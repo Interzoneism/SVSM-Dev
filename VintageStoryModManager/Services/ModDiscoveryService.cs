@@ -45,6 +45,11 @@ public sealed class ModDiscoveryService
                 continue;
             }
 
+            if (IsDefaultGameModsDirectory(searchPath))
+            {
+                continue;
+            }
+
             foreach (FileSystemInfo entry in new DirectoryInfo(searchPath).EnumerateFileSystemInfos())
             {
                 if (!seenSources.Add(entry.FullName))
@@ -112,6 +117,27 @@ public sealed class ModDiscoveryService
         }
 
         return ordered;
+    }
+
+    private static bool IsDefaultGameModsDirectory(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            string fullPath = Path.GetFullPath(path);
+            string normalized = fullPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+                .TrimEnd(Path.DirectorySeparatorChar);
+            string marker = Path.DirectorySeparatorChar + "Vintagestory" + Path.DirectorySeparatorChar + "Mods";
+            return normalized.Contains(marker, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     private IEnumerable<string> LoadPathsFromLog()
