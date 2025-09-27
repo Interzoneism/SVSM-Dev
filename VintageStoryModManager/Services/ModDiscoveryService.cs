@@ -1,0 +1,506 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+using VintageStoryModManager.Models;
+
+namespace VintageStoryModManager.Services;
+
+/// <summary>
+/// Discovers installed mods and reads their metadata in the same way as the game.
+/// </summary>
+public sealed class ModDiscoveryService
+{
+    private static readonly JsonDocumentOptions DocumentOptions = new()
+    {
+        AllowTrailingCommas = true,
+        CommentHandling = JsonCommentHandling.Skip
+    };
+
+    private readonly ClientSettingsStore _settingsStore;
+
+    public ModDiscoveryService(ClientSettingsStore settingsStore)
+    {
+        _settingsStore = settingsStore ?? throw new ArgumentNullException(nameof(settingsStore));
+    }
+
+    public IReadOnlyList<ModEntry> LoadMods()
+    {
+        var results = new List<ModEntry>();
+        var seenSources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string searchPath in BuildSearchPaths())
+        {
+            if (!Directory.Exists(searchPath))
+            {
+                continue;
+            }
+
+            foreach (FileSystemInfo entry in new DirectoryInfo(searchPath).EnumerateFileSystemInfos())
+            {
+                if (!seenSources.Add(entry.FullName))
+                {
+                    continue;
+                }
+
+                switch (entry)
+                {
+                    case DirectoryInfo directory:
+                        var fromDirectory = TryLoadFromDirectory(directory);
+                        if (fromDirectory != null)
+                        {
+                            results.Add(fromDirectory);
+                        }
+                        break;
+                    case FileInfo file:
+                        if (string.Equals(file.Extension, ".zip", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var fromZip = TryLoadFromZip(file);
+                            if (fromZip != null)
+                            {
+                                results.Add(fromZip);
+                            }
+                        }
+                        else if (string.Equals(file.Extension, ".cs", StringComparison.OrdinalIgnoreCase) || string.Equals(file.Extension, ".dll", StringComparison.OrdinalIgnoreCase))
+                        {
+                            results.Add(CreateUnsupportedCodeModEntry(file));
+                        }
+                        break;
+                }
+            }
+        }
+
+        return results;
+    }
+
+    private IEnumerable<string> BuildSearchPaths()
+    {
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            Path.Combine(_settingsStore.DataDirectory, "Mods"),
+            Path.Combine(_settingsStore.DataDirectory, "ModsByServer")
+        };
+
+        foreach (var path in _settingsStore.ModPaths)
+        {
+            foreach (var candidate in ResolvePathCandidates(path))
+            {
+                paths.Add(candidate);
+            }
+        }
+
+        return paths;
+    }
+
+    private IEnumerable<string> ResolvePathCandidates(string rawPath)
+    {
+        if (string.IsNullOrWhiteSpace(rawPath))
+        {
+            yield break;
+        }
+
+        if (Path.IsPathRooted(rawPath))
+        {
+            yield return Path.GetFullPath(rawPath);
+            yield break;
+        }
+
+        foreach (var basePath in _settingsStore.SearchBaseCandidates)
+        {
+            var combined = Path.GetFullPath(Path.Combine(basePath, rawPath));
+            yield return combined;
+        }
+    }
+
+    private ModEntry? TryLoadFromDirectory(DirectoryInfo directory)
+    {
+        string modInfoPath = Path.Combine(directory.FullName, "modinfo.json");
+        if (!File.Exists(modInfoPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(modInfoPath), DocumentOptions);
+            var info = ParseModInfo(document.RootElement, directory.Name);
+            byte[]? iconBytes = LoadIconFromDirectory(directory, info.IconPath, out string? iconDescription);
+
+            return CreateEntry(info, directory.FullName, ModSourceKind.Folder, iconBytes, iconDescription);
+        }
+        catch (Exception ex)
+        {
+            return CreateErrorEntry(directory.Name, directory.FullName, ModSourceKind.Folder, ex.Message);
+        }
+    }
+
+    private ModEntry? TryLoadFromZip(FileInfo archiveFile)
+    {
+        try
+        {
+            using ZipArchive archive = ZipFile.OpenRead(archiveFile.FullName);
+            ZipArchiveEntry? infoEntry = FindEntry(archive, "modinfo.json");
+            if (infoEntry == null)
+            {
+                return CreateErrorEntry(Path.GetFileNameWithoutExtension(archiveFile.Name), archiveFile.FullName, ModSourceKind.ZipArchive, "Missing modinfo.json");
+            }
+
+            using var infoStream = infoEntry.Open();
+            using JsonDocument document = JsonDocument.Parse(infoStream, DocumentOptions);
+            var info = ParseModInfo(document.RootElement, Path.GetFileNameWithoutExtension(archiveFile.Name));
+
+            byte[]? iconBytes = LoadIconFromArchive(archive, info.IconPath, out string? iconDescription);
+            return CreateEntry(info, archiveFile.FullName, ModSourceKind.ZipArchive, iconBytes, iconDescription);
+        }
+        catch (Exception ex)
+        {
+            return CreateErrorEntry(Path.GetFileNameWithoutExtension(archiveFile.Name), archiveFile.FullName, ModSourceKind.ZipArchive, ex.Message);
+        }
+    }
+
+    private static ZipArchiveEntry? FindEntry(ZipArchive archive, string entryName)
+    {
+        foreach (var entry in archive.Entries)
+        {
+            if (string.Equals(entry.FullName, entryName, StringComparison.OrdinalIgnoreCase))
+            {
+                return entry;
+            }
+        }
+
+        return archive.Entries.FirstOrDefault(e => string.Equals(Path.GetFileName(e.FullName), entryName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private ModEntry CreateUnsupportedCodeModEntry(FileInfo file)
+    {
+        string id = ToModId(Path.GetFileNameWithoutExtension(file.Name));
+        return new ModEntry
+        {
+            ModId = id,
+            Name = Path.GetFileNameWithoutExtension(file.Name),
+            Version = null,
+            NetworkVersion = null,
+            Description = "This code mod is not packaged with a modinfo.json file. Pack the mod into a zip or folder with modinfo.json so it can be managed.",
+            Website = null,
+            Authors = Array.Empty<string>(),
+            Contributors = Array.Empty<string>(),
+            Dependencies = Array.Empty<ModDependencyInfo>(),
+            SourcePath = file.FullName,
+            SourceKind = string.Equals(file.Extension, ".cs", StringComparison.OrdinalIgnoreCase) ? ModSourceKind.SourceCode : ModSourceKind.Assembly,
+            IconBytes = null,
+            IconDescription = null,
+            Error = "Metadata unavailable for code-only mods.",
+            Side = null,
+            RequiredOnClient = null,
+            RequiredOnServer = null
+        };
+    }
+
+    private ModEntry CreateEntry(RawModInfo info, string sourcePath, ModSourceKind kind, byte[]? iconBytes, string? iconDescription)
+    {
+        return new ModEntry
+        {
+            ModId = info.ModId,
+            Name = info.Name,
+            Version = info.Version,
+            NetworkVersion = info.NetworkVersion,
+            Description = info.Description,
+            Website = info.Website,
+            Authors = info.Authors,
+            Contributors = info.Contributors,
+            Dependencies = info.Dependencies,
+            SourcePath = sourcePath,
+            SourceKind = kind,
+            IconBytes = iconBytes,
+            IconDescription = iconDescription,
+            Error = null,
+            Side = info.Side,
+            RequiredOnClient = info.RequiredOnClient,
+            RequiredOnServer = info.RequiredOnServer
+        };
+    }
+
+    private ModEntry CreateErrorEntry(string hintName, string sourcePath, ModSourceKind kind, string message)
+    {
+        string name = string.IsNullOrWhiteSpace(hintName) ? Path.GetFileName(sourcePath) : hintName;
+        return new ModEntry
+        {
+            ModId = ToModId(name),
+            Name = name,
+            Version = null,
+            NetworkVersion = null,
+            Description = null,
+            Website = null,
+            Authors = Array.Empty<string>(),
+            Contributors = Array.Empty<string>(),
+            Dependencies = Array.Empty<ModDependencyInfo>(),
+            SourcePath = sourcePath,
+            SourceKind = kind,
+            IconBytes = null,
+            IconDescription = null,
+            Error = message,
+            Side = null,
+            RequiredOnClient = null,
+            RequiredOnServer = null
+        };
+    }
+
+    private static RawModInfo ParseModInfo(JsonElement root, string fallbackName)
+    {
+        string modId = GetString(root, "modid") ?? GetString(root, "modID") ?? string.Empty;
+        string name = GetString(root, "name") ?? fallbackName;
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            modId = ToModId(name);
+        }
+
+        string? version = GetString(root, "version");
+        version ??= TryResolveVersionFromMap(root);
+
+        var authors = GetStringList(root, "authors");
+        var contributors = GetStringList(root, "contributors");
+        var dependencies = GetDependencies(root);
+
+        return new RawModInfo
+        {
+            ModId = modId,
+            Name = string.IsNullOrWhiteSpace(name) ? modId : name,
+            Version = string.IsNullOrWhiteSpace(version) ? null : version,
+            NetworkVersion = GetString(root, "networkversion") ?? GetString(root, "networkVersion"),
+            Description = GetString(root, "description"),
+            Website = GetString(root, "website"),
+            Authors = authors,
+            Contributors = contributors,
+            Dependencies = dependencies,
+            IconPath = GetString(root, "iconpath") ?? GetString(root, "iconPath"),
+            Side = GetString(root, "side"),
+            RequiredOnClient = GetNullableBool(root, "requiredonclient"),
+            RequiredOnServer = GetNullableBool(root, "requiredonserver")
+        };
+    }
+
+    private static IReadOnlyList<ModDependencyInfo> GetDependencies(JsonElement root)
+    {
+        if (!TryGetProperty(root, "dependencies", out JsonElement dependencies) || dependencies.ValueKind != JsonValueKind.Object)
+        {
+            return Array.Empty<ModDependencyInfo>();
+        }
+
+        var list = new List<ModDependencyInfo>();
+        foreach (var property in dependencies.EnumerateObject())
+        {
+            string version = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() ?? string.Empty : string.Empty;
+            list.Add(new ModDependencyInfo(property.Name, version));
+        }
+
+        return list.Count == 0 ? Array.Empty<ModDependencyInfo>() : list.ToArray();
+    }
+
+    private static string? TryResolveVersionFromMap(JsonElement root)
+    {
+        if (!TryGetProperty(root, "versionmap", out JsonElement map) && !TryGetProperty(root, "VersionMap", out map))
+        {
+            return null;
+        }
+
+        if (map.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        string? preferred = null;
+        string? fallback = null;
+        foreach (var property in map.EnumerateObject())
+        {
+            string? version = property.Value.GetString();
+            if (version == null)
+            {
+                continue;
+            }
+
+            fallback = version;
+            if (property.Name.Contains("1.21", StringComparison.OrdinalIgnoreCase))
+            {
+                preferred = version;
+            }
+        }
+
+        return preferred ?? fallback;
+    }
+
+    private static byte[]? LoadIconFromDirectory(DirectoryInfo directory, string? iconPath, out string? description)
+    {
+        string? candidate = ResolveSafePath(directory.FullName, iconPath);
+        if (candidate == null)
+        {
+            string fallback = Path.Combine(directory.FullName, "modicon.png");
+            if (File.Exists(fallback))
+            {
+                candidate = fallback;
+            }
+        }
+
+        if (candidate != null && File.Exists(candidate))
+        {
+            description = candidate;
+            return File.ReadAllBytes(candidate);
+        }
+
+        description = null;
+        return null;
+    }
+
+    private static byte[]? LoadIconFromArchive(ZipArchive archive, string? iconPath, out string? description)
+    {
+        ZipArchiveEntry? entry = null;
+        if (!string.IsNullOrWhiteSpace(iconPath))
+        {
+            entry = FindEntry(archive, iconPath);
+        }
+
+        entry ??= FindEntry(archive, "modicon.png");
+        if (entry == null)
+        {
+            description = null;
+            return null;
+        }
+
+        using MemoryStream buffer = new MemoryStream();
+        using Stream iconStream = entry.Open();
+        iconStream.CopyTo(buffer);
+        description = entry.FullName;
+        return buffer.ToArray();
+    }
+
+    private static string? ResolveSafePath(string baseDirectory, string? relative)
+    {
+        if (string.IsNullOrWhiteSpace(relative))
+        {
+            return null;
+        }
+
+        try
+        {
+            string combined = Path.GetFullPath(Path.Combine(baseDirectory, relative));
+            if (combined.StartsWith(baseDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                return combined;
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore invalid paths.
+        }
+
+        return null;
+    }
+
+    private static string ToModId(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "mod";
+        }
+
+        var builder = new StringBuilder(name.Length);
+        foreach (char ch in name)
+        {
+            if (char.IsLetter(ch))
+            {
+                builder.Append(char.ToLowerInvariant(ch));
+            }
+            else if (char.IsDigit(ch))
+            {
+                if (builder.Length == 0)
+                {
+                    builder.Append('m');
+                }
+                builder.Append(ch);
+            }
+        }
+
+        return builder.Length == 0 ? "mod" : builder.ToString();
+    }
+
+    private static string? GetString(JsonElement element, string propertyName)
+    {
+        if (TryGetProperty(element, propertyName, out JsonElement value) && value.ValueKind == JsonValueKind.String)
+        {
+            return value.GetString();
+        }
+
+        return null;
+    }
+
+    private static bool? GetNullableBool(JsonElement element, string propertyName)
+    {
+        if (TryGetProperty(element, propertyName, out JsonElement value))
+        {
+            if (value.ValueKind == JsonValueKind.True)
+            {
+                return true;
+            }
+
+            if (value.ValueKind == JsonValueKind.False)
+            {
+                return false;
+            }
+        }
+
+        return null;
+    }
+
+    private static IReadOnlyList<string> GetStringList(JsonElement element, string propertyName)
+    {
+        if (!TryGetProperty(element, propertyName, out JsonElement array) || array.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<string>();
+        }
+
+        var list = new List<string>();
+        foreach (var item in array.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String)
+            {
+                list.Add(item.GetString() ?? string.Empty);
+            }
+        }
+
+        return list.Count == 0 ? Array.Empty<string>() : list.ToArray();
+    }
+
+    private static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement value)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                value = property.Value;
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
+    }
+
+    private sealed class RawModInfo
+    {
+        public required string ModId { get; init; }
+        public required string Name { get; init; }
+        public string? Version { get; init; }
+        public string? NetworkVersion { get; init; }
+        public string? Description { get; init; }
+        public string? Website { get; init; }
+        public IReadOnlyList<string> Authors { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> Contributors { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<ModDependencyInfo> Dependencies { get; init; } = Array.Empty<ModDependencyInfo>();
+        public string? IconPath { get; init; }
+        public string? Side { get; init; }
+        public bool? RequiredOnClient { get; init; }
+        public bool? RequiredOnServer { get; init; }
+    }
+}
