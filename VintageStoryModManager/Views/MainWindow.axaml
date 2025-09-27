@@ -1,0 +1,115 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:VintageStoryModManager.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="VintageStoryModManager.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Vintage Story Mod Manager"
+        Width="1100"
+        Height="720">
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24" RowSpacing="16">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+            <TextBlock Text="Vintage Story Mod Manager" FontSize="28" FontWeight="SemiBold"/>
+            <Border Background="{DynamicResource ThemeAccentBrush}" CornerRadius="12" Padding="10 4" VerticalAlignment="Center">
+                <TextBlock Text="Portable" FontSize="14" Foreground="White"/>
+            </Border>
+        </StackPanel>
+
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="16" RowDefinitions="Auto">
+            <StackPanel Orientation="Vertical" Grid.Column="0">
+                <TextBlock Text="Sort by" FontWeight="SemiBold"/>
+                <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSortOption}" Width="180" />
+            </StackPanel>
+            <StackPanel Orientation="Vertical" Grid.Column="1">
+                <TextBlock Text="Order" FontWeight="SemiBold"/>
+                <ToggleSwitch Content="Descending" IsChecked="{Binding SortDescending}" />
+            </StackPanel>
+            <StackPanel Orientation="Vertical" Grid.Column="2">
+                <TextBlock Text="Refresh" FontWeight="SemiBold"/>
+                <Button Content="Reload mods" Command="{Binding RefreshCommand}" Width="140" />
+            </StackPanel>
+            <StackPanel Orientation="Vertical" Grid.Column="3">
+                <TextBlock Text="Summary" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding Summary}" FontSize="16" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+
+        <Border Grid.Row="2" CornerRadius="12" Background="#0F000000" Padding="8">
+            <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding Mods}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel ItemWidth="340" MinWidth="320" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ModViewModel">
+                            <Border Margin="8" Padding="16" CornerRadius="12" Background="#1AFFFFFF" ToolTip.Tip="{Binding Tooltip}">
+                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="16" RowSpacing="8">
+                                    <Border Width="72" Height="72" CornerRadius="18" Background="#22007ACC" VerticalAlignment="Top">
+                                        <Grid>
+                                            <Image Source="{Binding Icon}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
+                                            <TextBlock Text="{Binding Initials}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasNoIcon}"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="20" FontWeight="SemiBold" />
+                                            <Border Background="#22007ACC" Padding="8 2" CornerRadius="8">
+                                                <TextBlock Text="{Binding VersionDisplay}" FontSize="13"/>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" MaxWidth="480"/>
+
+                                        <StackPanel Orientation="Horizontal" Spacing="12">
+                                            <StackPanel>
+                                                <TextBlock Text="Authors" FontWeight="SemiBold" FontSize="13"/>
+                                                <TextBlock Text="{Binding AuthorsDisplay}" TextWrapping="Wrap" MaxWidth="240" />
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="Contributors" FontWeight="SemiBold" FontSize="13"/>
+                                                <TextBlock Text="{Binding ContributorsDisplay}" TextWrapping="Wrap" MaxWidth="240" />
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <Border Background="#1F000000" Padding="6 2" CornerRadius="6">
+                                                <TextBlock Text="{Binding SourceHint}" FontSize="12"/>
+                                            </Border>
+                                            <Border Background="#1F000000" Padding="6 2" CornerRadius="6">
+                                                <TextBlock Text="{Binding StatusText}" FontSize="12"/>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                                            <ToggleSwitch Content="Active" IsChecked="{Binding IsActive}" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <Border Grid.ColumnSpan="2" Grid.Row="2" Background="#44ff6b6b" Padding="8" CornerRadius="8" IsVisible="{Binding HasError}">
+                                        <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="{DynamicResource ThemeForegroundBrush}"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <Border Grid.Row="3" CornerRadius="8" Background="#0F000000" Padding="12" HorizontalAlignment="Stretch">
+            <DockPanel>
+                <TextBlock Text="{Binding Summary}" DockPanel.Dock="Left" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding StatusMessage}" HorizontalAlignment="Right"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
