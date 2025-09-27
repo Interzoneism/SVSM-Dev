@@ -10,6 +10,8 @@ using Vintagestory.API.Config;
 using Vintagestory.Client;
 using Vintagestory.Client.NoObf;
 
+#nullable enable
+
 namespace ImprovedModMenu
 {
     public class ImprovedModMenuModSystem : ModSystem
@@ -19,7 +21,7 @@ namespace ImprovedModMenu
         public override void StartClientSide(ICoreClientAPI api)
         {
             harmony = new Harmony(Mod.Info.ModID);
-            harmony.PatchAll(typeof(GuiScreenModsPatches));
+            harmony.CreateClassProcessor(typeof(GuiScreenModsPatches)).Patch();
         }
 
         public override void Dispose()
@@ -59,6 +61,7 @@ namespace ImprovedModMenu
             private const double SortButtonWidth = 110.0;
             private const double SortButtonHeight = 30.0;
             private const double SortButtonHorizontalSpacing = 6.0;
+            private const double SortButtonVerticalSpacing = 4.0;
             private const double TitleToButtonsSpacing = 8.0;
             private const double ButtonsToListSpacing = 5.0;
 
@@ -82,7 +85,11 @@ namespace ImprovedModMenu
 
                 double scrollWidth = Math.Max(400.0, (double)width * 0.5) / ClientSettings.GUIScale;
                 float scaledHeight = (float)Math.Max(300, height) / ClientSettings.GUIScale;
-                double additionalOffset = TitleToButtonsSpacing + SortButtonHeight + ButtonsToListSpacing;
+                bool canFitSideBySide = scrollWidth >= SortButtonWidth * 2.0 + SortButtonHorizontalSpacing;
+                double buttonsHeight = canFitSideBySide
+                    ? SortButtonHeight
+                    : SortButtonHeight * 2.0 + SortButtonVerticalSpacing;
+                double additionalOffset = TitleToButtonsSpacing + buttonsHeight + ButtonsToListSpacing;
                 double scrollHeight = scaledHeight - 190f - additionalOffset;
                 if (scrollHeight < 0.0)
                 {
@@ -93,26 +100,35 @@ namespace ImprovedModMenu
                     .BelowCopy(0.0, additionalOffset)
                     .WithFixedSize(scrollWidth, scrollHeight);
 
-                GuiComposer composer = (GuiComposer)DialogBaseMethod.Invoke(__instance, new object[] { "mainmenu-mods", -1.0, -1.0 });
+                GuiComposer composer = DialogBaseMethod.Invoke(__instance, new object[] { "mainmenu-mods", -1.0, -1.0 }) as GuiComposer
+                    ?? throw new InvalidOperationException("dialogBase returned null");
                 __instance.ElementComposer = composer;
 
                 composer.AddStaticText(Lang.Get("Installed mods"), CairoFont.WhiteSmallishText(), titleBounds);
                 composer.AddInset(scrollBounds);
 
                 double buttonTop = titleAnchorBounds.fixedY + titleAnchorBounds.fixedHeight + TitleToButtonsSpacing;
+                double scrollLeft = scrollBounds.fixedX;
                 double scrollRight = scrollBounds.fixedX + scrollBounds.fixedWidth;
 
-                double activeButtonX = scrollRight - SortButtonWidth;
-                double nameButtonX = activeButtonX - SortButtonWidth - SortButtonHorizontalSpacing;
-                if (nameButtonX < scrollBounds.fixedX)
+                ElementBounds sortNameBounds;
+                ElementBounds sortActiveBounds;
+                if (canFitSideBySide)
                 {
-                    nameButtonX = scrollBounds.fixedX;
+                    double requiredWidth = SortButtonWidth * 2.0 + SortButtonHorizontalSpacing;
+                    double startX = Math.Max(scrollLeft, scrollRight - requiredWidth);
+                    sortNameBounds = ElementBounds.Fixed(EnumDialogArea.LeftTop, startX, buttonTop, SortButtonWidth, SortButtonHeight)
+                        .WithFixedPadding(10.0, 2.0);
+                    sortActiveBounds = ElementBounds.Fixed(EnumDialogArea.LeftTop, startX + SortButtonWidth + SortButtonHorizontalSpacing, buttonTop, SortButtonWidth, SortButtonHeight)
+                        .WithFixedPadding(10.0, 2.0);
                 }
-
-                ElementBounds sortNameBounds = ElementBounds.Fixed(EnumDialogArea.LeftTop, nameButtonX, buttonTop, SortButtonWidth, SortButtonHeight)
-                    .WithFixedPadding(10.0, 2.0);
-                ElementBounds sortActiveBounds = ElementBounds.Fixed(EnumDialogArea.LeftTop, activeButtonX, buttonTop, SortButtonWidth, SortButtonHeight)
-                    .WithFixedPadding(10.0, 2.0);
+                else
+                {
+                    sortNameBounds = ElementBounds.Fixed(EnumDialogArea.LeftTop, scrollLeft, buttonTop, SortButtonWidth, SortButtonHeight)
+                        .WithFixedPadding(10.0, 2.0);
+                    sortActiveBounds = ElementBounds.Fixed(EnumDialogArea.LeftTop, scrollLeft, buttonTop + SortButtonHeight + SortButtonVerticalSpacing, SortButtonWidth, SortButtonHeight)
+                        .WithFixedPadding(10.0, 2.0);
+                }
 
                 composer.AddSmallButton(Lang.Get("improvedmodmenu-sort-name"), () => SetSortMode(__instance, SortMode.Name), sortNameBounds);
                 composer.AddSmallButton(Lang.Get("improvedmodmenu-sort-active"), () => SetSortMode(__instance, SortMode.Active), sortActiveBounds);
@@ -126,7 +142,11 @@ namespace ImprovedModMenu
                 composer.AddVerticalScrollbar(onScroll, ElementStdBounds.VerticalScrollbar(scrollBounds), "scrollbar");
 
                 OnRequireCell<ModCellEntry> cellCreator = (cell, bounds) =>
-                    (IGuiElementCell)CreateCellElemMethod.Invoke(__instance, new object[] { cell, bounds });
+                {
+                    object? created = CreateCellElemMethod.Invoke(__instance, new object[] { cell, bounds });
+                    return created as IGuiElementCell
+                        ?? throw new InvalidOperationException("createCellElem returned an unexpected value");
+                };
                 List<ModCellEntry> cells = InvokeLoadModCells(__instance);
 
                 composer.BeginClip(clippingBounds);
@@ -223,12 +243,15 @@ namespace ImprovedModMenu
 
             private static List<ModCellEntry> InvokeLoadModCells(GuiScreenMods screen)
             {
-                return (List<ModCellEntry>)LoadModCellsMethod.Invoke(screen, Array.Empty<object>());
+                object? result = LoadModCellsMethod.Invoke(screen, Array.Empty<object>());
+                return result as List<ModCellEntry>
+                    ?? throw new InvalidOperationException("LoadModCells returned an unexpected value");
             }
 
             private static bool InvokeButtonHandler(GuiScreenMods screen, MethodInfo method)
             {
-                return (bool)method.Invoke(screen, Array.Empty<object>());
+                object? result = method.Invoke(screen, Array.Empty<object>());
+                return result is bool handled && handled;
             }
         }
     }
