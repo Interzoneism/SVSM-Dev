@@ -19,7 +19,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         _mods = new ObservableCollection<ModViewModel>();
-        Mods = new ReadOnlyObservableCollection<ModViewModel>(_mods);
+        Mods = _mods;
         SortOptions = new ObservableCollection<SortOptionViewModel>(SortOptionViewModel.CreateDefaults());
         _selectedSortOption = SortOptions.First();
         Summary = "No mods loaded.";
@@ -32,14 +32,14 @@ public partial class MainWindowViewModel : ViewModelBase
         _modDiscoveryService = modDiscoveryService ?? throw new ArgumentNullException(nameof(modDiscoveryService));
         _settingsStore = settingsStore ?? throw new ArgumentNullException(nameof(settingsStore));
         _mods = new ObservableCollection<ModViewModel>();
-        Mods = new ReadOnlyObservableCollection<ModViewModel>(_mods);
+        Mods = _mods;
         SortOptions = new ObservableCollection<SortOptionViewModel>(SortOptionViewModel.CreateDefaults());
         _selectedSortOption = SortOptions.First();
         RefreshCommand = new RelayCommand(Refresh);
         Refresh();
     }
 
-    public ReadOnlyObservableCollection<ModViewModel> Mods { get; }
+    public ObservableCollection<ModViewModel> Mods { get; }
 
     public ObservableCollection<SortOptionViewModel> SortOptions { get; }
 
