@@ -2,9 +2,9 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
-using System.Linq;
 using Avalonia.Markup.Xaml;
-using System.IO;
+using System;
+using System.Linq;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
 using VintageStoryModManager.Views;
@@ -25,7 +25,17 @@ public partial class App : Application
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
-            var dataDirectory = Directory.GetCurrentDirectory();
+            string dataDirectory;
+            try
+            {
+                dataDirectory = DataDirectoryLocator.Resolve();
+            }
+            catch (Exception ex)
+            {
+                dataDirectory = Environment.CurrentDirectory;
+                Console.Error.WriteLine($"Failed to resolve data directory, falling back to '{dataDirectory}': {ex.Message}");
+            }
+
             var settingsStore = new ClientSettingsStore(dataDirectory);
             var discoveryService = new ModDiscoveryService(settingsStore);
 

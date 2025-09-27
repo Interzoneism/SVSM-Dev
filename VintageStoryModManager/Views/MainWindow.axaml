@@ -41,68 +41,104 @@
         </Grid>
 
         <Border Grid.Row="2" CornerRadius="12" Background="#0F000000" Padding="8">
-            <ScrollViewer>
-                <ItemsControl ItemsSource="{Binding Mods}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel ItemWidth="340" MinWidth="320" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:ModViewModel">
-                            <Border Margin="8" Padding="16" CornerRadius="12" Background="#1AFFFFFF" ToolTip.Tip="{Binding Tooltip}">
-                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="16" RowSpacing="8">
-                                    <Border Width="72" Height="72" CornerRadius="18" Background="#22007ACC" VerticalAlignment="Top">
-                                        <Grid>
-                                            <Image Source="{Binding Icon}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
-                                            <TextBlock Text="{Binding Initials}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasNoIcon}"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="4">
-                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding DisplayName}" FontSize="20" FontWeight="SemiBold" />
-                                            <Border Background="#22007ACC" Padding="8 2" CornerRadius="8">
-                                                <TextBlock Text="{Binding VersionDisplay}" FontSize="13"/>
-                                            </Border>
-                                        </StackPanel>
-
-                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" MaxWidth="480"/>
-
-                                        <StackPanel Orientation="Horizontal" Spacing="12">
-                                            <StackPanel>
-                                                <TextBlock Text="Authors" FontWeight="SemiBold" FontSize="13"/>
-                                                <TextBlock Text="{Binding AuthorsDisplay}" TextWrapping="Wrap" MaxWidth="240" />
-                                            </StackPanel>
-                                            <StackPanel>
-                                                <TextBlock Text="Contributors" FontWeight="SemiBold" FontSize="13"/>
-                                                <TextBlock Text="{Binding ContributorsDisplay}" TextWrapping="Wrap" MaxWidth="240" />
-                                            </StackPanel>
-                                        </StackPanel>
-
-                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                            <Border Background="#1F000000" Padding="6 2" CornerRadius="6">
-                                                <TextBlock Text="{Binding SourceHint}" FontSize="12"/>
-                                            </Border>
-                                            <Border Background="#1F000000" Padding="6 2" CornerRadius="6">
-                                                <TextBlock Text="{Binding StatusText}" FontSize="12"/>
-                                            </Border>
-                                        </StackPanel>
-
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                                            <ToggleSwitch Content="Active" IsChecked="{Binding IsActive}" />
-                                        </StackPanel>
-                                    </StackPanel>
-
-                                    <Border Grid.ColumnSpan="2" Grid.Row="2" Background="#44ff6b6b" Padding="8" CornerRadius="8" IsVisible="{Binding HasError}">
-                                        <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="{DynamicResource ThemeForegroundBrush}"/>
-                                    </Border>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+            <DataGrid ItemsSource="{Binding Mods}"
+                      AutoGenerateColumns="False"
+                      GridLinesVisibility="Horizontal"
+                      HeadersVisibility="Column"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      RowHeight="60"
+                      Sorting="OnModsSorting"
+                      SelectionMode="Extended"
+                      CanUserReorderColumns="False"
+                      IsReadOnly="False">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Icon"
+                                            Width="80"
+                                            IsReadOnly="True"
+                                            Tag="{x:Static vm:SortKey.Name}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="vm:ModViewModel">
+                                <Border Width="48" Height="48" CornerRadius="12" Background="#22007ACC" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Image Source="{Binding Icon}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
+                                        <TextBlock Text="{Binding Initials}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasNoIcon}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Active"
+                                            Width="80"
+                                            Tag="{x:Static vm:SortKey.Status}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="vm:ModViewModel">
+                                <ToggleSwitch IsChecked="{Binding IsActive}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Name"
+                                            Width="2*"
+                                            Tag="{x:Static vm:SortKey.Name}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="vm:ModViewModel">
+                                <TextBlock Text="{Binding DisplayName}" ToolTip.Tip="{Binding Tooltip}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Version"
+                                        Binding="{Binding VersionDisplay}"
+                                        Width="*"
+                                        Tag="{x:Static vm:SortKey.Version}"/>
+                    <DataGridTextColumn Header="Status"
+                                        Binding="{Binding StatusText}"
+                                        Width="*"
+                                        Tag="{x:Static vm:SortKey.Status}"/>
+                    <DataGridTextColumn Header="Side"
+                                        Binding="{Binding SideDisplay}"
+                                        Width="*"
+                                        Tag="{x:Static vm:SortKey.Side}"/>
+                    <DataGridTextColumn Header="Requirement"
+                                        Binding="{Binding RequirementDisplay}"
+                                        Width="*"
+                                        Tag="{x:Static vm:SortKey.Requirement}"/>
+                    <DataGridTextColumn Header="Authors"
+                                        Binding="{Binding AuthorsDisplay}"
+                                        Width="*"
+                                        Tag="{x:Static vm:SortKey.Authors}"/>
+                    <DataGridTextColumn Header="Source"
+                                        Binding="{Binding SourceHint}"
+                                        Width="*"
+                                        Tag="{x:Static vm:SortKey.Source}"/>
+                    <DataGridTemplateColumn Header="Location"
+                                            Width="3*"
+                                            Tag="{x:Static vm:SortKey.Location}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="vm:ModViewModel">
+                                <TextBlock Text="{Binding SourcePath}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding SourcePath}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Dependencies"
+                                            Width="2*"
+                                            Tag="{x:Static vm:SortKey.Dependencies}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="vm:ModViewModel">
+                                <TextBlock Text="{Binding DependenciesDisplay}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DependenciesDisplay}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Issues"
+                                            Width="2*"
+                                            Tag="{x:Static vm:SortKey.Issues}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="vm:ModViewModel">
+                                <TextBlock Text="{Binding IssuesDisplay}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding IssuesDisplay}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
         </Border>
 
         <Border Grid.Row="3" CornerRadius="8" Background="#0F000000" Padding="12" HorizontalAlignment="Stretch">
