@@ -20,6 +20,12 @@ public sealed class ModDiscoveryService
         CommentHandling = JsonCommentHandling.Skip
     };
 
+    private static readonly char[] PathSeparators = new[]
+    {
+        Path.DirectorySeparatorChar,
+        Path.AltDirectorySeparatorChar
+    };
+
     private readonly ClientSettingsStore _settingsStore;
 
     public ModDiscoveryService(ClientSettingsStore settingsStore)
@@ -100,7 +106,124 @@ public sealed class ModDiscoveryService
             }
         }
 
+        foreach (var loggedPath in LoadPathsFromLog())
+        {
+            AddPath(loggedPath);
+        }
+
         return ordered;
+    }
+
+    private IEnumerable<string> LoadPathsFromLog()
+    {
+        string logsDirectory = Path.Combine(_settingsStore.DataDirectory, "Logs");
+        if (!Directory.Exists(logsDirectory))
+        {
+            yield break;
+        }
+
+        FileInfo? logFile = null;
+        try
+        {
+            logFile = new DirectoryInfo(logsDirectory)
+                .EnumerateFiles("client-main*.txt", SearchOption.TopDirectoryOnly)
+                .OrderByDescending(file => file.LastWriteTimeUtc)
+                .FirstOrDefault();
+
+            logFile ??= new DirectoryInfo(logsDirectory)
+                .EnumerateFiles("*.txt", SearchOption.TopDirectoryOnly)
+                .OrderByDescending(file => file.LastWriteTimeUtc)
+                .FirstOrDefault();
+        }
+        catch (Exception)
+        {
+            yield break;
+        }
+
+        if (logFile == null)
+        {
+            yield break;
+        }
+
+        bool collecting = false;
+        List<string> lines;
+        try
+        {
+            lines = File.ReadLines(logFile.FullName).ToList();
+        }
+        catch (Exception)
+        {
+            yield break;
+        }
+
+        foreach (string rawLine in lines)
+        {
+            string message = ExtractLogMessage(rawLine);
+            if (!collecting)
+            {
+                if (message.IndexOf("Will search the following paths for mods:", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    collecting = true;
+                }
+
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                break;
+            }
+
+            string trimmed = message.Trim();
+            if (trimmed.EndsWith("(Not found?)", StringComparison.Ordinal))
+            {
+                trimmed = trimmed.Substring(0, trimmed.Length - "(Not found?)".Length).TrimEnd();
+            }
+
+            if (LooksLikePath(trimmed))
+            {
+                yield return trimmed;
+                continue;
+            }
+
+            break;
+        }
+    }
+
+    private static string ExtractLogMessage(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return string.Empty;
+        }
+
+        int bracketIndex = line.IndexOf(']');
+        if (bracketIndex >= 0 && bracketIndex + 1 < line.Length)
+        {
+            return line[(bracketIndex + 1)..].TrimStart();
+        }
+
+        return line.TrimStart();
+    }
+
+    private static bool LooksLikePath(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        if (text.IndexOfAny(PathSeparators) >= 0)
+        {
+            return true;
+        }
+
+        if (text.Length >= 2 && char.IsLetter(text[0]) && text[1] == ':')
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private IEnumerable<string> ResolvePathCandidates(string rawPath)
