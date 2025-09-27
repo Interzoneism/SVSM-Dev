@@ -8,56 +8,96 @@
         x:DataType="vm:MainWindowViewModel"
         Title="Vintage Story Mod Manager"
         Width="1100"
-        Height="720">
+        Height="720"
+        Background="{DynamicResource WindowBackgroundBrush}">
+    <Window.Resources>
+        <LinearGradientBrush x:Key="WindowBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#1B1F2F" Offset="0"/>
+            <GradientStop Color="#111521" Offset="1"/>
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="CardBackgroundBrush" Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="CardBorderBrush" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6"/>
+        <SolidColorBrush x:Key="AccentBrushSoft" Color="#DBEAFE"/>
+    </Window.Resources>
     <Design.DataContext>
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24" RowSpacing="16">
-        <StackPanel Orientation="Horizontal" Spacing="12">
-            <TextBlock Text="Vintage Story Mod Manager" FontSize="28" FontWeight="SemiBold"/>
-            <Border Background="{DynamicResource ThemeAccentBrush}" CornerRadius="12" Padding="10 4" VerticalAlignment="Center">
-                <TextBlock Text="Portable" FontSize="14" Foreground="White"/>
-            </Border>
-        </StackPanel>
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="32" RowSpacing="20">
+        <Border Padding="20" CornerRadius="18" Background="#101523" BoxShadow="0 14 35 -12 #000000AA">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Vintage Story Mod Manager" FontSize="30" FontWeight="SemiBold" Foreground="#F8FAFC"/>
+                    <TextBlock Text="Organise, enable and troubleshoot your mod collection with a clean overview."
+                               FontSize="14" Foreground="#CBD5F5"/>
+                </StackPanel>
+                <Border Background="{StaticResource AccentBrushSoft}" Padding="14 8" CornerRadius="16" VerticalAlignment="Center">
+                    <TextBlock Text="Portable Edition" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                </Border>
+            </Grid>
+        </Border>
 
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="16" RowDefinitions="Auto">
-            <StackPanel Orientation="Vertical" Grid.Column="0">
-                <TextBlock Text="Sort by" FontWeight="SemiBold"/>
-                <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSortOption}" Width="180" />
-            </StackPanel>
-            <StackPanel Orientation="Vertical" Grid.Column="1">
-                <TextBlock Text="Order" FontWeight="SemiBold"/>
-                <ToggleSwitch Content="Descending" IsChecked="{Binding SortDescending}" />
-            </StackPanel>
-            <StackPanel Orientation="Vertical" Grid.Column="2">
-                <TextBlock Text="Refresh" FontWeight="SemiBold"/>
-                <Button Content="Reload mods" Command="{Binding RefreshCommand}" Width="140" />
-            </StackPanel>
-        </Grid>
+        <Border Grid.Row="1" Background="{StaticResource CardBackgroundBrush}" CornerRadius="16" Padding="20" BoxShadow="0 16 32 -18 #000000AA">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="20">
+                <StackPanel Orientation="Vertical" Grid.Column="0" Spacing="8">
+                    <TextBlock Text="Sort by" FontWeight="SemiBold" Foreground="#1E293B"/>
+                    <ComboBox ItemsSource="{Binding SortOptions}"
+                              SelectedItem="{Binding SelectedSortOption}"
+                              Width="200"
+                              MinWidth="160"/>
+                </StackPanel>
+                <StackPanel Orientation="Vertical" Grid.Column="1" Spacing="8">
+                    <TextBlock Text="Order" FontWeight="SemiBold" Foreground="#1E293B"/>
+                    <ToggleSwitch Content="Descending"
+                                  IsChecked="{Binding SortDescending}"
+                                  HorizontalAlignment="Left"/>
+                </StackPanel>
+                <StackPanel Orientation="Vertical" Grid.Column="2" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="Active mods" FontWeight="SemiBold" Foreground="#1E293B"/>
+                    <TextBlock Text="{Binding Summary}" Foreground="#475569" FontSize="14"/>
+                </StackPanel>
+                <StackPanel Orientation="Vertical" Grid.Column="3" Spacing="8" HorizontalAlignment="Right">
+                    <TextBlock Text="Refresh" FontWeight="SemiBold" Foreground="#1E293B" HorizontalAlignment="Right"/>
+                    <Button Content="Reload mods"
+                            Command="{Binding RefreshCommand}"
+                            Width="160"
+                            HorizontalAlignment="Right"
+                            Background="{StaticResource AccentBrush}"
+                            Foreground="White"
+                            BorderBrush="{StaticResource AccentBrush}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
 
-        <Border Grid.Row="2" CornerRadius="12" Background="#0F000000" Padding="8">
+        <Border Grid.Row="2" CornerRadius="18" Background="{StaticResource CardBackgroundBrush}" Padding="16" BoxShadow="0 30 60 -40 #000000AA">
             <ListBox ItemsSource="{Binding Mods}"
                      Background="Transparent"
                      BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                     SelectionMode="Single">
+                     SelectionMode="Single"
+                     Padding="4">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Spacing="10"/>
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
                 <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="vm:ModViewModel">
-                        <Border Margin="0 4" Padding="12" Background="#15000000" CornerRadius="10">
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
-                                <Border Width="56" Height="56" CornerRadius="14" Background="#22007ACC">
+                        <Border Padding="16" Background="White" CornerRadius="14" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" BoxShadow="0 22 36 -28 #00000055">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+                                <Border Width="60" Height="60" CornerRadius="16" Background="{StaticResource AccentBrushSoft}">
                                     <Grid>
                                         <Image Source="{Binding Icon}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
                                         <TextBlock Text="{Binding Initials}" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasNoIcon}"/>
                                     </Grid>
                                 </Border>
-                                <StackPanel Grid.Column="1" Spacing="6">
+                                <StackPanel Grid.Column="1" Spacing="10">
                                     <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold" ToolTip.Tip="{Binding Tooltip}" />
-                                            <Border Background="#D9534F" CornerRadius="6" Padding="6 2" IsVisible="{Binding HasError}">
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="20" FontWeight="SemiBold" Foreground="#0F172A" ToolTip.Tip="{Binding Tooltip}" />
+                                            <Border Background="#EF4444" CornerRadius="8" Padding="8 3" IsVisible="{Binding HasError}">
                                                 <TextBlock Text="Issue" Foreground="White" FontSize="12" FontWeight="SemiBold"/>
                                             </Border>
                                         </StackPanel>
@@ -67,43 +107,44 @@
                                                       VerticalAlignment="Center"
                                                       RenderTransformOrigin="0.5,0.5">
                                             <ToggleSwitch.RenderTransform>
-                                                <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                                <ScaleTransform ScaleX="1.35" ScaleY="1.35"/>
                                             </ToggleSwitch.RenderTransform>
                                         </ToggleSwitch>
                                     </Grid>
-                                    <StackPanel Orientation="Horizontal" Spacing="16">
-                                        <TextBlock>
-                                            <Run Text="Version: " FontWeight="SemiBold"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="24">
+                                        <TextBlock Foreground="#475569">
+                                            <Run Text="Version " FontWeight="SemiBold"/>
                                             <Run Text="{Binding VersionDisplay}"/>
                                         </TextBlock>
-                                        <TextBlock>
-                                            <Run Text="Authors: " FontWeight="SemiBold"/>
+                                        <TextBlock Foreground="#475569">
+                                            <Run Text="Authors " FontWeight="SemiBold"/>
                                             <Run Text="{Binding AuthorsDisplay}"/>
                                         </TextBlock>
                                     </StackPanel>
                                     <TextBlock Text="{Binding Description}"
                                                TextWrapping="Wrap"
                                                TextTrimming="CharacterEllipsis"
+                                               Foreground="#1F2937"
                                                MaxLines="2"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="16"
+                                    <StackPanel Orientation="Horizontal" Spacing="20"
                                                 IsVisible="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}">
-                                        <TextBlock>
+                                        <TextBlock Foreground="#334155">
                                             <Run Text="Status: " FontWeight="SemiBold"/>
                                             <Run Text="{Binding StatusText}"/>
                                         </TextBlock>
-                                        <TextBlock>
+                                        <TextBlock Foreground="#334155">
                                             <Run Text="Side: " FontWeight="SemiBold"/>
                                             <Run Text="{Binding SideDisplay}"/>
                                         </TextBlock>
-                                        <TextBlock>
+                                        <TextBlock Foreground="#334155">
                                             <Run Text="Requirement: " FontWeight="SemiBold"/>
                                             <Run Text="{Binding RequirementDisplay}"/>
                                         </TextBlock>
-                                        <TextBlock>
+                                        <TextBlock Foreground="#334155">
                                             <Run Text="Dependencies: " FontWeight="SemiBold"/>
                                             <Run Text="{Binding DependenciesDisplay}"/>
                                         </TextBlock>
-                                        <TextBlock>
+                                        <TextBlock Foreground="#334155">
                                             <Run Text="Issues: " FontWeight="SemiBold"/>
                                             <Run Text="{Binding IssuesDisplay}"/>
                                         </TextBlock>
@@ -112,7 +153,7 @@
                                                TextWrapping="Wrap"
                                                TextTrimming="CharacterEllipsis"
                                                ToolTip.Tip="{Binding SourcePath}"
-                                               Foreground="Gray"
+                                               Foreground="#64748B"
                                                IsVisible="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"/>
                                 </StackPanel>
                             </Grid>
@@ -122,11 +163,11 @@
             </ListBox>
         </Border>
 
-        <Border Grid.Row="3" CornerRadius="8" Background="#0F000000" Padding="12" HorizontalAlignment="Stretch">
-            <DockPanel>
-                <TextBlock Text="{Binding Summary}" DockPanel.Dock="Left" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding StatusMessage}" HorizontalAlignment="Right"/>
-            </DockPanel>
+        <Border Grid.Row="3" CornerRadius="16" Background="{StaticResource CardBackgroundBrush}" Padding="18" HorizontalAlignment="Stretch" BoxShadow="0 10 30 -24 #000000AA">
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" Foreground="#0F172A"/>
+                <TextBlock Text="{Binding StatusMessage}" HorizontalAlignment="Right" Foreground="#475569" Grid.Column="1"/>
+            </Grid>
         </Border>
     </Grid>
 </Window>
