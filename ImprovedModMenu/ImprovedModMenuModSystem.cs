@@ -16,24 +16,18 @@ namespace ImprovedModMenu
 {
     public class ImprovedModMenuModSystem : ModSystem
     {
-        private Harmony? harmony;
-
         public override void StartClientSide(ICoreClientAPI api)
         {
-            harmony = new Harmony(Mod.Info.ModID);
-            harmony.CreateClassProcessor(typeof(GuiScreenModsPatches)).Patch();
+            HarmonyBootstrap.EnsurePatched();
         }
 
         public override void Dispose()
         {
-            if (harmony != null)
-            {
-                harmony.UnpatchAll(harmony.Id);
-            }
+            HarmonyBootstrap.Unpatch();
         }
 
         [HarmonyPatch(typeof(GuiScreenMods))]
-        private static class GuiScreenModsPatches
+        internal static class GuiScreenModsPatches
         {
             private enum SortMode
             {
