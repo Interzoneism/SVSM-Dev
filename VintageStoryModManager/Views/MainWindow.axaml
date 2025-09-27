@@ -21,7 +21,7 @@
             </Border>
         </StackPanel>
 
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="16" RowDefinitions="Auto">
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="16" RowDefinitions="Auto">
             <StackPanel Orientation="Vertical" Grid.Column="0">
                 <TextBlock Text="Sort by" FontWeight="SemiBold"/>
                 <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSortOption}" Width="180" />
@@ -33,10 +33,6 @@
             <StackPanel Orientation="Vertical" Grid.Column="2">
                 <TextBlock Text="Refresh" FontWeight="SemiBold"/>
                 <Button Content="Reload mods" Command="{Binding RefreshCommand}" Width="140" />
-            </StackPanel>
-            <StackPanel Orientation="Vertical" Grid.Column="3">
-                <TextBlock Text="Summary" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding Summary}" FontSize="16" VerticalAlignment="Center"/>
             </StackPanel>
         </Grid>
 
@@ -57,7 +53,7 @@
                                         <TextBlock Text="{Binding Initials}" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasNoIcon}"/>
                                     </Grid>
                                 </Border>
-                                <StackPanel Grid.Column="1" Spacing="8">
+                                <StackPanel Grid.Column="1" Spacing="6">
                                     <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold" ToolTip.Tip="{Binding Tooltip}" />
@@ -65,13 +61,32 @@
                                                 <TextBlock Text="Issue" Foreground="White" FontSize="12" FontWeight="SemiBold"/>
                                             </Border>
                                         </StackPanel>
-                                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsActive}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                        <ToggleSwitch Grid.Column="1"
+                                                      IsChecked="{Binding IsActive}"
+                                                      HorizontalAlignment="Right"
+                                                      VerticalAlignment="Center"
+                                                      RenderTransformOrigin="0.5,0.5">
+                                            <ToggleSwitch.RenderTransform>
+                                                <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                            </ToggleSwitch.RenderTransform>
+                                        </ToggleSwitch>
                                     </Grid>
                                     <StackPanel Orientation="Horizontal" Spacing="16">
                                         <TextBlock>
                                             <Run Text="Version: " FontWeight="SemiBold"/>
                                             <Run Text="{Binding VersionDisplay}"/>
                                         </TextBlock>
+                                        <TextBlock>
+                                            <Run Text="Authors: " FontWeight="SemiBold"/>
+                                            <Run Text="{Binding AuthorsDisplay}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Description}"
+                                               TextWrapping="Wrap"
+                                               TextTrimming="CharacterEllipsis"
+                                               MaxLines="2"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="16"
+                                                IsVisible="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}">
                                         <TextBlock>
                                             <Run Text="Status: " FontWeight="SemiBold"/>
                                             <Run Text="{Binding StatusText}"/>
@@ -83,12 +98,6 @@
                                         <TextBlock>
                                             <Run Text="Requirement: " FontWeight="SemiBold"/>
                                             <Run Text="{Binding RequirementDisplay}"/>
-                                        </TextBlock>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal" Spacing="16">
-                                        <TextBlock>
-                                            <Run Text="Authors: " FontWeight="SemiBold"/>
-                                            <Run Text="{Binding AuthorsDisplay}"/>
                                         </TextBlock>
                                         <TextBlock>
                                             <Run Text="Dependencies: " FontWeight="SemiBold"/>
@@ -103,7 +112,8 @@
                                                TextWrapping="Wrap"
                                                TextTrimming="CharacterEllipsis"
                                                ToolTip.Tip="{Binding SourcePath}"
-                                               Foreground="Gray"/>
+                                               Foreground="Gray"
+                                               IsVisible="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
