@@ -70,17 +70,49 @@ public sealed partial class ModViewModel : ObservableObject
         _ => "Folder"
     };
 
-    public string StatusText => IsActive ? "Active" : "Inactive";
+    public string StatusText => HasError ? "Error" : (IsActive ? "Active" : "Inactive");
+
+    public string SideDisplay => string.IsNullOrWhiteSpace(Entry.Side) ? "Any" : Entry.Side!;
+
+    public string RequirementDisplay
+    {
+        get
+        {
+            bool client = Entry.RequiredOnClient ?? false;
+            bool server = Entry.RequiredOnServer ?? false;
+
+            if (client && server)
+            {
+                return "Client & Server";
+            }
+
+            if (client)
+            {
+                return "Client";
+            }
+
+            if (server)
+            {
+                return "Server";
+            }
+
+            return "Optional";
+        }
+    }
+
+    public string SourcePath => Entry.SourcePath;
+
+    public string DependenciesDisplay => Entry.Dependencies.Count == 0
+        ? "None"
+        : string.Join(", ", Entry.Dependencies.Select(d => d.Display));
+
+    public string IssuesDisplay => HasError ? Entry.Error! : "None";
 
     public string Tooltip
     {
         get
         {
-            string dependencies = Entry.Dependencies.Count == 0
-                ? "None"
-                : string.Join(", ", Entry.Dependencies.Select(d => d.Display));
-
-            return $"Mod ID: {ModId}\nVersion: {VersionDisplay}\nStatus: {StatusText}\nSource: {Entry.SourcePath}\nAuthors: {AuthorsDisplay}\nContributors: {ContributorsDisplay}\nDependencies: {dependencies}";
+            return $"Mod ID: {ModId}\nVersion: {VersionDisplay}\nStatus: {StatusText}\nSource: {Entry.SourcePath}\nAuthors: {AuthorsDisplay}\nContributors: {ContributorsDisplay}\nDependencies: {DependenciesDisplay}";
         }
     }
 

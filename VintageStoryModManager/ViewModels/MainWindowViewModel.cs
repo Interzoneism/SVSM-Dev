@@ -120,7 +120,24 @@ public partial class MainWindowViewModel : ViewModelBase
         IOrderedEnumerable<ModViewModel> ordered = SelectedSortOption.Key switch
         {
             SortKey.Name => _mods.OrderBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase),
-            SortKey.Status => _mods.OrderByDescending(m => m.IsActive).ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase),
+            SortKey.Status => _mods.OrderByDescending(m => m.IsActive)
+                                      .ThenBy(m => m.HasError)
+                                      .ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase),
+            SortKey.Version => _mods.OrderBy(m => m.VersionDisplay, StringComparer.OrdinalIgnoreCase),
+            SortKey.Source => _mods.OrderBy(m => m.SourceHint, StringComparer.OrdinalIgnoreCase)
+                                 .ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase),
+            SortKey.Location => _mods.OrderBy(m => m.SourcePath, StringComparer.OrdinalIgnoreCase),
+            SortKey.Side => _mods.OrderBy(m => m.SideDisplay, StringComparer.OrdinalIgnoreCase)
+                              .ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase),
+            SortKey.Requirement => _mods.OrderBy(m => m.RequirementDisplay, StringComparer.OrdinalIgnoreCase)
+                                        .ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase),
+            SortKey.Authors => _mods.OrderBy(m => m.AuthorsDisplay, StringComparer.OrdinalIgnoreCase)
+                                   .ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase),
+            SortKey.Dependencies => _mods.OrderBy(m => m.DependenciesDisplay, StringComparer.OrdinalIgnoreCase)
+                                        .ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase),
+            SortKey.Issues => _mods.OrderBy(m => m.HasError ? 0 : 1)
+                                   .ThenBy(m => m.IssuesDisplay, StringComparer.OrdinalIgnoreCase)
+                                   .ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase),
             _ => _mods.OrderBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase)
         };
 
@@ -176,7 +193,15 @@ public sealed class SortOptionViewModel
     public static SortOptionViewModel[] CreateDefaults() => new[]
     {
         new SortOptionViewModel(SortKey.Name, "Name"),
-        new SortOptionViewModel(SortKey.Status, "Active state")
+        new SortOptionViewModel(SortKey.Status, "Active state"),
+        new SortOptionViewModel(SortKey.Version, "Version"),
+        new SortOptionViewModel(SortKey.Side, "Side"),
+        new SortOptionViewModel(SortKey.Requirement, "Requirement"),
+        new SortOptionViewModel(SortKey.Authors, "Authors"),
+        new SortOptionViewModel(SortKey.Source, "Source type"),
+        new SortOptionViewModel(SortKey.Location, "Location"),
+        new SortOptionViewModel(SortKey.Dependencies, "Dependencies"),
+        new SortOptionViewModel(SortKey.Issues, "Issues")
     };
 
     public override string ToString() => Display;
@@ -185,5 +210,13 @@ public sealed class SortOptionViewModel
 public enum SortKey
 {
     Name,
-    Status
+    Status,
+    Version,
+    Source,
+    Location,
+    Side,
+    Requirement,
+    Authors,
+    Dependencies,
+    Issues
 }

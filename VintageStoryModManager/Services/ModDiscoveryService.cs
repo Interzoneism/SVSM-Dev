@@ -78,21 +78,29 @@ public sealed class ModDiscoveryService
 
     private IEnumerable<string> BuildSearchPaths()
     {
-        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        var ordered = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void AddPath(string candidate)
         {
-            Path.Combine(_settingsStore.DataDirectory, "Mods"),
-            Path.Combine(_settingsStore.DataDirectory, "ModsByServer")
-        };
+            if (!string.IsNullOrWhiteSpace(candidate) && seen.Add(candidate))
+            {
+                ordered.Add(candidate);
+            }
+        }
+
+        AddPath(Path.Combine(_settingsStore.DataDirectory, "Mods"));
+        AddPath(Path.Combine(_settingsStore.DataDirectory, "ModsByServer"));
 
         foreach (var path in _settingsStore.ModPaths)
         {
             foreach (var candidate in ResolvePathCandidates(path))
             {
-                paths.Add(candidate);
+                AddPath(candidate);
             }
         }
 
-        return paths;
+        return ordered;
     }
 
     private IEnumerable<string> ResolvePathCandidates(string rawPath)
