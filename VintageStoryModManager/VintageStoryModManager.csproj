@@ -1,29 +1,17 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssetTargetFallback>$(AssetTargetFallback);net5.0-windows7.0;netcoreapp3.0</AssetTargetFallback>
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
-    <AvaloniaResource Include="Assets\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.3.6" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.3.6" />
-    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.6" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.6" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.6" />
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.6">
-      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
-      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
+    <PackageReference Include="ModernWpfUI" Version="0.9.6" />
   </ItemGroup>
 </Project>
