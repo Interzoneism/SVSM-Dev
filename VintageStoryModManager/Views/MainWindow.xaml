@@ -96,7 +96,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTextColumn Header="VS Version" Binding="{Binding NetworkVersionDisplay}" Width="120" IsReadOnly="True" />
+                <DataGridTextColumn Header="VS Version" Binding="{Binding GameVersionDisplay}" Width="120" IsReadOnly="True" />
                 <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="2*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="*" IsReadOnly="True" />

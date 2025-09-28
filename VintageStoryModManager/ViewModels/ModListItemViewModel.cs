@@ -18,6 +18,7 @@ public sealed class ModListItemViewModel : ObservableObject
 {
     private readonly Func<ModListItemViewModel, bool, Task<ActivationResult>> _activationHandler;
     private readonly IReadOnlyList<ModDependencyInfo> _dependencies;
+    private readonly ModDependencyInfo? _gameDependency;
     private readonly IReadOnlyList<string> _authors;
     private readonly IReadOnlyList<string> _contributors;
     private readonly string? _description;
@@ -49,7 +50,20 @@ public sealed class ModListItemViewModel : ObservableObject
         SourceKind = entry.SourceKind;
         _authors = entry.Authors;
         _contributors = entry.Contributors;
-        _dependencies = entry.Dependencies;
+
+        IReadOnlyList<ModDependencyInfo> dependencies = entry.Dependencies ?? Array.Empty<ModDependencyInfo>();
+        _gameDependency = dependencies.FirstOrDefault(d => string.Equals(d.ModId, "game", StringComparison.OrdinalIgnoreCase))
+            ?? dependencies.FirstOrDefault(d => d.IsGameOrCoreDependency);
+
+        if (dependencies.Count == 0)
+        {
+            _dependencies = Array.Empty<ModDependencyInfo>();
+        }
+        else
+        {
+            ModDependencyInfo[] filtered = dependencies.Where(d => !d.IsGameOrCoreDependency).ToArray();
+            _dependencies = filtered.Length == 0 ? Array.Empty<ModDependencyInfo>() : filtered;
+        }
         _description = entry.Description;
         _metadataError = entry.Error;
         Side = entry.Side;
@@ -75,7 +89,22 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public string? NetworkVersion { get; }
 
-    public string NetworkVersionDisplay => string.IsNullOrWhiteSpace(NetworkVersion) ? "—" : NetworkVersion!;
+    public string GameVersionDisplay
+    {
+        get
+        {
+            if (_gameDependency is { } dependency)
+            {
+                string version = dependency.Version?.Trim() ?? string.Empty;
+                if (version.Length > 0)
+                {
+                    return version;
+                }
+            }
+
+            return string.IsNullOrWhiteSpace(NetworkVersion) ? "—" : NetworkVersion!;
+        }
+    }
 
     public string AuthorsDisplay => _authors.Count == 0 ? "—" : string.Join(", ", _authors);
 
