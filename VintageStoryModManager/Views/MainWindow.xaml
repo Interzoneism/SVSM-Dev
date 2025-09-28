@@ -95,6 +95,8 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="120" IsReadOnly="True" />
+                <DataGridTextColumn Header="VS Version" Binding="{Binding NetworkVersionDisplay}" Width="120" IsReadOnly="True" />
+                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="2*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="80" IsReadOnly="True" />
                 <DataGridTextColumn Header="Website" Binding="{Binding Website}" Width="*" IsReadOnly="True" />
