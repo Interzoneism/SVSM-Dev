@@ -10,6 +10,10 @@
         Title="Vintage Story Mod Manager"
         Height="640" Width="1100"
         MinWidth="900" MinHeight="520">
+    <Window.Resources>
+        <Style x:Key="TextBlockStyle1" TargetType="{x:Type TextBlock}"/>
+        <Style x:Key="StackPanelStyle1" TargetType="{x:Type StackPanel}"/>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -24,14 +28,11 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Orientation="Vertical">
-                    <TextBlock Text="Vintage Story Mod Manager"
+                <StackPanel Style="{DynamicResource StackPanelStyle1}" Orientation="Vertical">
+                    <TextBlock Style="{DynamicResource TextBlockStyle1}" Text="Vintage Story Mod Manager"
                                FontSize="20"
                                FontWeight="SemiBold" />
-                    <TextBlock Text="Manage mods directly from your VintagestoryData folder."
-                               Margin="0,4,0,0"
-                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-                    
+
                 </StackPanel>
 
                 
