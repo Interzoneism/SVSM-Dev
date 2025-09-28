@@ -1,6 +1,8 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Navigation;
 using VintageStoryModManager.ViewModels;
 
 namespace VintageStoryModManager.Views;
@@ -26,6 +28,32 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             Application.Current.Shutdown();
+        }
+    }
+
+    private void OnWebsiteNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        e.Handled = true;
+
+        Uri? target = e.Uri;
+        if (target == null)
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(target.AbsoluteUri)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to open link:\n{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 

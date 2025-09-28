@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using VintageStoryModManager.Models;
+using VintageStoryModManager.Utilities;
 
 namespace VintageStoryModManager.ViewModels;
 
@@ -44,7 +45,7 @@ public sealed class ModListItemViewModel : ObservableObject
         DisplayName = string.IsNullOrWhiteSpace(entry.Name) ? entry.ModId : entry.Name;
         Version = entry.Version;
         NetworkVersion = entry.NetworkVersion;
-        Website = entry.Website;
+        Website = NormalizeWebsite(entry.Website);
         SourcePath = entry.SourcePath;
         Location = location;
         SourceKind = entry.SourceKind;
@@ -69,6 +70,8 @@ public sealed class ModListItemViewModel : ObservableObject
         Side = entry.Side;
         RequiredOnClient = entry.RequiredOnClient;
         RequiredOnServer = entry.RequiredOnServer;
+
+        OfficialModDbUri = ModDbLinkBuilder.TryCreateEntryUri(ModId);
 
         Icon = CreateImage(entry.IconBytes);
 
@@ -115,6 +118,12 @@ public sealed class ModListItemViewModel : ObservableObject
         : string.Join(", ", _dependencies.Select(dependency => dependency.Display));
 
     public string? Website { get; }
+
+    public Uri? OfficialModDbUri { get; }
+
+    public string OfficialModDbDisplay => OfficialModDbUri?.ToString() ?? "—";
+
+    public bool HasOfficialModDbLink => OfficialModDbUri != null;
 
     public string SourcePath { get; }
 
@@ -293,6 +302,12 @@ public sealed class ModListItemViewModel : ObservableObject
             builder.Append("Website: ").Append(Website);
         }
 
+        if (OfficialModDbUri != null)
+        {
+            builder.AppendLine();
+            builder.Append("Mod DB: ").Append(OfficialModDbDisplay);
+        }
+
         if (!string.IsNullOrWhiteSpace(_metadataError))
         {
             builder.AppendLine();
@@ -330,5 +345,21 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             return null;
         }
+    }
+
+    private static string? NormalizeWebsite(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        string trimmed = value.Trim();
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out Uri? uri))
+        {
+            return uri.ToString();
+        }
+
+        return trimmed;
     }
 }
