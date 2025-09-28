@@ -101,7 +101,19 @@
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="80" IsReadOnly="True" />
-                <DataGridTextColumn Header="Website" Binding="{Binding Website}" Width="*" IsReadOnly="True" />
+                <DataGridTemplateColumn Header="Website" Width="*" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock TextWrapping="NoWrap">
+                                <Hyperlink NavigateUri="{Binding OfficialModDbUri}"
+                                           IsEnabled="{Binding HasOfficialModDbLink}"
+                                           RequestNavigate="OnWebsiteNavigate">
+                                    <Run Text="{Binding OfficialModDbDisplay}" />
+                                </Hyperlink>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="*" IsReadOnly="True" />
             </DataGrid.Columns>
         </DataGrid>
