@@ -22,16 +22,17 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0" Padding="16">
-            <Grid>
+            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Style="{DynamicResource StackPanelStyle1}" Orientation="Vertical">
+                <StackPanel Style="{DynamicResource StackPanelStyle1}" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <TextBlock Style="{DynamicResource TextBlockStyle1}" Text="Vintage Story Mod Manager"
-                               FontSize="20"
-                               FontWeight="SemiBold" />
+                               FontFamily="Arial Black"
+                               FontSize="25"
+                               FontWeight="SemiBold" Height="42" RenderTransformOrigin="0.501,0.576" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
 
                 </StackPanel>
 
@@ -49,9 +50,9 @@
                   EnableRowVirtualization="True"
                   HeadersVisibility="Column"
                   GridLinesVisibility="Horizontal"
-                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
                   RowHeaderWidth="0"
-                  IsSynchronizedWithCurrentItem="True">
+                  IsSynchronizedWithCurrentItem="True" BorderBrush="{DynamicResource {x:Static SystemColors.InfoBrushKey}}" MinColumnWidth="20">
             <DataGrid.Resources>
                 <Style TargetType="TextBlock">
                     <Setter Property="TextWrapping" Value="Wrap" />
@@ -82,8 +83,8 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="2*" SortMemberPath="DisplayName" />
-                <DataGridTemplateColumn Header="Active" SortMemberPath="IsActive" Width="90">
+                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="2*" SortMemberPath="DisplayName" FontFamily="Arial Black" />
+                <DataGridTemplateColumn Header="Active" SortMemberPath="IsActive" Width="*">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <ui:ToggleSwitch IsOn="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -94,13 +95,13 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="120" IsReadOnly="True" />
+
                 <DataGridTextColumn Header="VS Version" Binding="{Binding NetworkVersionDisplay}" Width="120" IsReadOnly="True" />
                 <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="2*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="80" IsReadOnly="True" />
                 <DataGridTextColumn Header="Website" Binding="{Binding Website}" Width="*" IsReadOnly="True" />
-                <DataGridTextColumn Header="Location" Binding="{Binding Location}" Width="2*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="*" IsReadOnly="True" />
             </DataGrid.Columns>
         </DataGrid>
