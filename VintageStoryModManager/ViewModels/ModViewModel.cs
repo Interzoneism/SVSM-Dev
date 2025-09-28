@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
-using Avalonia.Media.Imaging;
+using System.IO;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
@@ -26,7 +28,7 @@ public sealed partial class ModViewModel : ObservableObject
 
     public ModEntry Entry { get; }
 
-    public Bitmap? Icon { get; }
+    public ImageSource? Icon { get; }
 
     public bool HasIcon => Icon != null;
 
@@ -154,11 +156,18 @@ public sealed partial class ModViewModel : ObservableObject
         _statusReporter.Invoke($"{DisplayName} {action}.");
     }
 
-    private static Bitmap? CreateBitmap(byte[] data)
+    private static ImageSource? CreateBitmap(byte[] data)
     {
         try
         {
-            return new Bitmap(new System.IO.MemoryStream(data, writable: false));
+            using var stream = new MemoryStream(data, writable: false);
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.StreamSource = stream;
+            bitmap.EndInit();
+            bitmap.Freeze();
+            return bitmap;
         }
         catch
         {
