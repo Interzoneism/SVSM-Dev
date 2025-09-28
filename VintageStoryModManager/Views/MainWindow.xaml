@@ -31,31 +31,10 @@
                     <TextBlock Text="Manage mods directly from your VintagestoryData folder."
                                Margin="0,4,0,0"
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-                    <TextBlock Text="Data directory:" FontWeight="SemiBold" Margin="0,12,0,0" />
-                    <TextBlock Text="{Binding DataDirectory}"
-                               TextTrimming="CharacterEllipsis"
-                               ToolTip="{Binding DataDirectory}" />
-                    <TextBlock Text="{Binding SummaryText}"
-                               Margin="0,12,0,0"
-                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                    
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Sort by:" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <ComboBox ItemsSource="{Binding SortOptions}"
-                                  SelectedItem="{Binding SelectedSortOption}"
-                                  DisplayMemberPath="DisplayName"
-                                  Width="220" />
-                    </StackPanel>
-                    <Button Content="Refresh"
-                            Command="{Binding RefreshCommand}"
-                            Margin="12,0,0,0" />
-                    <ui:ProgressRing Width="32" Height="32"
-                                     Margin="12,0,0,0"
-                                     VerticalAlignment="Center"
-                                     IsActive="{Binding IsBusy}" />
-                </StackPanel>
+                
             </Grid>
         </Border>
 
@@ -115,7 +94,6 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="120" IsReadOnly="True" />
-                <DataGridTextColumn Header="Network" Binding="{Binding NetworkVersionDisplay}" Width="120" IsReadOnly="True" />
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="80" IsReadOnly="True" />
                 <DataGridTextColumn Header="Website" Binding="{Binding Website}" Width="*" IsReadOnly="True" />
