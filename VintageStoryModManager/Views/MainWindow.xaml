@@ -96,7 +96,6 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTextColumn Header="VS Version" Binding="{Binding GameVersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
@@ -181,7 +180,24 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Tags" Binding="{Binding DatabaseTagsDisplay}" Width="SizeToCells" IsReadOnly="True" />
-                <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="SizeToCells" IsReadOnly="True" />
+                <DataGridTemplateColumn Header="Status" Width="SizeToCells" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding StatusText}" ToolTip="{Binding StatusDetails}" TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding StatusText}" Value="Error">
+                                                <Setter Property="Foreground" Value="#FFD13438" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
 

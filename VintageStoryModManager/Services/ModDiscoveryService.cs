@@ -84,8 +84,178 @@ public sealed class ModDiscoveryService
             }
         }
 
+        EvaluateLoadStatuses(results);
         return results;
     }
+
+    private void EvaluateLoadStatuses(List<ModEntry> mods)
+    {
+        if (mods.Count == 0)
+        {
+            return;
+        }
+
+        var availableMods = new Dictionary<string, ModEntry>(StringComparer.OrdinalIgnoreCase);
+        foreach (var group in mods.Where(mod => !string.IsNullOrWhiteSpace(mod.ModId))
+            .GroupBy(mod => mod.ModId, StringComparer.OrdinalIgnoreCase))
+        {
+            ModEntry? primary = null;
+            foreach (var candidate in group)
+            {
+                if (primary == null && !candidate.HasErrors)
+                {
+                    primary = candidate;
+                }
+            }
+
+            primary ??= group.First();
+            availableMods[primary.ModId] = primary;
+
+            foreach (var candidate in group)
+            {
+                if (!ReferenceEquals(candidate, primary))
+                {
+                    candidate.LoadError = GeneralLoadErrorMessage;
+                }
+            }
+        }
+
+        foreach (var mod in mods)
+        {
+            if (mod.HasErrors || mod.HasLoadError || mod.Dependencies.Count == 0)
+            {
+                continue;
+            }
+
+            bool dependencyHasError = false;
+            List<ModDependencyInfo>? missingDependencies = null;
+
+            foreach (var dependency in mod.Dependencies)
+            {
+                if (dependency.IsGameOrCoreDependency)
+                {
+                    continue;
+                }
+
+                if (!availableMods.TryGetValue(dependency.ModId, out ModEntry? provider))
+                {
+                    missingDependencies ??= new List<ModDependencyInfo>();
+                    missingDependencies.Add(dependency);
+                    continue;
+                }
+
+                if (provider.HasErrors || provider.HasLoadError || _settingsStore.IsDisabled(provider.ModId, provider.Version))
+                {
+                    dependencyHasError = true;
+                    break;
+                }
+
+                if (!SatisfiesVersion(dependency.Version, provider.Version))
+                {
+                    missingDependencies ??= new List<ModDependencyInfo>();
+                    missingDependencies.Add(dependency);
+                }
+            }
+
+            if (dependencyHasError)
+            {
+                mod.LoadError = DependencyErrorMessage;
+            }
+            else if (missingDependencies is { Count: > 0 })
+            {
+                mod.LoadError = BuildMissingDependencyMessage(missingDependencies);
+            }
+        }
+    }
+
+    private static bool SatisfiesVersion(string? requested, string? provided)
+    {
+        if (string.IsNullOrWhiteSpace(requested) || string.Equals(requested.Trim(), "*", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (!TryParseVersion(requested, out var requestedParts))
+        {
+            return true;
+        }
+
+        if (!TryParseVersion(provided, out var providedParts))
+        {
+            return false;
+        }
+
+        int length = Math.Max(requestedParts.Length, providedParts.Length);
+        for (int i = 0; i < length; i++)
+        {
+            int requestedPart = i < requestedParts.Length ? requestedParts[i] : 0;
+            int providedPart = i < providedParts.Length ? providedParts[i] : 0;
+            if (providedPart > requestedPart)
+            {
+                return true;
+            }
+
+            if (providedPart < requestedPart)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryParseVersion(string? value, out int[] parts)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            parts = Array.Empty<int>();
+            return false;
+        }
+
+        string? normalized = VersionStringUtility.Normalize(value);
+        if (normalized == null)
+        {
+            parts = Array.Empty<int>();
+            return false;
+        }
+
+        string[] tokens = normalized.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        parts = new int[tokens.Length];
+        for (int i = 0; i < tokens.Length; i++)
+        {
+            if (!int.TryParse(tokens[i], out parts[i]))
+            {
+                parts = Array.Empty<int>();
+                return false;
+            }
+        }
+
+        return parts.Length > 0;
+    }
+
+    private static string BuildMissingDependencyMessage(IReadOnlyList<ModDependencyInfo> dependencies)
+    {
+        static string Format(ModDependencyInfo dependency)
+        {
+            string version = dependency.Version?.Trim() ?? string.Empty;
+            if (string.IsNullOrEmpty(version) || version == "*")
+            {
+                return dependency.ModId;
+            }
+
+            return $"{dependency.ModId} v{version}";
+        }
+
+        if (dependencies.Count == 1)
+        {
+            return $"Unable to load mod. Requires dependency {Format(dependencies[0])}";
+        }
+
+        return $"Unable to load mod. Requires dependencies {string.Join(", ", dependencies.Select(Format))}";
+    }
+
+    private const string GeneralLoadErrorMessage = "Unable to load mod. Check log files.";
+    private const string DependencyErrorMessage = "Unable to load mod. A dependency has an error. Make sure they all load correctly.";
 
     private IEnumerable<string> BuildSearchPaths()
     {
@@ -350,6 +520,7 @@ public sealed class ModDiscoveryService
             IconBytes = null,
             IconDescription = null,
             Error = "Metadata unavailable for code-only mods.",
+            LoadError = null,
             Side = null,
             RequiredOnClient = null,
             RequiredOnServer = null
@@ -374,6 +545,7 @@ public sealed class ModDiscoveryService
             IconBytes = iconBytes,
             IconDescription = iconDescription,
             Error = null,
+            LoadError = null,
             Side = info.Side,
             RequiredOnClient = info.RequiredOnClient,
             RequiredOnServer = info.RequiredOnServer
@@ -399,6 +571,7 @@ public sealed class ModDiscoveryService
             IconBytes = null,
             IconDescription = null,
             Error = message,
+            LoadError = null,
             Side = null,
             RequiredOnClient = null,
             RequiredOnServer = null

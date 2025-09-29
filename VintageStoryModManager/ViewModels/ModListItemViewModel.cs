@@ -26,6 +26,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly IReadOnlyList<string> _contributors;
     private readonly string? _description;
     private readonly string? _metadataError;
+    private readonly string? _loadError;
     private readonly IReadOnlyList<string> _databaseTags;
 
     private bool _isActive;
@@ -34,6 +35,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _activationError;
     private bool _hasActivationError;
     private string _statusText = string.Empty;
+    private string _statusDetails = string.Empty;
 
     public ModListItemViewModel(
         ModEntry entry,
@@ -59,6 +61,7 @@ public sealed class ModListItemViewModel : ObservableObject
         ModDatabaseAssetId = databaseInfo?.AssetId;
         ModDatabasePageUrl = databaseInfo?.ModPageUrl;
         LatestDatabaseVersion = databaseInfo?.LatestCompatibleVersion;
+        _loadError = entry.LoadError;
 
         WebsiteUri = TryCreateHttpUri(Website);
         WebsiteFavicon = CreateFaviconImage(WebsiteUri);
@@ -91,8 +94,8 @@ public sealed class ModListItemViewModel : ObservableObject
 
         _isActive = isActive;
         HasErrors = entry.HasErrors;
-        StatusText = entry.HasErrors ? entry.Error ?? "Metadata error." : string.Empty;
 
+        UpdateStatusFromErrors();
         UpdateTooltip();
     }
 
@@ -194,7 +197,9 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool HasErrors { get; }
 
-    public bool CanToggle => !HasErrors;
+    public bool HasLoadError => !string.IsNullOrWhiteSpace(_loadError);
+
+    public bool CanToggle => !HasErrors && !HasLoadError;
 
     public bool HasActivationError
     {
@@ -220,6 +225,12 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         get => _statusText;
         private set => SetProperty(ref _statusText, value);
+    }
+
+    public string StatusDetails
+    {
+        get => _statusDetails;
+        private set => SetProperty(ref _statusDetails, value);
     }
 
     public string Tooltip
@@ -292,15 +303,23 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         if (HasErrors)
         {
-            StatusText = _metadataError ?? "Metadata error.";
+            StatusText = "Error";
+            StatusDetails = _metadataError ?? "Metadata error.";
+        }
+        else if (HasLoadError)
+        {
+            StatusText = "Error";
+            StatusDetails = _loadError ?? string.Empty;
         }
         else if (HasActivationError)
         {
-            StatusText = ActivationError ?? string.Empty;
+            StatusText = "Error";
+            StatusDetails = ActivationError ?? string.Empty;
         }
         else
         {
             StatusText = string.Empty;
+            StatusDetails = string.Empty;
         }
     }
 
@@ -344,6 +363,12 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             builder.AppendLine();
             builder.Append("Metadata error: ").Append(_metadataError);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_loadError))
+        {
+            builder.AppendLine();
+            builder.Append("Load error: ").Append(_loadError);
         }
 
         if (!string.IsNullOrWhiteSpace(_activationError))
@@ -447,3 +472,4 @@ public sealed class ModListItemViewModel : ObservableObject
         }
     }
 }
+
