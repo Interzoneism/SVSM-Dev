@@ -122,7 +122,21 @@
                                         </Style.Triggers>
                                     </Style>
                                 </Button.Style>
-                                <Image Source="{Binding WebsiteFavicon}" Width="16" Height="16" Stretch="Uniform" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Image Source="{Binding WebsiteFavicon}" Width="16" Height="16" Stretch="Uniform">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Style.Triggers>
+                                                    <Trigger Property="Source" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                    <TextBlock Text="Open Website" Margin="4,0,0,0" />
+                                </StackPanel>
                             </Button>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
@@ -147,7 +161,21 @@
                                         </Style.Triggers>
                                     </Style>
                                 </Button.Style>
-                                <Image Source="{Binding ModDatabasePageFavicon}" Width="16" Height="16" Stretch="Uniform" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Image Source="{Binding ModDatabasePageFavicon}" Width="16" Height="16" Stretch="Uniform">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Style.Triggers>
+                                                    <Trigger Property="Source" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                    <TextBlock Text="Open Website" Margin="4,0,0,0" />
+                                </StackPanel>
                             </Button>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
