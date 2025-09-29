@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -325,59 +324,14 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private void UpdateTooltip()
     {
-        var builder = new StringBuilder();
         if (!string.IsNullOrWhiteSpace(_description))
         {
-            builder.AppendLine(_description.Trim());
+            Tooltip = _description.Trim();
         }
-
-        if (_authors.Count > 0)
+        else
         {
-            if (builder.Length > 0)
-            {
-                builder.AppendLine();
-            }
-
-            builder.Append("Author(s): ").Append(string.Join(", ", _authors));
+            Tooltip = DisplayName;
         }
-
-        if (_contributors.Count > 0)
-        {
-            builder.AppendLine();
-            builder.Append("Contributor(s): ").Append(string.Join(", ", _contributors));
-        }
-
-        if (_dependencies.Count > 0)
-        {
-            builder.AppendLine();
-            builder.Append("Dependencies: ").Append(string.Join(", ", _dependencies.Select(d => d.Display)));
-        }
-
-        if (!string.IsNullOrWhiteSpace(Website))
-        {
-            builder.AppendLine();
-            builder.Append("Website: ").Append(Website);
-        }
-
-        if (!string.IsNullOrWhiteSpace(_metadataError))
-        {
-            builder.AppendLine();
-            builder.Append("Metadata error: ").Append(_metadataError);
-        }
-
-        if (!string.IsNullOrWhiteSpace(_loadError))
-        {
-            builder.AppendLine();
-            builder.Append("Load error: ").Append(_loadError);
-        }
-
-        if (!string.IsNullOrWhiteSpace(_activationError))
-        {
-            builder.AppendLine();
-            builder.Append("Activation error: ").Append(_activationError);
-        }
-
-        Tooltip = builder.Length == 0 ? DisplayName : builder.ToString().Trim();
     }
 
     private static ImageSource? CreateFaviconImage(Uri? uri)

@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using VintageStoryModManager.ViewModels;
 
 namespace VintageStoryModManager.Views;
@@ -54,6 +55,16 @@ public partial class MainWindow : Window
                 "Vintage Story Mod Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
+        }
+    }
+
+    private void ModsDataGrid_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is DataGrid dataGrid)
+        {
+            dataGrid.SelectedIndex = -1;
+            dataGrid.UnselectAll();
+            dataGrid.UnselectAllCells();
         }
     }
 
