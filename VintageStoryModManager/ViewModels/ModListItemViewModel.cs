@@ -128,6 +128,8 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public string? ModDatabasePageUrl { get; }
 
+    public string ModDatabasePageUrlDisplay => string.IsNullOrWhiteSpace(ModDatabasePageUrl) ? "—" : ModDatabasePageUrl!;
+
     public string? LatestDatabaseVersion { get; }
 
     public string LatestDatabaseVersionDisplay => string.IsNullOrWhiteSpace(LatestDatabaseVersion) ? "—" : LatestDatabaseVersion!;
