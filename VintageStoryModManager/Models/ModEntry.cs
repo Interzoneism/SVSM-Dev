@@ -38,6 +38,10 @@ public sealed class ModEntry
 
     public bool HasErrors => !string.IsNullOrWhiteSpace(Error);
 
+    public string? LoadError { get; set; }
+
+    public bool HasLoadError => !string.IsNullOrWhiteSpace(LoadError);
+
     public string? Side { get; init; }
 
     public bool? RequiredOnClient { get; init; }

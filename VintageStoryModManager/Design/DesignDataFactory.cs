@@ -37,6 +37,7 @@ internal static class DesignDataFactory
                 requiredOnServer: false,
                 isActive: true,
                 error: null,
+                loadError: null,
                 activationError: null),
             CreateMod(
                 modId: "expandedstorage",
@@ -60,6 +61,7 @@ internal static class DesignDataFactory
                 requiredOnServer: true,
                 isActive: false,
                 error: "Missing dependency: CarryCapacity ≥ 1.3.0",
+                loadError: null,
                 activationError: null),
             CreateMod(
                 modId: "utilityscripts",
@@ -79,6 +81,7 @@ internal static class DesignDataFactory
                 requiredOnServer: true,
                 isActive: true,
                 error: null,
+                loadError: "Unable to load mod. Requires dependency CarryCapacity v1.3.0",
                 activationError: "Failed to enable scripts due to permission error."),
             CreateMod(
                 modId: "worldeditplus",
@@ -98,6 +101,7 @@ internal static class DesignDataFactory
                 requiredOnServer: true,
                 isActive: true,
                 error: null,
+                loadError: null,
                 activationError: null)
         };
 
@@ -122,6 +126,7 @@ internal static class DesignDataFactory
         bool? requiredOnServer,
         bool isActive,
         string? error,
+        string? loadError,
         string? activationError,
         ModDatabaseInfo? databaseInfo = null)
     {
@@ -144,6 +149,7 @@ internal static class DesignDataFactory
             IconBytes = SampleIcon,
             IconDescription = "Sample icon",
             Error = error,
+            LoadError = loadError,
             DatabaseInfo = databaseInfo
         };
 
