@@ -10,6 +10,7 @@ using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VintageStoryModManager.Models;
+using VintageStoryModManager.Services;
 
 namespace VintageStoryModManager.ViewModels;
 
@@ -31,6 +32,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private bool _isActive;
     private bool _suppressState;
     private string _tooltip = string.Empty;
+    private string? _versionWarningMessage;
     private string? _activationError;
     private bool _hasActivationError;
     private string _statusText = string.Empty;
@@ -40,7 +42,8 @@ public sealed class ModListItemViewModel : ObservableObject
         ModEntry entry,
         bool isActive,
         string location,
-        Func<ModListItemViewModel, bool, Task<ActivationResult>> activationHandler)
+        Func<ModListItemViewModel, bool, Task<ActivationResult>> activationHandler,
+        string? installedGameVersion = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
         _activationHandler = activationHandler ?? throw new ArgumentNullException(nameof(activationHandler));
@@ -94,6 +97,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _isActive = isActive;
         HasErrors = entry.HasErrors;
 
+        InitializeVersionWarning(installedGameVersion);
         UpdateStatusFromErrors();
         UpdateTooltip();
     }
@@ -303,17 +307,22 @@ public sealed class ModListItemViewModel : ObservableObject
         if (HasErrors)
         {
             StatusText = "Error";
-            StatusDetails = _metadataError ?? "Metadata error.";
+            StatusDetails = AppendWarningText(_metadataError ?? "Metadata error.");
         }
         else if (HasLoadError)
         {
             StatusText = "Error";
-            StatusDetails = _loadError ?? string.Empty;
+            StatusDetails = AppendWarningText(_loadError ?? string.Empty);
         }
         else if (HasActivationError)
         {
             StatusText = "Error";
-            StatusDetails = ActivationError ?? string.Empty;
+            StatusDetails = AppendWarningText(ActivationError ?? string.Empty);
+        }
+        else if (!string.IsNullOrWhiteSpace(_versionWarningMessage))
+        {
+            StatusText = "Warning";
+            StatusDetails = _versionWarningMessage!;
         }
         else
         {
@@ -324,14 +333,105 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private void UpdateTooltip()
     {
-        if (!string.IsNullOrWhiteSpace(_description))
+        string tooltipText = !string.IsNullOrWhiteSpace(_description)
+            ? _description.Trim()
+            : DisplayName;
+
+        if (!string.IsNullOrWhiteSpace(_versionWarningMessage))
         {
-            Tooltip = _description.Trim();
+            tooltipText = string.Concat(tooltipText, Environment.NewLine, Environment.NewLine, _versionWarningMessage);
+        }
+
+        Tooltip = tooltipText;
+    }
+
+    private void InitializeVersionWarning(string? installedGameVersion)
+    {
+        string? normalizedInstalled = VersionStringUtility.Normalize(installedGameVersion);
+        string? normalizedRequired = VersionStringUtility.Normalize(_gameDependency?.Version);
+
+        if (TryCreateVersionWarning(normalizedRequired, normalizedInstalled, out string? message))
+        {
+            _versionWarningMessage = message;
         }
         else
         {
-            Tooltip = DisplayName;
+            _versionWarningMessage = null;
         }
+    }
+
+    private string AppendWarningText(string baseText)
+    {
+        if (string.IsNullOrWhiteSpace(_versionWarningMessage))
+        {
+            return baseText;
+        }
+
+        if (string.IsNullOrWhiteSpace(baseText))
+        {
+            return _versionWarningMessage!;
+        }
+
+        return string.Concat(baseText, Environment.NewLine, Environment.NewLine, _versionWarningMessage);
+    }
+
+    private static bool TryCreateVersionWarning(string? requiredVersion, string? installedVersion, out string? message)
+    {
+        message = null;
+
+        if (string.IsNullOrWhiteSpace(requiredVersion) || string.IsNullOrWhiteSpace(installedVersion))
+        {
+            return false;
+        }
+
+        if (!TryGetMajorMinor(requiredVersion!, out int requiredMajor, out int requiredMinor))
+        {
+            return false;
+        }
+
+        if (!TryGetMajorMinor(installedVersion!, out int installedMajor, out int installedMinor))
+        {
+            return false;
+        }
+
+        if (requiredMajor == installedMajor && requiredMinor == installedMinor)
+        {
+            return false;
+        }
+
+        message = $"The mod asks for Vintage Story version {requiredVersion} but you have {installedVersion}, it might be incompatible";
+        return true;
+    }
+
+    private static bool TryGetMajorMinor(string version, out int major, out int minor)
+    {
+        major = 0;
+        minor = 0;
+
+        string[] parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(parts[0], out major))
+        {
+            return false;
+        }
+
+        if (parts.Length > 1)
+        {
+            if (!int.TryParse(parts[1], out minor))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            minor = 0;
+        }
+
+        return true;
     }
 
     private static ImageSource? CreateFaviconImage(Uri? uri)
