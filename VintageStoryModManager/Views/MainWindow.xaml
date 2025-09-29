@@ -74,7 +74,7 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTemplateColumn Header="Icon" Width="70" IsReadOnly="True">
+                <DataGridTemplateColumn Header="Icon" Width="SizeToCells" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Border Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -83,8 +83,8 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="2*" SortMemberPath="DisplayName" FontFamily="Arial Black" />
-                <DataGridTemplateColumn Header="Active" SortMemberPath="IsActive" Width="*">
+                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="SizeToCells" SortMemberPath="DisplayName" FontFamily="Arial Black" />
+                <DataGridTemplateColumn Header="Active" SortMemberPath="IsActive" Width="SizeToCells">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <ui:ToggleSwitch IsOn="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -96,16 +96,64 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTextColumn Header="VS Version" Binding="{Binding GameVersionDisplay}" Width="120" IsReadOnly="True" />
-                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="2*" IsReadOnly="True" />
-                <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="*" IsReadOnly="True" />
-                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="*" IsReadOnly="True" />
-                <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="*" IsReadOnly="True" />
-                <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="80" IsReadOnly="True" />
-                <DataGridTextColumn Header="Website" Binding="{Binding Website}" Width="*" IsReadOnly="True" />
-                <DataGridTextColumn Header="Mod Page URL" Binding="{Binding ModDatabasePageUrlDisplay}" Width="2*" IsReadOnly="True" />
-                <DataGridTextColumn Header="Tags" Binding="{Binding DatabaseTagsDisplay}" Width="2*" IsReadOnly="True" />
-                <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="*" IsReadOnly="True" />
+                <DataGridTextColumn Header="VS Version" Binding="{Binding GameVersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
+                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="SizeToCells" IsReadOnly="True" />
+                <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
+                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
+                <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="SizeToCells" IsReadOnly="True" />
+                <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="SizeToCells" IsReadOnly="True" />
+                <DataGridTemplateColumn Header="Website" Width="SizeToCells" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding OpenWebsiteCommand}"
+                                    Padding="2"
+                                    BorderThickness="0"
+                                    Background="Transparent"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    ToolTip="{Binding Website}">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasWebsiteLink}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Image Source="{Binding WebsiteFavicon}" Width="16" Height="16" Stretch="Uniform" />
+                            </Button>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Mod Page URL" Width="SizeToCells" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding OpenModDatabasePageCommand}"
+                                    Padding="2"
+                                    BorderThickness="0"
+                                    Background="Transparent"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    ToolTip="{Binding ModDatabasePageUrlDisplay}">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasModDatabasePageLink}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Image Source="{Binding ModDatabasePageFavicon}" Width="16" Height="16" Stretch="Uniform" />
+                            </Button>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Tags" Binding="{Binding DatabaseTagsDisplay}" Width="SizeToCells" IsReadOnly="True" />
+                <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="SizeToCells" IsReadOnly="True" />
             </DataGrid.Columns>
         </DataGrid>
 
