@@ -122,7 +122,8 @@ internal static class DesignDataFactory
         bool? requiredOnServer,
         bool isActive,
         string? error,
-        string? activationError)
+        string? activationError,
+        ModDatabaseInfo? databaseInfo = null)
     {
         var entry = new ModEntry
         {
@@ -142,7 +143,8 @@ internal static class DesignDataFactory
             RequiredOnServer = requiredOnServer,
             IconBytes = SampleIcon,
             IconDescription = "Sample icon",
-            Error = error
+            Error = error,
+            DatabaseInfo = databaseInfo
         };
 
         var viewModel = new ModListItemViewModel(entry, isActive, location, (_, _) => Task.FromResult(new ActivationResult(true, null)));

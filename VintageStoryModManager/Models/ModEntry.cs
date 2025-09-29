@@ -44,6 +44,8 @@ public sealed class ModEntry
 
     public bool? RequiredOnServer { get; init; }
 
+    public ModDatabaseInfo? DatabaseInfo { get; set; }
+
     public override string ToString() => $"{Name} ({ModId})";
 }
 

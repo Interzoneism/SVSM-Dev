@@ -21,7 +21,9 @@ public sealed class MainViewModel : ObservableObject
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
     private readonly ClientSettingsStore _settingsStore;
     private readonly ModDiscoveryService _discoveryService;
+    private readonly ModDatabaseService _databaseService;
     private readonly ObservableCollection<SortOption> _sortOptions;
+    private readonly string? _installedGameVersion;
 
     private SortOption? _selectedSortOption;
     private bool _isBusy;
@@ -35,6 +37,8 @@ public sealed class MainViewModel : ObservableObject
         string dataDirectory = DataDirectoryLocator.Resolve();
         _settingsStore = new ClientSettingsStore(dataDirectory);
         _discoveryService = new ModDiscoveryService(_settingsStore);
+        _databaseService = new ModDatabaseService();
+        _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion();
 
         DataDirectory = _settingsStore.DataDirectory;
 
@@ -163,6 +167,7 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             var entries = await Task.Run(_discoveryService.LoadMods);
+            await _databaseService.PopulateModDatabaseInfoAsync(entries, _installedGameVersion);
             var viewModels = entries
                 .Select(entry => CreateModViewModel(entry))
                 .ToList();
