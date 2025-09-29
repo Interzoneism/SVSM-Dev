@@ -10,10 +10,6 @@
         Title="Vintage Story Mod Manager"
         Height="640" Width="1100"
         MinWidth="900" MinHeight="520">
-    <Window.Resources>
-        <Style x:Key="TextBlockStyle1" TargetType="{x:Type TextBlock}"/>
-        <Style x:Key="StackPanelStyle1" TargetType="{x:Type StackPanel}"/>
-    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -21,24 +17,21 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Padding="16">
-            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Style="{DynamicResource StackPanelStyle1}" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Style="{DynamicResource TextBlockStyle1}" Text="Vintage Story Mod Manager"
-                               FontFamily="Arial Black"
-                               FontSize="25"
-                               FontWeight="SemiBold" Height="42" RenderTransformOrigin="0.501,0.576" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" />
-
-                </StackPanel>
+        
 
                 
-            </Grid>
-        </Border>
+                    <Border BorderBrush="{x:Null}" Height="50">
+                     
+                    <TextBlock x:Name="Title" Text="Vintage Story Mod Manager"
+                               
+                               FontFamily="Arial Black"
+                               FontSize="24"
+                               FontWeight="SemiBold" HorizontalAlignment="Left" TextAlignment="Center" VerticalAlignment="Center" Margin="20,0,0,0" />
+                    </Border>
+                
+
+                
+        
 
         <DataGrid Grid.Row="1"
                   Margin="16"
