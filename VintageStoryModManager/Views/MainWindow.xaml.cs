@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using VintageStoryModManager.ViewModels;
 
 namespace VintageStoryModManager.Views;
@@ -66,6 +67,18 @@ public partial class MainWindow : Window
             dataGrid.UnselectAll();
             dataGrid.UnselectAllCells();
         }
+    }
+
+    private void ModDatabasePageButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: ModListItemViewModel mod }
+            && mod.OpenModDatabasePageCommand is ICommand command
+            && command.CanExecute(null))
+        {
+            command.Execute(null);
+        }
+
+        e.Handled = true;
     }
 
 

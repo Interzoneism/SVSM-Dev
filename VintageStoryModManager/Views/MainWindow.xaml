@@ -138,14 +138,14 @@
                 <DataGridTemplateColumn Header="Mod Page URL" Width="SizeToCells" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Button Command="{Binding OpenModDatabasePageCommand}"
-                                    Padding="4"
+                            <Button Padding="4"
                                     BorderThickness="2"
                                     BorderBrush="#FFB9D1EA"
                                     Background="Transparent"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
-                                    ToolTip="{Binding ModDatabasePageUrlDisplay}">
+                                    ToolTip="{Binding ModDatabasePageUrlDisplay}"
+                                    Click="ModDatabasePageButton_OnClick">
                                 <Button.Style>
                                     <Style TargetType="Button">
                                         <Setter Property="Visibility" Value="Collapsed" />
