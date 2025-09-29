@@ -24,7 +24,7 @@
 
             <TextBlock x:Name="TitleText" Text="Vintage Story Mod Manager"
                                
-                               FontFamily="Arial Black"
+                               FontFamily="Segoe UI, Trebuchet MS, Verdana, Arial"
                                FontSize="24"
                                FontWeight="SemiBold" HorizontalAlignment="Left" TextAlignment="Center" VerticalAlignment="Center" Margin="20,0,0,0" />
         </Border>
@@ -104,8 +104,9 @@
                                 <Border.ToolTip>
                                     <ToolTip>
                                         <TextBlock Text="{Binding Tooltip}"
-                                                   FontFamily="Arial Black"
-                                                   FontSize="16"
+                                                   FontFamily="Segoe UI, Trebuchet MS, Verdana, Arial"
+                                                   FontSize="24"
+                                                   FontWeight="SemiBold"
                                                    TextWrapping="Wrap" />
                                     </ToolTip>
                                 </Border.ToolTip>
@@ -117,19 +118,20 @@
                 <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="SizeToCells" SortMemberPath="DisplayName">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
-                            <Setter Property="FontFamily" Value="Arial Black" />
+                            <Setter Property="FontFamily" Value="Segoe UI" />
                             <Setter Property="ToolTipService.ShowDuration" Value="60000" />
                             <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
                             <Setter Property="HorizontalAlignment" Value="Stretch" />
                             <Setter Property="VerticalAlignment" Value="Center" />
-                            <Setter Property="TextAlignment" Value="Center" />
+                            <Setter Property="TextAlignment" Value="Left" />
+                            <Setter Property="Margin" Value="15,0,0,0" />
                             <Setter Property="ToolTip">
                                 <Setter.Value>
                                     <ToolTip>
-                                        <TextBlock Text="{Binding Tooltip}"
-                                                   FontFamily="Arial Black"
-                                                   FontSize="16"
-                                                   TextWrapping="Wrap" />
+                                        <TextBlock Text="Vintage Story Mod Manager"
+                                           FontFamily="Segoe UI, Trebuchet MS, Verdana, Arial"
+                                           FontSize="24"
+                                           FontWeight="SemiBold"/>
                                     </ToolTip>
                                 </Setter.Value>
                             </Setter>
@@ -142,9 +144,9 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
-                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
-                <DataGridTemplateColumn Header="Mod Page URL" Width="SizeToCells" IsReadOnly="True">
+                <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="65" IsReadOnly="True" MinWidth="64" />
+                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="100" MinWidth="99" IsReadOnly="True" />
+                <DataGridTemplateColumn Header="Mod Page" Width="SizeToCells" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Button Padding="4"
@@ -184,8 +186,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="SizeToCells" IsReadOnly="True" />
-                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="*" IsReadOnly="True">
+                <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="80" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="TextWrapping" Value="Wrap" />
@@ -201,31 +202,14 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="SizeToCells" IsReadOnly="True" />
-                <DataGridTextColumn Header="Tags" Binding="{Binding DatabaseTagsDisplay}" Width="*" IsReadOnly="True">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="TextWrapping" Value="Wrap" />
-                            <Setter Property="HorizontalAlignment" Value="Stretch" />
-                            <Setter Property="VerticalAlignment" Value="Center" />
-                            <Setter Property="TextAlignment" Value="Center" />
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                    <DataGridTextColumn.CellStyle>
-                        <Style TargetType="DataGridCell">
-                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                            <Setter Property="VerticalContentAlignment" Value="Center" />
-                        </Style>
-                    </DataGridTextColumn.CellStyle>
-                </DataGridTextColumn>
-                <DataGridTemplateColumn Header="Status" Width="SizeToCells" IsReadOnly="True">
+                <DataGridTemplateColumn Header="Status" Width="100" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding StatusText}"
-                                       TextWrapping="Wrap"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextAlignment="Center">
+                       TextWrapping="Wrap"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseHighBrush}" />
@@ -249,6 +233,24 @@
                         </Style>
                     </DataGridTemplateColumn.CellStyle>
                 </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="80" IsReadOnly="True">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextWrapping" Value="Wrap" />
+                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="TextAlignment" Value="Center" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="SizeToCells" IsReadOnly="True" />
+                
             </DataGrid.Columns>
         </DataGrid>
 
