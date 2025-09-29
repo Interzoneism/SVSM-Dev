@@ -221,17 +221,23 @@
                 <DataGridTemplateColumn Header="Status" Width="SizeToCells" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding StatusText}"
-                                       TextWrapping="Wrap"
+                            <TextBlock FontFamily="Segoe Fluent Icons"
+                                       FontSize="18"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        TextAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseHighBrush}" />
+                                        <Setter Property="Text" Value="" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding StatusText}" Value="Error">
                                                 <Setter Property="Foreground" Value="#FFD13438" />
+                                                <Setter Property="Text" Value="&#xEA39;" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding StatusText}" Value="Warning">
+                                                <Setter Property="Foreground" Value="#FFE17E00" />
+                                                <Setter Property="Text" Value="&#xE7BA;" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
