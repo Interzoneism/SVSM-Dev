@@ -28,6 +28,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly string? _metadataError;
     private readonly string? _loadError;
     private readonly IReadOnlyList<string> _databaseTags;
+    private readonly IReadOnlyList<string> _databaseRequiredGameVersions;
 
     private bool _isActive;
     private bool _suppressState;
@@ -60,6 +61,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _contributors = entry.Contributors;
         var databaseInfo = entry.DatabaseInfo;
         _databaseTags = databaseInfo?.Tags ?? Array.Empty<string>();
+        _databaseRequiredGameVersions = databaseInfo?.RequiredGameVersions ?? Array.Empty<string>();
         ModDatabaseAssetId = databaseInfo?.AssetId;
         ModDatabasePageUrl = databaseInfo?.ModPageUrl;
         LatestDatabaseVersion = databaseInfo?.LatestCompatibleVersion;
@@ -348,9 +350,9 @@ public sealed class ModListItemViewModel : ObservableObject
     private void InitializeVersionWarning(string? installedGameVersion)
     {
         string? normalizedInstalled = VersionStringUtility.Normalize(installedGameVersion);
-        string? normalizedRequired = VersionStringUtility.Normalize(_gameDependency?.Version);
+        IReadOnlyList<(string Normalized, string Original)> requiredVersions = BuildRequiredVersionCandidates();
 
-        if (TryCreateVersionWarning(normalizedRequired, normalizedInstalled, out string? message))
+        if (TryCreateVersionWarning(requiredVersions, normalizedInstalled, out string? message))
         {
             _versionWarningMessage = message;
         }
@@ -358,6 +360,41 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             _versionWarningMessage = null;
         }
+    }
+
+    private IReadOnlyList<(string Normalized, string Original)> BuildRequiredVersionCandidates()
+    {
+        if (_databaseRequiredGameVersions.Count > 0)
+        {
+            var normalized = new List<(string Normalized, string Original)>(_databaseRequiredGameVersions.Count);
+            foreach (string tag in _databaseRequiredGameVersions)
+            {
+                string? normalizedTag = VersionStringUtility.Normalize(tag);
+                if (!string.IsNullOrWhiteSpace(normalizedTag))
+                {
+                    normalized.Add((normalizedTag!, tag));
+                }
+            }
+
+            if (normalized.Count > 0)
+            {
+                return normalized;
+            }
+        }
+
+        if (_gameDependency is { Version: not null } dependency)
+        {
+            string? normalizedDependency = VersionStringUtility.Normalize(dependency.Version);
+            if (!string.IsNullOrWhiteSpace(normalizedDependency))
+            {
+                return new (string, string)[]
+                {
+                    (normalizedDependency!, dependency.Version!)
+                };
+            }
+        }
+
+        return Array.Empty<(string, string)>();
     }
 
     private string AppendWarningText(string baseText)
@@ -375,16 +412,11 @@ public sealed class ModListItemViewModel : ObservableObject
         return string.Concat(baseText, Environment.NewLine, Environment.NewLine, _versionWarningMessage);
     }
 
-    private static bool TryCreateVersionWarning(string? requiredVersion, string? installedVersion, out string? message)
+    private static bool TryCreateVersionWarning(IReadOnlyCollection<(string Normalized, string Original)> requiredVersions, string? installedVersion, out string? message)
     {
         message = null;
 
-        if (string.IsNullOrWhiteSpace(requiredVersion) || string.IsNullOrWhiteSpace(installedVersion))
-        {
-            return false;
-        }
-
-        if (!TryGetMajorMinor(requiredVersion!, out int requiredMajor, out int requiredMinor))
+        if (requiredVersions.Count == 0 || string.IsNullOrWhiteSpace(installedVersion))
         {
             return false;
         }
@@ -394,13 +426,56 @@ public sealed class ModListItemViewModel : ObservableObject
             return false;
         }
 
-        if (requiredMajor == installedMajor && requiredMinor == installedMinor)
+        bool hasComparable = false;
+        foreach ((string normalized, _) in requiredVersions)
+        {
+            if (!TryGetMajorMinor(normalized, out int requiredMajor, out int requiredMinor))
+            {
+                continue;
+            }
+
+            hasComparable = true;
+            if (requiredMajor == installedMajor && requiredMinor == installedMinor)
+            {
+                return false;
+            }
+        }
+
+        if (!hasComparable)
         {
             return false;
         }
 
-        message = $"The mod asks for Vintage Story version {requiredVersion} but you have {installedVersion}, it might be incompatible";
+        string displayVersions = FormatRequiredVersions(requiredVersions.Select(pair => pair.Original));
+        message = $"The mod asks for Vintage Story version {displayVersions} but you have {installedVersion}, it might be incompatible";
         return true;
+    }
+
+    private static string FormatRequiredVersions(IEnumerable<string> versions)
+    {
+        string[] filtered = versions
+            .Where(version => !string.IsNullOrWhiteSpace(version))
+            .Select(version => version.Trim())
+            .Where(version => version.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (filtered.Length == 0)
+        {
+            return "—";
+        }
+
+        if (filtered.Length == 1)
+        {
+            return filtered[0];
+        }
+
+        if (filtered.Length == 2)
+        {
+            return string.Join(" or ", filtered);
+        }
+
+        return string.Join(", ", filtered.Take(filtered.Length - 1)) + " or " + filtered[^1];
     }
 
     private static bool TryGetMajorMinor(string version, out int major, out int minor)
