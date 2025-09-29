@@ -126,7 +126,7 @@
                             <Setter Property="ToolTip">
                                 <Setter.Value>
                                     <ToolTip>
-                                        <TextBlock Text="{Binding Tooltip}"
+                                        <TextBlock Text="{Binding DataContext.Tooltip, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
                                                    FontFamily="Arial Black"
                                                    FontSize="16"
                                                    TextWrapping="Wrap" />
