@@ -99,9 +99,12 @@
                 <DataGridTextColumn Header="VS Version" Binding="{Binding GameVersionDisplay}" Width="120" IsReadOnly="True" />
                 <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="2*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="80" IsReadOnly="True" />
                 <DataGridTextColumn Header="Website" Binding="{Binding Website}" Width="*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Mod Page URL" Binding="{Binding ModDatabasePageUrlDisplay}" Width="2*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Tags" Binding="{Binding DatabaseTagsDisplay}" Width="2*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="*" IsReadOnly="True" />
             </DataGrid.Columns>
         </DataGrid>
