@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -31,6 +33,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _activationError;
     private bool _hasActivationError;
     private string _statusText = string.Empty;
+    private Uri? _officialModDbUri;
 
     public ModListItemViewModel(
         ModEntry entry,
@@ -72,6 +75,7 @@ public sealed class ModListItemViewModel : ObservableObject
         RequiredOnServer = entry.RequiredOnServer;
 
         OfficialModDbUri = ModDbLinkBuilder.TryCreateEntryUri(ModId);
+        InitializeOfficialModDbLinkAsync(ModId);
 
         Icon = CreateImage(entry.IconBytes);
 
@@ -119,7 +123,18 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public string? Website { get; }
 
-    public Uri? OfficialModDbUri { get; }
+    public Uri? OfficialModDbUri
+    {
+        get => _officialModDbUri;
+        private set
+        {
+            if (SetProperty(ref _officialModDbUri, value))
+            {
+                OnPropertyChanged(nameof(OfficialModDbDisplay));
+                OnPropertyChanged(nameof(HasOfficialModDbLink));
+            }
+        }
+    }
 
     public string OfficialModDbDisplay => OfficialModDbUri?.ToString() ?? "—";
 
@@ -321,6 +336,67 @@ public sealed class ModListItemViewModel : ObservableObject
         }
 
         Tooltip = builder.Length == 0 ? DisplayName : builder.ToString().Trim();
+    }
+
+    private void InitializeOfficialModDbLinkAsync(string? modId)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                Uri? resolved = await ModDbLinkBuilder.TryFetchEntryUriAsync(modId, CancellationToken.None).ConfigureAwait(false);
+                if (resolved == null || Equals(resolved, OfficialModDbUri))
+                {
+                    return;
+                }
+
+                await DispatchToUiThreadAsync(() => OfficialModDbUri = resolved).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Ignore cancellation; the view model will continue using the slug-based URL.
+            }
+            catch
+            {
+                // Swallow network and parsing errors. The slug-based fallback remains available.
+            }
+        });
+    }
+
+    private static Task DispatchToUiThreadAsync(Action action)
+    {
+        if (action == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher == null || dispatcher.CheckAccess())
+        {
+            action();
+            return Task.CompletedTask;
+        }
+
+        var completion = new TaskCompletionSource<object?>();
+        dispatcher.BeginInvoke(new Action(() =>
+        {
+            try
+            {
+                action();
+                completion.SetResult(null);
+            }
+            catch (Exception ex)
+            {
+                completion.SetException(ex);
+            }
+        }));
+
+        return completion.Task;
     }
 
     private static ImageSource? CreateImage(byte[]? bytes)
