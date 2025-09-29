@@ -120,6 +120,9 @@
                             <Setter Property="FontFamily" Value="Arial Black" />
                             <Setter Property="ToolTipService.ShowDuration" Value="60000" />
                             <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
+                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="TextAlignment" Value="Center" />
                             <Setter Property="ToolTip">
                                 <Setter.Value>
                                     <ToolTip>
@@ -132,6 +135,12 @@
                             </Setter>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
@@ -180,16 +189,34 @@
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="TextWrapping" Value="Wrap" />
+                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="TextAlignment" Value="Center" />
                         </Style>
                     </DataGridTextColumn.ElementStyle>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
                 <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Tags" Binding="{Binding DatabaseTagsDisplay}" Width="*" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="TextWrapping" Value="Wrap" />
+                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="TextAlignment" Value="Center" />
                         </Style>
                     </DataGridTextColumn.ElementStyle>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
                 <DataGridTemplateColumn Header="Status" Width="SizeToCells" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
