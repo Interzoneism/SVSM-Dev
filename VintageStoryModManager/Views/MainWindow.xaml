@@ -115,7 +115,6 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="SizeToCells" SortMemberPath="DisplayName" FontFamily="Arial Black" />
-                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTemplateColumn Header="Mod Page URL" Width="SizeToCells" IsReadOnly="True">
@@ -159,6 +158,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="SizeToCells" IsReadOnly="True" />
+                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Tags" Binding="{Binding DatabaseTagsDisplay}" Width="SizeToCells" IsReadOnly="True"/>
                 <DataGridTemplateColumn Header="Status" Width="SizeToCells" IsReadOnly="True">
