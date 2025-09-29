@@ -22,7 +22,7 @@
 
         <Border BorderBrush="{x:Null}" Height="50">
 
-            <TextBlock x:Name="Title" Text="Vintage Story Mod Manager"
+            <TextBlock x:Name="TitleText" Text="Vintage Story Mod Manager"
                                
                                FontFamily="Arial Black"
                                FontSize="24"
@@ -68,18 +68,6 @@
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="Background" Value="Transparent" />
-                    <Setter Property="ToolTip">
-                        <Setter.Value>
-                            <ToolTip>
-                                <TextBlock Text="{Binding Tooltip}"
-                                           FontFamily="Arial Black"
-                                           FontSize="16"
-                                           TextWrapping="Wrap" />
-                            </ToolTip>
-                        </Setter.Value>
-                    </Setter>
-                    <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                    <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding HasErrors}" Value="True">
                             <Setter Property="Background" Value="#FFFFE5E5" />
@@ -108,13 +96,54 @@
                 <DataGridTemplateColumn Header="Icon" Width="SizeToCells" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Border Width="60" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Border Width="60" Height="60"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ShowDuration="60000"
+                                    ToolTipService.InitialShowDelay="200">
+                                <Border.ToolTip>
+                                    <ToolTip>
+                                        <TextBlock Text="{Binding Tooltip}"
+                                                   FontFamily="Arial Black"
+                                                   FontSize="16"
+                                                   TextWrapping="Wrap" />
+                                    </ToolTip>
+                                </Border.ToolTip>
                                 <Image Source="{Binding Icon}" Stretch="Uniform" />
                             </Border>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
+<<<<<<< HEAD
                 <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="SizeToCells" SortMemberPath="DisplayName" FontFamily="Arial Black" />
+=======
+                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="SizeToCells" SortMemberPath="DisplayName">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="FontFamily" Value="Arial Black" />
+                            <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                            <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
+                            <Setter Property="ToolTip">
+                                <Setter.Value>
+                                    <ToolTip>
+                                        <TextBlock Text="{Binding Tooltip}"
+                                                   FontFamily="Arial Black"
+                                                   FontSize="16"
+                                                   TextWrapping="Wrap" />
+                                    </ToolTip>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="*" IsReadOnly="True">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextWrapping" Value="Wrap" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+>>>>>>> 1c260b64c1061ffacaef3a2f9dc133142e0ad1b4
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTemplateColumn Header="Mod Page URL" Width="SizeToCells" IsReadOnly="True">
@@ -160,7 +189,13 @@
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="SizeToCells" IsReadOnly="True" />
-                <DataGridTextColumn Header="Tags" Binding="{Binding DatabaseTagsDisplay}" Width="SizeToCells" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Tags" Binding="{Binding DatabaseTagsDisplay}" Width="*" IsReadOnly="True">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextWrapping" Value="Wrap" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
                 <DataGridTemplateColumn Header="Status" Width="SizeToCells" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>

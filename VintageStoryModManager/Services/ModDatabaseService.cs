@@ -37,7 +37,7 @@ public sealed class ModDatabaseService
                 continue;
             }
 
-            ModDatabaseInfo? info = await TryLoadDatabaseInfoAsync(mod.ModId, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
+            ModDatabaseInfo? info = await TryLoadDatabaseInfoAsync(mod.ModId, mod.Version, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
             if (info != null)
             {
                 mod.DatabaseInfo = info;
@@ -45,7 +45,7 @@ public sealed class ModDatabaseService
         }
     }
 
-    private static async Task<ModDatabaseInfo?> TryLoadDatabaseInfoAsync(string modId, string? normalizedGameVersion, CancellationToken cancellationToken)
+    private static async Task<ModDatabaseInfo?> TryLoadDatabaseInfoAsync(string modId, string? modVersion, string? normalizedGameVersion, CancellationToken cancellationToken)
     {
         try
         {
@@ -69,13 +69,15 @@ public sealed class ModDatabaseService
             string? assetId = TryGetAssetId(modElement);
             string? modPageUrl = assetId == null ? null : ModPageBaseUrl + assetId;
             string? latestVersion = FindCompatibleReleaseVersion(modElement, normalizedGameVersion);
+            IReadOnlyList<string> requiredVersions = FindRequiredGameVersions(modElement, modVersion);
 
             return new ModDatabaseInfo
             {
                 Tags = tags,
                 AssetId = assetId,
                 ModPageUrl = modPageUrl,
-                LatestCompatibleVersion = latestVersion
+                LatestCompatibleVersion = latestVersion,
+                RequiredGameVersions = requiredVersions
             };
         }
         catch (OperationCanceledException)
@@ -158,6 +160,66 @@ public sealed class ModDatabaseService
         }
 
         return null;
+    }
+
+    private static IReadOnlyList<string> FindRequiredGameVersions(JsonElement modElement, string? modVersion)
+    {
+        if (string.IsNullOrWhiteSpace(modVersion))
+        {
+            return Array.Empty<string>();
+        }
+
+        if (!modElement.TryGetProperty("releases", out JsonElement releasesElement) || releasesElement.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<string>();
+        }
+
+        string? normalizedModVersion = VersionStringUtility.Normalize(modVersion);
+
+        foreach (JsonElement release in releasesElement.EnumerateArray())
+        {
+            if (release.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            if (!release.TryGetProperty("modversion", out JsonElement releaseModVersionElement) || releaseModVersionElement.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            string? releaseModVersion = releaseModVersionElement.GetString();
+            if (string.IsNullOrWhiteSpace(releaseModVersion))
+            {
+                continue;
+            }
+
+            if (!ReleaseMatchesModVersion(releaseModVersion, modVersion, normalizedModVersion))
+            {
+                continue;
+            }
+
+            var tags = GetStringList(release, "tags");
+            return tags.Count == 0 ? Array.Empty<string>() : tags;
+        }
+
+        return Array.Empty<string>();
+    }
+
+    private static bool ReleaseMatchesModVersion(string releaseModVersion, string? modVersion, string? normalizedModVersion)
+    {
+        if (modVersion != null && string.Equals(releaseModVersion, modVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        string? normalizedReleaseVersion = VersionStringUtility.Normalize(releaseModVersion);
+        if (normalizedReleaseVersion == null || normalizedModVersion == null)
+        {
+            return false;
+        }
+
+        return string.Equals(normalizedReleaseVersion, normalizedModVersion, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? ExtractReleaseVersion(JsonElement releaseElement)

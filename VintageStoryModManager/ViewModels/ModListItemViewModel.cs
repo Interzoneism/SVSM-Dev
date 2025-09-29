@@ -10,6 +10,7 @@ using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VintageStoryModManager.Models;
+using VintageStoryModManager.Services;
 
 namespace VintageStoryModManager.ViewModels;
 
@@ -27,10 +28,12 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly string? _metadataError;
     private readonly string? _loadError;
     private readonly IReadOnlyList<string> _databaseTags;
+    private readonly IReadOnlyList<string> _databaseRequiredGameVersions;
 
     private bool _isActive;
     private bool _suppressState;
     private string _tooltip = string.Empty;
+    private string? _versionWarningMessage;
     private string? _activationError;
     private bool _hasActivationError;
     private string _statusText = string.Empty;
@@ -40,7 +43,8 @@ public sealed class ModListItemViewModel : ObservableObject
         ModEntry entry,
         bool isActive,
         string location,
-        Func<ModListItemViewModel, bool, Task<ActivationResult>> activationHandler)
+        Func<ModListItemViewModel, bool, Task<ActivationResult>> activationHandler,
+        string? installedGameVersion = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
         _activationHandler = activationHandler ?? throw new ArgumentNullException(nameof(activationHandler));
@@ -57,6 +61,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _contributors = entry.Contributors;
         var databaseInfo = entry.DatabaseInfo;
         _databaseTags = databaseInfo?.Tags ?? Array.Empty<string>();
+        _databaseRequiredGameVersions = databaseInfo?.RequiredGameVersions ?? Array.Empty<string>();
         ModDatabaseAssetId = databaseInfo?.AssetId;
         ModDatabasePageUrl = databaseInfo?.ModPageUrl;
         LatestDatabaseVersion = databaseInfo?.LatestCompatibleVersion;
@@ -94,6 +99,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _isActive = isActive;
         HasErrors = entry.HasErrors;
 
+        InitializeVersionWarning(installedGameVersion);
         UpdateStatusFromErrors();
         UpdateTooltip();
     }
@@ -303,17 +309,22 @@ public sealed class ModListItemViewModel : ObservableObject
         if (HasErrors)
         {
             StatusText = "Error";
-            StatusDetails = _metadataError ?? "Metadata error.";
+            StatusDetails = AppendWarningText(_metadataError ?? "Metadata error.");
         }
         else if (HasLoadError)
         {
             StatusText = "Error";
-            StatusDetails = _loadError ?? string.Empty;
+            StatusDetails = AppendWarningText(_loadError ?? string.Empty);
         }
         else if (HasActivationError)
         {
             StatusText = "Error";
-            StatusDetails = ActivationError ?? string.Empty;
+            StatusDetails = AppendWarningText(ActivationError ?? string.Empty);
+        }
+        else if (!string.IsNullOrWhiteSpace(_versionWarningMessage))
+        {
+            StatusText = "Warning";
+            StatusDetails = _versionWarningMessage!;
         }
         else
         {
@@ -324,14 +335,178 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private void UpdateTooltip()
     {
-        if (!string.IsNullOrWhiteSpace(_description))
+        string tooltipText = !string.IsNullOrWhiteSpace(_description)
+            ? _description.Trim()
+            : DisplayName;
+
+        if (!string.IsNullOrWhiteSpace(_versionWarningMessage))
         {
-            Tooltip = _description.Trim();
+            tooltipText = string.Concat(tooltipText, Environment.NewLine, Environment.NewLine, _versionWarningMessage);
+        }
+
+        Tooltip = tooltipText;
+    }
+
+    private void InitializeVersionWarning(string? installedGameVersion)
+    {
+        string? normalizedInstalled = VersionStringUtility.Normalize(installedGameVersion);
+        IReadOnlyList<(string Normalized, string Original)> requiredVersions = BuildRequiredVersionCandidates();
+
+        if (TryCreateVersionWarning(requiredVersions, normalizedInstalled, out string? message))
+        {
+            _versionWarningMessage = message;
         }
         else
         {
-            Tooltip = DisplayName;
+            _versionWarningMessage = null;
         }
+    }
+
+    private IReadOnlyList<(string Normalized, string Original)> BuildRequiredVersionCandidates()
+    {
+        if (_databaseRequiredGameVersions.Count > 0)
+        {
+            var normalized = new List<(string Normalized, string Original)>(_databaseRequiredGameVersions.Count);
+            foreach (string tag in _databaseRequiredGameVersions)
+            {
+                string? normalizedTag = VersionStringUtility.Normalize(tag);
+                if (!string.IsNullOrWhiteSpace(normalizedTag))
+                {
+                    normalized.Add((normalizedTag!, tag));
+                }
+            }
+
+            if (normalized.Count > 0)
+            {
+                return normalized;
+            }
+        }
+
+        if (_gameDependency is { Version: not null } dependency)
+        {
+            string? normalizedDependency = VersionStringUtility.Normalize(dependency.Version);
+            if (!string.IsNullOrWhiteSpace(normalizedDependency))
+            {
+                return new (string, string)[]
+                {
+                    (normalizedDependency!, dependency.Version!)
+                };
+            }
+        }
+
+        return Array.Empty<(string, string)>();
+    }
+
+    private string AppendWarningText(string baseText)
+    {
+        if (string.IsNullOrWhiteSpace(_versionWarningMessage))
+        {
+            return baseText;
+        }
+
+        if (string.IsNullOrWhiteSpace(baseText))
+        {
+            return _versionWarningMessage!;
+        }
+
+        return string.Concat(baseText, Environment.NewLine, Environment.NewLine, _versionWarningMessage);
+    }
+
+    private static bool TryCreateVersionWarning(IReadOnlyCollection<(string Normalized, string Original)> requiredVersions, string? installedVersion, out string? message)
+    {
+        message = null;
+
+        if (requiredVersions.Count == 0 || string.IsNullOrWhiteSpace(installedVersion))
+        {
+            return false;
+        }
+
+        if (!TryGetMajorMinor(installedVersion!, out int installedMajor, out int installedMinor))
+        {
+            return false;
+        }
+
+        bool hasComparable = false;
+        foreach ((string normalized, _) in requiredVersions)
+        {
+            if (!TryGetMajorMinor(normalized, out int requiredMajor, out int requiredMinor))
+            {
+                continue;
+            }
+
+            hasComparable = true;
+            if (requiredMajor == installedMajor && requiredMinor == installedMinor)
+            {
+                return false;
+            }
+        }
+
+        if (!hasComparable)
+        {
+            return false;
+        }
+
+        string displayVersions = FormatRequiredVersions(requiredVersions.Select(pair => pair.Original));
+        message = $"The mod asks for Vintage Story version {displayVersions} but you have {installedVersion}, it might be incompatible";
+        return true;
+    }
+
+    private static string FormatRequiredVersions(IEnumerable<string> versions)
+    {
+        string[] filtered = versions
+            .Where(version => !string.IsNullOrWhiteSpace(version))
+            .Select(version => version.Trim())
+            .Where(version => version.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (filtered.Length == 0)
+        {
+            return "—";
+        }
+
+        if (filtered.Length == 1)
+        {
+            return filtered[0];
+        }
+
+        if (filtered.Length == 2)
+        {
+            return string.Join(" or ", filtered);
+        }
+
+        return string.Join(", ", filtered.Take(filtered.Length - 1)) + " or " + filtered[^1];
+    }
+
+    private static bool TryGetMajorMinor(string version, out int major, out int minor)
+    {
+        major = 0;
+        minor = 0;
+
+        string[] parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(parts[0], out major))
+        {
+            return false;
+        }
+
+        if (parts.Length > 1)
+        {
+            if (!int.TryParse(parts[1], out minor))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            minor = 0;
+        }
+
+        return true;
     }
 
     private static ImageSource? CreateFaviconImage(Uri? uri)

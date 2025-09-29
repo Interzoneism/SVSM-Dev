@@ -197,7 +197,7 @@ public sealed class MainViewModel : ObservableObject
     {
         bool isActive = !_settingsStore.IsDisabled(entry.ModId, entry.Version);
         string location = GetDisplayPath(entry.SourcePath);
-        return new ModListItemViewModel(entry, isActive, location, ApplyActivationChangeAsync);
+        return new ModListItemViewModel(entry, isActive, location, ApplyActivationChangeAsync, _installedGameVersion);
     }
 
     private void UpdateActiveCount()
