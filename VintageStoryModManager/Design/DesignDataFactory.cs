@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using VintageStoryModManager.Models;
+using VintageStoryModManager.Utilities;
 using VintageStoryModManager.ViewModels;
 
 namespace VintageStoryModManager.Design;
@@ -37,7 +39,12 @@ internal static class DesignDataFactory
                 requiredOnServer: false,
                 isActive: true,
                 error: null,
-                activationError: null),
+                activationError: null,
+                modDbPageUrl: "https://mods.vintagestory.at/betterhud",
+                modDbVersion: "1.4.2",
+                modDbVsVersion: "1.21.0",
+                modDbOneClick: "betterhud@1.4.2",
+                modDbTags: new[] { "client", "hud" }),
             CreateMod(
                 modId: "expandedstorage",
                 name: "Expanded Storage",
@@ -60,7 +67,12 @@ internal static class DesignDataFactory
                 requiredOnServer: true,
                 isActive: false,
                 error: "Missing dependency: CarryCapacity ≥ 1.3.0",
-                activationError: null),
+                activationError: null,
+                modDbPageUrl: "https://mods.vintagestory.at/expandedstorage",
+                modDbVersion: "2.1.0",
+                modDbVsVersion: "1.21.0",
+                modDbOneClick: "expandedstorage@2.1.0",
+                modDbTags: new[] { "both", "storage", "gameplay" }),
             CreateMod(
                 modId: "utilityscripts",
                 name: "Utility Scripts",
@@ -79,7 +91,12 @@ internal static class DesignDataFactory
                 requiredOnServer: true,
                 isActive: true,
                 error: null,
-                activationError: "Failed to enable scripts due to permission error."),
+                activationError: "Failed to enable scripts due to permission error.",
+                modDbPageUrl: "https://mods.vintagestory.at/utilityscripts",
+                modDbVersion: "0.9.5",
+                modDbVsVersion: "1.21.1",
+                modDbOneClick: "utilityscripts@0.9.5",
+                modDbTags: new[] { "server", "utility" }),
             CreateMod(
                 modId: "worldeditplus",
                 name: "World Edit Plus",
@@ -98,7 +115,12 @@ internal static class DesignDataFactory
                 requiredOnServer: true,
                 isActive: true,
                 error: null,
-                activationError: null)
+                activationError: null,
+                modDbPageUrl: "https://mods.vintagestory.at/worldeditplus",
+                modDbVersion: "3.6.0",
+                modDbVsVersion: "1.21.1",
+                modDbOneClick: "worldeditplus@3.6.0",
+                modDbTags: new[] { "both", "worldedit" })
         };
 
         return mods;
@@ -122,7 +144,12 @@ internal static class DesignDataFactory
         bool? requiredOnServer,
         bool isActive,
         string? error,
-        string? activationError)
+        string? activationError,
+        string? modDbPageUrl,
+        string? modDbVersion,
+        string? modDbVsVersion,
+        string? modDbOneClick,
+        IReadOnlyList<string>? modDbTags)
     {
         var entry = new ModEntry
         {
@@ -152,6 +179,13 @@ internal static class DesignDataFactory
             SetActivationError(viewModel, activationError);
         }
 
+        if (!string.IsNullOrWhiteSpace(modDbPageUrl) || !string.IsNullOrWhiteSpace(modDbVersion) ||
+            !string.IsNullOrWhiteSpace(modDbVsVersion) || !string.IsNullOrWhiteSpace(modDbOneClick) ||
+            (modDbTags != null && modDbTags.Count > 0))
+        {
+            SetModDbInfo(viewModel, modDbPageUrl, modDbVersion, modDbVsVersion, modDbOneClick, modDbTags);
+        }
+
         return viewModel;
     }
 
@@ -162,5 +196,35 @@ internal static class DesignDataFactory
             .GetSetMethod(true);
 
         setter?.Invoke(viewModel, new object?[] { error });
+    }
+
+    private static void SetModDbInfo(
+        ModListItemViewModel viewModel,
+        string? pageUrl,
+        string? latestVersion,
+        string? latestGameVersion,
+        string? oneClick,
+        IReadOnlyList<string>? tags)
+    {
+        var method = typeof(ModListItemViewModel)
+            .GetMethod("ApplyModDbInfo", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (method == null)
+        {
+            return;
+        }
+
+        var info = new VintageStoryModDb.ModDbEntryInfo
+        {
+            ModPageUrl = pageUrl ?? string.Empty,
+            ModIdOrSlug = viewModel.ModId,
+            DisplayName = viewModel.DisplayName,
+            LatestModVersion = latestVersion ?? string.Empty,
+            LatestCompatibleGameVersion = latestGameVersion ?? string.Empty,
+            OneClickInstallUrl = oneClick ?? string.Empty,
+            Tags = tags?.Where(tag => !string.IsNullOrWhiteSpace(tag)).Select(tag => tag.Trim()).ToList()
+                ?? new List<string>()
+        };
+
+        method.Invoke(viewModel, new object?[] { info });
     }
 }

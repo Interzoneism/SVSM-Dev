@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -34,6 +33,10 @@ public sealed class ModListItemViewModel : ObservableObject
     private bool _hasActivationError;
     private string _statusText = string.Empty;
     private Uri? _officialModDbUri;
+    private string? _modDbLatestModVersion;
+    private string? _modDbLatestGameVersion;
+    private string? _modDbOneClickInstall;
+    private string[] _modDbTags = Array.Empty<string>();
 
     public ModListItemViewModel(
         ModEntry entry,
@@ -74,8 +77,8 @@ public sealed class ModListItemViewModel : ObservableObject
         RequiredOnClient = entry.RequiredOnClient;
         RequiredOnServer = entry.RequiredOnServer;
 
-        OfficialModDbUri = ModDbLinkBuilder.TryCreateEntryUri(ModId);
-        InitializeOfficialModDbLinkAsync(ModId);
+        OfficialModDbUri = VintageStoryModDb.TryCreateEntryUri(ModId);
+        InitializeOfficialModDbInfoAsync(ModId, DisplayName);
 
         Icon = CreateImage(entry.IconBytes);
 
@@ -132,6 +135,7 @@ public sealed class ModListItemViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(OfficialModDbDisplay));
                 OnPropertyChanged(nameof(HasOfficialModDbLink));
+                UpdateTooltip();
             }
         }
     }
@@ -139,6 +143,20 @@ public sealed class ModListItemViewModel : ObservableObject
     public string OfficialModDbDisplay => OfficialModDbUri?.ToString() ?? "—";
 
     public bool HasOfficialModDbLink => OfficialModDbUri != null;
+
+    public string ModDbLatestModVersionDisplay => string.IsNullOrWhiteSpace(_modDbLatestModVersion)
+        ? "—"
+        : _modDbLatestModVersion!;
+
+    public string ModDbLatestGameVersionDisplay => string.IsNullOrWhiteSpace(_modDbLatestGameVersion)
+        ? "—"
+        : _modDbLatestGameVersion!;
+
+    public string ModDbOneClickInstallDisplay => string.IsNullOrWhiteSpace(_modDbOneClickInstall)
+        ? "—"
+        : _modDbOneClickInstall!;
+
+    public string ModDbTagsDisplay => _modDbTags.Length == 0 ? "—" : string.Join(", ", _modDbTags);
 
     public string SourcePath { get; }
 
@@ -323,6 +341,30 @@ public sealed class ModListItemViewModel : ObservableObject
             builder.Append("Mod DB: ").Append(OfficialModDbDisplay);
         }
 
+        if (!string.IsNullOrWhiteSpace(_modDbLatestModVersion))
+        {
+            builder.AppendLine();
+            builder.Append("Mod DB Version: ").Append(_modDbLatestModVersion);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_modDbLatestGameVersion))
+        {
+            builder.AppendLine();
+            builder.Append("Mod DB VS: ").Append(_modDbLatestGameVersion);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_modDbOneClickInstall))
+        {
+            builder.AppendLine();
+            builder.Append("1-click install: ").Append(_modDbOneClickInstall);
+        }
+
+        if (_modDbTags.Length > 0)
+        {
+            builder.AppendLine();
+            builder.Append("Mod DB Tags: ").Append(string.Join(", ", _modDbTags));
+        }
+
         if (!string.IsNullOrWhiteSpace(_metadataError))
         {
             builder.AppendLine();
@@ -338,34 +380,159 @@ public sealed class ModListItemViewModel : ObservableObject
         Tooltip = builder.Length == 0 ? DisplayName : builder.ToString().Trim();
     }
 
-    private void InitializeOfficialModDbLinkAsync(string? modId)
+    private void InitializeOfficialModDbInfoAsync(string? modId, string? displayName)
     {
-        if (string.IsNullOrWhiteSpace(modId))
+        string[] queries = new[] { displayName, modId }
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (queries.Length == 0)
         {
             return;
         }
 
         _ = Task.Run(async () =>
         {
-            try
+            foreach (string query in queries)
             {
-                Uri? resolved = await ModDbLinkBuilder.TryFetchEntryUriAsync(modId, CancellationToken.None).ConfigureAwait(false);
-                if (resolved == null || Equals(resolved, OfficialModDbUri))
+                try
                 {
-                    return;
-                }
+                    VintageStoryModDb.ModDbEntryInfo? info = await VintageStoryModDb.GetModInfoAsync(query).ConfigureAwait(false);
+                    if (info == null)
+                    {
+                        continue;
+                    }
 
-                await DispatchToUiThreadAsync(() => OfficialModDbUri = resolved).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                // Ignore cancellation; the view model will continue using the slug-based URL.
-            }
-            catch
-            {
-                // Swallow network and parsing errors. The slug-based fallback remains available.
+                    await DispatchToUiThreadAsync(() => ApplyModDbInfo(info)).ConfigureAwait(false);
+                    break;
+                }
+                catch (ArgumentException)
+                {
+                    // Ignore empty queries.
+                }
+                catch
+                {
+                    // Ignore network and parsing errors.
+                }
             }
         });
+    }
+
+    private void ApplyModDbInfo(VintageStoryModDb.ModDbEntryInfo info)
+    {
+        if (info == null)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(info.ModPageUrl) && Uri.TryCreate(info.ModPageUrl, UriKind.Absolute, out Uri? uri))
+        {
+            OfficialModDbUri = uri;
+        }
+        else if (!string.IsNullOrWhiteSpace(info.ModIdOrSlug))
+        {
+            Uri? fallback = VintageStoryModDb.TryCreateEntryUri(info.ModIdOrSlug);
+            if (fallback != null)
+            {
+                OfficialModDbUri = fallback;
+            }
+        }
+
+        bool tooltipNeedsUpdate = false;
+        tooltipNeedsUpdate |= SetModDbLatestModVersion(info.LatestModVersion);
+        tooltipNeedsUpdate |= SetModDbLatestGameVersion(info.LatestCompatibleGameVersion);
+        tooltipNeedsUpdate |= SetModDbOneClickInstall(info.OneClickInstallUrl);
+        tooltipNeedsUpdate |= SetModDbTags(info.Tags);
+
+        if (tooltipNeedsUpdate)
+        {
+            UpdateTooltip();
+        }
+    }
+
+    private bool SetModDbLatestModVersion(string? value)
+    {
+        string? normalized = NormalizeDisplayValue(value);
+        if (string.Equals(_modDbLatestModVersion, normalized, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        _modDbLatestModVersion = normalized;
+        OnPropertyChanged(nameof(ModDbLatestModVersionDisplay));
+        return true;
+    }
+
+    private bool SetModDbLatestGameVersion(string? value)
+    {
+        string? normalized = NormalizeDisplayValue(value);
+        if (string.Equals(_modDbLatestGameVersion, normalized, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        _modDbLatestGameVersion = normalized;
+        OnPropertyChanged(nameof(ModDbLatestGameVersionDisplay));
+        return true;
+    }
+
+    private bool SetModDbOneClickInstall(string? value)
+    {
+        string? normalized = NormalizeDisplayValue(value);
+        if (string.Equals(_modDbOneClickInstall, normalized, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        _modDbOneClickInstall = normalized;
+        OnPropertyChanged(nameof(ModDbOneClickInstallDisplay));
+        return true;
+    }
+
+    private bool SetModDbTags(IReadOnlyList<string>? tags)
+    {
+        string[] normalized = tags == null
+            ? Array.Empty<string>()
+            : tags
+                .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                .Select(tag => tag.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+        if (_modDbTags.Length == normalized.Length)
+        {
+            bool equal = true;
+            for (int i = 0; i < normalized.Length; i++)
+            {
+                if (!string.Equals(_modDbTags[i], normalized[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    equal = false;
+                    break;
+                }
+            }
+
+            if (equal)
+            {
+                return false;
+            }
+        }
+
+        _modDbTags = normalized;
+        OnPropertyChanged(nameof(ModDbTagsDisplay));
+        return true;
+    }
+
+    private static string? NormalizeDisplayValue(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        string trimmed = value.Trim();
+        return trimmed.Length == 0 ? null : trimmed;
     }
 
     private static Task DispatchToUiThreadAsync(Action action)

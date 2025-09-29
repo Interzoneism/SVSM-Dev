@@ -101,7 +101,7 @@
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="80" IsReadOnly="True" />
-                <DataGridTemplateColumn Header="Website" Width="*" IsReadOnly="True">
+                <DataGridTemplateColumn Header="Mod DB Page" Width="*" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock TextWrapping="NoWrap">
@@ -114,6 +114,16 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Mod DB Version" Binding="{Binding ModDbLatestModVersionDisplay}" Width="*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Mod DB VS" Binding="{Binding ModDbLatestGameVersionDisplay}" Width="120" IsReadOnly="True" />
+                <DataGridTemplateColumn Header="1-Click Install" Width="*" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ModDbOneClickInstallDisplay}" TextWrapping="NoWrap" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Mod DB Tags" Binding="{Binding ModDbTagsDisplay}" Width="2*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="*" IsReadOnly="True" />
             </DataGrid.Columns>
         </DataGrid>
