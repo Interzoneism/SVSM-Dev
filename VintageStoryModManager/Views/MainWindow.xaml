@@ -98,11 +98,11 @@
                 <DataGridTemplateColumn Header="Active" SortMemberPath="IsActive" Width="SizeToCells">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <ui:ToggleSwitch IsOn="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             HorizontalAlignment="Center"
-                                             IsEnabled="{Binding CanToggle}"
-                                             OffContent="Disabled"
-                                             OnContent="Enabled" />
+                            <Grid HorizontalAlignment="Center">
+                                <ui:ToggleSwitch IsOn="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 HorizontalAlignment="Center"
+                                                 IsEnabled="{Binding CanToggle}" />
+                            </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
