@@ -114,9 +114,6 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-<<<<<<< HEAD
-                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="SizeToCells" SortMemberPath="DisplayName" FontFamily="Arial Black" />
-=======
                 <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="SizeToCells" SortMemberPath="DisplayName">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
@@ -136,14 +133,6 @@
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="*" IsReadOnly="True">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="TextWrapping" Value="Wrap" />
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
->>>>>>> 1c260b64c1061ffacaef3a2f9dc133142e0ad1b4
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTemplateColumn Header="Mod Page URL" Width="SizeToCells" IsReadOnly="True">
@@ -187,7 +176,13 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="SizeToCells" IsReadOnly="True" />
-                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="SizeToCells" IsReadOnly="True" />
+                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="*" IsReadOnly="True">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextWrapping" Value="Wrap" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
                 <DataGridTextColumn Header="Side" Binding="{Binding SideDisplay}" Width="SizeToCells" IsReadOnly="True" />
                 <DataGridTextColumn Header="Tags" Binding="{Binding DatabaseTagsDisplay}" Width="*" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
@@ -206,7 +201,7 @@
                                        TextAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseHighBrush}" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding StatusText}" Value="Error">
                                                 <Setter Property="Foreground" Value="#FFD13438" />
@@ -230,11 +225,11 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <Border Grid.Row="2" Padding="16" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+        <Border Grid.Row="2" Padding="16" Background="{ui:ThemeResource SystemControlBackgroundBaseLowBrush}">
             <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
-                        <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
                         <Setter Property="Visibility" Value="Collapsed" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
