@@ -52,9 +52,16 @@
                 <Style TargetType="TextBlock">
                     <Setter Property="TextWrapping" Value="Wrap" />
                 </Style>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderBrush" Value="Transparent" />
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                </Style>
             </DataGrid.Resources>
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="Transparent" />
                     <Setter Property="ToolTip">
                         <Setter.Value>
                             <ToolTip>
@@ -81,7 +88,7 @@
                 <DataGridTemplateColumn Header="Icon" Width="SizeToCells" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Border Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Border Width="60" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Image Source="{Binding Icon}" Stretch="Uniform" />
                             </Border>
                         </DataTemplate>
@@ -126,7 +133,7 @@
                                     </Style>
                                 </Button.Style>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <Image Source="{Binding WebsiteFavicon}" Width="16" Height="16" Stretch="Uniform">
+                                    <Image Source="{Binding WebsiteFavicon}" Width="20" Height="20" Stretch="Uniform">
                                         <Image.Style>
                                             <Style TargetType="Image">
                                                 <Setter Property="Visibility" Value="Visible" />
@@ -165,7 +172,7 @@
                                     </Style>
                                 </Button.Style>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <Image Source="{Binding ModDatabasePageFavicon}" Width="16" Height="16" Stretch="Uniform">
+                                    <Image Source="{Binding ModDatabasePageFavicon}" Width="20" Height="20" Stretch="Uniform">
                                         <Image.Style>
                                             <Style TargetType="Image">
                                                 <Setter Property="Visibility" Value="Visible" />
@@ -188,7 +195,6 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding StatusText}"
-                                       ToolTip="{Binding StatusDetails}"
                                        TextWrapping="Wrap"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
@@ -206,6 +212,15 @@
                             </TextBlock>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                            <Setter Property="ToolTip" Value="{Binding StatusDetails}" />
+                        </Style>
+                    </DataGridTemplateColumn.CellStyle>
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
