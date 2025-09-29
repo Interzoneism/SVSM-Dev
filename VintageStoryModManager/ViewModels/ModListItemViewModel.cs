@@ -335,13 +335,24 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private void UpdateTooltip()
     {
-        string tooltipText = !string.IsNullOrWhiteSpace(_description)
-            ? _description.Trim()
-            : DisplayName;
+        string tooltipText = DisplayName;
+
+        if (!string.IsNullOrWhiteSpace(_description))
+        {
+            tooltipText = string.Concat(
+                tooltipText,
+                Environment.NewLine,
+                Environment.NewLine,
+                _description.Trim());
+        }
 
         if (!string.IsNullOrWhiteSpace(_versionWarningMessage))
         {
-            tooltipText = string.Concat(tooltipText, Environment.NewLine, Environment.NewLine, _versionWarningMessage);
+            tooltipText = string.Concat(
+                tooltipText,
+                Environment.NewLine,
+                Environment.NewLine,
+                _versionWarningMessage);
         }
 
         Tooltip = tooltipText;
