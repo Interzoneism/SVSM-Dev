@@ -51,8 +51,10 @@
                   HeadersVisibility="Column"
                   GridLinesVisibility="Horizontal"
                   SelectionUnit="FullRow"
+                  SelectionMode="Single"
                   RowHeaderWidth="0"
-                  IsSynchronizedWithCurrentItem="True" BorderBrush="{DynamicResource {x:Static SystemColors.InfoBrushKey}}" MinColumnWidth="20">
+                  IsSynchronizedWithCurrentItem="True" BorderBrush="{DynamicResource {x:Static SystemColors.InfoBrushKey}}" MinColumnWidth="20"
+                  SelectionChanged="ModsDataGrid_OnSelectionChanged">
             <DataGrid.Resources>
                 <Style TargetType="TextBlock">
                     <Setter Property="TextWrapping" Value="Wrap" />
@@ -60,12 +62,21 @@
             </DataGrid.Resources>
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
-                    <Setter Property="ToolTip" Value="{Binding Tooltip}" />
+                    <Setter Property="ToolTip">
+                        <Setter.Value>
+                            <ToolTip>
+                                <TextBlock Text="{Binding Tooltip}"
+                                           FontFamily="Arial Black"
+                                           FontSize="16"
+                                           TextWrapping="Wrap" />
+                            </ToolTip>
+                        </Setter.Value>
+                    </Setter>
                     <Setter Property="ToolTipService.ShowDuration" Value="60000" />
                     <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                            <Setter Property="Background" Value="#22FF6B6B" />
+                            <Setter Property="Background" Value="#FFFFE5E5" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding HasActivationError}" Value="True">
                             <Setter Property="Background" Value="#22F5D67B" />
@@ -183,7 +194,12 @@
                 <DataGridTemplateColumn Header="Status" Width="SizeToCells" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding StatusText}" ToolTip="{Binding StatusDetails}" TextWrapping="Wrap">
+                            <TextBlock Text="{Binding StatusText}"
+                                       ToolTip="{Binding StatusDetails}"
+                                       TextWrapping="Wrap"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
