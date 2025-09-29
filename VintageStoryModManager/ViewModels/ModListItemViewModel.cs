@@ -23,6 +23,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly IReadOnlyList<string> _contributors;
     private readonly string? _description;
     private readonly string? _metadataError;
+    private readonly IReadOnlyList<string> _databaseTags;
 
     private bool _isActive;
     private bool _suppressState;
@@ -50,6 +51,11 @@ public sealed class ModListItemViewModel : ObservableObject
         SourceKind = entry.SourceKind;
         _authors = entry.Authors;
         _contributors = entry.Contributors;
+        var databaseInfo = entry.DatabaseInfo;
+        _databaseTags = databaseInfo?.Tags ?? Array.Empty<string>();
+        ModDatabaseAssetId = databaseInfo?.AssetId;
+        ModDatabasePageUrl = databaseInfo?.ModPageUrl;
+        LatestDatabaseVersion = databaseInfo?.LatestCompatibleVersion;
 
         IReadOnlyList<ModDependencyInfo> dependencies = entry.Dependencies ?? Array.Empty<ModDependencyInfo>();
         _gameDependency = dependencies.FirstOrDefault(d => string.Equals(d.ModId, "game", StringComparison.OrdinalIgnoreCase))
@@ -113,6 +119,18 @@ public sealed class ModListItemViewModel : ObservableObject
     public string DependenciesDisplay => _dependencies.Count == 0
         ? "—"
         : string.Join(", ", _dependencies.Select(dependency => dependency.Display));
+
+    public IReadOnlyList<string> DatabaseTags => _databaseTags;
+
+    public string DatabaseTagsDisplay => _databaseTags.Count == 0 ? "—" : string.Join(", ", _databaseTags);
+
+    public string? ModDatabaseAssetId { get; }
+
+    public string? ModDatabasePageUrl { get; }
+
+    public string? LatestDatabaseVersion { get; }
+
+    public string LatestDatabaseVersionDisplay => string.IsNullOrWhiteSpace(LatestDatabaseVersion) ? "—" : LatestDatabaseVersion!;
 
     public string? Website { get; }
 
