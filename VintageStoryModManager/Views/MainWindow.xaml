@@ -186,7 +186,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="80" IsReadOnly="True">
+                <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="110" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="TextWrapping" Value="Wrap" />
