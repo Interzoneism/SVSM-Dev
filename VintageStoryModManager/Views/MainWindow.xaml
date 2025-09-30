@@ -14,14 +14,12 @@
         PreviewKeyUp="Window_OnPreviewKeyUp">
 
     <Grid>
-
+        
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" MinHeight="40" />
             <RowDefinition />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-
-
 
         <Menu IsMainMenu="True">
             <MenuItem Header="_File" Height="30">
@@ -36,11 +34,7 @@
                 <MenuItem Header="_About" Height="30" />
             </MenuItem>
         </Menu>
-
-
-
-
-
+        
         <DataGrid Grid.Row="1"
                   Margin="16,0,16,0"
                   ItemsSource="{Binding ModsView}"
@@ -66,7 +60,6 @@
                     <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 </Style>
             </DataGrid.Resources>
-            
             <DataGrid.RowHeaderStyle>
                 <Style/>
             </DataGrid.RowHeaderStyle>
