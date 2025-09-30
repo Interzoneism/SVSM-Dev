@@ -236,7 +236,7 @@
                         </Style>
                     </DataGridTemplateColumn.CellStyle>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="80" IsReadOnly="True">
+                <DataGridTextColumn Header="Dependencies" Binding="{Binding DependenciesDisplay}" Width="110" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="TextWrapping" Value="Wrap" />
