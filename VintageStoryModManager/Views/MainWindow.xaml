@@ -22,13 +22,17 @@
 
 
         <Menu IsMainMenu="True">
-            <MenuItem Header="_File" Height="20">
-                <MenuItem Header="_Refresh Mods" Height="20" />
+            <MenuItem Header="_File" Height="30">
+                <MenuItem Header="_Refresh Mods" Height="30" />
                 <Separator />
-                <MenuItem Header="E_xit" Height="20"/>
+                <MenuItem Header="_Set VintagestoryData folder" Height="30" />
+                <Separator />
+                <MenuItem Header="_Set VintageStory folder" Height="30" />
+                <Separator />
+                <MenuItem Header="E_xit" Height="30"/>
             </MenuItem>
-            <MenuItem Header="_Help" Height="20">
-                <MenuItem Header="_About" Height="20" />
+            <MenuItem Header="_Help" Height="30">
+                <MenuItem Header="_About" Height="30" />
             </MenuItem>
         </Menu>
 
