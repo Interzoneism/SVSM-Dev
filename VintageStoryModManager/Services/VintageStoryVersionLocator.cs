@@ -11,10 +11,14 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public static class VintageStoryVersionLocator
 {
-    private static readonly string[] CandidateFiles =
+    private static readonly string[] CandidateRelativePaths =
     {
-        "VintagestoryAPI.dll",
-        Path.Combine("VSFOLDER", "VintagestoryAPI.dll")
+        "Vintagestory.exe",
+        "Vintagestory",
+        Path.Combine("Vintagestory.app", "Contents", "MacOS", "Vintagestory"),
+        "VintagestoryServer.exe",
+        "VintagestoryServer",
+        "VintagestoryAPI.dll"
     };
 
     public static string? GetInstalledVersion()
@@ -39,19 +43,39 @@ public static class VintageStoryVersionLocator
 
     private static IEnumerable<string> EnumerateCandidates()
     {
+        foreach (string root in EnumerateRoots())
+        {
+            foreach (string relative in CandidateRelativePaths)
+            {
+                yield return Path.Combine(root, relative);
+            }
+        }
+    }
+
+    private static IEnumerable<string> EnumerateRoots()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         string? explicitFolder = Environment.GetEnvironmentVariable("VINTAGE_STORY");
         if (!string.IsNullOrWhiteSpace(explicitFolder))
         {
-            foreach (string file in CandidateFiles)
+            string fullPath = Path.GetFullPath(explicitFolder);
+            if (seen.Add(fullPath))
             {
-                yield return Path.Combine(explicitFolder!, file);
+                yield return fullPath;
             }
         }
 
-        string baseDirectory = AppContext.BaseDirectory;
-        foreach (string file in CandidateFiles)
+        string baseDirectory = Path.GetFullPath(AppContext.BaseDirectory);
+        if (seen.Add(baseDirectory))
         {
-            yield return Path.Combine(baseDirectory, file);
+            yield return baseDirectory;
+        }
+
+        string vsFolder = Path.Combine(baseDirectory, "VSFOLDER");
+        if (Directory.Exists(vsFolder) && seen.Add(vsFolder))
+        {
+            yield return vsFolder;
         }
     }
 
