@@ -125,7 +125,7 @@
                             <Setter Property="Margin" Value="15,0,0,0" />
                             <Setter Property="ToolTipService.ToolTip">
                                 <Setter.Value>
-                                    <TextBlock Text="{Binding DataContext.Tooltip, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
+                                    <TextBlock Text="{Binding Tooltip}"
                                                FontFamily="Segoe UI"
                                                FontSize="12"
                                                FontWeight="Normal"
