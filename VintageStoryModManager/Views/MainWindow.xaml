@@ -66,7 +66,12 @@
                     <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 </Style>
             </DataGrid.Resources>
-            
+            <DataGrid.ColumnHeaderStyle>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="BorderBrush" Value="LightSlateGray" />
+                    <Setter Property="BorderThickness" Value="0,0,2,0" />
+                </Style>
+            </DataGrid.ColumnHeaderStyle>
             <DataGrid.RowHeaderStyle>
                 <Style/>
             </DataGrid.RowHeaderStyle>
