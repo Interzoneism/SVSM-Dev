@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     private string? _gameDirectory;
     private bool _isInitializing;
     private bool _isApplyingPreset;
+    private bool _isHoveringSavePresetButton;
 
     public MainWindow()
     {
@@ -88,6 +89,7 @@ public partial class MainWindow : Window
                 PresetComboBox.SelectedItem = null;
             }
 
+            UpdateSavePresetButtonContent();
             return;
         }
 
@@ -101,6 +103,8 @@ public partial class MainWindow : Window
         {
             PresetComboBox.SelectedItem = null;
         }
+
+        UpdateSavePresetButtonContent();
     }
 
     private void InitializeViewModel()
@@ -539,6 +543,8 @@ public partial class MainWindow : Window
 
     private async void PresetComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        UpdateSavePresetButtonContent();
+
         if (_viewModel is null || _isApplyingPreset)
         {
             return;
@@ -557,6 +563,7 @@ public partial class MainWindow : Window
         finally
         {
             _isApplyingPreset = false;
+            UpdateSavePresetButtonContent();
         }
     }
 
@@ -564,6 +571,22 @@ public partial class MainWindow : Window
     {
         if (_viewModel is null)
         {
+            return;
+        }
+
+        if (IsDeletePresetMode())
+        {
+            if (PresetComboBox.SelectedItem is not ModPreset preset)
+            {
+                return;
+            }
+
+            if (_userConfiguration.RemovePreset(preset.Name))
+            {
+                RefreshPresetList();
+                _viewModel.ReportStatus($"Deleted preset \"{preset.Name}\".");
+            }
+
             return;
         }
 
@@ -592,6 +615,51 @@ public partial class MainWindow : Window
         _userConfiguration.SetPreset(presetName, disabledEntries);
         RefreshPresetList(presetName);
         _viewModel.ReportStatus($"Saved preset \"{presetName}\".");
+    }
+
+    private void SavePresetButton_OnMouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        _isHoveringSavePresetButton = true;
+        UpdateSavePresetButtonContent();
+    }
+
+    private void SavePresetButton_OnMouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        _isHoveringSavePresetButton = false;
+        UpdateSavePresetButtonContent();
+    }
+
+    private void Window_OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key is Key.LeftCtrl or Key.RightCtrl)
+        {
+            UpdateSavePresetButtonContent();
+        }
+    }
+
+    private void Window_OnPreviewKeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key is Key.LeftCtrl or Key.RightCtrl)
+        {
+            UpdateSavePresetButtonContent();
+        }
+    }
+
+    private bool IsDeletePresetMode()
+    {
+        return _isHoveringSavePresetButton
+               && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)
+               && PresetComboBox.SelectedItem is ModPreset;
+    }
+
+    private void UpdateSavePresetButtonContent()
+    {
+        if (SavePresetButton == null)
+        {
+            return;
+        }
+
+        SavePresetButton.Content = IsDeletePresetMode() ? "Delete Preset" : "Save Preset";
     }
 
     private string? PromptForPresetName(string? defaultName)

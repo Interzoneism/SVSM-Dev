@@ -97,6 +97,23 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public bool RemovePreset(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return false;
+        }
+
+        string normalized = name.Trim();
+        if (!_presets.Remove(normalized))
+        {
+            return false;
+        }
+
+        Save();
+        return true;
+    }
+
     public void SetDataDirectory(string path)
     {
         DataDirectory = NormalizePath(path);
