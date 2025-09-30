@@ -9,7 +9,9 @@
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
         Height="632" Width="1100"
-        MinWidth="900" MinHeight="520">
+        MinWidth="900" MinHeight="520"
+        PreviewKeyDown="Window_OnPreviewKeyDown"
+        PreviewKeyUp="Window_OnPreviewKeyUp">
 
     <Grid>
 
@@ -285,6 +287,9 @@
         <ComboBox x:Name="PresetComboBox" Margin="755,0,0,0" VerticalAlignment="Center" Width="295"
                   DisplayMemberPath="Name"
                   SelectionChanged="PresetComboBox_OnSelectionChanged"/>
-        <Button Content="Save Preset" Margin="655,0,0,0" Width="95" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="SavePresetButton_OnClick"/>
+        <Button x:Name="SavePresetButton" Content="Save Preset" Margin="655,0,0,0" Width="95" Background="#CCFFFFFF" BorderBrush="#7F000000"
+                Click="SavePresetButton_OnClick"
+                MouseEnter="SavePresetButton_OnMouseEnter"
+                MouseLeave="SavePresetButton_OnMouseLeave"/>
     </Grid>
 </Window>
