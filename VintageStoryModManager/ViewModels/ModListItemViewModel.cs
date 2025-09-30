@@ -270,6 +270,25 @@ public sealed class ModListItemViewModel : ObservableObject
         }
     }
 
+    public void SetIsActiveSilently(bool isActive)
+    {
+        if (_isActive == isActive)
+        {
+            return;
+        }
+
+        _suppressState = true;
+        try
+        {
+            SetProperty(ref _isActive, isActive);
+            ActivationError = null;
+        }
+        finally
+        {
+            _suppressState = false;
+        }
+    }
+
     private async Task ApplyActivationChangeAsync(bool previous, bool current)
     {
         ActivationResult result;

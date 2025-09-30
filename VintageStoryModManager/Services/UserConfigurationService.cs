@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using VintageStoryModManager.Models;
 
 namespace VintageStoryModManager.Services;
 
@@ -12,6 +15,7 @@ public sealed class UserConfigurationService
 {
     private const string ConfigurationFileName = "settings.json";
     private readonly string _configurationPath;
+    private readonly Dictionary<string, string[]> _presets = new(StringComparer.OrdinalIgnoreCase);
 
     public UserConfigurationService()
     {
@@ -22,6 +26,76 @@ public sealed class UserConfigurationService
     public string? DataDirectory { get; private set; }
 
     public string? GameDirectory { get; private set; }
+
+    public IReadOnlyList<ModPreset> GetPresets()
+    {
+        return _presets
+            .OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(pair => new ModPreset(pair.Key, pair.Value.ToArray()))
+            .ToList();
+    }
+
+    public bool ContainsPreset(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return false;
+        }
+
+        return _presets.ContainsKey(name.Trim());
+    }
+
+    public bool TryGetPreset(string? name, out ModPreset? preset)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            preset = null;
+            return false;
+        }
+
+        string normalized = name.Trim();
+        if (_presets.TryGetValue(normalized, out string[]? entries))
+        {
+            preset = new ModPreset(normalized, entries.ToArray());
+            return true;
+        }
+
+        preset = null;
+        return false;
+    }
+
+    public void SetPreset(string name, IEnumerable<string> disabledEntries)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Preset name cannot be empty.", nameof(name));
+        }
+
+        string normalized = name.Trim();
+
+        var values = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (disabledEntries != null)
+        {
+            foreach (string entry in disabledEntries)
+            {
+                if (string.IsNullOrWhiteSpace(entry))
+                {
+                    continue;
+                }
+
+                string trimmed = entry.Trim();
+                if (seen.Add(trimmed))
+                {
+                    values.Add(trimmed);
+                }
+            }
+        }
+
+        _presets[normalized] = values.Count == 0 ? Array.Empty<string>() : values.ToArray();
+        Save();
+    }
 
     public void SetDataDirectory(string path)
     {
@@ -37,6 +111,7 @@ public sealed class UserConfigurationService
 
     private void Load()
     {
+        _presets.Clear();
         try
         {
             if (!File.Exists(_configurationPath))
@@ -53,11 +128,13 @@ public sealed class UserConfigurationService
 
             DataDirectory = NormalizePath(obj["dataDirectory"]?.GetValue<string?>());
             GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
+            LoadPresets(obj["modPresets"]);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
             DataDirectory = null;
             GameDirectory = null;
+            _presets.Clear();
         }
     }
 
@@ -71,7 +148,8 @@ public sealed class UserConfigurationService
             var obj = new JsonObject
             {
                 ["dataDirectory"] = DataDirectory,
-                ["gameDirectory"] = GameDirectory
+                ["gameDirectory"] = GameDirectory,
+                ["modPresets"] = BuildPresetsJson()
             };
 
             var options = new JsonSerializerOptions
@@ -92,6 +170,72 @@ public sealed class UserConfigurationService
         string baseDirectory = GetBaseDirectory();
         Directory.CreateDirectory(baseDirectory);
         return Path.Combine(baseDirectory, ConfigurationFileName);
+    }
+
+    private JsonObject BuildPresetsJson()
+    {
+        var result = new JsonObject();
+
+        foreach (var pair in _presets.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            var values = pair.Value;
+            if (values.Length == 0)
+            {
+                result[pair.Key] = new JsonArray();
+                continue;
+            }
+
+            var array = new JsonArray();
+            foreach (string value in values)
+            {
+                array.Add(JsonValue.Create(value));
+            }
+
+            result[pair.Key] = array;
+        }
+
+        return result;
+    }
+
+    private void LoadPresets(JsonNode? node)
+    {
+        if (node is not JsonObject obj)
+        {
+            return;
+        }
+
+        foreach (var pair in obj)
+        {
+            string name = pair.Key;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            if (pair.Value is not JsonArray array)
+            {
+                continue;
+            }
+
+            var values = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (JsonNode? element in array)
+            {
+                string? value = element?.GetValue<string?>();
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+
+                string trimmed = value.Trim();
+                if (seen.Add(trimmed))
+                {
+                    values.Add(trimmed);
+                }
+            }
+
+            _presets[name.Trim()] = values.Count == 0 ? Array.Empty<string>() : values.ToArray();
+        }
     }
 
     private static string GetBaseDirectory()
