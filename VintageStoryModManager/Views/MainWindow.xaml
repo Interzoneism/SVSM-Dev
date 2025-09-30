@@ -101,15 +101,13 @@
                                     VerticalAlignment="Center"
                                     ToolTipService.ShowDuration="60000"
                                     ToolTipService.InitialShowDelay="200">
-                                <Border.ToolTip>
-                                    <ToolTip DataContext="{Binding}">
-                                        <TextBlock Text="{Binding Tooltip}"
-                                                   FontFamily="Segoe UI"
-                                                   FontSize="12"
-                                                   FontWeight="Normal"
-                                                   TextWrapping="Wrap" />
-                                    </ToolTip>
-                                </Border.ToolTip>
+                                <ToolTipService.ToolTip>
+                                    <TextBlock Text="{Binding Tooltip}"
+                                               FontFamily="Segoe UI"
+                                               FontSize="12"
+                                               FontWeight="Normal"
+                                               TextWrapping="Wrap" />
+                                </ToolTipService.ToolTip>
                                 <Image Source="{Binding Icon}" Stretch="Uniform" />
                             </Border>
                         </DataTemplate>
@@ -125,15 +123,13 @@
                             <Setter Property="VerticalAlignment" Value="Center" />
                             <Setter Property="TextAlignment" Value="Left" />
                             <Setter Property="Margin" Value="15,0,0,0" />
-                            <Setter Property="ToolTip">
+                            <Setter Property="ToolTipService.ToolTip">
                                 <Setter.Value>
-                                    <ToolTip DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=DataGridRow}}">
-                                        <TextBlock Text="{Binding Tooltip}"
-                                                   FontFamily="Segoe UI"
-                                                   FontSize="12"
-                                                   FontWeight="Normal"
-                                                   TextWrapping="Wrap" />
-                                    </ToolTip>
+                                    <TextBlock Text="{Binding DataContext.Tooltip, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
+                                               FontFamily="Segoe UI"
+                                               FontSize="12"
+                                               FontWeight="Normal"
+                                               TextWrapping="Wrap" />
                                 </Setter.Value>
                             </Setter>
                         </Style>
