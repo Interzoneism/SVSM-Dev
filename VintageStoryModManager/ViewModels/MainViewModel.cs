@@ -32,15 +32,16 @@ public sealed class MainViewModel : ObservableObject
     private int _totalMods;
     private int _activeMods;
 
-    public MainViewModel()
+    public MainViewModel(string dataDirectory)
     {
-        string dataDirectory = DataDirectoryLocator.Resolve();
-        _settingsStore = new ClientSettingsStore(dataDirectory);
+        ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
+
+        DataDirectory = Path.GetFullPath(dataDirectory);
+
+        _settingsStore = new ClientSettingsStore(DataDirectory);
         _discoveryService = new ModDiscoveryService(_settingsStore);
         _databaseService = new ModDatabaseService();
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion();
-
-        DataDirectory = _settingsStore.DataDirectory;
 
         ModsView = CollectionViewSource.GetDefaultView(_mods);
         _sortOptions = new ObservableCollection<SortOption>(CreateSortOptions());
