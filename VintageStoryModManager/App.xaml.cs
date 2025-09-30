@@ -4,10 +4,11 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
+using WpfMessageBox = System.Windows.MessageBox;
 
 namespace VintageStoryModManager;
 
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
     private const string SingleInstanceMutexName = "VintageStoryModManager.SingleInstance";
     private Mutex? _instanceMutex;
@@ -53,7 +54,7 @@ public partial class App : Application
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         string message = $"An unexpected error occurred:\n{e.Exception.Message}";
-        MessageBox.Show(message, "Vintage Story Mod Manager", MessageBoxButton.OK, MessageBoxImage.Error);
+        WpfMessageBox.Show(message, "Vintage Story Mod Manager", MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true;
     }
 
