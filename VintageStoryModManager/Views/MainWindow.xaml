@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
-        Height="640" Width="1100"
+        Height="632" Width="1100"
         MinWidth="900" MinHeight="520">
 
     <Grid>
@@ -22,13 +22,13 @@
 
 
         <Menu IsMainMenu="True">
-            <MenuItem Header="_File" Height="20">
-                <MenuItem Header="_Refresh Mods" Height="20" Click="RefreshModsMenuItem_OnClick" />
+            <MenuItem Header="_File" Height="30">
+                <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" />
                 <Separator />
-                <MenuItem Header="Set _Data Folder..." Height="20" Click="SelectDataFolderMenuItem_OnClick" />
-                <MenuItem Header="Set _Game Folder..." Height="20" Click="SelectGameFolderMenuItem_OnClick" />
+                <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" />
+                <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" />
                 <Separator />
-                <MenuItem Header="E_xit" Height="20" Click="ExitMenuItem_OnClick"/>
+                <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick"/>
             </MenuItem>
             <MenuItem Header="_Help" Height="30">
                 <MenuItem Header="_About" Height="30" />
@@ -40,7 +40,7 @@
 
 
         <DataGrid Grid.Row="1"
-                  Margin="16,16,16,16"
+                  Margin="16,0,16,0"
                   ItemsSource="{Binding ModsView}"
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
@@ -52,7 +52,7 @@
                   SelectionMode="Single"
                   RowHeaderWidth="0"
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
-                  SelectionChanged="ModsDataGrid_OnSelectionChanged" BorderThickness="2,2,2,2">
+                  SelectionChanged="ModsDataGrid_OnSelectionChanged" BorderThickness="2,2,2,2" Foreground="Black" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
             <DataGrid.Resources>
                 <Style TargetType="TextBlock">
                     <Setter Property="TextWrapping" Value="Wrap" />
@@ -67,12 +67,6 @@
             <DataGrid.RowHeaderStyle>
                 <Style/>
             </DataGrid.RowHeaderStyle>
-            <DataGrid.BorderBrush>
-                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                    <GradientStop Color="#FFB9D1EA"/>
-                    <GradientStop Color="#FFC8C8C8" Offset="1"/>
-                </LinearGradientBrush>
-            </DataGrid.BorderBrush>
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="Background" Value="Transparent" />
@@ -266,7 +260,7 @@
         </DataGrid>
 
 
-        <Border Grid.Row="2" Padding="16" Background="{ui:ThemeResource SystemControlBackgroundBaseLowBrush}" VerticalAlignment="Center" Height="85" Margin="0,0,907,0">
+        <Border Grid.Row="2" Padding="16" Background="{ui:ThemeResource SystemControlBackgroundBaseLowBrush}" VerticalAlignment="Center" Height="56">
             <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="-6,-6,6,6">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
