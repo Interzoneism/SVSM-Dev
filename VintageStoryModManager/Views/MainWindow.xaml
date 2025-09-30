@@ -147,13 +147,13 @@
                 </DataGridTextColumn>
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="65" IsReadOnly="True" MinWidth="64" />
                 <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="100" MinWidth="99" IsReadOnly="True" />
-                <DataGridTemplateColumn Header="Mod Page" Width="SizeToCells" IsReadOnly="True">
+                <DataGridTemplateColumn Header="Mod Page" Width="100" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Button Padding="4"
                                     BorderThickness="2"
                                     BorderBrush="#FFB9D1EA"
-                                    Background="Transparent"
+                                    Background="AliceBlue"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     ToolTip="{Binding ModDatabasePageUrlDisplay}"
@@ -207,7 +207,7 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock FontFamily="Segoe Fluent Icons"
-                                       FontSize="18"
+                                       FontSize="30"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        TextAlignment="Center">
