@@ -68,7 +68,7 @@ public partial class MainWindow : Window
             throw new InvalidOperationException("The data directory is not set.");
         }
 
-        _viewModel = new MainViewModel(_dataDirectory);
+        _viewModel = new MainViewModel(_dataDirectory, _userConfiguration);
         DataContext = _viewModel;
     }
 
@@ -161,7 +161,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var viewModel = new MainViewModel(_dataDirectory);
+            var viewModel = new MainViewModel(_dataDirectory, _userConfiguration);
             _viewModel = viewModel;
             DataContext = viewModel;
             await InitializeViewModelAsync(viewModel);
@@ -495,8 +495,69 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Button_Click(object sender, RoutedEventArgs e)
+    private void SavePresetButton_OnClick(object sender, RoutedEventArgs e)
     {
-        // Placeholder for Save Preset button until implemented.
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        string defaultName = _viewModel.SelectedPreset ?? string.Empty;
+
+        var dialog = new PresetNameDialog
+        {
+            Owner = this
+        };
+        dialog.SetInitialName(defaultName);
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        string presetName = dialog.PresetName;
+        if (string.IsNullOrWhiteSpace(presetName))
+        {
+            return;
+        }
+
+        if (_viewModel.ContainsPreset(presetName))
+        {
+            MessageBoxResult confirm = WpfMessageBox.Show(
+                $"A preset named \"{presetName}\" already exists. Do you want to replace it?",
+                "Save Preset",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+        }
+
+        try
+        {
+            if (!_viewModel.TrySavePreset(presetName, out string? errorMessage))
+            {
+                if (string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    errorMessage = "Failed to save the preset.";
+                }
+
+                WpfMessageBox.Show(
+                    errorMessage!,
+                    "Save Preset",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to save preset:\n{ex.Message}",
+                "Save Preset",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 }

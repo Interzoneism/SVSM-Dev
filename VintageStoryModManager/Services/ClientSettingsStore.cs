@@ -140,6 +140,55 @@ public sealed class ClientSettingsStore
         }
     }
 
+    public bool TryApplyPreset(IEnumerable<string> disabledEntries, out string? error)
+    {
+        ArgumentNullException.ThrowIfNull(disabledEntries);
+
+        var normalized = new List<string>();
+        var lookup = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string entry in disabledEntries)
+        {
+            if (string.IsNullOrWhiteSpace(entry))
+            {
+                continue;
+            }
+
+            string trimmed = entry.Trim();
+            if (lookup.Add(trimmed))
+            {
+                normalized.Add(trimmed);
+            }
+        }
+
+        if (lookup.SetEquals(_disabledLookup))
+        {
+            error = null;
+            return true;
+        }
+
+        _disabledMods.Clear();
+        _disabledMods.AddRange(normalized);
+
+        _disabledLookup.Clear();
+        foreach (string entry in normalized)
+        {
+            _disabledLookup.Add(entry);
+        }
+
+        try
+        {
+            Persist();
+            error = null;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+    }
+
     private bool RemoveDisabledEntry(string key)
     {
         if (!_disabledLookup.Remove(key))

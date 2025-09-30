@@ -266,29 +266,74 @@
         </DataGrid>
 
 
-        <Border Grid.Row="2" Padding="16" Background="{ui:ThemeResource SystemControlBackgroundBaseLowBrush}" VerticalAlignment="Center" Height="85" Margin="0,0,907,0">
-            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="-6,-6,6,6">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
-                                <Setter Property="Visibility" Value="Visible" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                <Setter Property="Foreground" Value="#FFD13438" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-        </Border>
-        <Button Content="Launch Vintage Story" Margin="891,0,0,0" Grid.Row="2" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="LaunchGameButton_OnClick"/>
-        <Button Content="Open Mod Folder" Margin="755,0,0,0" Grid.Row="2" Width="131" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenModFolderButton_OnClick"/>
-        <Button Content="Open Config Folder" Margin="604,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenConfigFolderButton_OnClick"/>
-        <Button Content="Open Logs Folder" Margin="453,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenLogsFolderButton_OnClick"/>
-        <ComboBox Margin="755,0,0,0" VerticalAlignment="Center" Width="295"/>
-        <Button Content="Save Preset" Margin="655,0,0,0" Width="95" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="Button_Click"/>
+        <Grid Grid.Row="2" Margin="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Padding="12"
+                    Background="{ui:ThemeResource SystemControlBackgroundBaseLowBrush}"
+                    VerticalAlignment="Center"
+                    Margin="0,0,16,0">
+                <TextBlock Text="{Binding StatusMessage}"
+                           TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
+                                    <Setter Property="Foreground" Value="#FFD13438" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Border>
+
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Right">
+                <ComboBox Width="220"
+                          Margin="0,0,8,0"
+                          ItemsSource="{Binding Presets}"
+                          SelectedItem="{Binding SelectedPreset, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Button Content="Save Preset"
+                        Width="110"
+                        Margin="0,0,8,0"
+                        Background="#CCFFFFFF"
+                        BorderBrush="#7F000000"
+                        Click="SavePresetButton_OnClick" />
+                <Button Content="Open Logs Folder"
+                        Width="146"
+                        Margin="0,0,8,0"
+                        Background="#CCFFFFFF"
+                        BorderBrush="#7F000000"
+                        Click="OpenLogsFolderButton_OnClick" />
+                <Button Content="Open Config Folder"
+                        Width="146"
+                        Margin="0,0,8,0"
+                        Background="#CCFFFFFF"
+                        BorderBrush="#7F000000"
+                        Click="OpenConfigFolderButton_OnClick" />
+                <Button Content="Open Mod Folder"
+                        Width="131"
+                        Margin="0,0,8,0"
+                        Background="#CCFFFFFF"
+                        BorderBrush="#7F000000"
+                        Click="OpenModFolderButton_OnClick" />
+                <Button Content="Launch Vintage Story"
+                        Width="159"
+                        Background="#CCFFFFFF"
+                        BorderBrush="#7F000000"
+                        Click="LaunchGameButton_OnClick" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

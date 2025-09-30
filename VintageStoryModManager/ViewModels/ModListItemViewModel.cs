@@ -270,6 +270,24 @@ public sealed class ModListItemViewModel : ObservableObject
         }
     }
 
+    internal void SetActiveFromPreset(bool isActive)
+    {
+        if (_isActive == isActive)
+        {
+            return;
+        }
+
+        _suppressState = true;
+        try
+        {
+            SetProperty(ref _isActive, isActive, nameof(IsActive));
+        }
+        finally
+        {
+            _suppressState = false;
+        }
+    }
+
     private async Task ApplyActivationChangeAsync(bool previous, bool current)
     {
         ActivationResult result;
