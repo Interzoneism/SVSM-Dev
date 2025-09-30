@@ -66,6 +66,7 @@
                     <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 </Style>
             </DataGrid.Resources>
+            
             <DataGrid.RowHeaderStyle>
                 <Style/>
             </DataGrid.RowHeaderStyle>
@@ -287,7 +288,7 @@
         <ComboBox x:Name="PresetComboBox" Margin="755,0,0,0" VerticalAlignment="Center" Width="295"
                   DisplayMemberPath="Name"
                   SelectionChanged="PresetComboBox_OnSelectionChanged"/>
-        <Button x:Name="SavePresetButton" Content="Save Preset" Margin="655,0,0,0" Width="95" Background="#CCFFFFFF" BorderBrush="#7F000000"
+        <Button x:Name="SavePresetButton" Content="Save Preset" Margin="635,0,0,0" Width="115" Background="#CCFFFFFF" BorderBrush="#7F000000"
                 Click="SavePresetButton_OnClick"
                 MouseEnter="SavePresetButton_OnMouseEnter"
                 MouseLeave="SavePresetButton_OnMouseLeave"/>
