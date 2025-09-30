@@ -23,9 +23,12 @@
 
         <Menu IsMainMenu="True">
             <MenuItem Header="_File" Height="20">
-                <MenuItem Header="_Refresh Mods" Height="20" />
+                <MenuItem Header="_Refresh Mods" Height="20" Click="RefreshModsMenuItem_OnClick" />
                 <Separator />
-                <MenuItem Header="E_xit" Height="20"/>
+                <MenuItem Header="Set _Data Folder..." Height="20" Click="SelectDataFolderMenuItem_OnClick" />
+                <MenuItem Header="Set _Game Folder..." Height="20" Click="SelectGameFolderMenuItem_OnClick" />
+                <Separator />
+                <MenuItem Header="E_xit" Height="20" Click="ExitMenuItem_OnClick"/>
             </MenuItem>
             <MenuItem Header="_Help" Height="20">
                 <MenuItem Header="_About" Height="20" />
@@ -281,10 +284,10 @@
                 </TextBlock.Style>
             </TextBlock>
         </Border>
-        <Button Content="Launch Vintage Story" Margin="891,0,0,0" Grid.Row="2" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="Button_Click"/>
-        <Button Content="Open Mod Folder" Margin="755,0,0,0" Grid.Row="2" Width="131" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="Button_Click"/>
-        <Button Content="Open Config Folder" Margin="604,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="Button_Click"/>
-        <Button Content="Open Logs Folder" Margin="453,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="Button_Click"/>
+        <Button Content="Launch Vintage Story" Margin="891,0,0,0" Grid.Row="2" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="LaunchGameButton_OnClick"/>
+        <Button Content="Open Mod Folder" Margin="755,0,0,0" Grid.Row="2" Width="131" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenModFolderButton_OnClick"/>
+        <Button Content="Open Config Folder" Margin="604,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenConfigFolderButton_OnClick"/>
+        <Button Content="Open Logs Folder" Margin="453,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenLogsFolderButton_OnClick"/>
         <ComboBox Margin="755,0,0,0" VerticalAlignment="Center" Width="295"/>
         <Button Content="Save Preset" Margin="655,0,0,0" Width="95" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="Button_Click"/>
     </Grid>
