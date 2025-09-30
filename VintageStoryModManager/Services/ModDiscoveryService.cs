@@ -26,7 +26,16 @@ public sealed class ModDiscoveryService
         Path.AltDirectorySeparatorChar
     };
 
+    private static readonly string[] DefaultIconRelativePaths =
+    {
+        Path.Combine("assets", "game", "textures", "gui", "3rdpartymodicon.png"),
+        Path.Combine("game", "textures", "gui", "3rdpartymodicon.png")
+    };
+
     private readonly ClientSettingsStore _settingsStore;
+    private byte[]? _defaultIconBytes;
+    private string? _defaultIconDescription;
+    private bool _defaultIconResolved;
 
     public ModDiscoveryService(ClientSettingsStore settingsStore)
     {
@@ -455,6 +464,10 @@ public sealed class ModDiscoveryService
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(modInfoPath), DocumentOptions);
             var info = ParseModInfo(document.RootElement, directory.Name);
             byte[]? iconBytes = LoadIconFromDirectory(directory, info.IconPath, out string? iconDescription);
+            if (iconBytes == null)
+            {
+                iconBytes = LoadDefaultIcon(out iconDescription);
+            }
 
             return CreateEntry(info, directory.FullName, ModSourceKind.Folder, iconBytes, iconDescription);
         }
@@ -480,6 +493,10 @@ public sealed class ModDiscoveryService
             var info = ParseModInfo(document.RootElement, Path.GetFileNameWithoutExtension(archiveFile.Name));
 
             byte[]? iconBytes = LoadIconFromArchive(archive, info.IconPath, out string? iconDescription);
+            if (iconBytes == null)
+            {
+                iconBytes = LoadDefaultIcon(out iconDescription);
+            }
             return CreateEntry(info, archiveFile.FullName, ModSourceKind.ZipArchive, iconBytes, iconDescription);
         }
         catch (Exception ex)
@@ -703,6 +720,106 @@ public sealed class ModDiscoveryService
         iconStream.CopyTo(buffer);
         description = entry.FullName;
         return buffer.ToArray();
+    }
+
+    private byte[]? LoadDefaultIcon(out string? description)
+    {
+        if (_defaultIconResolved)
+        {
+            description = _defaultIconDescription;
+            return _defaultIconBytes;
+        }
+
+        _defaultIconResolved = true;
+
+        foreach (string candidate in EnumerateDefaultIconCandidates())
+        {
+            try
+            {
+                if (!File.Exists(candidate))
+                {
+                    continue;
+                }
+
+                _defaultIconBytes = File.ReadAllBytes(candidate);
+                _defaultIconDescription = candidate;
+                break;
+            }
+            catch (IOException)
+            {
+                // Ignore IO failures and continue with other candidates.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Ignore permission issues and continue with other candidates.
+            }
+            catch (NotSupportedException)
+            {
+                // Ignore invalid path formats and continue with other candidates.
+            }
+        }
+
+        description = _defaultIconDescription;
+        return _defaultIconBytes;
+    }
+
+    private IEnumerable<string> EnumerateDefaultIconCandidates()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string basePath in _settingsStore.SearchBaseCandidates)
+        {
+            if (string.IsNullOrWhiteSpace(basePath))
+            {
+                continue;
+            }
+
+            string? current;
+            try
+            {
+                current = Path.GetFullPath(basePath);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            for (int depth = 0; depth < 4 && !string.IsNullOrEmpty(current); depth++)
+            {
+                foreach (string relative in DefaultIconRelativePaths)
+                {
+                    string candidate;
+                    try
+                    {
+                        candidate = Path.Combine(current, relative);
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
+                    if (seen.Add(candidate))
+                    {
+                        yield return candidate;
+                    }
+                }
+
+                try
+                {
+                    DirectoryInfo? parent = Directory.GetParent(current);
+                    if (parent == null)
+                    {
+                        break;
+                    }
+
+                    current = parent.FullName;
+                }
+                catch (Exception)
+                {
+                    break;
+                }
+            }
+        }
     }
 
     private static string? ResolveSafePath(string baseDirectory, string? relative)
