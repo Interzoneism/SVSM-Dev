@@ -1,32 +1,42 @@
 using System;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using VintageStoryModManager.Services;
+using VintageStoryModManager.Models;
 using VintageStoryModManager.ViewModels;
 using WinForms = System.Windows.Forms;
 using WpfApplication = System.Windows.Application;
 using WpfButton = System.Windows.Controls.Button;
+using WpfHorizontalAlignment = System.Windows.HorizontalAlignment;
 using WpfMessageBox = System.Windows.MessageBox;
+using WpfOrientation = System.Windows.Controls.Orientation;
+using WpfTextBox = System.Windows.Controls.TextBox;
 
 namespace VintageStoryModManager.Views;
 
 public partial class MainWindow : Window
 {
     private readonly UserConfigurationService _userConfiguration;
+    private readonly ObservableCollection<ModPreset> _presets = new();
     private MainViewModel? _viewModel;
     private string? _dataDirectory;
     private string? _gameDirectory;
     private bool _isInitializing;
+    private bool _isApplyingPreset;
 
     public MainWindow()
     {
         InitializeComponent();
 
         _userConfiguration = new UserConfigurationService();
+        PresetComboBox.ItemsSource = _presets;
+        RefreshPresetList();
 
         if (!TryInitializePaths())
         {
@@ -58,6 +68,38 @@ public partial class MainWindow : Window
         if (_viewModel != null)
         {
             await InitializeViewModelAsync(_viewModel);
+        }
+    }
+
+    private void RefreshPresetList(string? presetToSelect = null)
+    {
+        string? desired = presetToSelect ?? (PresetComboBox.SelectedItem as ModPreset)?.Name;
+
+        _presets.Clear();
+        foreach (var preset in _userConfiguration.GetPresets())
+        {
+            _presets.Add(preset);
+        }
+
+        if (string.IsNullOrWhiteSpace(desired))
+        {
+            if (PresetComboBox.SelectedItem != null)
+            {
+                PresetComboBox.SelectedItem = null;
+            }
+
+            return;
+        }
+
+        var match = _presets.FirstOrDefault(preset =>
+            string.Equals(preset.Name, desired, StringComparison.OrdinalIgnoreCase));
+        if (match != null)
+        {
+            PresetComboBox.SelectedItem = match;
+        }
+        else if (PresetComboBox.SelectedItem != null)
+        {
+            PresetComboBox.SelectedItem = null;
         }
     }
 
@@ -495,8 +537,152 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Button_Click(object sender, RoutedEventArgs e)
+    private async void PresetComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        // Placeholder for Save Preset button until implemented.
+        if (_viewModel is null || _isApplyingPreset)
+        {
+            return;
+        }
+
+        if (PresetComboBox.SelectedItem is not ModPreset preset)
+        {
+            return;
+        }
+
+        _isApplyingPreset = true;
+        try
+        {
+            await _viewModel.ApplyPresetAsync(preset.Name, preset.DisabledEntries);
+        }
+        finally
+        {
+            _isApplyingPreset = false;
+        }
+    }
+
+    private void SavePresetButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        string? defaultName = (PresetComboBox.SelectedItem as ModPreset)?.Name;
+        string? presetName = PromptForPresetName(defaultName);
+        if (presetName is null)
+        {
+            return;
+        }
+
+        if (_userConfiguration.ContainsPreset(presetName))
+        {
+            MessageBoxResult overwrite = WpfMessageBox.Show(
+                $"A preset named \"{presetName}\" already exists. Replace it?",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (overwrite != MessageBoxResult.Yes)
+            {
+                return;
+            }
+        }
+
+        IReadOnlyList<string> disabledEntries = _viewModel.GetCurrentDisabledEntries();
+        _userConfiguration.SetPreset(presetName, disabledEntries);
+        RefreshPresetList(presetName);
+        _viewModel.ReportStatus($"Saved preset \"{presetName}\".");
+    }
+
+    private string? PromptForPresetName(string? defaultName)
+    {
+        var dialog = new Window
+        {
+            Title = "Save Mod Preset",
+            Owner = this,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            SizeToContent = SizeToContent.WidthAndHeight,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStyle = WindowStyle.ToolWindow,
+            ShowInTaskbar = false
+        };
+
+        var layout = new StackPanel
+        {
+            Margin = new Thickness(16),
+            MinWidth = 320
+        };
+
+        var textBlock = new TextBlock
+        {
+            Text = "Enter a name for the preset:",
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+
+        var textBox = new WpfTextBox
+        {
+            Text = defaultName ?? string.Empty,
+            Margin = new Thickness(0, 0, 0, 16)
+        };
+
+        var buttonsPanel = new StackPanel
+        {
+            Orientation = WpfOrientation.Horizontal,
+            HorizontalAlignment = WpfHorizontalAlignment.Right
+        };
+
+        var saveButton = new WpfButton
+        {
+            Content = "Save",
+            Width = 88,
+            Margin = new Thickness(0, 0, 8, 0),
+            IsDefault = true
+        };
+
+        var cancelButton = new WpfButton
+        {
+            Content = "Cancel",
+            Width = 88,
+            IsCancel = true
+        };
+
+        buttonsPanel.Children.Add(saveButton);
+        buttonsPanel.Children.Add(cancelButton);
+
+        layout.Children.Add(textBlock);
+        layout.Children.Add(textBox);
+        layout.Children.Add(buttonsPanel);
+
+        dialog.Content = layout;
+
+        saveButton.IsEnabled = !string.IsNullOrWhiteSpace(textBox.Text);
+        textBox.TextChanged += (_, _) => saveButton.IsEnabled = !string.IsNullOrWhiteSpace(textBox.Text);
+
+        dialog.Loaded += (_, _) =>
+        {
+            textBox.Focus();
+            textBox.SelectAll();
+        };
+
+        saveButton.Click += (_, _) =>
+        {
+            dialog.DialogResult = true;
+            dialog.Close();
+        };
+
+        cancelButton.Click += (_, _) =>
+        {
+            dialog.DialogResult = false;
+            dialog.Close();
+        };
+
+        bool? result = dialog.ShowDialog();
+        if (result == true)
+        {
+            string trimmed = textBox.Text.Trim();
+            return trimmed.Length == 0 ? null : trimmed;
+        }
+
+        return null;
     }
 }

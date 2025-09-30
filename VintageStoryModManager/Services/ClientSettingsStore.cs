@@ -59,6 +59,11 @@ public sealed class ClientSettingsStore
 
     public ReadOnlyCollection<string> DisabledEntries => _disabledMods.AsReadOnly();
 
+    public IReadOnlyList<string> GetDisabledEntriesSnapshot()
+    {
+        return _disabledMods.ToArray();
+    }
+
     public ReadOnlyCollection<string> ModPaths => _modPaths.AsReadOnly();
 
     /// <summary>
@@ -125,6 +130,59 @@ public sealed class ClientSettingsStore
         {
             error = null;
             return true;
+        }
+
+        try
+        {
+            Persist();
+            error = null;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+    }
+
+    public bool TryApplyDisabledEntries(IEnumerable<string> entries, out string? error)
+    {
+        var sanitized = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (entries != null)
+        {
+            foreach (string entry in entries)
+            {
+                if (string.IsNullOrWhiteSpace(entry))
+                {
+                    continue;
+                }
+
+                string trimmed = entry.Trim();
+                if (seen.Add(trimmed))
+                {
+                    sanitized.Add(trimmed);
+                }
+            }
+        }
+
+        bool changed = sanitized.Count != _disabledMods.Count
+            || !sanitized.SequenceEqual(_disabledMods, StringComparer.OrdinalIgnoreCase);
+
+        if (!changed)
+        {
+            error = null;
+            return true;
+        }
+
+        _disabledMods.Clear();
+        _disabledLookup.Clear();
+
+        foreach (string value in sanitized)
+        {
+            _disabledMods.Add(value);
+            _disabledLookup.Add(value);
         }
 
         try

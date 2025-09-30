@@ -129,6 +129,50 @@ public sealed class MainViewModel : ObservableObject
 
     public Task InitializeAsync() => LoadModsAsync();
 
+    public IReadOnlyList<string> GetCurrentDisabledEntries()
+    {
+        return _settingsStore.GetDisabledEntriesSnapshot();
+    }
+
+    public async Task<bool> ApplyPresetAsync(string presetName, IReadOnlyList<string> disabledEntries)
+    {
+        string? localError = null;
+        IReadOnlyList<string> entries = disabledEntries ?? Array.Empty<string>();
+
+        bool success = await Task.Run(() =>
+        {
+            bool result = _settingsStore.TryApplyDisabledEntries(entries, out var error);
+            localError = error;
+            return result;
+        });
+
+        if (!success)
+        {
+            string message = string.IsNullOrWhiteSpace(localError)
+                ? $"Failed to apply preset \"{presetName}\"."
+                : localError!;
+            SetStatus(message, true);
+            return false;
+        }
+
+        foreach (var mod in _mods)
+        {
+            bool isDisabled = _settingsStore.IsDisabled(mod.ModId, mod.Version);
+            mod.SetIsActiveSilently(!isDisabled);
+        }
+
+        UpdateActiveCount();
+        SelectedSortOption?.Apply(ModsView);
+        ModsView.Refresh();
+        SetStatus($"Applied preset \"{presetName}\".", false);
+        return true;
+    }
+
+    public void ReportStatus(string message, bool isError = false)
+    {
+        SetStatus(message, isError);
+    }
+
     internal async Task<ActivationResult> ApplyActivationChangeAsync(ModListItemViewModel mod, bool isActive)
     {
         ArgumentNullException.ThrowIfNull(mod);
