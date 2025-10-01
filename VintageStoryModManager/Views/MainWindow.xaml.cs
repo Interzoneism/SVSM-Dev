@@ -30,6 +30,7 @@ public partial class MainWindow : Window
     private bool _isInitializing;
     private bool _isApplyingPreset;
     private bool _isHoveringSavePresetButton;
+    private string? _pendingPresetReselection;
 
     public MainWindow()
     {
@@ -37,6 +38,9 @@ public partial class MainWindow : Window
 
         _userConfiguration = new UserConfigurationService();
         PresetComboBox.ItemsSource = _presets;
+        PresetComboBox.AddHandler(ComboBoxItem.PreviewMouseDownEvent,
+            new MouseButtonEventHandler(PresetComboBox_OnItemPreviewMouseDown));
+        PresetComboBox.DropDownClosed += PresetComboBox_OnDropDownClosed;
         RefreshPresetList();
 
         if (!TryInitializePaths())
@@ -545,12 +549,75 @@ public partial class MainWindow : Window
     {
         UpdateSavePresetButtonContent();
 
-        if (_viewModel is null || _isApplyingPreset)
+        if (PresetComboBox.SelectedItem is not ModPreset preset)
+        {
+            _pendingPresetReselection = null;
+            return;
+        }
+
+        _pendingPresetReselection = null;
+
+        await ApplyPresetAsync(preset);
+    }
+
+    private async void PresetComboBox_OnDropDownClosed(object? sender, EventArgs e)
+    {
+        if (_pendingPresetReselection is null)
         {
             return;
         }
 
         if (PresetComboBox.SelectedItem is not ModPreset preset)
+        {
+            _pendingPresetReselection = null;
+            return;
+        }
+
+        if (!string.Equals(preset.Name, _pendingPresetReselection, StringComparison.OrdinalIgnoreCase))
+        {
+            _pendingPresetReselection = null;
+            return;
+        }
+
+        _pendingPresetReselection = null;
+
+        await ApplyPresetAsync(preset);
+    }
+
+    private void PresetComboBox_OnItemPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.ComboBox comboBox)
+        {
+            return;
+        }
+
+        if (comboBox.SelectedItem is not ModPreset selected)
+        {
+            _pendingPresetReselection = null;
+            return;
+        }
+
+        if (e.OriginalSource is not DependencyObject source)
+        {
+            _pendingPresetReselection = null;
+            return;
+        }
+
+        var container = ItemsControl.ContainerFromElement(comboBox, source) as ComboBoxItem;
+        if (container?.DataContext is ModPreset preset &&
+            string.Equals(preset.Name, selected.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            _pendingPresetReselection = preset.Name;
+        }
+        else
+        {
+            _pendingPresetReselection = null;
+        }
+    }
+
+    private async Task ApplyPresetAsync(ModPreset preset)
+    {
+        if (_viewModel is null || _isApplyingPreset)
         {
             return;
         }
