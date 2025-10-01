@@ -14,14 +14,14 @@
         PreviewKeyUp="Window_OnPreviewKeyUp">
 
     <Grid>
-        
+
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" MinHeight="40" />
+            <RowDefinition Height="Auto" MinHeight="55" />
             <RowDefinition />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Menu IsMainMenu="True">
+        <Menu IsMainMenu="True" Margin="0,6,0,9">
             <MenuItem Header="_File" Height="30">
                 <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" />
                 <Separator />
@@ -34,7 +34,7 @@
                 <MenuItem Header="_About" Height="30" />
             </MenuItem>
         </Menu>
-        
+
         <DataGrid Grid.Row="1"
                   Margin="16,0,16,0"
                   ItemsSource="{Binding ModsView}"
@@ -48,8 +48,8 @@
                   SelectionMode="Single"
                   RowHeaderWidth="0"
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
-                  SelectionChanged="ModsDataGrid_OnSelectionChanged" BorderThickness="2,2,2,2" Foreground="Black"
-                  PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel">
+                  SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="Black"
+                  PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel" BorderThickness="0,1,0,0">
             <DataGrid.Resources>
                 <Style TargetType="TextBlock">
                     <Setter Property="TextWrapping" Value="Wrap" />
@@ -61,6 +61,9 @@
                     <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 </Style>
             </DataGrid.Resources>
+            <DataGrid.BorderBrush>
+                <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ActiveBorderColorKey}}"/>
+            </DataGrid.BorderBrush>
             <DataGrid.RowHeaderStyle>
                 <Style/>
             </DataGrid.RowHeaderStyle>
@@ -316,17 +319,17 @@
                 </TextBlock.Style>
             </TextBlock>
         </Border>
-        <Button Content="Launch Vintage Story" Margin="891,0,0,0" Grid.Row="2" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="LaunchGameButton_OnClick"/>
-        <Button Content="Open Mod Folder" Margin="755,0,0,0" Grid.Row="2" Width="131" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenModFolderButton_OnClick"/>
-        <Button Content="Open Config Folder" Margin="604,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenConfigFolderButton_OnClick"/>
-        <Button Content="Open Logs Folder" Margin="453,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenLogsFolderButton_OnClick"/>
+        <Button Content="Launch Vintage Story" Margin="891,0,0,0" Grid.Row="2" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="LaunchGameButton_OnClick" Height="32"/>
+        <Button Content="Open Mod Folder" Margin="755,0,0,0" Grid.Row="2" Width="131" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenModFolderButton_OnClick" Height="32"/>
+        <Button Content="Open Config Folder" Margin="604,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenConfigFolderButton_OnClick" Height="32"/>
+        <Button Content="Open Logs Folder" Margin="453,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenLogsFolderButton_OnClick" Height="32"/>
         <ComboBox x:Name="PresetComboBox" Margin="755,0,0,0" VerticalAlignment="Center" Width="295"
                   DisplayMemberPath="Name"
                   SelectionChanged="PresetComboBox_OnSelectionChanged"
-                  DropDownClosed="PresetComboBox_OnDropDownClosed"/>
+                  DropDownClosed="PresetComboBox_OnDropDownClosed" Height="32"/>
         <Button x:Name="SavePresetButton" Content="Save Preset" Margin="635,0,0,0" Width="115" Background="#CCFFFFFF" BorderBrush="#7F000000"
                 Click="SavePresetButton_OnClick"
                 MouseEnter="SavePresetButton_OnMouseEnter"
-                MouseLeave="SavePresetButton_OnMouseLeave"/>
+                MouseLeave="SavePresetButton_OnMouseLeave" Height="30"/>
     </Grid>
 </Window>
