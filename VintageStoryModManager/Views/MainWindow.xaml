@@ -122,7 +122,7 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTemplateColumn Header="Active" SortMemberPath="IsActive" Width="90" MinWidth="85">
+                <DataGridTemplateColumn x:Name="ActiveColumn" Header="Active" SortMemberPath="IsActive" Width="90" MinWidth="85">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Grid HorizontalAlignment="Center">

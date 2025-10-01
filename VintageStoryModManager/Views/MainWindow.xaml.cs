@@ -998,11 +998,21 @@ public partial class MainWindow : Window
         }
     }
 
-    private static bool ShouldIgnoreRowSelection(DependencyObject? source)
+    private bool ShouldIgnoreRowSelection(DependencyObject? source)
     {
         while (source != null)
         {
-            if (source is System.Windows.Controls.Primitives.ButtonBase or ToggleButton)
+            if (source is System.Windows.Controls.Primitives.ButtonBase or ToggleButton || source is ToggleSwitch)
+            {
+                return true;
+            }
+
+            if (source is FrameworkElement { TemplatedParent: ToggleSwitch })
+            {
+                return true;
+            }
+
+            if (source is DataGridCell cell && ReferenceEquals(cell.Column, ActiveColumn))
             {
                 return true;
             }
