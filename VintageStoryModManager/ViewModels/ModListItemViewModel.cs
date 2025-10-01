@@ -65,7 +65,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _databaseRequiredGameVersions = databaseInfo?.RequiredGameVersions ?? Array.Empty<string>();
         ModDatabaseAssetId = databaseInfo?.AssetId;
         ModDatabasePageUrl = databaseInfo?.ModPageUrl;
-        LatestDatabaseVersion = databaseInfo?.LatestCompatibleVersion;
+        LatestDatabaseVersion = databaseInfo?.LatestVersion ?? databaseInfo?.LatestCompatibleVersion;
         _loadError = entry.LoadError;
 
         WebsiteUri = TryCreateHttpUri(Website);
