@@ -161,6 +161,7 @@
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="FontFamily" Value="Segoe UI" />
+                            <Setter Property="FontWeight" Value="Bold" />
                             <Setter Property="ToolTipService.ShowDuration" Value="60000" />
                             <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
                             <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -191,9 +192,8 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Button Padding="4"
-                                    BorderThickness="2"
-                                    BorderBrush="#FFB9D1EA"
-                                    Background="AliceBlue"
+                                    Background="#CCFFFFFF" 
+                                    BorderBrush="#7F000000"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     ToolTip="{Binding ModDatabasePageUrlDisplay}"
@@ -231,9 +231,8 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Button Padding="4"
-                                    BorderThickness="2"
-                                    BorderBrush="#FFB9D1EA"
-                                    Background="AliceBlue"
+                                    Background="#CCFFFFFF" 
+                                    BorderBrush="#7F000000"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     Content="Edit Config"
