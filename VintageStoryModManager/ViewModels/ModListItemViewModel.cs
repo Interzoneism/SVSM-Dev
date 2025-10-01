@@ -38,6 +38,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private bool _hasActivationError;
     private string _statusText = string.Empty;
     private string _statusDetails = string.Empty;
+    private bool _isSelected;
 
     public ModListItemViewModel(
         ModEntry entry,
@@ -268,6 +269,12 @@ public sealed class ModListItemViewModel : ObservableObject
 
             _ = ApplyActivationChangeAsync(previous, value);
         }
+    }
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set => SetProperty(ref _isSelected, value);
     }
 
     public void SetIsActiveSilently(bool isActive)

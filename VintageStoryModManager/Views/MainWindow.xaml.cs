@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -7,6 +10,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
+using System.Windows.Data;
+using ModernWpf.Controls;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.ViewModels;
@@ -31,6 +38,10 @@ public partial class MainWindow : Window
     private bool _isApplyingPreset;
     private bool _isHoveringSavePresetButton;
     private string? _pendingPresetReselection;
+    private readonly List<ModListItemViewModel> _selectedMods = new();
+    private ModListItemViewModel? _selectionAnchor;
+    private INotifyCollectionChanged? _modsCollection;
+    private bool _isApplyingMultiToggle;
 
     public MainWindow()
     {
@@ -120,6 +131,7 @@ public partial class MainWindow : Window
 
         _viewModel = new MainViewModel(_dataDirectory);
         DataContext = _viewModel;
+        AttachToModsView(_viewModel.ModsView);
     }
 
     private async Task InitializeViewModelAsync(MainViewModel viewModel)
@@ -214,6 +226,7 @@ public partial class MainWindow : Window
             var viewModel = new MainViewModel(_dataDirectory);
             _viewModel = viewModel;
             DataContext = viewModel;
+            AttachToModsView(viewModel.ModsView);
             await InitializeViewModelAsync(viewModel);
         }
         catch (Exception ex)
@@ -379,6 +392,23 @@ public partial class MainWindow : Window
             dataGrid.UnselectAll();
             dataGrid.UnselectAllCells();
         }
+    }
+
+    private void ModsDataGridRow_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (ShouldIgnoreRowSelection(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        if (sender is not DataGridRow row || row.DataContext is not ModListItemViewModel mod)
+        {
+            return;
+        }
+
+        row.Focus();
+        HandleModRowSelection(mod);
+        e.Handled = true;
     }
 
     private void ModDatabasePageButton_OnClick(object sender, RoutedEventArgs e)
@@ -727,6 +757,202 @@ public partial class MainWindow : Window
         }
 
         SavePresetButton.Content = IsDeletePresetMode() ? "Delete Preset" : "Save Preset";
+    }
+
+    private void AttachToModsView(ICollectionView modsView)
+    {
+        if (_modsCollection != null)
+        {
+            _modsCollection.CollectionChanged -= ModsView_OnCollectionChanged;
+            _modsCollection = null;
+        }
+
+        if (modsView is INotifyCollectionChanged notify)
+        {
+            _modsCollection = notify;
+            notify.CollectionChanged += ModsView_OnCollectionChanged;
+        }
+
+        ClearSelection(resetAnchor: true);
+    }
+
+    private void ModsView_OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        Dispatcher.Invoke(() => ClearSelection(resetAnchor: true));
+    }
+
+    private void HandleModRowSelection(ModListItemViewModel mod)
+    {
+        bool isShiftPressed = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
+        bool isCtrlPressed = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
+
+        if (isShiftPressed && _selectionAnchor is { } anchor)
+        {
+            ApplyRangeSelection(anchor, mod, isCtrlPressed);
+            _selectionAnchor = mod;
+            return;
+        }
+
+        if (isCtrlPressed)
+        {
+            if (_selectedMods.Contains(mod))
+            {
+                RemoveFromSelection(mod);
+                _selectionAnchor = mod;
+            }
+            else
+            {
+                AddToSelection(mod);
+                _selectionAnchor = mod;
+            }
+
+            return;
+        }
+
+        ClearSelection();
+        AddToSelection(mod);
+        _selectionAnchor = mod;
+    }
+
+    private void ApplyRangeSelection(ModListItemViewModel start, ModListItemViewModel end, bool preserveExisting)
+    {
+        List<ModListItemViewModel> mods = GetModsInViewOrder();
+        int startIndex = mods.IndexOf(start);
+        int endIndex = mods.IndexOf(end);
+
+        if (startIndex < 0 || endIndex < 0)
+        {
+            if (!preserveExisting)
+            {
+                ClearSelection();
+            }
+
+            AddToSelection(end);
+            return;
+        }
+
+        if (!preserveExisting)
+        {
+            ClearSelection();
+        }
+
+        if (startIndex > endIndex)
+        {
+            (startIndex, endIndex) = (endIndex, startIndex);
+        }
+
+        for (int i = startIndex; i <= endIndex; i++)
+        {
+            AddToSelection(mods[i]);
+        }
+    }
+
+    private List<ModListItemViewModel> GetModsInViewOrder()
+    {
+        if (_viewModel?.ModsView == null)
+        {
+            return new List<ModListItemViewModel>();
+        }
+
+        return _viewModel.ModsView.Cast<ModListItemViewModel>().ToList();
+    }
+
+    private void AddToSelection(ModListItemViewModel mod)
+    {
+        if (_selectedMods.Contains(mod))
+        {
+            return;
+        }
+
+        _selectedMods.Add(mod);
+        mod.IsSelected = true;
+    }
+
+    private void RemoveFromSelection(ModListItemViewModel mod)
+    {
+        if (!_selectedMods.Remove(mod))
+        {
+            return;
+        }
+
+        mod.IsSelected = false;
+    }
+
+    private void ClearSelection(bool resetAnchor = false)
+    {
+        if (_selectedMods.Count > 0)
+        {
+            foreach (var mod in _selectedMods)
+            {
+                mod.IsSelected = false;
+            }
+
+            _selectedMods.Clear();
+        }
+
+        if (resetAnchor)
+        {
+            _selectionAnchor = null;
+        }
+    }
+
+    private static bool ShouldIgnoreRowSelection(DependencyObject? source)
+    {
+        while (source != null)
+        {
+            if (source is System.Windows.Controls.Primitives.ButtonBase or ToggleButton)
+            {
+                return true;
+            }
+
+            source = VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
+    }
+
+    private void ActiveToggle_OnToggled(object sender, RoutedEventArgs e)
+    {
+        if (_isApplyingMultiToggle)
+        {
+            return;
+        }
+
+        if (sender is not ToggleSwitch { DataContext: ModListItemViewModel mod })
+        {
+            return;
+        }
+
+        if (!_selectedMods.Contains(mod) || _selectedMods.Count <= 1)
+        {
+            return;
+        }
+
+        bool desiredState = mod.IsActive;
+
+        try
+        {
+            _isApplyingMultiToggle = true;
+
+            foreach (var selected in _selectedMods)
+            {
+                if (ReferenceEquals(selected, mod))
+                {
+                    continue;
+                }
+
+                if (!selected.CanToggle || selected.IsActive == desiredState)
+                {
+                    continue;
+                }
+
+                selected.IsActive = desiredState;
+            }
+        }
+        finally
+        {
+            _isApplyingMultiToggle = false;
+        }
     }
 
     private string? PromptForPresetName(string? defaultName)
