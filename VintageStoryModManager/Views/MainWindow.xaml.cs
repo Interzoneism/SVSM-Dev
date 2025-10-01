@@ -10,10 +10,14 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+
+using System.Windows.Threading;
+
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Data;
 using ModernWpf.Controls;
+
 using VintageStoryModManager.Services;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.ViewModels;
@@ -38,10 +42,15 @@ public partial class MainWindow : Window
     private bool _isApplyingPreset;
     private bool _isHoveringSavePresetButton;
     private string? _pendingPresetReselection;
+
+    private DispatcherTimer? _modsWatcherTimer;
+    private bool _isAutomaticRefreshRunning;
+
     private readonly List<ModListItemViewModel> _selectedMods = new();
     private ModListItemViewModel? _selectionAnchor;
     private INotifyCollectionChanged? _modsCollection;
     private bool _isApplyingMultiToggle;
+
 
     public MainWindow()
     {
@@ -142,9 +151,11 @@ public partial class MainWindow : Window
         }
 
         _isInitializing = true;
+        bool initialized = false;
         try
         {
             await viewModel.InitializeAsync();
+            initialized = true;
         }
         catch (Exception ex)
         {
@@ -156,6 +167,77 @@ public partial class MainWindow : Window
         finally
         {
             _isInitializing = false;
+        }
+
+        if (initialized)
+        {
+            StartModsWatcher();
+        }
+    }
+
+    private void StartModsWatcher()
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        StopModsWatcher();
+
+        _modsWatcherTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        _modsWatcherTimer.Tick += ModsWatcherTimerOnTick;
+        _modsWatcherTimer.Start();
+    }
+
+    private void StopModsWatcher()
+    {
+        if (_modsWatcherTimer is null)
+        {
+            return;
+        }
+
+        _modsWatcherTimer.Stop();
+        _modsWatcherTimer.Tick -= ModsWatcherTimerOnTick;
+        _modsWatcherTimer = null;
+        _isAutomaticRefreshRunning = false;
+    }
+
+    private async void ModsWatcherTimerOnTick(object? sender, EventArgs e)
+    {
+        if (_viewModel is null || _viewModel.IsBusy || _isInitializing || _isAutomaticRefreshRunning)
+        {
+            return;
+        }
+
+        bool hasChanges = await _viewModel.CheckForModStateChangesAsync();
+        if (!hasChanges)
+        {
+            return;
+        }
+
+        if (_viewModel.RefreshCommand == null)
+        {
+            return;
+        }
+
+        _isAutomaticRefreshRunning = true;
+        try
+        {
+            await _viewModel.RefreshCommand.ExecuteAsync(null);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show($"Failed to refresh mods automatically:\n{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            _isAutomaticRefreshRunning = false;
         }
     }
 
@@ -220,6 +302,8 @@ public partial class MainWindow : Window
         {
             return;
         }
+
+        StopModsWatcher();
 
         try
         {
@@ -1045,5 +1129,11 @@ public partial class MainWindow : Window
         }
 
         return null;
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        StopModsWatcher();
+        base.OnClosed(e);
     }
 }
