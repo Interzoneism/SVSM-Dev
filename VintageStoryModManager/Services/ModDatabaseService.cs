@@ -68,7 +68,8 @@ public sealed class ModDatabaseService
             var tags = GetStringList(modElement, "tags");
             string? assetId = TryGetAssetId(modElement);
             string? modPageUrl = assetId == null ? null : ModPageBaseUrl + assetId;
-            string? latestVersion = FindCompatibleReleaseVersion(modElement, normalizedGameVersion);
+            string? latestVersion = FindLatestReleaseVersion(modElement);
+            string? latestCompatibleVersion = FindCompatibleReleaseVersion(modElement, normalizedGameVersion);
             IReadOnlyList<string> requiredVersions = FindRequiredGameVersions(modElement, modVersion);
 
             return new ModDatabaseInfo
@@ -76,7 +77,8 @@ public sealed class ModDatabaseService
                 Tags = tags,
                 AssetId = assetId,
                 ModPageUrl = modPageUrl,
-                LatestCompatibleVersion = latestVersion,
+                LatestCompatibleVersion = latestCompatibleVersion,
+                LatestVersion = latestVersion,
                 RequiredGameVersions = requiredVersions
             };
         }
@@ -127,6 +129,30 @@ public sealed class ModDatabaseService
             JsonValueKind.String => string.IsNullOrWhiteSpace(assetIdElement.GetString()) ? null : assetIdElement.GetString(),
             _ => null
         };
+    }
+
+    private static string? FindLatestReleaseVersion(JsonElement modElement)
+    {
+        if (!modElement.TryGetProperty("releases", out JsonElement releasesElement) || releasesElement.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        foreach (JsonElement release in releasesElement.EnumerateArray())
+        {
+            if (release.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            string? version = ExtractReleaseVersion(release);
+            if (!string.IsNullOrWhiteSpace(version))
+            {
+                return version;
+            }
+        }
+
+        return null;
     }
 
     private static string? FindCompatibleReleaseVersion(JsonElement modElement, string? normalizedGameVersion)
