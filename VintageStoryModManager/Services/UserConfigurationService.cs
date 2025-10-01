@@ -16,6 +16,7 @@ public sealed class UserConfigurationService
     private const string ConfigurationFileName = "settings.json";
     private readonly string _configurationPath;
     private readonly Dictionary<string, string[]> _presets = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
 
     public UserConfigurationService()
     {
@@ -26,6 +27,47 @@ public sealed class UserConfigurationService
     public string? DataDirectory { get; private set; }
 
     public string? GameDirectory { get; private set; }
+
+    public bool TryGetModConfigPath(string? modId, out string? path)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            path = null;
+            return false;
+        }
+
+        return _modConfigPaths.TryGetValue(modId.Trim(), out path);
+    }
+
+    public void SetModConfigPath(string modId, string path)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            throw new ArgumentException("Mod ID cannot be empty.", nameof(modId));
+        }
+
+        string? normalized = NormalizePath(path);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            throw new ArgumentException("The configuration path is invalid.", nameof(path));
+        }
+
+        _modConfigPaths[modId.Trim()] = normalized;
+        Save();
+    }
+
+    public void RemoveModConfigPath(string? modId)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            return;
+        }
+
+        if (_modConfigPaths.Remove(modId.Trim()))
+        {
+            Save();
+        }
+    }
 
     public IReadOnlyList<ModPreset> GetPresets()
     {
@@ -129,6 +171,7 @@ public sealed class UserConfigurationService
     private void Load()
     {
         _presets.Clear();
+        _modConfigPaths.Clear();
         try
         {
             if (!File.Exists(_configurationPath))
@@ -146,12 +189,14 @@ public sealed class UserConfigurationService
             DataDirectory = NormalizePath(obj["dataDirectory"]?.GetValue<string?>());
             GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
             LoadPresets(obj["modPresets"]);
+            LoadModConfigPaths(obj["modConfigPaths"]);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
             DataDirectory = null;
             GameDirectory = null;
             _presets.Clear();
+            _modConfigPaths.Clear();
         }
     }
 
@@ -166,7 +211,8 @@ public sealed class UserConfigurationService
             {
                 ["dataDirectory"] = DataDirectory,
                 ["gameDirectory"] = GameDirectory,
-                ["modPresets"] = BuildPresetsJson()
+                ["modPresets"] = BuildPresetsJson(),
+                ["modConfigPaths"] = BuildModConfigPathsJson()
             };
 
             var options = new JsonSerializerOptions
@@ -252,6 +298,46 @@ public sealed class UserConfigurationService
             }
 
             _presets[name.Trim()] = values.Count == 0 ? Array.Empty<string>() : values.ToArray();
+        }
+    }
+
+    private JsonObject BuildModConfigPathsJson()
+    {
+        var result = new JsonObject();
+
+        foreach (var pair in _modConfigPaths.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            result[pair.Key] = pair.Value;
+        }
+
+        return result;
+    }
+
+    private void LoadModConfigPaths(JsonNode? node)
+    {
+        _modConfigPaths.Clear();
+
+        if (node is not JsonObject obj)
+        {
+            return;
+        }
+
+        foreach (var pair in obj)
+        {
+            string modId = pair.Key;
+            if (string.IsNullOrWhiteSpace(modId))
+            {
+                continue;
+            }
+
+            string? path = pair.Value?.GetValue<string?>();
+            string? normalized = NormalizePath(path);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                continue;
+            }
+
+            _modConfigPaths[modId.Trim()] = normalized;
         }
     }
 
