@@ -227,6 +227,20 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Config" Width="100" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Padding="4"
+                                    BorderThickness="2"
+                                    BorderBrush="#FFB9D1EA"
+                                    Background="AliceBlue"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Content="Edit Config"
+                                    Click="EditConfigButton_OnClick" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="110" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">

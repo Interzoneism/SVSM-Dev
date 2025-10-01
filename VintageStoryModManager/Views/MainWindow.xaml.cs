@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -377,6 +378,77 @@ public partial class MainWindow : Window
         }
     }
 
+    private string? PromptForConfigFile(ModListItemViewModel mod, string? previousPath)
+    {
+        string? initialDirectory = GetInitialConfigDirectory(previousPath);
+
+        using var dialog = new WinForms.OpenFileDialog
+        {
+            Title = $"Select config file for {mod.DisplayName}",
+            Filter = "Config files (*.json)|*.json|All files (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = false,
+            RestoreDirectory = true
+        };
+
+        if (!string.IsNullOrWhiteSpace(initialDirectory) && Directory.Exists(initialDirectory))
+        {
+            dialog.InitialDirectory = initialDirectory;
+        }
+
+        if (!string.IsNullOrWhiteSpace(previousPath))
+        {
+            dialog.FileName = Path.GetFileName(previousPath);
+        }
+
+        WinForms.DialogResult result = dialog.ShowDialog();
+        if (result != WinForms.DialogResult.OK)
+        {
+            return null;
+        }
+
+        try
+        {
+            return Path.GetFullPath(dialog.FileName);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            throw new ArgumentException("The selected configuration file path is invalid.", nameof(previousPath), ex);
+        }
+    }
+
+    private string? GetInitialConfigDirectory(string? previousPath)
+    {
+        if (!string.IsNullOrWhiteSpace(previousPath))
+        {
+            try
+            {
+                string? directory = Path.GetDirectoryName(previousPath);
+                if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
+                {
+                    return directory;
+                }
+            }
+            catch (Exception)
+            {
+                // Ignore invalid stored paths and fall back to the default directory.
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(_dataDirectory))
+        {
+            string configDirectory = Path.Combine(_dataDirectory, "ModConfig");
+            if (Directory.Exists(configDirectory))
+            {
+                return configDirectory;
+            }
+
+            return _dataDirectory;
+        }
+
+        return null;
+    }
+
     private static bool TryValidateDataDirectory(string? path, out string? normalizedPath, out string? errorMessage)
     {
         normalizedPath = null;
@@ -505,6 +577,82 @@ public partial class MainWindow : Window
         }
 
         e.Handled = true;
+    }
+
+    private void EditConfigButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfButton { DataContext: ModListItemViewModel mod })
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        if (string.IsNullOrWhiteSpace(mod.ModId))
+        {
+            return;
+        }
+
+        string? configPath = null;
+        string? storedPath = null;
+
+        try
+        {
+            if (_userConfiguration.TryGetModConfigPath(mod.ModId, out string? existing) && !string.IsNullOrWhiteSpace(existing))
+            {
+                storedPath = existing;
+                if (File.Exists(existing))
+                {
+                    configPath = existing;
+                }
+                else
+                {
+                    _userConfiguration.RemoveModConfigPath(mod.ModId);
+                }
+            }
+
+            if (configPath is null)
+            {
+                configPath = PromptForConfigFile(mod, storedPath);
+                if (configPath is null)
+                {
+                    return;
+                }
+
+                _userConfiguration.SetModConfigPath(mod.ModId, configPath);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            WpfMessageBox.Show($"Failed to store the configuration path:\n{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        try
+        {
+            var editorViewModel = new ModConfigEditorViewModel(mod.DisplayName, configPath);
+            var editorWindow = new ModConfigEditorWindow(editorViewModel)
+            {
+                Owner = this
+            };
+
+            bool? result = editorWindow.ShowDialog();
+            if (result == true)
+            {
+                _viewModel?.ReportStatus($"Saved config for {mod.DisplayName}.");
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            WpfMessageBox.Show($"Failed to open the configuration file:\n{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            _userConfiguration.RemoveModConfigPath(mod.ModId);
+        }
     }
 
     private async void RefreshModsMenuItem_OnClick(object sender, RoutedEventArgs e)
