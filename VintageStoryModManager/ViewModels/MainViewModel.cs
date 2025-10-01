@@ -22,7 +22,9 @@ public sealed class MainViewModel : ObservableObject
     private readonly ClientSettingsStore _settingsStore;
     private readonly ModDiscoveryService _discoveryService;
     private readonly ModDatabaseService _databaseService;
+    private readonly ModCategoryConfigurationService _categoryConfigurationService;
     private readonly ObservableCollection<SortOption> _sortOptions;
+    private readonly ObservableCollection<ModCategoryDefinition> _categories = new();
     private readonly string? _installedGameVersion;
     private readonly object _modsStateLock = new();
 
@@ -43,11 +45,13 @@ public sealed class MainViewModel : ObservableObject
         _settingsStore = new ClientSettingsStore(DataDirectory);
         _discoveryService = new ModDiscoveryService(_settingsStore);
         _databaseService = new ModDatabaseService();
+        _categoryConfigurationService = new ModCategoryConfigurationService();
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion();
 
         ModsView = CollectionViewSource.GetDefaultView(_mods);
         _sortOptions = new ObservableCollection<SortOption>(CreateSortOptions());
         SortOptions = new ReadOnlyObservableCollection<SortOption>(_sortOptions);
+        Categories = new ReadOnlyObservableCollection<ModCategoryDefinition>(_categories);
         SelectedSortOption = SortOptions.FirstOrDefault();
         SelectedSortOption?.Apply(ModsView);
 
@@ -60,6 +64,8 @@ public sealed class MainViewModel : ObservableObject
     public ICollectionView ModsView { get; }
 
     public ReadOnlyObservableCollection<SortOption> SortOptions { get; }
+
+    public ReadOnlyObservableCollection<ModCategoryDefinition> Categories { get; }
 
     public SortOption? SelectedSortOption
     {
@@ -213,6 +219,8 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
+            ReloadCategories();
+
             var entries = await Task.Run(_discoveryService.LoadMods);
             await _databaseService.PopulateModDatabaseInfoAsync(entries, _installedGameVersion);
             var viewModels = entries
@@ -306,6 +314,20 @@ public sealed class MainViewModel : ObservableObject
     private void UpdateActiveCount()
     {
         ActiveMods = _mods.Count(item => item.IsActive);
+    }
+
+    private void ReloadCategories()
+    {
+        IReadOnlyList<ModCategoryDefinition> definitions = _categoryConfigurationService.LoadCategories(DataDirectory);
+
+        _categories.Clear();
+        foreach (ModCategoryDefinition category in definitions)
+        {
+            if (category?.HasMatchers == true)
+            {
+                _categories.Add(category);
+            }
+        }
     }
 
     private string GetDisplayPath(string? fullPath)
