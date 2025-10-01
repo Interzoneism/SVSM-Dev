@@ -75,6 +75,13 @@
                                         BorderThickness="{TemplateBinding BorderThickness}"
                                         SnapsToDevicePixels="True">
                                     <Grid>
+                                        <Border x:Name="SelectionOverlay"
+                                                Background="#80007AFF"
+                                                Visibility="Collapsed"
+                                                IsHitTestVisible="False"
+                                                Panel.ZIndex="-1"
+                                                HorizontalAlignment="Stretch"
+                                                VerticalAlignment="Stretch" />
                                         <SelectiveScrollingGrid>
                                             <SelectiveScrollingGrid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
@@ -90,12 +97,6 @@
                                                                       SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
                                                                       Visibility="{TemplateBinding DetailsVisibility}" />
                                         </SelectiveScrollingGrid>
-                                        <Border x:Name="SelectionOverlay"
-                                                Background="#80007AFF"
-                                                Visibility="Collapsed"
-                                                IsHitTestVisible="False"
-                                                HorizontalAlignment="Stretch"
-                                                VerticalAlignment="Stretch" />
                                     </Grid>
                                 </Border>
                                 <ControlTemplate.Triggers>
