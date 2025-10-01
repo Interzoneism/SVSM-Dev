@@ -49,7 +49,7 @@ public sealed class MainViewModel : ObservableObject
         _sortOptions = new ObservableCollection<SortOption>(CreateSortOptions());
         SortOptions = new ReadOnlyObservableCollection<SortOption>(_sortOptions);
         SelectedSortOption = SortOptions.FirstOrDefault();
-        ApplyCurrentSort();
+        SelectedSortOption?.Apply(ModsView);
 
         RefreshCommand = new AsyncRelayCommand(LoadModsAsync);
         SetStatus("Ready.", false);
@@ -68,7 +68,7 @@ public sealed class MainViewModel : ObservableObject
         {
             if (SetProperty(ref _selectedSortOption, value))
             {
-                ApplyCurrentSort();
+                value?.Apply(ModsView);
             }
         }
     }
@@ -163,8 +163,9 @@ public sealed class MainViewModel : ObservableObject
             mod.SetIsActiveSilently(!isDisabled);
         }
 
-        ApplyCurrentSort();
         UpdateActiveCount();
+        SelectedSortOption?.Apply(ModsView);
+        ModsView.Refresh();
         SetStatus($"Applied preset \"{presetName}\".", false);
         return true;
     }
@@ -172,17 +173,6 @@ public sealed class MainViewModel : ObservableObject
     public void ReportStatus(string message, bool isError = false)
     {
         SetStatus(message, isError);
-    }
-
-    public void ApplyCurrentSort()
-    {
-        if (ModsView is null)
-        {
-            return;
-        }
-
-        SelectedSortOption?.Apply(ModsView);
-        ModsView.Refresh();
     }
 
     internal async Task<ActivationResult> ApplyActivationChangeAsync(ModListItemViewModel mod, bool isActive)
@@ -236,8 +226,8 @@ public sealed class MainViewModel : ObservableObject
             }
 
             TotalMods = _mods.Count;
-            ApplyCurrentSort();
             UpdateActiveCount();
+            SelectedSortOption?.Apply(ModsView);
             SetStatus($"Loaded {TotalMods} mods.", false);
             await UpdateModsStateSnapshotAsync();
         }

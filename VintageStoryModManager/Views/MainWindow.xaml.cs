@@ -887,11 +887,7 @@ public partial class MainWindow : Window
         _isApplyingPreset = true;
         try
         {
-            bool applied = await _viewModel.ApplyPresetAsync(preset.Name, preset.DisabledEntries);
-            if (applied)
-            {
-                _viewModel.ApplyCurrentSort();
-            }
+            await _viewModel.ApplyPresetAsync(preset.Name, preset.DisabledEntries);
         }
         finally
         {
