@@ -9,7 +9,11 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AssetTargetFallback>$(AssetTargetFallback);net5.0-windows7.0;netcoreapp3.0</AssetTargetFallback>
+    <ApplicationIcon>modmanager.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <Content Include="modmanager.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
