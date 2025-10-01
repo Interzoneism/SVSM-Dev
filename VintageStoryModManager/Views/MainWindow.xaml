@@ -66,6 +66,50 @@
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="DataGridRow">
+                                <Border x:Name="RowBorder"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        SnapsToDevicePixels="True">
+                                    <Grid>
+                                        <SelectiveScrollingGrid>
+                                            <SelectiveScrollingGrid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                            </SelectiveScrollingGrid.ColumnDefinitions>
+                                            <SelectiveScrollingGrid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </SelectiveScrollingGrid.RowDefinitions>
+                                            <DataGridCellsPresenter Grid.Column="0"
+                                                                     SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" />
+                                            <DataGridDetailsPresenter Grid.Column="0"
+                                                                      Grid.Row="1"
+                                                                      SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
+                                                                      Visibility="{TemplateBinding DetailsVisibility}" />
+                                        </SelectiveScrollingGrid>
+                                        <Border x:Name="SelectionOverlay"
+                                                Background="#80007AFF"
+                                                Visibility="Collapsed"
+                                                IsHitTestVisible="False"
+                                                HorizontalAlignment="Stretch"
+                                                VerticalAlignment="Stretch" />
+                                    </Grid>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="DetailsVisibility" Value="Visible">
+                                        <Setter TargetName="RowBorder" Property="BorderThickness" Value="1,0,1,1" />
+                                    </Trigger>
+                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                        <Setter TargetName="SelectionOverlay" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ModsDataGridRow_OnPreviewMouseLeftButtonDown" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding HasErrors}" Value="True">
                             <Setter Property="Background" Value="#FFFFE5E5" />
@@ -84,6 +128,7 @@
                                 <ui:ToggleSwitch IsOn="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  HorizontalAlignment="Center"
                                  IsEnabled="{Binding CanToggle}"
+                                 Toggled="ActiveToggle_OnToggled"
                                  Margin="20"
                                  OnContent="{x:Null}"
                                  OffContent="{x:Null}"/>
