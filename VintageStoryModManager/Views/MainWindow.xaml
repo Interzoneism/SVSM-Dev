@@ -35,9 +35,14 @@
             </MenuItem>
         </Menu>
         
-        <DataGrid Grid.Row="1"
-                  Margin="16,0,16,0"
-                  ItemsSource="{Binding ModsView}"
+        <Border Grid.Row="1"
+                Margin="16,0,16,0"
+                Background="White"
+                CornerRadius="12">
+            <Border.Effect>
+                <DropShadowEffect Color="#33000000" BlurRadius="16" ShadowDepth="4" Direction="270" />
+            </Border.Effect>
+            <DataGrid ItemsSource="{Binding ModsView}"
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
@@ -48,8 +53,10 @@
                   SelectionMode="Single"
                   RowHeaderWidth="0"
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
-                  SelectionChanged="ModsDataGrid_OnSelectionChanged" BorderThickness="2,2,2,2" Foreground="Black"
-                  PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel">
+                  SelectionChanged="ModsDataGrid_OnSelectionChanged" BorderThickness="0" Foreground="Black"
+                  PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
+                  AlternationCount="2"
+                  Background="Transparent">
             <DataGrid.Resources>
                 <Style TargetType="TextBlock">
                     <Setter Property="TextWrapping" Value="Wrap" />
@@ -66,7 +73,7 @@
             </DataGrid.RowHeaderStyle>
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
-                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Background" Value="White" />
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="DataGridRow">
@@ -113,6 +120,9 @@
                     </Setter>
                     <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ModsDataGridRow_OnPreviewMouseLeftButtonDown" />
                     <Style.Triggers>
+                        <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                            <Setter Property="Background" Value="#FFF5F5F5" />
+                        </Trigger>
                         <DataTrigger Binding="{Binding HasErrors}" Value="True">
                             <Setter Property="Background" Value="#FFFFE5E5" />
                         </DataTrigger>
@@ -296,6 +306,7 @@
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
+        </Border>
 
 
         <Border Grid.Row="2" Padding="16" Background="{ui:ThemeResource SystemControlBackgroundBaseLowBrush}" VerticalAlignment="Center" Height="56">
