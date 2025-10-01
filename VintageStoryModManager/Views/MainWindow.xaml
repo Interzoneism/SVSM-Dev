@@ -280,7 +280,8 @@
         <Button Content="Open Logs Folder" Margin="453,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenLogsFolderButton_OnClick"/>
         <ComboBox x:Name="PresetComboBox" Margin="755,0,0,0" VerticalAlignment="Center" Width="295"
                   DisplayMemberPath="Name"
-                  SelectionChanged="PresetComboBox_OnSelectionChanged"/>
+                  SelectionChanged="PresetComboBox_OnSelectionChanged"
+                  DropDownClosed="PresetComboBox_OnDropDownClosed"/>
         <Button x:Name="SavePresetButton" Content="Save Preset" Margin="635,0,0,0" Width="115" Background="#CCFFFFFF" BorderBrush="#7F000000"
                 Click="SavePresetButton_OnClick"
                 MouseEnter="SavePresetButton_OnMouseEnter"
