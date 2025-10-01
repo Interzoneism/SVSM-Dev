@@ -24,6 +24,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly ModDatabaseService _databaseService;
     private readonly ObservableCollection<SortOption> _sortOptions;
     private readonly string? _installedGameVersion;
+    private readonly object _modsStateLock = new();
 
     private SortOption? _selectedSortOption;
     private bool _isBusy;
@@ -31,6 +32,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _isErrorStatus;
     private int _totalMods;
     private int _activeMods;
+    private string? _modsStateFingerprint;
 
     public MainViewModel(string dataDirectory)
     {
@@ -227,6 +229,7 @@ public sealed class MainViewModel : ObservableObject
             UpdateActiveCount();
             SelectedSortOption?.Apply(ModsView);
             SetStatus($"Loaded {TotalMods} mods.", false);
+            await UpdateModsStateSnapshotAsync();
         }
         catch (Exception ex)
         {
@@ -238,11 +241,66 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    public async Task<bool> CheckForModStateChangesAsync()
+    {
+        string? fingerprint = await CaptureModsStateFingerprintAsync().ConfigureAwait(false);
+        if (fingerprint is null)
+        {
+            return false;
+        }
+
+        lock (_modsStateLock)
+        {
+            if (_modsStateFingerprint is null)
+            {
+                _modsStateFingerprint = fingerprint;
+                return false;
+            }
+
+            if (!string.Equals(_modsStateFingerprint, fingerprint, StringComparison.Ordinal))
+            {
+                _modsStateFingerprint = fingerprint;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private ModListItemViewModel CreateModViewModel(ModEntry entry)
     {
         bool isActive = !_settingsStore.IsDisabled(entry.ModId, entry.Version);
         string location = GetDisplayPath(entry.SourcePath);
         return new ModListItemViewModel(entry, isActive, location, ApplyActivationChangeAsync, _installedGameVersion);
+    }
+
+    private async Task UpdateModsStateSnapshotAsync()
+    {
+        string? fingerprint = await CaptureModsStateFingerprintAsync().ConfigureAwait(false);
+        if (fingerprint is null)
+        {
+            return;
+        }
+
+        lock (_modsStateLock)
+        {
+            _modsStateFingerprint = fingerprint;
+        }
+    }
+
+    private Task<string?> CaptureModsStateFingerprintAsync()
+    {
+        return Task.Run(() =>
+        {
+            try
+            {
+                return _discoveryService.GetModsStateFingerprint();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        });
     }
 
     private void UpdateActiveCount()

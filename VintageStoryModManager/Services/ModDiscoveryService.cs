@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.IO.Compression;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using VintageStoryModManager.Models;
@@ -265,6 +267,63 @@ public sealed class ModDiscoveryService
 
     private const string GeneralLoadErrorMessage = "Unable to load mod. Check log files.";
     private const string DependencyErrorMessage = "Unable to load mod. A dependency has an error. Make sure they all load correctly.";
+
+    public string GetModsStateFingerprint()
+    {
+        using var sha256 = SHA256.Create();
+        var builder = new StringBuilder();
+
+        foreach (string searchPath in BuildSearchPaths())
+        {
+            builder.AppendLine(searchPath);
+
+            if (!Directory.Exists(searchPath))
+            {
+                builder.AppendLine("<missing>");
+                continue;
+            }
+
+            try
+            {
+                var entries = new DirectoryInfo(searchPath)
+                    .EnumerateFileSystemInfos()
+                    .OrderBy(info => info.Name, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var entry in entries)
+                {
+                    AppendEntrySignature(builder, entry);
+                }
+            }
+            catch (Exception ex)
+            {
+                builder.Append("<error>|")
+                    .Append(ex.GetType().FullName)
+                    .Append('|')
+                    .Append(ex.Message)
+                    .AppendLine();
+            }
+        }
+
+        byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(builder.ToString()));
+        return Convert.ToHexString(hash);
+    }
+
+    private static void AppendEntrySignature(StringBuilder builder, FileSystemInfo entry)
+    {
+        builder.Append(entry.Name)
+            .Append('|')
+            .Append(entry is DirectoryInfo ? 'D' : 'F')
+            .Append('|')
+            .Append(entry.LastWriteTimeUtc.Ticks.ToString(CultureInfo.InvariantCulture));
+
+        if (entry is FileInfo fileInfo)
+        {
+            builder.Append('|')
+                .Append(fileInfo.Length.ToString(CultureInfo.InvariantCulture));
+        }
+
+        builder.AppendLine();
+    }
 
     private IEnumerable<string> BuildSearchPaths()
     {
