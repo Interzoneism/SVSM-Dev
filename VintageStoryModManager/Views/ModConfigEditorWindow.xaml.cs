@@ -63,13 +63,11 @@ public partial class ModConfigEditorWindow : Window
             return;
         }
 
-        if (e.Delta > 0)
+        double offsetDelta = e.Delta / 240d;
+        if (Math.Abs(offsetDelta) > double.Epsilon)
         {
-            scrollViewer.LineUp();
-        }
-        else if (e.Delta < 0)
-        {
-            scrollViewer.LineDown();
+            double targetOffset = scrollViewer.VerticalOffset - offsetDelta;
+            scrollViewer.ScrollToVerticalOffset(targetOffset);
         }
 
         e.Handled = true;
