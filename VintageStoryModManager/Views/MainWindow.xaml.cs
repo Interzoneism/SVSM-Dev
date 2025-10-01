@@ -34,6 +34,8 @@ namespace VintageStoryModManager.Views;
 
 public partial class MainWindow : Window
 {
+    private const double ModListScrollMultiplier = 0.5;
+
     private readonly UserConfigurationService _userConfiguration;
     private readonly ObservableCollection<ModPreset> _presets = new();
     private MainViewModel? _viewModel;
@@ -887,13 +889,50 @@ public partial class MainWindow : Window
         _isApplyingPreset = true;
         try
         {
-            await _viewModel.ApplyPresetAsync(preset.Name, preset.DisabledEntries);
+            bool applied = await _viewModel.ApplyPresetAsync(preset.Name, preset.DisabledEntries);
+            if (applied)
+            {
+                _viewModel.SelectedSortOption?.Apply(_viewModel.ModsView);
+                _viewModel.ModsView.Refresh();
+            }
         }
         finally
         {
             _isApplyingPreset = false;
             UpdateSavePresetButtonContent();
         }
+    }
+
+    private void ModsDataGrid_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (e.Handled || e.Delta == 0)
+        {
+            return;
+        }
+
+        if (sender is not DependencyObject dependencyObject)
+        {
+            return;
+        }
+
+        ScrollViewer? scrollViewer = FindDescendantScrollViewer(dependencyObject);
+        if (scrollViewer is null)
+        {
+            return;
+        }
+
+        double lines = Math.Max(1, SystemParameters.WheelScrollLines);
+        double deltaMultiplier = e.Delta / (double)Mouse.MouseWheelDeltaForOneLine;
+        double offsetChange = deltaMultiplier * lines * ModListScrollMultiplier;
+        if (Math.Abs(offsetChange) < double.Epsilon)
+        {
+            return;
+        }
+
+        double targetOffset = scrollViewer.VerticalOffset - offsetChange;
+        double clampedOffset = Math.Max(0, Math.Min(targetOffset, scrollViewer.ScrollableHeight));
+        scrollViewer.ScrollToVerticalOffset(clampedOffset);
+        e.Handled = true;
     }
 
     private void SavePresetButton_OnClick(object sender, RoutedEventArgs e)
@@ -1169,6 +1208,31 @@ public partial class MainWindow : Window
         }
 
         return false;
+    }
+
+    private static ScrollViewer? FindDescendantScrollViewer(DependencyObject? current)
+    {
+        if (current is null)
+        {
+            return null;
+        }
+
+        if (current is ScrollViewer viewer)
+        {
+            return viewer;
+        }
+
+        int childCount = VisualTreeHelper.GetChildrenCount(current);
+        for (int i = 0; i < childCount; i++)
+        {
+            ScrollViewer? result = FindDescendantScrollViewer(VisualTreeHelper.GetChild(current, i));
+            if (result != null)
+            {
+                return result;
+            }
+        }
+
+        return null;
     }
 
     private void ActiveToggle_OnToggled(object sender, RoutedEventArgs e)
