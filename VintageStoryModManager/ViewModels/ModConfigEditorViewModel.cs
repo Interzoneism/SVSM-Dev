@@ -85,48 +85,55 @@ public sealed class ModConfigEditorViewModel : ObservableObject
         {
             return new[]
             {
-                CreateArrayNode("(root)", array)
+                CreateArrayNode("(root)", array, "Items")
             };
         }
 
         return new[]
         {
-            CreateValueNode("(root)", node, value => _rootNode = value)
+            CreateValueNode("(root)", node, value => _rootNode = value, string.Empty)
         };
     }
 
-    private ModConfigNodeViewModel CreateNode(string name, JsonNode? node, Action<JsonNode?> setter)
+    private ModConfigNodeViewModel CreateNode(string name, JsonNode? node, Action<JsonNode?> setter, string? displayName = null)
     {
         if (node is JsonObject obj)
         {
             var children = new ObservableCollection<ModConfigNodeViewModel>(
                 obj.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
                     .Select(pair => CreateNode(pair.Key, pair.Value, value => obj[pair.Key] = value)));
-            return new ModConfigObjectNodeViewModel(name, children);
+            return new ModConfigObjectNodeViewModel(name, children, displayName);
         }
 
         if (node is JsonArray array)
         {
-            return CreateArrayNode(name, array);
+            return CreateArrayNode(name, array, displayName);
         }
 
-        return CreateValueNode(name, node, setter);
+        return CreateValueNode(name, node, setter, displayName);
     }
 
-    private ModConfigNodeViewModel CreateArrayNode(string name, JsonArray array)
+    private ModConfigNodeViewModel CreateArrayNode(string name, JsonArray array, string? displayName = null)
     {
         var children = new ObservableCollection<ModConfigNodeViewModel>();
         for (int i = 0; i < array.Count; i++)
         {
             int index = i;
-            children.Add(CreateNode($"[{i}]", array[index], value => array[index] = value));
+            JsonNode? childNode = array[index];
+            string? childDisplayName = childNode switch
+            {
+                JsonObject => $"Item {i + 1}",
+                JsonArray => $"Item {i + 1}",
+                _ => string.Empty
+            };
+            children.Add(CreateNode($"[{i}]", childNode, value => array[index] = value, childDisplayName));
         }
 
-        return new ModConfigArrayNodeViewModel(name, children, () => array.Count);
+        return new ModConfigArrayNodeViewModel(name, children, () => array.Count, displayName);
     }
 
-    private ModConfigNodeViewModel CreateValueNode(string name, JsonNode? node, Action<JsonNode?> setter)
+    private ModConfigNodeViewModel CreateValueNode(string name, JsonNode? node, Action<JsonNode?> setter, string? displayName)
     {
-        return new ModConfigValueNodeViewModel(name, node, setter);
+        return new ModConfigValueNodeViewModel(name, node, setter, displayName);
     }
 }

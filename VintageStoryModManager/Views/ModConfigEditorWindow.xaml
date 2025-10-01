@@ -23,42 +23,81 @@
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type viewModels:ModConfigObjectNodeViewModel}"
                                                   ItemsSource="{Binding Children}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                <TextBlock Text="{Binding TypeDisplay}"
-                                           Margin="8,0,0,0"
-                                           Foreground="Gray"
-                                           FontStyle="Italic" />
-                            </StackPanel>
+                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
                         </HierarchicalDataTemplate>
                         <HierarchicalDataTemplate DataType="{x:Type viewModels:ModConfigArrayNodeViewModel}"
                                                   ItemsSource="{Binding Children}">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                <TextBlock Text="{Binding ItemCount, StringFormat=Items: {0}}"
-                                           Margin="8,0,0,0"
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                <TextBlock Margin="8,0,0,0"
                                            Foreground="Gray"
-                                           FontStyle="Italic" />
+                                           FontStyle="Italic"
+                                           Text="{Binding ItemCount, StringFormat={}{0} items}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ItemCount}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ItemCount}" Value="1">
+                                                    <Setter Property="Text" Value="1 item" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                         </HierarchicalDataTemplate>
                         <DataTemplate DataType="{x:Type viewModels:ModConfigValueNodeViewModel}">
-                            <Grid Margin="0,2,0,2">
+                            <Grid Margin="0,4,0,4">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="220" />
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding TypeDisplay}"
-                                           Margin="8,0,0,0"
-                                           Foreground="Gray"
+                                <TextBlock x:Name="ValueLabel"
+                                           Text="{Binding DisplayName}"
                                            VerticalAlignment="Center"
-                                           FontStyle="Italic" />
-                                <TextBox Grid.Column="2"
-                                         Margin="12,0,0,0"
+                                           Margin="0,0,12,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasDisplayName}" Value="False">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBox x:Name="ValueTextBox"
+                                         Grid.Column="1"
                                          Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}" />
+                                <ToggleButton x:Name="BooleanToggle"
+                                              Grid.Column="1"
+                                              Margin="0"
+                                              HorizontalAlignment="Left"
+                                              Width="80"
+                                              IsChecked="{Binding BooleanValue, Mode=TwoWay}"
+                                              Visibility="Collapsed">
+                                    <ToggleButton.Style>
+                                        <Style TargetType="ToggleButton">
+                                            <Setter Property="Content" Value="Off" />
+                                            <Setter Property="Padding" Value="12,2" />
+                                            <Style.Triggers>
+                                                <Trigger Property="IsChecked" Value="True">
+                                                    <Setter Property="Content" Value="On" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ToggleButton.Style>
+                                </ToggleButton>
                             </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsBoolean}" Value="True">
+                                    <Setter TargetName="ValueTextBox" Property="UIElement.Visibility" Value="Collapsed" />
+                                    <Setter TargetName="BooleanToggle" Property="UIElement.Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
                         </DataTemplate>
                     </TreeView.Resources>
                 </TreeView>
