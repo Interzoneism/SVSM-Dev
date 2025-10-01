@@ -48,7 +48,8 @@
                   SelectionMode="Single"
                   RowHeaderWidth="0"
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
-                  SelectionChanged="ModsDataGrid_OnSelectionChanged" BorderThickness="2,2,2,2" Foreground="Black">
+                  SelectionChanged="ModsDataGrid_OnSelectionChanged" BorderThickness="2,2,2,2" Foreground="Black"
+                  PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel">
             <DataGrid.Resources>
                 <Style TargetType="TextBlock">
                     <Setter Property="TextWrapping" Value="Wrap" />
