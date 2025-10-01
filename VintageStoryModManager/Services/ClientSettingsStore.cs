@@ -24,6 +24,7 @@ public sealed class ClientSettingsStore
     private readonly HashSet<string> _disabledLookup;
     private readonly List<string> _modPaths;
     private readonly IReadOnlyList<string> _searchBases;
+    private readonly object _syncRoot = new();
 
     public ClientSettingsStore(string dataDirectory)
     {
@@ -57,14 +58,35 @@ public sealed class ClientSettingsStore
 
     public string DataDirectory { get; }
 
-    public ReadOnlyCollection<string> DisabledEntries => _disabledMods.AsReadOnly();
+    public ReadOnlyCollection<string> DisabledEntries
+    {
+        get
+        {
+            lock (_syncRoot)
+            {
+                return new ReadOnlyCollection<string>(_disabledMods.ToList());
+            }
+        }
+    }
 
     public IReadOnlyList<string> GetDisabledEntriesSnapshot()
     {
-        return _disabledMods.ToArray();
+        lock (_syncRoot)
+        {
+            return _disabledMods.ToArray();
+        }
     }
 
-    public ReadOnlyCollection<string> ModPaths => _modPaths.AsReadOnly();
+    public ReadOnlyCollection<string> ModPaths
+    {
+        get
+        {
+            lock (_syncRoot)
+            {
+                return new ReadOnlyCollection<string>(_modPaths.ToList());
+            }
+        }
+    }
 
     /// <summary>
     /// Directories that are used as bases for resolving relative mod paths.
@@ -78,14 +100,17 @@ public sealed class ClientSettingsStore
             return false;
         }
 
-        if (_disabledLookup.Contains(modId))
+        lock (_syncRoot)
         {
-            return true;
-        }
+            if (_disabledLookup.Contains(modId))
+            {
+                return true;
+            }
 
-        if (!string.IsNullOrWhiteSpace(version))
-        {
-            return _disabledLookup.Contains($"{modId}@{version}");
+            if (!string.IsNullOrWhiteSpace(version))
+            {
+                return _disabledLookup.Contains($"{modId}@{version}");
+            }
         }
 
         return false;
@@ -99,102 +124,108 @@ public sealed class ClientSettingsStore
             return false;
         }
 
-        var normalizedModId = modId.Trim();
-        var keyWithVersion = !string.IsNullOrWhiteSpace(version)
-            ? $"{normalizedModId}@{version!.Trim()}"
-            : null;
-
-        bool changed = false;
-
-        if (isActive)
+        lock (_syncRoot)
         {
-            if (keyWithVersion != null)
+            var normalizedModId = modId.Trim();
+            var keyWithVersion = !string.IsNullOrWhiteSpace(version)
+                ? $"{normalizedModId}@{version!.Trim()}"
+                : null;
+
+            bool changed = false;
+
+            if (isActive)
             {
-                changed |= RemoveDisabledEntry(keyWithVersion);
+                if (keyWithVersion != null)
+                {
+                    changed |= RemoveDisabledEntry(keyWithVersion);
+                }
+
+                changed |= RemoveDisabledEntry(normalizedModId);
+            }
+            else
+            {
+                string keyToAdd = keyWithVersion ?? normalizedModId;
+                if (!_disabledLookup.Contains(keyToAdd))
+                {
+                    _disabledLookup.Add(keyToAdd);
+                    _disabledMods.Add(keyToAdd);
+                    changed = true;
+                }
             }
 
-            changed |= RemoveDisabledEntry(normalizedModId);
-        }
-        else
-        {
-            string keyToAdd = keyWithVersion ?? normalizedModId;
-            if (!_disabledLookup.Contains(keyToAdd))
+            if (!changed)
             {
-                _disabledLookup.Add(keyToAdd);
-                _disabledMods.Add(keyToAdd);
-                changed = true;
+                error = null;
+                return true;
             }
-        }
 
-        if (!changed)
-        {
-            error = null;
-            return true;
-        }
-
-        try
-        {
-            Persist();
-            error = null;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            error = ex.Message;
-            return false;
+            try
+            {
+                Persist();
+                error = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
         }
     }
 
     public bool TryApplyDisabledEntries(IEnumerable<string> entries, out string? error)
     {
-        var sanitized = new List<string>();
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        if (entries != null)
+        lock (_syncRoot)
         {
-            foreach (string entry in entries)
-            {
-                if (string.IsNullOrWhiteSpace(entry))
-                {
-                    continue;
-                }
+            var sanitized = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                string trimmed = entry.Trim();
-                if (seen.Add(trimmed))
+            if (entries != null)
+            {
+                foreach (string entry in entries)
                 {
-                    sanitized.Add(trimmed);
+                    if (string.IsNullOrWhiteSpace(entry))
+                    {
+                        continue;
+                    }
+
+                    string trimmed = entry.Trim();
+                    if (seen.Add(trimmed))
+                    {
+                        sanitized.Add(trimmed);
+                    }
                 }
             }
-        }
 
-        bool changed = sanitized.Count != _disabledMods.Count
-            || !sanitized.SequenceEqual(_disabledMods, StringComparer.OrdinalIgnoreCase);
+            bool changed = sanitized.Count != _disabledMods.Count
+                || !sanitized.SequenceEqual(_disabledMods, StringComparer.OrdinalIgnoreCase);
 
-        if (!changed)
-        {
-            error = null;
-            return true;
-        }
+            if (!changed)
+            {
+                error = null;
+                return true;
+            }
 
-        _disabledMods.Clear();
-        _disabledLookup.Clear();
+            _disabledMods.Clear();
+            _disabledLookup.Clear();
 
-        foreach (string value in sanitized)
-        {
-            _disabledMods.Add(value);
-            _disabledLookup.Add(value);
-        }
+            foreach (string value in sanitized)
+            {
+                _disabledMods.Add(value);
+                _disabledLookup.Add(value);
+            }
 
-        try
-        {
-            Persist();
-            error = null;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            error = ex.Message;
-            return false;
+            try
+            {
+                Persist();
+                error = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
         }
     }
 
@@ -321,19 +352,22 @@ public sealed class ClientSettingsStore
 
     private void Persist()
     {
-        _stringListSettings["disabledMods"] = new JsonArray(_disabledMods.Select(value => JsonValue.Create(value)).ToArray());
-        _stringListSettings["modPaths"] = new JsonArray(_modPaths.Select(path => JsonValue.Create(path)).ToArray());
-
-        var json = _root.ToJsonString(_serializerOptions);
-
-        File.WriteAllText(_tempPath, json);
-        if (File.Exists(_settingsPath))
+        lock (_syncRoot)
         {
-            File.Replace(_tempPath, _settingsPath, _backupPath);
-        }
-        else
-        {
-            File.Move(_tempPath, _settingsPath);
+            _stringListSettings["disabledMods"] = new JsonArray(_disabledMods.Select(value => JsonValue.Create(value)).ToArray());
+            _stringListSettings["modPaths"] = new JsonArray(_modPaths.Select(path => JsonValue.Create(path)).ToArray());
+
+            var json = _root.ToJsonString(_serializerOptions);
+
+            File.WriteAllText(_tempPath, json);
+            if (File.Exists(_settingsPath))
+            {
+                File.Replace(_tempPath, _settingsPath, _backupPath);
+            }
+            else
+            {
+                File.Move(_tempPath, _settingsPath);
+            }
         }
     }
 }
