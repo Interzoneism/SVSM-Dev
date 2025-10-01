@@ -870,10 +870,26 @@ public partial class MainWindow : Window
         bool isShiftPressed = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
         bool isCtrlPressed = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
 
-        if (isShiftPressed && _selectionAnchor is { } anchor)
+        if (isShiftPressed)
         {
-            ApplyRangeSelection(anchor, mod, isCtrlPressed);
-            _selectionAnchor = mod;
+            if (_selectionAnchor is not { } anchor)
+            {
+                if (!isCtrlPressed)
+                {
+                    ClearSelection();
+                }
+
+                AddToSelection(mod);
+                _selectionAnchor = mod;
+                return;
+            }
+
+            bool anchorApplied = ApplyRangeSelection(anchor, mod, isCtrlPressed);
+            if (!anchorApplied)
+            {
+                _selectionAnchor = mod;
+            }
+
             return;
         }
 
@@ -898,7 +914,7 @@ public partial class MainWindow : Window
         _selectionAnchor = mod;
     }
 
-    private void ApplyRangeSelection(ModListItemViewModel start, ModListItemViewModel end, bool preserveExisting)
+    private bool ApplyRangeSelection(ModListItemViewModel start, ModListItemViewModel end, bool preserveExisting)
     {
         List<ModListItemViewModel> mods = GetModsInViewOrder();
         int startIndex = mods.IndexOf(start);
@@ -912,7 +928,7 @@ public partial class MainWindow : Window
             }
 
             AddToSelection(end);
-            return;
+            return false;
         }
 
         if (!preserveExisting)
@@ -929,6 +945,8 @@ public partial class MainWindow : Window
         {
             AddToSelection(mods[i]);
         }
+
+        return true;
     }
 
     private List<ModListItemViewModel> GetModsInViewOrder()
