@@ -2,6 +2,9 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using VintageStoryModManager.ViewModels;
 using WpfMessageBox = System.Windows.MessageBox;
 
@@ -40,5 +43,50 @@ public partial class ModConfigEditorWindow : Window
     private void CancelButton_OnClick(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
+    }
+
+    private void TreeView_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (e.Handled)
+        {
+            return;
+        }
+
+        if (sender is not DependencyObject dependencyObject)
+        {
+            return;
+        }
+
+        var scrollViewer = FindAncestorScrollViewer(dependencyObject);
+        if (scrollViewer is null)
+        {
+            return;
+        }
+
+        if (e.Delta > 0)
+        {
+            scrollViewer.LineUp();
+        }
+        else if (e.Delta < 0)
+        {
+            scrollViewer.LineDown();
+        }
+
+        e.Handled = true;
+    }
+
+    private static ScrollViewer? FindAncestorScrollViewer(DependencyObject? current)
+    {
+        while (current is not null)
+        {
+            if (current is ScrollViewer scrollViewer)
+            {
+                return scrollViewer;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
     }
 }
