@@ -308,8 +308,8 @@
                 Visibility="Collapsed"
                 IsEnabled="False">
             <Image Source="/webicon.png"
-           Width="48"
-           Height="48"
+           Width="64"
+           Height="64"
            Stretch="Uniform"
            HorizontalAlignment="Center"
            VerticalAlignment="Center" />
@@ -325,8 +325,8 @@
                 Visibility="Collapsed"
                 IsEnabled="False">
             <Image Source="/deleteicon.png"
-                   Width="48"
-                   Height="48"
+                   Width="64"
+                   Height="64"
                    Stretch="Uniform" />
         </Button>
         <Button x:Name="SelectedModEditConfigButton"
@@ -340,8 +340,8 @@
                 Visibility="Collapsed"
                 IsEnabled="False">
             <Image Source="/configicon.png"
-           Width="48"
-           Height="48"
+           Width="64"
+           Height="64"
            Stretch="Uniform" />
         </Button>
         <Button Content="Launch Vintage Story" Margin="891,58,0,0" Grid.Row="2" FontWeight="Bold" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="LaunchGameButton_OnClick" Height="32" VerticalAlignment="Top" Width="159"/>
