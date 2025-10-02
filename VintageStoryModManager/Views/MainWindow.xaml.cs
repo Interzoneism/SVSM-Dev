@@ -931,6 +931,11 @@ public partial class MainWindow : Window
             return false;
         }
 
+        if (!TryEnsureManagedModTargetIsSafe(fullPath, out errorMessage))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -980,6 +985,58 @@ public partial class MainWindow : Window
         }
         catch (Exception)
         {
+            return false;
+        }
+    }
+
+    private bool TryEnsureManagedModTargetIsSafe(string fullPath, out string? errorMessage)
+    {
+        errorMessage = null;
+
+        FileSystemInfo? info = null;
+
+        if (Directory.Exists(fullPath))
+        {
+            info = new DirectoryInfo(fullPath);
+        }
+        else if (File.Exists(fullPath))
+        {
+            info = new FileInfo(fullPath);
+        }
+
+        if (info is null)
+        {
+            return true;
+        }
+
+        if (!info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+        {
+            return true;
+        }
+
+        try
+        {
+            FileSystemInfo? target = info.ResolveLinkTarget(returnFinalTarget: true);
+
+            if (target is null)
+            {
+                errorMessage = $"This mod is a symbolic link and its target could not be resolved. It will not be deleted automatically.{Environment.NewLine}{Environment.NewLine}Location:{Environment.NewLine}{fullPath}";
+                return false;
+            }
+
+            string resolvedFullPath = Path.GetFullPath(target.FullName);
+
+            if (!IsPathWithinManagedMods(resolvedFullPath))
+            {
+                errorMessage = $"This mod is a symbolic link that points outside of the Mods folder and cannot be deleted automatically.{Environment.NewLine}{Environment.NewLine}Link target:{Environment.NewLine}{resolvedFullPath}";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PlatformNotSupportedException)
+        {
+            errorMessage = $"This mod is a symbolic link that could not be validated for automatic deletion.{Environment.NewLine}{Environment.NewLine}Location:{Environment.NewLine}{fullPath}{Environment.NewLine}{Environment.NewLine}Reason:{Environment.NewLine}{ex.Message}";
             return false;
         }
     }
