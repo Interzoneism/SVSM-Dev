@@ -16,6 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="configicon.png" />
+    <Resource Include="webicon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
   </ItemGroup>
