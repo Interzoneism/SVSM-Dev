@@ -330,24 +330,20 @@
                 </TextBlock.Style>
             </TextBlock>
         </Border>
-        <Button Padding="4" Grid.Row="2" Margin="450,0,0,0"
-        Background="Transparent"
-        HorizontalAlignment="Left"
-        VerticalAlignment="Center"
-        ToolTip="{Binding ModDatabasePageUrlDisplay}"
-        Click="ModDatabasePageButton_OnClick" Foreground="Transparent" BorderBrush="{x:Null}">
-            <Button.Style>
-                <Style TargetType="Button">
-                    <Setter Property="Visibility" Value="Visible" />
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding HasModDatabasePageLink}" Value="True">
-                            <Setter Property="BorderBrush" Value="Transparent" />
-                            <Setter Property="BorderThickness"  Value="0,0,0,0" />
-                            <Setter Property="Visibility" Value="Collapsed" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Button.Style>
+        <Button x:Name="SelectedModDatabasePageButton"
+                Padding="4"
+                Grid.Row="2"
+                Margin="450,0,0,0"
+                Background="Transparent"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                ToolTip="{Binding ModDatabasePageUrlDisplay}"
+                Click="ModDatabasePageButton_OnClick"
+                Foreground="Transparent"
+                BorderBrush="{x:Null}"
+                AutomationProperties.Name="Open Mod Database Page"
+                Visibility="Collapsed"
+                IsEnabled="False">
             <Image Source="/webicon.png"
            Width="48"
            Height="48"
@@ -355,16 +351,26 @@
            HorizontalAlignment="Center"
            VerticalAlignment="Center" />
         </Button>
-        <Button Padding="4" Grid.Row="2" Margin="650,0,0,0"
-        Background="#CCFFFFFF"
-        BorderBrush="#7F000000"
-        Content="Delete"
-        Click="DeleteModButton_OnClick" />
-        <Button Padding="4" Grid.Row="2"
-        Background="Transparent"
-        ToolTip="Edit Config"
-        AutomationProperties.Name="Edit Config"
-        Click="EditConfigButton_OnClick" Margin="550,0,0,0">
+        <Button x:Name="SelectedModDeleteButton"
+                Padding="4"
+                Grid.Row="2"
+                Margin="650,0,0,0"
+                Background="#CCFFFFFF"
+                BorderBrush="#7F000000"
+                Content="Delete"
+                Click="DeleteModButton_OnClick"
+                Visibility="Collapsed"
+                IsEnabled="False" />
+        <Button x:Name="SelectedModEditConfigButton"
+                Padding="4"
+                Grid.Row="2"
+                Background="Transparent"
+                ToolTip="Edit Config"
+                AutomationProperties.Name="Edit Config"
+                Click="EditConfigButton_OnClick"
+                Margin="550,0,0,0"
+                Visibility="Collapsed"
+                IsEnabled="False">
             <Image Source="/configicon.png"
            Width="48"
            Height="48"
