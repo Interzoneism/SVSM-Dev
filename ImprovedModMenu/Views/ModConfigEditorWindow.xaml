@@ -4,103 +4,347 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewModels="clr-namespace:VintageStoryModManager.ViewModels"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
         mc:Ignorable="d"
         Title="{Binding WindowTitle}"
         Height="520"
         Width="720"
         MinWidth="600"
         MinHeight="420"
-        WindowStartupLocation="CenterOwner">
-    <Grid Margin="12">
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource IMM.SurfaceBrush}">
+    <Window.Resources>
+        <Style x:Key="IMM.TreeViewItemStyle" TargetType="TreeViewItem">
+            <Setter Property="Margin" Value="0,2,0,2" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </Window.Resources>
+    <Grid Margin="12" Background="{StaticResource IMM.SurfaceAltBrush}" ui:ControlHelper.CornerRadius="12">
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border BorderBrush="#FFD0D0D0" BorderThickness="1" CornerRadius="4">
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+        <Border BorderBrush="{StaticResource IMM.BorderBrush}" BorderThickness="1" CornerRadius="10" Background="White" Padding="4">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="5" Opacity="0.16" Color="#33000000" />
+            </Border.Effect>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="Transparent">
                 <TreeView ItemsSource="{Binding RootNodes}"
                           PreviewMouseWheel="TreeView_OnPreviewMouseWheel"
                           Grid.IsSharedSizeScope="True"
+                          ItemContainerStyle="{StaticResource IMM.TreeViewItemStyle}"
                           AutomationProperties.AutomationId="ModConfigTreeView"
-                          AutomationProperties.Name="Mod Configuration Tree">
+                          AutomationProperties.Name="Mod Configuration Tree"
+                          BorderThickness="0"
+                          Background="Transparent">
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type viewModels:ModConfigObjectNodeViewModel}"
                                                   ItemsSource="{Binding Children}">
-                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                            <Border x:Name="ObjectHeaderBorder" CornerRadius="8" Padding="10,6">
+                                <Border.Background>
+                                    <SolidColorBrush Color="Transparent" />
+                                </Border.Background>
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard x:Name="ObjectHoverIn">
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            Duration="0:0:0.15">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                                <Trigger.ExitActions>
+                                                    <BeginStoryboard x:Name="ObjectHoverOut">
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="Transparent"
+                                                                            Duration="0:0:0.2">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.ExitActions>
+                                            </Trigger>
+                                            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
+                                                         Value="True">
+                                                <DataTrigger.EnterActions>
+                                                    <StopStoryboard BeginStoryboardName="ObjectHoverIn" />
+                                                    <StopStoryboard BeginStoryboardName="ObjectHoverOut" />
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="{StaticResource IMM.AccentColor}"
+                                                                            Duration="0:0:0.18">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                                <DataTrigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="Transparent"
+                                                                            Duration="0:0:0.22">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.ExitActions>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock x:Name="ObjectHeaderText"
+                                           Text="{Binding DisplayName}"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource IMM.ForegroundBrush}" />
+                            </Border>
+                            <HierarchicalDataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
+                                             Value="True">
+                                    <Setter TargetName="ObjectHeaderText" Property="Foreground" Value="White" />
+                                </DataTrigger>
+                            </HierarchicalDataTemplate.Triggers>
                         </HierarchicalDataTemplate>
                         <HierarchicalDataTemplate DataType="{x:Type viewModels:ModConfigArrayNodeViewModel}"
                                                   ItemsSource="{Binding Children}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
-                                <TextBlock Margin="8,0,0,0"
-                                           Foreground="Gray"
-                                           FontStyle="Italic"
-                                           Text="{Binding ItemCount, StringFormat={}{0} items}">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding ItemCount}" Value="0">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding ItemCount}" Value="1">
-                                                    <Setter Property="Text" Value="1 item" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </StackPanel>
+                            <Border x:Name="ArrayHeaderBorder" CornerRadius="8" Padding="10,6">
+                                <Border.Background>
+                                    <SolidColorBrush Color="Transparent" />
+                                </Border.Background>
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard x:Name="ArrayHoverIn">
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            Duration="0:0:0.15">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                                <Trigger.ExitActions>
+                                                    <BeginStoryboard x:Name="ArrayHoverOut">
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="Transparent"
+                                                                            Duration="0:0:0.2">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.ExitActions>
+                                            </Trigger>
+                                            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
+                                                         Value="True">
+                                                <DataTrigger.EnterActions>
+                                                    <StopStoryboard BeginStoryboardName="ArrayHoverIn" />
+                                                    <StopStoryboard BeginStoryboardName="ArrayHoverOut" />
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="{StaticResource IMM.AccentColor}"
+                                                                            Duration="0:0:0.18">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                                <DataTrigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="Transparent"
+                                                                            Duration="0:0:0.22">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.ExitActions>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="ArrayHeaderText"
+                                               Text="{Binding DisplayName}"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource IMM.ForegroundBrush}" />
+                                    <TextBlock Margin="8,0,0,0"
+                                               Foreground="Gray"
+                                               FontStyle="Italic"
+                                               Text="{Binding ItemCount, StringFormat={}{0} items}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ItemCount}" Value="0">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding ItemCount}" Value="1">
+                                                        <Setter Property="Text" Value="1 item" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                            <HierarchicalDataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
+                                             Value="True">
+                                    <Setter TargetName="ArrayHeaderText" Property="Foreground" Value="White" />
+                                </DataTrigger>
+                            </HierarchicalDataTemplate.Triggers>
                         </HierarchicalDataTemplate>
                         <DataTemplate DataType="{x:Type viewModels:ModConfigValueNodeViewModel}">
-                            <Grid Margin="0,4,0,4">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="ConfigLabelColumn" />
-                                    <ColumnDefinition Width="20" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="ValueLabel"
-                                           Text="{Binding DisplayName}"
-                                           VerticalAlignment="Center"
-                                           Margin="0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding HasDisplayName}" Value="False">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                                <TextBox x:Name="ValueTextBox"
-                                         Grid.Column="2"
-                                         HorizontalAlignment="Stretch"
-                                         TextAlignment="Right"
-                                         Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}"
-                                         AutomationProperties.Name="{Binding DisplayName}" />
-                                <ToggleButton x:Name="BooleanToggle"
-                                              Grid.Column="2"
-                                              Margin="0"
-                                              HorizontalAlignment="Left"
-                                              Width="80"
-                                              IsChecked="{Binding BooleanValue, Mode=TwoWay}"
-                                              Visibility="Collapsed"
-                                              AutomationProperties.Name="{Binding DisplayName}">
-                                    <ToggleButton.Style>
-                                        <Style TargetType="ToggleButton">
-                                            <Setter Property="Content" Value="Off" />
-                                            <Setter Property="Padding" Value="12,2" />
-                                            <Style.Triggers>
-                                                <Trigger Property="IsChecked" Value="True">
-                                                    <Setter Property="Content" Value="On" />
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ToggleButton.Style>
-                                </ToggleButton>
-                            </Grid>
+                            <Border x:Name="ValueContainer" Margin="0,4,0,4" CornerRadius="8" Padding="10,6">
+                                <Border.Background>
+                                    <SolidColorBrush Color="Transparent" />
+                                </Border.Background>
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard x:Name="ValueHoverIn">
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            Duration="0:0:0.15">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                                <Trigger.ExitActions>
+                                                    <BeginStoryboard x:Name="ValueHoverOut">
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="Transparent"
+                                                                            Duration="0:0:0.2">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.ExitActions>
+                                            </Trigger>
+                                            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
+                                                         Value="True">
+                                                <DataTrigger.EnterActions>
+                                                    <StopStoryboard BeginStoryboardName="ValueHoverIn" />
+                                                    <StopStoryboard BeginStoryboardName="ValueHoverOut" />
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="{StaticResource IMM.ButtonPressedColor}"
+                                                                            Duration="0:0:0.18">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                                <DataTrigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                            To="Transparent"
+                                                                            Duration="0:0:0.22">
+                                                                <ColorAnimation.EasingFunction>
+                                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                                </ColorAnimation.EasingFunction>
+                                                            </ColorAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.ExitActions>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="ConfigLabelColumn" />
+                                        <ColumnDefinition Width="20" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="ValueLabel"
+                                               Text="{Binding DisplayName}"
+                                               VerticalAlignment="Center"
+                                               Margin="0"
+                                               Foreground="{StaticResource IMM.ForegroundBrush}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasDisplayName}" Value="False">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBox x:Name="ValueTextBox"
+                                             Grid.Column="2"
+                                             HorizontalAlignment="Stretch"
+                                             TextAlignment="Right"
+                                             Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{Binding DisplayName}" />
+                                    <ToggleButton x:Name="BooleanToggle"
+                                                  Grid.Column="2"
+                                                  Margin="0"
+                                                  HorizontalAlignment="Left"
+                                                  Width="80"
+                                                  IsChecked="{Binding BooleanValue, Mode=TwoWay}"
+                                                  Visibility="Collapsed"
+                                                  AutomationProperties.Name="{Binding DisplayName}">
+                                        <ToggleButton.Style>
+                                            <Style TargetType="ToggleButton" BasedOn="{StaticResource IMM.ToggleButtonBaseStyle}">
+                                                <Setter Property="Content" Value="Off" />
+                                                <Setter Property="Padding" Value="12,2" />
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter Property="Content" Value="On" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ToggleButton.Style>
+                                    </ToggleButton>
+                                </Grid>
+                            </Border>
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsBoolean}" Value="True">
                                     <Setter TargetName="ValueTextBox" Property="UIElement.Visibility" Value="Collapsed" />
@@ -113,21 +357,21 @@
             </ScrollViewer>
         </Border>
 
-        <DockPanel Grid.Row="1" Margin="0,12,0,0">
+        <DockPanel Grid.Row="1" Margin="0,12,0,0" LastChildFill="False">
             <TextBlock Text="{Binding FilePath}"
-                       Foreground="Gray"
+                       Foreground="#FF617191"
                        VerticalAlignment="Center"
                        Margin="0,0,16,0"
                        TextTrimming="CharacterEllipsis" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
                 <Button Content="Save"
-                        Width="90"
+                        Width="110"
                         Margin="0,0,8,0"
                         IsDefault="True"
                         Click="SaveButton_OnClick"
                         AutomationProperties.AutomationId="ConfigSaveButton" />
                 <Button Content="Cancel"
-                        Width="90"
+                        Width="110"
                         IsCancel="True"
                         Click="CancelButton_OnClick"
                         AutomationProperties.AutomationId="ConfigCancelButton" />
