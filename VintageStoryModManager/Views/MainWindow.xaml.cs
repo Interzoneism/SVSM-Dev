@@ -1387,6 +1387,7 @@ public partial class MainWindow : Window
 
         _selectedMods.Add(mod);
         mod.IsSelected = true;
+        UpdateSelectedModButtons();
     }
 
     private void RemoveFromSelection(ModListItemViewModel mod)
@@ -1397,6 +1398,7 @@ public partial class MainWindow : Window
         }
 
         mod.IsSelected = false;
+        UpdateSelectedModButtons();
     }
 
     private void ClearSelection(bool resetAnchor = false)
@@ -1415,6 +1417,37 @@ public partial class MainWindow : Window
         {
             _selectionAnchor = null;
         }
+
+        UpdateSelectedModButtons();
+    }
+
+    private void UpdateSelectedModButtons()
+    {
+        ModListItemViewModel? singleSelection = _selectedMods.Count == 1 ? _selectedMods[0] : null;
+
+        UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, requireModDatabaseLink: true);
+        UpdateSelectedModButton(SelectedModEditConfigButton, singleSelection, requireModDatabaseLink: false);
+        UpdateSelectedModButton(SelectedModDeleteButton, singleSelection, requireModDatabaseLink: false);
+    }
+
+    private static void UpdateSelectedModButton(WpfButton? button, ModListItemViewModel? mod, bool requireModDatabaseLink)
+    {
+        if (button is null)
+        {
+            return;
+        }
+
+        if (mod is null || (requireModDatabaseLink && !mod.HasModDatabasePageLink))
+        {
+            button.DataContext = null;
+            button.Visibility = Visibility.Collapsed;
+            button.IsEnabled = false;
+            return;
+        }
+
+        button.DataContext = mod;
+        button.Visibility = Visibility.Visible;
+        button.IsEnabled = true;
     }
 
     private bool ShouldIgnoreRowSelection(DependencyObject? source)
