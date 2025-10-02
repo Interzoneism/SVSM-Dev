@@ -76,4 +76,8 @@ public sealed class MainWindowDesignData
     public string SummaryText => TotalMods == 0
         ? "No mods found."
         : $"{ActiveMods} active of {TotalMods} mods";
+
+    public string LoadedModsText => TotalMods == 1
+        ? "Loaded 1 mod."
+        : $"Loaded {TotalMods} mods.";
 }
