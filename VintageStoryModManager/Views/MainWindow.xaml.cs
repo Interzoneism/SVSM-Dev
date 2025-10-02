@@ -657,6 +657,95 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void DeleteModButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfButton { DataContext: ModListItemViewModel mod })
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        if (!TryGetManagedModPath(mod, out string modPath, out string? errorMessage))
+        {
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                WpfMessageBox.Show(errorMessage!,
+                    "Vintage Story Mod Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+
+            return;
+        }
+
+        MessageBoxResult confirmation = WpfMessageBox.Show(
+            $"Are you sure you want to delete {mod.DisplayName}? This will remove the mod from disk.",
+            "Vintage Story Mod Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirmation != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        bool removed = false;
+        try
+        {
+            if (Directory.Exists(modPath))
+            {
+                Directory.Delete(modPath, recursive: true);
+                removed = true;
+            }
+            else if (File.Exists(modPath))
+            {
+                File.Delete(modPath);
+                removed = true;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            WpfMessageBox.Show($"Failed to delete {mod.DisplayName}:{Environment.NewLine}{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        if (!removed)
+        {
+            WpfMessageBox.Show($"The mod could not be found at:{Environment.NewLine}{modPath}{Environment.NewLine}It may have already been removed.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        else
+        {
+            _userConfiguration.RemoveModConfigPath(mod.ModId);
+        }
+
+        if (_viewModel?.RefreshCommand != null)
+        {
+            try
+            {
+                await _viewModel.RefreshCommand.ExecuteAsync(null);
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show($"The mod list could not be refreshed:{Environment.NewLine}{ex.Message}",
+                    "Vintage Story Mod Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        if (removed)
+        {
+            _viewModel?.ReportStatus($"Deleted {mod.DisplayName}.");
+        }
+    }
+
     private async void RefreshModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (_viewModel?.RefreshCommand == null)
@@ -806,6 +895,149 @@ public partial class MainWindow : Window
                 "Vintage Story Mod Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
+        }
+    }
+
+    private bool TryGetManagedModPath(ModListItemViewModel mod, out string fullPath, out string? errorMessage)
+    {
+        fullPath = string.Empty;
+        errorMessage = null;
+
+        if (_dataDirectory is null)
+        {
+            errorMessage = "The VintagestoryData folder is not available. Please verify it from File > Set Data Folder.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(mod.SourcePath))
+        {
+            errorMessage = "This mod does not have a known source path and cannot be deleted automatically.";
+            return false;
+        }
+
+        try
+        {
+            fullPath = Path.GetFullPath(mod.SourcePath);
+        }
+        catch (Exception)
+        {
+            errorMessage = "The mod path is invalid and cannot be deleted automatically.";
+            return false;
+        }
+
+        if (!IsPathWithinManagedMods(fullPath))
+        {
+            errorMessage = $"This mod is located outside of the Mods folder and cannot be deleted automatically.{Environment.NewLine}{Environment.NewLine}Location:{Environment.NewLine}{fullPath}";
+            return false;
+        }
+
+        if (!TryEnsureManagedModTargetIsSafe(fullPath, out errorMessage))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool IsPathWithinManagedMods(string fullPath)
+    {
+        if (_dataDirectory is null)
+        {
+            return false;
+        }
+
+        string modsDirectory = Path.Combine(_dataDirectory, "Mods");
+        string modsByServerDirectory = Path.Combine(_dataDirectory, "ModsByServer");
+        return IsPathUnderDirectory(fullPath, modsDirectory) || IsPathUnderDirectory(fullPath, modsByServerDirectory);
+    }
+
+    private static bool IsPathUnderDirectory(string path, string? directory)
+    {
+        if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(directory))
+        {
+            return false;
+        }
+
+        try
+        {
+            string normalizedPath = Path.GetFullPath(path)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string normalizedDirectory = Path.GetFullPath(directory)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            if (normalizedPath.Length < normalizedDirectory.Length)
+            {
+                return false;
+            }
+
+            if (!normalizedPath.StartsWith(normalizedDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (normalizedPath.Length == normalizedDirectory.Length)
+            {
+                return true;
+            }
+
+            char separator = normalizedPath[normalizedDirectory.Length];
+            return separator == Path.DirectorySeparatorChar || separator == Path.AltDirectorySeparatorChar;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private bool TryEnsureManagedModTargetIsSafe(string fullPath, out string? errorMessage)
+    {
+        errorMessage = null;
+
+        FileSystemInfo? info = null;
+
+        if (Directory.Exists(fullPath))
+        {
+            info = new DirectoryInfo(fullPath);
+        }
+        else if (File.Exists(fullPath))
+        {
+            info = new FileInfo(fullPath);
+        }
+
+        if (info is null)
+        {
+            return true;
+        }
+
+        if (!info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+        {
+            return true;
+        }
+
+        try
+        {
+            FileSystemInfo? target = info.ResolveLinkTarget(returnFinalTarget: true);
+
+            if (target is null)
+            {
+                errorMessage = $"This mod is a symbolic link and its target could not be resolved. It will not be deleted automatically.{Environment.NewLine}{Environment.NewLine}Location:{Environment.NewLine}{fullPath}";
+                return false;
+            }
+
+            string resolvedFullPath = Path.GetFullPath(target.FullName);
+
+            if (!IsPathWithinManagedMods(resolvedFullPath))
+            {
+                errorMessage = $"This mod is a symbolic link that points outside of the Mods folder and cannot be deleted automatically.{Environment.NewLine}{Environment.NewLine}Link target:{Environment.NewLine}{resolvedFullPath}";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PlatformNotSupportedException)
+        {
+            errorMessage = $"This mod is a symbolic link that could not be validated for automatic deletion.{Environment.NewLine}{Environment.NewLine}Location:{Environment.NewLine}{fullPath}{Environment.NewLine}{Environment.NewLine}Reason:{Environment.NewLine}{ex.Message}";
+            return false;
         }
     }
 

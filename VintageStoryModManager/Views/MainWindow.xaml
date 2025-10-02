@@ -235,12 +235,25 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Button Padding="4"
-                                    Background="#CCFFFFFF" 
+                                    Background="#CCFFFFFF"
                                     BorderBrush="#7F000000"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     Content="Edit Config"
                                     Click="EditConfigButton_OnClick" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Delete" Width="100" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Padding="4"
+                                    Background="#CCFFFFFF"
+                                    BorderBrush="#7F000000"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Content="Delete"
+                                    Click="DeleteModButton_OnClick" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
