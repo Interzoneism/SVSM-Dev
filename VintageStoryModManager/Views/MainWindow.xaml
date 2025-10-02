@@ -270,10 +270,9 @@
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
-                <TextBlock TextWrapping="Wrap" Margin="-6,-6,6,6">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
+                <StackPanel Margin="-6,-6,6,6">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
@@ -281,11 +280,17 @@
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </TextBlock.Style>
-                    <Run Text="{Binding SelectedMod.DisplayName, Mode=OneWay}" FontWeight="Bold" />
-                    <LineBreak />
-                    <Run Text="{Binding SelectedMod.DescriptionDisplay, Mode=OneWay}" />
-                </TextBlock>
+                    </StackPanel.Style>
+                    <TextBlock Text="{Binding SelectedMod.DisplayName, Mode=OneWay}"
+                               FontWeight="Bold"
+                               Foreground="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
+                    <TextBlock Text="{Binding SelectedMod.DescriptionDisplay, Mode=OneWay}"
+                               Margin="0,4,0,0"
+                               TextWrapping="Wrap"
+                               Foreground="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}"
+                               HorizontalAlignment="Left"
+                               MaxWidth="410" />
+                </StackPanel>
             </Grid>
         </Border>
         <Button x:Name="SelectedModDatabasePageButton"
