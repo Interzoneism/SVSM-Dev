@@ -21,7 +21,9 @@
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                 <TreeView ItemsSource="{Binding RootNodes}"
                           PreviewMouseWheel="TreeView_OnPreviewMouseWheel"
-                          Grid.IsSharedSizeScope="True">
+                          Grid.IsSharedSizeScope="True"
+                          AutomationProperties.AutomationId="ModConfigTreeView"
+                          AutomationProperties.Name="Mod Configuration Tree">
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type viewModels:ModConfigObjectNodeViewModel}"
                                                   ItemsSource="{Binding Children}">
@@ -76,14 +78,16 @@
                                          Grid.Column="2"
                                          HorizontalAlignment="Stretch"
                                          TextAlignment="Right"
-                                         Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}" />
+                                         Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.Name="{Binding DisplayName}" />
                                 <ToggleButton x:Name="BooleanToggle"
                                               Grid.Column="2"
                                               Margin="0"
                                               HorizontalAlignment="Left"
                                               Width="80"
                                               IsChecked="{Binding BooleanValue, Mode=TwoWay}"
-                                              Visibility="Collapsed">
+                                              Visibility="Collapsed"
+                                              AutomationProperties.Name="{Binding DisplayName}">
                                     <ToggleButton.Style>
                                         <Style TargetType="ToggleButton">
                                             <Setter Property="Content" Value="Off" />
@@ -120,11 +124,13 @@
                         Width="90"
                         Margin="0,0,8,0"
                         IsDefault="True"
-                        Click="SaveButton_OnClick" />
+                        Click="SaveButton_OnClick"
+                        AutomationProperties.AutomationId="ConfigSaveButton" />
                 <Button Content="Cancel"
                         Width="90"
                         IsCancel="True"
-                        Click="CancelButton_OnClick" />
+                        Click="CancelButton_OnClick"
+                        AutomationProperties.AutomationId="ConfigCancelButton" />
             </StackPanel>
         </DockPanel>
     </Grid>

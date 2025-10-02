@@ -13,6 +13,7 @@
 - Ignore all warnings about NET7 compatiblity or legacy net 7 warnings
 - Build: `dotnet build -nologo -clp:Summary -warnaserror`
 - Test: `dotnet test --nologo --verbosity=minimal`
+- Automation metadata tests verify that critical `AutomationProperties` assignments remain intact. Run the test suite after changing any automation IDs or names to catch regressions early.
 - Lint (optional): `dotnet format --verify-no-changes`
 - Game dependency DLL files live in `VSFOLDER` also available as env variable VINTAGE_STORY
 
