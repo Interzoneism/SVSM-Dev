@@ -65,7 +65,6 @@ public partial class MainWindow : Window
             new MouseButtonEventHandler(PresetComboBox_OnItemPreviewMouseDown));
         PresetComboBox.DropDownClosed += PresetComboBox_OnDropDownClosed;
         RefreshPresetList();
-        UpdateSelectedModDetails();
 
         if (!TryInitializePaths())
         {
@@ -1301,7 +1300,6 @@ public partial class MainWindow : Window
 
                 AddToSelection(mod);
                 _selectionAnchor = mod;
-                UpdateSelectedModDetails();
                 return;
             }
 
@@ -1311,7 +1309,6 @@ public partial class MainWindow : Window
                 _selectionAnchor = mod;
             }
 
-            UpdateSelectedModDetails();
             return;
         }
 
@@ -1328,14 +1325,12 @@ public partial class MainWindow : Window
                 _selectionAnchor = mod;
             }
 
-            UpdateSelectedModDetails();
             return;
         }
 
         ClearSelection();
         AddToSelection(mod);
         _selectionAnchor = mod;
-        UpdateSelectedModDetails();
     }
 
     private bool ApplyRangeSelection(ModListItemViewModel start, ModListItemViewModel end, bool preserveExisting)
@@ -1419,83 +1414,6 @@ public partial class MainWindow : Window
         if (resetAnchor)
         {
             _selectionAnchor = null;
-        }
-
-        UpdateSelectedModDetails();
-    }
-
-    private void UpdateSelectedModDetails()
-    {
-        ModListItemViewModel? mod = _selectedMods.Count == 1 ? _selectedMods[0] : null;
-
-        if (ModDescriptionTextBox != null)
-        {
-            string descriptionText;
-            if (mod is null)
-            {
-                descriptionText = string.Empty;
-            }
-            else
-            {
-                string? description = mod.Description;
-                descriptionText = string.IsNullOrWhiteSpace(description)
-                    ? "No description available."
-                    : description!;
-            }
-
-            ModDescriptionTextBox.Text = descriptionText;
-            ModDescriptionTextBox.ToolTip = string.IsNullOrWhiteSpace(descriptionText) ? null : descriptionText;
-            ModDescriptionTextBox.CaretIndex = 0;
-            ModDescriptionTextBox.ScrollToHome();
-        }
-
-        if (ModPageButton != null)
-        {
-            if (mod is not null && mod.HasModDatabasePageLink)
-            {
-                bool canOpen = mod.OpenModDatabasePageCommand?.CanExecute(null) ?? false;
-                ModPageButton.Visibility = Visibility.Visible;
-                ModPageButton.IsEnabled = canOpen;
-                ModPageButton.DataContext = mod;
-            }
-            else
-            {
-                ModPageButton.Visibility = Visibility.Collapsed;
-                ModPageButton.IsEnabled = false;
-                ModPageButton.DataContext = null;
-            }
-        }
-
-        if (ModConfigButton != null)
-        {
-            if (mod is not null)
-            {
-                ModConfigButton.Visibility = Visibility.Visible;
-                ModConfigButton.IsEnabled = true;
-                ModConfigButton.DataContext = mod;
-            }
-            else
-            {
-                ModConfigButton.Visibility = Visibility.Collapsed;
-                ModConfigButton.IsEnabled = false;
-                ModConfigButton.DataContext = null;
-            }
-        }
-
-        if (DeleteModButton != null)
-        {
-            if (mod is not null)
-            {
-                DeleteModButton.Visibility = Visibility.Visible;
-                DeleteModButton.IsEnabled = true;
-                DeleteModButton.DataContext = mod;
-            }
-            else
-            {
-                DeleteModButton.Visibility = Visibility.Collapsed;
-                DeleteModButton.IsEnabled = false;
-                DeleteModButton.DataContext = null;
-            }
         }
     }
 
