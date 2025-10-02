@@ -21,17 +21,17 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Menu IsMainMenu="True" Margin="0,6,0,9">
-            <MenuItem Header="_File" Height="30">
-                <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" />
+        <Menu IsMainMenu="True" Margin="0,6,0,9" AutomationProperties.AutomationId="MainMenu">
+            <MenuItem Header="_File" Height="30" AutomationProperties.AutomationId="FileMenu">
+                <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" AutomationProperties.AutomationId="RefreshModsMenuItem" />
                 <Separator />
-                <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" />
-                <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" />
+                <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" AutomationProperties.AutomationId="SetDataFolderMenuItem" />
+                <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" AutomationProperties.AutomationId="SetGameFolderMenuItem" />
                 <Separator />
-                <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick"/>
+                <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick" AutomationProperties.AutomationId="ExitMenuItem"/>
             </MenuItem>
-            <MenuItem Header="_Help" Height="30">
-                <MenuItem Header="_About" Height="30" />
+            <MenuItem Header="_Help" Height="30" AutomationProperties.AutomationId="HelpMenu">
+                <MenuItem Header="_About" Height="30" AutomationProperties.AutomationId="AboutMenuItem" />
             </MenuItem>
         </Menu>
 
@@ -42,6 +42,7 @@
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
                   IsReadOnly="False"
+                  AutomationProperties.AutomationId="ModsDataGrid"
                   EnableRowVirtualization="True"
                   GridLinesVisibility="Horizontal"
                   SelectionUnit="FullRow"
@@ -136,7 +137,9 @@
                                  Toggled="ActiveToggle_OnToggled"
                                  Margin="20"
                                  OnContent="{x:Null}"
-                                 OffContent="{x:Null}"/>
+                                 OffContent="{x:Null}"
+                                 AutomationProperties.AutomationId="{Binding ModId, StringFormat=ModActivationToggle_{0}}"
+                                 AutomationProperties.Name="{Binding DisplayName, StringFormat=Toggle Activation for {0}}"/>
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
@@ -196,12 +199,14 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Button Padding="4"
-                                    Background="#CCFFFFFF" 
+                                    Background="#CCFFFFFF"
                                     BorderBrush="#7F000000"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     ToolTip="{Binding ModDatabasePageUrlDisplay}"
-                                    Click="ModDatabasePageButton_OnClick">
+                                    Click="ModDatabasePageButton_OnClick"
+                                    AutomationProperties.AutomationId="{Binding ModId, StringFormat=OpenModDatabasePageButton_{0}}"
+                                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Open Mod Database Page for {0}}">
                                 <Button.Style>
                                     <Style TargetType="Button">
                                         <Setter Property="Visibility" Value="Collapsed" />
@@ -240,7 +245,9 @@
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     Content="Edit Config"
-                                    Click="EditConfigButton_OnClick" />
+                                    Click="EditConfigButton_OnClick"
+                                    AutomationProperties.AutomationId="{Binding ModId, StringFormat=EditConfigButton_{0}}"
+                                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Edit Config for {0}}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -253,7 +260,9 @@
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     Content="Delete"
-                                    Click="DeleteModButton_OnClick" />
+                                    Click="DeleteModButton_OnClick"
+                                    AutomationProperties.AutomationId="{Binding ModId, StringFormat=DeleteModButton_{0}}"
+                                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Delete {0}}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -332,17 +341,17 @@
                 </TextBlock.Style>
             </TextBlock>
         </Border>
-        <Button Content="Launch Vintage Story" Margin="891,0,0,0" Grid.Row="2" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="LaunchGameButton_OnClick" Height="32"/>
-        <Button Content="Open Mod Folder" Margin="755,0,0,0" Grid.Row="2" Width="131" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenModFolderButton_OnClick" Height="32"/>
-        <Button Content="Open Config Folder" Margin="604,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenConfigFolderButton_OnClick" Height="32"/>
-        <Button Content="Open Logs Folder" Margin="453,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenLogsFolderButton_OnClick" Height="32"/>
+        <Button Content="Launch Vintage Story" Margin="891,0,0,0" Grid.Row="2" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="LaunchGameButton_OnClick" Height="32" AutomationProperties.AutomationId="LaunchGameButton"/>
+        <Button Content="Open Mod Folder" Margin="755,0,0,0" Grid.Row="2" Width="131" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenModFolderButton_OnClick" Height="32" AutomationProperties.AutomationId="OpenModFolderButton"/>
+        <Button Content="Open Config Folder" Margin="604,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenConfigFolderButton_OnClick" Height="32" AutomationProperties.AutomationId="OpenConfigFolderButton"/>
+        <Button Content="Open Logs Folder" Margin="453,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenLogsFolderButton_OnClick" Height="32" AutomationProperties.AutomationId="OpenLogsFolderButton"/>
         <ComboBox x:Name="PresetComboBox" Margin="755,0,0,0" VerticalAlignment="Center" Width="295"
                   DisplayMemberPath="Name"
                   SelectionChanged="PresetComboBox_OnSelectionChanged"
-                  DropDownClosed="PresetComboBox_OnDropDownClosed" Height="32"/>
+                  DropDownClosed="PresetComboBox_OnDropDownClosed" Height="32" AutomationProperties.AutomationId="PresetComboBox"/>
         <Button x:Name="SavePresetButton" Content="Save Preset" Margin="635,0,0,0" Width="115" Background="#CCFFFFFF" BorderBrush="#7F000000"
                 Click="SavePresetButton_OnClick"
                 MouseEnter="SavePresetButton_OnMouseEnter"
-                MouseLeave="SavePresetButton_OnMouseLeave" Height="30"/>
+                MouseLeave="SavePresetButton_OnMouseLeave" Height="30" AutomationProperties.AutomationId="SavePresetButton"/>
     </Grid>
 </Window>
