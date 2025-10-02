@@ -312,8 +312,8 @@
         </DataGrid>
 
 
-        <Border Grid.Row="2" Padding="16" Background="{ui:ThemeResource SystemControlBackgroundBaseLowBrush}" VerticalAlignment="Center" Height="100">
-            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="-6,-6,6,6">
+        <Border Grid.Row="2" Padding="16" VerticalAlignment="Center" Height="100" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" BorderThickness="0,2,0,0">
+            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="-6,-6,6,6" Foreground="Black">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
@@ -330,10 +330,50 @@
                 </TextBlock.Style>
             </TextBlock>
         </Border>
-        <Button Content="Launch Vintage Story" Margin="891,58,0,0" Grid.Row="2" FontWeight="Bold" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="LaunchGameButton_OnClick" Height="32" VerticalAlignment="Top"/>
-        <Button Content="Open Mods Folder" Margin="891,18,0,0" Grid.Row="2" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenModFolderButton_OnClick" Height="32" VerticalAlignment="Top"/>
-        <Button Content="Open Config Folder" Margin="730,58,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenConfigFolderButton_OnClick" Height="32" VerticalAlignment="Top"/>
-        <Button Content="Open Logs Folder" Margin="730,18,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenLogsFolderButton_OnClick" Height="32" VerticalAlignment="Top"/>
+        <Button Padding="4" Grid.Row="2" Margin="450,0,0,0"
+        Background="Transparent"
+        HorizontalAlignment="Left"
+        VerticalAlignment="Center"
+        ToolTip="{Binding ModDatabasePageUrlDisplay}"
+        Click="ModDatabasePageButton_OnClick" Foreground="Transparent" BorderBrush="{x:Null}">
+            <Button.Style>
+                <Style TargetType="Button">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasModDatabasePageLink}" Value="True">
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                            <Setter Property="BorderThickness"  Value="0,0,0,0" />
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+            <Image Source="/webicon.png"
+           Width="48"
+           Height="48"
+           Stretch="Uniform"
+           HorizontalAlignment="Center"
+           VerticalAlignment="Center" />
+        </Button>
+        <Button Padding="4" Grid.Row="2" Margin="650,0,0,0"
+        Background="#CCFFFFFF"
+        BorderBrush="#7F000000"
+        Content="Delete"
+        Click="DeleteModButton_OnClick" />
+        <Button Padding="4" Grid.Row="2"
+        Background="Transparent"
+        ToolTip="Edit Config"
+        AutomationProperties.Name="Edit Config"
+        Click="EditConfigButton_OnClick" Margin="550,0,0,0">
+            <Image Source="/configicon.png"
+           Width="48"
+           Height="48"
+           Stretch="Uniform" />
+        </Button>
+        <Button Content="Launch Vintage Story" Margin="891,58,0,0" Grid.Row="2" FontWeight="Bold" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="LaunchGameButton_OnClick" Height="32" VerticalAlignment="Top" Width="159"/>
+        <Button Content="Open Mods Folder" Margin="891,18,0,0" Grid.Row="2" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenModFolderButton_OnClick" Height="32" VerticalAlignment="Top" Width="159"/>
+        <Button Content="Open Config Folder" Margin="730,58,0,0" Grid.Row="2" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenConfigFolderButton_OnClick" Height="32" VerticalAlignment="Top" Width="146"/>
+        <Button Content="Open Logs Folder" Margin="730,18,0,0" Grid.Row="2" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenLogsFolderButton_OnClick" Height="32" VerticalAlignment="Top" Width="146"/>
         <ComboBox x:Name="PresetComboBox" Margin="755,0,0,0" VerticalAlignment="Center" Width="295"
                   DisplayMemberPath="Name"
                   SelectionChanged="PresetComboBox_OnSelectionChanged"
