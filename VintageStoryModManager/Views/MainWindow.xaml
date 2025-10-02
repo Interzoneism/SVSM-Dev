@@ -273,7 +273,7 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
-                <DataGridTemplateColumn Header="Status" Width="100" IsReadOnly="True">
+                <DataGridTemplateColumn Header="Status" Width="100" IsReadOnly="True" SortMemberPath="StatusSortOrder">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock FontFamily="Segoe Fluent Icons"

@@ -230,8 +230,21 @@ public sealed class ModListItemViewModel : ObservableObject
     public string StatusText
     {
         get => _statusText;
-        private set => SetProperty(ref _statusText, value);
+        private set
+        {
+            if (SetProperty(ref _statusText, value))
+            {
+                OnPropertyChanged(nameof(StatusSortOrder));
+            }
+        }
     }
+
+    public int StatusSortOrder => StatusText switch
+    {
+        "Error" => 0,
+        "Warning" => 1,
+        _ => 2
+    };
 
     public string StatusDetails
     {
