@@ -282,9 +282,9 @@
                             </Style.Triggers>
                         </Style>
                     </TextBlock.Style>
-                    <Run Text="{Binding SelectedMod.DisplayName}" FontWeight="Bold" />
+                    <Run Text="{Binding SelectedMod.DisplayName, Mode=OneWay}" FontWeight="Bold" />
                     <LineBreak />
-                    <Run Text="{Binding SelectedMod.DescriptionDisplay}" />
+                    <Run Text="{Binding SelectedMod.DescriptionDisplay, Mode=OneWay}" />
                 </TextBlock>
             </Grid>
         </Border>
