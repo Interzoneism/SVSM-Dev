@@ -161,7 +161,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="SizeToCells" SortMemberPath="DisplayName" IsReadOnly="True">
+                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="SizeToCells" SortMemberPath="DisplayName" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="FontFamily" Value="Segoe UI" />
@@ -190,8 +190,8 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="65" IsReadOnly="True" MinWidth="64" />
-                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay}" Width="100" MinWidth="99" IsReadOnly="True" />
+                <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay, Mode=OneWay}" Width="65" IsReadOnly="True" MinWidth="64" />
+                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" Width="100" MinWidth="99" IsReadOnly="True" />
                 <DataGridTemplateColumn Header="Mod Page" Width="100" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
@@ -257,7 +257,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay}" Width="110" IsReadOnly="True">
+                <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay, Mode=OneWay}" Width="110" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="TextWrapping" Value="Wrap" />
