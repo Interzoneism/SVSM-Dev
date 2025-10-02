@@ -331,9 +331,9 @@
             </TextBlock>
         </Border>
         <Button Content="Launch Vintage Story" Margin="891,58,0,0" Grid.Row="2" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="LaunchGameButton_OnClick" Height="32" VerticalAlignment="Top"/>
-        <Button Content="Open Mod Folder" Margin="891,10,0,0" Grid.Row="2" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenModFolderButton_OnClick" Height="32" VerticalAlignment="Top"/>
-        <Button Content="Open Config Folder" Margin="604,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenConfigFolderButton_OnClick" Height="32"/>
-        <Button Content="Open Logs Folder" Margin="453,0,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenLogsFolderButton_OnClick" Height="32"/>
+        <Button Content="Open Mods Folder" Margin="891,10,0,0" Grid.Row="2" Width="159" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenModFolderButton_OnClick" Height="32" VerticalAlignment="Top"/>
+        <Button Content="Open Config Folder" Margin="730,58,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenConfigFolderButton_OnClick" Height="32" VerticalAlignment="Top"/>
+        <Button Content="Open Logs Folder" Margin="730,10,0,0" Grid.Row="2" Width="146" Background="#CCFFFFFF" BorderBrush="#7F000000" Click="OpenLogsFolderButton_OnClick" Height="32" VerticalAlignment="Top"/>
         <ComboBox x:Name="PresetComboBox" Margin="755,0,0,0" VerticalAlignment="Center" Width="295"
                   DisplayMemberPath="Name"
                   SelectionChanged="PresetComboBox_OnSelectionChanged"
