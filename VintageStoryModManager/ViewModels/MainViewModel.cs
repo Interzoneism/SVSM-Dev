@@ -33,6 +33,7 @@ public sealed class MainViewModel : ObservableObject
     private int _totalMods;
     private int _activeMods;
     private string? _modsStateFingerprint;
+    private ModListItemViewModel? _selectedMod;
 
     public MainViewModel(string dataDirectory)
     {
@@ -92,6 +93,20 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
+
+    public ModListItemViewModel? SelectedMod
+    {
+        get => _selectedMod;
+        private set
+        {
+            if (SetProperty(ref _selectedMod, value))
+            {
+                OnPropertyChanged(nameof(HasSelectedMod));
+            }
+        }
+    }
+
+    public bool HasSelectedMod => SelectedMod != null;
 
     public bool IsErrorStatus
     {
@@ -173,6 +188,11 @@ public sealed class MainViewModel : ObservableObject
     public void ReportStatus(string message, bool isError = false)
     {
         SetStatus(message, isError);
+    }
+
+    internal void SetSelectedMod(ModListItemViewModel? mod)
+    {
+        SelectedMod = mod;
     }
 
     internal async Task<ActivationResult> ApplyActivationChangeAsync(ModListItemViewModel mod, bool isActive)

@@ -18,6 +18,7 @@
   <ItemGroup>
     <Resource Include="configicon.png" />
     <Resource Include="webicon.png" />
+    <Resource Include="deleteicon.png" />
   </ItemGroup>
 
   <ItemGroup>
