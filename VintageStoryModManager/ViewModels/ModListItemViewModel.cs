@@ -140,8 +140,6 @@ public sealed class ModListItemViewModel : ObservableObject
         ? "—"
         : string.Join(", ", _dependencies.Select(dependency => dependency.Display));
 
-    public string? Description => string.IsNullOrWhiteSpace(_description) ? null : _description.Trim();
-
     public IReadOnlyList<string> DatabaseTags => _databaseTags;
 
     public string DatabaseTagsDisplay => _databaseTags.Count == 0 ? "—" : string.Join(", ", _databaseTags);

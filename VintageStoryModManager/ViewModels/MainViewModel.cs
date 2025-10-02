@@ -107,7 +107,6 @@ public sealed class MainViewModel : ObservableObject
             if (SetProperty(ref _totalMods, value))
             {
                 OnPropertyChanged(nameof(SummaryText));
-                OnPropertyChanged(nameof(LoadedModsText));
             }
         }
     }
@@ -127,10 +126,6 @@ public sealed class MainViewModel : ObservableObject
     public string SummaryText => TotalMods == 0
         ? "No mods found."
         : $"{ActiveMods} active of {TotalMods} mods";
-
-    public string LoadedModsText => TotalMods == 1
-        ? "Loaded 1 mod."
-        : $"Loaded {TotalMods} mods.";
 
     public IAsyncRelayCommand RefreshCommand { get; }
 
