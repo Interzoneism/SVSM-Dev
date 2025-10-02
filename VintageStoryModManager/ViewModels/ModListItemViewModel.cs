@@ -158,6 +158,8 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public string LatestDatabaseVersionDisplay => string.IsNullOrWhiteSpace(LatestDatabaseVersion) ? "—" : LatestDatabaseVersion!;
 
+    public string DescriptionDisplay => string.IsNullOrWhiteSpace(_description) ? "No description available." : _description!;
+
     public string? Website { get; }
 
     public Uri? WebsiteUri { get; }

@@ -1428,6 +1428,7 @@ public partial class MainWindow : Window
         UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, requireModDatabaseLink: true);
         UpdateSelectedModButton(SelectedModEditConfigButton, singleSelection, requireModDatabaseLink: false);
         UpdateSelectedModButton(SelectedModDeleteButton, singleSelection, requireModDatabaseLink: false);
+        _viewModel?.SetSelectedMod(singleSelection);
     }
 
     private static void UpdateSelectedModButton(WpfButton? button, ModListItemViewModel? mod, bool requireModDatabaseLink)
