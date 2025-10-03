@@ -145,8 +145,34 @@ public partial class MainWindow : Window
         }
 
         _viewModel = new MainViewModel(_dataDirectory);
+        _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         DataContext = _viewModel;
+        ApplyCompactViewState(_viewModel.IsCompactView);
         AttachToModsView(_viewModel.ModsView);
+    }
+
+    private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.IsCompactView))
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (_viewModel != null)
+                {
+                    ApplyCompactViewState(_viewModel.IsCompactView);
+                }
+            });
+        }
+    }
+
+    private void ApplyCompactViewState(bool isCompactView)
+    {
+        if (IconColumn == null)
+        {
+            return;
+        }
+
+        IconColumn.Visibility = isCompactView ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private async Task InitializeViewModelAsync(MainViewModel viewModel)
