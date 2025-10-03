@@ -89,7 +89,9 @@ public sealed class ModListItemViewModel : ObservableObject
             ModDependencyInfo[] filtered = dependencies.Where(d => !d.IsGameOrCoreDependency).ToArray();
             _dependencies = filtered.Length == 0 ? Array.Empty<ModDependencyInfo>() : filtered;
         }
-        _description = entry.Description;
+        _description = string.IsNullOrWhiteSpace(entry.Description)
+            ? null
+            : entry.Description!.Trim();
         _metadataError = entry.Error;
         Side = entry.Side;
         RequiredOnClient = entry.RequiredOnClient;
@@ -108,6 +110,10 @@ public sealed class ModListItemViewModel : ObservableObject
     public string ModId { get; }
 
     public string DisplayName { get; }
+
+    public bool HasDescription => !string.IsNullOrWhiteSpace(_description);
+
+    public string? Description => _description;
 
     public string? Version { get; }
 
@@ -369,7 +375,7 @@ public sealed class ModListItemViewModel : ObservableObject
                 tooltipText,
                 Environment.NewLine,
                 Environment.NewLine,
-                _description.Trim());
+                _description);
         }
 
         if (!string.IsNullOrWhiteSpace(_versionWarningMessage))

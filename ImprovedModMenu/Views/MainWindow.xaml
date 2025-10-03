@@ -58,7 +58,6 @@
                   PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                   Background="White"
                   RowBackground="Transparent"
-                  AlternatingRowBackground="#0F1A5AA9"
                   HorizontalGridLinesBrush="{StaticResource IMM.BorderBrush}"
                   VerticalGridLinesBrush="{StaticResource IMM.BorderBrush}"
                   ui:ControlHelper.CornerRadius="10"
@@ -328,37 +327,50 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="SizeToCells" SortMemberPath="DisplayName" IsReadOnly="True">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="FontFamily" Value="Segoe UI" />
-                            <Setter Property="FontWeight" Value="Bold" />
-                            <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                            <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
-                            <Setter Property="HorizontalAlignment" Value="Stretch" />
-                            <Setter Property="VerticalAlignment" Value="Center" />
-                            <Setter Property="TextAlignment" Value="Left" />
-                            <Setter Property="Margin" Value="15,0,0,0" />
-                            <Setter Property="ToolTipService.ToolTip">
-                                <Setter.Value>
-                                    <TextBlock Text="{Binding Tooltip}"
-                                               FontFamily="Segoe UI"
-                                               FontSize="12"
-                                               FontWeight="Normal"
-                                               TextWrapping="Wrap" />
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                    <DataGridTextColumn.CellStyle>
+                <DataGridTemplateColumn Header="Name"
+                                        SortMemberPath="DisplayName"
+                                        Width="*"
+                                        MinWidth="200"
+                                        IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="15,0,0,0"
+                                        Orientation="Vertical"
+                                        HorizontalAlignment="Stretch">
+                                <TextBlock Text="{Binding DisplayName}"
+                                           FontFamily="Segoe UI"
+                                           FontWeight="Bold"
+                                           ToolTipService.ShowDuration="60000"
+                                           ToolTipService.InitialShowDelay="200"
+                                           ToolTipService.ToolTip="{Binding Tooltip}" />
+                                <TextBlock Text="{Binding Description}"
+                                           Margin="0,4,0,0"
+                                           TextWrapping="Wrap">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding IsSelected}" Value="True" />
+                                                        <Condition Binding="{Binding HasDescription}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="DataGridCell">
-                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             <Setter Property="VerticalContentAlignment" Value="Center" />
                         </Style>
-                    </DataGridTextColumn.CellStyle>
-                </DataGridTextColumn>
-                <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay, Mode=OneWay}" Width="65" IsReadOnly="True" MinWidth="64" />
-                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" Width="100" MinWidth="99" IsReadOnly="True" />
+                    </DataGridTemplateColumn.CellStyle>
+                </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="Mod Page" Width="100" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
@@ -430,6 +442,8 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay, Mode=OneWay}" Width="65" IsReadOnly="True" MinWidth="64" />
+                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" Width="100" MinWidth="99" IsReadOnly="True" />
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay, Mode=OneWay}" Width="110" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
@@ -487,45 +501,97 @@
         </DataGrid>
 
 
-        <Border Grid.Row="2"
-                Padding="16"
-                Background="{StaticResource IMM.SurfaceBrush}"
-                BorderBrush="{StaticResource IMM.BorderBrush}"
-                BorderThickness="1"
-                CornerRadius="8"
-                VerticalAlignment="Center"
-                Height="56">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="12" Direction="270" ShadowDepth="4" Opacity="0.14" Color="#33000000" />
-            </Border.Effect>
-            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="-6,-6,6,6">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
-                                <Setter Property="Visibility" Value="Visible" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                <Setter Property="Foreground" Value="#FFD13438" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-        </Border>
-        <Button Content="Launch Vintage Story" Margin="891,0,0,0" Grid.Row="2" Width="159" Background="{DynamicResource IMM.ButtonBackgroundBrush}" BorderBrush="{DynamicResource IMM.BorderBrush}" Click="LaunchGameButton_OnClick" Height="32" AutomationProperties.AutomationId="LaunchGameButton"/>
-        <Button Content="Open Mod Folder" Margin="755,0,0,0" Grid.Row="2" Width="131" Background="{DynamicResource IMM.ButtonBackgroundBrush}" BorderBrush="{DynamicResource IMM.BorderBrush}" Click="OpenModFolderButton_OnClick" Height="32" AutomationProperties.AutomationId="OpenModFolderButton"/>
-        <Button Content="Open Config Folder" Margin="604,0,0,0" Grid.Row="2" Width="146" Background="{DynamicResource IMM.ButtonBackgroundBrush}" BorderBrush="{DynamicResource IMM.BorderBrush}" Click="OpenConfigFolderButton_OnClick" Height="32" AutomationProperties.AutomationId="OpenConfigFolderButton"/>
-        <Button Content="Open Logs Folder" Margin="453,0,0,0" Grid.Row="2" Width="146" Background="{DynamicResource IMM.ButtonBackgroundBrush}" BorderBrush="{DynamicResource IMM.BorderBrush}" Click="OpenLogsFolderButton_OnClick" Height="32" AutomationProperties.AutomationId="OpenLogsFolderButton"/>
-        <ComboBox x:Name="PresetComboBox" Margin="755,0,0,0" VerticalAlignment="Center" Width="295"
-                  DisplayMemberPath="Name"
-                  SelectionChanged="PresetComboBox_OnSelectionChanged"
-                  DropDownClosed="PresetComboBox_OnDropDownClosed" Height="32" AutomationProperties.AutomationId="PresetComboBox"/>
-        <Button x:Name="SavePresetButton" Content="Save Preset" Margin="635,0,0,0" Width="115" Background="{DynamicResource IMM.ButtonBackgroundBrush}" BorderBrush="{DynamicResource IMM.BorderBrush}"
-                Click="SavePresetButton_OnClick"
-                MouseEnter="SavePresetButton_OnMouseEnter"
-                MouseLeave="SavePresetButton_OnMouseLeave" Height="30" AutomationProperties.AutomationId="SavePresetButton"/>
+        <Grid Grid.Row="2" Margin="16,0,16,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Margin="0,0,16,0"
+                    Padding="16"
+                    Background="{StaticResource IMM.SurfaceBrush}"
+                    BorderBrush="{StaticResource IMM.BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    VerticalAlignment="Center"
+                    Height="56">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" Direction="270" ShadowDepth="4" Opacity="0.14" Color="#33000000" />
+                </Border.Effect>
+                <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="-6,-6,6,6">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
+                                    <Setter Property="Foreground" Value="#FFD13438" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Border>
+
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+                <ComboBox x:Name="PresetComboBox"
+                          Width="295"
+                          Margin="0,0,12,0"
+                          VerticalAlignment="Center"
+                          DisplayMemberPath="Name"
+                          SelectionChanged="PresetComboBox_OnSelectionChanged"
+                          DropDownClosed="PresetComboBox_OnDropDownClosed"
+                          Height="32"
+                          AutomationProperties.AutomationId="PresetComboBox" />
+                <Button x:Name="SavePresetButton"
+                        Content="Save Preset"
+                        Width="115"
+                        Height="30"
+                        Margin="0,0,12,0"
+                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                        Click="SavePresetButton_OnClick"
+                        MouseEnter="SavePresetButton_OnMouseEnter"
+                        MouseLeave="SavePresetButton_OnMouseLeave"
+                        AutomationProperties.AutomationId="SavePresetButton" />
+                <Button Content="Open Logs Folder"
+                        Width="146"
+                        Height="32"
+                        Margin="0,0,12,0"
+                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                        Click="OpenLogsFolderButton_OnClick"
+                        AutomationProperties.AutomationId="OpenLogsFolderButton" />
+                <Button Content="Open Config Folder"
+                        Width="146"
+                        Height="32"
+                        Margin="0,0,12,0"
+                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                        Click="OpenConfigFolderButton_OnClick"
+                        AutomationProperties.AutomationId="OpenConfigFolderButton" />
+                <Button Content="Open Mod Folder"
+                        Width="131"
+                        Height="32"
+                        Margin="0,0,12,0"
+                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                        Click="OpenModFolderButton_OnClick"
+                        AutomationProperties.AutomationId="OpenModFolderButton" />
+                <Button Content="Launch Vintage Story"
+                        Width="159"
+                        Height="32"
+                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                        Click="LaunchGameButton_OnClick"
+                        AutomationProperties.AutomationId="LaunchGameButton" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>
