@@ -195,6 +195,24 @@ public sealed class MainViewModel : ObservableObject
         SelectedMod = mod;
     }
 
+    internal async Task<bool> PreserveActivationStateAsync(string modId, string? previousVersion, string? newVersion, bool wasActive)
+    {
+        string? localError = null;
+
+        bool success = await Task.Run(() =>
+            _settingsStore.TryUpdateDisabledEntry(modId, previousVersion, newVersion, shouldDisable: !wasActive, out localError));
+
+        if (!success)
+        {
+            string message = string.IsNullOrWhiteSpace(localError)
+                ? $"Failed to preserve the activation state for {modId}."
+                : localError!;
+            SetStatus(message, true);
+        }
+
+        return success;
+    }
+
     internal async Task<ActivationResult> ApplyActivationChangeAsync(ModListItemViewModel mod, bool isActive)
     {
         ArgumentNullException.ThrowIfNull(mod);

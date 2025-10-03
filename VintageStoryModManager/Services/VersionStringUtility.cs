@@ -49,4 +49,72 @@ internal static class VersionStringUtility
         string candidate = string.Join('.', normalized);
         return string.IsNullOrWhiteSpace(candidate) ? null : candidate;
     }
+
+    public static bool IsCandidateVersionNewer(string? candidateVersion, string? currentVersion)
+    {
+        if (string.IsNullOrWhiteSpace(candidateVersion))
+        {
+            return false;
+        }
+
+        string? normalizedCandidate = Normalize(candidateVersion);
+        string? normalizedCurrent = Normalize(currentVersion);
+
+        if (normalizedCandidate is null)
+        {
+            if (string.IsNullOrWhiteSpace(currentVersion))
+            {
+                return false;
+            }
+
+            return !string.Equals(candidateVersion.Trim(), currentVersion.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (normalizedCurrent is null)
+        {
+            return true;
+        }
+
+        if (TryParseVersionParts(normalizedCandidate, out var candidateParts)
+            && TryParseVersionParts(normalizedCurrent, out var currentParts))
+        {
+            int length = Math.Max(candidateParts.Length, currentParts.Length);
+            for (int i = 0; i < length; i++)
+            {
+                int candidatePart = i < candidateParts.Length ? candidateParts[i] : 0;
+                int currentPart = i < currentParts.Length ? currentParts[i] : 0;
+
+                if (candidatePart > currentPart)
+                {
+                    return true;
+                }
+
+                if (candidatePart < currentPart)
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        return !string.Equals(normalizedCandidate, normalizedCurrent, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryParseVersionParts(string normalizedVersion, out int[] parts)
+    {
+        string[] tokens = normalizedVersion.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        parts = new int[tokens.Length];
+
+        for (int i = 0; i < tokens.Length; i++)
+        {
+            if (!int.TryParse(tokens[i], out parts[i]))
+            {
+                parts = Array.Empty<int>();
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

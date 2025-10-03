@@ -229,6 +229,89 @@ public sealed class ClientSettingsStore
         }
     }
 
+    public bool TryUpdateDisabledEntry(string modId, string? previousVersion, string? newVersion, bool shouldDisable, out string? error)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            error = "Mod ID is missing.";
+            return false;
+        }
+
+        string normalizedModId = modId.Trim();
+        string? previousKey = ComposeVersionKey(normalizedModId, previousVersion);
+        string? newKey = ComposeVersionKey(normalizedModId, newVersion);
+
+        lock (_syncRoot)
+        {
+            bool hadGeneralEntry = _disabledLookup.Contains(normalizedModId);
+            bool changed = false;
+
+            if (previousKey != null)
+            {
+                changed |= RemoveDisabledEntry(previousKey);
+            }
+
+            if (!shouldDisable)
+            {
+                changed |= RemoveDisabledEntry(normalizedModId);
+                if (newKey != null)
+                {
+                    changed |= RemoveDisabledEntry(newKey);
+                }
+            }
+            else
+            {
+                if (hadGeneralEntry)
+                {
+                    if (!_disabledLookup.Contains(normalizedModId))
+                    {
+                        _disabledLookup.Add(normalizedModId);
+                        _disabledMods.Add(normalizedModId);
+                        changed = true;
+                    }
+                }
+                else
+                {
+                    string keyToAdd = newKey ?? normalizedModId;
+                    if (!_disabledLookup.Contains(keyToAdd))
+                    {
+                        _disabledLookup.Add(keyToAdd);
+                        _disabledMods.Add(keyToAdd);
+                        changed = true;
+                    }
+                }
+            }
+
+            if (!changed)
+            {
+                error = null;
+                return true;
+            }
+
+            try
+            {
+                Persist();
+                error = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+        }
+    }
+
+    private static string? ComposeVersionKey(string modId, string? version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return null;
+        }
+
+        return string.Concat(modId, '@', version.Trim());
+    }
+
     private bool RemoveDisabledEntry(string key)
     {
         if (!_disabledLookup.Remove(key))

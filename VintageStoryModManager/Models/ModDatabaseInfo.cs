@@ -19,4 +19,8 @@ public sealed class ModDatabaseInfo
     public string? LatestVersion { get; init; }
 
     public IReadOnlyList<string> RequiredGameVersions { get; init; } = Array.Empty<string>();
+
+    public ModReleaseInfo? LatestRelease { get; init; }
+
+    public ModReleaseInfo? LatestCompatibleRelease { get; init; }
 }

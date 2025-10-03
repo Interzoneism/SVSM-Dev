@@ -29,6 +29,7 @@
               AutomationProperties.AutomationId="MainMenu">
             <MenuItem Header="_File" Height="30" AutomationProperties.AutomationId="FileMenu">
                 <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" AutomationProperties.AutomationId="RefreshModsMenuItem" />
+                <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" AutomationProperties.AutomationId="UpdateAllModsMenuItem" />
                 <Separator />
                 <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" AutomationProperties.AutomationId="SetDataFolderMenuItem" />
                 <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" AutomationProperties.AutomationId="SetGameFolderMenuItem" />
@@ -535,6 +536,21 @@
                                            Stretch="Uniform"
                                            Margin="0,0,6,0" />
                                     <TextBlock Text="Mod Page" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="SelectedModUpdateButton"
+                                    Margin="0,0,8,0"
+                                    Padding="12,6"
+                                    Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                    BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                    Visibility="Collapsed"
+                                    IsEnabled="False"
+                                    Click="UpdateModButton_OnClick"
+                                    AutomationProperties.AutomationId="SelectedModUpdateButton"
+                                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Update {0}}"
+                                    ToolTip="{Binding UpdateButtonToolTip}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Update" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                             <Button x:Name="SelectedModEditConfigButton"

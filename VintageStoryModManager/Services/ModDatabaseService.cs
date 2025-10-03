@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
@@ -68,8 +69,11 @@ public sealed class ModDatabaseService
             var tags = GetStringList(modElement, "tags");
             string? assetId = TryGetAssetId(modElement);
             string? modPageUrl = assetId == null ? null : ModPageBaseUrl + assetId;
-            string? latestVersion = FindLatestReleaseVersion(modElement);
-            string? latestCompatibleVersion = FindCompatibleReleaseVersion(modElement, normalizedGameVersion);
+            IReadOnlyList<ModReleaseInfo> releases = BuildReleaseInfos(modElement, normalizedGameVersion);
+            ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
+            ModReleaseInfo? latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
+            string? latestVersion = latestRelease?.Version;
+            string? latestCompatibleVersion = latestCompatibleRelease?.Version;
             IReadOnlyList<string> requiredVersions = FindRequiredGameVersions(modElement, modVersion);
 
             return new ModDatabaseInfo
@@ -79,7 +83,9 @@ public sealed class ModDatabaseService
                 ModPageUrl = modPageUrl,
                 LatestCompatibleVersion = latestCompatibleVersion,
                 LatestVersion = latestVersion,
-                RequiredGameVersions = requiredVersions
+                RequiredGameVersions = requiredVersions,
+                LatestRelease = latestRelease,
+                LatestCompatibleRelease = latestCompatibleRelease
             };
         }
         catch (OperationCanceledException)
@@ -131,61 +137,88 @@ public sealed class ModDatabaseService
         };
     }
 
-    private static string? FindLatestReleaseVersion(JsonElement modElement)
+    private static IReadOnlyList<ModReleaseInfo> BuildReleaseInfos(JsonElement modElement, string? normalizedGameVersion)
     {
         if (!modElement.TryGetProperty("releases", out JsonElement releasesElement) || releasesElement.ValueKind != JsonValueKind.Array)
         {
-            return null;
+            return Array.Empty<ModReleaseInfo>();
         }
 
-        foreach (JsonElement release in releasesElement.EnumerateArray())
+        var releases = new List<ModReleaseInfo>();
+
+        foreach (JsonElement releaseElement in releasesElement.EnumerateArray())
         {
-            if (release.ValueKind != JsonValueKind.Object)
+            if (releaseElement.ValueKind != JsonValueKind.Object)
             {
                 continue;
             }
 
-            string? version = ExtractReleaseVersion(release);
-            if (!string.IsNullOrWhiteSpace(version))
+            if (TryCreateReleaseInfo(releaseElement, normalizedGameVersion, out ModReleaseInfo release))
             {
-                return version;
+                releases.Add(release);
             }
         }
 
-        return null;
+        return releases.Count == 0 ? Array.Empty<ModReleaseInfo>() : releases;
     }
 
-    private static string? FindCompatibleReleaseVersion(JsonElement modElement, string? normalizedGameVersion)
+    private static bool TryCreateReleaseInfo(JsonElement releaseElement, string? normalizedGameVersion, out ModReleaseInfo release)
     {
-        if (normalizedGameVersion == null)
+        release = default!;
+
+        string? downloadUrl = GetString(releaseElement, "mainfile");
+        if (string.IsNullOrWhiteSpace(downloadUrl) || !Uri.TryCreate(downloadUrl, UriKind.Absolute, out Uri? downloadUri))
         {
-            return null;
+            return false;
         }
 
-        if (!modElement.TryGetProperty("releases", out JsonElement releasesElement) || releasesElement.ValueKind != JsonValueKind.Array)
+        string? version = ExtractReleaseVersion(releaseElement);
+        if (string.IsNullOrWhiteSpace(version))
         {
-            return null;
+            return false;
         }
 
-        foreach (JsonElement release in releasesElement.EnumerateArray())
-        {
-            if (release.ValueKind != JsonValueKind.Object)
-            {
-                continue;
-            }
+        string? normalizedVersion = VersionStringUtility.Normalize(version);
+        IReadOnlyList<string> releaseTags = GetStringList(releaseElement, "tags");
+        bool isCompatible = false;
 
-            var tags = GetStringList(release, "tags");
-            foreach (string tag in tags)
+        if (normalizedGameVersion != null && releaseTags.Count > 0)
+        {
+            foreach (string tag in releaseTags)
             {
                 string? normalizedTag = VersionStringUtility.Normalize(tag);
                 if (normalizedTag != null && string.Equals(normalizedTag, normalizedGameVersion, StringComparison.OrdinalIgnoreCase))
                 {
-                    return ExtractReleaseVersion(release);
+                    isCompatible = true;
+                    break;
                 }
             }
         }
 
-        return null;
+        string? fileName = GetString(releaseElement, "filename");
+
+        release = new ModReleaseInfo
+        {
+            Version = version!,
+            NormalizedVersion = normalizedVersion,
+            DownloadUri = downloadUri,
+            FileName = fileName,
+            GameVersionTags = releaseTags,
+            IsCompatibleWithInstalledGame = isCompatible
+        };
+
+        return true;
+    }
+
+    private static string? GetString(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out JsonElement value) || value.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        string? text = value.GetString();
+        return string.IsNullOrWhiteSpace(text) ? null : text;
     }
 
     private static IReadOnlyList<string> FindRequiredGameVersions(JsonElement modElement, string? modVersion)
