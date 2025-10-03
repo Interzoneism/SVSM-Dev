@@ -429,7 +429,7 @@
                     Background="{StaticResource IMM.SurfaceBrush}"
                     BorderBrush="{StaticResource IMM.BorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="8,8,0,0">
+                    CornerRadius="8,8,8,0">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="12" Direction="270" ShadowDepth="4" Opacity="0.14" Color="#33000000" />
                 </Border.Effect>
@@ -443,13 +443,13 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="0"
+                    <TextBlock Grid.Row="1"
                                Grid.Column="1"
                                Text="{Binding StatusMessage}"
                                TextWrapping="Wrap"
                                Margin="6,-6,-6,6"
                                TextAlignment="Right"
-                               HorizontalAlignment="Right">
+                               HorizontalAlignment="Right" VerticalAlignment="Bottom">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
@@ -492,7 +492,7 @@
                                        Text="{Binding SelectedMod.DisplayName}"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource IMM.ForegroundBrush}"
-                                       TextAlignment="Left" />
+                                       TextAlignment="Left" VerticalAlignment="Top" HorizontalAlignment="Left" />
                             <TextBlock Grid.Row="1"
                                        Margin="0,4,0,0"
                                        Text="{Binding SelectedMod.DescriptionDisplay}"
@@ -500,7 +500,7 @@
                                        MaxWidth="420"
                                        TextWrapping="Wrap"
                                        TextTrimming="CharacterEllipsis"
-                                       TextAlignment="Left" />
+                                       TextAlignment="Left" HorizontalAlignment="Left" VerticalAlignment="Top" />
                         </Grid>
 
                         <StackPanel Grid.Column="1"
