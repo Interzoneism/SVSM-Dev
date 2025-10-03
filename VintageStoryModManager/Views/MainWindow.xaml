@@ -58,7 +58,6 @@
                   PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                   Background="White"
                   RowBackground="Transparent"
-                  AlternatingRowBackground="#0F1A5AA9"
                   HorizontalGridLinesBrush="{StaticResource IMM.BorderBrush}"
                   VerticalGridLinesBrush="{StaticResource IMM.BorderBrush}"
                   ui:ControlHelper.CornerRadius="10"
@@ -419,152 +418,220 @@
         </DataGrid>
 
 
-        <Border Grid.Row="2"
-                Padding="16"
-                Background="{StaticResource IMM.SurfaceBrush}"
-                BorderBrush="{StaticResource IMM.BorderBrush}"
-                BorderThickness="1"
-                CornerRadius="8,8,0,0"
-                VerticalAlignment="Center"
-                Height="129">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="12" Direction="270" ShadowDepth="4" Opacity="0.14" Color="#33000000" />
-            </Border.Effect>
-            <Grid>
+        <Grid Grid.Row="2" Margin="16,0,16,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Padding="16"
+                    Background="{StaticResource IMM.SurfaceBrush}"
+                    BorderBrush="{StaticResource IMM.BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8,8,0,0">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" Direction="270" ShadowDepth="4" Opacity="0.14" Color="#33000000" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="{Binding StatusMessage}"
+                               TextWrapping="Wrap"
+                               Margin="-6,-6,6,6">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
+                                        <Setter Property="Foreground" Value="#FFD13438" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <Grid Grid.Row="1" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0"
+                                    VerticalAlignment="Center">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="{Binding SelectedMod.DisplayName}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource IMM.ForegroundBrush}" />
+                            <TextBlock Text="{Binding SelectedMod.DescriptionDisplay}"
+                                       Margin="0,2,0,0"
+                                       Foreground="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       MaxWidth="420"
+                                       TextWrapping="Wrap"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    Margin="24,0,0,0"
+                                    VerticalAlignment="Center">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <Button x:Name="SelectedModDatabasePageButton"
+                                    Margin="0,0,8,0"
+                                    Padding="12,6"
+                                    Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                    BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                    Visibility="Collapsed"
+                                    IsEnabled="False"
+                                    Click="ModDatabasePageButton_OnClick"
+                                    AutomationProperties.AutomationId="SelectedModDatabasePageButton"
+                                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Open Mod Database Page for {0}}"
+                                    ToolTip="{Binding ModDatabasePageUrlDisplay}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Image Source="/webicon.png"
+                                           Width="20"
+                                           Height="20"
+                                           Stretch="Uniform"
+                                           Margin="0,0,6,0" />
+                                    <TextBlock Text="Mod Page" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="SelectedModEditConfigButton"
+                                    Margin="0,0,8,0"
+                                    Padding="12,6"
+                                    Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                    BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                    Visibility="Collapsed"
+                                    IsEnabled="False"
+                                    Click="EditConfigButton_OnClick"
+                                    AutomationProperties.AutomationId="SelectedModEditConfigButton"
+                                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Edit Config for {0}}"
+                                    ToolTip="{Binding DisplayName, StringFormat=Edit Config for {0}}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Image Source="/configicon.png"
+                                           Width="20"
+                                           Height="20"
+                                           Stretch="Uniform"
+                                           Margin="0,0,6,0" />
+                                    <TextBlock Text="Edit Config" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="SelectedModDeleteButton"
+                                    Padding="12,6"
+                                    Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                    BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                    Visibility="Collapsed"
+                                    IsEnabled="False"
+                                    Click="DeleteModButton_OnClick"
+                                    AutomationProperties.AutomationId="SelectedModDeleteButton"
+                                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Delete {0}}"
+                                    ToolTip="{Binding DisplayName, StringFormat=Delete {0}}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Image Source="/deleteicon.png"
+                                           Width="20"
+                                           Height="20"
+                                           Stretch="Uniform"
+                                           Margin="0,0,6,0" />
+                                    <TextBlock Text="Delete" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="1" Margin="0,12,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0"
-                           Text="{Binding StatusMessage}"
-                           TextWrapping="Wrap"
-                           Margin="-6,-6,6,6">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                    <Setter Property="Foreground" Value="#FFD13438" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
-                <StackPanel Grid.Column="1"
-                            Margin="24,0,0,0"
+
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Left"
                             VerticalAlignment="Center">
-                    <StackPanel.Style>
-                        <Style TargetType="StackPanel">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
-                    <TextBlock Text="{Binding SelectedMod.DisplayName}"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource IMM.ForegroundBrush}" />
-                    <TextBlock Text="{Binding SelectedMod.DescriptionDisplay}"
-                               Margin="0,2,0,0"
-                               Foreground="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}"
-                               MaxWidth="420"
-                               TextWrapping="Wrap"
-                               TextTrimming="CharacterEllipsis" />
+                    <Button x:Name="SavePresetButton"
+                            Content="Save Preset"
+                            Margin="0,0,12,0"
+                            Width="115"
+                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                            BorderBrush="{DynamicResource IMM.BorderBrush}"
+                            Click="SavePresetButton_OnClick"
+                            MouseEnter="SavePresetButton_OnMouseEnter"
+                            MouseLeave="SavePresetButton_OnMouseLeave"
+                            Height="30"
+                            AutomationProperties.AutomationId="SavePresetButton" />
+                    <ComboBox x:Name="PresetComboBox"
+                              Width="260"
+                              DisplayMemberPath="Name"
+                              SelectionChanged="PresetComboBox_OnSelectionChanged"
+                              DropDownClosed="PresetComboBox_OnDropDownClosed"
+                              Height="32"
+                              AutomationProperties.AutomationId="PresetComboBox" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                    <Button Content="Open Logs Folder"
+                            Margin="0,0,8,0"
+                            Width="146"
+                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                            BorderBrush="{DynamicResource IMM.BorderBrush}"
+                            Click="OpenLogsFolderButton_OnClick"
+                            Height="32"
+                            AutomationProperties.AutomationId="OpenLogsFolderButton" />
+                    <Button Content="Open Config Folder"
+                            Margin="0,0,8,0"
+                            Width="146"
+                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                            BorderBrush="{DynamicResource IMM.BorderBrush}"
+                            Click="OpenConfigFolderButton_OnClick"
+                            Height="32"
+                            AutomationProperties.AutomationId="OpenConfigFolderButton" />
+                    <Button Content="Open Mods Folder"
+                            Margin="0,0,8,0"
+                            Width="159"
+                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                            BorderBrush="{DynamicResource IMM.BorderBrush}"
+                            Click="OpenModFolderButton_OnClick"
+                            Height="32"
+                            AutomationProperties.AutomationId="OpenModFolderButton" />
+                    <Button Content="Launch Vintage Story"
+                            Width="159"
+                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                            BorderBrush="{DynamicResource IMM.BorderBrush}"
+                            Click="LaunchGameButton_OnClick"
+                            Height="32"
+                            AutomationProperties.AutomationId="LaunchGameButton" />
                 </StackPanel>
             </Grid>
-        </Border>
-        <StackPanel Grid.Row="2"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    Margin="32,0,0,0">
-            <StackPanel.Style>
-                <Style TargetType="StackPanel">
-                    <Setter Property="Visibility" Value="Collapsed" />
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
-                            <Setter Property="Visibility" Value="Visible" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </StackPanel.Style>
-            <Button x:Name="SelectedModDatabasePageButton"
-                    Margin="0,0,8,0"
-                    Padding="12,6"
-                    Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                    BorderBrush="{DynamicResource IMM.BorderBrush}"
-                    Visibility="Collapsed"
-                    IsEnabled="False"
-                    Click="ModDatabasePageButton_OnClick"
-                    AutomationProperties.AutomationId="SelectedModDatabasePageButton"
-                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Open Mod Database Page for {0}}"
-                    ToolTip="{Binding ModDatabasePageUrlDisplay}">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Image Source="/webicon.png"
-                           Width="20"
-                           Height="20"
-                           Stretch="Uniform"
-                           Margin="0,0,6,0" />
-                    <TextBlock Text="Mod Page" VerticalAlignment="Center" />
-                </StackPanel>
-            </Button>
-            <Button x:Name="SelectedModEditConfigButton"
-                    Margin="0,0,8,0"
-                    Padding="12,6"
-                    Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                    BorderBrush="{DynamicResource IMM.BorderBrush}"
-                    Visibility="Collapsed"
-                    IsEnabled="False"
-                    Click="EditConfigButton_OnClick"
-                    AutomationProperties.AutomationId="SelectedModEditConfigButton"
-                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Edit Config for {0}}"
-                    ToolTip="{Binding DisplayName, StringFormat=Edit Config for {0}}">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Image Source="/configicon.png"
-                           Width="20"
-                           Height="20"
-                           Stretch="Uniform"
-                           Margin="0,0,6,0" />
-                    <TextBlock Text="Edit Config" VerticalAlignment="Center" />
-                </StackPanel>
-            </Button>
-            <Button x:Name="SelectedModDeleteButton"
-                    Padding="12,6"
-                    Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                    BorderBrush="{DynamicResource IMM.BorderBrush}"
-                    Visibility="Collapsed"
-                    IsEnabled="False"
-                    Click="DeleteModButton_OnClick"
-                    AutomationProperties.AutomationId="SelectedModDeleteButton"
-                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Delete {0}}"
-                    ToolTip="{Binding DisplayName, StringFormat=Delete {0}}">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Image Source="/deleteicon.png"
-                           Width="20"
-                           Height="20"
-                           Stretch="Uniform"
-                           Margin="0,0,6,0" />
-                    <TextBlock Text="Delete" VerticalAlignment="Center" />
-                </StackPanel>
-            </Button>
-        </StackPanel>
-        <Button Content="Launch Vintage Story" Margin="914,67,0,30" Grid.Row="2" Width="159" Background="{DynamicResource IMM.ButtonBackgroundBrush}" BorderBrush="{DynamicResource IMM.BorderBrush}" Click="LaunchGameButton_OnClick" Height="32" AutomationProperties.AutomationId="LaunchGameButton" HorizontalAlignment="Left"/>
-        <Button Content="Open Mods Folder" Margin="914,30,0,67" Grid.Row="2" Width="159" Background="{DynamicResource IMM.ButtonBackgroundBrush}" BorderBrush="{DynamicResource IMM.BorderBrush}" Click="OpenModFolderButton_OnClick" Height="32" AutomationProperties.AutomationId="OpenModFolderButton" HorizontalAlignment="Left"/>
-        <Button Content="Open Config Folder" Margin="747,67,0,30" Grid.Row="2" Width="146" Background="{DynamicResource IMM.ButtonBackgroundBrush}" BorderBrush="{DynamicResource IMM.BorderBrush}" Click="OpenConfigFolderButton_OnClick" Height="32" AutomationProperties.AutomationId="OpenConfigFolderButton" HorizontalAlignment="Left"/>
-        <Button Content="Open Logs Folder" Margin="747,30,0,67" Grid.Row="2" Width="146" Background="{DynamicResource IMM.ButtonBackgroundBrush}" BorderBrush="{DynamicResource IMM.BorderBrush}" Click="OpenLogsFolderButton_OnClick" Height="32" AutomationProperties.AutomationId="OpenLogsFolderButton" HorizontalAlignment="Left"/>
-        <ComboBox x:Name="PresetComboBox" Margin="755,0,0,0" VerticalAlignment="Center" Width="295"
-                  DisplayMemberPath="Name"
-                  SelectionChanged="PresetComboBox_OnSelectionChanged"
-                  DropDownClosed="PresetComboBox_OnDropDownClosed" Height="32" AutomationProperties.AutomationId="PresetComboBox"/>
-        <Button x:Name="SavePresetButton" Content="Save Preset" Margin="644,11,0,14" Width="115" Background="{DynamicResource IMM.ButtonBackgroundBrush}" BorderBrush="{DynamicResource IMM.BorderBrush}"
-                Click="SavePresetButton_OnClick"
-                MouseEnter="SavePresetButton_OnMouseEnter"
-                MouseLeave="SavePresetButton_OnMouseLeave" Height="30" AutomationProperties.AutomationId="SavePresetButton" HorizontalAlignment="Left"/>
+        </Grid>
     </Grid>
 </Window>
