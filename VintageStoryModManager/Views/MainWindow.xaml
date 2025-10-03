@@ -22,24 +22,54 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Menu IsMainMenu="True"
-              Margin="0,6,0,9"
-              Background="{StaticResource IMM.SurfaceBrush}"
-              BorderThickness="0"
-              AutomationProperties.AutomationId="MainMenu">
-            <MenuItem Header="_File" Height="30" AutomationProperties.AutomationId="FileMenu">
-                <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" AutomationProperties.AutomationId="RefreshModsMenuItem" />
-                <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" AutomationProperties.AutomationId="UpdateAllModsMenuItem" />
-                <Separator />
-                <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" AutomationProperties.AutomationId="SetDataFolderMenuItem" />
-                <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" AutomationProperties.AutomationId="SetGameFolderMenuItem" />
-                <Separator />
-                <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick" AutomationProperties.AutomationId="ExitMenuItem"/>
-            </MenuItem>
-            <MenuItem Header="_Help" Height="30" AutomationProperties.AutomationId="HelpMenu">
-                <MenuItem Header="_About" Height="30" AutomationProperties.AutomationId="AboutMenuItem" />
-            </MenuItem>
-        </Menu>
+        <Grid Grid.Row="0" Margin="0,6,0,9">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Menu Grid.Column="0"
+                  IsMainMenu="True"
+                  Background="{StaticResource IMM.SurfaceBrush}"
+                  BorderThickness="0"
+                  AutomationProperties.AutomationId="MainMenu">
+                <MenuItem Header="_File" Height="30" AutomationProperties.AutomationId="FileMenu">
+                    <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" AutomationProperties.AutomationId="RefreshModsMenuItem" />
+                    <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" AutomationProperties.AutomationId="UpdateAllModsMenuItem" />
+                    <Separator />
+                    <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" AutomationProperties.AutomationId="SetDataFolderMenuItem" />
+                    <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" AutomationProperties.AutomationId="SetGameFolderMenuItem" />
+                    <Separator />
+                    <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick" AutomationProperties.AutomationId="ExitMenuItem"/>
+                </MenuItem>
+                <MenuItem Header="_Help" Height="30" AutomationProperties.AutomationId="HelpMenu">
+                    <MenuItem Header="_About" Height="30" AutomationProperties.AutomationId="AboutMenuItem" />
+                </MenuItem>
+            </Menu>
+
+            <TextBlock Grid.Column="1"
+                       Text="{Binding StatusMessage}"
+                       TextWrapping="Wrap"
+                       Margin="12,0,0,0"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
+                       TextAlignment="Right">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
+                                <Setter Property="Foreground" Value="#FFD13438" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
 
         <DataGrid Grid.Row="1"
                   Margin="16,0,16,0"
@@ -435,39 +465,8 @@
                     <DropShadowEffect BlurRadius="12" Direction="270" ShadowDepth="4" Opacity="0.14" Color="#33000000" />
                 </Border.Effect>
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock Grid.Row="1"
-                               Grid.Column="1"
-                               Text="{Binding StatusMessage}"
-                               TextWrapping="Wrap"
-                               Margin="6,-6,-6,6"
-                               TextAlignment="Right"
-                               HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                        <Setter Property="Foreground" Value="#FFD13438" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-
-                    <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,12,0,0">
+                    <Grid Margin="0"
+                          VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
