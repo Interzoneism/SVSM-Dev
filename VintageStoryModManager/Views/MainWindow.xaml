@@ -15,6 +15,10 @@
         PreviewKeyUp="Window_OnPreviewKeyUp"
         Background="{StaticResource IMM.SurfaceBrush}">
 
+    <Window.Resources>
+        <sys:Double x:Key="IMM.CompactRowHeight">72</sys:Double>
+    </Window.Resources>
+
     <Grid Background="{StaticResource IMM.SurfaceAltBrush}">
 
         <Grid.RowDefinitions>
@@ -257,8 +261,7 @@
                                                     <DoubleAnimation Storyboard.TargetName="HoverOverlay"
                                                                      Storyboard.TargetProperty="Opacity"
                                                                      To="0.12"
-                                                                     Duration="0:0:0.18"
-                                                                     FillBehavior="Stop">
+                                                                     Duration="0:0:0.18">
                                                         <DoubleAnimation.EasingFunction>
                                                             <QuadraticEase EasingMode="EaseOut" />
                                                         </DoubleAnimation.EasingFunction>
@@ -272,8 +275,7 @@
                                                     <DoubleAnimation Storyboard.TargetName="HoverOverlay"
                                                                     Storyboard.TargetProperty="Opacity"
                                                                      To="0"
-                                                                     Duration="0:0:0.2"
-                                                                     FillBehavior="Stop">
+                                                                     Duration="0:0:0.2">
                                                         <DoubleAnimation.EasingFunction>
                                                             <QuadraticEase EasingMode="EaseOut" />
                                                         </DoubleAnimation.EasingFunction>
@@ -292,8 +294,7 @@
                                                                      Storyboard.TargetProperty="Opacity"
                                                                      From="0"
                                                                      To="0.22"
-                                                                     Duration="0:0:0.18"
-                                                                     FillBehavior="Stop">
+                                                                     Duration="0:0:0.18">
                                                         <DoubleAnimation.EasingFunction>
                                                             <QuadraticEase EasingMode="EaseOut" />
                                                         </DoubleAnimation.EasingFunction>
@@ -301,8 +302,7 @@
                                                     <DoubleAnimation Storyboard.TargetName="HoverOverlay"
                                                                      Storyboard.TargetProperty="Opacity"
                                                                      To="0"
-                                                                     Duration="0:0:0.1"
-                                                                     FillBehavior="Stop" />
+                                                                     Duration="0:0:0.1" />
                                                 </Storyboard>
                                             </BeginStoryboard>
                                         </DataTrigger.EnterActions>
@@ -313,8 +313,7 @@
                                                                      Storyboard.TargetProperty="Opacity"
                                                                      From="0.22"
                                                                      To="0"
-                                                                     Duration="0:0:0.22"
-                                                                     FillBehavior="Stop">
+                                                                     Duration="0:0:0.22">
                                                         <DoubleAnimation.EasingFunction>
                                                             <QuadraticEase EasingMode="EaseOut" />
                                                         </DoubleAnimation.EasingFunction>
@@ -330,7 +329,7 @@
                     <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ModsDataGridRow_OnPreviewMouseLeftButtonDown" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                            <Setter Property="Height" Value="72" />
+                            <Setter Property="Height" Value="{StaticResource IMM.CompactRowHeight}" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
                             <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
@@ -515,7 +514,16 @@
                               SelectionChanged="PresetComboBox_OnSelectionChanged"
                               DropDownClosed="PresetComboBox_OnDropDownClosed"
                               Height="32"
-                              AutomationProperties.AutomationId="PresetComboBox" />
+                              MaxDropDownHeight="320"
+                              AutomationProperties.AutomationId="PresetComboBox">
+                        <ComboBox.ItemContainerStyle>
+                            <Style TargetType="ComboBoxItem">
+                                <Setter Property="MinHeight" Value="32" />
+                                <Setter Property="Padding" Value="12,6" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ComboBox.ItemContainerStyle>
+                    </ComboBox>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1"
