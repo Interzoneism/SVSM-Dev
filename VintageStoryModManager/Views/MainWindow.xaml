@@ -438,11 +438,18 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
                     <TextBlock Grid.Row="0"
+                               Grid.Column="1"
                                Text="{Binding StatusMessage}"
                                TextWrapping="Wrap"
-                               Margin="-6,-6,6,6">
+                               Margin="6,-6,-6,6"
+                               TextAlignment="Right"
+                               HorizontalAlignment="Right">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
@@ -459,16 +466,16 @@
                         </TextBlock.Style>
                     </TextBlock>
 
-                    <Grid Grid.Row="1" Margin="0,12,0,0">
+                    <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0"
-                                    VerticalAlignment="Center">
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
+                        <Grid Grid.Column="0"
+                              VerticalAlignment="Center">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
@@ -476,17 +483,25 @@
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </StackPanel.Style>
-                            <TextBlock Text="{Binding SelectedMod.DisplayName}"
+                            </Grid.Style>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0"
+                                       Text="{Binding SelectedMod.DisplayName}"
                                        FontWeight="SemiBold"
-                                       Foreground="{StaticResource IMM.ForegroundBrush}" />
-                            <TextBlock Text="{Binding SelectedMod.DescriptionDisplay}"
-                                       Margin="0,2,0,0"
+                                       Foreground="{StaticResource IMM.ForegroundBrush}"
+                                       TextAlignment="Left" />
+                            <TextBlock Grid.Row="1"
+                                       Margin="0,4,0,0"
+                                       Text="{Binding SelectedMod.DescriptionDisplay}"
                                        Foreground="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}"
                                        MaxWidth="420"
                                        TextWrapping="Wrap"
-                                       TextTrimming="CharacterEllipsis" />
-                        </StackPanel>
+                                       TextTrimming="CharacterEllipsis"
+                                       TextAlignment="Left" />
+                        </Grid>
 
                         <StackPanel Grid.Column="1"
                                     Orientation="Horizontal"
