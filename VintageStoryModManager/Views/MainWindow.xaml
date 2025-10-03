@@ -17,6 +17,13 @@
 
     <Window.Resources>
         <sys:Double x:Key="IMM.CompactRowHeight">72</sys:Double>
+        <Style x:Key="IMM.DataGridCellBaseStyle" TargetType="DataGridCell">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Padding" Value="8,6" />
+        </Style>
     </Window.Resources>
 
     <Grid Background="{StaticResource IMM.SurfaceAltBrush}">
@@ -113,13 +120,6 @@
             <DataGrid.Resources>
                 <Style TargetType="TextBlock">
                     <Setter Property="TextWrapping" Value="Wrap" />
-                </Style>
-                <Style x:Key="IMM.DataGridCellBaseStyle" TargetType="DataGridCell">
-                    <Setter Property="Background" Value="Transparent" />
-                    <Setter Property="BorderBrush" Value="Transparent" />
-                    <Setter Property="BorderThickness" Value="0,0,0,1" />
-                    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                    <Setter Property="Padding" Value="8,6" />
                 </Style>
                 <Style TargetType="DataGridColumnHeader">
                     <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
