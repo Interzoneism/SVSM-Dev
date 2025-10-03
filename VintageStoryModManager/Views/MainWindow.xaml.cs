@@ -18,6 +18,7 @@ using System.Windows.Threading;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Data;
+using System.Windows.Media.Animation;
 using ModernWpf.Controls;
 
 using VintageStoryModManager.Services;
@@ -36,6 +37,8 @@ namespace VintageStoryModManager.Views;
 public partial class MainWindow : Window
 {
     private const double ModListScrollMultiplier = 0.5;
+    private const double HoverOverlayOpacity = 0.12;
+    private const double SelectionOverlayOpacity = 0.22;
 
     private readonly UserConfigurationService _userConfiguration;
     private readonly ObservableCollection<ModPreset> _presets = new();
@@ -596,6 +599,70 @@ public partial class MainWindow : Window
         row.Focus();
         HandleModRowSelection(mod);
         e.Handled = true;
+    }
+
+    private void ModsDataGridRow_OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is DataGridRow row)
+        {
+            row.DataContextChanged -= ModsDataGridRow_OnDataContextChanged;
+            row.DataContextChanged += ModsDataGridRow_OnDataContextChanged;
+            ResetRowOverlays(row);
+        }
+    }
+
+    private void ModsDataGridRow_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is DataGridRow row)
+        {
+            ResetRowOverlays(row);
+        }
+    }
+
+    private void ModsDataGridRow_OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is DataGridRow row)
+        {
+            row.DataContextChanged -= ModsDataGridRow_OnDataContextChanged;
+            ClearRowOverlayAnimations(row);
+        }
+    }
+
+    private static void ResetRowOverlays(DataGridRow row)
+    {
+        row.ApplyTemplate();
+
+        if (row.Template?.FindName("SelectionOverlay", row) is Border selectionOverlay)
+        {
+            selectionOverlay.BeginAnimation(UIElement.OpacityProperty, null);
+
+            double targetOpacity = row.DataContext is ModListItemViewModel { IsSelected: true }
+                ? SelectionOverlayOpacity
+                : 0;
+
+            selectionOverlay.Opacity = targetOpacity;
+        }
+
+        if (row.Template?.FindName("HoverOverlay", row) is Border hoverOverlay)
+        {
+            hoverOverlay.BeginAnimation(UIElement.OpacityProperty, null);
+            hoverOverlay.Opacity = row.IsMouseOver ? HoverOverlayOpacity : 0;
+        }
+    }
+
+    private static void ClearRowOverlayAnimations(DataGridRow row)
+    {
+        row.ApplyTemplate();
+
+        if (row.Template?.FindName("SelectionOverlay", row) is Border selectionOverlay)
+        {
+            selectionOverlay.BeginAnimation(UIElement.OpacityProperty, null);
+        }
+
+        if (row.Template?.FindName("HoverOverlay", row) is Border hoverOverlay)
+        {
+            hoverOverlay.BeginAnimation(UIElement.OpacityProperty, null);
+        }
     }
 
     private void ModDatabasePageButton_OnClick(object sender, RoutedEventArgs e)
