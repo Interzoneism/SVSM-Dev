@@ -16,11 +16,11 @@
         Background="{StaticResource IMM.SurfaceBrush}">
 
     <Window.Resources>
-        <sys:Double x:Key="IMM.CompactRowHeight">72</sys:Double>
+        <sys:Double x:Key="IMM.CompactRowHeight">55</sys:Double>
         <Style x:Key="IMM.DataGridCellBaseStyle" TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="BorderThickness" Value="0,0,0,0" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Padding" Value="8,6" />
         </Style>
@@ -108,7 +108,6 @@
                   HorizontalGridLinesBrush="Transparent"
                   VerticalGridLinesBrush="Transparent"
                   ui:ControlHelper.CornerRadius="10"
-                  BorderThickness="1"
                   CellStyle="{StaticResource IMM.DataGridCellBaseStyle}">
             <DataGrid.Effect>
                 <DropShadowEffect BlurRadius="18"
