@@ -71,6 +71,7 @@ public partial class MainWindow : Window
     private bool _isApplyingMultiToggle;
     private readonly ModUpdateService _modUpdateService = new();
     private bool _isModUpdateInProgress;
+    private ScrollViewer? _modsScrollViewer;
 
 
     public MainWindow()
@@ -273,7 +274,7 @@ public partial class MainWindow : Window
         _isAutomaticRefreshRunning = true;
         try
         {
-            await _viewModel.RefreshCommand.ExecuteAsync(null);
+            await RefreshModsAsync();
         }
         catch (Exception ex)
         {
@@ -285,6 +286,29 @@ public partial class MainWindow : Window
         finally
         {
             _isAutomaticRefreshRunning = false;
+        }
+    }
+
+    private async Task RefreshModsAsync()
+    {
+        if (_viewModel?.RefreshCommand == null)
+        {
+            return;
+        }
+
+        ScrollViewer? scrollViewer = GetModsScrollViewer();
+        double? targetOffset = scrollViewer?.VerticalOffset;
+
+        await _viewModel.RefreshCommand.ExecuteAsync(null);
+
+        if (scrollViewer != null && targetOffset.HasValue)
+        {
+            await Dispatcher.InvokeAsync(() =>
+            {
+                scrollViewer.UpdateLayout();
+                double clampedOffset = Math.Max(0, Math.Min(targetOffset.Value, scrollViewer.ScrollableHeight));
+                scrollViewer.ScrollToVerticalOffset(clampedOffset);
+            }, DispatcherPriority.Background);
         }
     }
 
@@ -895,7 +919,7 @@ public partial class MainWindow : Window
         {
             try
             {
-                await _viewModel.RefreshCommand.ExecuteAsync(null);
+                await RefreshModsAsync();
             }
             catch (Exception ex)
             {
@@ -961,7 +985,7 @@ public partial class MainWindow : Window
 
         try
         {
-            await _viewModel.RefreshCommand.ExecuteAsync(null);
+            await RefreshModsAsync();
         }
         catch (Exception ex)
         {
@@ -1353,7 +1377,15 @@ public partial class MainWindow : Window
             return;
         }
 
-        ScrollViewer? scrollViewer = FindDescendantScrollViewer(dependencyObject);
+        ScrollViewer? scrollViewer = ReferenceEquals(dependencyObject, ModsDataGrid)
+            ? GetModsScrollViewer()
+            : FindDescendantScrollViewer(dependencyObject);
+
+        if (scrollViewer is null)
+        {
+            scrollViewer = GetModsScrollViewer();
+        }
+
         if (scrollViewer is null)
         {
             return;
@@ -1685,6 +1717,22 @@ public partial class MainWindow : Window
         return false;
     }
 
+    private ScrollViewer? GetModsScrollViewer()
+    {
+        if (_modsScrollViewer != null)
+        {
+            return _modsScrollViewer;
+        }
+
+        if (ModsDataGrid == null)
+        {
+            return null;
+        }
+
+        _modsScrollViewer = FindDescendantScrollViewer(ModsDataGrid);
+        return _modsScrollViewer;
+    }
+
     private static ScrollViewer? FindDescendantScrollViewer(DependencyObject? current)
     {
         if (current is null)
@@ -1794,7 +1842,7 @@ public partial class MainWindow : Window
             {
                 try
                 {
-                    await _viewModel.RefreshCommand.ExecuteAsync(null).ConfigureAwait(true);
+                    await RefreshModsAsync().ConfigureAwait(true);
                 }
                 catch (Exception ex)
                 {

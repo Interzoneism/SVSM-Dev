@@ -216,21 +216,33 @@
                                         CornerRadius="6"
                                         Margin="4"
                                         SnapsToDevicePixels="True">
-                                    <SelectiveScrollingGrid>
-                                        <SelectiveScrollingGrid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                        </SelectiveScrollingGrid.ColumnDefinitions>
-                                        <SelectiveScrollingGrid.RowDefinitions>
-                                            <RowDefinition Height="*" />
-                                            <RowDefinition Height="Auto" />
-                                        </SelectiveScrollingGrid.RowDefinitions>
-                                        <DataGridCellsPresenter Grid.Column="0"
-                                                                 SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" />
-                                        <DataGridDetailsPresenter Grid.Column="0"
-                                                                  Grid.Row="1"
-                                                                  SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
-                                                                  Visibility="{TemplateBinding DetailsVisibility}" />
-                                    </SelectiveScrollingGrid>
+                                    <Grid>
+                                        <Border x:Name="SelectionOverlay"
+                                                Background="{StaticResource IMM.AccentBrush}"
+                                                Opacity="0"
+                                                CornerRadius="6"
+                                                IsHitTestVisible="False" />
+                                        <Border x:Name="HoverOverlay"
+                                                Background="{StaticResource IMM.RowHoverBrush}"
+                                                Opacity="0"
+                                                CornerRadius="6"
+                                                IsHitTestVisible="False" />
+                                        <SelectiveScrollingGrid>
+                                            <SelectiveScrollingGrid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                            </SelectiveScrollingGrid.ColumnDefinitions>
+                                            <SelectiveScrollingGrid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </SelectiveScrollingGrid.RowDefinitions>
+                                            <DataGridCellsPresenter Grid.Column="0"
+                                                                     SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" />
+                                            <DataGridDetailsPresenter Grid.Column="0"
+                                                                      Grid.Row="1"
+                                                                      SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
+                                                                      Visibility="{TemplateBinding DetailsVisibility}" />
+                                        </SelectiveScrollingGrid>
+                                    </Grid>
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="DetailsVisibility" Value="Visible">
