@@ -327,6 +327,8 @@
                         </Setter.Value>
                     </Setter>
                     <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ModsDataGridRow_OnPreviewMouseLeftButtonDown" />
+                    <EventSetter Event="Loaded" Handler="ModsDataGridRow_OnLoaded" />
+                    <EventSetter Event="Unloaded" Handler="ModsDataGridRow_OnUnloaded" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                             <Setter Property="Height" Value="{StaticResource IMM.CompactRowHeight}" />
