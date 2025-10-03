@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
-        Height="632" Width="1100"
+        Height="654" Width="1002"
         MinWidth="900" MinHeight="520"
         PreviewKeyDown="Window_OnPreviewKeyDown"
         PreviewKeyUp="Window_OnPreviewKeyUp"
@@ -552,7 +552,7 @@
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="LaunchGameButton_OnClick"
                             Height="32"
-                            AutomationProperties.AutomationId="LaunchGameButton" />
+                            AutomationProperties.AutomationId="LaunchGameButton" FontWeight="Bold" />
                 </StackPanel>
             </Grid>
             <Border Grid.Row="0"
