@@ -40,6 +40,18 @@ public partial class MainWindow : Window
     private const double HoverOverlayOpacity = 0.12;
     private const double SelectionOverlayOpacity = 0.22;
 
+    private static readonly DependencyProperty BoundModProperty =
+        DependencyProperty.RegisterAttached(
+            "BoundMod",
+            typeof(ModListItemViewModel),
+            typeof(MainWindow));
+
+    private static readonly DependencyProperty BoundModHandlerProperty =
+        DependencyProperty.RegisterAttached(
+            "BoundModHandler",
+            typeof(PropertyChangedEventHandler),
+            typeof(MainWindow));
+
     private readonly UserConfigurationService _userConfiguration;
     private readonly ObservableCollection<ModPreset> _presets = new();
     private MainViewModel? _viewModel;
@@ -607,6 +619,7 @@ public partial class MainWindow : Window
         {
             row.DataContextChanged -= ModsDataGridRow_OnDataContextChanged;
             row.DataContextChanged += ModsDataGridRow_OnDataContextChanged;
+            UpdateRowModSubscription(row, row.DataContext as ModListItemViewModel);
             ResetRowOverlays(row);
         }
     }
@@ -615,6 +628,7 @@ public partial class MainWindow : Window
     {
         if (sender is DataGridRow row)
         {
+            UpdateRowModSubscription(row, e.NewValue as ModListItemViewModel);
             ResetRowOverlays(row);
         }
     }
@@ -624,6 +638,7 @@ public partial class MainWindow : Window
         if (sender is DataGridRow row)
         {
             row.DataContextChanged -= ModsDataGridRow_OnDataContextChanged;
+            UpdateRowModSubscription(row, null);
             ClearRowOverlayAnimations(row);
         }
     }
@@ -663,6 +678,61 @@ public partial class MainWindow : Window
         {
             hoverOverlay.BeginAnimation(UIElement.OpacityProperty, null);
         }
+    }
+
+    private static void UpdateRowModSubscription(DataGridRow row, ModListItemViewModel? newMod)
+    {
+        if (GetBoundMod(row) is { } oldMod && GetBoundModHandler(row) is { } oldHandler)
+        {
+            oldMod.PropertyChanged -= oldHandler;
+        }
+
+        if (newMod is { })
+        {
+            PropertyChangedEventHandler handler = (_, args) =>
+            {
+                if (args.PropertyName == nameof(ModListItemViewModel.IsSelected))
+                {
+                    if (row.Dispatcher.CheckAccess())
+                    {
+                        ResetRowOverlays(row);
+                    }
+                    else
+                    {
+                        row.Dispatcher.Invoke(() => ResetRowOverlays(row));
+                    }
+                }
+            };
+
+            newMod.PropertyChanged += handler;
+            SetBoundModHandler(row, handler);
+        }
+        else
+        {
+            SetBoundModHandler(row, null);
+        }
+
+        SetBoundMod(row, newMod);
+    }
+
+    private static void SetBoundMod(DataGridRow row, ModListItemViewModel? mod)
+    {
+        row.SetValue(BoundModProperty, mod);
+    }
+
+    private static ModListItemViewModel? GetBoundMod(DataGridRow row)
+    {
+        return (ModListItemViewModel?)row.GetValue(BoundModProperty);
+    }
+
+    private static void SetBoundModHandler(DataGridRow row, PropertyChangedEventHandler? handler)
+    {
+        row.SetValue(BoundModHandlerProperty, handler);
+    }
+
+    private static PropertyChangedEventHandler? GetBoundModHandler(DataGridRow row)
+    {
+        return (PropertyChangedEventHandler?)row.GetValue(BoundModHandlerProperty);
     }
 
     private void ModDatabasePageButton_OnClick(object sender, RoutedEventArgs e)
