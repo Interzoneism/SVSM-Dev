@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
@@ -53,6 +54,8 @@ public partial class MainWindow : Window
     private ModListItemViewModel? _selectionAnchor;
     private INotifyCollectionChanged? _modsCollection;
     private bool _isApplyingMultiToggle;
+    private readonly ModUpdateService _modUpdateService = new();
+    private bool _isModUpdateInProgress;
 
 
     public MainWindow()
@@ -746,6 +749,46 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void UpdateModButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_isModUpdateInProgress)
+        {
+            return;
+        }
+
+        if (sender is not WpfButton { DataContext: ModListItemViewModel mod })
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        await UpdateModsAsync(new[] { mod }, isBulk: false);
+    }
+
+    private async void UpdateAllModsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_isModUpdateInProgress || _viewModel?.ModsView == null)
+        {
+            return;
+        }
+
+        var mods = _viewModel.ModsView.Cast<ModListItemViewModel>()
+            .Where(mod => mod.CanUpdate)
+            .ToList();
+
+        if (mods.Count == 0)
+        {
+            WpfMessageBox.Show("All mods are already up to date.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        await UpdateModsAsync(mods, isBulk: true);
+    }
+
     private async void RefreshModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (_viewModel?.RefreshCommand == null)
@@ -1426,19 +1469,22 @@ public partial class MainWindow : Window
         ModListItemViewModel? singleSelection = _selectedMods.Count == 1 ? _selectedMods[0] : null;
 
         UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, requireModDatabaseLink: true);
+        UpdateSelectedModButton(SelectedModUpdateButton, singleSelection, requireModDatabaseLink: false, requireUpdate: true);
         UpdateSelectedModButton(SelectedModEditConfigButton, singleSelection, requireModDatabaseLink: false);
         UpdateSelectedModButton(SelectedModDeleteButton, singleSelection, requireModDatabaseLink: false);
         _viewModel?.SetSelectedMod(singleSelection);
     }
 
-    private static void UpdateSelectedModButton(WpfButton? button, ModListItemViewModel? mod, bool requireModDatabaseLink)
+    private static void UpdateSelectedModButton(WpfButton? button, ModListItemViewModel? mod, bool requireModDatabaseLink, bool requireUpdate = false)
     {
         if (button is null)
         {
             return;
         }
 
-        if (mod is null || (requireModDatabaseLink && !mod.HasModDatabasePageLink))
+        if (mod is null
+            || (requireModDatabaseLink && !mod.HasModDatabasePageLink)
+            || (requireUpdate && !mod.CanUpdate))
         {
             button.DataContext = null;
             button.Visibility = Visibility.Collapsed;
@@ -1499,6 +1545,418 @@ public partial class MainWindow : Window
         }
 
         return null;
+    }
+
+    private async Task UpdateModsAsync(IReadOnlyList<ModListItemViewModel> mods, bool isBulk)
+    {
+        if (_viewModel is null || mods.Count == 0)
+        {
+            return;
+        }
+
+        _isModUpdateInProgress = true;
+        UpdateSelectedModButtons();
+
+        try
+        {
+            var results = new List<ModUpdateOperationResult>();
+            ModUpdateReleasePreference? bulkPreference = null;
+            bool abortRequested = false;
+            bool anySuccess = false;
+
+            foreach (ModListItemViewModel mod in mods)
+            {
+                if (!mod.CanUpdate)
+                {
+                    continue;
+                }
+
+                if (!TryGetManagedModPath(mod, out string modPath, out string? pathError))
+                {
+                    string message = string.IsNullOrWhiteSpace(pathError)
+                        ? "The mod location could not be determined."
+                        : pathError!;
+                    results.Add(ModUpdateOperationResult.Failure(mod, message));
+                    continue;
+                }
+
+                ModReleaseInfo? release = SelectReleaseForMod(mod, isBulk, ref bulkPreference, results, ref abortRequested);
+                if (abortRequested)
+                {
+                    break;
+                }
+
+                if (release is null)
+                {
+                    continue;
+                }
+
+                bool targetIsDirectory = Directory.Exists(modPath);
+                bool targetIsFile = File.Exists(modPath);
+
+                if (!targetIsDirectory && !targetIsFile && mod.SourceKind == ModSourceKind.Folder)
+                {
+                    targetIsDirectory = true;
+                }
+
+                var descriptor = new ModUpdateDescriptor(
+                    mod.ModId,
+                    release.DownloadUri,
+                    modPath,
+                    targetIsDirectory,
+                    release.FileName);
+
+                var progress = new Progress<ModUpdateProgress>(p =>
+                    _viewModel.ReportStatus($"{mod.DisplayName}: {p.Message}"));
+
+                ModUpdateResult updateResult = await _modUpdateService.UpdateAsync(descriptor, progress).ConfigureAwait(true);
+
+                if (!updateResult.Success)
+                {
+                    string failureMessage = string.IsNullOrWhiteSpace(updateResult.ErrorMessage)
+                        ? "The update failed."
+                        : updateResult.ErrorMessage!;
+                    _viewModel.ReportStatus($"Failed to update {mod.DisplayName}: {failureMessage}", true);
+                    results.Add(ModUpdateOperationResult.Failure(mod, failureMessage));
+                    continue;
+                }
+
+                anySuccess = true;
+                _viewModel.ReportStatus($"Updated {mod.DisplayName} to {release.Version}.");
+                await _viewModel.PreserveActivationStateAsync(mod.ModId, mod.Version, release.Version, mod.IsActive).ConfigureAwait(true);
+                results.Add(ModUpdateOperationResult.SuccessResult(mod, release.Version));
+            }
+
+            if (anySuccess && _viewModel.RefreshCommand != null)
+            {
+                try
+                {
+                    await _viewModel.RefreshCommand.ExecuteAsync(null).ConfigureAwait(true);
+                }
+                catch (Exception ex)
+                {
+                    WpfMessageBox.Show($"The mod list could not be refreshed after updating mods:{Environment.NewLine}{ex.Message}",
+                        "Vintage Story Mod Manager",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+
+            if (abortRequested)
+            {
+                _viewModel.ReportStatus(isBulk ? "Bulk update cancelled." : "Update cancelled.");
+            }
+
+            if (results.Count > 0)
+            {
+                ShowUpdateSummary(results, isBulk, abortRequested);
+            }
+            else if (abortRequested)
+            {
+                WpfMessageBox.Show(isBulk ? "Bulk update cancelled." : "Update cancelled.",
+                    "Vintage Story Mod Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+        }
+        finally
+        {
+            _isModUpdateInProgress = false;
+            UpdateSelectedModButtons();
+        }
+    }
+
+    private ModReleaseInfo? SelectReleaseForMod(
+        ModListItemViewModel mod,
+        bool isBulk,
+        ref ModUpdateReleasePreference? bulkPreference,
+        List<ModUpdateOperationResult> results,
+        ref bool abortRequested)
+    {
+        ModReleaseInfo? latest = mod.LatestRelease;
+        if (latest is null)
+        {
+            results.Add(ModUpdateOperationResult.SkippedResult(mod, "No downloadable release was found."));
+            return null;
+        }
+
+        if (!mod.RequiresCompatibilitySelection)
+        {
+            if (!latest.IsCompatibleWithInstalledGame && mod.LatestCompatibleRelease == null)
+            {
+                if (!PromptInstallIncompatibleLatest(mod, isBulk, out bool skipped, out bool aborted))
+                {
+                    if (aborted)
+                    {
+                        abortRequested = true;
+                    }
+
+                    if (skipped)
+                    {
+                        results.Add(ModUpdateOperationResult.SkippedResult(mod, "Skipped by user."));
+                    }
+
+                    return null;
+                }
+            }
+
+            return latest;
+        }
+
+        if (bulkPreference.HasValue)
+        {
+            if (bulkPreference.Value == ModUpdateReleasePreference.LatestCompatible)
+            {
+                if (mod.LatestCompatibleRelease != null)
+                {
+                    return mod.LatestCompatibleRelease;
+                }
+
+                if (!PromptInstallIncompatibleLatest(mod, isBulk, out bool skipped, out bool aborted))
+                {
+                    if (aborted)
+                    {
+                        abortRequested = true;
+                    }
+
+                    if (skipped)
+                    {
+                        results.Add(ModUpdateOperationResult.SkippedResult(mod, "Skipped by user."));
+                    }
+
+                    return null;
+                }
+
+                return latest;
+            }
+
+            return latest;
+        }
+
+        CompatibilityDecisionKind decision = PromptCompatibilityDecision(mod, isBulk);
+
+        switch (decision)
+        {
+            case CompatibilityDecisionKind.Latest:
+                if (isBulk)
+                {
+                    bulkPreference = ModUpdateReleasePreference.Latest;
+                }
+                return latest;
+            case CompatibilityDecisionKind.LatestCompatible:
+                if (mod.LatestCompatibleRelease != null)
+                {
+                    if (isBulk)
+                    {
+                        bulkPreference = ModUpdateReleasePreference.LatestCompatible;
+                    }
+
+                    return mod.LatestCompatibleRelease;
+                }
+
+                results.Add(ModUpdateOperationResult.Failure(mod, "No compatible release is available."));
+                return null;
+            case CompatibilityDecisionKind.Skip:
+                results.Add(ModUpdateOperationResult.SkippedResult(mod, "Skipped by user."));
+                return null;
+            case CompatibilityDecisionKind.Abort:
+                abortRequested = true;
+                return null;
+            default:
+                return null;
+        }
+    }
+
+    private CompatibilityDecisionKind PromptCompatibilityDecision(ModListItemViewModel mod, bool isBulk)
+    {
+        ModReleaseInfo? latest = mod.LatestRelease;
+        ModReleaseInfo? compatible = mod.LatestCompatibleRelease;
+
+        if (latest is null)
+        {
+            return CompatibilityDecisionKind.Skip;
+        }
+
+        bool hasCompatible = compatible != null
+            && !string.Equals(latest.Version, compatible.Version, StringComparison.OrdinalIgnoreCase);
+
+        string message = $"The latest release ({latest.Version}) for {mod.DisplayName} is not marked as compatible with your Vintage Story version.";
+
+        if (hasCompatible)
+        {
+            message = string.Concat(
+                message,
+                Environment.NewLine,
+                Environment.NewLine,
+                $"Select Yes to install the latest release or No to install the latest compatible release ({compatible!.Version}).");
+        }
+        else
+        {
+            message = string.Concat(
+                message,
+                Environment.NewLine,
+                Environment.NewLine,
+                "No compatible alternative was found. Do you want to install the latest release anyway?");
+        }
+
+        if (isBulk)
+        {
+            message = string.Concat(
+                message,
+                Environment.NewLine,
+                Environment.NewLine,
+                "Your selection will be used for the remaining mods in this update session.");
+        }
+
+        MessageBoxResult result = WpfMessageBox.Show(
+            message,
+            "Vintage Story Mod Manager",
+            hasCompatible ? MessageBoxButton.YesNoCancel : MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Warning);
+
+        return result switch
+        {
+            MessageBoxResult.Yes => CompatibilityDecisionKind.Latest,
+            MessageBoxResult.No => hasCompatible ? CompatibilityDecisionKind.LatestCompatible : CompatibilityDecisionKind.Skip,
+            MessageBoxResult.Cancel => CompatibilityDecisionKind.Abort,
+            _ => CompatibilityDecisionKind.Skip
+        };
+    }
+
+    private bool PromptInstallIncompatibleLatest(ModListItemViewModel mod, bool isBulk, out bool skipped, out bool aborted)
+    {
+        skipped = false;
+        aborted = false;
+
+        ModReleaseInfo? latest = mod.LatestRelease;
+        if (latest is null)
+        {
+            skipped = true;
+            return false;
+        }
+
+        string message = $"The latest release ({latest.Version}) for {mod.DisplayName} is not marked as compatible with your Vintage Story version, and no compatible alternative was found.";
+
+        message = string.Concat(
+            message,
+            Environment.NewLine,
+            Environment.NewLine,
+            "Select Yes to install the latest release, No to skip this mod, or Cancel to stop updating.");
+
+        if (isBulk)
+        {
+            message = string.Concat(
+                message,
+                Environment.NewLine,
+                Environment.NewLine,
+                "This prompt applies only to the current mod.");
+        }
+
+        MessageBoxResult result = WpfMessageBox.Show(
+            message,
+            "Vintage Story Mod Manager",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Warning);
+
+        switch (result)
+        {
+            case MessageBoxResult.Yes:
+                return true;
+            case MessageBoxResult.No:
+                skipped = true;
+                return false;
+            case MessageBoxResult.Cancel:
+                aborted = true;
+                return false;
+            default:
+                skipped = true;
+                return false;
+        }
+    }
+
+    private static void ShowUpdateSummary(IReadOnlyList<ModUpdateOperationResult> results, bool isBulk, bool aborted)
+    {
+        if (results.Count == 0)
+        {
+            return;
+        }
+
+        int successCount = results.Count(result => result.Success);
+        int failureCount = results.Count(result => !result.Success && !result.Skipped);
+        int skippedCount = results.Count(result => result.Skipped);
+
+        if (!isBulk && failureCount == 0 && skippedCount == 0)
+        {
+            return;
+        }
+
+        var builder = new StringBuilder();
+        builder.AppendLine(isBulk ? "Bulk update completed." : "Update completed.");
+        if (aborted)
+        {
+            builder.AppendLine("The operation was cancelled.");
+        }
+
+        builder.AppendLine($"Updated: {successCount}");
+
+        if (failureCount > 0)
+        {
+            builder.AppendLine($"Failed: {failureCount}");
+        }
+
+        if (skippedCount > 0)
+        {
+            builder.AppendLine($"Skipped: {skippedCount}");
+        }
+
+        if (failureCount > 0)
+        {
+            builder.AppendLine();
+            builder.AppendLine("Failures:");
+            foreach (var failure in results.Where(result => !result.Success && !result.Skipped))
+            {
+                builder.AppendLine($" • {failure.Mod.DisplayName}: {failure.Message}");
+            }
+        }
+
+        if (skippedCount > 0)
+        {
+            builder.AppendLine();
+            builder.AppendLine("Skipped:");
+            foreach (var skipped in results.Where(result => result.Skipped))
+            {
+                builder.AppendLine($" • {skipped.Mod.DisplayName}: {skipped.Message}");
+            }
+        }
+
+        MessageBoxImage icon = failureCount > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information;
+        WpfMessageBox.Show(builder.ToString(), "Vintage Story Mod Manager", MessageBoxButton.OK, icon);
+    }
+
+    private enum ModUpdateReleasePreference
+    {
+        Latest,
+        LatestCompatible
+    }
+
+    private enum CompatibilityDecisionKind
+    {
+        Latest,
+        LatestCompatible,
+        Skip,
+        Abort
+    }
+
+    private readonly record struct ModUpdateOperationResult(ModListItemViewModel Mod, bool Success, bool Skipped, string Message)
+    {
+        public static ModUpdateOperationResult SuccessResult(ModListItemViewModel mod, string version) =>
+            new(mod, true, false, $"Updated to {version}.");
+
+        public static ModUpdateOperationResult Failure(ModListItemViewModel mod, string message) =>
+            new(mod, false, false, message);
+
+        public static ModUpdateOperationResult SkippedResult(ModListItemViewModel mod, string message) =>
+            new(mod, false, true, message);
     }
 
     private void ActiveToggle_OnToggled(object sender, RoutedEventArgs e)

@@ -29,6 +29,8 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly string? _loadError;
     private readonly IReadOnlyList<string> _databaseTags;
     private readonly IReadOnlyList<string> _databaseRequiredGameVersions;
+    private readonly ModReleaseInfo? _latestRelease;
+    private readonly ModReleaseInfo? _latestCompatibleRelease;
 
     private bool _isActive;
     private bool _suppressState;
@@ -39,6 +41,8 @@ public sealed class ModListItemViewModel : ObservableObject
     private string _statusText = string.Empty;
     private string _statusDetails = string.Empty;
     private bool _isSelected;
+    private bool _hasUpdate;
+    private string? _updateMessage;
 
     public ModListItemViewModel(
         ModEntry entry,
@@ -63,9 +67,14 @@ public sealed class ModListItemViewModel : ObservableObject
         var databaseInfo = entry.DatabaseInfo;
         _databaseTags = databaseInfo?.Tags ?? Array.Empty<string>();
         _databaseRequiredGameVersions = databaseInfo?.RequiredGameVersions ?? Array.Empty<string>();
+        _latestRelease = databaseInfo?.LatestRelease;
+        _latestCompatibleRelease = databaseInfo?.LatestCompatibleRelease;
         ModDatabaseAssetId = databaseInfo?.AssetId;
         ModDatabasePageUrl = databaseInfo?.ModPageUrl;
-        LatestDatabaseVersion = databaseInfo?.LatestVersion ?? databaseInfo?.LatestCompatibleVersion;
+        LatestDatabaseVersion = _latestRelease?.Version
+            ?? databaseInfo?.LatestVersion
+            ?? _latestCompatibleRelease?.Version
+            ?? databaseInfo?.LatestCompatibleVersion;
         _loadError = entry.LoadError;
 
         WebsiteUri = TryCreateHttpUri(Website);
@@ -100,6 +109,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _isActive = isActive;
         HasErrors = entry.HasErrors;
 
+        InitializeUpdateAvailability();
         InitializeVersionWarning(installedGameVersion);
         UpdateStatusFromErrors();
         UpdateTooltip();
@@ -157,6 +167,46 @@ public sealed class ModListItemViewModel : ObservableObject
     public string? LatestDatabaseVersion { get; }
 
     public string LatestDatabaseVersionDisplay => string.IsNullOrWhiteSpace(LatestDatabaseVersion) ? "—" : LatestDatabaseVersion!;
+
+    public bool CanUpdate => _hasUpdate;
+
+    public bool RequiresCompatibilitySelection => _hasUpdate
+        && _latestRelease != null
+        && !_latestRelease.IsCompatibleWithInstalledGame
+        && _latestCompatibleRelease != null
+        && !string.Equals(_latestRelease.Version, _latestCompatibleRelease.Version, StringComparison.OrdinalIgnoreCase);
+
+    public bool HasCompatibleUpdate => _latestCompatibleRelease != null;
+
+    public bool LatestReleaseIsCompatible => _latestRelease?.IsCompatibleWithInstalledGame ?? false;
+
+    public ModReleaseInfo? LatestRelease => _latestRelease;
+
+    public ModReleaseInfo? LatestCompatibleRelease => _latestCompatibleRelease;
+
+    public string UpdateButtonToolTip
+    {
+        get
+        {
+            if (_latestRelease is null)
+            {
+                return "No updates available.";
+            }
+
+            if (_latestRelease.IsCompatibleWithInstalledGame)
+            {
+                return $"Install version {_latestRelease.Version}.";
+            }
+
+            if (_latestCompatibleRelease != null
+                && !string.Equals(_latestRelease.Version, _latestCompatibleRelease.Version, StringComparison.OrdinalIgnoreCase))
+            {
+                return $"Latest: {_latestRelease.Version}. Compatible: {_latestCompatibleRelease.Version}.";
+            }
+
+            return $"Install version {_latestRelease.Version} (may be incompatible).";
+        }
+    }
 
     public string DescriptionDisplay => string.IsNullOrWhiteSpace(_description) ? "No description available." : _description!;
 
@@ -367,6 +417,13 @@ public sealed class ModListItemViewModel : ObservableObject
             StatusText = "Warning";
             StatusDetails = _versionWarningMessage!;
         }
+        else if (_hasUpdate)
+        {
+            StatusText = "Update";
+            StatusDetails = string.IsNullOrWhiteSpace(_updateMessage)
+                ? "Update available."
+                : _updateMessage!;
+        }
         else
         {
             StatusText = string.Empty;
@@ -396,7 +453,52 @@ public sealed class ModListItemViewModel : ObservableObject
                 _versionWarningMessage);
         }
 
+        if (_hasUpdate && !string.IsNullOrWhiteSpace(_updateMessage))
+        {
+            tooltipText = string.Concat(
+                tooltipText,
+                Environment.NewLine,
+                Environment.NewLine,
+                _updateMessage);
+        }
+
         Tooltip = tooltipText;
+    }
+
+    private void InitializeUpdateAvailability()
+    {
+        if (_latestRelease is null)
+        {
+            _hasUpdate = false;
+            _updateMessage = null;
+            return;
+        }
+
+        if (!VersionStringUtility.IsCandidateVersionNewer(_latestRelease.Version, Version))
+        {
+            _hasUpdate = false;
+            _updateMessage = null;
+            return;
+        }
+
+        _hasUpdate = true;
+        _updateMessage = BuildUpdateMessage(_latestRelease);
+    }
+
+    private string BuildUpdateMessage(ModReleaseInfo release)
+    {
+        if (release.IsCompatibleWithInstalledGame)
+        {
+            return $"Update available: {release.Version}";
+        }
+
+        if (_latestCompatibleRelease != null
+            && !string.Equals(_latestCompatibleRelease.Version, release.Version, StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Update available: {release.Version} (latest compatible: {_latestCompatibleRelease.Version})";
+        }
+
+        return $"Update available: {release.Version} (may be incompatible with your Vintage Story version)";
     }
 
     private void InitializeVersionWarning(string? installedGameVersion)
