@@ -28,6 +28,7 @@ public sealed class MainViewModel : ObservableObject
 
     private SortOption? _selectedSortOption;
     private bool _isBusy;
+    private bool _isCompactView;
     private string _statusMessage = string.Empty;
     private bool _isErrorStatus;
     private int _totalMods;
@@ -78,6 +79,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _isBusy;
         private set => SetProperty(ref _isBusy, value);
+    }
+
+    public bool IsCompactView
+    {
+        get => _isCompactView;
+        set => SetProperty(ref _isCompactView, value);
     }
 
     public string StatusMessage

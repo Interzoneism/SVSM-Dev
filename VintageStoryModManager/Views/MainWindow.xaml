@@ -5,6 +5,7 @@
         xmlns:design="clr-namespace:VintageStoryModManager.Design"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.modernwpf.com/2019"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
@@ -42,6 +43,13 @@
                     <Separator />
                     <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick" AutomationProperties.AutomationId="ExitMenuItem"/>
                 </MenuItem>
+                <MenuItem Header="_View" Height="30" AutomationProperties.AutomationId="ViewMenu">
+                    <MenuItem Header="_Compact View"
+                              Height="30"
+                              IsCheckable="True"
+                              IsChecked="{Binding IsCompactView, Mode=TwoWay}"
+                              AutomationProperties.AutomationId="CompactViewMenuItem" />
+                </MenuItem>
                 <MenuItem Header="_Help" Height="30" AutomationProperties.AutomationId="HelpMenu">
                     <MenuItem Header="_About" Height="30" AutomationProperties.AutomationId="AboutMenuItem" />
                 </MenuItem>
@@ -70,7 +78,8 @@
             </TextBlock>
         </Grid>
 
-        <DataGrid Grid.Row="1"
+        <DataGrid x:Name="ModsDataGrid"
+                  Grid.Row="1"
                   Margin="16,0,16,0"
                   ItemsSource="{Binding ModsView}"
                   AutoGenerateColumns="False"
@@ -192,6 +201,7 @@
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="DataGridRow">
@@ -319,6 +329,12 @@
                     </Setter>
                     <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ModsDataGridRow_OnPreviewMouseLeftButtonDown" />
                     <Style.Triggers>
+                        <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                            <Setter Property="Height" Value="72" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                            <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
+                        </DataTrigger>
                         <DataTrigger Binding="{Binding HasErrors}" Value="True">
                             <Setter Property="Background" Value="#FFFFE5E5" />
                         </DataTrigger>
@@ -346,7 +362,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Icon" Width="SizeToCells" IsReadOnly="True">
+                <DataGridTemplateColumn x:Name="IconColumn" Header="Icon" Width="SizeToCells" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Border Width="60" Height="60"
@@ -404,9 +420,16 @@
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="TextWrapping" Value="Wrap" />
+                            <Setter Property="TextTrimming" Value="None" />
                             <Setter Property="HorizontalAlignment" Value="Stretch" />
                             <Setter Property="VerticalAlignment" Value="Center" />
                             <Setter Property="TextAlignment" Value="Center" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                    <Setter Property="TextWrapping" Value="NoWrap" />
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                </DataTrigger>
+                            </Style.Triggers>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                     <DataGridTextColumn.CellStyle>
@@ -420,7 +443,6 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock FontFamily="Segoe Fluent Icons"
-                                       FontSize="30"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        TextAlignment="Center">
@@ -428,7 +450,11 @@
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseHighBrush}" />
                                         <Setter Property="Text" Value="" />
+                                        <Setter Property="FontSize" Value="30" />
                                         <Style.Triggers>
+                                            <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                <Setter Property="FontSize" Value="22.5" />
+                                            </DataTrigger>
                                             <DataTrigger Binding="{Binding StatusText}" Value="Error">
                                                 <Setter Property="Foreground" Value="#FFD13438" />
                                                 <Setter Property="Text" Value="&#xEA39;" />
