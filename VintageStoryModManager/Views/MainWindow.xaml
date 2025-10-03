@@ -509,7 +509,7 @@
                             Height="30"
                             AutomationProperties.AutomationId="SavePresetButton" />
                     <ComboBox x:Name="PresetComboBox"
-                              Width="260"
+                              Width="174"
                               DisplayMemberPath="Name"
                               SelectionChanged="PresetComboBox_OnSelectionChanged"
                               DropDownClosed="PresetComboBox_OnDropDownClosed"
