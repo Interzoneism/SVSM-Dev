@@ -35,8 +35,6 @@
                           PreviewMouseWheel="TreeView_OnPreviewMouseWheel"
                           Grid.IsSharedSizeScope="True"
                           ItemContainerStyle="{StaticResource IMM.TreeViewItemStyle}"
-                          AutomationProperties.AutomationId="ModConfigTreeView"
-                          AutomationProperties.Name="Mod Configuration Tree"
                           BorderThickness="0"
                           Background="Transparent">
                     <TreeView.Resources>
@@ -321,16 +319,14 @@
                                              Grid.Column="2"
                                              HorizontalAlignment="Stretch"
                                              TextAlignment="Right"
-                                             Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}"
-                                             AutomationProperties.Name="{Binding DisplayName}" />
+                                             Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}" />
                                     <ToggleButton x:Name="BooleanToggle"
                                                   Grid.Column="2"
                                                   Margin="0"
                                                   HorizontalAlignment="Left"
                                                   Width="80"
                                                   IsChecked="{Binding BooleanValue, Mode=TwoWay}"
-                                                  Visibility="Collapsed"
-                                                  AutomationProperties.Name="{Binding DisplayName}">
+                                                  Visibility="Collapsed">
                                         <ToggleButton.Style>
                                             <Style TargetType="ToggleButton" BasedOn="{StaticResource IMM.ToggleButtonBaseStyle}">
                                                 <Setter Property="Content" Value="Off" />
@@ -368,13 +364,11 @@
                         Width="110"
                         Margin="0,0,8,0"
                         IsDefault="True"
-                        Click="SaveButton_OnClick"
-                        AutomationProperties.AutomationId="ConfigSaveButton" />
+                        Click="SaveButton_OnClick" />
                 <Button Content="Cancel"
                         Width="110"
                         IsCancel="True"
-                        Click="CancelButton_OnClick"
-                        AutomationProperties.AutomationId="ConfigCancelButton" />
+                        Click="CancelButton_OnClick" />
             </StackPanel>
         </DockPanel>
     </Grid>

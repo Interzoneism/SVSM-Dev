@@ -36,26 +36,24 @@
             <Menu Grid.Column="0"
                   IsMainMenu="True"
                   Background="{StaticResource IMM.SurfaceBrush}"
-                  BorderThickness="0"
-                  AutomationProperties.AutomationId="MainMenu">
-                <MenuItem Header="_File" Height="30" AutomationProperties.AutomationId="FileMenu">
-                    <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" AutomationProperties.AutomationId="RefreshModsMenuItem" />
-                    <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" AutomationProperties.AutomationId="UpdateAllModsMenuItem" />
+                  BorderThickness="0">
+                <MenuItem Header="_File" Height="30">
+                    <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" />
+                    <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" />
                     <Separator />
-                    <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" AutomationProperties.AutomationId="SetDataFolderMenuItem" />
-                    <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" AutomationProperties.AutomationId="SetGameFolderMenuItem" />
+                    <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" />
+                    <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" />
                     <Separator />
-                    <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick" AutomationProperties.AutomationId="ExitMenuItem"/>
+                    <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick" />
                 </MenuItem>
-                <MenuItem Header="_View" Height="30" AutomationProperties.AutomationId="ViewMenu">
+                <MenuItem Header="_View" Height="30">
                     <MenuItem Header="_Compact View"
                               Height="30"
                               IsCheckable="True"
-                              IsChecked="{Binding IsCompactView, Mode=TwoWay}"
-                              AutomationProperties.AutomationId="CompactViewMenuItem" />
+                              IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
                 </MenuItem>
-                <MenuItem Header="_Help" Height="30" AutomationProperties.AutomationId="HelpMenu">
-                    <MenuItem Header="_About" Height="30" AutomationProperties.AutomationId="AboutMenuItem" />
+                <MenuItem Header="_Help" Height="30">
+                    <MenuItem Header="_About" Height="30" />
                 </MenuItem>
             </Menu>
 
@@ -90,7 +88,6 @@
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
                   IsReadOnly="False"
-                  AutomationProperties.AutomationId="ModsDataGrid"
                   EnableRowVirtualization="True"
                   GridLinesVisibility="Horizontal"
                   SelectionUnit="FullRow"
@@ -205,6 +202,9 @@
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderBrush" Value="Transparent" />
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="Padding" Value="0" />
                     <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
                     <Setter Property="Template">
                         <Setter.Value>
@@ -213,115 +213,29 @@
                                         Background="{TemplateBinding Background}"
                                         BorderBrush="{TemplateBinding BorderBrush}"
                                         BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="6"
+                                        Margin="4"
                                         SnapsToDevicePixels="True">
-                                    <Grid>
-                                        <Border x:Name="HoverOverlay"
-                                                Background="{StaticResource IMM.AccentBrush}"
-                                                Opacity="0"
-                                                IsHitTestVisible="False"
-                                                Panel.ZIndex="-2"
-                                                CornerRadius="6"
-                                                Margin="4"
-                                                HorizontalAlignment="Stretch"
-                                                VerticalAlignment="Stretch" />
-                                        <Border x:Name="SelectionOverlay"
-                                                Background="{StaticResource IMM.AccentBrush}"
-                                                Opacity="0"
-                                                IsHitTestVisible="False"
-                                                Panel.ZIndex="-1"
-                                                CornerRadius="6"
-                                                Margin="4"
-                                                HorizontalAlignment="Stretch"
-                                                VerticalAlignment="Stretch" />
-                                        <SelectiveScrollingGrid>
-                                            <SelectiveScrollingGrid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                            </SelectiveScrollingGrid.ColumnDefinitions>
-                                            <SelectiveScrollingGrid.RowDefinitions>
-                                                <RowDefinition Height="*" />
-                                                <RowDefinition Height="Auto" />
-                                            </SelectiveScrollingGrid.RowDefinitions>
-                                            <DataGridCellsPresenter Grid.Column="0"
-                                                                     SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" />
-                                            <DataGridDetailsPresenter Grid.Column="0"
-                                                                      Grid.Row="1"
-                                                                      SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
-                                                                      Visibility="{TemplateBinding DetailsVisibility}" />
-                                        </SelectiveScrollingGrid>
-                                    </Grid>
+                                    <SelectiveScrollingGrid>
+                                        <SelectiveScrollingGrid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                        </SelectiveScrollingGrid.ColumnDefinitions>
+                                        <SelectiveScrollingGrid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </SelectiveScrollingGrid.RowDefinitions>
+                                        <DataGridCellsPresenter Grid.Column="0"
+                                                                 SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" />
+                                        <DataGridDetailsPresenter Grid.Column="0"
+                                                                  Grid.Row="1"
+                                                                  SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
+                                                                  Visibility="{TemplateBinding DetailsVisibility}" />
+                                    </SelectiveScrollingGrid>
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="DetailsVisibility" Value="Visible">
                                         <Setter TargetName="RowBorder" Property="BorderThickness" Value="1,0,1,1" />
                                     </Trigger>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Trigger.EnterActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="HoverOverlay"
-                                                                     Storyboard.TargetProperty="Opacity"
-                                                                     To="0.12"
-                                                                     Duration="0:0:0.18">
-                                                        <DoubleAnimation.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseOut" />
-                                                        </DoubleAnimation.EasingFunction>
-                                                    </DoubleAnimation>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </Trigger.EnterActions>
-                                        <Trigger.ExitActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="HoverOverlay"
-                                                                    Storyboard.TargetProperty="Opacity"
-                                                                     To="0"
-                                                                     Duration="0:0:0.2">
-                                                        <DoubleAnimation.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseOut" />
-                                                        </DoubleAnimation.EasingFunction>
-                                                    </DoubleAnimation>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </Trigger.ExitActions>
-                                    </Trigger>
-                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                        <Setter TargetName="SelectionOverlay" Property="Opacity" Value="0.22" />
-                                        <Setter TargetName="HoverOverlay" Property="Opacity" Value="0" />
-                                        <DataTrigger.EnterActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="SelectionOverlay"
-                                                                     Storyboard.TargetProperty="Opacity"
-                                                                     From="0"
-                                                                     To="0.22"
-                                                                     Duration="0:0:0.18">
-                                                        <DoubleAnimation.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseOut" />
-                                                        </DoubleAnimation.EasingFunction>
-                                                    </DoubleAnimation>
-                                                    <DoubleAnimation Storyboard.TargetName="HoverOverlay"
-                                                                     Storyboard.TargetProperty="Opacity"
-                                                                     To="0"
-                                                                     Duration="0:0:0.1" />
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </DataTrigger.EnterActions>
-                                        <DataTrigger.ExitActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="SelectionOverlay"
-                                                                     Storyboard.TargetProperty="Opacity"
-                                                                     From="0.22"
-                                                                     To="0"
-                                                                     Duration="0:0:0.22">
-                                                        <DoubleAnimation.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseOut" />
-                                                        </DoubleAnimation.EasingFunction>
-                                                    </DoubleAnimation>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </DataTrigger.ExitActions>
-                                    </DataTrigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
                         </Setter.Value>
@@ -342,6 +256,13 @@
                         <DataTrigger Binding="{Binding HasActivationError}" Value="True">
                             <Setter Property="Background" Value="#22F5D67B" />
                         </DataTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="{StaticResource IMM.RowHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="{StaticResource IMM.RowSelectionBrush}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
+                        </Trigger>
                     </Style.Triggers>
                 </Style>
             </DataGrid.RowStyle>
@@ -356,9 +277,7 @@
                                  Toggled="ActiveToggle_OnToggled"
                                  Margin="20"
                                  OnContent="{x:Null}"
-                                 OffContent="{x:Null}"
-                                 AutomationProperties.AutomationId="{Binding ModId, StringFormat=ModActivationToggle_{0}}"
-                                 AutomationProperties.Name="{Binding DisplayName, StringFormat=Toggle Activation for {0}}"/>
+                                 OffContent="{x:Null}"/>
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
@@ -528,16 +447,14 @@
                             Click="SavePresetButton_OnClick"
                             MouseEnter="SavePresetButton_OnMouseEnter"
                             MouseLeave="SavePresetButton_OnMouseLeave"
-                            Height="30"
-                            AutomationProperties.AutomationId="SavePresetButton" />
+                            Height="30" />
                     <ComboBox x:Name="PresetComboBox"
                               Width="174"
                               DisplayMemberPath="Name"
                               SelectionChanged="PresetComboBox_OnSelectionChanged"
                               DropDownClosed="PresetComboBox_OnDropDownClosed"
                               Height="32"
-                              MaxDropDownHeight="320"
-                              AutomationProperties.AutomationId="PresetComboBox">
+                              MaxDropDownHeight="320">
                         <ComboBox.ItemContainerStyle>
                             <Style TargetType="ComboBoxItem">
                                 <Setter Property="MinHeight" Value="32" />
@@ -558,31 +475,28 @@
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="OpenLogsFolderButton_OnClick"
-                            Height="32"
-                            AutomationProperties.AutomationId="OpenLogsFolderButton" />
+                            Height="32" />
                     <Button Content="Open Config Folder"
                             Margin="0,0,8,0"
                             Width="146"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="OpenConfigFolderButton_OnClick"
-                            Height="32"
-                            AutomationProperties.AutomationId="OpenConfigFolderButton" />
+                            Height="32" />
                     <Button Content="Open Mods Folder"
                             Margin="0,0,8,0"
                             Width="159"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="OpenModFolderButton_OnClick"
-                            Height="32"
-                            AutomationProperties.AutomationId="OpenModFolderButton" />
+                            Height="32" />
                     <Button Content="Launch Vintage Story"
                             Width="159"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="LaunchGameButton_OnClick"
                             Height="32"
-                            AutomationProperties.AutomationId="LaunchGameButton" FontWeight="Bold" />
+                            FontWeight="Bold" />
                 </StackPanel>
             </Grid>
             <Border Grid.Row="0"
@@ -655,8 +569,6 @@
                                     Visibility="Collapsed"
                                     IsEnabled="False"
                                     Click="ModDatabasePageButton_OnClick"
-                                    AutomationProperties.AutomationId="SelectedModDatabasePageButton"
-                                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Open Mod Database Page for \{0\}}"
                                     ToolTip="{Binding ModDatabasePageUrlDisplay}">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Image Source="/webicon.png"
@@ -675,8 +587,6 @@
                                     Visibility="Collapsed"
                                     IsEnabled="False"
                                     Click="UpdateModButton_OnClick"
-                                    AutomationProperties.AutomationId="SelectedModUpdateButton"
-                                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Update \{0\}}"
                                     ToolTip="{Binding UpdateButtonToolTip}">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="Update" VerticalAlignment="Center" />
@@ -690,8 +600,6 @@
                                     Visibility="Collapsed"
                                     IsEnabled="False"
                                     Click="EditConfigButton_OnClick"
-                                    AutomationProperties.AutomationId="SelectedModEditConfigButton"
-                                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Edit Config for \{0\}}"
                                     ToolTip="{Binding DisplayName, StringFormat=Edit Config for \{0\}}">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Image Source="/configicon.png"
@@ -709,8 +617,6 @@
                                     Visibility="Collapsed"
                                     IsEnabled="False"
                                     Click="DeleteModButton_OnClick"
-                                    AutomationProperties.AutomationId="SelectedModDeleteButton"
-                                    AutomationProperties.Name="{Binding DisplayName, StringFormat=Delete \{0\}}"
                                     ToolTip="{Binding DisplayName, StringFormat=Delete \{0\}}">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Image Source="/deleteicon.png"
