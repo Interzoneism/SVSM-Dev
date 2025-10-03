@@ -199,7 +199,8 @@
                                 <ContentPresenter Margin="{TemplateBinding Padding}"
                                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  RecognizesAccessKey="True" />
+                                                  RecognizesAccessKey="True"
+                                                  IsHitTestVisible="False" />
                                 <Path x:Name="DropDownGlyph"
                                       Grid.Column="1"
                                       Width="12"
@@ -208,7 +209,22 @@
                                       Stretch="Fill"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
-                                      Fill="{StaticResource IMM.ForegroundBrush}" />
+                                      Fill="{StaticResource IMM.ForegroundBrush}"
+                                      IsHitTestVisible="False" />
+                                <ToggleButton x:Name="DropDownToggle"
+                                              Grid.ColumnSpan="2"
+                                              Focusable="False"
+                                              Background="Transparent"
+                                              BorderBrush="Transparent"
+                                              BorderThickness="0"
+                                              ClickMode="Press"
+                                              IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border Background="Transparent" />
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
                                 <Popup x:Name="Popup"
                                        Placement="Bottom"
                                        AllowsTransparency="True"
