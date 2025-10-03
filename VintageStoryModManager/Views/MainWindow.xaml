@@ -411,7 +411,27 @@
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
                 <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay, Mode=OneWay}" Width="65" IsReadOnly="True" MinWidth="64" />
-                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" Width="100" MinWidth="99" IsReadOnly="True" />
+                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" Width="100" MinWidth="99" IsReadOnly="True">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ShouldHighlightLatestVersion}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource IMM.SuccessBrush}" />
+                                    <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                                    <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
 
 
 
@@ -438,7 +458,7 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
-                <DataGridTemplateColumn Header="Status" Width="100" IsReadOnly="True">
+                <DataGridTemplateColumn Header="Status" Width="100" IsReadOnly="True" SortMemberPath="StatusSortOrder">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock FontFamily="Segoe Fluent Icons"

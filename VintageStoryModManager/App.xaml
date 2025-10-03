@@ -20,6 +20,7 @@
             <Color x:Key="IMM.ButtonPressedColor">#FFD5E3FF</Color>
             <Color x:Key="IMM.ButtonDisabledColor">#FFEEF1F6</Color>
             <Color x:Key="IMM.ForegroundColor">#FF1C2635</Color>
+            <Color x:Key="IMM.SuccessColor">#FF79C46E</Color>
 
             <SolidColorBrush x:Key="IMM.AccentBrush" Color="{StaticResource IMM.AccentColor}" />
             <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource IMM.SurfaceColor}" />
@@ -31,6 +32,7 @@
             <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="{StaticResource IMM.ButtonPressedColor}" />
             <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="{StaticResource IMM.ButtonDisabledColor}" />
             <SolidColorBrush x:Key="IMM.ForegroundBrush" Color="{StaticResource IMM.ForegroundColor}" />
+            <SolidColorBrush x:Key="IMM.SuccessBrush" Color="{StaticResource IMM.SuccessColor}" />
 
             <Style TargetType="Button">
                 <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
