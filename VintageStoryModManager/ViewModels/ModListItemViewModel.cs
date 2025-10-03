@@ -180,6 +180,8 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool LatestReleaseIsCompatible => _latestRelease?.IsCompatibleWithInstalledGame ?? false;
 
+    public bool ShouldHighlightLatestVersion => _hasUpdate && LatestReleaseIsCompatible;
+
     public ModReleaseInfo? LatestRelease => _latestRelease;
 
     public ModReleaseInfo? LatestCompatibleRelease => _latestCompatibleRelease;
