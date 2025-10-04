@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -32,6 +33,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly ModReleaseInfo? _latestRelease;
     private readonly ModReleaseInfo? _latestCompatibleRelease;
     private readonly IReadOnlyList<ModReleaseInfo> _releases;
+    private readonly string _searchIndex;
     private IReadOnlyList<ModVersionOptionViewModel> _versionOptions = Array.Empty<ModVersionOptionViewModel>();
 
     private bool _isActive;
@@ -118,6 +120,7 @@ public sealed class ModListItemViewModel : ObservableObject
         InitializeVersionWarning(installedGameVersion);
         UpdateStatusFromErrors();
         UpdateTooltip();
+        _searchIndex = BuildSearchIndex(entry, location);
     }
 
     public string ModId { get; }
@@ -482,6 +485,24 @@ public sealed class ModListItemViewModel : ObservableObject
         Tooltip = tooltipText;
     }
 
+    internal bool MatchesSearchTokens(IReadOnlyList<string> tokens)
+    {
+        if (tokens.Count == 0)
+        {
+            return true;
+        }
+
+        foreach (var token in tokens)
+        {
+            if (_searchIndex.IndexOf(token, StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private void InitializeUpdateAvailability()
     {
         if (_latestRelease is null)
@@ -745,6 +766,88 @@ public sealed class ModListItemViewModel : ObservableObject
         }
 
         return true;
+    }
+
+    private string BuildSearchIndex(ModEntry entry, string location)
+    {
+        var builder = new StringBuilder();
+
+        AppendText(builder, DisplayName);
+        AppendText(builder, entry.Name);
+        AppendText(builder, entry.ModId);
+        AppendText(builder, ModId);
+        AppendText(builder, entry.Version);
+        AppendText(builder, Version);
+        AppendText(builder, entry.NetworkVersion);
+        AppendText(builder, NetworkVersion);
+        AppendText(builder, entry.Description);
+        AppendText(builder, _description);
+        AppendText(builder, entry.Error);
+        AppendText(builder, _metadataError);
+        AppendText(builder, entry.LoadError);
+        AppendText(builder, _loadError);
+        AppendText(builder, entry.Side);
+        AppendText(builder, Side);
+        AppendText(builder, location);
+        AppendText(builder, entry.SourcePath);
+        AppendText(builder, entry.SourceKind.ToString());
+        AppendText(builder, Website);
+        AppendText(builder, ModDatabasePageUrl);
+        AppendText(builder, ModDatabaseAssetId);
+        AppendText(builder, LatestDatabaseVersion);
+        AppendText(builder, LatestDatabaseVersionDisplay);
+        AppendText(builder, _latestRelease?.Version);
+        AppendText(builder, _latestCompatibleRelease?.Version);
+        AppendCollection(builder, _databaseTags);
+        AppendCollection(builder, _databaseRequiredGameVersions);
+        AppendCollection(builder, _authors);
+        AppendCollection(builder, _contributors);
+        AppendDependencies(builder, _dependencies);
+        AppendReleases(builder, _releases);
+
+        return builder.ToString();
+    }
+
+    private static void AppendText(StringBuilder builder, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        if (builder.Length > 0)
+        {
+            builder.Append(' ');
+        }
+
+        builder.Append(value);
+    }
+
+    private static void AppendCollection(StringBuilder builder, IEnumerable<string> values)
+    {
+        foreach (var value in values)
+        {
+            AppendText(builder, value);
+        }
+    }
+
+    private static void AppendDependencies(StringBuilder builder, IReadOnlyList<ModDependencyInfo> dependencies)
+    {
+        foreach (var dependency in dependencies)
+        {
+            AppendText(builder, dependency.ModId);
+            AppendText(builder, dependency.Display);
+            AppendText(builder, dependency.Version);
+        }
+    }
+
+    private static void AppendReleases(StringBuilder builder, IReadOnlyList<ModReleaseInfo> releases)
+    {
+        foreach (var release in releases)
+        {
+            AppendText(builder, release.Version);
+            AppendCollection(builder, release.GameVersionTags);
+        }
     }
 
     private static ImageSource? CreateFaviconImage(Uri? uri)

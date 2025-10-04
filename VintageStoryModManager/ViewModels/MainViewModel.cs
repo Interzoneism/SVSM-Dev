@@ -35,6 +35,8 @@ public sealed class MainViewModel : ObservableObject
     private int _activeMods;
     private string? _modsStateFingerprint;
     private ModListItemViewModel? _selectedMod;
+    private string _searchText = string.Empty;
+    private string[] _searchTokens = Array.Empty<string>();
 
     public MainViewModel(string dataDirectory)
     {
@@ -48,6 +50,7 @@ public sealed class MainViewModel : ObservableObject
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion();
 
         ModsView = CollectionViewSource.GetDefaultView(_mods);
+        ModsView.Filter = FilterMod;
         _sortOptions = new ObservableCollection<SortOption>(CreateSortOptions());
         SortOptions = new ReadOnlyObservableCollection<SortOption>(_sortOptions);
         SelectedSortOption = SortOptions.FirstOrDefault();
@@ -120,6 +123,23 @@ public sealed class MainViewModel : ObservableObject
         get => _isErrorStatus;
         private set => SetProperty(ref _isErrorStatus, value);
     }
+
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            string newValue = value ?? string.Empty;
+            if (SetProperty(ref _searchText, newValue))
+            {
+                _searchTokens = CreateSearchTokens(newValue);
+                OnPropertyChanged(nameof(HasSearchText));
+                ModsView.Refresh();
+            }
+        }
+    }
+
+    public bool HasSearchText => _searchTokens.Length > 0;
 
     public int TotalMods
     {
@@ -273,6 +293,7 @@ public sealed class MainViewModel : ObservableObject
             TotalMods = _mods.Count;
             UpdateActiveCount();
             SelectedSortOption?.Apply(ModsView);
+            ModsView.Refresh();
             SetStatus($"Loaded {TotalMods} mods.", false);
             await UpdateModsStateSnapshotAsync();
         }
@@ -351,6 +372,32 @@ public sealed class MainViewModel : ObservableObject
     private void UpdateActiveCount()
     {
         ActiveMods = _mods.Count(item => item.IsActive);
+    }
+
+    private bool FilterMod(object? item)
+    {
+        if (item is not ModListItemViewModel mod)
+        {
+            return false;
+        }
+
+        if (_searchTokens.Length == 0)
+        {
+            return true;
+        }
+
+        return mod.MatchesSearchTokens(_searchTokens);
+    }
+
+    private static string[] CreateSearchTokens(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return Array.Empty<string>();
+        }
+
+        return value
+            .Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
     private string GetDisplayPath(string? fullPath)

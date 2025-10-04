@@ -40,8 +40,13 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
             <Menu Grid.Column="0"
+                  Grid.RowSpan="2"
                   IsMainMenu="True"
                   Background="{StaticResource IMM.SurfaceBrush}"
                   BorderThickness="0">
@@ -68,11 +73,13 @@
             </Menu>
 
             <TextBlock Grid.Column="1"
+                       Grid.Row="0"
                        Text="{Binding StatusMessage}"
                        TextWrapping="Wrap"
                        HorizontalAlignment="Right"
                        VerticalAlignment="Center"
-                       TextAlignment="Right" Margin="0,16,24,0">
+                       TextAlignment="Right"
+                       Margin="0,16,24,4">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
@@ -88,6 +95,15 @@
                     </Style>
                 </TextBlock.Style>
             </TextBlock>
+
+            <TextBox Grid.Column="1"
+                     Grid.Row="1"
+                     Margin="0,0,24,0"
+                     HorizontalAlignment="Right"
+                     Width="280"
+                     MinWidth="200"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                     ui:ControlHelper.CornerRadius="6" />
         </Grid>
 
         <DataGrid x:Name="ModsDataGrid"
