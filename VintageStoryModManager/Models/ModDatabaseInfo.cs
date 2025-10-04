@@ -23,4 +23,6 @@ public sealed class ModDatabaseInfo
     public ModReleaseInfo? LatestRelease { get; init; }
 
     public ModReleaseInfo? LatestCompatibleRelease { get; init; }
+
+    public IReadOnlyList<ModReleaseInfo> Releases { get; init; } = Array.Empty<ModReleaseInfo>();
 }

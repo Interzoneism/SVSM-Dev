@@ -5,6 +5,7 @@
         xmlns:design="clr-namespace:VintageStoryModManager.Design"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.modernwpf.com/2019"
+        xmlns:viewModels="clr-namespace:VintageStoryModManager.ViewModels"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
@@ -609,6 +610,60 @@
                                     <TextBlock Text="Mod Page" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
+                            <ComboBox x:Name="SelectedModVersionComboBox"
+                                      Width="190"
+                                      Margin="0,0,8,0"
+                                      ItemsSource="{Binding SelectedMod.VersionOptions}"
+                                      SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
+                                      SelectionChanged="SelectedModVersionComboBox_OnSelectionChanged"
+                                      VerticalAlignment="Center">
+                                <ComboBox.Style>
+                                    <Style TargetType="ComboBox">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Setter Property="IsEnabled" Value="False" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedMod.HasVersionOptions}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Setter Property="IsEnabled" Value="True" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ComboBox.Style>
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type viewModels:ModVersionOptionViewModel}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding VersionDisplay}" />
+                                            <TextBlock Text=" (Installed)"
+                                                       Margin="6,0,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsInstalled}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock Text="✓"
+                                                       Foreground="#FF2E7D32"
+                                                       Margin="6,0,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsCompatible}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
                             <Button x:Name="SelectedModUpdateButton"
                                     Margin="0,0,8,0"
                                     Padding="12,6"

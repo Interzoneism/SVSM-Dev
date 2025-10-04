@@ -85,7 +85,8 @@ public sealed class ModDatabaseService
                 LatestVersion = latestVersion,
                 RequiredGameVersions = requiredVersions,
                 LatestRelease = latestRelease,
-                LatestCompatibleRelease = latestCompatibleRelease
+                LatestCompatibleRelease = latestCompatibleRelease,
+                Releases = releases
             };
         }
         catch (OperationCanceledException)
