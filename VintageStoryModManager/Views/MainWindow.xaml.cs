@@ -82,7 +82,7 @@ public partial class MainWindow : Window
 
         if (VintageThemeMenuItem != null)
         {
-            VintageThemeMenuItem.IsEnabled = ThemeManager.CurrentTheme != AppTheme.Vintage;
+            VintageThemeMenuItem.IsChecked = ThemeManager.CurrentTheme == AppTheme.Vintage;
         }
 
         _userConfiguration = new UserConfigurationService();
@@ -1310,29 +1310,35 @@ public partial class MainWindow : Window
 
     private void VintageThemeMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        if (ThemeManager.CurrentTheme == AppTheme.Vintage)
+        if (sender is not MenuItem menuItem)
         {
-            VintageThemeMenuItem.IsEnabled = false;
+            return;
+        }
+
+        AppTheme currentTheme = ThemeManager.CurrentTheme;
+        AppTheme requestedTheme = menuItem.IsChecked ? AppTheme.Vintage : AppTheme.Modern;
+
+        if (requestedTheme == currentTheme)
+        {
+            menuItem.IsChecked = currentTheme == AppTheme.Vintage;
             return;
         }
 
         try
         {
-            ThemePreferenceStore.Save(AppTheme.Vintage);
+            ThemePreferenceStore.Save(requestedTheme);
         }
         catch (Exception ex)
         {
-            WpfMessageBox.Show($"Failed to enable the vintage theme:\n{ex.Message}",
+            menuItem.IsChecked = currentTheme == AppTheme.Vintage;
+            WpfMessageBox.Show($"Failed to update the theme preference:\n{ex.Message}",
                 "Vintage Story Mod Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             return;
         }
 
-        if (VintageThemeMenuItem != null)
-        {
-            VintageThemeMenuItem.IsEnabled = false;
-        }
+        menuItem.IsEnabled = false;
 
         try
         {
@@ -1340,9 +1346,16 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            if (VintageThemeMenuItem != null)
+            menuItem.IsEnabled = true;
+            menuItem.IsChecked = currentTheme == AppTheme.Vintage;
+
+            try
             {
-                VintageThemeMenuItem.IsEnabled = true;
+                ThemePreferenceStore.Save(currentTheme);
+            }
+            catch
+            {
+                // If we cannot restore the saved preference we ignore the error and keep the UI state consistent.
             }
 
             WpfMessageBox.Show($"Failed to restart the application:\n{ex.Message}",
