@@ -1023,6 +1023,159 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void InstallModButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_isModUpdateInProgress)
+        {
+            return;
+        }
+
+        if (_viewModel?.SearchModDatabase != true)
+        {
+            return;
+        }
+
+        if (sender is not WpfButton { DataContext: ModListItemViewModel mod })
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        if (!mod.HasDownloadableRelease)
+        {
+            WpfMessageBox.Show("No downloadable releases are available for this mod.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        ModReleaseInfo? release = SelectReleaseForInstall(mod);
+        if (release is null)
+        {
+            WpfMessageBox.Show("No downloadable releases are available for this mod.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (!release.IsCompatibleWithInstalledGame && mod.LatestCompatibleRelease is null)
+        {
+            if (!ConfirmInstallIncompatibleRelease(mod, release))
+            {
+                return;
+            }
+        }
+
+        if (!TryGetInstallTargetPath(mod, release, out string targetPath, out string? errorMessage))
+        {
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                WpfMessageBox.Show(errorMessage!,
+                    "Vintage Story Mod Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+
+            return;
+        }
+
+        _isModUpdateInProgress = true;
+        UpdateSelectedModButtons();
+
+        try
+        {
+            var descriptor = new ModUpdateDescriptor(
+                mod.ModId,
+                release.DownloadUri,
+                targetPath,
+                false,
+                release.FileName,
+                release.Version);
+
+            var progress = new Progress<ModUpdateProgress>(p =>
+                _viewModel?.ReportStatus($"{mod.DisplayName}: {p.Message}"));
+
+            ModUpdateResult result = await _modUpdateService.UpdateAsync(descriptor, progress).ConfigureAwait(true);
+
+            if (!result.Success)
+            {
+                string message = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                    ? "The installation failed."
+                    : result.ErrorMessage!;
+                _viewModel?.ReportStatus($"Failed to install {mod.DisplayName}: {message}", true);
+                WpfMessageBox.Show($"Failed to install {mod.DisplayName}:{Environment.NewLine}{message}",
+                    "Vintage Story Mod Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            string versionText = string.IsNullOrWhiteSpace(release.Version) ? string.Empty : $" {release.Version}";
+            _viewModel?.ReportStatus($"Installed {mod.DisplayName}{versionText}.");
+
+            await RefreshModsAsync().ConfigureAwait(true);
+
+            if (mod.IsSelected)
+            {
+                RemoveFromSelection(mod);
+            }
+
+            _viewModel?.RemoveSearchResult(mod);
+        }
+        catch (OperationCanceledException)
+        {
+            _viewModel?.ReportStatus("Installation cancelled.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            _viewModel?.ReportStatus($"Failed to install {mod.DisplayName}: {ex.Message}", true);
+            WpfMessageBox.Show($"Failed to install {mod.DisplayName}:{Environment.NewLine}{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            _isModUpdateInProgress = false;
+            UpdateSelectedModButtons();
+        }
+    }
+
+    private static ModReleaseInfo? SelectReleaseForInstall(ModListItemViewModel mod)
+    {
+        if (mod.LatestRelease?.IsCompatibleWithInstalledGame == true)
+        {
+            return mod.LatestRelease;
+        }
+
+        if (mod.LatestCompatibleRelease != null)
+        {
+            return mod.LatestCompatibleRelease;
+        }
+
+        return mod.LatestRelease;
+    }
+
+    private static bool ConfirmInstallIncompatibleRelease(ModListItemViewModel mod, ModReleaseInfo release)
+    {
+        string message = string.Concat(
+            $"No compatible release was found for {mod.DisplayName}.",
+            Environment.NewLine,
+            Environment.NewLine,
+            $"Do you want to install version {release.Version} anyway?");
+
+        MessageBoxResult result = WpfMessageBox.Show(
+            message,
+            "Vintage Story Mod Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        return result == MessageBoxResult.Yes;
+    }
+
     private async void UpdateModButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (_isModUpdateInProgress)
@@ -1438,6 +1591,50 @@ public partial class MainWindow : Window
         return true;
     }
 
+    private bool TryGetInstallTargetPath(ModListItemViewModel mod, ModReleaseInfo release, out string fullPath, out string? errorMessage)
+    {
+        fullPath = string.Empty;
+        errorMessage = null;
+
+        if (_dataDirectory is null)
+        {
+            errorMessage = "The VintagestoryData folder is not available. Please verify it from File > Set Data Folder.";
+            return false;
+        }
+
+        string modsDirectory = Path.Combine(_dataDirectory, "Mods");
+
+        try
+        {
+            Directory.CreateDirectory(modsDirectory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            errorMessage = $"The Mods folder could not be accessed:{Environment.NewLine}{ex.Message}";
+            return false;
+        }
+
+        string defaultName = string.IsNullOrWhiteSpace(mod.ModId) ? "mod" : mod.ModId;
+        string versionPart = string.IsNullOrWhiteSpace(release.Version) ? "latest" : release.Version!;
+        string fallbackFileName = $"{defaultName}-{versionPart}.zip";
+
+        string? releaseFileName = release.FileName;
+        if (!string.IsNullOrWhiteSpace(releaseFileName))
+        {
+            releaseFileName = Path.GetFileName(releaseFileName);
+        }
+
+        string sanitizedFileName = SanitizeFileName(releaseFileName, fallbackFileName);
+        if (string.IsNullOrWhiteSpace(Path.GetExtension(sanitizedFileName)))
+        {
+            sanitizedFileName += ".zip";
+        }
+
+        string candidatePath = Path.Combine(modsDirectory, sanitizedFileName);
+        fullPath = EnsureUniqueFilePath(candidatePath);
+        return true;
+    }
+
     private bool IsPathWithinManagedMods(string fullPath)
     {
         if (_dataDirectory is null)
@@ -1486,6 +1683,49 @@ public partial class MainWindow : Window
         {
             return false;
         }
+    }
+
+    private static string SanitizeFileName(string? fileName, string fallback)
+    {
+        string name = string.IsNullOrWhiteSpace(fileName) ? fallback : fileName;
+        char[] invalidChars = Path.GetInvalidFileNameChars();
+        var builder = new StringBuilder(name.Length);
+
+        foreach (char c in name)
+        {
+            builder.Append(Array.IndexOf(invalidChars, c) >= 0 ? '_' : c);
+        }
+
+        string sanitized = builder.ToString().Trim();
+        return string.IsNullOrWhiteSpace(sanitized) ? fallback : sanitized;
+    }
+
+    private static string EnsureUniqueFilePath(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return path;
+        }
+
+        string? directory = Path.GetDirectoryName(path);
+        string fileName = Path.GetFileNameWithoutExtension(path);
+        string extension = Path.GetExtension(path);
+
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            directory = Directory.GetCurrentDirectory();
+        }
+
+        int counter = 1;
+        string candidate;
+        do
+        {
+            candidate = Path.Combine(directory, $"{fileName} ({counter}){extension}");
+            counter++;
+        }
+        while (File.Exists(candidate));
+
+        return candidate;
     }
 
     private bool TryEnsureManagedModTargetIsSafe(string fullPath, out string? errorMessage)
@@ -2084,11 +2324,44 @@ public partial class MainWindow : Window
     {
         ModListItemViewModel? singleSelection = _selectedMods.Count == 1 ? _selectedMods[0] : null;
 
-        UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, requireModDatabaseLink: true);
-        UpdateSelectedModButton(SelectedModUpdateButton, singleSelection, requireModDatabaseLink: false, requireUpdate: true);
-        UpdateSelectedModButton(SelectedModEditConfigButton, singleSelection, requireModDatabaseLink: false);
-        UpdateSelectedModButton(SelectedModDeleteButton, singleSelection, requireModDatabaseLink: false);
+        if (_viewModel?.SearchModDatabase == true)
+        {
+            UpdateSelectedModButton(SelectedModDatabasePageButton, null, requireModDatabaseLink: true);
+            UpdateSelectedModButton(SelectedModUpdateButton, null, requireModDatabaseLink: false, requireUpdate: true);
+            UpdateSelectedModButton(SelectedModEditConfigButton, null, requireModDatabaseLink: false);
+            UpdateSelectedModButton(SelectedModDeleteButton, null, requireModDatabaseLink: false);
+            UpdateSelectedModInstallButton(singleSelection);
+        }
+        else
+        {
+            UpdateSelectedModInstallButton(null);
+            UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, requireModDatabaseLink: true);
+            UpdateSelectedModButton(SelectedModUpdateButton, singleSelection, requireModDatabaseLink: false, requireUpdate: true);
+            UpdateSelectedModButton(SelectedModEditConfigButton, singleSelection, requireModDatabaseLink: false);
+            UpdateSelectedModButton(SelectedModDeleteButton, singleSelection, requireModDatabaseLink: false);
+        }
+
         _viewModel?.SetSelectedMod(singleSelection);
+    }
+
+    private void UpdateSelectedModInstallButton(ModListItemViewModel? mod)
+    {
+        if (SelectedModInstallButton is null)
+        {
+            return;
+        }
+
+        if (_viewModel?.SearchModDatabase != true || mod is null)
+        {
+            SelectedModInstallButton.DataContext = null;
+            SelectedModInstallButton.Visibility = Visibility.Collapsed;
+            SelectedModInstallButton.IsEnabled = false;
+            return;
+        }
+
+        SelectedModInstallButton.DataContext = mod;
+        SelectedModInstallButton.Visibility = Visibility.Visible;
+        SelectedModInstallButton.IsEnabled = mod.HasDownloadableRelease && !_isModUpdateInProgress;
     }
 
     private static void UpdateSelectedModButton(WpfButton? button, ModListItemViewModel? mod, bool requireModDatabaseLink, bool requireUpdate = false)

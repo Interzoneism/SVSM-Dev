@@ -286,6 +286,21 @@ public sealed class MainViewModel : ObservableObject
         SelectedMod = mod;
     }
 
+    internal void RemoveSearchResult(ModListItemViewModel mod)
+    {
+        if (mod is null)
+        {
+            return;
+        }
+
+        _searchResults.Remove(mod);
+
+        if (ReferenceEquals(SelectedMod, mod))
+        {
+            SelectedMod = null;
+        }
+    }
+
     internal async Task<bool> PreserveActivationStateAsync(string modId, string? previousVersion, string? newVersion, bool wasActive)
     {
         string? localError = null;
@@ -508,7 +523,21 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
-            var entries = results
+            HashSet<string> installedModIds = await GetInstalledModIdsAsync(cancellationToken).ConfigureAwait(false);
+
+            var filteredResults = results
+                .Where(result => !IsResultInstalled(result, installedModIds))
+                .ToList();
+
+            if (filteredResults.Count == 0)
+            {
+                await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
+                await InvokeOnDispatcherAsync(() => SetStatus("All matching mods are already installed.", false), cancellationToken)
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            var entries = filteredResults
                 .Select(CreateSearchResultEntry)
                 .ToList();
 
@@ -563,6 +592,43 @@ public sealed class MainViewModel : ObservableObject
         }, cancellationToken);
     }
 
+    private Task<HashSet<string>> GetInstalledModIdsAsync(CancellationToken cancellationToken)
+    {
+        return InvokeOnDispatcherAsync(
+            () =>
+            {
+                var installed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var mod in _mods)
+                {
+                    if (!string.IsNullOrWhiteSpace(mod.ModId))
+                    {
+                        installed.Add(mod.ModId);
+                    }
+                }
+
+                return installed;
+            },
+            cancellationToken);
+    }
+
+    private static bool IsResultInstalled(ModDatabaseSearchResult result, HashSet<string> installedModIds)
+    {
+        if (installedModIds.Contains(result.ModId))
+        {
+            return true;
+        }
+
+        foreach (string alternate in result.AlternateIds)
+        {
+            if (!string.IsNullOrWhiteSpace(alternate) && installedModIds.Contains(alternate))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static Task InvokeOnDispatcherAsync(Action action, CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
@@ -583,6 +649,26 @@ public sealed class MainViewModel : ObservableObject
 
         action();
         return Task.CompletedTask;
+    }
+
+    private static Task<T> InvokeOnDispatcherAsync<T>(Func<T> function, CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled<T>(cancellationToken);
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher)
+        {
+            if (dispatcher.CheckAccess())
+            {
+                return Task.FromResult(function());
+            }
+
+            return dispatcher.InvokeAsync(function, DispatcherPriority.Normal, cancellationToken).Task;
+        }
+
+        return Task.FromResult(function());
     }
 
     private static ModEntry CreateSearchResultEntry(ModDatabaseSearchResult result)

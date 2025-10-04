@@ -728,6 +728,18 @@
                                         <TextBlock Text="Delete" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
+                                <Button x:Name="SelectedModInstallButton"
+                                        Padding="12,6"
+                                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                        Visibility="Collapsed"
+                                        IsEnabled="False"
+                                        Click="InstallModButton_OnClick"
+                                        ToolTip="{Binding InstallButtonToolTip}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Install" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal"
                                         Margin="0,6,0,0">
