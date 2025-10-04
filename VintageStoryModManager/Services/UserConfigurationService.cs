@@ -16,7 +16,9 @@ public sealed class UserConfigurationService
     private const string ConfigurationFileName = "settings.json";
     private readonly string _configurationPath;
     private readonly Dictionary<string, string[]> _presets = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, AdvancedPresetData> _advancedPresets = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
+    private bool _isAdvancedPresetMode;
 
     public UserConfigurationService()
     {
@@ -71,9 +73,18 @@ public sealed class UserConfigurationService
 
     public IReadOnlyList<ModPreset> GetPresets()
     {
+        if (_isAdvancedPresetMode)
+        {
+            return _advancedPresets
+                .OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(pair => new ModPreset(pair.Key, pair.Value.DisabledEntries.ToArray(),
+                    pair.Value.ModStates.Length == 0 ? Array.Empty<ModPresetModState>() : pair.Value.ModStates.Select(CloneState).ToArray()))
+                .ToList();
+        }
+
         return _presets
             .OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
-            .Select(pair => new ModPreset(pair.Key, pair.Value.ToArray()))
+            .Select(pair => new ModPreset(pair.Key, pair.Value.ToArray(), Array.Empty<ModPresetModState>()))
             .ToList();
     }
 
@@ -84,7 +95,10 @@ public sealed class UserConfigurationService
             return false;
         }
 
-        return _presets.ContainsKey(name.Trim());
+        string normalized = name.Trim();
+        return _isAdvancedPresetMode
+            ? _advancedPresets.ContainsKey(normalized)
+            : _presets.ContainsKey(normalized);
     }
 
     public bool TryGetPreset(string? name, out ModPreset? preset)
@@ -96,9 +110,22 @@ public sealed class UserConfigurationService
         }
 
         string normalized = name.Trim();
-        if (_presets.TryGetValue(normalized, out string[]? entries))
+        if (_isAdvancedPresetMode)
         {
-            preset = new ModPreset(normalized, entries.ToArray());
+            if (_advancedPresets.TryGetValue(normalized, out AdvancedPresetData? data))
+            {
+                preset = new ModPreset(
+                    normalized,
+                    data.DisabledEntries.ToArray(),
+                    data.ModStates.Length == 0
+                        ? Array.Empty<ModPresetModState>()
+                        : data.ModStates.Select(CloneState).ToArray());
+                return true;
+            }
+        }
+        else if (_presets.TryGetValue(normalized, out string[]? entries))
+        {
+            preset = new ModPreset(normalized, entries.ToArray(), Array.Empty<ModPresetModState>());
             return true;
         }
 
@@ -106,7 +133,7 @@ public sealed class UserConfigurationService
         return false;
     }
 
-    public void SetPreset(string name, IEnumerable<string> disabledEntries)
+    public void SetPreset(string name, IEnumerable<string> disabledEntries, IEnumerable<ModPresetModState>? modStates = null)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -135,7 +162,18 @@ public sealed class UserConfigurationService
             }
         }
 
-        _presets[normalized] = values.Count == 0 ? Array.Empty<string>() : values.ToArray();
+        string[] disabled = values.Count == 0 ? Array.Empty<string>() : values.ToArray();
+
+        if (_isAdvancedPresetMode)
+        {
+            ModPresetModState[] states = BuildSanitizedStates(modStates);
+            _advancedPresets[normalized] = new AdvancedPresetData(disabled, states);
+        }
+        else
+        {
+            _presets[normalized] = disabled;
+        }
+
         Save();
     }
 
@@ -147,13 +185,30 @@ public sealed class UserConfigurationService
         }
 
         string normalized = name.Trim();
-        if (!_presets.Remove(normalized))
+        bool removed = _isAdvancedPresetMode
+            ? _advancedPresets.Remove(normalized)
+            : _presets.Remove(normalized);
+
+        if (!removed)
         {
             return false;
         }
 
         Save();
         return true;
+    }
+
+    public bool IsAdvancedPresetMode => _isAdvancedPresetMode;
+
+    public void SetAdvancedPresetMode(bool isEnabled)
+    {
+        if (_isAdvancedPresetMode == isEnabled)
+        {
+            return;
+        }
+
+        _isAdvancedPresetMode = isEnabled;
+        Save();
     }
 
     public void SetDataDirectory(string path)
@@ -188,7 +243,9 @@ public sealed class UserConfigurationService
 
             DataDirectory = NormalizePath(obj["dataDirectory"]?.GetValue<string?>());
             GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
-            LoadPresets(obj["modPresets"]);
+            _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
+            LoadClassicPresets(obj["modPresets"]);
+            LoadAdvancedPresets(obj["advancedModPresets"]);
             LoadModConfigPaths(obj["modConfigPaths"]);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -196,7 +253,9 @@ public sealed class UserConfigurationService
             DataDirectory = null;
             GameDirectory = null;
             _presets.Clear();
+            _advancedPresets.Clear();
             _modConfigPaths.Clear();
+            _isAdvancedPresetMode = false;
         }
     }
 
@@ -211,7 +270,9 @@ public sealed class UserConfigurationService
             {
                 ["dataDirectory"] = DataDirectory,
                 ["gameDirectory"] = GameDirectory,
-                ["modPresets"] = BuildPresetsJson(),
+                ["useAdvancedPresets"] = _isAdvancedPresetMode,
+                ["modPresets"] = BuildClassicPresetsJson(),
+                ["advancedModPresets"] = BuildAdvancedPresetsJson(),
                 ["modConfigPaths"] = BuildModConfigPathsJson()
             };
 
@@ -235,7 +296,7 @@ public sealed class UserConfigurationService
         return Path.Combine(baseDirectory, ConfigurationFileName);
     }
 
-    private JsonObject BuildPresetsJson()
+    private JsonObject BuildClassicPresetsJson()
     {
         var result = new JsonObject();
 
@@ -260,8 +321,42 @@ public sealed class UserConfigurationService
         return result;
     }
 
-    private void LoadPresets(JsonNode? node)
+    private JsonObject BuildAdvancedPresetsJson()
     {
+        var result = new JsonObject();
+
+        foreach (var pair in _advancedPresets.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            var data = pair.Value;
+            var preset = new JsonObject
+            {
+                ["disabledEntries"] = BuildArrayNode(data.DisabledEntries)
+            };
+
+            var modsArray = new JsonArray();
+            foreach (var state in data.ModStates)
+            {
+                var modObject = new JsonObject
+                {
+                    ["modId"] = state.ModId,
+                    ["version"] = state.Version,
+                    ["isActive"] = state.IsActive
+                };
+
+                modsArray.Add(modObject);
+            }
+
+            preset["mods"] = modsArray;
+            result[pair.Key] = preset;
+        }
+
+        return result;
+    }
+
+    private void LoadClassicPresets(JsonNode? node)
+    {
+        _presets.Clear();
+
         if (node is not JsonObject obj)
         {
             return;
@@ -275,31 +370,136 @@ public sealed class UserConfigurationService
                 continue;
             }
 
-            if (pair.Value is not JsonArray array)
+            string[] entries = ExtractPresetValues(pair.Value);
+            _presets[name.Trim()] = entries;
+        }
+    }
+
+    private void LoadAdvancedPresets(JsonNode? node)
+    {
+        _advancedPresets.Clear();
+
+        if (node is not JsonObject obj)
+        {
+            return;
+        }
+
+        foreach (var pair in obj)
+        {
+            string name = pair.Key;
+            if (string.IsNullOrWhiteSpace(name))
             {
                 continue;
             }
 
-            var values = new List<string>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (JsonNode? element in array)
+            if (pair.Value is not JsonObject presetObj)
             {
-                string? value = element?.GetValue<string?>();
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    continue;
-                }
+                continue;
+            }
 
-                string trimmed = value.Trim();
-                if (seen.Add(trimmed))
+            string[] disabled = ExtractPresetValues(presetObj["disabledEntries"]);
+            var states = new List<ModPresetModState>();
+
+            if (presetObj["mods"] is JsonArray modsArray)
+            {
+                foreach (JsonNode? element in modsArray)
                 {
-                    values.Add(trimmed);
+                    if (element is not JsonObject modObj)
+                    {
+                        continue;
+                    }
+
+                    string? modId = modObj["modId"]?.GetValue<string?>();
+                    if (string.IsNullOrWhiteSpace(modId))
+                    {
+                        continue;
+                    }
+
+                    string trimmedId = modId.Trim();
+                    string? version = modObj["version"]?.GetValue<string?>();
+                    bool isActive = modObj["isActive"]?.GetValue<bool?>() ?? true;
+                    states.Add(new ModPresetModState(trimmedId, string.IsNullOrWhiteSpace(version) ? null : version, isActive));
                 }
             }
 
-            _presets[name.Trim()] = values.Count == 0 ? Array.Empty<string>() : values.ToArray();
+            _advancedPresets[name.Trim()] = new AdvancedPresetData(disabled, states.Count == 0 ? Array.Empty<ModPresetModState>() : states.ToArray());
         }
     }
+
+    private static string[] ExtractPresetValues(JsonNode? node)
+    {
+        if (node is not JsonArray array)
+        {
+            return Array.Empty<string>();
+        }
+
+        var values = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (JsonNode? element in array)
+        {
+            string? value = element?.GetValue<string?>();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            string trimmed = value.Trim();
+            if (seen.Add(trimmed))
+            {
+                values.Add(trimmed);
+            }
+        }
+
+        return values.Count == 0 ? Array.Empty<string>() : values.ToArray();
+    }
+
+    private static ModPresetModState[] BuildSanitizedStates(IEnumerable<ModPresetModState>? states)
+    {
+        if (states is null)
+        {
+            return Array.Empty<ModPresetModState>();
+        }
+
+        var sanitized = new List<ModPresetModState>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var state in states)
+        {
+            if (state is null || string.IsNullOrWhiteSpace(state.ModId))
+            {
+                continue;
+            }
+
+            string trimmedId = state.ModId.Trim();
+            if (!seen.Add(trimmedId))
+            {
+                continue;
+            }
+
+            sanitized.Add(new ModPresetModState(trimmedId, string.IsNullOrWhiteSpace(state.Version) ? null : state.Version, state.IsActive));
+        }
+
+        return sanitized.Count == 0 ? Array.Empty<ModPresetModState>() : sanitized.ToArray();
+    }
+
+    private static ModPresetModState CloneState(ModPresetModState state)
+    {
+        return new ModPresetModState(state.ModId, state.Version, state.IsActive);
+    }
+
+    private static JsonArray BuildArrayNode(IReadOnlyList<string> values)
+    {
+        var array = new JsonArray();
+        foreach (string value in values)
+        {
+            array.Add(JsonValue.Create(value));
+        }
+
+        return array;
+    }
+
+    private sealed record AdvancedPresetData(string[] DisabledEntries, ModPresetModState[] ModStates);
 
     private JsonObject BuildModConfigPathsJson()
     {

@@ -158,10 +158,17 @@ public sealed class MainViewModel : ObservableObject
         return _settingsStore.GetDisabledEntriesSnapshot();
     }
 
-    public async Task<bool> ApplyPresetAsync(string presetName, IReadOnlyList<string> disabledEntries)
+    public IReadOnlyList<ModPresetModState> GetCurrentModStates()
+    {
+        return _mods
+            .Select(mod => new ModPresetModState(mod.ModId, mod.Version, mod.IsActive))
+            .ToList();
+    }
+
+    public async Task<bool> ApplyPresetAsync(ModPreset preset)
     {
         string? localError = null;
-        IReadOnlyList<string> entries = disabledEntries ?? Array.Empty<string>();
+        IReadOnlyList<string> entries = preset.DisabledEntries ?? Array.Empty<string>();
 
         bool success = await Task.Run(() =>
         {
@@ -173,7 +180,7 @@ public sealed class MainViewModel : ObservableObject
         if (!success)
         {
             string message = string.IsNullOrWhiteSpace(localError)
-                ? $"Failed to apply preset \"{presetName}\"."
+                ? $"Failed to apply preset \"{preset.Name}\"."
                 : localError!;
             SetStatus(message, true);
             return false;
@@ -188,7 +195,7 @@ public sealed class MainViewModel : ObservableObject
         UpdateActiveCount();
         SelectedSortOption?.Apply(ModsView);
         ModsView.Refresh();
-        SetStatus($"Applied preset \"{presetName}\".", false);
+        SetStatus($"Applied preset \"{preset.Name}\".", false);
         return true;
     }
 
