@@ -6,6 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
@@ -13,7 +14,17 @@
         MinWidth="900" MinHeight="520"
         PreviewKeyDown="Window_OnPreviewKeyDown"
         PreviewKeyUp="Window_OnPreviewKeyUp"
+        WindowStyle="None"
+        ResizeMode="CanResizeWithGrip"
         Background="{StaticResource IMM.SurfaceBrush}">
+
+    <WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                             CornerRadius="0"
+                             GlassFrameThickness="0"
+                             ResizeBorderThickness="6"
+                             UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <sys:Double x:Key="IMM.CompactRowHeight">55</sys:Double>
@@ -23,6 +34,48 @@
             <Setter Property="BorderThickness" Value="0,0,0,0" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Padding" Value="8,6" />
+        </Style>
+
+        <Style x:Key="IMM.CaptionButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Width" Value="46" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="ui:ControlHelper.CornerRadius" Value="6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              SnapsToDevicePixels="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource IMM.ButtonHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource IMM.ButtonPressedBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource IMM.ButtonDisabledBrush}" />
+                                <Setter TargetName="Root" Property="Opacity" Value="0.6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
@@ -34,58 +87,118 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="0,6,0,9">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+        <Border Grid.Row="0"
+                Margin="0,6,0,9"
+                Background="{StaticResource IMM.SurfaceBrush}"
+                BorderBrush="{StaticResource IMM.BorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,8,16,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-            <Menu Grid.Column="0"
-                  IsMainMenu="True"
-                  Background="{StaticResource IMM.SurfaceBrush}"
-                  BorderThickness="0">
-                <MenuItem Header="_File" Height="30">
-                    <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" />
-                    <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" />
-                    <Separator />
-                    <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" />
-                    <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" />
-                    <Separator />
-                    <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick" />
-                </MenuItem>
-                <MenuItem Header="_View" Height="30">
-                    <MenuItem Header="_Compact View"
-                              Height="30"
-                              IsCheckable="True"
-                              IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
-                </MenuItem>
-                <MenuItem Header="_Help" Height="30">
-                    <MenuItem Header="_About" Height="30" />
-                </MenuItem>
-            </Menu>
+                <Grid Grid.Row="0"
+                      MouseLeftButtonDown="TitleBarDragArea_OnMouseLeftButtonDown"
+                      Background="Transparent">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Column="1"
-                       Text="{Binding StatusMessage}"
-                       TextWrapping="Wrap"
-                       HorizontalAlignment="Right"
-                       VerticalAlignment="Center"
-                       TextAlignment="Right" Margin="0,16,24,0">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
-                                <Setter Property="Visibility" Value="Visible" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                <Setter Property="Foreground" Value="#FFD13438" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-        </Grid>
+                    <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Image Source="/configicon.png"
+                               Width="24"
+                               Height="24"
+                               Margin="0,0,8,0"
+                               SnapsToDevicePixels="True" />
+                        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   VerticalAlignment="Center"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource IMM.ForegroundBrush}" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding StatusMessage}"
+                               TextWrapping="Wrap"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"
+                               TextAlignment="Right"
+                               Margin="0,0,12,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
+                                        <Setter Property="Foreground" Value="#FFD13438" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource IMM.CaptionButtonStyle}"
+                                Margin="0,0,4,0"
+                                Click="MinimizeButton_OnClick"
+                                Content="─" />
+                        <Button Style="{StaticResource IMM.CaptionButtonStyle}"
+                                Margin="0,0,4,0"
+                                Click="MaximizeButton_OnClick">
+                            <TextBlock FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="□" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                         Value="Maximized">
+                                                <Setter Property="Text" Value="❐" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+                        <Button Style="{StaticResource IMM.CaptionButtonStyle}"
+                                Click="CloseButton_OnClick"
+                                Content="✕" />
+                    </StackPanel>
+                </Grid>
+
+                <Menu Grid.Row="1"
+                      IsMainMenu="True"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      Margin="0,10,0,0">
+                    <MenuItem Header="_File" Height="30">
+                        <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" />
+                        <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" />
+                        <Separator />
+                        <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" />
+                        <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" />
+                        <Separator />
+                        <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick" />
+                    </MenuItem>
+                    <MenuItem Header="_View" Height="30">
+                        <MenuItem Header="_Compact View"
+                                  Height="30"
+                                  IsCheckable="True"
+                                  IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
+                    </MenuItem>
+                    <MenuItem Header="_Help" Height="30">
+                        <MenuItem Header="_About" Height="30" />
+                    </MenuItem>
+                </Menu>
+            </Grid>
+        </Border>
 
         <DataGrid x:Name="ModsDataGrid"
                   Grid.Row="1"
