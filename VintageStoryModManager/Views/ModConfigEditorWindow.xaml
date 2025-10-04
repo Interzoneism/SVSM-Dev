@@ -12,7 +12,7 @@
         MinWidth="600"
         MinHeight="420"
         WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource IMM.SurfaceBrush}"
+        Background="{StaticResource IMM.SurfaceBrush}"
         Loaded="Window_OnLoaded">
     <Window.Resources>
         <Style x:Key="IMM.TreeViewItemStyle" TargetType="TreeViewItem">
@@ -21,13 +21,13 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
     </Window.Resources>
-    <Grid Margin="12" Background="{DynamicResource IMM.SurfaceAltBrush}" ui:ControlHelper.CornerRadius="12">
+    <Grid Margin="12" Background="{StaticResource IMM.SurfaceAltBrush}" ui:ControlHelper.CornerRadius="12">
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border BorderBrush="{DynamicResource IMM.BorderBrush}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource IMM.SurfaceBrush}" Padding="4">
+        <Border BorderBrush="{StaticResource IMM.BorderBrush}" BorderThickness="1" CornerRadius="10" Background="White" Padding="4">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="5" Opacity="0.16" Color="#33000000" />
             </Border.Effect>
@@ -35,7 +35,7 @@
                 <TreeView ItemsSource="{Binding RootNodes}"
                           PreviewMouseWheel="TreeView_OnPreviewMouseWheel"
                           Grid.IsSharedSizeScope="True"
-                          ItemContainerStyle="{DynamicResource IMM.TreeViewItemStyle}"
+                          ItemContainerStyle="{StaticResource IMM.TreeViewItemStyle}"
                           BorderThickness="0"
                           Background="Transparent">
                     <TreeView.Resources>
@@ -53,7 +53,7 @@
                                                     <BeginStoryboard x:Name="ObjectHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{DynamicResource IMM.ButtonHoverColor}"
+                                                                            To="{StaticResource IMM.ButtonHoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -84,7 +84,7 @@
                                                     <BeginStoryboard>
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{DynamicResource IMM.AccentColor}"
+                                                                            To="{StaticResource IMM.AccentColor}"
                                                                             Duration="0:0:0.18">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -113,14 +113,14 @@
                                 <TextBlock x:Name="ObjectHeaderText"
                                            Text="{Binding DisplayName}"
                                            FontWeight="SemiBold"
-                                           Foreground="{DynamicResource IMM.ForegroundBrush}" />
+                                           Foreground="{StaticResource IMM.ForegroundBrush}" />
                             </Border>
-                                  <HierarchicalDataTemplate.Triggers>
-                                      <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
-                                                   Value="True">
-                                          <Setter TargetName="ObjectHeaderText" Property="Foreground" Value="{DynamicResource IMM.OnAccentBrush}" />
-                                      </DataTrigger>
-                                  </HierarchicalDataTemplate.Triggers>
+                            <HierarchicalDataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
+                                             Value="True">
+                                    <Setter TargetName="ObjectHeaderText" Property="Foreground" Value="White" />
+                                </DataTrigger>
+                            </HierarchicalDataTemplate.Triggers>
                         </HierarchicalDataTemplate>
                         <HierarchicalDataTemplate DataType="{x:Type viewModels:ModConfigArrayNodeViewModel}"
                                                   ItemsSource="{Binding Children}">
@@ -136,7 +136,7 @@
                                                     <BeginStoryboard x:Name="ArrayHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{DynamicResource IMM.ButtonHoverColor}"
+                                                                            To="{StaticResource IMM.ButtonHoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -167,7 +167,7 @@
                                                     <BeginStoryboard>
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{DynamicResource IMM.AccentColor}"
+                                                                            To="{StaticResource IMM.AccentColor}"
                                                                             Duration="0:0:0.18">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -197,9 +197,9 @@
                                     <TextBlock x:Name="ArrayHeaderText"
                                                Text="{Binding DisplayName}"
                                                FontWeight="SemiBold"
-                                               Foreground="{DynamicResource IMM.ForegroundBrush}" />
-                                     <TextBlock Margin="8,0,0,0"
-                                                Foreground="{DynamicResource IMM.SubtleForegroundBrush}"
+                                               Foreground="{StaticResource IMM.ForegroundBrush}" />
+                                    <TextBlock Margin="8,0,0,0"
+                                               Foreground="Gray"
                                                FontStyle="Italic"
                                                Text="{Binding ItemCount, StringFormat={}{0} items}">
                                         <TextBlock.Style>
@@ -217,12 +217,12 @@
                                     </TextBlock>
                                 </StackPanel>
                             </Border>
-                                  <HierarchicalDataTemplate.Triggers>
-                                      <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
-                                                   Value="True">
-                                          <Setter TargetName="ArrayHeaderText" Property="Foreground" Value="{DynamicResource IMM.OnAccentBrush}" />
-                                      </DataTrigger>
-                                  </HierarchicalDataTemplate.Triggers>
+                            <HierarchicalDataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
+                                             Value="True">
+                                    <Setter TargetName="ArrayHeaderText" Property="Foreground" Value="White" />
+                                </DataTrigger>
+                            </HierarchicalDataTemplate.Triggers>
                         </HierarchicalDataTemplate>
                         <DataTemplate DataType="{x:Type viewModels:ModConfigValueNodeViewModel}">
                             <Border x:Name="ValueContainer" Margin="0,4,0,4" CornerRadius="8" Padding="10,6">
@@ -237,7 +237,7 @@
                                                     <BeginStoryboard x:Name="ValueHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{DynamicResource IMM.ButtonHoverColor}"
+                                                                            To="{StaticResource IMM.ButtonHoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -268,7 +268,7 @@
                                                     <BeginStoryboard>
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{DynamicResource IMM.ButtonPressedColor}"
+                                                                            To="{StaticResource IMM.ButtonPressedColor}"
                                                                             Duration="0:0:0.18">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -304,7 +304,7 @@
                                                Text="{Binding DisplayName}"
                                                VerticalAlignment="Center"
                                                Margin="0"
-                                               Foreground="{DynamicResource IMM.ForegroundBrush}">
+                                               Foreground="{StaticResource IMM.ForegroundBrush}">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
                                                 <Setter Property="Visibility" Value="Visible" />
@@ -357,7 +357,7 @@
         <DockPanel Grid.Row="1" Margin="0,12,0,0" LastChildFill="False">
             <TextBlock x:Name="FilePathTextBlock"
                        Text="{Binding FilePath}"
-                       Foreground="{DynamicResource IMM.SubtleForegroundBrush}"
+                       Foreground="#FF617191"
                        VerticalAlignment="Center"
                        Margin="0,0,16,0"
                        TextTrimming="CharacterEllipsis" />

@@ -21,7 +21,6 @@ public sealed class UserConfigurationService
     private string? _selectedPresetName;
     private string? _selectedAdvancedPresetName;
     private bool _isAdvancedPresetMode;
-    private bool _isDarkThemeEnabled;
 
     public UserConfigurationService()
     {
@@ -246,19 +245,6 @@ public sealed class UserConfigurationService
         return true;
     }
 
-    public bool IsDarkThemeEnabled => _isDarkThemeEnabled;
-
-    public void SetDarkThemeEnabled(bool isEnabled)
-    {
-        if (_isDarkThemeEnabled == isEnabled)
-        {
-            return;
-        }
-
-        _isDarkThemeEnabled = isEnabled;
-        Save();
-    }
-
     public bool IsAdvancedPresetMode => _isAdvancedPresetMode;
 
     public void SetAdvancedPresetMode(bool isEnabled)
@@ -290,7 +276,6 @@ public sealed class UserConfigurationService
         _modConfigPaths.Clear();
         _selectedPresetName = null;
         _selectedAdvancedPresetName = null;
-        _isDarkThemeEnabled = false;
         try
         {
             if (!File.Exists(_configurationPath))
@@ -308,7 +293,6 @@ public sealed class UserConfigurationService
             DataDirectory = NormalizePath(obj["dataDirectory"]?.GetValue<string?>());
             GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
             _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
-            _isDarkThemeEnabled = obj["useDarkTheme"]?.GetValue<bool?>() ?? false;
             LoadClassicPresets(obj["modPresets"]);
             LoadAdvancedPresets(obj["advancedModPresets"]);
             LoadModConfigPaths(obj["modConfigPaths"]);
@@ -337,7 +321,6 @@ public sealed class UserConfigurationService
             _isAdvancedPresetMode = false;
             _selectedPresetName = null;
             _selectedAdvancedPresetName = null;
-            _isDarkThemeEnabled = false;
         }
     }
 
@@ -353,7 +336,6 @@ public sealed class UserConfigurationService
                 ["dataDirectory"] = DataDirectory,
                 ["gameDirectory"] = GameDirectory,
                 ["useAdvancedPresets"] = _isAdvancedPresetMode,
-                ["useDarkTheme"] = _isDarkThemeEnabled,
                 ["modPresets"] = BuildClassicPresetsJson(),
                 ["advancedModPresets"] = BuildAdvancedPresetsJson(),
                 ["modConfigPaths"] = BuildModConfigPathsJson(),

@@ -19,7 +19,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Data;
 using System.Windows.Media.Animation;
-using ModernWpf;
 using ModernWpf.Controls;
 
 using VintageStoryModManager.Services;
@@ -41,9 +40,6 @@ public partial class MainWindow : Window
     private const double HoverOverlayOpacity = 0.12;
     private const double SelectionOverlayOpacity = 0.22;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/enhancedhandbook";
-
-    private const string LightThemeResourcePath = "Resources/Themes/Theme.Light.xaml";
-    private const string DarkThemeResourcePath = "Resources/Themes/Theme.Dark.xaml";
 
     private static readonly DependencyProperty BoundModProperty =
         DependencyProperty.RegisterAttached(
@@ -216,8 +212,6 @@ public partial class MainWindow : Window
         }
 
         _viewModel = new MainViewModel(_dataDirectory);
-        _viewModel.IsDarkTheme = _userConfiguration.IsDarkThemeEnabled;
-        ApplyTheme(_viewModel.IsDarkTheme);
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         DataContext = _viewModel;
         ApplyCompactViewState(_viewModel.IsCompactView);
@@ -226,19 +220,6 @@ public partial class MainWindow : Window
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainViewModel.IsDarkTheme))
-        {
-            Dispatcher.Invoke(() =>
-            {
-                if (_viewModel != null)
-                {
-                    ApplyTheme(_viewModel.IsDarkTheme);
-                    _userConfiguration.SetDarkThemeEnabled(_viewModel.IsDarkTheme);
-                }
-            });
-            return;
-        }
-
         if (e.PropertyName == nameof(MainViewModel.IsCompactView))
         {
             Dispatcher.Invoke(() =>
@@ -259,73 +240,6 @@ public partial class MainWindow : Window
         }
 
         IconColumn.Visibility = isCompactView ? Visibility.Collapsed : Visibility.Visible;
-    }
-
-    private void ApplyTheme(bool isDarkTheme)
-    {
-        var application = WpfApplication.Current;
-        if (application == null)
-        {
-            return;
-        }
-
-        var mergedDictionaries = application.Resources.MergedDictionaries;
-        string targetPath = isDarkTheme ? DarkThemeResourcePath : LightThemeResourcePath;
-        Uri targetUri = new(targetPath, UriKind.Relative);
-
-        int existingIndex = -1;
-
-        for (int i = 0; i < mergedDictionaries.Count; i++)
-        {
-            var dictionary = mergedDictionaries[i];
-            Uri? source = dictionary.Source;
-            if (!ThemeUriEquals(source, LightThemeResourcePath) && !ThemeUriEquals(source, DarkThemeResourcePath))
-            {
-                continue;
-            }
-
-            existingIndex = i;
-
-            if (ThemeUriEquals(source, targetPath))
-            {
-                ThemeManager.Current.ApplicationTheme = isDarkTheme ? ApplicationTheme.Dark : ApplicationTheme.Light;
-                return;
-            }
-
-            break;
-        }
-
-        var themeDictionary = new ResourceDictionary
-        {
-            Source = targetUri
-        };
-
-        if (existingIndex >= 0)
-        {
-            mergedDictionaries.RemoveAt(existingIndex);
-            mergedDictionaries.Insert(existingIndex, themeDictionary);
-        }
-        else
-        {
-            mergedDictionaries.Insert(0, themeDictionary);
-        }
-
-        ThemeManager.Current.ApplicationTheme = isDarkTheme ? ApplicationTheme.Dark : ApplicationTheme.Light;
-    }
-
-    private static bool ThemeUriEquals(Uri? source, string path)
-    {
-        if (source == null)
-        {
-            return false;
-        }
-
-        if (source.IsAbsoluteUri)
-        {
-            return source.ToString().EndsWith(path, StringComparison.OrdinalIgnoreCase);
-        }
-
-        return string.Equals(source.OriginalString, path, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task InitializeViewModelAsync(MainViewModel viewModel)
