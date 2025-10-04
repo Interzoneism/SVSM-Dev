@@ -18,6 +18,8 @@ public sealed class UserConfigurationService
     private readonly Dictionary<string, string[]> _presets = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AdvancedPresetData> _advancedPresets = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
+    private string? _selectedPresetName;
+    private string? _selectedAdvancedPresetName;
     private bool _isAdvancedPresetMode;
 
     public UserConfigurationService()
@@ -29,6 +31,37 @@ public sealed class UserConfigurationService
     public string? DataDirectory { get; private set; }
 
     public string? GameDirectory { get; private set; }
+
+    public string? GetLastSelectedPresetName()
+    {
+        return _isAdvancedPresetMode ? _selectedAdvancedPresetName : _selectedPresetName;
+    }
+
+    public void SetLastSelectedPresetName(string? name)
+    {
+        string? normalized = NormalizePresetName(name);
+
+        if (_isAdvancedPresetMode)
+        {
+            if (string.Equals(_selectedAdvancedPresetName, normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            _selectedAdvancedPresetName = normalized;
+        }
+        else
+        {
+            if (string.Equals(_selectedPresetName, normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            _selectedPresetName = normalized;
+        }
+
+        Save();
+    }
 
     public bool TryGetModConfigPath(string? modId, out string? path)
     {
@@ -185,9 +218,23 @@ public sealed class UserConfigurationService
         }
 
         string normalized = name.Trim();
-        bool removed = _isAdvancedPresetMode
-            ? _advancedPresets.Remove(normalized)
-            : _presets.Remove(normalized);
+        bool removed;
+        if (_isAdvancedPresetMode)
+        {
+            removed = _advancedPresets.Remove(normalized);
+            if (removed && string.Equals(_selectedAdvancedPresetName, normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                _selectedAdvancedPresetName = null;
+            }
+        }
+        else
+        {
+            removed = _presets.Remove(normalized);
+            if (removed && string.Equals(_selectedPresetName, normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                _selectedPresetName = null;
+            }
+        }
 
         if (!removed)
         {
@@ -227,6 +274,8 @@ public sealed class UserConfigurationService
     {
         _presets.Clear();
         _modConfigPaths.Clear();
+        _selectedPresetName = null;
+        _selectedAdvancedPresetName = null;
         try
         {
             if (!File.Exists(_configurationPath))
@@ -247,6 +296,20 @@ public sealed class UserConfigurationService
             LoadClassicPresets(obj["modPresets"]);
             LoadAdvancedPresets(obj["advancedModPresets"]);
             LoadModConfigPaths(obj["modConfigPaths"]);
+            _selectedPresetName = NormalizePresetName(obj["selectedPreset"]?.GetValue<string?>());
+            _selectedAdvancedPresetName = NormalizePresetName(obj["selectedAdvancedPreset"]?.GetValue<string?>());
+
+            if (!string.IsNullOrWhiteSpace(_selectedPresetName)
+                && !_presets.ContainsKey(_selectedPresetName))
+            {
+                _selectedPresetName = null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_selectedAdvancedPresetName)
+                && !_advancedPresets.ContainsKey(_selectedAdvancedPresetName))
+            {
+                _selectedAdvancedPresetName = null;
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -256,6 +319,8 @@ public sealed class UserConfigurationService
             _advancedPresets.Clear();
             _modConfigPaths.Clear();
             _isAdvancedPresetMode = false;
+            _selectedPresetName = null;
+            _selectedAdvancedPresetName = null;
         }
     }
 
@@ -273,7 +338,9 @@ public sealed class UserConfigurationService
                 ["useAdvancedPresets"] = _isAdvancedPresetMode,
                 ["modPresets"] = BuildClassicPresetsJson(),
                 ["advancedModPresets"] = BuildAdvancedPresetsJson(),
-                ["modConfigPaths"] = BuildModConfigPathsJson()
+                ["modConfigPaths"] = BuildModConfigPathsJson(),
+                ["selectedPreset"] = _selectedPresetName,
+                ["selectedAdvancedPreset"] = _selectedAdvancedPresetName
             };
 
             var options = new JsonSerializerOptions
@@ -591,5 +658,10 @@ public sealed class UserConfigurationService
         {
             return null;
         }
+    }
+
+    private static string? NormalizePresetName(string? name)
+    {
+        return string.IsNullOrWhiteSpace(name) ? null : name.Trim();
     }
 }
