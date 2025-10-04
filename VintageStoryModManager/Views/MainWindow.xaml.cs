@@ -211,7 +211,10 @@ public partial class MainWindow : Window
             throw new InvalidOperationException("The data directory is not set.");
         }
 
-        _viewModel = new MainViewModel(_dataDirectory);
+        _viewModel = new MainViewModel(_dataDirectory)
+        {
+            IsCompactView = _userConfiguration.IsCompactView
+        };
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         DataContext = _viewModel;
         ApplyCompactViewState(_viewModel.IsCompactView);
@@ -222,13 +225,18 @@ public partial class MainWindow : Window
     {
         if (e.PropertyName == nameof(MainViewModel.IsCompactView))
         {
-            Dispatcher.Invoke(() =>
+            if (_viewModel != null)
             {
-                if (_viewModel != null)
+                _userConfiguration.SetCompactViewMode(_viewModel.IsCompactView);
+
+                Dispatcher.Invoke(() =>
                 {
-                    ApplyCompactViewState(_viewModel.IsCompactView);
-                }
-            });
+                    if (_viewModel != null)
+                    {
+                        ApplyCompactViewState(_viewModel.IsCompactView);
+                    }
+                });
+            }
         }
     }
 
