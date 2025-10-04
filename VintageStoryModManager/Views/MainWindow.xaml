@@ -612,7 +612,13 @@
                             </Button>
                             <ComboBox x:Name="SelectedModVersionComboBox"
                                       Width="190"
+                                      Height="32"
                                       Margin="0,0,8,0"
+                                      Padding="12,6"
+                                      Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                      BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                      BorderThickness="1"
+                                      ui:ControlHelper.CornerRadius="6"
                                       ItemsSource="{Binding SelectedMod.VersionOptions}"
                                       SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
                                       SelectionChanged="SelectedModVersionComboBox_OnSelectionChanged"
