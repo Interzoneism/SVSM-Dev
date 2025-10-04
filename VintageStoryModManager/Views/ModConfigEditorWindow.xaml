@@ -67,13 +67,14 @@
                                                 <Trigger.ExitActions>
                                                     <BeginStoryboard x:Name="ObjectHoverOut">
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.2">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.2"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </Trigger.ExitActions>
@@ -98,13 +99,14 @@
                                                 <DataTrigger.ExitActions>
                                                     <BeginStoryboard>
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.22">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.22"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </DataTrigger.ExitActions>
@@ -151,13 +153,14 @@
                                                 <Trigger.ExitActions>
                                                     <BeginStoryboard x:Name="ArrayHoverOut">
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.2">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.2"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </Trigger.ExitActions>
@@ -182,13 +185,14 @@
                                                 <DataTrigger.ExitActions>
                                                     <BeginStoryboard>
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.22">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.22"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </DataTrigger.ExitActions>
@@ -253,13 +257,14 @@
                                                 <Trigger.ExitActions>
                                                     <BeginStoryboard x:Name="ValueHoverOut">
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.2">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.2"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </Trigger.ExitActions>
@@ -284,13 +289,14 @@
                                                 <DataTrigger.ExitActions>
                                                     <BeginStoryboard>
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.22">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.22"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </DataTrigger.ExitActions>
