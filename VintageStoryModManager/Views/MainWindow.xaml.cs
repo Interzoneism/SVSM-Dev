@@ -950,7 +950,61 @@ public partial class MainWindow : Window
 
         e.Handled = true;
 
-        await UpdateModsAsync(new[] { mod }, isBulk: false);
+        IReadOnlyDictionary<ModListItemViewModel, ModReleaseInfo>? overrides = null;
+        if (mod.SelectedVersionOption is { Release: { } selectedRelease, IsInstalled: false })
+        {
+            overrides = new Dictionary<ModListItemViewModel, ModReleaseInfo>
+            {
+                [mod] = selectedRelease
+            };
+        }
+
+        await UpdateModsAsync(new[] { mod }, isBulk: false, overrides);
+    }
+
+    private async void SelectedModVersionComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isModUpdateInProgress)
+        {
+            return;
+        }
+
+        if (sender is not System.Windows.Controls.ComboBox comboBox)
+        {
+            return;
+        }
+
+        if (!comboBox.IsDropDownOpen && !comboBox.IsKeyboardFocusWithin)
+        {
+            return;
+        }
+
+        if (_viewModel?.SelectedMod is not ModListItemViewModel mod)
+        {
+            return;
+        }
+
+        if (comboBox.SelectedItem is not ModVersionOptionViewModel option)
+        {
+            return;
+        }
+
+        if (option.IsInstalled || option.Release is null)
+        {
+            return;
+        }
+
+        if (string.Equals(mod.Version, option.Version, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var overrides = new Dictionary<ModListItemViewModel, ModReleaseInfo>
+        {
+            [mod] = option.Release
+        };
+
+        await UpdateModsAsync(new[] { mod }, isBulk: false, overrides);
     }
 
     private async void UpdateAllModsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -1758,7 +1812,10 @@ public partial class MainWindow : Window
         return null;
     }
 
-    private async Task UpdateModsAsync(IReadOnlyList<ModListItemViewModel> mods, bool isBulk)
+    private async Task UpdateModsAsync(
+        IReadOnlyList<ModListItemViewModel> mods,
+        bool isBulk,
+        IReadOnlyDictionary<ModListItemViewModel, ModReleaseInfo>? releaseOverrides = null)
     {
         if (_viewModel is null || mods.Count == 0)
         {
@@ -1777,7 +1834,11 @@ public partial class MainWindow : Window
 
             foreach (ModListItemViewModel mod in mods)
             {
-                if (!mod.CanUpdate)
+                ModReleaseInfo? overrideRelease = null;
+                bool hasOverride = releaseOverrides != null
+                    && releaseOverrides.TryGetValue(mod, out overrideRelease);
+
+                if (!hasOverride && !mod.CanUpdate)
                 {
                     continue;
                 }
@@ -1791,7 +1852,9 @@ public partial class MainWindow : Window
                     continue;
                 }
 
-                ModReleaseInfo? release = SelectReleaseForMod(mod, isBulk, ref bulkPreference, results, ref abortRequested);
+                ModReleaseInfo? release = hasOverride
+                    ? overrideRelease
+                    : SelectReleaseForMod(mod, isBulk, ref bulkPreference, results, ref abortRequested);
                 if (abortRequested)
                 {
                     break;
@@ -1815,7 +1878,8 @@ public partial class MainWindow : Window
                     release.DownloadUri,
                     modPath,
                     targetIsDirectory,
-                    release.FileName);
+                    release.FileName,
+                    release.Version);
 
                 var progress = new Progress<ModUpdateProgress>(p =>
                     _viewModel.ReportStatus($"{mod.DisplayName}: {p.Message}"));

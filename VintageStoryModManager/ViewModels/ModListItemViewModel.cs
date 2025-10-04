@@ -31,6 +31,8 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly IReadOnlyList<string> _databaseRequiredGameVersions;
     private readonly ModReleaseInfo? _latestRelease;
     private readonly ModReleaseInfo? _latestCompatibleRelease;
+    private readonly IReadOnlyList<ModReleaseInfo> _releases;
+    private IReadOnlyList<ModVersionOptionViewModel> _versionOptions = Array.Empty<ModVersionOptionViewModel>();
 
     private bool _isActive;
     private bool _suppressState;
@@ -43,6 +45,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private bool _isSelected;
     private bool _hasUpdate;
     private string? _updateMessage;
+    private ModVersionOptionViewModel? _selectedVersionOption;
 
     public ModListItemViewModel(
         ModEntry entry,
@@ -69,6 +72,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _databaseRequiredGameVersions = databaseInfo?.RequiredGameVersions ?? Array.Empty<string>();
         _latestRelease = databaseInfo?.LatestRelease;
         _latestCompatibleRelease = databaseInfo?.LatestCompatibleRelease;
+        _releases = databaseInfo?.Releases ?? Array.Empty<ModReleaseInfo>();
         ModDatabaseAssetId = databaseInfo?.AssetId;
         ModDatabasePageUrl = databaseInfo?.ModPageUrl;
         LatestDatabaseVersion = _latestRelease?.Version
@@ -110,6 +114,7 @@ public sealed class ModListItemViewModel : ObservableObject
         HasErrors = entry.HasErrors;
 
         InitializeUpdateAvailability();
+        InitializeVersionOptions();
         InitializeVersionWarning(installedGameVersion);
         UpdateStatusFromErrors();
         UpdateTooltip();
@@ -185,6 +190,16 @@ public sealed class ModListItemViewModel : ObservableObject
     public ModReleaseInfo? LatestRelease => _latestRelease;
 
     public ModReleaseInfo? LatestCompatibleRelease => _latestCompatibleRelease;
+
+    public IReadOnlyList<ModVersionOptionViewModel> VersionOptions => _versionOptions;
+
+    public bool HasVersionOptions => _versionOptions.Count > 0;
+
+    public ModVersionOptionViewModel? SelectedVersionOption
+    {
+        get => _selectedVersionOption;
+        set => SetProperty(ref _selectedVersionOption, value);
+    }
 
     public string UpdateButtonToolTip
     {
@@ -501,6 +516,73 @@ public sealed class ModListItemViewModel : ObservableObject
         }
 
         return $"Update available: {release.Version} (may be incompatible with your Vintage Story version)";
+    }
+
+    private void InitializeVersionOptions()
+    {
+        if (_releases.Count == 0 && string.IsNullOrWhiteSpace(Version))
+        {
+            _versionOptions = Array.Empty<ModVersionOptionViewModel>();
+            OnPropertyChanged(nameof(VersionOptions));
+            OnPropertyChanged(nameof(HasVersionOptions));
+            SetProperty(ref _selectedVersionOption, null);
+            return;
+        }
+
+        string? normalizedInstalled = VersionStringUtility.Normalize(Version);
+        var options = new List<ModVersionOptionViewModel>(_releases.Count + 1);
+        bool hasInstalled = false;
+
+        foreach (ModReleaseInfo release in _releases)
+        {
+            bool isInstalled = IsReleaseInstalled(release, Version, normalizedInstalled);
+            if (isInstalled)
+            {
+                hasInstalled = true;
+            }
+
+            options.Add(ModVersionOptionViewModel.FromRelease(release, isInstalled));
+        }
+
+        if (!hasInstalled && !string.IsNullOrWhiteSpace(Version))
+        {
+            options.Insert(0, ModVersionOptionViewModel.FromInstalledVersion(Version!, normalizedInstalled));
+        }
+
+        IReadOnlyList<ModVersionOptionViewModel> finalized = options.Count == 0
+            ? Array.Empty<ModVersionOptionViewModel>()
+            : options.AsReadOnly();
+
+        _versionOptions = finalized;
+        OnPropertyChanged(nameof(VersionOptions));
+        OnPropertyChanged(nameof(HasVersionOptions));
+
+        ModVersionOptionViewModel? selected = finalized.FirstOrDefault(option => option.IsInstalled)
+            ?? finalized.FirstOrDefault();
+
+        SetProperty(ref _selectedVersionOption, selected);
+    }
+
+    private static bool IsReleaseInstalled(ModReleaseInfo release, string? installedVersion, string? normalizedInstalled)
+    {
+        if (string.IsNullOrWhiteSpace(installedVersion))
+        {
+            return false;
+        }
+
+        string trimmedInstalled = installedVersion.Trim();
+        if (!string.IsNullOrWhiteSpace(release.Version)
+            && string.Equals(release.Version.Trim(), trimmedInstalled, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (normalizedInstalled != null && !string.IsNullOrWhiteSpace(release.NormalizedVersion))
+        {
+            return string.Equals(release.NormalizedVersion, normalizedInstalled, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return false;
     }
 
     private void InitializeVersionWarning(string? installedGameVersion)

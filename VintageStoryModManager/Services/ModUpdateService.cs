@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using VintageStoryModManager.Models;
@@ -17,6 +18,8 @@ public sealed class ModUpdateService
 {
     private static readonly HttpClient HttpClient = new();
 
+    private sealed record DownloadResult(string Path, bool IsTemporary, string? CachePath, bool IsCacheHit);
+
     public async Task<ModUpdateResult> UpdateAsync(ModUpdateDescriptor descriptor, IProgress<ModUpdateProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         if (descriptor is null)
@@ -27,19 +30,27 @@ public sealed class ModUpdateService
         try
         {
             ReportProgress(progress, ModUpdateStage.Downloading, "Downloading update package...");
-            string downloadPath = await DownloadAsync(descriptor, cancellationToken).ConfigureAwait(false);
+            DownloadResult download = await DownloadAsync(descriptor, cancellationToken).ConfigureAwait(false);
 
             try
             {
                 ReportProgress(progress, ModUpdateStage.Validating, "Validating archive...");
-                ValidateArchive(downloadPath);
+                ValidateArchive(download.Path);
+
+                if (!download.IsCacheHit && download.CachePath != null)
+                {
+                    TryCacheDownload(download.Path, download.CachePath);
+                }
 
                 bool treatAsDirectory = descriptor.TargetIsDirectory;
-                return await InstallAsync(descriptor, downloadPath, treatAsDirectory, progress, cancellationToken).ConfigureAwait(false);
+                return await InstallAsync(descriptor, download.Path, treatAsDirectory, progress, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
-                TryDelete(downloadPath);
+                if (download.IsTemporary)
+                {
+                    TryDelete(download.Path);
+                }
             }
         }
         catch (OperationCanceledException)
@@ -54,9 +65,8 @@ public sealed class ModUpdateService
         }
     }
 
-    private static async Task<string> DownloadAsync(ModUpdateDescriptor descriptor, CancellationToken cancellationToken)
+    private static async Task<DownloadResult> DownloadAsync(ModUpdateDescriptor descriptor, CancellationToken cancellationToken)
     {
-        string tempDirectory = CreateTemporaryDirectory();
         string? fileName = descriptor.ReleaseFileName;
         if (string.IsNullOrWhiteSpace(fileName))
         {
@@ -68,6 +78,13 @@ public sealed class ModUpdateService
             fileName = descriptor.ModId + ".zip";
         }
 
+        string? cachePath = GetCachePath(descriptor, fileName);
+        if (cachePath != null && File.Exists(cachePath))
+        {
+            return new DownloadResult(Path: cachePath, IsTemporary: false, CachePath: cachePath, IsCacheHit: true);
+        }
+
+        string tempDirectory = CreateTemporaryDirectory();
         string downloadPath = Path.Combine(tempDirectory, fileName);
 
         if (descriptor.DownloadUri.IsFile)
@@ -88,7 +105,69 @@ public sealed class ModUpdateService
             await stream.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
         }
 
-        return downloadPath;
+        return new DownloadResult(Path: downloadPath, IsTemporary: true, CachePath: cachePath, IsCacheHit: false);
+    }
+
+    private static string? GetCachePath(ModUpdateDescriptor descriptor, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(descriptor.ReleaseVersion))
+        {
+            return null;
+        }
+
+        string? documentsDirectory = GetDocumentsDirectory();
+        if (string.IsNullOrWhiteSpace(documentsDirectory))
+        {
+            return null;
+        }
+
+        string modDirectory = SanitizeFileName(descriptor.ModId, "mod");
+        string versionSegment = SanitizeFileName(descriptor.ReleaseVersion!, "version");
+        string extension = Path.GetExtension(fileName);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            extension = ".zip";
+        }
+
+        string cacheDirectory = Path.Combine(documentsDirectory, "VS Mod Manager", "Cached Mods", modDirectory);
+        return Path.Combine(cacheDirectory, versionSegment + extension);
+    }
+
+    private static string? GetDocumentsDirectory()
+    {
+        string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            return path;
+        }
+
+        path = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+        return string.IsNullOrWhiteSpace(path) ? null : path;
+    }
+
+    private static string SanitizeFileName(string? input, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return fallback;
+        }
+
+        char[] invalidChars = Path.GetInvalidFileNameChars();
+        var builder = new StringBuilder(input.Length);
+        foreach (char c in input)
+        {
+            if (Array.IndexOf(invalidChars, c) >= 0)
+            {
+                builder.Append('_');
+            }
+            else
+            {
+                builder.Append(c);
+            }
+        }
+
+        string sanitized = builder.ToString().Trim();
+        return string.IsNullOrEmpty(sanitized) ? fallback : sanitized;
     }
 
     private static void ValidateArchive(string downloadPath)
@@ -271,6 +350,29 @@ public sealed class ModUpdateService
         return candidate;
     }
 
+    private static void TryCacheDownload(string sourcePath, string cachePath)
+    {
+        try
+        {
+            if (string.Equals(sourcePath, cachePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            string? directory = Path.GetDirectoryName(cachePath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.Copy(sourcePath, cachePath, true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            Trace.TraceWarning("Failed to cache mod archive {0}: {1}", cachePath, ex.Message);
+        }
+    }
+
     private static void TryDelete(string path)
     {
         try
@@ -323,7 +425,8 @@ public sealed record ModUpdateDescriptor(
     Uri DownloadUri,
     string TargetPath,
     bool TargetIsDirectory,
-    string? ReleaseFileName);
+    string? ReleaseFileName,
+    string? ReleaseVersion);
 
 public sealed record ModUpdateResult(bool Success, string? ErrorMessage);
 
