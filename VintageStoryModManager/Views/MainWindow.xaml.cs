@@ -893,6 +893,21 @@ public partial class MainWindow : Window
             bool? result = editorWindow.ShowDialog();
             if (result == true)
             {
+                if (!string.Equals(configPath, editorViewModel.FilePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        _userConfiguration.SetModConfigPath(mod.ModId, editorViewModel.FilePath);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+                    {
+                        WpfMessageBox.Show($"Failed to store the configuration path:\n{ex.Message}",
+                            "Vintage Story Mod Manager",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                    }
+                }
+
                 _viewModel?.ReportStatus($"Saved config for {mod.DisplayName}.");
             }
         }
