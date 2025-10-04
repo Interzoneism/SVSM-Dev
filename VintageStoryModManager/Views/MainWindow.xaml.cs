@@ -218,7 +218,7 @@ public partial class MainWindow : Window
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         DataContext = _viewModel;
         ApplyCompactViewState(_viewModel.IsCompactView);
-        AttachToModsView(_viewModel.ModsView);
+        AttachToModsView(_viewModel.CurrentModsView);
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -234,6 +234,19 @@ public partial class MainWindow : Window
                     if (_viewModel != null)
                     {
                         ApplyCompactViewState(_viewModel.IsCompactView);
+                    }
+                });
+            }
+        }
+        else if (e.PropertyName == nameof(MainViewModel.CurrentModsView))
+        {
+            if (_viewModel != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (_viewModel != null)
+                    {
+                        AttachToModsView(_viewModel.CurrentModsView);
                     }
                 });
             }
@@ -440,7 +453,7 @@ public partial class MainWindow : Window
             var viewModel = new MainViewModel(_dataDirectory);
             _viewModel = viewModel;
             DataContext = viewModel;
-            AttachToModsView(viewModel.ModsView);
+            AttachToModsView(viewModel.CurrentModsView);
             await InitializeViewModelAsync(viewModel);
         }
         catch (Exception ex)

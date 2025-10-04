@@ -7,6 +7,7 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         xmlns:viewModels="clr-namespace:VintageStoryModManager.ViewModels"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:converters="clr-namespace:VintageStoryModManager.Converters"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
@@ -17,6 +18,8 @@
         Background="{StaticResource IMM.SurfaceBrush}">
 
     <Window.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenTrueConverter" />
+        <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenFalseConverter" IsInverted="True" />
         <sys:Double x:Key="IMM.CompactRowHeight">55</sys:Double>
         <Style x:Key="IMM.DataGridCellBaseStyle" TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent" />
@@ -107,20 +110,27 @@
                 </TextBlock.Style>
             </TextBlock>
 
-            <TextBox Grid.Column="1"
-                     Grid.Row="1"
-                     Margin="0,0,24,0"
-                     HorizontalAlignment="Right"
-                     Width="280"
-                     MinWidth="200"
-                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                     ui:ControlHelper.CornerRadius="6" />
+            <StackPanel Grid.Column="1"
+                        Grid.Row="1"
+                        Margin="0,0,24,0"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center">
+                <CheckBox Content="Search Mod DB"
+                          Margin="0,0,12,0"
+                          VerticalAlignment="Center"
+                          IsChecked="{Binding SearchModDatabase, Mode=TwoWay}" />
+                <TextBox Width="280"
+                         MinWidth="200"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         ui:ControlHelper.CornerRadius="6" />
+            </StackPanel>
         </Grid>
 
         <DataGrid x:Name="ModsDataGrid"
                   Grid.Row="1"
                   Margin="16,0,16,0"
-                  ItemsSource="{Binding ModsView}"
+                  ItemsSource="{Binding CurrentModsView}"
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
@@ -299,7 +309,8 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTemplateColumn x:Name="ActiveColumn" Header="Active" SortMemberPath="IsActive" Width="90" MinWidth="85">
+                <DataGridTemplateColumn x:Name="ActiveColumn" Header="Active" SortMemberPath="IsActive" Width="90" MinWidth="85"
+                                        Visibility="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource IMM.VisibleWhenFalseConverter}}">
                     <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                             <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -311,12 +322,22 @@
                         <DataTemplate>
                             <Grid HorizontalAlignment="Center">
                                 <ui:ToggleSwitch IsOn="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 HorizontalAlignment="Center"
-                                 IsEnabled="{Binding CanToggle}"
-                                 Toggled="ActiveToggle_OnToggled"
-                                 Margin="12,0"
-                                 OnContent="{x:Null}"
-                                 OffContent="{x:Null}"/>
+                                                 HorizontalAlignment="Center"
+                                                 Toggled="ActiveToggle_OnToggled"
+                                                 Margin="12,0"
+                                                 OnContent="{x:Null}"
+                                                 OffContent="{x:Null}">
+                                    <ui:ToggleSwitch.Style>
+                                        <Style TargetType="ui:ToggleSwitch">
+                                            <Setter Property="IsEnabled" Value="{Binding CanToggle}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ui:ToggleSwitch.Style>
+                                </ui:ToggleSwitch>
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
