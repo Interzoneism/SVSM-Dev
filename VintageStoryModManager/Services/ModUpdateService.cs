@@ -213,6 +213,8 @@ public sealed class ModUpdateService
         string backupPath = CreateUniquePath(targetDirectory, ".immbackup");
         string extractDirectory = CreateTemporaryDirectory();
 
+        bool backupMoved = false;
+
         try
         {
             if (Directory.Exists(targetDirectory))
@@ -223,6 +225,7 @@ public sealed class ModUpdateService
                 }
 
                 Directory.Move(targetDirectory, backupPath);
+                backupMoved = true;
             }
 
             ZipFile.ExtractToDirectory(downloadPath, extractDirectory);
@@ -232,15 +235,41 @@ public sealed class ModUpdateService
             ReportProgress(progress, ModUpdateStage.Completed, "Update installed.");
 
             TryDelete(backupPath);
-            TryDelete(extractDirectory);
             return new ModUpdateResult(true, null);
+        }
+        catch (OperationCanceledException)
+        {
+            TryDelete(targetDirectory);
+            if (backupMoved)
+            {
+                TryRestoreDirectoryBackup(backupPath, targetDirectory);
+            }
+
+            throw;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or NotSupportedException)
         {
             TryDelete(targetDirectory);
-            TryRestoreDirectoryBackup(backupPath, targetDirectory);
-            TryDelete(extractDirectory);
+            if (backupMoved)
+            {
+                TryRestoreDirectoryBackup(backupPath, targetDirectory);
+            }
+
             return new ModUpdateResult(false, ex.Message);
+        }
+        catch
+        {
+            TryDelete(targetDirectory);
+            if (backupMoved)
+            {
+                TryRestoreDirectoryBackup(backupPath, targetDirectory);
+            }
+
+            throw;
+        }
+        finally
+        {
+            TryDelete(extractDirectory);
         }
     }
 
