@@ -765,6 +765,10 @@
                                                     <Setter Property="Visibility" Value="Visible" />
                                                     <Setter Property="IsEnabled" Value="True" />
                                                 </DataTrigger>
+                                                <DataTrigger Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </ComboBox.Style>
