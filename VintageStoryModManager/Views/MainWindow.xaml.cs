@@ -121,7 +121,9 @@ public partial class MainWindow : Window
 
     private void RefreshPresetList(string? presetToSelect = null)
     {
-        string? desired = presetToSelect ?? (PresetComboBox.SelectedItem as ModPreset)?.Name;
+        string? desired = presetToSelect
+            ?? (PresetComboBox.SelectedItem as ModPreset)?.Name
+            ?? _userConfiguration.GetLastSelectedPresetName();
 
         AdvancedPresetsMenuItem.IsChecked = _userConfiguration.IsAdvancedPresetMode;
         _presets.Clear();
@@ -1454,6 +1456,7 @@ public partial class MainWindow : Window
         }
 
         _pendingPresetReselection = null;
+        _userConfiguration.SetLastSelectedPresetName(preset.Name);
 
         await ApplyPresetAsync(preset);
     }
@@ -1655,7 +1658,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        await UpdateModsAsync(overrides.Keys.ToList(), isBulk: true, overrides);
+        await UpdateModsAsync(overrides.Keys.ToList(), isBulk: true, overrides, showSummary: false);
     }
 
     private static bool VersionsMatch(string? desiredVersion, string? installedVersion)
@@ -2084,7 +2087,8 @@ public partial class MainWindow : Window
     private async Task UpdateModsAsync(
         IReadOnlyList<ModListItemViewModel> mods,
         bool isBulk,
-        IReadOnlyDictionary<ModListItemViewModel, ModReleaseInfo>? releaseOverrides = null)
+        IReadOnlyDictionary<ModListItemViewModel, ModReleaseInfo>? releaseOverrides = null,
+        bool showSummary = true)
     {
         if (_viewModel is null || mods.Count == 0)
         {
@@ -2191,11 +2195,11 @@ public partial class MainWindow : Window
                 _viewModel.ReportStatus(isBulk ? "Bulk update cancelled." : "Update cancelled.");
             }
 
-            if (results.Count > 0)
+            if (results.Count > 0 && showSummary)
             {
                 ShowUpdateSummary(results, isBulk, abortRequested);
             }
-            else if (abortRequested)
+            else if (abortRequested && showSummary)
             {
                 WpfMessageBox.Show(isBulk ? "Bulk update cancelled." : "Update cancelled.",
                     "Vintage Story Mod Manager",
@@ -2473,7 +2477,15 @@ public partial class MainWindow : Window
             }
         }
 
-        MessageBoxImage icon = failureCount > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information;
+        MessageBoxImage icon;
+        if (isBulk)
+        {
+            icon = MessageBoxImage.None;
+        }
+        else
+        {
+            icon = failureCount > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information;
+        }
         WpfMessageBox.Show(builder.ToString(), "Vintage Story Mod Manager", MessageBoxButton.OK, icon);
     }
 
