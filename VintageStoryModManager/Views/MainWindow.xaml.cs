@@ -39,6 +39,7 @@ public partial class MainWindow : Window
     private const double ModListScrollMultiplier = 0.5;
     private const double HoverOverlayOpacity = 0.12;
     private const double SelectionOverlayOpacity = 0.22;
+    private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/enhancedhandbook";
 
     private static readonly DependencyProperty BoundModProperty =
         DependencyProperty.RegisterAttached(
@@ -1137,7 +1138,65 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ManagerDataFolderMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        string? directory = GetManagerDataDirectory();
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            WpfMessageBox.Show(
+                "The manager data folder is not available on this system.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(directory);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to open the manager data folder:\n{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        OpenFolder(directory, "manager data");
+    }
+
+    private void ManagerModDbPageMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = ManagerModDatabaseUrl,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to open the mod database page:\n{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
     private static string? GetCachedModsDirectory()
+    {
+        string? managerDirectory = GetManagerDataDirectory();
+        return managerDirectory is null
+            ? null
+            : Path.Combine(managerDirectory, "Cached Mods");
+    }
+
+    private static string? GetManagerDataDirectory()
     {
         string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         if (string.IsNullOrWhiteSpace(path))
@@ -1147,7 +1206,7 @@ public partial class MainWindow : Window
 
         return string.IsNullOrWhiteSpace(path)
             ? null
-            : Path.Combine(path, "VS Mod Manager", "Cached Mods");
+            : Path.Combine(path, "VS Mod Manager");
     }
 
     private async void RefreshModsMenuItem_OnClick(object sender, RoutedEventArgs e)
