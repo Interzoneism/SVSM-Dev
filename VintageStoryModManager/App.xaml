@@ -24,6 +24,25 @@
             <Color x:Key="IMM.RowHoverColor">#FF7AA6F9</Color>
             <Color x:Key="IMM.RowSelectionColor">#334C8BF5</Color>
 
+            <!-- Vintage Story dialog and text colors extracted from GuiStyle -->
+            <Color x:Key="VS.DialogLightBackgroundColor">#BF403529</Color>
+            <Color x:Key="VS.DialogDefaultBackgroundColor">#CC403529</Color>
+            <Color x:Key="VS.DialogStrongBackgroundColor">#FF403529</Color>
+            <Color x:Key="VS.DialogBorderColor">#4D000000</Color>
+            <Color x:Key="VS.DialogHighlightColor">#E6A88B6C</Color>
+            <Color x:Key="VS.DialogAlternateBackgroundColor">#EDB5AEA6</Color>
+            <Color x:Key="VS.DialogDefaultTextColor">#FFE9DDCE</Color>
+            <Color x:Key="VS.DialogDarkBrownTextColor">#FF5A4530</Color>
+            <Color x:Key="VS.DialogHotbarNumberTextColor">#805A4530</Color>
+            <Color x:Key="VS.DialogButtonTextColor">#FFE0CFBB</Color>
+            <Color x:Key="VS.DialogActiveButtonTextColor">#FFC58948</Color>
+            <Color x:Key="VS.DialogDisabledTextColor">#59FFFFFF</Color>
+            <Color x:Key="VS.DialogSuccessTextColor">#FF80FF80</Color>
+            <Color x:Key="VS.DialogErrorTextColor">#FFFF8080</Color>
+            <Color x:Key="VS.DialogWarningTextColor">#FFF2C983</Color>
+            <Color x:Key="VS.DialogLinkTextColor">#FF8080FF</Color>
+            <Color x:Key="VS.DialogTitleBarColor">#33000000</Color>
+
             <SolidColorBrush x:Key="IMM.AccentBrush" Color="{StaticResource IMM.AccentColor}" />
             <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource IMM.SurfaceColor}" />
             <SolidColorBrush x:Key="IMM.SurfaceAltBrush" Color="{StaticResource IMM.SurfaceAltColor}" />
@@ -37,6 +56,24 @@
             <SolidColorBrush x:Key="IMM.SuccessBrush" Color="{StaticResource IMM.SuccessColor}" />
             <SolidColorBrush x:Key="IMM.RowHoverBrush" Color="{StaticResource IMM.RowHoverColor}" />
             <SolidColorBrush x:Key="IMM.RowSelectionBrush" Color="{StaticResource IMM.RowSelectionColor}" />
+
+            <SolidColorBrush x:Key="VS.DialogLightBackgroundBrush" Color="{StaticResource VS.DialogLightBackgroundColor}" />
+            <SolidColorBrush x:Key="VS.DialogDefaultBackgroundBrush" Color="{StaticResource VS.DialogDefaultBackgroundColor}" />
+            <SolidColorBrush x:Key="VS.DialogStrongBackgroundBrush" Color="{StaticResource VS.DialogStrongBackgroundColor}" />
+            <SolidColorBrush x:Key="VS.DialogBorderBrush" Color="{StaticResource VS.DialogBorderColor}" />
+            <SolidColorBrush x:Key="VS.DialogHighlightBrush" Color="{StaticResource VS.DialogHighlightColor}" />
+            <SolidColorBrush x:Key="VS.DialogAlternateBackgroundBrush" Color="{StaticResource VS.DialogAlternateBackgroundColor}" />
+            <SolidColorBrush x:Key="VS.DialogDefaultTextBrush" Color="{StaticResource VS.DialogDefaultTextColor}" />
+            <SolidColorBrush x:Key="VS.DialogDarkBrownTextBrush" Color="{StaticResource VS.DialogDarkBrownTextColor}" />
+            <SolidColorBrush x:Key="VS.DialogHotbarNumberTextBrush" Color="{StaticResource VS.DialogHotbarNumberTextColor}" />
+            <SolidColorBrush x:Key="VS.DialogButtonTextBrush" Color="{StaticResource VS.DialogButtonTextColor}" />
+            <SolidColorBrush x:Key="VS.DialogActiveButtonTextBrush" Color="{StaticResource VS.DialogActiveButtonTextColor}" />
+            <SolidColorBrush x:Key="VS.DialogDisabledTextBrush" Color="{StaticResource VS.DialogDisabledTextColor}" />
+            <SolidColorBrush x:Key="VS.DialogSuccessTextBrush" Color="{StaticResource VS.DialogSuccessTextColor}" />
+            <SolidColorBrush x:Key="VS.DialogErrorTextBrush" Color="{StaticResource VS.DialogErrorTextColor}" />
+            <SolidColorBrush x:Key="VS.DialogWarningTextBrush" Color="{StaticResource VS.DialogWarningTextColor}" />
+            <SolidColorBrush x:Key="VS.DialogLinkTextBrush" Color="{StaticResource VS.DialogLinkTextColor}" />
+            <SolidColorBrush x:Key="VS.DialogTitleBarBrush" Color="{StaticResource VS.DialogTitleBarColor}" />
 
             <Style TargetType="Button">
                 <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
