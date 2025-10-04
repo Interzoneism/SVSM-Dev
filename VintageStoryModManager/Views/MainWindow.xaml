@@ -60,6 +60,12 @@
                     <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" />
                     <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" />
                     <MenuItem Header="_Delete Cached Mods" Height="30" Click="DeleteCachedModsMenuItem_OnClick" />
+                    <Separator />
+                    <MenuItem x:Name="AdvancedPresetsMenuItem"
+                              Header="_Advanced presets"
+                              Height="30"
+                              IsCheckable="True"
+                              Click="AdvancedPresetsMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_View" Height="30">
                     <MenuItem Header="_Compact View"

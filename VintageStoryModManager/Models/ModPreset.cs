@@ -7,4 +7,14 @@ namespace VintageStoryModManager.Models;
 /// </summary>
 /// <param name="Name">Display name for the preset.</param>
 /// <param name="DisabledEntries">Collection of disabled mod identifiers stored in clientsettings.json.</param>
-public sealed record ModPreset(string Name, IReadOnlyList<string> DisabledEntries);
+/// <param name="ModStates">Optional snapshot of per-mod state used by advanced presets.</param>
+public sealed record ModPreset(
+    string Name,
+    IReadOnlyList<string> DisabledEntries,
+    IReadOnlyList<ModPresetModState> ModStates)
+{
+    /// <summary>
+    /// Gets a value indicating whether the preset was saved in advanced mode.
+    /// </summary>
+    public bool IsAdvanced => ModStates.Count > 0;
+}

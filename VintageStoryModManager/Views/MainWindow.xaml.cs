@@ -79,6 +79,7 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _userConfiguration = new UserConfigurationService();
+        AdvancedPresetsMenuItem.IsChecked = _userConfiguration.IsAdvancedPresetMode;
         PresetComboBox.ItemsSource = _presets;
         PresetComboBox.AddHandler(ComboBoxItem.PreviewMouseDownEvent,
             new MouseButtonEventHandler(PresetComboBox_OnItemPreviewMouseDown));
@@ -122,6 +123,7 @@ public partial class MainWindow : Window
     {
         string? desired = presetToSelect ?? (PresetComboBox.SelectedItem as ModPreset)?.Name;
 
+        AdvancedPresetsMenuItem.IsChecked = _userConfiguration.IsAdvancedPresetMode;
         _presets.Clear();
         foreach (var preset in _userConfiguration.GetPresets())
         {
@@ -151,6 +153,52 @@ public partial class MainWindow : Window
         }
 
         UpdateSavePresetButtonContent();
+    }
+
+    private void AdvancedPresetsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return;
+        }
+
+        bool isCurrentlyEnabled = _userConfiguration.IsAdvancedPresetMode;
+        bool requestedState = menuItem.IsChecked;
+
+        if (!isCurrentlyEnabled && requestedState)
+        {
+            MessageBoxResult confirm = WpfMessageBox.Show(
+                "This will activate advanced preset mode, which saves the specific versions of the mods as well, switching versions when presets are loaded. Uses a separate preset list.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes)
+            {
+                menuItem.IsChecked = false;
+                return;
+            }
+        }
+
+        if (isCurrentlyEnabled == requestedState)
+        {
+            menuItem.IsChecked = isCurrentlyEnabled;
+            return;
+        }
+
+        _userConfiguration.SetAdvancedPresetMode(requestedState);
+        menuItem.IsChecked = requestedState;
+        PresetComboBox.SelectedItem = null;
+        RefreshPresetList();
+        UpdateSavePresetButtonContent();
+
+        if (_viewModel != null)
+        {
+            string status = requestedState
+                ? "Advanced presets enabled."
+                : "Advanced presets disabled.";
+            _viewModel.ReportStatus(status);
+        }
     }
 
     private void InitializeViewModel()
@@ -1475,7 +1523,12 @@ public partial class MainWindow : Window
         _isApplyingPreset = true;
         try
         {
-            bool applied = await _viewModel.ApplyPresetAsync(preset.Name, preset.DisabledEntries);
+            if (preset.IsAdvanced && preset.ModStates.Count > 0)
+            {
+                await ApplyPresetModVersionsAsync(preset);
+            }
+
+            bool applied = await _viewModel.ApplyPresetAsync(preset);
             if (applied)
             {
                 _viewModel.SelectedSortOption?.Apply(_viewModel.ModsView);
@@ -1487,6 +1540,149 @@ public partial class MainWindow : Window
             _isApplyingPreset = false;
             UpdateSavePresetButtonContent();
         }
+    }
+
+    private async Task ApplyPresetModVersionsAsync(ModPreset preset)
+    {
+        if (_viewModel?.ModsView is null)
+        {
+            return;
+        }
+
+        var mods = _viewModel.ModsView.Cast<ModListItemViewModel>().ToList();
+        if (mods.Count == 0)
+        {
+            return;
+        }
+
+        var modLookup = mods.ToDictionary(mod => mod.ModId, StringComparer.OrdinalIgnoreCase);
+        var overrides = new Dictionary<ModListItemViewModel, ModReleaseInfo>();
+        var missingMods = new List<string>();
+        var missingVersions = new List<string>();
+
+        foreach (var state in preset.ModStates)
+        {
+            if (!modLookup.TryGetValue(state.ModId, out ModListItemViewModel? mod))
+            {
+                missingMods.Add(state.ModId);
+                continue;
+            }
+
+            string? desiredVersion = string.IsNullOrWhiteSpace(state.Version) ? null : state.Version!.Trim();
+            if (string.IsNullOrWhiteSpace(desiredVersion))
+            {
+                continue;
+            }
+
+            string? installedVersion = string.IsNullOrWhiteSpace(mod.Version) ? null : mod.Version!.Trim();
+
+            if (VersionsMatch(desiredVersion, installedVersion))
+            {
+                continue;
+            }
+
+            string? desiredNormalized = VersionStringUtility.Normalize(desiredVersion);
+
+            ModVersionOptionViewModel? option = mod.VersionOptions.FirstOrDefault(opt =>
+                (!string.IsNullOrWhiteSpace(desiredVersion)
+                    && string.Equals(opt.Version, desiredVersion, StringComparison.OrdinalIgnoreCase))
+                || (!string.IsNullOrWhiteSpace(desiredNormalized)
+                    && !string.IsNullOrWhiteSpace(opt.NormalizedVersion)
+                    && string.Equals(opt.NormalizedVersion, desiredNormalized, StringComparison.OrdinalIgnoreCase)));
+
+            if (option is null)
+            {
+                missingVersions.Add($"{mod.DisplayName} ({desiredVersion})");
+                continue;
+            }
+
+            if (option.IsInstalled)
+            {
+                continue;
+            }
+
+            if (!option.HasRelease || option.Release is null)
+            {
+                string display = !string.IsNullOrWhiteSpace(option.Version)
+                    ? option.Version
+                    : desiredVersion ?? "Unknown";
+                missingVersions.Add($"{mod.DisplayName} ({display})");
+                continue;
+            }
+
+            overrides[mod] = option.Release;
+        }
+
+        if (missingMods.Count > 0 || missingVersions.Count > 0)
+        {
+            var builder = new StringBuilder();
+
+            if (missingMods.Count > 0)
+            {
+                builder.AppendLine("The following mods from the preset are not installed:");
+                foreach (string modId in missingMods.Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    builder.AppendLine($" • {modId}");
+                }
+            }
+
+            if (missingVersions.Count > 0)
+            {
+                if (builder.Length > 0)
+                {
+                    builder.AppendLine();
+                }
+
+                builder.AppendLine("The following mod versions could not be located:");
+                foreach (string entry in missingVersions.Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    builder.AppendLine($" • {entry}");
+                }
+            }
+
+            string message = builder.ToString().Trim();
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                WpfMessageBox.Show(message,
+                    "Vintage Story Mod Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
+        if (overrides.Count == 0)
+        {
+            return;
+        }
+
+        await UpdateModsAsync(overrides.Keys.ToList(), isBulk: true, overrides);
+    }
+
+    private static bool VersionsMatch(string? desiredVersion, string? installedVersion)
+    {
+        if (string.IsNullOrWhiteSpace(desiredVersion) && string.IsNullOrWhiteSpace(installedVersion))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(desiredVersion) && !string.IsNullOrWhiteSpace(installedVersion))
+        {
+            if (string.Equals(desiredVersion.Trim(), installedVersion.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            string? desiredNormalized = VersionStringUtility.Normalize(desiredVersion);
+            string? installedNormalized = VersionStringUtility.Normalize(installedVersion);
+            if (!string.IsNullOrWhiteSpace(desiredNormalized)
+                && !string.IsNullOrWhiteSpace(installedNormalized)
+                && string.Equals(desiredNormalized, installedNormalized, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void ModsDataGrid_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -1574,7 +1770,10 @@ public partial class MainWindow : Window
         }
 
         IReadOnlyList<string> disabledEntries = _viewModel.GetCurrentDisabledEntries();
-        _userConfiguration.SetPreset(presetName, disabledEntries);
+        IReadOnlyList<ModPresetModState>? states = _userConfiguration.IsAdvancedPresetMode
+            ? _viewModel.GetCurrentModStates()
+            : null;
+        _userConfiguration.SetPreset(presetName, disabledEntries, states);
         RefreshPresetList(presetName);
         _viewModel.ReportStatus($"Saved preset \"{presetName}\".");
     }
