@@ -309,8 +309,7 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTemplateColumn x:Name="ActiveColumn" Header="Active" SortMemberPath="IsActive" Width="90" MinWidth="85"
-                                        Visibility="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource IMM.VisibleWhenFalseConverter}}">
+                <DataGridTemplateColumn x:Name="ActiveColumn" Header="Active" SortMemberPath="IsActive" Width="90" MinWidth="85">
                     <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                             <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -453,7 +452,7 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
-                <DataGridTemplateColumn Header="Status" Width="100" IsReadOnly="True" SortMemberPath="StatusSortOrder">
+                <DataGridTemplateColumn x:Name="StatusColumn" Header="Status" Width="100" IsReadOnly="True" SortMemberPath="StatusSortOrder">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock FontFamily="Segoe Fluent Icons"

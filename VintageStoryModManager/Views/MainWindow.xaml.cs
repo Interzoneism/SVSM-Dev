@@ -218,6 +218,7 @@ public partial class MainWindow : Window
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         DataContext = _viewModel;
         ApplyCompactViewState(_viewModel.IsCompactView);
+        UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
         AttachToModsView(_viewModel.CurrentModsView);
     }
 
@@ -234,6 +235,19 @@ public partial class MainWindow : Window
                     if (_viewModel != null)
                     {
                         ApplyCompactViewState(_viewModel.IsCompactView);
+                    }
+                });
+            }
+        }
+        else if (e.PropertyName == nameof(MainViewModel.SearchModDatabase))
+        {
+            if (_viewModel != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (_viewModel != null)
+                    {
+                        UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
                     }
                 });
             }
@@ -260,7 +274,30 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_viewModel?.SearchModDatabase == true)
+        {
+            IconColumn.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         IconColumn.Visibility = isCompactView ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void UpdateSearchColumnVisibility(bool isSearchingModDatabase)
+    {
+        Visibility visibility = isSearchingModDatabase ? Visibility.Collapsed : Visibility.Visible;
+
+        if (ActiveColumn != null)
+        {
+            ActiveColumn.Visibility = visibility;
+        }
+
+        if (StatusColumn != null)
+        {
+            StatusColumn.Visibility = visibility;
+        }
+
+        ApplyCompactViewState(_viewModel?.IsCompactView ?? false);
     }
 
     private async Task InitializeViewModelAsync(MainViewModel viewModel)
