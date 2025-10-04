@@ -29,7 +29,6 @@ public sealed class MainViewModel : ObservableObject
     private SortOption? _selectedSortOption;
     private bool _isBusy;
     private bool _isCompactView;
-    private bool _isDarkTheme;
     private string _statusMessage = string.Empty;
     private bool _isErrorStatus;
     private int _totalMods;
@@ -89,12 +88,6 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _isCompactView;
         set => SetProperty(ref _isCompactView, value);
-    }
-
-    public bool IsDarkTheme
-    {
-        get => _isDarkTheme;
-        set => SetProperty(ref _isDarkTheme, value);
     }
 
     public string StatusMessage
