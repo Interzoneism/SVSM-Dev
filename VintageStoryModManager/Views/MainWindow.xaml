@@ -519,7 +519,7 @@
                             FontWeight="Bold" />
                 </StackPanel>
             </Grid>
-            <Border Grid.Row="0"
+            <Border x:Name="Border_MODINFO" Grid.Row="0"
                     Padding="16"
                     Background="{StaticResource IMM.SurfaceBrush}"
                     BorderBrush="{StaticResource IMM.BorderBrush}"
