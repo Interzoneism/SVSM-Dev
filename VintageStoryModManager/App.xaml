@@ -19,10 +19,22 @@
             <Color x:Key="IMM.ButtonHoverColor">#FFE7F0FF</Color>
             <Color x:Key="IMM.ButtonPressedColor">#FFD5E3FF</Color>
             <Color x:Key="IMM.ButtonDisabledColor">#FFEEF1F6</Color>
+            <Color x:Key="IMM.ButtonForegroundColor">#FF1C2635</Color>
             <Color x:Key="IMM.ForegroundColor">#FF1C2635</Color>
+            <Color x:Key="IMM.SecondaryTextColor">#FF617191</Color>
             <Color x:Key="IMM.SuccessColor">#FF79C46E</Color>
             <Color x:Key="IMM.RowHoverColor">#FF7AA6F9</Color>
             <Color x:Key="IMM.RowSelectionColor">#334C8BF5</Color>
+            <Color x:Key="IMM.ListBackgroundColor">#FFFFFFFF</Color>
+            <Color x:Key="IMM.ScrollBackgroundColor">#FFEFF3F9</Color>
+            <Color x:Key="IMM.ScrollThumbColor">#FFCAD7EB</Color>
+            <Color x:Key="IMM.InputBackgroundColor">#FFFFFFFF</Color>
+            <Color x:Key="IMM.InputBorderColor">#FFCAD7EB</Color>
+            <Color x:Key="IMM.InputForegroundColor">#FF1C2635</Color>
+            <Color x:Key="IMM.InputFocusBackgroundColor">#FFE7F0FF</Color>
+            <Color x:Key="IMM.HeaderBackgroundColor">#FFEFF3F9</Color>
+            <Color x:Key="IMM.HeaderTextColor">#FF1C2635</Color>
+            <Color x:Key="IMM.OnAccentTextColor">#FFFFFFFF</Color>
 
             <!-- Vintage Story dialog and text colors extracted from GuiStyle -->
             <Color x:Key="VS.DialogLightBackgroundColor">#BF403529</Color>
@@ -52,10 +64,22 @@
             <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource IMM.ButtonHoverColor}" />
             <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="{StaticResource IMM.ButtonPressedColor}" />
             <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="{StaticResource IMM.ButtonDisabledColor}" />
+            <SolidColorBrush x:Key="IMM.ButtonForegroundBrush" Color="{StaticResource IMM.ButtonForegroundColor}" />
             <SolidColorBrush x:Key="IMM.ForegroundBrush" Color="{StaticResource IMM.ForegroundColor}" />
+            <SolidColorBrush x:Key="IMM.SecondaryTextBrush" Color="{StaticResource IMM.SecondaryTextColor}" />
             <SolidColorBrush x:Key="IMM.SuccessBrush" Color="{StaticResource IMM.SuccessColor}" />
             <SolidColorBrush x:Key="IMM.RowHoverBrush" Color="{StaticResource IMM.RowHoverColor}" />
             <SolidColorBrush x:Key="IMM.RowSelectionBrush" Color="{StaticResource IMM.RowSelectionColor}" />
+            <SolidColorBrush x:Key="IMM.ListBackgroundBrush" Color="{StaticResource IMM.ListBackgroundColor}" />
+            <SolidColorBrush x:Key="IMM.ScrollBackgroundBrush" Color="{StaticResource IMM.ScrollBackgroundColor}" />
+            <SolidColorBrush x:Key="IMM.ScrollThumbBrush" Color="{StaticResource IMM.ScrollThumbColor}" />
+            <SolidColorBrush x:Key="IMM.InputBackgroundBrush" Color="{StaticResource IMM.InputBackgroundColor}" />
+            <SolidColorBrush x:Key="IMM.InputBorderBrush" Color="{StaticResource IMM.InputBorderColor}" />
+            <SolidColorBrush x:Key="IMM.InputForegroundBrush" Color="{StaticResource IMM.InputForegroundColor}" />
+            <SolidColorBrush x:Key="IMM.InputFocusBackgroundBrush" Color="{StaticResource IMM.InputFocusBackgroundColor}" />
+            <SolidColorBrush x:Key="IMM.HeaderBackgroundBrush" Color="{StaticResource IMM.HeaderBackgroundColor}" />
+            <SolidColorBrush x:Key="IMM.HeaderTextBrush" Color="{StaticResource IMM.HeaderTextColor}" />
+            <SolidColorBrush x:Key="IMM.OnAccentTextBrush" Color="{StaticResource IMM.OnAccentTextColor}" />
 
             <SolidColorBrush x:Key="VS.DialogLightBackgroundBrush" Color="{StaticResource VS.DialogLightBackgroundColor}" />
             <SolidColorBrush x:Key="VS.DialogDefaultBackgroundBrush" Color="{StaticResource VS.DialogDefaultBackgroundColor}" />
@@ -76,7 +100,7 @@
             <SolidColorBrush x:Key="VS.DialogTitleBarBrush" Color="{StaticResource VS.DialogTitleBarColor}" />
 
             <Style TargetType="Button">
-                <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource IMM.ButtonForegroundBrush}" />
                 <Setter Property="Background" Value="{StaticResource IMM.ButtonBackgroundBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
@@ -214,7 +238,7 @@
             </Style>
 
             <Style TargetType="ComboBox">
-                <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource IMM.ButtonForegroundBrush}" />
                 <Setter Property="Background" Value="{StaticResource IMM.ButtonBackgroundBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
                 <Setter Property="Padding" Value="10,4" />
@@ -252,7 +276,7 @@
                                       Stretch="Fill"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
-                                      Fill="{StaticResource IMM.ForegroundBrush}"
+                                      Fill="{StaticResource IMM.ButtonForegroundBrush}"
                                       IsHitTestVisible="False" />
                                 <ToggleButton x:Name="DropDownToggle"
                                               Grid.ColumnSpan="2"
@@ -369,9 +393,9 @@
             </Style>
 
             <Style TargetType="TextBox">
-                <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
-                <Setter Property="Background" Value="White" />
-                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource IMM.InputForegroundBrush}" />
+                <Setter Property="Background" Value="{StaticResource IMM.InputBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource IMM.InputBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Padding" Value="6,4" />
                 <Setter Property="ui:ControlHelper.CornerRadius" Value="4" />
@@ -400,7 +424,7 @@
                                                                 Duration="0:0:0.12" />
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.ButtonHoverColor}"
+                                                                To="{StaticResource IMM.InputFocusBackgroundColor}"
                                                                 Duration="0:0:0.12" />
                                             </Storyboard>
                                         </BeginStoryboard>
@@ -410,11 +434,11 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.BorderColor}"
+                                                                To="{StaticResource IMM.InputBorderColor}"
                                                                 Duration="0:0:0.12" />
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="White"
+                                                                To="{StaticResource IMM.InputBackgroundColor}"
                                                                 Duration="0:0:0.12" />
                                             </Storyboard>
                                         </BeginStoryboard>
@@ -427,7 +451,7 @@
             </Style>
 
             <Style x:Key="IMM.ToggleButtonBaseStyle" TargetType="ToggleButton">
-                <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource IMM.ButtonForegroundBrush}" />
                 <Setter Property="Background" Value="{StaticResource IMM.ButtonBackgroundBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
@@ -504,10 +528,10 @@
                             
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
-                                    <Setter Property="Foreground" Value="White" />
+                                    <Setter Property="Foreground" Value="{StaticResource IMM.OnAccentTextBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsChecked" Value="False">
-                                    <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                                    <Setter Property="Foreground" Value="{StaticResource IMM.ButtonForegroundBrush}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>

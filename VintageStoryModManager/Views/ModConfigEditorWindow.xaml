@@ -29,7 +29,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border BorderBrush="{StaticResource IMM.BorderBrush}" BorderThickness="1" CornerRadius="10" Background="White" Padding="4">
+        <Border BorderBrush="{StaticResource IMM.BorderBrush}" BorderThickness="1" CornerRadius="10" Background="{StaticResource IMM.ListBackgroundBrush}" Padding="4">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="5" Opacity="0.16" Color="#33000000" />
             </Border.Effect>
@@ -55,7 +55,7 @@
                                                     <BeginStoryboard x:Name="ObjectHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            To="{StaticResource IMM.RowHoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -121,7 +121,7 @@
                             <HierarchicalDataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                              Value="True">
-                                    <Setter TargetName="ObjectHeaderText" Property="Foreground" Value="White" />
+                                    <Setter TargetName="ObjectHeaderText" Property="Foreground" Value="{StaticResource IMM.OnAccentTextBrush}" />
                                 </DataTrigger>
                             </HierarchicalDataTemplate.Triggers>
                         </HierarchicalDataTemplate>
@@ -139,7 +139,7 @@
                                                     <BeginStoryboard x:Name="ArrayHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            To="{StaticResource IMM.RowHoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -203,7 +203,7 @@
                                                Foreground="{StaticResource IMM.ForegroundBrush}"
                                                IsHitTestVisible="False" />
                                     <TextBlock Margin="8,0,0,0"
-                                               Foreground="Gray"
+                                               Foreground="{StaticResource IMM.SecondaryTextBrush}"
                                                FontStyle="Italic"
                                                Text="{Binding ItemCount, StringFormat={}{0} items}">
                                         <TextBlock.Style>
@@ -224,7 +224,7 @@
                             <HierarchicalDataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                              Value="True">
-                                    <Setter TargetName="ArrayHeaderText" Property="Foreground" Value="White" />
+                                    <Setter TargetName="ArrayHeaderText" Property="Foreground" Value="{StaticResource IMM.OnAccentTextBrush}" />
                                 </DataTrigger>
                             </HierarchicalDataTemplate.Triggers>
                         </HierarchicalDataTemplate>
@@ -241,7 +241,7 @@
                                                     <BeginStoryboard x:Name="ValueHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            To="{StaticResource IMM.RowHoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -352,6 +352,9 @@
                                     <Setter TargetName="ValueTextBox" Property="UIElement.Visibility" Value="Collapsed" />
                                     <Setter TargetName="BooleanToggle" Property="UIElement.Visibility" Value="Visible" />
                                 </DataTrigger>
+                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}" Value="True">
+                                    <Setter TargetName="ValueLabel" Property="Foreground" Value="{StaticResource IMM.OnAccentTextBrush}" />
+                                </DataTrigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>
                     </TreeView.Resources>
@@ -362,7 +365,7 @@
         <DockPanel Grid.Row="1" Margin="0,12,0,0" LastChildFill="False">
             <TextBlock x:Name="FilePathTextBlock"
                        Text="{Binding FilePath}"
-                       Foreground="#FF617191"
+                       Foreground="{StaticResource IMM.SecondaryTextBrush}"
                        VerticalAlignment="Center"
                        Margin="0,0,16,0"
                        TextTrimming="CharacterEllipsis" />

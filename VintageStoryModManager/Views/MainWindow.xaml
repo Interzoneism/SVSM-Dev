@@ -98,7 +98,7 @@
                        Margin="0,16,24,4">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
-                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource IMM.SecondaryTextBrush}" />
                         <Setter Property="Visibility" Value="Collapsed" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
@@ -138,7 +138,7 @@
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
                   SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="{StaticResource IMM.ForegroundBrush}"
                   PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
-                  Background="White"
+                  Background="{StaticResource IMM.ListBackgroundBrush}"
                   RowBackground="Transparent"
                   HorizontalGridLinesBrush="Transparent"
                   VerticalGridLinesBrush="Transparent"
@@ -154,16 +154,23 @@
             </DataGrid.Effect>
             <DataGrid.Resources>
                 <Style TargetType="ScrollBar">
-                    <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                    <Setter Property="Background" Value="{StaticResource IMM.ScrollBackgroundBrush}" />
+                    <Setter Property="Foreground" Value="{StaticResource IMM.ScrollThumbBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource IMM.ScrollBackgroundBrush}" />
+                    <Style.Resources>
+                        <Style TargetType="Thumb">
+                            <Setter Property="Background" Value="{StaticResource IMM.ScrollThumbBrush}" />
+                        </Style>
+                    </Style.Resources>
                 </Style>
                 <Style TargetType="TextBlock">
                     <Setter Property="TextWrapping" Value="Wrap" />
                 </Style>
                 <Style TargetType="DataGridColumnHeader">
-                    <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                    <Setter Property="Background" Value="{StaticResource IMM.HeaderBackgroundBrush}" />
                     <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
                     <Setter Property="BorderThickness" Value="1,0,0,1" />
-                    <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                    <Setter Property="Foreground" Value="{StaticResource IMM.HeaderTextBrush}" />
                     <Setter Property="Padding" Value="12,10" />
                     <Setter Property="FontWeight" Value="SemiBold" />
                     <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -201,7 +208,7 @@
                                                 <Storyboard>
                                                     <ColorAnimation Storyboard.TargetName="HeaderBorder"
                                                                     Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                    To="{StaticResource IMM.SurfaceAltColor}"
+                                                                    To="{StaticResource IMM.HeaderBackgroundColor}"
                                                                     Duration="0:0:0.15">
                                                         <ColorAnimation.EasingFunction>
                                                             <QuadraticEase EasingMode="EaseOut" />
