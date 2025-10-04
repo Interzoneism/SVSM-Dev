@@ -96,6 +96,62 @@ public partial class ModConfigEditorWindow : Window
         DialogResult = false;
     }
 
+    private void BrowseButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not ModConfigEditorViewModel viewModel)
+        {
+            return;
+        }
+
+        string? initialDirectory = GetInitialDirectory(viewModel.FilePath);
+
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Select configuration file",
+            Filter = "Config files (*.json)|*.json|All files (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (!string.IsNullOrWhiteSpace(initialDirectory) && Directory.Exists(initialDirectory))
+        {
+            dialog.InitialDirectory = initialDirectory;
+        }
+
+        try
+        {
+            string? currentFileName = Path.GetFileName(viewModel.FilePath);
+            if (!string.IsNullOrWhiteSpace(currentFileName))
+            {
+                dialog.FileName = currentFileName;
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore invalid paths and fall back to the default behaviour of the dialog.
+        }
+
+        bool? result = dialog.ShowDialog(this);
+        if (result != true)
+        {
+            return;
+        }
+
+        try
+        {
+            viewModel.ReplaceConfigurationFile(dialog.FileName);
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(EnsureFilePathDoesNotOverlapButtons));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or PathTooLongException or NotSupportedException)
+        {
+            WpfMessageBox.Show(this,
+                $"Failed to open the configuration file:\n{ex.Message}",
+                "Edit Config",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
     private void TreeView_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (e.Handled)
@@ -239,5 +295,47 @@ public partial class ModConfigEditorWindow : Window
         }
 
         return null;
+    }
+
+    private static string? GetInitialDirectory(string? filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            return null;
+        }
+
+        try
+        {
+            string? directory = Path.GetDirectoryName(filePath);
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                return null;
+            }
+
+            string? candidate = directory;
+            while (!string.IsNullOrWhiteSpace(candidate))
+            {
+                string trimmed = candidate.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string folderName = Path.GetFileName(trimmed);
+                if (string.Equals(folderName, "ModConfig", StringComparison.OrdinalIgnoreCase))
+                {
+                    return candidate;
+                }
+
+                string? parent = Path.GetDirectoryName(candidate);
+                if (string.IsNullOrWhiteSpace(parent) || string.Equals(parent, candidate, StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+
+                candidate = parent;
+            }
+
+            return directory;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 }

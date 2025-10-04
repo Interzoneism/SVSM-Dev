@@ -11,7 +11,7 @@ namespace VintageStoryModManager.ViewModels;
 
 public sealed class ModConfigEditorViewModel : ObservableObject
 {
-    private readonly string _filePath;
+    private string _filePath;
     private JsonNode? _rootNode;
 
     public ModConfigEditorViewModel(string modDisplayName, string filePath)
@@ -27,7 +27,7 @@ public sealed class ModConfigEditorViewModel : ObservableObject
         }
 
         ModDisplayName = modDisplayName;
-        _filePath = Path.GetFullPath(filePath);
+        _filePath = NormalizePath(filePath);
         WindowTitle = $"Edit Config - {ModDisplayName}";
 
         LoadConfiguration();
@@ -37,7 +37,20 @@ public sealed class ModConfigEditorViewModel : ObservableObject
 
     public string WindowTitle { get; }
 
-    public string FilePath => _filePath;
+    public string FilePath
+    {
+        get => _filePath;
+        private set
+        {
+            if (string.Equals(_filePath, value, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            _filePath = value;
+            OnPropertyChanged();
+        }
+    }
 
     public ObservableCollection<ModConfigNodeViewModel> RootNodes { get; private set; } = new();
 
@@ -57,18 +70,40 @@ public sealed class ModConfigEditorViewModel : ObservableObject
         File.WriteAllText(_filePath, json);
     }
 
-    private void LoadConfiguration()
+    public void ReplaceConfigurationFile(string filePath)
     {
-        using FileStream stream = File.OpenRead(_filePath);
-        _rootNode = JsonNode.Parse(stream);
+        string normalizedPath = NormalizePath(filePath);
 
-        if (_rootNode is null)
+        JsonNode? node;
+        using (FileStream stream = File.OpenRead(normalizedPath))
         {
-            _rootNode = new JsonObject();
+            node = JsonNode.Parse(stream);
         }
 
+        if (node is null)
+        {
+            node = new JsonObject();
+        }
+
+        _rootNode = node;
         RootNodes = new ObservableCollection<ModConfigNodeViewModel>(CreateRootNodes(_rootNode));
+        FilePath = normalizedPath;
         OnPropertyChanged(nameof(RootNodes));
+    }
+
+    private void LoadConfiguration()
+    {
+        ReplaceConfigurationFile(_filePath);
+    }
+
+    private static string NormalizePath(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            throw new ArgumentException("Configuration file path is required.", nameof(filePath));
+        }
+
+        return Path.GetFullPath(filePath);
     }
 
     private IEnumerable<ModConfigNodeViewModel> CreateRootNodes(JsonNode node)
