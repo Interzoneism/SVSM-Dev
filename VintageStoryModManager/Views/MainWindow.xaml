@@ -183,15 +183,14 @@
                                         <Trigger.EnterActions>
                                             <BeginStoryboard>
                                                 <Storyboard>
-                                                    <ColorAnimationUsingKeyFrames Storyboard.TargetName="HeaderBorder"
-                                                                                  Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                        <EasingColorKeyFrame KeyTime="0:0:0.15"
-                                                                             Value="{DynamicResource IMM.ButtonHoverColor}">
-                                                            <EasingColorKeyFrame.EasingFunction>
-                                                                <QuadraticEase EasingMode="EaseOut" />
-                                                            </EasingColorKeyFrame.EasingFunction>
-                                                        </EasingColorKeyFrame>
-                                                    </ColorAnimationUsingKeyFrames>
+                                                    <ColorAnimation Storyboard.TargetName="HeaderBorder"
+                                                                    Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                    To="{DynamicResource IMM.ButtonHoverColor}"
+                                                                    Duration="0:0:0.15">
+                                                        <ColorAnimation.EasingFunction>
+                                                            <QuadraticEase EasingMode="EaseOut" />
+                                                        </ColorAnimation.EasingFunction>
+                                                    </ColorAnimation>
 
                                                 </Storyboard>
                                             </BeginStoryboard>
@@ -199,15 +198,14 @@
                                         <Trigger.ExitActions>
                                             <BeginStoryboard>
                                                 <Storyboard>
-                                                    <ColorAnimationUsingKeyFrames Storyboard.TargetName="HeaderBorder"
-                                                                                  Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                        <EasingColorKeyFrame KeyTime="0:0:0.15"
-                                                                             Value="{DynamicResource IMM.SurfaceAltColor}">
-                                                            <EasingColorKeyFrame.EasingFunction>
-                                                                <QuadraticEase EasingMode="EaseOut" />
-                                                            </EasingColorKeyFrame.EasingFunction>
-                                                        </EasingColorKeyFrame>
-                                                    </ColorAnimationUsingKeyFrames>
+                                                    <ColorAnimation Storyboard.TargetName="HeaderBorder"
+                                                                    Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                    To="{DynamicResource IMM.SurfaceAltColor}"
+                                                                    Duration="0:0:0.15">
+                                                        <ColorAnimation.EasingFunction>
+                                                            <QuadraticEase EasingMode="EaseOut" />
+                                                        </ColorAnimation.EasingFunction>
+                                                    </ColorAnimation>
 
                                                 </Storyboard>
                                             </BeginStoryboard>

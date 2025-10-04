@@ -103,24 +103,22 @@
                                 <VisualStateGroup x:Name="CommonStates">
                                     <VisualState x:Name="Normal">
                                         <Storyboard>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                          Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                <EasingColorKeyFrame KeyTime="0:0:0.15"
-                                                                     Value="{DynamicResource IMM.ButtonBackgroundColor}">
-                                                    <EasingColorKeyFrame.EasingFunction>
-                                                        <QuadraticEase EasingMode="EaseOut" />
-                                                    </EasingColorKeyFrame.EasingFunction>
-                                                </EasingColorKeyFrame>
-                                            </ColorAnimationUsingKeyFrames>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                          Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)">
-                                                <EasingColorKeyFrame KeyTime="0:0:0.15"
-                                                                     Value="{DynamicResource IMM.BorderColor}">
-                                                    <EasingColorKeyFrame.EasingFunction>
-                                                        <QuadraticEase EasingMode="EaseOut" />
-                                                    </EasingColorKeyFrame.EasingFunction>
-                                                </EasingColorKeyFrame>
-                                            </ColorAnimationUsingKeyFrames>
+                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="{DynamicResource IMM.ButtonBackgroundColor}"
+                                                            Duration="0:0:0.15">
+                                                <ColorAnimation.EasingFunction>
+                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                </ColorAnimation.EasingFunction>
+                                            </ColorAnimation>
+                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                            To="{DynamicResource IMM.BorderColor}"
+                                                            Duration="0:0:0.15">
+                                                <ColorAnimation.EasingFunction>
+                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                </ColorAnimation.EasingFunction>
+                                            </ColorAnimation>
                                             <DoubleAnimation Storyboard.TargetName="Root"
                                                              Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
                                                              To="1"
@@ -137,24 +135,22 @@
                                     </VisualState>
                                     <VisualState x:Name="MouseOver">
                                         <Storyboard>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                          Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                <EasingColorKeyFrame KeyTime="0:0:0.15"
-                                                                     Value="{DynamicResource IMM.ButtonHoverColor}">
-                                                    <EasingColorKeyFrame.EasingFunction>
-                                                        <QuadraticEase EasingMode="EaseOut" />
-                                                    </EasingColorKeyFrame.EasingFunction>
-                                                </EasingColorKeyFrame>
-                                            </ColorAnimationUsingKeyFrames>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                          Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)">
-                                                <EasingColorKeyFrame KeyTime="0:0:0.15"
-                                                                     Value="{DynamicResource IMM.BorderHoverColor}">
-                                                    <EasingColorKeyFrame.EasingFunction>
-                                                        <QuadraticEase EasingMode="EaseOut" />
-                                                    </EasingColorKeyFrame.EasingFunction>
-                                                </EasingColorKeyFrame>
-                                            </ColorAnimationUsingKeyFrames>
+                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="{DynamicResource IMM.ButtonHoverColor}"
+                                                            Duration="0:0:0.15">
+                                                <ColorAnimation.EasingFunction>
+                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                </ColorAnimation.EasingFunction>
+                                            </ColorAnimation>
+                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                            To="{DynamicResource IMM.BorderHoverColor}"
+                                                            Duration="0:0:0.15">
+                                                <ColorAnimation.EasingFunction>
+                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                </ColorAnimation.EasingFunction>
+                                            </ColorAnimation>
                                             <DoubleAnimation Storyboard.TargetName="Root"
                                                              Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
                                                              To="1.01"
@@ -175,16 +171,14 @@
                                     </VisualState>
                                     <VisualState x:Name="Pressed">
                                         <Storyboard>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                          Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                <LinearColorKeyFrame KeyTime="0:0:0.05"
-                                                                     Value="{DynamicResource IMM.ButtonPressedColor}" />
-                                            </ColorAnimationUsingKeyFrames>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                          Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)">
-                                                <LinearColorKeyFrame KeyTime="0:0:0.05"
-                                                                     Value="{DynamicResource IMM.AccentColor}" />
-                                            </ColorAnimationUsingKeyFrames>
+                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="{DynamicResource IMM.ButtonPressedColor}"
+                                                            Duration="0:0:0.05" />
+                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                            To="{DynamicResource IMM.AccentColor}"
+                                                            Duration="0:0:0.05" />
                                             <DoubleAnimation Storyboard.TargetName="Root"
                                                              Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
                                                              To="0.975"
@@ -197,11 +191,10 @@
                                     </VisualState>
                                     <VisualState x:Name="Disabled">
                                         <Storyboard>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                          Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                <LinearColorKeyFrame KeyTime="0:0:0.15"
-                                                                     Value="{DynamicResource IMM.ButtonDisabledColor}" />
-                                            </ColorAnimationUsingKeyFrames>
+                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="{DynamicResource IMM.ButtonDisabledColor}"
+                                                            Duration="0:0:0.15" />
                                             <DoubleAnimation Storyboard.TargetName="Root"
                                                              Storyboard.TargetProperty="Opacity"
                                                              To="0.55"
@@ -307,24 +300,22 @@
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <ColorAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder"
-                                                                              Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                    <EasingColorKeyFrame KeyTime="0:0:0.15"
-                                                                         Value="{DynamicResource IMM.ButtonHoverColor}">
-                                                        <EasingColorKeyFrame.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseOut" />
-                                                        </EasingColorKeyFrame.EasingFunction>
-                                                    </EasingColorKeyFrame>
-                                                </ColorAnimationUsingKeyFrames>
-                                                <ColorAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder"
-                                                                              Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)">
-                                                    <EasingColorKeyFrame KeyTime="0:0:0.15"
-                                                                         Value="{DynamicResource IMM.BorderHoverColor}">
-                                                        <EasingColorKeyFrame.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseOut" />
-                                                        </EasingColorKeyFrame.EasingFunction>
-                                                    </EasingColorKeyFrame>
-                                                </ColorAnimationUsingKeyFrames>
+                                                <ColorAnimation Storyboard.TargetName="BackgroundBorder"
+                                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                To="{DynamicResource IMM.ButtonHoverColor}"
+                                                                Duration="0:0:0.15">
+                                                    <ColorAnimation.EasingFunction>
+                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                    </ColorAnimation.EasingFunction>
+                                                </ColorAnimation>
+                                                <ColorAnimation Storyboard.TargetName="BackgroundBorder"
+                                                                Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                                To="{DynamicResource IMM.BorderHoverColor}"
+                                                                Duration="0:0:0.15">
+                                                    <ColorAnimation.EasingFunction>
+                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                    </ColorAnimation.EasingFunction>
+                                                </ColorAnimation>
                                                 <DoubleAnimation Storyboard.TargetName="BackgroundBorder"
                                                                  Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
                                                                  To="1.01"
@@ -339,24 +330,22 @@
                                     <Trigger.ExitActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <ColorAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder"
-                                                                              Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                    <EasingColorKeyFrame KeyTime="0:0:0.15"
-                                                                         Value="{DynamicResource IMM.ButtonBackgroundColor}">
-                                                        <EasingColorKeyFrame.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseOut" />
-                                                        </EasingColorKeyFrame.EasingFunction>
-                                                    </EasingColorKeyFrame>
-                                                </ColorAnimationUsingKeyFrames>
-                                                <ColorAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder"
-                                                                              Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)">
-                                                    <EasingColorKeyFrame KeyTime="0:0:0.15"
-                                                                         Value="{DynamicResource IMM.BorderColor}">
-                                                        <EasingColorKeyFrame.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseOut" />
-                                                        </EasingColorKeyFrame.EasingFunction>
-                                                    </EasingColorKeyFrame>
-                                                </ColorAnimationUsingKeyFrames>
+                                                <ColorAnimation Storyboard.TargetName="BackgroundBorder"
+                                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                To="{DynamicResource IMM.ButtonBackgroundColor}"
+                                                                Duration="0:0:0.15">
+                                                    <ColorAnimation.EasingFunction>
+                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                    </ColorAnimation.EasingFunction>
+                                                </ColorAnimation>
+                                                <ColorAnimation Storyboard.TargetName="BackgroundBorder"
+                                                                Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                                To="{DynamicResource IMM.BorderColor}"
+                                                                Duration="0:0:0.15">
+                                                    <ColorAnimation.EasingFunction>
+                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                    </ColorAnimation.EasingFunction>
+                                                </ColorAnimation>
                                                 <DoubleAnimation Storyboard.TargetName="BackgroundBorder"
                                                                  Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
                                                                  To="1"
@@ -405,32 +394,28 @@
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                              Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)">
-                                                    <LinearColorKeyFrame KeyTime="0:0:0.12"
-                                                                         Value="{DynamicResource IMM.AccentColor}" />
-                                                </ColorAnimationUsingKeyFrames>
-                                                <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                              Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                    <LinearColorKeyFrame KeyTime="0:0:0.12"
-                                                                         Value="{DynamicResource IMM.ButtonHoverColor}" />
-                                                </ColorAnimationUsingKeyFrames>
+                                                <ColorAnimation Storyboard.TargetName="Root"
+                                                                Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                                To="{DynamicResource IMM.AccentColor}"
+                                                                Duration="0:0:0.12" />
+                                                <ColorAnimation Storyboard.TargetName="Root"
+                                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                To="{DynamicResource IMM.ButtonHoverColor}"
+                                                                Duration="0:0:0.12" />
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.EnterActions>
                                     <Trigger.ExitActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                              Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)">
-                                                    <LinearColorKeyFrame KeyTime="0:0:0.12"
-                                                                         Value="{DynamicResource IMM.BorderColor}" />
-                                                </ColorAnimationUsingKeyFrames>
-                                                <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                              Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                    <LinearColorKeyFrame KeyTime="0:0:0.12"
-                                                                         Value="{DynamicResource IMM.SurfaceColor}" />
-                                                </ColorAnimationUsingKeyFrames>
+                                                <ColorAnimation Storyboard.TargetName="Root"
+                                                                Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                                To="{DynamicResource IMM.BorderColor}"
+                                                                Duration="0:0:0.12" />
+                                                <ColorAnimation Storyboard.TargetName="Root"
+                                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                To="{DynamicResource IMM.SurfaceColor}"
+                                                                Duration="0:0:0.12" />
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.ExitActions>
@@ -466,16 +451,14 @@
                                     <VisualState x:Name="Normal" />
                                     <VisualState x:Name="MouseOver">
                                         <Storyboard>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                          Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                <LinearColorKeyFrame KeyTime="0:0:0.15"
-                                                                     Value="{DynamicResource IMM.ButtonHoverColor}" />
-                                            </ColorAnimationUsingKeyFrames>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                          Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)">
-                                                <LinearColorKeyFrame KeyTime="0:0:0.15"
-                                                                     Value="{DynamicResource IMM.BorderHoverColor}" />
-                                            </ColorAnimationUsingKeyFrames>
+                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="{DynamicResource IMM.ButtonHoverColor}"
+                                                            Duration="0:0:0.15" />
+                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                            To="{DynamicResource IMM.BorderHoverColor}"
+                                                            Duration="0:0:0.15" />
                                         </Storyboard>
                                     </VisualState>
                                     <VisualState x:Name="Pressed">
@@ -503,16 +486,14 @@
                                     <VisualState x:Name="Unchecked" />
                                     <VisualState x:Name="Checked">
                                         <Storyboard>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                          Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
-                                                <LinearColorKeyFrame KeyTime="0:0:0.15"
-                                                                     Value="{DynamicResource IMM.AccentColor}" />
-                                            </ColorAnimationUsingKeyFrames>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Root"
-                                                                          Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)">
-                                                <LinearColorKeyFrame KeyTime="0:0:0.15"
-                                                                     Value="{DynamicResource IMM.AccentColor}" />
-                                            </ColorAnimationUsingKeyFrames>
+                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="{DynamicResource IMM.AccentColor}"
+                                                            Duration="0:0:0.15" />
+                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
+                                                            To="{DynamicResource IMM.AccentColor}"
+                                                            Duration="0:0:0.15" />
                                         </Storyboard>
                                     </VisualState>
                                 </VisualStateGroup>
