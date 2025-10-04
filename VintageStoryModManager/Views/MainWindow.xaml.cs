@@ -24,6 +24,7 @@ using ModernWpf.Controls;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.ViewModels;
+using VintageStoryModManager.Theming;
 using WinForms = System.Windows.Forms;
 using WpfApplication = System.Windows.Application;
 using WpfButton = System.Windows.Controls.Button;
@@ -78,6 +79,11 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        if (VintageThemeMenuItem != null)
+        {
+            VintageThemeMenuItem.IsEnabled = ThemeManager.CurrentTheme != AppTheme.Vintage;
+        }
 
         _userConfiguration = new UserConfigurationService();
         AdvancedPresetsMenuItem.IsChecked = _userConfiguration.IsAdvancedPresetMode;
@@ -1302,6 +1308,50 @@ public partial class MainWindow : Window
         Close();
     }
 
+    private void VintageThemeMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (ThemeManager.CurrentTheme == AppTheme.Vintage)
+        {
+            VintageThemeMenuItem.IsEnabled = false;
+            return;
+        }
+
+        try
+        {
+            ThemePreferenceStore.Save(AppTheme.Vintage);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show($"Failed to enable the vintage theme:\n{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        if (VintageThemeMenuItem != null)
+        {
+            VintageThemeMenuItem.IsEnabled = false;
+        }
+
+        try
+        {
+            RestartApplication();
+        }
+        catch (Exception ex)
+        {
+            if (VintageThemeMenuItem != null)
+            {
+                VintageThemeMenuItem.IsEnabled = true;
+            }
+
+            WpfMessageBox.Show($"Failed to restart the application:\n{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
     private void LaunchGameButton_OnClick(object sender, RoutedEventArgs e)
     {
         string? executable = GameDirectoryLocator.FindExecutable(_gameDirectory);
@@ -1345,6 +1395,23 @@ public partial class MainWindow : Window
     private void OpenLogsFolderButton_OnClick(object sender, RoutedEventArgs e)
     {
         OpenFolder(_dataDirectory is null ? null : Path.Combine(_dataDirectory, "Logs"), "logs");
+    }
+
+    private static void RestartApplication()
+    {
+        string? processPath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(processPath) || !File.Exists(processPath))
+        {
+            throw new InvalidOperationException("The application executable could not be determined.");
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = processPath,
+            UseShellExecute = true
+        });
+
+        WpfApplication.Current?.Shutdown();
     }
 
     private static void OpenFolder(string? path, string description)

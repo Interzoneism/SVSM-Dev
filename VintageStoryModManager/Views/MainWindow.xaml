@@ -72,6 +72,10 @@
                               Height="30"
                               IsCheckable="True"
                               IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
+                    <MenuItem x:Name="VintageThemeMenuItem"
+                              Header="_Vintage Theme"
+                              Height="30"
+                              Click="VintageThemeMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_Help" Height="30">
                     <MenuItem Header="Manager _Data Folder"
@@ -131,7 +135,7 @@
                   SelectionMode="Single"
                   RowHeaderWidth="0"
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
-                  SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="Black"
+                  SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="{StaticResource IMM.ForegroundBrush}"
                   PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                   Background="White"
                   RowBackground="Transparent"
