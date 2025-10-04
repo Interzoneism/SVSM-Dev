@@ -105,7 +105,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.ButtonBackgroundColor}"
+                                                            To="{DynamicResource IMM.ButtonBackgroundColor}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -113,7 +113,7 @@
                                             </ColorAnimation>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.BorderColor}"
+                                                            To="{DynamicResource IMM.BorderColor}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -137,7 +137,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                            To="{DynamicResource IMM.ButtonHoverColor}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -145,7 +145,7 @@
                                             </ColorAnimation>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.BorderHoverColor}"
+                                                            To="{DynamicResource IMM.BorderHoverColor}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -173,11 +173,11 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.ButtonPressedColor}"
+                                                            To="{DynamicResource IMM.ButtonPressedColor}"
                                                             Duration="0:0:0.05" />
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.AccentColor}"
+                                                            To="{DynamicResource IMM.AccentColor}"
                                                             Duration="0:0:0.05" />
                                             <DoubleAnimation Storyboard.TargetName="Root"
                                                              Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
@@ -193,7 +193,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.ButtonDisabledColor}"
+                                                            To="{DynamicResource IMM.ButtonDisabledColor}"
                                                             Duration="0:0:0.15" />
                                             <DoubleAnimation Storyboard.TargetName="Root"
                                                              Storyboard.TargetProperty="Opacity"
@@ -302,7 +302,7 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="BackgroundBorder"
                                                                 Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.ButtonHoverColor}"
+                                                                To="{DynamicResource IMM.ButtonHoverColor}"
                                                                 Duration="0:0:0.15">
                                                     <ColorAnimation.EasingFunction>
                                                         <QuadraticEase EasingMode="EaseOut" />
@@ -310,7 +310,7 @@
                                                 </ColorAnimation>
                                                 <ColorAnimation Storyboard.TargetName="BackgroundBorder"
                                                                 Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.BorderHoverColor}"
+                                                                To="{DynamicResource IMM.BorderHoverColor}"
                                                                 Duration="0:0:0.15">
                                                     <ColorAnimation.EasingFunction>
                                                         <QuadraticEase EasingMode="EaseOut" />
@@ -332,7 +332,7 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="BackgroundBorder"
                                                                 Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.ButtonBackgroundColor}"
+                                                                To="{DynamicResource IMM.ButtonBackgroundColor}"
                                                                 Duration="0:0:0.15">
                                                     <ColorAnimation.EasingFunction>
                                                         <QuadraticEase EasingMode="EaseOut" />
@@ -340,7 +340,7 @@
                                                 </ColorAnimation>
                                                 <ColorAnimation Storyboard.TargetName="BackgroundBorder"
                                                                 Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.BorderColor}"
+                                                                To="{DynamicResource IMM.BorderColor}"
                                                                 Duration="0:0:0.15">
                                                     <ColorAnimation.EasingFunction>
                                                         <QuadraticEase EasingMode="EaseOut" />
@@ -370,7 +370,7 @@
 
             <Style TargetType="TextBox">
                 <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
-                <Setter Property="Background" Value="White" />
+                <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Padding" Value="6,4" />
@@ -396,11 +396,11 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.AccentColor}"
+                                                                To="{DynamicResource IMM.AccentColor}"
                                                                 Duration="0:0:0.12" />
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.ButtonHoverColor}"
+                                                                To="{DynamicResource IMM.ButtonHoverColor}"
                                                                 Duration="0:0:0.12" />
                                             </Storyboard>
                                         </BeginStoryboard>
@@ -410,11 +410,11 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.BorderColor}"
+                                                                To="{DynamicResource IMM.BorderColor}"
                                                                 Duration="0:0:0.12" />
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="White"
+                                                                To="{DynamicResource IMM.SurfaceColor}"
                                                                 Duration="0:0:0.12" />
                                             </Storyboard>
                                         </BeginStoryboard>
@@ -453,11 +453,11 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                            To="{DynamicResource IMM.ButtonHoverColor}"
                                                             Duration="0:0:0.15" />
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.BorderHoverColor}"
+                                                            To="{DynamicResource IMM.BorderHoverColor}"
                                                             Duration="0:0:0.15" />
                                         </Storyboard>
                                     </VisualState>
@@ -488,11 +488,11 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.AccentColor}"
+                                                            To="{DynamicResource IMM.AccentColor}"
                                                             Duration="0:0:0.15" />
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.AccentColor}"
+                                                            To="{DynamicResource IMM.AccentColor}"
                                                             Duration="0:0:0.15" />
                                         </Storyboard>
                                     </VisualState>

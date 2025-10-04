@@ -213,10 +213,12 @@ public partial class MainWindow : Window
 
         _viewModel = new MainViewModel(_dataDirectory)
         {
-            IsCompactView = _userConfiguration.IsCompactView
+            IsCompactView = _userConfiguration.IsCompactView,
+            IsVintageTheme = _userConfiguration.IsVintageTheme
         };
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         DataContext = _viewModel;
+        ThemeService.ApplyTheme(_viewModel.IsVintageTheme);
         ApplyCompactViewState(_viewModel.IsCompactView);
         AttachToModsView(_viewModel.ModsView);
     }
@@ -236,6 +238,16 @@ public partial class MainWindow : Window
                         ApplyCompactViewState(_viewModel.IsCompactView);
                     }
                 });
+            }
+        }
+        else if (e.PropertyName == nameof(MainViewModel.IsVintageTheme))
+        {
+            if (_viewModel != null)
+            {
+                bool useVintageTheme = _viewModel.IsVintageTheme;
+                _userConfiguration.SetVintageTheme(useVintageTheme);
+
+                Dispatcher.Invoke(() => ThemeService.ApplyTheme(useVintageTheme));
             }
         }
     }

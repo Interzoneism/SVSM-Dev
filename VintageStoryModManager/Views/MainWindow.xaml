@@ -72,6 +72,10 @@
                               Height="30"
                               IsCheckable="True"
                               IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
+                    <MenuItem Header="_Vintage Theme"
+                              Height="30"
+                              IsCheckable="True"
+                              IsChecked="{Binding IsVintageTheme, Mode=TwoWay}" />
                 </MenuItem>
                 <MenuItem Header="_Help" Height="30">
                     <MenuItem Header="Manager _Data Folder"
@@ -131,9 +135,9 @@
                   SelectionMode="Single"
                   RowHeaderWidth="0"
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
-                  SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="Black"
+                  SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="{StaticResource IMM.ForegroundBrush}"
                   PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
-                  Background="White"
+                  Background="{StaticResource IMM.SurfaceBrush}"
                   RowBackground="Transparent"
                   HorizontalGridLinesBrush="Transparent"
                   VerticalGridLinesBrush="Transparent"
@@ -181,7 +185,7 @@
                                                 <Storyboard>
                                                     <ColorAnimation Storyboard.TargetName="HeaderBorder"
                                                                     Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                    To="{StaticResource IMM.ButtonHoverColor}"
+                                                                    To="{DynamicResource IMM.ButtonHoverColor}"
                                                                     Duration="0:0:0.15">
                                                         <ColorAnimation.EasingFunction>
                                                             <QuadraticEase EasingMode="EaseOut" />
@@ -196,7 +200,7 @@
                                                 <Storyboard>
                                                     <ColorAnimation Storyboard.TargetName="HeaderBorder"
                                                                     Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                    To="{StaticResource IMM.SurfaceAltColor}"
+                                                                    To="{DynamicResource IMM.SurfaceAltColor}"
                                                                     Duration="0:0:0.15">
                                                         <ColorAnimation.EasingFunction>
                                                             <QuadraticEase EasingMode="EaseOut" />
