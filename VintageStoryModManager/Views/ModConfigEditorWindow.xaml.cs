@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using VintageStoryModManager.ViewModels;
 using WpfMessageBox = System.Windows.MessageBox;
 
@@ -16,6 +17,55 @@ public partial class ModConfigEditorWindow : Window
     {
         InitializeComponent();
         DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+    }
+
+    private void Window_OnLoaded(object sender, RoutedEventArgs e)
+    {
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(EnsureFilePathDoesNotOverlapButtons));
+    }
+
+    private void EnsureFilePathDoesNotOverlapButtons()
+    {
+        if (FilePathTextBlock is null || ActionButtonsPanel is null)
+        {
+            return;
+        }
+
+        UpdateLayout();
+
+        const int maxIterations = 3;
+        for (int i = 0; i < maxIterations; i++)
+        {
+            Rect filePathBounds = GetElementBounds(FilePathTextBlock);
+            Rect buttonsBounds = GetElementBounds(ActionButtonsPanel);
+
+            if (filePathBounds.Right <= buttonsBounds.Left)
+            {
+                break;
+            }
+
+            double overlap = filePathBounds.Right - buttonsBounds.Left;
+            if (overlap <= 0)
+            {
+                break;
+            }
+
+            double additionalWidth = overlap + 24; // Add some spacing to separate the elements.
+            Width = Math.Max(Width + additionalWidth, MinWidth);
+
+            UpdateLayout();
+        }
+    }
+
+    private Rect GetElementBounds(FrameworkElement element)
+    {
+        if (!element.IsLoaded)
+        {
+            element.UpdateLayout();
+        }
+
+        GeneralTransform transform = element.TransformToAncestor(this);
+        return transform.TransformBounds(new Rect(element.RenderSize));
     }
 
     private void SaveButton_OnClick(object sender, RoutedEventArgs e)

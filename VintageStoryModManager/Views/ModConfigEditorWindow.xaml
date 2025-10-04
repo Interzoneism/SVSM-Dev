@@ -12,7 +12,8 @@
         MinWidth="600"
         MinHeight="420"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource IMM.SurfaceBrush}">
+        Background="{StaticResource IMM.SurfaceBrush}"
+        Loaded="Window_OnLoaded">
     <Window.Resources>
         <Style x:Key="IMM.TreeViewItemStyle" TargetType="TreeViewItem">
             <Setter Property="Margin" Value="0,2,0,2" />
@@ -354,12 +355,13 @@
         </Border>
 
         <DockPanel Grid.Row="1" Margin="0,12,0,0" LastChildFill="False">
-            <TextBlock Text="{Binding FilePath}"
+            <TextBlock x:Name="FilePathTextBlock"
+                       Text="{Binding FilePath}"
                        Foreground="#FF617191"
                        VerticalAlignment="Center"
                        Margin="0,0,16,0"
                        TextTrimming="CharacterEllipsis" />
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
+            <StackPanel x:Name="ActionButtonsPanel" Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
                 <Button Content="Save"
                         Width="110"
                         Margin="0,0,8,0"

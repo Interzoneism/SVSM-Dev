@@ -76,7 +76,6 @@ public sealed class ModConfigEditorViewModel : ObservableObject
         if (node is JsonObject obj)
         {
             return obj
-                .OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
                 .Select(pair => CreateNode(pair.Key, pair.Value, value => obj[pair.Key] = value))
                 .ToList();
         }
@@ -100,8 +99,7 @@ public sealed class ModConfigEditorViewModel : ObservableObject
         if (node is JsonObject obj)
         {
             var children = new ObservableCollection<ModConfigNodeViewModel>(
-                obj.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
-                    .Select(pair => CreateNode(pair.Key, pair.Value, value => obj[pair.Key] = value)));
+                obj.Select(pair => CreateNode(pair.Key, pair.Value, value => obj[pair.Key] = value)));
             return new ModConfigObjectNodeViewModel(name, children, displayName);
         }
 
