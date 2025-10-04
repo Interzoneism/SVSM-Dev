@@ -74,7 +74,12 @@
                               IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
                 </MenuItem>
                 <MenuItem Header="_Help" Height="30">
-                    <MenuItem Header="_About" Height="30" />
+                    <MenuItem Header="Manager _Data Folder"
+                              Height="30"
+                              Click="ManagerDataFolderMenuItem_OnClick" />
+                    <MenuItem Header="Manager _Mod DB Page"
+                              Height="30"
+                              Click="ManagerModDbPageMenuItem_OnClick" />
                 </MenuItem>
             </Menu>
 
