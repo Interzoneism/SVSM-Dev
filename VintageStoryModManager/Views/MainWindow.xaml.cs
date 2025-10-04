@@ -1030,6 +1030,76 @@ public partial class MainWindow : Window
         await UpdateModsAsync(mods, isBulk: true);
     }
 
+    private void DeleteCachedModsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        MessageBoxResult result = WpfMessageBox.Show(
+            "This will only delete the managers cached mods to save some disk space, it will not affect your installed mods.",
+            "Vintage Story Mod Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        string? cachedModsDirectory = GetCachedModsDirectory();
+        if (string.IsNullOrWhiteSpace(cachedModsDirectory))
+        {
+            WpfMessageBox.Show(
+                "Could not determine the cached mods directory.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!Directory.Exists(cachedModsDirectory))
+        {
+            WpfMessageBox.Show(
+                "No cached mods were found.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            foreach (string directory in Directory.GetDirectories(cachedModsDirectory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+
+            WpfMessageBox.Show(
+                "Cached mods deleted successfully.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to delete cached mods:\n{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private static string? GetCachedModsDirectory()
+    {
+        string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+        }
+
+        return string.IsNullOrWhiteSpace(path)
+            ? null
+            : Path.Combine(path, "VS Mod Manager", "Cached Mods");
+    }
+
     private async void RefreshModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (_viewModel?.RefreshCommand == null)

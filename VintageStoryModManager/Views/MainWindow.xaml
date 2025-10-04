@@ -46,13 +46,15 @@
                   Background="{StaticResource IMM.SurfaceBrush}"
                   BorderThickness="0">
                 <MenuItem Header="_File" Height="30">
-                    <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" />
-                    <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" />
-                    <Separator />
                     <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" />
                     <Separator />
                     <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick" />
+                </MenuItem>
+                <MenuItem Header="_Mods" Height="30">
+                    <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" />
+                    <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" />
+                    <MenuItem Header="_Delete Cached Mods" Height="30" Click="DeleteCachedModsMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_View" Height="30">
                     <MenuItem Header="_Compact View"
