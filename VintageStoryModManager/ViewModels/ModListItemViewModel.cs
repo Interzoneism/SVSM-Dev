@@ -198,6 +198,36 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool HasVersionOptions => _versionOptions.Count > 0;
 
+    public bool HasDownloadableRelease => _latestRelease != null || _latestCompatibleRelease != null;
+
+    public string InstallButtonToolTip
+    {
+        get
+        {
+            if (!HasDownloadableRelease)
+            {
+                return "No downloadable releases are available.";
+            }
+
+            if (_latestRelease?.IsCompatibleWithInstalledGame == true)
+            {
+                return $"Install version {_latestRelease.Version}.";
+            }
+
+            if (_latestCompatibleRelease != null)
+            {
+                return $"Install compatible version {_latestCompatibleRelease.Version}.";
+            }
+
+            if (_latestRelease != null)
+            {
+                return $"Install version {_latestRelease.Version} (may be incompatible).";
+            }
+
+            return "No downloadable releases are available.";
+        }
+    }
+
     public ModVersionOptionViewModel? SelectedVersionOption
     {
         get => _selectedVersionOption;
