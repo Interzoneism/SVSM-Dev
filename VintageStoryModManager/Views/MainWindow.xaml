@@ -119,17 +119,20 @@
                                    Color="#33000000" />
             </DataGrid.Effect>
             <DataGrid.Resources>
+                <Style TargetType="ScrollBar">
+                    <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                </Style>
                 <Style TargetType="TextBlock">
                     <Setter Property="TextWrapping" Value="Wrap" />
                 </Style>
                 <Style TargetType="DataGridColumnHeader">
                     <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
                     <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
-                    <Setter Property="BorderThickness" Value="0,0,0,1" />
+                    <Setter Property="BorderThickness" Value="1,0,0,1" />
                     <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
                     <Setter Property="Padding" Value="12,10" />
                     <Setter Property="FontWeight" Value="SemiBold" />
-                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                    <Setter Property="HorizontalContentAlignment" Value="Left" />
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="DataGridColumnHeader">
@@ -155,14 +158,7 @@
                                                             <QuadraticEase EasingMode="EaseOut" />
                                                         </ColorAnimation.EasingFunction>
                                                     </ColorAnimation>
-                                                    <ColorAnimation Storyboard.TargetName="HeaderBorder"
-                                                                    Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                    To="{StaticResource IMM.BorderHoverColor}"
-                                                                    Duration="0:0:0.15">
-                                                        <ColorAnimation.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseOut" />
-                                                        </ColorAnimation.EasingFunction>
-                                                    </ColorAnimation>
+
                                                 </Storyboard>
                                             </BeginStoryboard>
                                         </Trigger.EnterActions>
@@ -177,14 +173,7 @@
                                                             <QuadraticEase EasingMode="EaseOut" />
                                                         </ColorAnimation.EasingFunction>
                                                     </ColorAnimation>
-                                                    <ColorAnimation Storyboard.TargetName="HeaderBorder"
-                                                                    Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                    To="{StaticResource IMM.BorderColor}"
-                                                                    Duration="0:0:0.15">
-                                                        <ColorAnimation.EasingFunction>
-                                                            <QuadraticEase EasingMode="EaseOut" />
-                                                        </ColorAnimation.EasingFunction>
-                                                    </ColorAnimation>
+
                                                 </Storyboard>
                                             </BeginStoryboard>
                                         </Trigger.ExitActions>
