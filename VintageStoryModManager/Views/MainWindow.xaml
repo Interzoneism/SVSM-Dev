@@ -568,9 +568,10 @@
                         </Grid>
 
                         <StackPanel Grid.Column="1"
-                                    Orientation="Horizontal"
+                                    Orientation="Vertical"
                                     Margin="24,0,0,0"
-                                    VerticalAlignment="Center">
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Left">
                             <StackPanel.Style>
                                 <Style TargetType="{x:Type StackPanel}">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -581,132 +582,137 @@
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
-                            <Button x:Name="SelectedModDatabasePageButton"
-                                    Margin="0,0,8,0"
-                                    Padding="12,6"
-                                    Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                                    BorderBrush="{DynamicResource IMM.BorderBrush}"
-                                    Visibility="Collapsed"
-                                    IsEnabled="False"
-                                    Click="ModDatabasePageButton_OnClick"
-                                    ToolTip="{Binding ModDatabasePageUrlDisplay}">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Image Source="/webicon.png"
-                                           Width="20"
-                                           Height="20"
-                                           Stretch="Uniform"
-                                           Margin="0,0,6,0" />
-                                    <TextBlock Text="Mod Page" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-                            <ComboBox x:Name="SelectedModVersionComboBox"
-                                      Width="190"
-                                      Height="32"
-                                      Margin="0,0,8,0"
-                                      Padding="12,6"
-                                      Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                                      BorderBrush="{DynamicResource IMM.BorderBrush}"
-                                      BorderThickness="1"
-                                      ui:ControlHelper.CornerRadius="6"
-                                      ItemsSource="{Binding SelectedMod.VersionOptions}"
-                                      SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
-                                      SelectionChanged="SelectedModVersionComboBox_OnSelectionChanged"
-                                      VerticalAlignment="Center">
-                                <ComboBox.Style>
-                                    <Style TargetType="ComboBox">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Setter Property="IsEnabled" Value="False" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedMod.HasVersionOptions}" Value="True">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                                <Setter Property="IsEnabled" Value="True" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ComboBox.Style>
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type viewModels:ModVersionOptionViewModel}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding VersionDisplay}" />
-                                            <TextBlock Text=" (Installed)"
-                                                       Margin="6,0,0,0">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsInstalled}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                            <TextBlock Text="✓"
-                                                       Foreground="#FF2E7D32"
-                                                       Margin="6,0,0,0">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsCompatible}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                            <Button x:Name="SelectedModUpdateButton"
-                                    Margin="0,0,8,0"
-                                    Padding="12,6"
-                                    Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                                    BorderBrush="{DynamicResource IMM.BorderBrush}"
-                                    Visibility="Collapsed"
-                                    IsEnabled="False"
-                                    Click="UpdateModButton_OnClick"
-                                    ToolTip="{Binding UpdateButtonToolTip}">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="Update" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-                            <Button x:Name="SelectedModEditConfigButton"
-                                    Margin="0,0,8,0"
-                                    Padding="12,6"
-                                    Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                                    BorderBrush="{DynamicResource IMM.BorderBrush}"
-                                    Visibility="Collapsed"
-                                    IsEnabled="False"
-                                    Click="EditConfigButton_OnClick"
-                                    ToolTip="{Binding DisplayName, StringFormat=Edit Config for \{0\}}">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Image Source="/configicon.png"
-                                           Width="20"
-                                           Height="20"
-                                           Stretch="Uniform"
-                                           Margin="0,0,6,0" />
-                                    <TextBlock Text="Edit Config" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-                            <Button x:Name="SelectedModDeleteButton"
-                                    Padding="12,6"
-                                    Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                                    BorderBrush="{DynamicResource IMM.BorderBrush}"
-                                    Visibility="Collapsed"
-                                    IsEnabled="False"
-                                    Click="DeleteModButton_OnClick"
-                                    ToolTip="{Binding DisplayName, StringFormat=Delete \{0\}}">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Image Source="/deleteicon.png"
-                                           Width="20"
-                                           Height="20"
-                                           Stretch="Uniform"
-                                           Margin="0,0,6,0" />
-                                    <TextBlock Text="Delete" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="SelectedModDatabasePageButton"
+                                        Margin="0,0,8,0"
+                                        Padding="12,6"
+                                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                        Visibility="Collapsed"
+                                        IsEnabled="False"
+                                        Click="ModDatabasePageButton_OnClick"
+                                        ToolTip="{Binding ModDatabasePageUrlDisplay}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Image Source="/webicon.png"
+                                               Width="20"
+                                               Height="20"
+                                               Stretch="Uniform"
+                                               Margin="0,0,6,0" />
+                                        <TextBlock Text="Mod Page" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="SelectedModEditConfigButton"
+                                        Margin="0,0,8,0"
+                                        Padding="12,6"
+                                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                        Visibility="Collapsed"
+                                        IsEnabled="False"
+                                        Click="EditConfigButton_OnClick"
+                                        ToolTip="{Binding DisplayName, StringFormat=Edit Config for \{0\}}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Image Source="/configicon.png"
+                                               Width="20"
+                                               Height="20"
+                                               Stretch="Uniform"
+                                               Margin="0,0,6,0" />
+                                        <TextBlock Text="Edit Config" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="SelectedModDeleteButton"
+                                        Padding="12,6"
+                                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                        Visibility="Collapsed"
+                                        IsEnabled="False"
+                                        Click="DeleteModButton_OnClick"
+                                        ToolTip="{Binding DisplayName, StringFormat=Delete \{0\}}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Image Source="/deleteicon.png"
+                                               Width="20"
+                                               Height="20"
+                                               Stretch="Uniform"
+                                               Margin="0,0,6,0" />
+                                        <TextBlock Text="Delete" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,6,0,0">
+                                <ComboBox x:Name="SelectedModVersionComboBox"
+                                          Width="152"
+                                          Height="32"
+                                          Margin="0,0,8,0"
+                                          Padding="12,6"
+                                          Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                          BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                          BorderThickness="1"
+                                          ui:ControlHelper.CornerRadius="6"
+                                          ItemsSource="{Binding SelectedMod.VersionOptions}"
+                                          SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
+                                          SelectionChanged="SelectedModVersionComboBox_OnSelectionChanged"
+                                          VerticalAlignment="Center">
+                                    <ComboBox.Style>
+                                        <Style TargetType="ComboBox">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Setter Property="IsEnabled" Value="False" />
+                                            <Setter Property="Background" Value="{DynamicResource IMM.ButtonBackgroundBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedMod.HasVersionOptions}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Setter Property="IsEnabled" Value="True" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ComboBox.Style>
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type viewModels:ModVersionOptionViewModel}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding VersionDisplay}" />
+                                                <TextBlock Text=" (Installed)"
+                                                           Margin="6,0,0,0">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsInstalled}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <TextBlock Text="✓"
+                                                           Foreground="#FF2E7D32"
+                                                           Margin="6,0,0,0">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsCompatible}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <Button x:Name="SelectedModUpdateButton"
+                                        Padding="12,6"
+                                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                        Visibility="Collapsed"
+                                        IsEnabled="False"
+                                        Click="UpdateModButton_OnClick"
+                                        ToolTip="{Binding UpdateButtonToolTip}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Update" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
                         </StackPanel>
                     </Grid>
                 </Grid>
