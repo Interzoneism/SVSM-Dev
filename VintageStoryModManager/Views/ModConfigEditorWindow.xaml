@@ -19,6 +19,8 @@
             <Setter Property="Margin" Value="0,2,0,2" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <EventSetter Event="Expanded" Handler="TreeViewItem_OnExpanded" />
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="TreeViewItem_OnPreviewMouseLeftButtonDown" />
         </Style>
     </Window.Resources>
     <Grid Margin="12" Background="{StaticResource IMM.SurfaceAltBrush}" ui:ControlHelper.CornerRadius="12">
@@ -113,7 +115,8 @@
                                 <TextBlock x:Name="ObjectHeaderText"
                                            Text="{Binding DisplayName}"
                                            FontWeight="SemiBold"
-                                           Foreground="{StaticResource IMM.ForegroundBrush}" />
+                                           Foreground="{StaticResource IMM.ForegroundBrush}"
+                                           IsHitTestVisible="False" />
                             </Border>
                             <HierarchicalDataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
@@ -197,7 +200,8 @@
                                     <TextBlock x:Name="ArrayHeaderText"
                                                Text="{Binding DisplayName}"
                                                FontWeight="SemiBold"
-                                               Foreground="{StaticResource IMM.ForegroundBrush}" />
+                                               Foreground="{StaticResource IMM.ForegroundBrush}"
+                                               IsHitTestVisible="False" />
                                     <TextBlock Margin="8,0,0,0"
                                                Foreground="Gray"
                                                FontStyle="Italic"
@@ -304,7 +308,8 @@
                                                Text="{Binding DisplayName}"
                                                VerticalAlignment="Center"
                                                Margin="0"
-                                               Foreground="{StaticResource IMM.ForegroundBrush}">
+                                               Foreground="{StaticResource IMM.ForegroundBrush}"
+                                               IsHitTestVisible="False">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
                                                 <Setter Property="Visibility" Value="Visible" />

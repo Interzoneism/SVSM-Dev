@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -135,6 +136,106 @@ public partial class ModConfigEditorWindow : Window
             }
 
             current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
+    }
+
+    private void TreeViewItem_OnExpanded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not TreeViewItem item)
+        {
+            return;
+        }
+
+        if (item.DataContext is not ModConfigArrayNodeViewModel)
+        {
+            return;
+        }
+
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => ExpandArrayChildren(item)));
+    }
+
+    private void TreeViewItem_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not TreeViewItem item)
+        {
+            return;
+        }
+
+        if (item.DataContext is not ModConfigArrayNodeViewModel)
+        {
+            return;
+        }
+
+        if (e.OriginalSource is DependencyObject source)
+        {
+            if (FindAncestor<ToggleButton>(source) is not null)
+            {
+                return;
+            }
+
+            if (FindAncestor<System.Windows.Controls.Primitives.TextBoxBase>(source) is not null)
+            {
+                return;
+            }
+        }
+
+        item.IsSelected = true;
+        item.IsExpanded = !item.IsExpanded;
+        e.Handled = true;
+    }
+
+    private void ExpandArrayChildren(TreeViewItem arrayItem)
+    {
+        if (arrayItem.ItemContainerGenerator.Status != GeneratorStatus.ContainersGenerated)
+        {
+            arrayItem.UpdateLayout();
+
+            if (arrayItem.ItemContainerGenerator.Status != GeneratorStatus.ContainersGenerated)
+            {
+                arrayItem.ItemContainerGenerator.StatusChanged += OnStatusChanged;
+                return;
+            }
+        }
+
+        foreach (object child in arrayItem.Items)
+        {
+            if (arrayItem.ItemContainerGenerator.ContainerFromItem(child) is TreeViewItem childItem
+                && childItem.DataContext is ModConfigContainerNodeViewModel)
+            {
+                childItem.IsExpanded = true;
+                ExpandArrayChildren(childItem);
+            }
+        }
+
+        void OnStatusChanged(object? sender, EventArgs e)
+        {
+            if (arrayItem.ItemContainerGenerator.Status == GeneratorStatus.ContainersGenerated)
+            {
+                arrayItem.ItemContainerGenerator.StatusChanged -= OnStatusChanged;
+                ExpandArrayChildren(arrayItem);
+            }
+        }
+    }
+
+    private static T? FindAncestor<T>(DependencyObject current)
+        where T : DependencyObject
+    {
+        while (current is not null)
+        {
+            if (current is T match)
+            {
+                return match;
+            }
+
+            DependencyObject? parent = VisualTreeHelper.GetParent(current);
+            if (parent is null)
+            {
+                break;
+            }
+
+            current = parent;
         }
 
         return null;
