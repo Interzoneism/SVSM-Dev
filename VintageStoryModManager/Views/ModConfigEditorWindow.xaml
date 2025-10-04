@@ -29,7 +29,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border BorderBrush="{StaticResource IMM.BorderBrush}" BorderThickness="1" CornerRadius="10" Background="White" Padding="4">
+        <Border BorderBrush="{StaticResource IMM.BorderBrush}" BorderThickness="1" CornerRadius="10" Background="{StaticResource IMM.SurfaceBrush}" Padding="4">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="5" Opacity="0.16" Color="#33000000" />
             </Border.Effect>
@@ -54,26 +54,28 @@
                                                 <Trigger.EnterActions>
                                                     <BeginStoryboard x:Name="ObjectHoverIn">
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
-                                                                            Duration="0:0:0.15">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.15"
+                                                                                     Value="{DynamicResource IMM.ButtonHoverColor}">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </Trigger.EnterActions>
                                                 <Trigger.ExitActions>
                                                     <BeginStoryboard x:Name="ObjectHoverOut">
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.2">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.2"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </Trigger.ExitActions>
@@ -85,26 +87,28 @@
                                                     <StopStoryboard BeginStoryboardName="ObjectHoverOut" />
                                                     <BeginStoryboard>
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.AccentColor}"
-                                                                            Duration="0:0:0.18">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.18"
+                                                                                     Value="{DynamicResource IMM.AccentColor}">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </DataTrigger.EnterActions>
                                                 <DataTrigger.ExitActions>
                                                     <BeginStoryboard>
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.22">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.22"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </DataTrigger.ExitActions>
@@ -138,26 +142,28 @@
                                                 <Trigger.EnterActions>
                                                     <BeginStoryboard x:Name="ArrayHoverIn">
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
-                                                                            Duration="0:0:0.15">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.15"
+                                                                                     Value="{DynamicResource IMM.ButtonHoverColor}">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </Trigger.EnterActions>
                                                 <Trigger.ExitActions>
                                                     <BeginStoryboard x:Name="ArrayHoverOut">
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.2">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.2"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </Trigger.ExitActions>
@@ -169,26 +175,28 @@
                                                     <StopStoryboard BeginStoryboardName="ArrayHoverOut" />
                                                     <BeginStoryboard>
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.AccentColor}"
-                                                                            Duration="0:0:0.18">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.18"
+                                                                                     Value="{DynamicResource IMM.AccentColor}">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </DataTrigger.EnterActions>
                                                 <DataTrigger.ExitActions>
                                                     <BeginStoryboard>
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.22">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.22"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </DataTrigger.ExitActions>
@@ -240,26 +248,28 @@
                                                 <Trigger.EnterActions>
                                                     <BeginStoryboard x:Name="ValueHoverIn">
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
-                                                                            Duration="0:0:0.15">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.15"
+                                                                                     Value="{DynamicResource IMM.ButtonHoverColor}">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </Trigger.EnterActions>
                                                 <Trigger.ExitActions>
                                                     <BeginStoryboard x:Name="ValueHoverOut">
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.2">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.2"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </Trigger.ExitActions>
@@ -271,26 +281,28 @@
                                                     <StopStoryboard BeginStoryboardName="ValueHoverOut" />
                                                     <BeginStoryboard>
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonPressedColor}"
-                                                                            Duration="0:0:0.18">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.18"
+                                                                                     Value="{DynamicResource IMM.ButtonPressedColor}">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </DataTrigger.EnterActions>
                                                 <DataTrigger.ExitActions>
                                                     <BeginStoryboard>
                                                         <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.22">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                                                                <EasingColorKeyFrame KeyTime="0:0:0.22"
+                                                                                     Value="Transparent">
+                                                                    <EasingColorKeyFrame.EasingFunction>
+                                                                        <QuadraticEase EasingMode="EaseOut" />
+                                                                    </EasingColorKeyFrame.EasingFunction>
+                                                                </EasingColorKeyFrame>
+                                                            </ColorAnimationUsingKeyFrames>
                                                         </Storyboard>
                                                     </BeginStoryboard>
                                                 </DataTrigger.ExitActions>
