@@ -48,8 +48,32 @@
             <Menu Grid.Column="0"
                   Grid.RowSpan="2"
                   IsMainMenu="True"
-                  Background="{StaticResource IMM.SurfaceBrush}"
+                  Background="{StaticResource IMM.HeaderBackgroundBrush}"
+                  Foreground="{StaticResource IMM.HeaderTextBrush}"
                   BorderThickness="0">
+                <Menu.Resources>
+                    <Style TargetType="MenuItem">
+                        <Setter Property="Foreground" Value="{StaticResource IMM.HeaderTextBrush}" />
+                        <Setter Property="Background" Value="{StaticResource IMM.HeaderBackgroundBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                        <Setter Property="Padding" Value="12,4" />
+                        <Style.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter Property="Background" Value="{StaticResource IMM.RowHoverBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource IMM.ButtonTextBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSubmenuOpen" Value="True">
+                                <Setter Property="Background" Value="{StaticResource IMM.RowHoverBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource IMM.ButtonTextBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                    <Style TargetType="Separator">
+                        <Setter Property="Margin" Value="0,4" />
+                        <Setter Property="Background" Value="{StaticResource IMM.BorderBrush}" />
+                        <Setter Property="Height" Value="1" />
+                    </Style>
+                </Menu.Resources>
                 <MenuItem Header="_File" Height="30">
                     <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" />
@@ -97,14 +121,14 @@
                        Margin="0,16,24,4">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
-                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundDimBrush}" />
                         <Setter Property="Visibility" Value="Collapsed" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
                                 <Setter Property="Visibility" Value="Visible" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                <Setter Property="Foreground" Value="#FFD13438" />
+                                <Setter Property="Foreground" Value="{StaticResource IMM.AccentBrush}" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -137,7 +161,7 @@
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
                   SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="{StaticResource IMM.ForegroundBrush}"
                   PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
-                  Background="White"
+                  Background="{StaticResource IMM.SurfaceAltBrush}"
                   RowBackground="Transparent"
                   HorizontalGridLinesBrush="Transparent"
                   VerticalGridLinesBrush="Transparent"
@@ -153,16 +177,21 @@
             </DataGrid.Effect>
             <DataGrid.Resources>
                 <Style TargetType="ScrollBar">
-                    <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                    <Setter Property="Background" Value="{StaticResource IMM.ScrollBarBackgroundBrush}" />
+                    <Setter Property="Foreground" Value="{StaticResource IMM.ScrollBarThumbBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                </Style>
+                <Style TargetType="Thumb">
+                    <Setter Property="Background" Value="{StaticResource IMM.ScrollBarThumbBrush}" />
                 </Style>
                 <Style TargetType="TextBlock">
                     <Setter Property="TextWrapping" Value="Wrap" />
                 </Style>
                 <Style TargetType="DataGridColumnHeader">
-                    <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                    <Setter Property="Background" Value="{StaticResource IMM.HeaderBackgroundBrush}" />
                     <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
                     <Setter Property="BorderThickness" Value="1,0,0,1" />
-                    <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                    <Setter Property="Foreground" Value="{StaticResource IMM.HeaderTextBrush}" />
                     <Setter Property="Padding" Value="12,10" />
                     <Setter Property="FontWeight" Value="SemiBold" />
                     <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -185,7 +214,7 @@
                                                 <Storyboard>
                                                     <ColorAnimation Storyboard.TargetName="HeaderBorder"
                                                                     Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                    To="{StaticResource IMM.ButtonHoverColor}"
+                                                                    To="{StaticResource IMM.RowHoverColor}"
                                                                     Duration="0:0:0.15">
                                                         <ColorAnimation.EasingFunction>
                                                             <QuadraticEase EasingMode="EaseOut" />
@@ -200,7 +229,7 @@
                                                 <Storyboard>
                                                     <ColorAnimation Storyboard.TargetName="HeaderBorder"
                                                                     Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                    To="{StaticResource IMM.SurfaceAltColor}"
+                                                                    To="{StaticResource IMM.HeaderBackgroundColor}"
                                                                     Duration="0:0:0.15">
                                                         <ColorAnimation.EasingFunction>
                                                             <QuadraticEase EasingMode="EaseOut" />
@@ -287,10 +316,10 @@
                             <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                            <Setter Property="Background" Value="#FFFFE5E5" />
+                            <Setter Property="Background" Value="{StaticResource IMM.ErrorBackgroundBrush}" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding HasActivationError}" Value="True">
-                            <Setter Property="Background" Value="#22F5D67B" />
+                            <Setter Property="Background" Value="{StaticResource IMM.WarningBackgroundBrush}" />
                         </DataTrigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="{StaticResource IMM.RowHoverBrush}" />
@@ -445,7 +474,7 @@
                                        TextAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseHighBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource IMM.ButtonTextBrush}" />
                                         <Setter Property="Text" Value="" />
                                         <Setter Property="FontSize" Value="30" />
                                         <Style.Triggers>
@@ -453,11 +482,11 @@
                                                 <Setter Property="FontSize" Value="22.5" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding StatusText}" Value="Error">
-                                                <Setter Property="Foreground" Value="#FFD13438" />
+                                                <Setter Property="Foreground" Value="{StaticResource IMM.AccentBrush}" />
                                                 <Setter Property="Text" Value="&#xEA39;" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding StatusText}" Value="Warning">
-                                                <Setter Property="Foreground" Value="#FFE17E00" />
+                                                <Setter Property="Foreground" Value="{StaticResource IMM.HeaderTextBrush}" />
                                                 <Setter Property="Text" Value="&#xE7BA;" />
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -635,7 +664,7 @@
                             <TextBlock Grid.Row="1"
                                        Margin="0,4,0,0"
                                        Text="{Binding SelectedMod.DescriptionDisplay}"
-                                       Foreground="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}"
+                                       Foreground="{StaticResource IMM.ForegroundDimBrush}"
                                        MaxWidth="420"
                                        TextWrapping="Wrap"
                                        TextTrimming="CharacterEllipsis"
@@ -731,7 +760,8 @@
                                         <Style TargetType="ComboBox">
                                             <Setter Property="Visibility" Value="Collapsed" />
                                             <Setter Property="IsEnabled" Value="False" />
-                                            <Setter Property="Background" Value="{DynamicResource IMM.ButtonBackgroundBrush}" />
+                                            <Setter Property="Background" Value="{DynamicResource IMM.InputBackgroundBrush}" />
+                                            <Setter Property="BorderBrush" Value="{DynamicResource IMM.InputBorderBrush}" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding SelectedMod.HasVersionOptions}" Value="True">
                                                     <Setter Property="Visibility" Value="Visible" />
@@ -758,7 +788,7 @@
                                                     </TextBlock.Style>
                                                 </TextBlock>
                                                 <TextBlock Text="✓"
-                                                           Foreground="#FF2E7D32"
+                                                           Foreground="{StaticResource IMM.ButtonTextBrush}"
                                                            Margin="6,0,0,0">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
