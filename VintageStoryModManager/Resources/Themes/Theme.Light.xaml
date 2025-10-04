@@ -1,0 +1,53 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="IMM.AccentColor">#FF4C8BF5</Color>
+    <Color x:Key="IMM.SurfaceColor">#FFF6F8FB</Color>
+    <Color x:Key="IMM.SurfaceAltColor">#FFEFF3F9</Color>
+    <Color x:Key="IMM.BorderColor">#FFCAD7EB</Color>
+    <Color x:Key="IMM.BorderHoverColor">#FF7AA6F9</Color>
+    <Color x:Key="IMM.ButtonBackgroundColor">#FFF9FBFF</Color>
+    <Color x:Key="IMM.ButtonHoverColor">#FFE7F0FF</Color>
+    <Color x:Key="IMM.ButtonPressedColor">#FFD5E3FF</Color>
+    <Color x:Key="IMM.ButtonDisabledColor">#FFEEF1F6</Color>
+    <Color x:Key="IMM.ForegroundColor">#FF1C2635</Color>
+    <Color x:Key="IMM.SubtleForegroundColor">#FF617191</Color>
+    <Color x:Key="IMM.SuccessColor">#FF79C46E</Color>
+    <Color x:Key="IMM.SuccessSoftColor">#1F79C46E</Color>
+    <Color x:Key="IMM.SuccessForegroundColor">#FF2E7D32</Color>
+    <Color x:Key="IMM.RowHoverColor">#FF7AA6F9</Color>
+    <Color x:Key="IMM.RowSelectionColor">#334C8BF5</Color>
+    <Color x:Key="IMM.RowErrorColor">#FFFFE5E5</Color>
+    <Color x:Key="IMM.RowActivationColor">#22F5D67B</Color>
+    <Color x:Key="IMM.ErrorColor">#FFD13438</Color>
+    <Color x:Key="IMM.ErrorForegroundColor">#FFD13438</Color>
+    <Color x:Key="IMM.WarningColor">#FFFFF3CD</Color>
+    <Color x:Key="IMM.WarningForegroundColor">#FFE17E00</Color>
+    <Color x:Key="IMM.InputBackgroundColor">#FFFFFFFF</Color>
+    <Color x:Key="IMM.DisabledForegroundColor">#66000000</Color>
+    <Color x:Key="IMM.OnAccentColor">#FFFFFFFF</Color>
+
+    <SolidColorBrush x:Key="IMM.AccentBrush" Color="#FF4C8BF5" />
+    <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="#FFF6F8FB" />
+    <SolidColorBrush x:Key="IMM.SurfaceAltBrush" Color="#FFEFF3F9" />
+    <SolidColorBrush x:Key="IMM.BorderBrush" Color="#FFCAD7EB" />
+    <SolidColorBrush x:Key="IMM.BorderHoverBrush" Color="#FF7AA6F9" />
+    <SolidColorBrush x:Key="IMM.ButtonBackgroundBrush" Color="#FFF9FBFF" />
+    <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="#FFE7F0FF" />
+    <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="#FFD5E3FF" />
+    <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="#FFEEF1F6" />
+    <SolidColorBrush x:Key="IMM.ForegroundBrush" Color="#FF1C2635" />
+    <SolidColorBrush x:Key="IMM.SubtleForegroundBrush" Color="#FF617191" />
+    <SolidColorBrush x:Key="IMM.SuccessBrush" Color="#FF79C46E" />
+    <SolidColorBrush x:Key="IMM.SuccessSoftBrush" Color="#1F79C46E" />
+    <SolidColorBrush x:Key="IMM.SuccessForegroundBrush" Color="#FF2E7D32" />
+    <SolidColorBrush x:Key="IMM.RowHoverBrush" Color="#FF7AA6F9" />
+    <SolidColorBrush x:Key="IMM.RowSelectionBrush" Color="#334C8BF5" />
+    <SolidColorBrush x:Key="IMM.RowErrorBrush" Color="#FFFFE5E5" />
+    <SolidColorBrush x:Key="IMM.RowActivationBrush" Color="#22F5D67B" />
+    <SolidColorBrush x:Key="IMM.ErrorBrush" Color="#FFD13438" />
+    <SolidColorBrush x:Key="IMM.WarningBrush" Color="#FFFFF3CD" />
+    <SolidColorBrush x:Key="IMM.WarningForegroundBrush" Color="#FFE17E00" />
+    <SolidColorBrush x:Key="IMM.InputBackgroundBrush" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="IMM.DisabledForegroundBrush" Color="#66000000" />
+    <SolidColorBrush x:Key="IMM.OnAccentBrush" Color="#FFFFFFFF" />
+</ResourceDictionary>
