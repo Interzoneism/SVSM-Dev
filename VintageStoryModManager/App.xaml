@@ -96,7 +96,7 @@
                                                              Duration="0:0:0.1" />
                                         </Storyboard>
                                     </VisualState>
-                                    <VisualState x:Name="PointerOver">
+                                    <VisualState x:Name="MouseOver">
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
@@ -116,7 +116,7 @@
                                             </ColorAnimation>
                                             <DoubleAnimation Storyboard.TargetName="Root"
                                                              Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                             To="1.015"
+                                                             To="1.01"
                                                              Duration="0:0:0.12">
                                                 <DoubleAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -124,7 +124,7 @@
                                             </DoubleAnimation>
                                             <DoubleAnimation Storyboard.TargetName="Root"
                                                              Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                             To="1.015"
+                                                             To="1.01"
                                                              Duration="0:0:0.12">
                                                 <DoubleAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -412,7 +412,7 @@
                                 <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroup x:Name="CommonStates">
                                     <VisualState x:Name="Normal" />
-                                    <VisualState x:Name="PointerOver">
+                                    <VisualState x:Name="MouseOver">
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
