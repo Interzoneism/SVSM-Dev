@@ -24,6 +24,7 @@ public sealed class UserConfigurationService
     private string? _selectedAdvancedPresetName;
     private bool _isAdvancedPresetMode;
     private bool _isCompactView;
+    private bool _isVintageTheme;
 
     public UserConfigurationService()
     {
@@ -41,6 +42,8 @@ public sealed class UserConfigurationService
     public string? GameDirectory { get; private set; }
 
     public bool IsCompactView => _isCompactView;
+
+    public bool IsVintageTheme => _isVintageTheme;
 
     public string? GetLastSelectedPresetName()
     {
@@ -279,6 +282,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetVintageTheme(bool useVintageTheme)
+    {
+        if (_isVintageTheme == useVintageTheme)
+        {
+            return;
+        }
+
+        _isVintageTheme = useVintageTheme;
+        Save();
+    }
+
     public void SetDataDirectory(string path)
     {
         DataDirectory = NormalizePath(path);
@@ -298,6 +312,9 @@ public sealed class UserConfigurationService
         _modConfigPaths.Clear();
         _selectedPresetName = null;
         _selectedAdvancedPresetName = null;
+        _isCompactView = false;
+        _isVintageTheme = false;
+        _isAdvancedPresetMode = false;
 
         try
         {
@@ -324,6 +341,7 @@ public sealed class UserConfigurationService
             DataDirectory = NormalizePath(obj["dataDirectory"]?.GetValue<string?>());
             GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
             _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
+            _isVintageTheme = obj["useVintageTheme"]?.GetValue<bool?>() ?? false;
             _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
             LoadClassicPresets(obj["modPresets"]);
             LoadAdvancedPresets(obj["advancedModPresets"]);
@@ -357,6 +375,7 @@ public sealed class UserConfigurationService
             _modConfigPaths.Clear();
             _isAdvancedPresetMode = false;
             _isCompactView = false;
+            _isVintageTheme = false;
             _selectedPresetName = null;
             _selectedAdvancedPresetName = null;
         }
@@ -374,6 +393,7 @@ public sealed class UserConfigurationService
                 ["dataDirectory"] = DataDirectory,
                 ["gameDirectory"] = GameDirectory,
                 ["isCompactView"] = _isCompactView,
+                ["useVintageTheme"] = _isVintageTheme,
                 ["useAdvancedPresets"] = _isAdvancedPresetMode,
                 ["modPresets"] = BuildClassicPresetsJson(),
                 ["advancedModPresets"] = BuildAdvancedPresetsJson(),

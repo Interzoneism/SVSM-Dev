@@ -29,7 +29,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border BorderBrush="{StaticResource IMM.BorderBrush}" BorderThickness="1" CornerRadius="10" Background="White" Padding="4">
+        <Border BorderBrush="{StaticResource IMM.BorderBrush}" BorderThickness="1" CornerRadius="10" Background="{StaticResource IMM.SurfaceBrush}" Padding="4">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="5" Opacity="0.16" Color="#33000000" />
             </Border.Effect>
@@ -55,7 +55,7 @@
                                                     <BeginStoryboard x:Name="ObjectHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            To="{DynamicResource IMM.ButtonHoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -86,7 +86,7 @@
                                                     <BeginStoryboard>
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.AccentColor}"
+                                                                            To="{DynamicResource IMM.AccentColor}"
                                                                             Duration="0:0:0.18">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -139,7 +139,7 @@
                                                     <BeginStoryboard x:Name="ArrayHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            To="{DynamicResource IMM.ButtonHoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -170,7 +170,7 @@
                                                     <BeginStoryboard>
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.AccentColor}"
+                                                                            To="{DynamicResource IMM.AccentColor}"
                                                                             Duration="0:0:0.18">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -241,7 +241,7 @@
                                                     <BeginStoryboard x:Name="ValueHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            To="{DynamicResource IMM.ButtonHoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -272,7 +272,7 @@
                                                     <BeginStoryboard>
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonPressedColor}"
+                                                                            To="{DynamicResource IMM.ButtonPressedColor}"
                                                                             Duration="0:0:0.18">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
