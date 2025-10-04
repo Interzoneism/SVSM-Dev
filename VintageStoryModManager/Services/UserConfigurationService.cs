@@ -13,24 +13,34 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public sealed class UserConfigurationService
 {
-    private const string ConfigurationFileName = "settings.json";
+    private const string ConfigurationFileName = "VS_ModManager_Config.json";
+    private const string LegacyConfigurationFileName = "settings.json";
     private readonly string _configurationPath;
+    private readonly string? _legacyConfigurationPath;
     private readonly Dictionary<string, string[]> _presets = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AdvancedPresetData> _advancedPresets = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private string? _selectedPresetName;
     private string? _selectedAdvancedPresetName;
     private bool _isAdvancedPresetMode;
+    private bool _isCompactView;
 
     public UserConfigurationService()
     {
-        _configurationPath = DetermineConfigurationPath();
+        (_configurationPath, _legacyConfigurationPath) = DetermineConfigurationPaths();
         Load();
+
+        if (!File.Exists(_configurationPath))
+        {
+            Save();
+        }
     }
 
     public string? DataDirectory { get; private set; }
 
     public string? GameDirectory { get; private set; }
+
+    public bool IsCompactView => _isCompactView;
 
     public string? GetLastSelectedPresetName()
     {
@@ -258,6 +268,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetCompactViewMode(bool isCompact)
+    {
+        if (_isCompactView == isCompact)
+        {
+            return;
+        }
+
+        _isCompactView = isCompact;
+        Save();
+    }
+
     public void SetDataDirectory(string path)
     {
         DataDirectory = NormalizePath(path);
@@ -273,17 +294,27 @@ public sealed class UserConfigurationService
     private void Load()
     {
         _presets.Clear();
+        _advancedPresets.Clear();
         _modConfigPaths.Clear();
         _selectedPresetName = null;
         _selectedAdvancedPresetName = null;
+
         try
         {
-            if (!File.Exists(_configurationPath))
+            string? pathToLoad = _configurationPath;
+            if (!File.Exists(pathToLoad)
+                && !string.IsNullOrWhiteSpace(_legacyConfigurationPath)
+                && File.Exists(_legacyConfigurationPath))
+            {
+                pathToLoad = _legacyConfigurationPath;
+            }
+
+            if (string.IsNullOrWhiteSpace(pathToLoad) || !File.Exists(pathToLoad))
             {
                 return;
             }
 
-            using FileStream stream = File.OpenRead(_configurationPath);
+            using FileStream stream = File.OpenRead(pathToLoad);
             JsonNode? node = JsonNode.Parse(stream);
             if (node is not JsonObject obj)
             {
@@ -292,6 +323,7 @@ public sealed class UserConfigurationService
 
             DataDirectory = NormalizePath(obj["dataDirectory"]?.GetValue<string?>());
             GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
+            _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
             _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
             LoadClassicPresets(obj["modPresets"]);
             LoadAdvancedPresets(obj["advancedModPresets"]);
@@ -310,6 +342,11 @@ public sealed class UserConfigurationService
             {
                 _selectedAdvancedPresetName = null;
             }
+
+            if (!string.Equals(pathToLoad, _configurationPath, StringComparison.OrdinalIgnoreCase))
+            {
+                Save();
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -319,6 +356,7 @@ public sealed class UserConfigurationService
             _advancedPresets.Clear();
             _modConfigPaths.Clear();
             _isAdvancedPresetMode = false;
+            _isCompactView = false;
             _selectedPresetName = null;
             _selectedAdvancedPresetName = null;
         }
@@ -335,6 +373,7 @@ public sealed class UserConfigurationService
             {
                 ["dataDirectory"] = DataDirectory,
                 ["gameDirectory"] = GameDirectory,
+                ["isCompactView"] = _isCompactView,
                 ["useAdvancedPresets"] = _isAdvancedPresetMode,
                 ["modPresets"] = BuildClassicPresetsJson(),
                 ["advancedModPresets"] = BuildAdvancedPresetsJson(),
@@ -356,11 +395,25 @@ public sealed class UserConfigurationService
         }
     }
 
-    private static string DetermineConfigurationPath()
+    private static (string path, string? legacyPath) DetermineConfigurationPaths()
     {
-        string baseDirectory = GetBaseDirectory();
-        Directory.CreateDirectory(baseDirectory);
-        return Path.Combine(baseDirectory, ConfigurationFileName);
+        string preferredDirectory = GetPreferredConfigurationDirectory();
+        Directory.CreateDirectory(preferredDirectory);
+        string preferredPath = Path.Combine(preferredDirectory, ConfigurationFileName);
+
+        string? legacyDirectory = GetLegacyConfigurationDirectory();
+        string? legacyPath = null;
+
+        if (!string.IsNullOrWhiteSpace(legacyDirectory))
+        {
+            legacyPath = Path.Combine(legacyDirectory!, LegacyConfigurationFileName);
+            if (string.Equals(preferredPath, legacyPath, StringComparison.OrdinalIgnoreCase))
+            {
+                legacyPath = null;
+            }
+        }
+
+        return (preferredPath, legacyPath);
     }
 
     private JsonObject BuildClassicPresetsJson()
@@ -608,7 +661,36 @@ public sealed class UserConfigurationService
         }
     }
 
-    private static string GetBaseDirectory()
+    private static string GetPreferredConfigurationDirectory()
+    {
+        string? documents = GetFolder(Environment.SpecialFolder.MyDocuments);
+        if (!string.IsNullOrWhiteSpace(documents))
+        {
+            return Path.Combine(documents!, "VS Mod Manager");
+        }
+
+        string? personal = GetFolder(Environment.SpecialFolder.Personal);
+        if (!string.IsNullOrWhiteSpace(personal))
+        {
+            return Path.Combine(personal!, "VS Mod Manager");
+        }
+
+        string? appData = GetFolder(Environment.SpecialFolder.ApplicationData);
+        if (!string.IsNullOrWhiteSpace(appData))
+        {
+            return Path.Combine(appData!, "VS Mod Manager");
+        }
+
+        string? home = Environment.GetEnvironmentVariable("HOME");
+        if (!string.IsNullOrWhiteSpace(home))
+        {
+            return Path.Combine(home!, ".vs-mod-manager");
+        }
+
+        return Path.Combine(AppContext.BaseDirectory, "VS Mod Manager");
+    }
+
+    private static string? GetLegacyConfigurationDirectory()
     {
         string? appData = GetFolder(Environment.SpecialFolder.ApplicationData);
         if (!string.IsNullOrWhiteSpace(appData))
