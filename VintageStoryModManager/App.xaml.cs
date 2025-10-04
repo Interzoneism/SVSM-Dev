@@ -6,6 +6,8 @@ using System.Windows;
 using System.Windows.Threading;
 using WpfMessageBox = System.Windows.MessageBox;
 
+using VintageStoryModManager.Theming;
+
 namespace VintageStoryModManager;
 
 public partial class App : System.Windows.Application
@@ -31,6 +33,9 @@ public partial class App : System.Windows.Application
             Current?.Shutdown();
             return;
         }
+
+        AppTheme theme = ThemePreferenceStore.Load();
+        ThemeManager.ApplyTheme(Resources, theme);
 
         base.OnStartup(e);
     }
