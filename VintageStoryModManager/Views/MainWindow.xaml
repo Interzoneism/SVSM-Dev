@@ -75,6 +75,7 @@
                     <MenuItem x:Name="VintageThemeMenuItem"
                               Header="_Vintage Theme"
                               Height="30"
+                              IsCheckable="True"
                               Click="VintageThemeMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_Help" Height="30">
