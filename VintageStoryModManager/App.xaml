@@ -21,7 +21,7 @@
             <Color x:Key="IMM.ButtonDisabledColor">#FFEEF1F6</Color>
             <Color x:Key="IMM.ForegroundColor">#FF1C2635</Color>
             <Color x:Key="IMM.SuccessColor">#FF79C46E</Color>
-            <Color x:Key="IMM.RowHoverColor">#1A4C8BF5</Color>
+            <Color x:Key="IMM.RowHoverColor">#FF7AA6F9</Color>
             <Color x:Key="IMM.RowSelectionColor">#334C8BF5</Color>
 
             <SolidColorBrush x:Key="IMM.AccentBrush" Color="{StaticResource IMM.AccentColor}" />
