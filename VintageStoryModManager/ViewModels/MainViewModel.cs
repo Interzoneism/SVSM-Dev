@@ -4,8 +4,11 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Data;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VintageStoryModManager.Models;
@@ -18,7 +21,11 @@ namespace VintageStoryModManager.ViewModels;
 /// </summary>
 public sealed class MainViewModel : ObservableObject
 {
+    private const int ModDatabaseSearchResultLimit = 20;
+    private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
+
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
+    private readonly ObservableCollection<ModListItemViewModel> _searchResults = new();
     private readonly ClientSettingsStore _settingsStore;
     private readonly ModDiscoveryService _discoveryService;
     private readonly ModDatabaseService _databaseService;
@@ -37,6 +44,8 @@ public sealed class MainViewModel : ObservableObject
     private ModListItemViewModel? _selectedMod;
     private string _searchText = string.Empty;
     private string[] _searchTokens = Array.Empty<string>();
+    private bool _searchModDatabase;
+    private CancellationTokenSource? _modDatabaseSearchCts;
 
     public MainViewModel(string dataDirectory)
     {
@@ -51,6 +60,7 @@ public sealed class MainViewModel : ObservableObject
 
         ModsView = CollectionViewSource.GetDefaultView(_mods);
         ModsView.Filter = FilterMod;
+        SearchResultsView = CollectionViewSource.GetDefaultView(_searchResults);
         _sortOptions = new ObservableCollection<SortOption>(CreateSortOptions());
         SortOptions = new ReadOnlyObservableCollection<SortOption>(_sortOptions);
         SelectedSortOption = SortOptions.FirstOrDefault();
@@ -63,6 +73,10 @@ public sealed class MainViewModel : ObservableObject
     public string DataDirectory { get; }
 
     public ICollectionView ModsView { get; }
+
+    public ICollectionView SearchResultsView { get; }
+
+    public ICollectionView CurrentModsView => SearchModDatabase ? SearchResultsView : ModsView;
 
     public ReadOnlyObservableCollection<SortOption> SortOptions { get; }
 
@@ -124,6 +138,42 @@ public sealed class MainViewModel : ObservableObject
         private set => SetProperty(ref _isErrorStatus, value);
     }
 
+    public bool SearchModDatabase
+    {
+        get => _searchModDatabase;
+        set
+        {
+            if (SetProperty(ref _searchModDatabase, value))
+            {
+                _modDatabaseSearchCts?.Cancel();
+
+                if (value)
+                {
+                    ClearSearchResults();
+                    SelectedMod = null;
+
+                    if (HasSearchText)
+                    {
+                        TriggerModDatabaseSearch();
+                    }
+                    else
+                    {
+                        SetStatus("Enter text to search the mod database.", false);
+                    }
+                }
+                else
+                {
+                    ClearSearchResults();
+                    SelectedSortOption?.Apply(ModsView);
+                    ModsView.Refresh();
+                    SetStatus("Showing installed mods.", false);
+                }
+
+                OnPropertyChanged(nameof(CurrentModsView));
+            }
+        }
+    }
+
     public string SearchText
     {
         get => _searchText;
@@ -134,7 +184,14 @@ public sealed class MainViewModel : ObservableObject
             {
                 _searchTokens = CreateSearchTokens(newValue);
                 OnPropertyChanged(nameof(HasSearchText));
-                ModsView.Refresh();
+                if (SearchModDatabase)
+                {
+                    TriggerModDatabaseSearch();
+                }
+                else
+                {
+                    ModsView.Refresh();
+                }
             }
         }
     }
@@ -379,6 +436,212 @@ public sealed class MainViewModel : ObservableObject
     private void UpdateActiveCount()
     {
         ActiveMods = _mods.Count(item => item.IsActive);
+    }
+
+    private void ClearSearchResults()
+    {
+        if (_searchResults.Count == 0)
+        {
+            SelectedMod = null;
+            return;
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+        {
+            dispatcher.Invoke(() =>
+            {
+                _searchResults.Clear();
+                SelectedMod = null;
+            });
+            return;
+        }
+
+        _searchResults.Clear();
+        SelectedMod = null;
+    }
+
+    private void TriggerModDatabaseSearch()
+    {
+        if (!SearchModDatabase)
+        {
+            return;
+        }
+
+        _modDatabaseSearchCts?.Cancel();
+
+        if (!HasSearchText)
+        {
+            ClearSearchResults();
+            SetStatus("Enter text to search the mod database.", false);
+            return;
+        }
+
+        var cts = new CancellationTokenSource();
+        _modDatabaseSearchCts = cts;
+        SetStatus("Searching the mod database...", false);
+
+        _ = RunModDatabaseSearchAsync(SearchText, cts);
+    }
+
+    private async Task RunModDatabaseSearchAsync(string query, CancellationTokenSource cts)
+    {
+        CancellationToken cancellationToken = cts.Token;
+
+        try
+        {
+            await Task.Delay(ModDatabaseSearchDebounce, cancellationToken).ConfigureAwait(false);
+
+            IReadOnlyList<ModDatabaseSearchResult> results = await _databaseService
+                .SearchModsAsync(query, ModDatabaseSearchResultLimit, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (results.Count == 0)
+            {
+                await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
+                await InvokeOnDispatcherAsync(() => SetStatus("No mods found in the mod database.", false), cancellationToken)
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            var entries = results
+                .Select(CreateSearchResultEntry)
+                .ToList();
+
+            await _databaseService.PopulateModDatabaseInfoAsync(entries, _installedGameVersion, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            var viewModels = entries
+                .Select(CreateSearchResultViewModel)
+                .ToList();
+
+            await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
+            await InvokeOnDispatcherAsync(
+                    () => SetStatus($"Found {viewModels.Count} mods in the mod database.", false),
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // Intentionally ignored.
+        }
+        catch (Exception ex)
+        {
+            await InvokeOnDispatcherAsync(() => SetStatus($"Failed to search the mod database: {ex.Message}", true),
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            if (ReferenceEquals(_modDatabaseSearchCts, cts))
+            {
+                _modDatabaseSearchCts = null;
+            }
+        }
+    }
+
+    private Task UpdateSearchResultsAsync(IReadOnlyList<ModListItemViewModel> items, CancellationToken cancellationToken)
+    {
+        return InvokeOnDispatcherAsync(() =>
+        {
+            _searchResults.Clear();
+            foreach (var item in items)
+            {
+                _searchResults.Add(item);
+            }
+
+            SelectedMod = null;
+        }, cancellationToken);
+    }
+
+    private static Task InvokeOnDispatcherAsync(Action action, CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher)
+        {
+            if (dispatcher.CheckAccess())
+            {
+                action();
+                return Task.CompletedTask;
+            }
+
+            return dispatcher.InvokeAsync(action, DispatcherPriority.Normal, cancellationToken).Task;
+        }
+
+        action();
+        return Task.CompletedTask;
+    }
+
+    private static ModEntry CreateSearchResultEntry(ModDatabaseSearchResult result)
+    {
+        var authors = string.IsNullOrWhiteSpace(result.Author)
+            ? Array.Empty<string>()
+            : new[] { result.Author };
+
+        string? description = BuildSearchResultDescription(result);
+        string? pageUrl = BuildModDatabasePageUrl(result);
+
+        return new ModEntry
+        {
+            ModId = result.ModId,
+            Name = result.Name,
+            Description = description,
+            Authors = authors,
+            Website = pageUrl,
+            SourceKind = ModSourceKind.SourceCode,
+            SourcePath = string.Empty,
+            Side = result.Side,
+            DatabaseInfo = new ModDatabaseInfo
+            {
+                Tags = result.Tags,
+                AssetId = result.AssetId,
+                ModPageUrl = pageUrl
+            }
+        };
+    }
+
+    private ModListItemViewModel CreateSearchResultViewModel(ModEntry entry)
+    {
+        return new ModListItemViewModel(entry, false, "Mod Database", RejectActivationChangeAsync, _installedGameVersion);
+    }
+
+    private static string? BuildSearchResultDescription(ModDatabaseSearchResult result)
+    {
+        return string.IsNullOrWhiteSpace(result.Summary) ? null : result.Summary.Trim();
+    }
+
+    private static string? BuildModDatabasePageUrl(ModDatabaseSearchResult result)
+    {
+        if (!string.IsNullOrWhiteSpace(result.AssetId))
+        {
+            return $"https://mods.vintagestory.at/show/mod/{result.AssetId}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.UrlAlias))
+        {
+            string alias = result.UrlAlias!.TrimStart('/');
+            return string.IsNullOrWhiteSpace(alias) ? null : $"https://mods.vintagestory.at/{alias}";
+        }
+
+        return null;
+    }
+
+    private static Task<ActivationResult> RejectActivationChangeAsync(ModListItemViewModel mod, bool isActive)
+    {
+        return Task.FromResult(new ActivationResult(false, "Install this mod locally to manage its activation state."));
     }
 
     private bool FilterMod(object? item)

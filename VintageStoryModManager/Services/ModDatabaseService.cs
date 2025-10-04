@@ -16,6 +16,7 @@ namespace VintageStoryModManager.Services;
 public sealed class ModDatabaseService
 {
     private const string ApiEndpointFormat = "https://mods.vintagestory.at/api/mod/{0}";
+    private const string SearchEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&limit={1}";
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
 
     private static readonly HttpClient HttpClient = new();
@@ -43,6 +44,82 @@ public sealed class ModDatabaseService
             {
                 mod.DatabaseInfo = info;
             }
+        }
+    }
+
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> SearchModsAsync(string query, int maxResults, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query) || maxResults <= 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        string trimmed = query.Trim();
+        var tokens = new List<string>(CreateSearchTokens(trimmed));
+        if (!string.IsNullOrWhiteSpace(trimmed)
+            && !tokens.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+        {
+            tokens.Add(trimmed);
+        }
+
+        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
+        string requestUri = string.Format(
+            CultureInfo.InvariantCulture,
+            SearchEndpointFormat,
+            Uri.EscapeDataString(trimmed),
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        try
+        {
+            using HttpRequestMessage request = new(HttpMethod.Get, requestUri);
+            using HttpResponseMessage response = await HttpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return Array.Empty<ModDatabaseSearchResult>();
+            }
+
+            await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using JsonDocument document = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (!document.RootElement.TryGetProperty("mods", out JsonElement modsElement)
+                || modsElement.ValueKind != JsonValueKind.Array)
+            {
+                return Array.Empty<ModDatabaseSearchResult>();
+            }
+
+            var candidates = new List<ModDatabaseSearchResult>();
+
+            foreach (JsonElement modElement in modsElement.EnumerateArray())
+            {
+                if (modElement.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                ModDatabaseSearchResult? result = TryCreateSearchResult(modElement, tokens);
+                if (result != null)
+                {
+                    candidates.Add(result);
+                }
+            }
+
+            return candidates
+                .OrderByDescending(candidate => candidate.Score)
+                .ThenByDescending(candidate => candidate.Downloads)
+                .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
+                .Take(maxResults)
+                .ToArray();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
         }
     }
 
@@ -220,6 +297,194 @@ public sealed class ModDatabaseService
 
         string? text = value.GetString();
         return string.IsNullOrWhiteSpace(text) ? null : text;
+    }
+
+    private static ModDatabaseSearchResult? TryCreateSearchResult(JsonElement element, IReadOnlyList<string> tokens)
+    {
+        string? name = GetString(element, "name");
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        IReadOnlyList<string> modIds = GetStringList(element, "modidstrs");
+        string? primaryId = modIds.FirstOrDefault(id => !string.IsNullOrWhiteSpace(id))
+            ?? GetString(element, "urlalias")
+            ?? name;
+
+        if (string.IsNullOrWhiteSpace(primaryId))
+        {
+            return null;
+        }
+
+        primaryId = primaryId.Trim();
+
+        string? summary = GetString(element, "summary");
+        string? author = GetString(element, "author");
+        string? assetId = TryGetAssetId(element);
+        string? urlAlias = GetString(element, "urlalias");
+        string? side = GetString(element, "side");
+        string? logo = GetString(element, "logo");
+
+        IReadOnlyList<string> tags = GetStringList(element, "tags");
+        int downloads = GetInt(element, "downloads");
+        int follows = GetInt(element, "follows");
+        int trendingPoints = GetInt(element, "trendingpoints");
+        int comments = GetInt(element, "comments");
+        DateTime? lastReleased = TryParseDateTime(GetString(element, "lastreleased"));
+
+        IReadOnlyList<string> alternateIds = modIds.Count == 0 ? new[] { primaryId } : modIds;
+
+        double score = CalculateSearchScore(
+            name,
+            primaryId,
+            summary,
+            alternateIds,
+            tags,
+            tokens,
+            downloads,
+            follows,
+            trendingPoints,
+            comments,
+            lastReleased);
+
+        return new ModDatabaseSearchResult
+        {
+            Name = name,
+            ModId = primaryId,
+            AlternateIds = alternateIds,
+            Summary = summary,
+            Author = author,
+            Tags = tags,
+            Downloads = downloads,
+            Follows = follows,
+            TrendingPoints = trendingPoints,
+            Comments = comments,
+            AssetId = assetId,
+            UrlAlias = urlAlias,
+            Side = side,
+            LogoUrl = logo,
+            LastReleasedUtc = lastReleased,
+            Score = score
+        };
+    }
+
+    private static double CalculateSearchScore(
+        string name,
+        string primaryId,
+        string? summary,
+        IReadOnlyList<string> alternateIds,
+        IReadOnlyList<string> tags,
+        IReadOnlyList<string> tokens,
+        int downloads,
+        int follows,
+        int trendingPoints,
+        int comments,
+        DateTime? lastReleased)
+    {
+        double score = 0;
+
+        string nameLower = name.ToLowerInvariant();
+        string summaryLower = summary?.ToLowerInvariant() ?? string.Empty;
+
+        foreach (string token in tokens)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                continue;
+            }
+
+            if (nameLower.Contains(token, StringComparison.OrdinalIgnoreCase))
+            {
+                score += 6;
+            }
+
+            if (primaryId.Contains(token, StringComparison.OrdinalIgnoreCase))
+            {
+                score += 5;
+            }
+            else if (alternateIds.Any(id => id.Contains(token, StringComparison.OrdinalIgnoreCase)))
+            {
+                score += 4;
+            }
+
+            if (tags.Any(tag => tag.Contains(token, StringComparison.OrdinalIgnoreCase)))
+            {
+                score += 2;
+            }
+
+            if (!string.IsNullOrEmpty(summaryLower)
+                && summaryLower.Contains(token, StringComparison.OrdinalIgnoreCase))
+            {
+                score += 1.5;
+            }
+        }
+
+        score += Math.Log10(downloads + 1) * 1.2;
+        score += Math.Log10(follows + 1) * 1.5;
+        score += Math.Log10(trendingPoints + 1);
+        score += Math.Log10(comments + 1) * 0.5;
+
+        if (lastReleased.HasValue)
+        {
+            double days = (DateTime.UtcNow - lastReleased.Value).TotalDays;
+            if (!double.IsNaN(days))
+            {
+                score += Math.Max(0, 4 - (days / 45.0));
+            }
+        }
+
+        return score;
+    }
+
+    private static IReadOnlyList<string> CreateSearchTokens(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return Array.Empty<string>();
+        }
+
+        return value.Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+
+    private static int GetInt(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out JsonElement value))
+        {
+            return 0;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.Number when value.TryGetInt32(out int intValue) => intValue,
+            JsonValueKind.Number when value.TryGetInt64(out long longValue) => (int)Math.Clamp(longValue, int.MinValue, int.MaxValue),
+            JsonValueKind.String when int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed) => parsed,
+            _ => 0
+        };
+    }
+
+    private static DateTime? TryParseDateTime(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        if (DateTime.TryParse(
+                value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out DateTime result))
+        {
+            return result;
+        }
+
+        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out result))
+        {
+            return DateTime.SpecifyKind(result, DateTimeKind.Utc);
+        }
+
+        return null;
     }
 
     private static IReadOnlyList<string> FindRequiredGameVersions(JsonElement modElement, string? modVersion)
