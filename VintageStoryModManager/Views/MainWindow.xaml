@@ -525,18 +525,54 @@
                     Background="{StaticResource IMM.SurfaceBrush}"
                     BorderBrush="{StaticResource IMM.BorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="0,0,8,8"
-                    MaxHeight="0"
-                    Opacity="0"
-                    IsHitTestVisible="False">
+                    CornerRadius="0,0,8,8">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="MaxHeight" Value="0" />
+                        <Setter Property="Opacity" Value="0" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
+                                <Setter Property="MaxHeight" Value="600" />
+                                <Setter Property="Opacity" Value="1" />
+                                <DataTrigger.EnterActions>
+                                    <StopStoryboard BeginStoryboardName="HideModInfoStoryboard" />
+                                    <BeginStoryboard x:Name="ShowModInfoStoryboard">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="MaxHeight"
+                                                             To="600"
+                                                             Duration="0:0:0.35">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <QuarticEase EasingMode="EaseOut" />
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <StopStoryboard BeginStoryboardName="ShowModInfoStoryboard" />
+                                    <BeginStoryboard x:Name="HideModInfoStoryboard">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="MaxHeight"
+                                                             To="0"
+                                                             Duration="0:0:0.2"
+                                                             FillBehavior="Stop">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <QuadraticEase EasingMode="EaseIn" />
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="12" Direction="270" ShadowDepth="4" Opacity="0.14" Color="#33000000" />
                 </Border.Effect>
                 <Grid>
-                    <Grid x:Name="ModInfoContentGrid"
-                          Margin="0"
-                          VerticalAlignment="Center"
-                          DataContext="{Binding ModInfoDisplayContext, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
+                    <Grid Margin="0"
+                          VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -544,18 +580,28 @@
 
                         <Grid Grid.Column="0"
                               VerticalAlignment="Center">
+                            <Grid.Style>
+                                <Style TargetType="{x:Type Grid}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0"
-                                       Text="{Binding DisplayName, TargetNullValue=''}"
+                                       Text="{Binding SelectedMod.DisplayName}"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource IMM.ForegroundBrush}"
                                        TextAlignment="Left" VerticalAlignment="Top" HorizontalAlignment="Left" />
                             <TextBlock Grid.Row="1"
                                        Margin="0,4,0,0"
-                                       Text="{Binding DescriptionDisplay, TargetNullValue=''}"
+                                       Text="{Binding SelectedMod.DescriptionDisplay}"
                                        Foreground="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}"
                                        MaxWidth="420"
                                        TextWrapping="Wrap"
@@ -568,6 +614,16 @@
                                     Margin="24,0,0,0"
                                     VerticalAlignment="Center"
                                     HorizontalAlignment="Left">
+                            <StackPanel.Style>
+                                <Style TargetType="{x:Type StackPanel}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
                             <StackPanel Orientation="Horizontal">
                                 <Button x:Name="SelectedModDatabasePageButton"
                                         Margin="0,0,8,0"
@@ -634,8 +690,8 @@
                                           BorderBrush="{DynamicResource IMM.BorderBrush}"
                                           BorderThickness="1"
                                           ui:ControlHelper.CornerRadius="6"
-                                          ItemsSource="{Binding VersionOptions}"
-                                          SelectedItem="{Binding SelectedVersionOption, Mode=TwoWay}"
+                                          ItemsSource="{Binding SelectedMod.VersionOptions}"
+                                          SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
                                           SelectionChanged="SelectedModVersionComboBox_OnSelectionChanged"
                                           VerticalAlignment="Center">
                                     <ComboBox.Style>
@@ -644,7 +700,7 @@
                                             <Setter Property="IsEnabled" Value="False" />
                                             <Setter Property="Background" Value="{DynamicResource IMM.ButtonBackgroundBrush}" />
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding HasVersionOptions}" Value="True">
+                                                <DataTrigger Binding="{Binding SelectedMod.HasVersionOptions}" Value="True">
                                                     <Setter Property="Visibility" Value="Visible" />
                                                     <Setter Property="IsEnabled" Value="True" />
                                                 </DataTrigger>

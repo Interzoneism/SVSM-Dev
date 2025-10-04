@@ -72,32 +72,11 @@ public partial class MainWindow : Window
     private readonly ModUpdateService _modUpdateService = new();
     private bool _isModUpdateInProgress;
     private ScrollViewer? _modsScrollViewer;
-    private bool _isModInfoInitialized;
-    private DispatcherOperation? _pendingModInfoUpdateOperation;
-
-
-    public static readonly DependencyProperty ModInfoDisplayContextProperty =
-        DependencyProperty.Register(
-            nameof(ModInfoDisplayContext),
-            typeof(ModListItemViewModel),
-            typeof(MainWindow),
-            new PropertyMetadata(null));
-
-    public ModListItemViewModel? ModInfoDisplayContext
-    {
-        get => (ModListItemViewModel?)GetValue(ModInfoDisplayContextProperty);
-        private set => SetValue(ModInfoDisplayContextProperty, value);
-    }
 
 
     public MainWindow()
     {
         InitializeComponent();
-
-        Border_MODINFO.MaxHeight = 0;
-        Border_MODINFO.Opacity = 0;
-        Border_MODINFO.IsHitTestVisible = false;
-        ModInfoContentGrid.SizeChanged += ModInfoContentGrid_OnSizeChanged;
 
         _userConfiguration = new UserConfigurationService();
         PresetComboBox.ItemsSource = _presets;
@@ -186,7 +165,6 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
         ApplyCompactViewState(_viewModel.IsCompactView);
         AttachToModsView(_viewModel.ModsView);
-        UpdateModInfoState(animate: false);
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -200,13 +178,6 @@ public partial class MainWindow : Window
                     ApplyCompactViewState(_viewModel.IsCompactView);
                 }
             });
-            return;
-        }
-
-        if (e.PropertyName == nameof(MainViewModel.HasSelectedMod)
-            || e.PropertyName == nameof(MainViewModel.SelectedMod))
-        {
-            RequestModInfoUpdate();
         }
     }
 
@@ -218,163 +189,6 @@ public partial class MainWindow : Window
         }
 
         IconColumn.Visibility = isCompactView ? Visibility.Collapsed : Visibility.Visible;
-    }
-
-    private void RequestModInfoUpdate()
-    {
-        if (!IsLoaded)
-        {
-            UpdateModInfoState(animate: false);
-            return;
-        }
-
-        _pendingModInfoUpdateOperation?.Abort();
-        _pendingModInfoUpdateOperation = Dispatcher.BeginInvoke(
-            DispatcherPriority.Loaded,
-            new Action(() => UpdateModInfoState(animate: true)));
-    }
-
-    private void UpdateModInfoState(bool animate)
-    {
-        _pendingModInfoUpdateOperation = null;
-
-        bool hasSelection = _viewModel?.HasSelectedMod == true;
-
-        if (hasSelection)
-        {
-            ModInfoDisplayContext = _viewModel?.SelectedMod;
-        }
-
-        double targetHeight = hasSelection ? CalculateModInfoTargetHeight() : 0;
-
-        Border_MODINFO.IsHitTestVisible = hasSelection;
-
-        if (!_isModInfoInitialized || !animate)
-        {
-            Border_MODINFO.BeginAnimation(Border.MaxHeightProperty, null);
-            Border_MODINFO.BeginAnimation(UIElement.OpacityProperty, null);
-            Border_MODINFO.MaxHeight = targetHeight;
-            Border_MODINFO.Opacity = hasSelection ? 1 : 0;
-            _isModInfoInitialized = true;
-
-            if (!hasSelection)
-            {
-                ModInfoDisplayContext = null;
-            }
-
-            return;
-        }
-
-        AnimateModInfoOpacity(hasSelection ? 1 : 0);
-
-        bool clearContextAfterAnimation = !hasSelection && ModInfoDisplayContext != null;
-        AnimateModInfoHeight(targetHeight, clearContextAfterAnimation);
-    }
-
-    private void AnimateModInfoHeight(double targetHeight, bool clearContextAfterAnimation)
-    {
-        targetHeight = Math.Max(0, targetHeight);
-        double currentHeight = Border_MODINFO.ActualHeight;
-
-        if (!Border_MODINFO.IsLoaded || double.IsNaN(currentHeight))
-        {
-            currentHeight = Border_MODINFO.MaxHeight;
-        }
-
-        Border_MODINFO.BeginAnimation(Border.MaxHeightProperty, null);
-
-        if (Math.Abs(currentHeight - targetHeight) < 0.5)
-        {
-            Border_MODINFO.MaxHeight = targetHeight;
-
-            if (clearContextAfterAnimation)
-            {
-                ModInfoDisplayContext = null;
-            }
-
-            return;
-        }
-
-        var easing = new QuarticEase
-        {
-            EasingMode = targetHeight > currentHeight ? EasingMode.EaseOut : EasingMode.EaseInOut
-        };
-
-        var animation = new DoubleAnimation
-        {
-            From = currentHeight,
-            To = targetHeight,
-            Duration = TimeSpan.FromMilliseconds(targetHeight > currentHeight ? 320 : 220),
-            EasingFunction = easing
-        };
-
-        animation.Completed += (_, _) =>
-        {
-            Border_MODINFO.MaxHeight = targetHeight;
-
-            if (clearContextAfterAnimation)
-            {
-                ModInfoDisplayContext = null;
-            }
-        };
-
-        Border_MODINFO.BeginAnimation(Border.MaxHeightProperty, animation, HandoffBehavior.SnapshotAndReplace);
-    }
-
-    private void AnimateModInfoOpacity(double targetOpacity)
-    {
-        targetOpacity = Math.Clamp(targetOpacity, 0, 1);
-
-        Border_MODINFO.BeginAnimation(UIElement.OpacityProperty, null);
-
-        if (Math.Abs(Border_MODINFO.Opacity - targetOpacity) < 0.01)
-        {
-            Border_MODINFO.Opacity = targetOpacity;
-            return;
-        }
-
-        var easing = new QuadraticEase
-        {
-            EasingMode = targetOpacity > Border_MODINFO.Opacity ? EasingMode.EaseOut : EasingMode.EaseIn
-        };
-
-        var animation = new DoubleAnimation
-        {
-            To = targetOpacity,
-            Duration = TimeSpan.FromMilliseconds(200),
-            EasingFunction = easing
-        };
-
-        Border_MODINFO.BeginAnimation(UIElement.OpacityProperty, animation, HandoffBehavior.SnapshotAndReplace);
-        Border_MODINFO.Opacity = targetOpacity;
-    }
-
-    private double CalculateModInfoTargetHeight()
-    {
-        double padding = Border_MODINFO.Padding.Top + Border_MODINFO.Padding.Bottom;
-        double contentHeight = ModInfoContentGrid.ActualHeight;
-
-        if (double.IsNaN(contentHeight) || contentHeight < 0)
-        {
-            contentHeight = 0;
-        }
-
-        return Math.Max(0, contentHeight + padding);
-    }
-
-    private void ModInfoContentGrid_OnSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        if (!IsLoaded || ModInfoDisplayContext is null)
-        {
-            return;
-        }
-
-        if (Math.Abs(e.PreviousSize.Height - e.NewSize.Height) < 0.5)
-        {
-            return;
-        }
-
-        AnimateModInfoHeight(CalculateModInfoTargetHeight(), clearContextAfterAnimation: false);
     }
 
     private async Task InitializeViewModelAsync(MainViewModel viewModel)
@@ -1901,18 +1715,7 @@ public partial class MainWindow : Window
 
     private void UpdateSelectedModButtons()
     {
-        ModListItemViewModel? previousSelection = _viewModel?.SelectedMod;
         ModListItemViewModel? singleSelection = _selectedMods.Count == 1 ? _selectedMods[0] : null;
-        bool selectionChanged = !ReferenceEquals(previousSelection, singleSelection);
-
-        if (selectionChanged && singleSelection != null)
-        {
-            ModInfoDisplayContext = singleSelection;
-        }
-        else if (selectionChanged && singleSelection is null && previousSelection != null)
-        {
-            ModInfoDisplayContext = previousSelection;
-        }
 
         UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, requireModDatabaseLink: true);
         UpdateSelectedModButton(SelectedModUpdateButton, singleSelection, requireModDatabaseLink: false, requireUpdate: true);
