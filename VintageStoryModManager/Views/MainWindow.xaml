@@ -375,17 +375,17 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn x:Name="IconColumn" Header="Icon" Width="SizeToCells" IsReadOnly="True">
+                <DataGridTemplateColumn x:Name="IconColumn" Header="Icon" Width="64" IsReadOnly="True">
                     <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                             <Setter Property="HorizontalContentAlignment" Value="Center" />
                             <Setter Property="VerticalContentAlignment" Value="Center" />
-                            <Setter Property="Padding" Value="0" />
+                            
                         </Style>
                     </DataGridTemplateColumn.CellStyle>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Border Width="60" Height="60"
+                            <Border Width="64" Height="64"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     ToolTipService.ShowDuration="60000"
@@ -397,12 +397,12 @@
                                                FontWeight="Normal"
                                                TextWrapping="Wrap" />
                                 </ToolTipService.ToolTip>
-                                <Image Source="{Binding Icon}" Stretch="Uniform" />
+                                <Image Source="{Binding Icon}" Stretch="Uniform" Margin="0" />
                             </Border>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="SizeToCells" SortMemberPath="DisplayName" IsReadOnly="True">
+                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="220" SortMemberPath="DisplayName" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="FontFamily" Value="Segoe UI" />
@@ -434,9 +434,9 @@
                 <DataGridTextColumn x:Name="VersionColumn"
                                      Header="Version"
                                      Binding="{Binding VersionDisplay, Mode=OneWay}"
-                                     Width="65"
+                                     Width="85"
                                      IsReadOnly="True"
-                                     MinWidth="64">
+                                     MinWidth="80">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="HorizontalAlignment" Value="Center" />
@@ -451,7 +451,7 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" Width="100" MinWidth="99" IsReadOnly="True">
+                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" Width="140" MinWidth="139" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="HorizontalAlignment" Value="Center" />
