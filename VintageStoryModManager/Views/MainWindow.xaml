@@ -116,15 +116,13 @@
                         Orientation="Vertical"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center">
-                <TextBox Width="280"
+                <TextBox Width="225"
                          MinWidth="200"
                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                          ui:ControlHelper.CornerRadius="6"
                          HorizontalAlignment="Stretch" />
                 <CheckBox Content="Search Mod DB"
-                          Margin="0,8,0,0"
-                          HorizontalAlignment="Right"
-                          IsChecked="{Binding SearchModDatabase, Mode=TwoWay}" />
+                          IsChecked="{Binding SearchModDatabase, Mode=TwoWay}" HorizontalAlignment="Right" />
             </StackPanel>
         </Grid>
 
