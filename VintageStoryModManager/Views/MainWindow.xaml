@@ -109,7 +109,7 @@
             </TextBlock>
             <Grid Grid.Column="1"
                 Margin="247,0,19,0"
-                VerticalAlignment="Center" Height="50">
+                VerticalAlignment="Center" Height="50" HorizontalAlignment="Right">
                 <CheckBox Content="Search Mod DB" VerticalContentAlignment="Bottom"  IsChecked="{Binding SearchModDatabase, Mode=TwoWay}"  FontSize="15" Height="27" Checked="CheckBox_Checked" Width="137" RenderTransformOrigin="0.5,0.5" Padding="8,0,0,0" VerticalAlignment="Bottom" Margin="0,0,227,11" HorizontalAlignment="Right" >
                     <CheckBox.RenderTransform>
                         <TransformGroup>
@@ -124,8 +124,7 @@
                 <TextBox Width="225"
                     MinWidth="200"
                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                    ui:ControlHelper.CornerRadius="2" HorizontalAlignment="Right"
-                    Margin="0,0,17,14" VerticalAlignment="Bottom">
+                    Margin="0,0,18,15" VerticalAlignment="Bottom" Height="24" HorizontalAlignment="Right">
                     <TextBox.Style>
                         <Style TargetType="TextBox">
                             <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
