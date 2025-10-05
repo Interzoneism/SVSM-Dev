@@ -2400,7 +2400,7 @@ public partial class MainWindow : Window
 
         if (_viewModel?.SearchModDatabase == true)
         {
-            UpdateSelectedModButton(SelectedModDatabasePageButton, null, requireModDatabaseLink: true);
+            UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, requireModDatabaseLink: true);
             UpdateSelectedModButton(SelectedModUpdateButton, null, requireModDatabaseLink: false, requireUpdate: true);
             UpdateSelectedModButton(SelectedModEditConfigButton, null, requireModDatabaseLink: false);
             UpdateSelectedModButton(SelectedModDeleteButton, null, requireModDatabaseLink: false);
