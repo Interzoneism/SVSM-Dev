@@ -55,11 +55,10 @@ public sealed class ModDatabaseService
         }
 
         string trimmed = query.Trim();
-        var tokens = new List<string>(CreateSearchTokens(trimmed));
-        if (!string.IsNullOrWhiteSpace(trimmed)
-            && !tokens.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+        IReadOnlyList<string> tokens = CreateSearchTokens(trimmed);
+        if (tokens.Count == 0)
         {
-            tokens.Add(trimmed);
+            return Array.Empty<ModDatabaseSearchResult>();
         }
 
         int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
@@ -337,18 +336,22 @@ public sealed class ModDatabaseService
 
         IReadOnlyList<string> alternateIds = modIds.Count == 0 ? new[] { primaryId } : modIds;
 
-        double score = CalculateSearchScore(
-            name,
-            primaryId,
-            summary,
-            alternateIds,
-            tags,
-            tokens,
-            downloads,
-            follows,
-            trendingPoints,
-            comments,
-            lastReleased);
+        if (!TryCalculateSearchScore(
+                name,
+                primaryId,
+                summary,
+                alternateIds,
+                tags,
+                tokens,
+                downloads,
+                follows,
+                trendingPoints,
+                comments,
+                lastReleased,
+                out double score))
+        {
+            return null;
+        }
 
         return new ModDatabaseSearchResult
         {
@@ -371,7 +374,7 @@ public sealed class ModDatabaseService
         };
     }
 
-    private static double CalculateSearchScore(
+    private static bool TryCalculateSearchScore(
         string name,
         string primaryId,
         string? summary,
@@ -382,12 +385,18 @@ public sealed class ModDatabaseService
         int follows,
         int trendingPoints,
         int comments,
-        DateTime? lastReleased)
+        DateTime? lastReleased,
+        out double score)
     {
-        double score = 0;
+        score = 0;
 
-        string nameLower = name.ToLowerInvariant();
-        string summaryLower = summary?.ToLowerInvariant() ?? string.Empty;
+        if (tokens.Count == 0)
+        {
+            return false;
+        }
+
+        int matchedTokenCount = 0;
+        string summaryText = summary ?? string.Empty;
 
         foreach (string token in tokens)
         {
@@ -396,32 +405,84 @@ public sealed class ModDatabaseService
                 continue;
             }
 
-            if (nameLower.Contains(token, StringComparison.OrdinalIgnoreCase))
+            string currentToken = token.Trim();
+            if (currentToken.Length == 0)
+            {
+                continue;
+            }
+
+            bool tokenMatched = false;
+
+            bool nameExactMatch = string.Equals(name, currentToken, StringComparison.OrdinalIgnoreCase);
+            if (nameExactMatch)
+            {
+                score += 12;
+                tokenMatched = true;
+            }
+            else if (name.Contains(currentToken, StringComparison.OrdinalIgnoreCase))
             {
                 score += 6;
+                tokenMatched = true;
             }
 
-            if (primaryId.Contains(token, StringComparison.OrdinalIgnoreCase))
+            bool primaryExactMatch = string.Equals(primaryId, currentToken, StringComparison.OrdinalIgnoreCase);
+            if (primaryExactMatch)
+            {
+                score += 10;
+                tokenMatched = true;
+            }
+            else if (primaryId.Contains(currentToken, StringComparison.OrdinalIgnoreCase))
             {
                 score += 5;
+                tokenMatched = true;
             }
-            else if (alternateIds.Any(id => id.Contains(token, StringComparison.OrdinalIgnoreCase)))
+            else
             {
-                score += 4;
+                bool alternateExact = alternateIds.Any(id => string.Equals(id, currentToken, StringComparison.OrdinalIgnoreCase));
+                if (alternateExact)
+                {
+                    score += 9;
+                    tokenMatched = true;
+                }
+                else if (alternateIds.Any(id => id.Contains(currentToken, StringComparison.OrdinalIgnoreCase)))
+                {
+                    score += 4;
+                    tokenMatched = true;
+                }
             }
 
-            if (tags.Any(tag => tag.Contains(token, StringComparison.OrdinalIgnoreCase)))
+            bool tagExactMatch = tags.Any(tag => string.Equals(tag, currentToken, StringComparison.OrdinalIgnoreCase));
+            if (tagExactMatch)
+            {
+                score += 3;
+                tokenMatched = true;
+            }
+            else if (tags.Any(tag => tag.Contains(currentToken, StringComparison.OrdinalIgnoreCase)))
             {
                 score += 2;
+                tokenMatched = true;
             }
 
-            if (!string.IsNullOrEmpty(summaryLower)
-                && summaryLower.Contains(token, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(summaryText)
+                && summaryText.Contains(currentToken, StringComparison.OrdinalIgnoreCase))
             {
                 score += 1.5;
+                tokenMatched = true;
+            }
+
+            if (tokenMatched)
+            {
+                matchedTokenCount++;
             }
         }
 
+        if (matchedTokenCount == 0)
+        {
+            score = 0;
+            return false;
+        }
+
+        score += matchedTokenCount * 1.5;
         score += Math.Log10(downloads + 1) * 1.2;
         score += Math.Log10(follows + 1) * 1.5;
         score += Math.Log10(trendingPoints + 1);
@@ -436,7 +497,7 @@ public sealed class ModDatabaseService
             }
         }
 
-        return score;
+        return true;
     }
 
     private static IReadOnlyList<string> CreateSearchTokens(string value)
@@ -446,7 +507,34 @@ public sealed class ModDatabaseService
             return Array.Empty<string>();
         }
 
-        return value.Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        string trimmed = value.Trim();
+        var tokens = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void AddToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
+            token = token.Trim();
+            if (seen.Add(token))
+            {
+                tokens.Add(token);
+            }
+        }
+
+        AddToken(trimmed);
+
+        foreach (string token in trimmed.Split(
+                     [' ', '\t', '\r', '\n', '-', '_', '.', '/', '\\'],
+                     StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            AddToken(token);
+        }
+
+        return tokens.Count == 0 ? Array.Empty<string>() : tokens;
     }
 
     private static int? GetNullableInt(JsonElement element, string propertyName)
