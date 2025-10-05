@@ -52,7 +52,7 @@
                   Grid.RowSpan="2"
                   IsMainMenu="True"
                   Background="{StaticResource IMM.SurfaceBrush}"
-                  BorderThickness="0">
+                  BorderThickness="0" Margin="0,-1,0,39">
                 <MenuItem Header="_File" Height="30">
                     <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" />
@@ -112,17 +112,17 @@
 
             <StackPanel Grid.Column="1"
                         Grid.Row="1"
-                        Margin="0,0,24,0"
+                        Margin="532,0,0,0"
                         Orientation="Vertical"
-                        HorizontalAlignment="Right"
+                        HorizontalAlignment="Left"
                         VerticalAlignment="Center">
+                <CheckBox Content="Search Mod DB" IsChecked="{Binding SearchModDatabase, Mode=TwoWay}" HorizontalAlignment="Right"  FontSize="12" Height="16" />
                 <TextBox Width="225"
                          MinWidth="200"
                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         ui:ControlHelper.CornerRadius="6"
-                         HorizontalAlignment="Stretch" />
-                <CheckBox Content="Search Mod DB"
-                          IsChecked="{Binding SearchModDatabase, Mode=TwoWay}" HorizontalAlignment="Right" />
+                         ui:ControlHelper.CornerRadius="2"
+                         />
+
             </StackPanel>
         </Grid>
 
@@ -796,7 +796,7 @@
                                         Click="DeleteModButton_OnClick"
                                         ToolTip="{Binding DisplayName, StringFormat=Delete \{0\}}">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        
+
                                         <TextBlock Text="Delete" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
