@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -20,6 +19,8 @@ using System.Windows.Media;
 using System.Windows.Data;
 using System.Windows.Media.Animation;
 using ModernWpf.Controls;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 
 using VintageStoryModManager.Services;
 using VintageStoryModManager.Models;
@@ -27,10 +28,7 @@ using VintageStoryModManager.ViewModels;
 using WinForms = System.Windows.Forms;
 using WpfApplication = System.Windows.Application;
 using WpfButton = System.Windows.Controls.Button;
-using WpfHorizontalAlignment = System.Windows.HorizontalAlignment;
 using WpfMessageBox = System.Windows.MessageBox;
-using WpfOrientation = System.Windows.Controls.Orientation;
-using WpfTextBox = System.Windows.Controls.TextBox;
 
 namespace VintageStoryModManager.Views;
 
@@ -40,6 +38,7 @@ public partial class MainWindow : Window
     private const double HoverOverlayOpacity = 0.12;
     private const double SelectionOverlayOpacity = 0.22;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/enhancedhandbook";
+    private const string PresetDirectoryName = "Presets";
 
     private static readonly DependencyProperty BoundModProperty =
         DependencyProperty.RegisterAttached(
@@ -54,14 +53,11 @@ public partial class MainWindow : Window
             typeof(MainWindow));
 
     private readonly UserConfigurationService _userConfiguration;
-    private readonly ObservableCollection<ModPreset> _presets = new();
     private MainViewModel? _viewModel;
     private string? _dataDirectory;
     private string? _gameDirectory;
     private bool _isInitializing;
     private bool _isApplyingPreset;
-    private bool _isHoveringSavePresetButton;
-    private string? _pendingPresetReselection;
 
     private DispatcherTimer? _modsWatcherTimer;
     private bool _isAutomaticRefreshRunning;
@@ -81,11 +77,6 @@ public partial class MainWindow : Window
 
         _userConfiguration = new UserConfigurationService();
         AdvancedPresetsMenuItem.IsChecked = _userConfiguration.IsAdvancedPresetMode;
-        PresetComboBox.ItemsSource = _presets;
-        PresetComboBox.AddHandler(ComboBoxItem.PreviewMouseDownEvent,
-            new MouseButtonEventHandler(PresetComboBox_OnItemPreviewMouseDown));
-        PresetComboBox.DropDownClosed += PresetComboBox_OnDropDownClosed;
-        RefreshPresetList();
 
         if (!TryInitializePaths())
         {
@@ -118,44 +109,6 @@ public partial class MainWindow : Window
         {
             await InitializeViewModelAsync(_viewModel);
         }
-    }
-
-    private void RefreshPresetList(string? presetToSelect = null)
-    {
-        string? desired = presetToSelect
-            ?? (PresetComboBox.SelectedItem as ModPreset)?.Name
-            ?? _userConfiguration.GetLastSelectedPresetName();
-
-        AdvancedPresetsMenuItem.IsChecked = _userConfiguration.IsAdvancedPresetMode;
-        _presets.Clear();
-        foreach (var preset in _userConfiguration.GetPresets())
-        {
-            _presets.Add(preset);
-        }
-
-        if (string.IsNullOrWhiteSpace(desired))
-        {
-            if (PresetComboBox.SelectedItem != null)
-            {
-                PresetComboBox.SelectedItem = null;
-            }
-
-            UpdateSavePresetButtonContent();
-            return;
-        }
-
-        var match = _presets.FirstOrDefault(preset =>
-            string.Equals(preset.Name, desired, StringComparison.OrdinalIgnoreCase));
-        if (match != null)
-        {
-            PresetComboBox.SelectedItem = match;
-        }
-        else if (PresetComboBox.SelectedItem != null)
-        {
-            PresetComboBox.SelectedItem = null;
-        }
-
-        UpdateSavePresetButtonContent();
     }
 
     private void AdvancedPresetsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -191,9 +144,6 @@ public partial class MainWindow : Window
 
         _userConfiguration.SetAdvancedPresetMode(requestedState);
         menuItem.IsChecked = requestedState;
-        PresetComboBox.SelectedItem = null;
-        RefreshPresetList();
-        UpdateSavePresetButtonContent();
 
         if (_viewModel != null)
         {
@@ -1854,75 +1804,289 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void PresetComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void SavePresetMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        UpdateSavePresetButtonContent();
-
-        if (PresetComboBox.SelectedItem is not ModPreset preset)
+        if (_viewModel is null)
         {
-            _pendingPresetReselection = null;
             return;
         }
 
-        _pendingPresetReselection = null;
-        _userConfiguration.SetLastSelectedPresetName(preset.Name);
+        string presetDirectory = EnsurePresetDirectory();
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save Mod Preset",
+            Filter = "Preset files (*.json)|*.json|All files (*.*)|*.*",
+            DefaultExt = ".json",
+            AddExtension = true,
+            OverwritePrompt = true,
+            InitialDirectory = presetDirectory
+        };
 
-        await ApplyPresetAsync(preset);
+        dialog.FileOk += (_, args) =>
+        {
+            if (IsPathWithinDirectory(presetDirectory, dialog.FileName))
+            {
+                return;
+            }
+
+            WpfMessageBox.Show("Presets must be saved inside the Presets folder.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            args.Cancel = true;
+        };
+
+        string? suggestedName = _userConfiguration.GetLastSelectedPresetName();
+        if (!string.IsNullOrWhiteSpace(suggestedName))
+        {
+            dialog.FileName = BuildSuggestedPresetFileName(suggestedName);
+        }
+
+        bool? result = dialog.ShowDialog(this);
+        if (result != true)
+        {
+            return;
+        }
+
+        string filePath = dialog.FileName;
+        string presetName = BuildSuggestedPresetFileName(Path.GetFileNameWithoutExtension(filePath));
+        if (!string.Equals(presetName, Path.GetFileNameWithoutExtension(filePath), StringComparison.Ordinal))
+        {
+            filePath = Path.Combine(presetDirectory, presetName + ".json");
+        }
+
+        IReadOnlyList<string> disabledEntries = _viewModel.GetCurrentDisabledEntries();
+        IReadOnlyList<ModPresetModState> states = _userConfiguration.IsAdvancedPresetMode
+            ? _viewModel.GetCurrentModStates()
+            : Array.Empty<ModPresetModState>();
+
+        var serializable = new SerializablePreset
+        {
+            Name = presetName,
+            DisabledEntries = disabledEntries.ToList(),
+            Mods = _userConfiguration.IsAdvancedPresetMode
+                ? states.Select(state => new SerializablePresetModState
+                {
+                    ModId = state.ModId,
+                    Version = state.Version,
+                    IsActive = state.IsActive
+                }).ToList()
+                : new List<SerializablePresetModState>()
+        };
+
+        try
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            string json = JsonSerializer.Serialize(serializable, options);
+            File.WriteAllText(filePath, json);
+
+            _userConfiguration.SetLastSelectedPresetName(presetName);
+            _viewModel.ReportStatus($"Saved preset \"{presetName}\".");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            WpfMessageBox.Show($"Failed to save the preset:\n{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
-    private async void PresetComboBox_OnDropDownClosed(object? sender, EventArgs e)
+    private async void LoadPresetMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        if (_pendingPresetReselection is null)
+        if (_viewModel is null)
         {
             return;
         }
 
-        if (PresetComboBox.SelectedItem is not ModPreset preset)
+        string presetDirectory = EnsurePresetDirectory();
+        var dialog = new OpenFileDialog
         {
-            _pendingPresetReselection = null;
+            Title = "Load Mod Preset",
+            Filter = "Preset files (*.json)|*.json|All files (*.*)|*.*",
+            DefaultExt = ".json",
+            InitialDirectory = presetDirectory,
+            Multiselect = false
+        };
+
+        dialog.FileOk += (_, args) =>
+        {
+            if (IsPathWithinDirectory(presetDirectory, dialog.FileName))
+            {
+                return;
+            }
+
+            WpfMessageBox.Show("Please select a preset from the Presets folder.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            args.Cancel = true;
+        };
+
+        bool? result = dialog.ShowDialog(this);
+        if (result != true)
+        {
             return;
         }
 
-        if (!string.Equals(preset.Name, _pendingPresetReselection, StringComparison.OrdinalIgnoreCase))
+        if (!TryLoadPresetFromFile(dialog.FileName, out ModPreset? preset, out string? errorMessage))
         {
-            _pendingPresetReselection = null;
+            string message = string.IsNullOrWhiteSpace(errorMessage)
+                ? "The selected file is not a valid preset."
+                : errorMessage!;
+            WpfMessageBox.Show($"Failed to load the preset:\n{message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
             return;
         }
 
-        _pendingPresetReselection = null;
-
+        _userConfiguration.SetLastSelectedPresetName(preset!.Name);
         await ApplyPresetAsync(preset);
+        _viewModel.ReportStatus($"Loaded preset \"{preset.Name}\".");
     }
 
-    private void PresetComboBox_OnItemPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    private bool TryLoadPresetFromFile(string filePath, out ModPreset? preset, out string? errorMessage)
     {
-        if (sender is not System.Windows.Controls.ComboBox comboBox)
+        preset = null;
+        errorMessage = null;
+
+        try
         {
-            return;
+            if (!File.Exists(filePath))
+            {
+                errorMessage = "The selected preset could not be found.";
+                return false;
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            using FileStream stream = File.OpenRead(filePath);
+            SerializablePreset? data = JsonSerializer.Deserialize<SerializablePreset>(stream, options);
+            if (data is null)
+            {
+                errorMessage = "The preset file was empty.";
+                return false;
+            }
+
+            string name = !string.IsNullOrWhiteSpace(data.Name)
+                ? data.Name!.Trim()
+                : GetPresetNameFromFilePath(filePath);
+
+            var disabledEntries = new List<string>();
+            var seenDisabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (data.DisabledEntries != null)
+            {
+                foreach (string entry in data.DisabledEntries)
+                {
+                    if (string.IsNullOrWhiteSpace(entry))
+                    {
+                        continue;
+                    }
+
+                    string trimmed = entry.Trim();
+                    if (seenDisabled.Add(trimmed))
+                    {
+                        disabledEntries.Add(trimmed);
+                    }
+                }
+            }
+
+            var modStates = new List<ModPresetModState>();
+            if (data.Mods != null)
+            {
+                foreach (var mod in data.Mods)
+                {
+                    if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
+                    {
+                        continue;
+                    }
+
+                    string modId = mod.ModId.Trim();
+                    string? version = string.IsNullOrWhiteSpace(mod.Version)
+                        ? null
+                        : mod.Version!.Trim();
+                    modStates.Add(new ModPresetModState(modId, version, mod.IsActive));
+                }
+            }
+
+            preset = new ModPreset(name, disabledEntries, modStates);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            errorMessage = ex.Message;
+            return false;
+        }
+    }
+
+    private string EnsurePresetDirectory()
+    {
+        string baseDirectory = _userConfiguration.GetConfigurationDirectory();
+        string presetDirectory = Path.Combine(baseDirectory, PresetDirectoryName);
+        Directory.CreateDirectory(presetDirectory);
+        return presetDirectory;
+    }
+
+    private static bool IsPathWithinDirectory(string directory, string candidatePath)
+    {
+        try
+        {
+            string normalizedDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory))
+                + Path.DirectorySeparatorChar;
+            string normalizedPath = Path.GetFullPath(candidatePath);
+            return normalizedPath.StartsWith(normalizedDirectory, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private static string BuildSuggestedPresetFileName(string? presetName)
+    {
+        if (string.IsNullOrWhiteSpace(presetName))
+        {
+            return "Preset";
         }
 
-        if (comboBox.SelectedItem is not ModPreset selected)
+        var invalid = Path.GetInvalidFileNameChars();
+        var builder = new StringBuilder(presetName.Length);
+        foreach (char ch in presetName)
         {
-            _pendingPresetReselection = null;
-            return;
+            builder.Append(Array.IndexOf(invalid, ch) >= 0 ? '_' : ch);
         }
 
-        if (e.OriginalSource is not DependencyObject source)
-        {
-            _pendingPresetReselection = null;
-            return;
-        }
+        string sanitized = builder.ToString().Trim();
+        return string.IsNullOrWhiteSpace(sanitized) ? "Preset" : sanitized;
+    }
 
-        var container = ItemsControl.ContainerFromElement(comboBox, source) as ComboBoxItem;
-        if (container?.DataContext is ModPreset preset &&
-            string.Equals(preset.Name, selected.Name, StringComparison.OrdinalIgnoreCase))
-        {
-            _pendingPresetReselection = preset.Name;
-        }
-        else
-        {
-            _pendingPresetReselection = null;
-        }
+    private static string GetPresetNameFromFilePath(string filePath)
+    {
+        string name = Path.GetFileNameWithoutExtension(filePath);
+        return string.IsNullOrWhiteSpace(name) ? "Preset" : name.Trim();
+    }
+
+    private sealed class SerializablePreset
+    {
+        public string? Name { get; set; }
+        public List<string>? DisabledEntries { get; set; }
+        public List<SerializablePresetModState>? Mods { get; set; }
+    }
+
+    private sealed class SerializablePresetModState
+    {
+        public string? ModId { get; set; }
+        public string? Version { get; set; }
+        public bool IsActive { get; set; }
     }
 
     private async Task ApplyPresetAsync(ModPreset preset)
@@ -1950,7 +2114,6 @@ public partial class MainWindow : Window
         finally
         {
             _isApplyingPreset = false;
-            UpdateSavePresetButtonContent();
         }
     }
 
@@ -2135,104 +2298,6 @@ public partial class MainWindow : Window
         double clampedOffset = Math.Max(0, Math.Min(targetOffset, scrollViewer.ScrollableHeight));
         scrollViewer.ScrollToVerticalOffset(clampedOffset);
         e.Handled = true;
-    }
-
-    private void SavePresetButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (_viewModel is null)
-        {
-            return;
-        }
-
-        if (IsDeletePresetMode())
-        {
-            if (PresetComboBox.SelectedItem is not ModPreset preset)
-            {
-                return;
-            }
-
-            if (_userConfiguration.RemovePreset(preset.Name))
-            {
-                RefreshPresetList();
-                _viewModel.ReportStatus($"Deleted preset \"{preset.Name}\".");
-            }
-
-            return;
-        }
-
-        string? defaultName = (PresetComboBox.SelectedItem as ModPreset)?.Name;
-        string? presetName = PromptForPresetName(defaultName);
-        if (presetName is null)
-        {
-            return;
-        }
-
-        if (_userConfiguration.ContainsPreset(presetName))
-        {
-            MessageBoxResult overwrite = WpfMessageBox.Show(
-                $"A preset named \"{presetName}\" already exists. Replace it?",
-                "Vintage Story Mod Manager",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (overwrite != MessageBoxResult.Yes)
-            {
-                return;
-            }
-        }
-
-        IReadOnlyList<string> disabledEntries = _viewModel.GetCurrentDisabledEntries();
-        IReadOnlyList<ModPresetModState>? states = _userConfiguration.IsAdvancedPresetMode
-            ? _viewModel.GetCurrentModStates()
-            : null;
-        _userConfiguration.SetPreset(presetName, disabledEntries, states);
-        RefreshPresetList(presetName);
-        _viewModel.ReportStatus($"Saved preset \"{presetName}\".");
-    }
-
-    private void SavePresetButton_OnMouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        _isHoveringSavePresetButton = true;
-        UpdateSavePresetButtonContent();
-    }
-
-    private void SavePresetButton_OnMouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        _isHoveringSavePresetButton = false;
-        UpdateSavePresetButtonContent();
-    }
-
-    private void Window_OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-    {
-        if (e.Key is Key.LeftCtrl or Key.RightCtrl)
-        {
-            UpdateSavePresetButtonContent();
-        }
-    }
-
-    private void Window_OnPreviewKeyUp(object sender, System.Windows.Input.KeyEventArgs e)
-    {
-        if (e.Key is Key.LeftCtrl or Key.RightCtrl)
-        {
-            UpdateSavePresetButtonContent();
-        }
-    }
-
-    private bool IsDeletePresetMode()
-    {
-        return _isHoveringSavePresetButton
-               && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)
-               && PresetComboBox.SelectedItem is ModPreset;
-    }
-
-    private void UpdateSavePresetButtonContent()
-    {
-        if (SavePresetButton == null)
-        {
-            return;
-        }
-
-        SavePresetButton.Content = IsDeletePresetMode() ? "Delete Preset" : "Save Preset";
     }
 
     private void AttachToModsView(ICollectionView modsView)
@@ -2999,98 +3064,6 @@ public partial class MainWindow : Window
         {
             _isApplyingMultiToggle = false;
         }
-    }
-
-    private string? PromptForPresetName(string? defaultName)
-    {
-        var dialog = new Window
-        {
-            Title = "Save Mod Preset",
-            Owner = this,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            SizeToContent = SizeToContent.WidthAndHeight,
-            ResizeMode = ResizeMode.NoResize,
-            WindowStyle = WindowStyle.ToolWindow,
-            ShowInTaskbar = false
-        };
-
-        var layout = new StackPanel
-        {
-            Margin = new Thickness(16),
-            MinWidth = 320
-        };
-
-        var textBlock = new TextBlock
-        {
-            Text = "Enter a name for the preset:",
-            Margin = new Thickness(0, 0, 0, 8)
-        };
-
-        var textBox = new WpfTextBox
-        {
-            Text = defaultName ?? string.Empty,
-            Margin = new Thickness(0, 0, 0, 16)
-        };
-
-        var buttonsPanel = new StackPanel
-        {
-            Orientation = WpfOrientation.Horizontal,
-            HorizontalAlignment = WpfHorizontalAlignment.Right
-        };
-
-        var saveButton = new WpfButton
-        {
-            Content = "Save",
-            Width = 88,
-            Margin = new Thickness(0, 0, 8, 0),
-            IsDefault = true
-        };
-
-        var cancelButton = new WpfButton
-        {
-            Content = "Cancel",
-            Width = 88,
-            IsCancel = true
-        };
-
-        buttonsPanel.Children.Add(saveButton);
-        buttonsPanel.Children.Add(cancelButton);
-
-        layout.Children.Add(textBlock);
-        layout.Children.Add(textBox);
-        layout.Children.Add(buttonsPanel);
-
-        dialog.Content = layout;
-
-        saveButton.IsEnabled = !string.IsNullOrWhiteSpace(textBox.Text);
-        textBox.TextChanged += (_, _) => saveButton.IsEnabled = !string.IsNullOrWhiteSpace(textBox.Text);
-
-        dialog.Loaded += (_, _) =>
-        {
-            textBox.Focus();
-            textBox.SelectAll();
-        };
-
-        saveButton.Click += (_, _) =>
-        {
-            dialog.DialogResult = true;
-            dialog.Close();
-        };
-
-        cancelButton.Click += (_, _) =>
-        {
-            dialog.DialogResult = false;
-            dialog.Close();
-        };
-
-        bool? result = dialog.ShowDialog();
-        if (result == true)
-        {
-            string trimmed = textBox.Text.Trim();
-            return trimmed.Length == 0 ? null : trimmed;
-        }
-
-        return null;
     }
 
     protected override void OnClosed(EventArgs e)
