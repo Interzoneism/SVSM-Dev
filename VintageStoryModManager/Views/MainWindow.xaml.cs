@@ -297,6 +297,16 @@ public partial class MainWindow : Window
             StatusColumn.Visibility = visibility;
         }
 
+        if (VersionColumn != null)
+        {
+            VersionColumn.Visibility = visibility;
+        }
+
+        if (DownloadsColumn != null)
+        {
+            DownloadsColumn.Visibility = isSearchingModDatabase ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         ApplyCompactViewState(_viewModel?.IsCompactView ?? false);
         UpdateSearchSortingBehavior(isSearchingModDatabase);
     }
