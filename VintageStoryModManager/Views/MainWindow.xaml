@@ -119,6 +119,7 @@
                 <TextBox Width="225"
                          MinWidth="200"
                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         ui:TextBoxHelper.PlaceholderText="Search your mods"
                          ui:ControlHelper.CornerRadius="6"
                          HorizontalAlignment="Stretch" />
                 <CheckBox Content="Search Mod DB"
