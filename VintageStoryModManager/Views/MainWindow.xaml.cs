@@ -252,6 +252,11 @@ public partial class MainWindow : Window
             VersionColumn.Visibility = visibility;
         }
 
+        if (InstalledColumn != null)
+        {
+            InstalledColumn.Visibility = isSearchingModDatabase ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         if (DownloadsColumn != null)
         {
             DownloadsColumn.Visibility = isSearchingModDatabase ? Visibility.Visible : Visibility.Collapsed;

@@ -56,7 +56,8 @@ public sealed class ModListItemViewModel : ObservableObject
         bool isActive,
         string location,
         Func<ModListItemViewModel, bool, Task<ActivationResult>> activationHandler,
-        string? installedGameVersion = null)
+        string? installedGameVersion = null,
+        bool isInstalled = false)
     {
         ArgumentNullException.ThrowIfNull(entry);
         _activationHandler = activationHandler ?? throw new ArgumentNullException(nameof(activationHandler));
@@ -85,6 +86,8 @@ public sealed class ModListItemViewModel : ObservableObject
             ?? _latestCompatibleRelease?.Version
             ?? databaseInfo?.LatestCompatibleVersion;
         _loadError = entry.LoadError;
+
+        IsInstalled = isInstalled;
 
         WebsiteUri = TryCreateHttpUri(Website);
         WebsiteFavicon = CreateFaviconImage(WebsiteUri);
@@ -182,6 +185,8 @@ public sealed class ModListItemViewModel : ObservableObject
     public string? LatestDatabaseVersion { get; }
 
     public string LatestDatabaseVersionDisplay => string.IsNullOrWhiteSpace(LatestDatabaseVersion) ? "—" : LatestDatabaseVersion!;
+
+    public bool IsInstalled { get; }
 
     public bool CanUpdate => _hasUpdate;
 
