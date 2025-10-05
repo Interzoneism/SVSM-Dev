@@ -146,6 +146,7 @@ public sealed class ModDatabaseService
             var tags = GetStringList(modElement, "tags");
             string? assetId = TryGetAssetId(modElement);
             string? modPageUrl = assetId == null ? null : ModPageBaseUrl + assetId;
+            int? downloads = GetNullableInt(modElement, "downloads");
             IReadOnlyList<ModReleaseInfo> releases = BuildReleaseInfos(modElement, normalizedGameVersion);
             ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
             ModReleaseInfo? latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
@@ -161,6 +162,7 @@ public sealed class ModDatabaseService
                 LatestCompatibleVersion = latestCompatibleVersion,
                 LatestVersion = latestVersion,
                 RequiredGameVersions = requiredVersions,
+                Downloads = downloads,
                 LatestRelease = latestRelease,
                 LatestCompatibleRelease = latestCompatibleRelease,
                 Releases = releases
@@ -447,20 +449,49 @@ public sealed class ModDatabaseService
         return value.Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
-    private static int GetInt(JsonElement element, string propertyName)
+    private static int? GetNullableInt(JsonElement element, string propertyName)
     {
         if (!element.TryGetProperty(propertyName, out JsonElement value))
         {
-            return 0;
+            return null;
         }
 
-        return value.ValueKind switch
+        switch (value.ValueKind)
         {
-            JsonValueKind.Number when value.TryGetInt32(out int intValue) => intValue,
-            JsonValueKind.Number when value.TryGetInt64(out long longValue) => (int)Math.Clamp(longValue, int.MinValue, int.MaxValue),
-            JsonValueKind.String when int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed) => parsed,
-            _ => 0
-        };
+            case JsonValueKind.Number when value.TryGetInt64(out long longValue):
+                return (int)Math.Clamp(longValue, int.MinValue, int.MaxValue);
+            case JsonValueKind.Number when value.TryGetDouble(out double doubleValue):
+                if (double.IsNaN(doubleValue) || double.IsInfinity(doubleValue))
+                {
+                    return null;
+                }
+
+                double truncated = Math.Truncate(doubleValue);
+                if (truncated < int.MinValue)
+                {
+                    return int.MinValue;
+                }
+
+                if (truncated > int.MaxValue)
+                {
+                    return int.MaxValue;
+                }
+
+                return (int)truncated;
+            case JsonValueKind.String when long.TryParse(
+                    value.GetString(),
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out long parsed):
+                return (int)Math.Clamp(parsed, int.MinValue, int.MaxValue);
+            default:
+                return null;
+        }
+    }
+
+    private static int GetInt(JsonElement element, string propertyName)
+    {
+        return GetNullableInt(element, propertyName) ?? 0;
     }
 
     private static DateTime? TryParseDateTime(string? value)
