@@ -31,26 +31,22 @@
     <Grid Background="{StaticResource IMM.SurfaceAltBrush}">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" MinHeight="55" />
+            <RowDefinition Height="50" MinHeight="10" />
             <RowDefinition />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="40" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="0,6,0,9">
+        <Grid Grid.Row="0" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+
 
             <Menu Grid.Column="0"
-                  Grid.RowSpan="2"
                   IsMainMenu="True"
                   Background="{StaticResource IMM.SurfaceBrush}"
-                  BorderThickness="0" Margin="0,-1,0,39">
+                  BorderThickness="0" Margin="0,0,0,5">
                 <MenuItem Header="_File" Height="30">
                     <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" />
@@ -111,21 +107,28 @@
                     </Style>
                 </TextBlock.Style>
             </TextBlock>
+            <Grid Grid.Column="1"
+                Margin="247,0,19,0"
+                VerticalAlignment="Center" Height="50">
+                <CheckBox Content="Search Mod DB" VerticalContentAlignment="Bottom"  IsChecked="{Binding SearchModDatabase, Mode=TwoWay}"  FontSize="15" Height="27" Checked="CheckBox_Checked" Width="137" RenderTransformOrigin="0.5,0.5" Padding="8,0,0,0" VerticalAlignment="Bottom" Margin="0,0,227,11" HorizontalAlignment="Right" >
+                    <CheckBox.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform ScaleX="0.7" ScaleY="0.7"/>
+                            <SkewTransform/>
+                            <RotateTransform/>
+                            <TranslateTransform/>
+                        </TransformGroup>
+                    </CheckBox.RenderTransform>
+                </CheckBox>
 
-            <StackPanel Grid.Column="1"
-                        Grid.Row="1"
-                        Margin="532,0,0,0"
-                        Orientation="Vertical"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center">
-                <CheckBox Content="Search Mod DB" IsChecked="{Binding SearchModDatabase, Mode=TwoWay}" HorizontalAlignment="Right"  FontSize="12" Height="16" />
                 <TextBox Width="225"
-                         MinWidth="200"
-                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         ui:ControlHelper.CornerRadius="2"
+                    MinWidth="200"
+                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                    ui:ControlHelper.CornerRadius="2" HorizontalAlignment="Right"
+                         Margin="0,0,17,14" VerticalAlignment="Bottom"
                          />
 
-            </StackPanel>
+            </Grid>
         </Grid>
 
         <DataGrid x:Name="ModsDataGrid"
