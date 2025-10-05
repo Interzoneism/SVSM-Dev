@@ -13,8 +13,6 @@
         Title="Vintage Story Mod Manager"
         Height="654" Width="1002"
         MinWidth="900" MinHeight="520"
-        PreviewKeyDown="Window_OnPreviewKeyDown"
-        PreviewKeyUp="Window_OnPreviewKeyUp"
         Background="{StaticResource IMM.SurfaceBrush}">
 
     <Window.Resources>
@@ -69,6 +67,10 @@
                               Height="30"
                               IsCheckable="True"
                               Click="AdvancedPresetsMenuItem_OnClick" />
+                </MenuItem>
+                <MenuItem Header="_Presets" Height="30">
+                    <MenuItem Header="_Save Preset..." Height="30" Click="SavePresetMenuItem_OnClick" />
+                    <MenuItem Header="_Load Preset..." Height="30" Click="LoadPresetMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_View" Height="30">
                     <MenuItem Header="_Compact View"
@@ -572,58 +574,6 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center">
-                    <Button x:Name="SavePresetButton"
-                            Content="Save Preset"
-                            Margin="0,0,12,0"
-                            Width="115"
-                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                            BorderBrush="{DynamicResource IMM.BorderBrush}"
-                            Click="SavePresetButton_OnClick"
-                            MouseEnter="SavePresetButton_OnMouseEnter"
-                            MouseLeave="SavePresetButton_OnMouseLeave"
-                            Height="30" />
-                    <ComboBox x:Name="PresetComboBox"
-                              Width="174"
-                              Height="32"
-                              Padding="12,6"
-                              MaxDropDownHeight="320"
-                              SelectionChanged="PresetComboBox_OnSelectionChanged"
-                              DropDownClosed="PresetComboBox_OnDropDownClosed"
-                              VerticalAlignment="Center"
-                              ui:ControlHelper.CornerRadius="6">
-                        <ComboBox.Style>
-                            <Style TargetType="ComboBox">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Setter Property="IsEnabled" Value="False" />
-                                <Setter Property="Background" Value="{DynamicResource IMM.ButtonBackgroundBrush}" />
-                                <Setter Property="BorderBrush" Value="{DynamicResource IMM.BorderBrush}" />
-                                <Setter Property="BorderThickness" Value="1" />
-                                <Style.Triggers>
-                                    <Trigger Property="HasItems" Value="True">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                        <Setter Property="IsEnabled" Value="True" />
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ComboBox.Style>
-                        <ComboBox.ItemContainerStyle>
-                            <Style TargetType="ComboBoxItem">
-                                <Setter Property="MinHeight" Value="32" />
-                                <Setter Property="Padding" Value="12,6" />
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                            </Style>
-                        </ComboBox.ItemContainerStyle>
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Name}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </StackPanel>
 
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
