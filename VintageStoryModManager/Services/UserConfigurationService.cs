@@ -42,6 +42,14 @@ public sealed class UserConfigurationService
 
     public bool IsCompactView => _isCompactView;
 
+    public string GetConfigurationDirectory()
+    {
+        string directory = Path.GetDirectoryName(_configurationPath)
+            ?? AppContext.BaseDirectory;
+        Directory.CreateDirectory(directory);
+        return directory;
+    }
+
     public string? GetLastSelectedPresetName()
     {
         return _isAdvancedPresetMode ? _selectedAdvancedPresetName : _selectedPresetName;
