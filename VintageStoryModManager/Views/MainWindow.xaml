@@ -380,7 +380,7 @@
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                             <Setter Property="HorizontalContentAlignment" Value="Center" />
                             <Setter Property="VerticalContentAlignment" Value="Center" />
-                            
+                            <Setter Property="Padding" Value="0" />
                         </Style>
                     </DataGridTemplateColumn.CellStyle>
                     <DataGridTemplateColumn.CellTemplate>
