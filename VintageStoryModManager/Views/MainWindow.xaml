@@ -797,11 +797,7 @@
                                         Click="DeleteModButton_OnClick"
                                         ToolTip="{Binding DisplayName, StringFormat=Delete \{0\}}">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Image Source="/deleteicon.png"
-                                               Width="20"
-                                               Height="20"
-                                               Stretch="Uniform"
-                                               Margin="0,0,6,0" />
+                                        
                                         <TextBlock Text="Delete" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
