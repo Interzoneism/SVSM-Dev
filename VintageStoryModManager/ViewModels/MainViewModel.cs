@@ -694,7 +694,8 @@ public sealed class MainViewModel : ObservableObject
             {
                 Tags = result.Tags,
                 AssetId = result.AssetId,
-                ModPageUrl = pageUrl
+                ModPageUrl = pageUrl,
+                Downloads = result.Downloads
             }
         };
     }

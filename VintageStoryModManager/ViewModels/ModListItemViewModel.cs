@@ -34,6 +34,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly ModReleaseInfo? _latestRelease;
     private readonly ModReleaseInfo? _latestCompatibleRelease;
     private readonly IReadOnlyList<ModReleaseInfo> _releases;
+    private readonly int? _databaseDownloads;
     private readonly string _searchIndex;
     private IReadOnlyList<ModVersionOptionViewModel> _versionOptions = Array.Empty<ModVersionOptionViewModel>();
 
@@ -78,6 +79,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _releases = databaseInfo?.Releases ?? Array.Empty<ModReleaseInfo>();
         ModDatabaseAssetId = databaseInfo?.AssetId;
         ModDatabasePageUrl = databaseInfo?.ModPageUrl;
+        _databaseDownloads = databaseInfo?.Downloads;
         LatestDatabaseVersion = _latestRelease?.Version
             ?? databaseInfo?.LatestVersion
             ?? _latestCompatibleRelease?.Version
@@ -172,6 +174,10 @@ public sealed class ModListItemViewModel : ObservableObject
     public bool HasModDatabasePageLink => ModDatabasePageUri != null;
 
     public string ModDatabasePageUrlDisplay => string.IsNullOrWhiteSpace(ModDatabasePageUrl) ? "—" : ModDatabasePageUrl!;
+
+    public string DownloadsDisplay => _databaseDownloads.HasValue
+        ? _databaseDownloads.Value.ToString("N0", CultureInfo.CurrentCulture)
+        : "—";
 
     public string? LatestDatabaseVersion { get; }
 

@@ -397,7 +397,12 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay, Mode=OneWay}" Width="65" IsReadOnly="True" MinWidth="64">
+                <DataGridTextColumn Header="Version"
+                                     Binding="{Binding VersionDisplay, Mode=OneWay}"
+                                     Width="65"
+                                     IsReadOnly="True"
+                                     MinWidth="64"
+                                     Visibility="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource IMM.VisibleWhenFalseConverter}}">
                     <DataGridTextColumn.CellStyle>
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                             <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -423,6 +428,25 @@
                                     <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
                                 </DataTrigger>
                             </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Downloads"
+                                     Binding="{Binding DownloadsDisplay, Mode=OneWay}"
+                                     Width="90"
+                                     MinWidth="80"
+                                     IsReadOnly="True"
+                                     Visibility="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
