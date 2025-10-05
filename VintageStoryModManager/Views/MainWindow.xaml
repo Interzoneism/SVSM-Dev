@@ -78,10 +78,10 @@
                 </MenuItem>
                 <MenuItem Header="_Help" Height="30">
                     <MenuItem Header="Manager _Data Folder"
-                              Height="30"
+                              Padding="12,6"
                               Click="ManagerDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Manager _Mod DB Page"
-                              Height="30"
+                              Padding="12,6"
                               Click="ManagerModDbPageMenuItem_OnClick" />
                 </MenuItem>
             </Menu>
@@ -524,11 +524,28 @@
                             Height="30" />
                     <ComboBox x:Name="PresetComboBox"
                               Width="174"
-                              DisplayMemberPath="Name"
+                              Height="32"
+                              Padding="12,6"
+                              MaxDropDownHeight="320"
                               SelectionChanged="PresetComboBox_OnSelectionChanged"
                               DropDownClosed="PresetComboBox_OnDropDownClosed"
-                              Height="32"
-                              MaxDropDownHeight="320">
+                              VerticalAlignment="Center"
+                              ui:ControlHelper.CornerRadius="6">
+                        <ComboBox.Style>
+                            <Style TargetType="ComboBox">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Setter Property="IsEnabled" Value="False" />
+                                <Setter Property="Background" Value="{DynamicResource IMM.ButtonBackgroundBrush}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource IMM.BorderBrush}" />
+                                <Setter Property="BorderThickness" Value="1" />
+                                <Style.Triggers>
+                                    <Trigger Property="HasItems" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                        <Setter Property="IsEnabled" Value="True" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ComboBox.Style>
                         <ComboBox.ItemContainerStyle>
                             <Style TargetType="ComboBoxItem">
                                 <Setter Property="MinHeight" Value="32" />
@@ -536,6 +553,11 @@
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             </Style>
                         </ComboBox.ItemContainerStyle>
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
                     </ComboBox>
                 </StackPanel>
 
@@ -687,16 +709,9 @@
                                         Visibility="Collapsed"
                                         IsEnabled="False"
                                         Click="ModDatabasePageButton_OnClick"
-                                        ToolTip="{Binding ModDatabasePageUrlDisplay}">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Image Source="/webicon.png"
-                                               Width="20"
-                                               Height="20"
-                                               Stretch="Uniform"
-                                               Margin="0,0,6,0" />
-                                        <TextBlock Text="Mod Page" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </Button>
+                                        ToolTip="{Binding ModDatabasePageUrlDisplay}"
+                                        VerticalContentAlignment="Center"
+                                        Content="Mod Page" />
                                 <Button x:Name="SelectedModEditConfigButton"
                                         Margin="0,0,8,0"
                                         Padding="12,6"
@@ -705,16 +720,9 @@
                                         Visibility="Collapsed"
                                         IsEnabled="False"
                                         Click="EditConfigButton_OnClick"
-                                        ToolTip="{Binding DisplayName, StringFormat=Edit Config for \{0\}}">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Image Source="/configicon.png"
-                                               Width="20"
-                                               Height="20"
-                                               Stretch="Uniform"
-                                               Margin="0,0,6,0" />
-                                        <TextBlock Text="Edit Config" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </Button>
+                                        ToolTip="{Binding DisplayName, StringFormat=Edit Config for \{0\}}"
+                                        VerticalContentAlignment="Center"
+                                        Content="Edit Config" />
                                 <Button x:Name="SelectedModDeleteButton"
                                         Padding="12,6"
                                         Background="{DynamicResource IMM.ButtonBackgroundBrush}"
