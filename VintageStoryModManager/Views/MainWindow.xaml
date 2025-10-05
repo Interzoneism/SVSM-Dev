@@ -376,18 +376,18 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn x:Name="IconColumn" Header="Icon" Width="64" IsReadOnly="True">
+                <DataGridTemplateColumn x:Name="IconColumn" Header="Icon" Width="76" IsReadOnly="True">
                     <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
                             <Setter Property="VerticalContentAlignment" Value="Center" />
-                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Padding" Value="0,0,12,0" />
                         </Style>
                     </DataGridTemplateColumn.CellStyle>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Border Width="64" Height="64"
-                                    HorizontalAlignment="Center"
+                                    HorizontalAlignment="Left"
                                     VerticalAlignment="Center"
                                     ToolTipService.ShowDuration="60000"
                                     ToolTipService.InitialShowDelay="200">
