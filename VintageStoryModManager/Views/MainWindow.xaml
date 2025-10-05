@@ -150,6 +150,16 @@
                   HeadersVisibility="Column"
                   ui:ControlHelper.CornerRadius="10"
                   CellStyle="{StaticResource IMM.DataGridCellBaseStyle}">
+            <DataGrid.Style>
+                <Style TargetType="DataGrid">
+                    <Setter Property="CanUserSortColumns" Value="True" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                            <Setter Property="CanUserSortColumns" Value="False" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.Style>
             <DataGrid.Effect>
                 <DropShadowEffect BlurRadius="18"
                                    Direction="270"

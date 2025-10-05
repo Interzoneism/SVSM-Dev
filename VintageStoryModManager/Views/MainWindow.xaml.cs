@@ -298,6 +298,33 @@ public partial class MainWindow : Window
         }
 
         ApplyCompactViewState(_viewModel?.IsCompactView ?? false);
+        UpdateSearchSortingBehavior(isSearchingModDatabase);
+    }
+
+    private void UpdateSearchSortingBehavior(bool isSearchingModDatabase)
+    {
+        if (ModsDataGrid == null)
+        {
+            return;
+        }
+
+        ModsDataGrid.CanUserSortColumns = !isSearchingModDatabase;
+
+        if (!isSearchingModDatabase)
+        {
+            return;
+        }
+
+        ICollectionView? view = _viewModel?.SearchResultsView;
+        if (view != null && view.SortDescriptions.Count > 0)
+        {
+            view.SortDescriptions.Clear();
+        }
+
+        if (ModsDataGrid.Items.SortDescriptions.Count > 0)
+        {
+            ModsDataGrid.Items.SortDescriptions.Clear();
+        }
     }
 
     private async Task InitializeViewModelAsync(MainViewModel viewModel)
