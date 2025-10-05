@@ -416,7 +416,7 @@ public sealed class MainViewModel : ObservableObject
     {
         bool isActive = !_settingsStore.IsDisabled(entry.ModId, entry.Version);
         string location = GetDisplayPath(entry.SourcePath);
-        return new ModListItemViewModel(entry, isActive, location, ApplyActivationChangeAsync, _installedGameVersion);
+        return new ModListItemViewModel(entry, isActive, location, ApplyActivationChangeAsync, _installedGameVersion, true);
     }
 
     private async Task UpdateModsStateSnapshotAsync()
@@ -525,23 +525,23 @@ public sealed class MainViewModel : ObservableObject
 
             HashSet<string> installedModIds = await GetInstalledModIdsAsync(cancellationToken).ConfigureAwait(false);
 
-            var filteredResults = results
-                .Where(result => !IsResultInstalled(result, installedModIds))
+            var entries = results
+                .Select(result => new
+                {
+                    Entry = CreateSearchResultEntry(result),
+                    IsInstalled = IsResultInstalled(result, installedModIds)
+                })
                 .ToList();
 
-            if (filteredResults.Count == 0)
+            if (entries.Count == 0)
             {
                 await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
-                await InvokeOnDispatcherAsync(() => SetStatus("All matching mods are already installed.", false), cancellationToken)
+                await InvokeOnDispatcherAsync(() => SetStatus("No mods found in the mod database.", false), cancellationToken)
                     .ConfigureAwait(false);
                 return;
             }
 
-            var entries = filteredResults
-                .Select(CreateSearchResultEntry)
-                .ToList();
-
-            await _databaseService.PopulateModDatabaseInfoAsync(entries, _installedGameVersion, cancellationToken)
+            await _databaseService.PopulateModDatabaseInfoAsync(entries.Select(item => item.Entry), _installedGameVersion, cancellationToken)
                 .ConfigureAwait(false);
 
             if (cancellationToken.IsCancellationRequested)
@@ -550,7 +550,7 @@ public sealed class MainViewModel : ObservableObject
             }
 
             var viewModels = entries
-                .Select(CreateSearchResultViewModel)
+                .Select(item => CreateSearchResultViewModel(item.Entry, item.IsInstalled))
                 .ToList();
 
             await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
@@ -700,9 +700,9 @@ public sealed class MainViewModel : ObservableObject
         };
     }
 
-    private ModListItemViewModel CreateSearchResultViewModel(ModEntry entry)
+    private ModListItemViewModel CreateSearchResultViewModel(ModEntry entry, bool isInstalled)
     {
-        return new ModListItemViewModel(entry, false, "Mod Database", RejectActivationChangeAsync, _installedGameVersion);
+        return new ModListItemViewModel(entry, false, "Mod Database", RejectActivationChangeAsync, _installedGameVersion, isInstalled);
     }
 
     private static string? BuildSearchResultDescription(ModDatabaseSearchResult result)

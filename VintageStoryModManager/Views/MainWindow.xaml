@@ -125,8 +125,18 @@
                     MinWidth="200"
                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                     ui:ControlHelper.CornerRadius="2" HorizontalAlignment="Right"
-                         Margin="0,0,17,14" VerticalAlignment="Bottom"
-                         />
+                    Margin="0,0,17,14" VerticalAlignment="Bottom">
+                    <TextBox.Style>
+                        <Style TargetType="TextBox">
+                            <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                    <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
 
             </Grid>
         </Grid>
@@ -435,6 +445,35 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
+                <DataGridTemplateColumn x:Name="InstalledColumn" Header="Installed" Width="85" IsReadOnly="True" Visibility="Collapsed">
+                    <DataGridTemplateColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                        </Style>
+                    </DataGridTemplateColumn.CellStyle>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="✓"
+                                       Foreground="#FF2E7D32"
+                                       FontSize="16"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsInstalled}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTextColumn x:Name="VersionColumn"
                                      Header="Version"
                                      Binding="{Binding VersionDisplay, Mode=OneWay}"
