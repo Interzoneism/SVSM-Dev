@@ -321,12 +321,20 @@ public sealed class UserConfigurationService
                 return;
             }
 
+            bool loadedFromPreferredLocation = string.Equals(
+                pathToLoad,
+                _configurationPath,
+                StringComparison.OrdinalIgnoreCase);
+
             DataDirectory = NormalizePath(obj["dataDirectory"]?.GetValue<string?>());
             GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
             _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
             _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
-            LoadClassicPresets(obj["modPresets"]);
-            LoadAdvancedPresets(obj["advancedModPresets"]);
+            if (loadedFromPreferredLocation)
+            {
+                LoadClassicPresets(obj["modPresets"]);
+                LoadAdvancedPresets(obj["advancedModPresets"]);
+            }
             LoadModConfigPaths(obj["modConfigPaths"]);
             _selectedPresetName = NormalizePresetName(obj["selectedPreset"]?.GetValue<string?>());
             _selectedAdvancedPresetName = NormalizePresetName(obj["selectedAdvancedPreset"]?.GetValue<string?>());
@@ -343,7 +351,7 @@ public sealed class UserConfigurationService
                 _selectedAdvancedPresetName = null;
             }
 
-            if (!string.Equals(pathToLoad, _configurationPath, StringComparison.OrdinalIgnoreCase))
+            if (!loadedFromPreferredLocation)
             {
                 Save();
             }
