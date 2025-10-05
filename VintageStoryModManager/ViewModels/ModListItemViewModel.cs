@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -845,12 +846,13 @@ public sealed class ModListItemViewModel : ObservableObject
             return;
         }
 
-        if (builder.Length > 0)
-        {
-            builder.Append(' ');
-        }
+        AppendSegment(builder, value);
 
-        builder.Append(value);
+        string normalized = NormalizeSearchText(value);
+        if (!string.IsNullOrEmpty(normalized) && !string.Equals(normalized, value, StringComparison.Ordinal))
+        {
+            AppendSegment(builder, normalized);
+        }
     }
 
     private static void AppendCollection(StringBuilder builder, IEnumerable<string> values)
@@ -859,6 +861,46 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             AppendText(builder, value);
         }
+    }
+
+    private static void AppendSegment(StringBuilder builder, string value)
+    {
+        if (builder.Length > 0)
+        {
+            builder.Append(' ');
+        }
+
+        builder.Append(value);
+    }
+
+    private static string NormalizeSearchText(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        string normalized = value.Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder(normalized.Length);
+
+        foreach (char character in normalized)
+        {
+            UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(character);
+
+            if (category == UnicodeCategory.NonSpacingMark
+                || category == UnicodeCategory.SpacingCombiningMark
+                || category == UnicodeCategory.EnclosingMark)
+            {
+                continue;
+            }
+
+            if (char.IsLetterOrDigit(character))
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString();
     }
 
     private static void AppendDependencies(StringBuilder builder, IReadOnlyList<ModDependencyInfo> dependencies)
