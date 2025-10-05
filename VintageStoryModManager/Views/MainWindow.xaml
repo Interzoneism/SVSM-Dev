@@ -432,17 +432,22 @@
                 <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay, Mode=OneWay}" Width="110" IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
-                            <Setter Property="TextWrapping" Value="Wrap" />
-                            <Setter Property="TextTrimming" Value="None" />
+                            <Setter Property="TextWrapping" Value="NoWrap" />
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
                             <Setter Property="HorizontalAlignment" Value="Stretch" />
                             <Setter Property="VerticalAlignment" Value="Center" />
                             <Setter Property="TextAlignment" Value="Center" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                    <Setter Property="TextWrapping" Value="NoWrap" />
-                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-                                </DataTrigger>
-                            </Style.Triggers>
+                            <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                            <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
+                            <Setter Property="ToolTipService.ToolTip">
+                                <Setter.Value>
+                                    <TextBlock Text="{Binding AuthorsDisplay}"
+                                               FontFamily="Segoe UI"
+                                               FontSize="12"
+                                               TextWrapping="Wrap"
+                                               MaxWidth="300" />
+                                </Setter.Value>
+                            </Setter>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                     <DataGridTextColumn.CellStyle>
