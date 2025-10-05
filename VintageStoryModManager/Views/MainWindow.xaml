@@ -280,17 +280,17 @@
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="Background" Value="Transparent" />
-                    <Setter Property="BorderBrush" Value="Transparent" />
-                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                    <Setter Property="BorderThickness" Value="1" />
                     <Setter Property="Padding" Value="0" />
                     <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
                     <Setter Property="Template">
                         <Setter.Value>
-                            <ControlTemplate TargetType="DataGridRow">
-                                <Border x:Name="RowBorder"
-                                        Background="{TemplateBinding Background}"
-                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                <ControlTemplate TargetType="DataGridRow">
+                                    <Border x:Name="RowBorder"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
                                         CornerRadius="6"
                                         Margin="4,0,4,4"
                                         SnapsToDevicePixels="True">
@@ -326,6 +326,14 @@
                                     <Trigger Property="DetailsVisibility" Value="Visible">
                                         <Setter TargetName="RowBorder" Property="BorderThickness" Value="1,0,1,1" />
                                     </Trigger>
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="IsMouseOver" Value="True" />
+                                            <Condition Property="IsSelected" Value="False" />
+                                        </MultiTrigger.Conditions>
+                                        <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.12" />
+                                        <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                    </MultiTrigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
                         </Setter.Value>
@@ -346,9 +354,6 @@
                         <DataTrigger Binding="{Binding HasActivationError}" Value="True">
                             <Setter Property="Background" Value="#22F5D67B" />
                         </DataTrigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="{StaticResource IMM.RowHoverBrush}" />
-                        </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter Property="Background" Value="{StaticResource IMM.RowSelectionBrush}" />
                             <Setter Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
