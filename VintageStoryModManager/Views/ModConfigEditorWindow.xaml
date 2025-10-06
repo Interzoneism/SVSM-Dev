@@ -23,7 +23,7 @@
             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="TreeViewItem_OnPreviewMouseLeftButtonDown" />
         </Style>
     </Window.Resources>
-    <Grid Margin="12" Background="{StaticResource IMM.SurfaceAltBrush}" ui:ControlHelper.CornerRadius="12">
+    <Grid Margin="12" Background="{StaticResource IMM.SurfaceAltBrush}">
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition Height="Auto" />
