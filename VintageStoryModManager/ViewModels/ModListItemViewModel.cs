@@ -211,7 +211,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool LatestReleaseIsCompatible => _latestRelease?.IsCompatibleWithInstalledGame ?? false;
 
-    public bool ShouldHighlightLatestVersion => _hasUpdate && LatestReleaseIsCompatible;
+    public bool ShouldHighlightLatestVersion => _hasUpdate;
 
     public ModReleaseInfo? LatestRelease => _latestRelease;
 
