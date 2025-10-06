@@ -124,7 +124,7 @@ public partial class MainWindow : Window
         if (!isCurrentlyEnabled && requestedState)
         {
             MessageBoxResult confirm = WpfMessageBox.Show(
-                "This will activate advanced preset mode, which saves the specific versions of the mods as well, switching versions when presets are loaded. Uses a separate preset list.",
+                "This will activate advanced preset mode, which saves the specific versions of the mods as well, switching versions when presets are loaded.",
                 "Vintage Story Mod Manager",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
