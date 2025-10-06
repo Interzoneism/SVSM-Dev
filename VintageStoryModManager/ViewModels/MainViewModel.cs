@@ -39,6 +39,7 @@ public sealed class MainViewModel : ObservableObject
     private SortOption? _selectedSortOption;
     private bool _isBusy;
     private bool _isCompactView;
+    private bool _isModInfoExpanded = true;
     private string _statusMessage = string.Empty;
     private bool _isErrorStatus;
     private int _totalMods;
@@ -106,6 +107,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _isCompactView;
         set => SetProperty(ref _isCompactView, value);
+    }
+
+    public bool IsModInfoExpanded
+    {
+        get => _isModInfoExpanded;
+        set => SetProperty(ref _isModInfoExpanded, value);
     }
 
     public string StatusMessage
