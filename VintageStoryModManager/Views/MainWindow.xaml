@@ -351,6 +351,9 @@
                                 <ui:ToggleSwitch IsOn="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  HorizontalAlignment="Center"
                                                  Toggled="ActiveToggle_OnToggled"
+                                                 PreviewMouseLeftButtonDown="ActiveToggle_OnPreviewMouseLeftButtonDown"
+                                                 PreviewMouseLeftButtonUp="ActiveToggle_OnPreviewMouseLeftButtonUp"
+                                                 PreviewMouseMove="ActiveToggle_OnPreviewMouseMove"
                                                  Margin="12,0"
                                                  OnContent="{x:Null}"
                                                  OffContent="{x:Null}">

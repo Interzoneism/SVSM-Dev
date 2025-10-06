@@ -3027,6 +3027,42 @@ public partial class MainWindow : Window
             new(mod, false, true, message);
     }
 
+    private void ActiveToggle_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not ToggleSwitch toggleSwitch)
+        {
+            return;
+        }
+
+        if (!toggleSwitch.IsEnabled)
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        toggleSwitch.Focus();
+        toggleSwitch.IsOn = !toggleSwitch.IsOn;
+    }
+
+    private void ActiveToggle_OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is ToggleSwitch)
+        {
+            e.Handled = true;
+        }
+    }
+
+    private void ActiveToggle_OnPreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is not ToggleSwitch || e.LeftButton != MouseButtonState.Pressed)
+        {
+            return;
+        }
+
+        e.Handled = true;
+    }
+
     private void ActiveToggle_OnToggled(object sender, RoutedEventArgs e)
     {
         if (_isApplyingMultiToggle)
