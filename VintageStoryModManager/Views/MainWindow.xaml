@@ -258,8 +258,8 @@
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="Background" Value="Transparent" />
-                    <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
-                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="BorderBrush" Value="{StaticResource IMM.RowBorderBrush}" />
+                    <Setter Property="BorderThickness" Value="2" />
                     <Setter Property="Padding">
                         <Setter.Value>
                             <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
@@ -276,7 +276,6 @@
                                             Background="{TemplateBinding Background}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}"
-                                        Padding="{TemplateBinding Padding}"
                                         CornerRadius="6"
                                         Margin="4,0,4,4"
                                         SnapsToDevicePixels="True">
@@ -291,26 +290,30 @@
                                                 Opacity="0"
                                                 CornerRadius="6"
                                                 IsHitTestVisible="False" />
-                                        <SelectiveScrollingGrid>
-                                            <SelectiveScrollingGrid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                            </SelectiveScrollingGrid.ColumnDefinitions>
-                                            <SelectiveScrollingGrid.RowDefinitions>
-                                                <RowDefinition Height="*" />
-                                                <RowDefinition Height="Auto" />
-                                            </SelectiveScrollingGrid.RowDefinitions>
-                                            <DataGridCellsPresenter Grid.Column="0"
-                                                                     SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" />
-                                            <DataGridDetailsPresenter Grid.Column="0"
-                                                                      Grid.Row="1"
-                                                                      SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
-                                                                      Visibility="{TemplateBinding DetailsVisibility}" />
-                                        </SelectiveScrollingGrid>
+                                        <Border Padding="{TemplateBinding Padding}"
+                                                Background="Transparent"
+                                                CornerRadius="6">
+                                            <SelectiveScrollingGrid>
+                                                <SelectiveScrollingGrid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                </SelectiveScrollingGrid.ColumnDefinitions>
+                                                <SelectiveScrollingGrid.RowDefinitions>
+                                                    <RowDefinition Height="*" />
+                                                    <RowDefinition Height="Auto" />
+                                                </SelectiveScrollingGrid.RowDefinitions>
+                                                <DataGridCellsPresenter Grid.Column="0"
+                                                                         SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" />
+                                                <DataGridDetailsPresenter Grid.Column="0"
+                                                                          Grid.Row="1"
+                                                                          SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
+                                                                          Visibility="{TemplateBinding DetailsVisibility}" />
+                                            </SelectiveScrollingGrid>
+                                        </Border>
                                     </Grid>
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="DetailsVisibility" Value="Visible">
-                                        <Setter TargetName="RowBorder" Property="BorderThickness" Value="1,0,1,1" />
+                                        <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,0,2,2" />
                                     </Trigger>
                                     <MultiTrigger>
                                         <MultiTrigger.Conditions>

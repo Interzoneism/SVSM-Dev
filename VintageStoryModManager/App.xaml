@@ -14,6 +14,7 @@
             <Color x:Key="IMM.SurfaceColor">#FFF6F8FB</Color>
             <Color x:Key="IMM.SurfaceAltColor">#FFEFF3F9</Color>
             <Color x:Key="IMM.BorderColor">#FFCAD7EB</Color>
+            <Color x:Key="IMM.RowBorderColor">#FF8EA0C0</Color>
             <Color x:Key="IMM.BorderHoverColor">#FF7AA6F9</Color>
             <Color x:Key="IMM.ButtonBackgroundColor">#FFF9FBFF</Color>
             <Color x:Key="IMM.ButtonHoverColor">#FFE7F0FF</Color>
@@ -48,6 +49,7 @@
             <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource IMM.SurfaceColor}" />
             <SolidColorBrush x:Key="IMM.SurfaceAltBrush" Color="{StaticResource IMM.SurfaceAltColor}" />
             <SolidColorBrush x:Key="IMM.BorderBrush" Color="{StaticResource IMM.BorderColor}" />
+            <SolidColorBrush x:Key="IMM.RowBorderBrush" Color="{StaticResource IMM.RowBorderColor}" />
             <SolidColorBrush x:Key="IMM.BorderHoverBrush" Color="{StaticResource IMM.BorderHoverColor}" />
             <SolidColorBrush x:Key="IMM.ButtonBackgroundBrush" Color="{StaticResource IMM.ButtonBackgroundColor}" />
             <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource IMM.ButtonHoverColor}" />
