@@ -18,7 +18,10 @@
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenTrueConverter" />
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenFalseConverter" IsInverted="True" />
-        <sys:Double x:Key="IMM.CompactRowHeight">55</sys:Double>
+        <converters:RowPaddingOffsetConverter x:Key="IMM.RowPaddingOffsetConverter" />
+        <Thickness x:Key="IMM.RowPaddingBase">0,0,0,0</Thickness>
+        <sys:Double x:Key="IMM.NormalRowHeightOffset">0</sys:Double>
+        <sys:Double x:Key="IMM.CompactRowHeightOffset">-12</sys:Double>
         <Style x:Key="IMM.DataGridCellBaseStyle" TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -257,7 +260,14 @@
                     <Setter Property="Background" Value="Transparent" />
                     <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
                     <Setter Property="BorderThickness" Value="1" />
-                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Padding">
+                        <Setter.Value>
+                            <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
+                                <Binding Source="{StaticResource IMM.RowPaddingBase}" />
+                                <Binding Source="{StaticResource IMM.NormalRowHeightOffset}" />
+                            </MultiBinding>
+                        </Setter.Value>
+                    </Setter>
                     <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
                     <Setter Property="Template">
                         <Setter.Value>
@@ -266,6 +276,7 @@
                                             Background="{TemplateBinding Background}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}"
+                                        Padding="{TemplateBinding Padding}"
                                         CornerRadius="6"
                                         Margin="4,0,4,4"
                                         SnapsToDevicePixels="True">
@@ -318,10 +329,14 @@
                     <EventSetter Event="Unloaded" Handler="ModsDataGridRow_OnUnloaded" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                            <Setter Property="Height" Value="{StaticResource IMM.CompactRowHeight}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
-                            <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
+                            <Setter Property="Padding">
+                                <Setter.Value>
+                                    <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
+                                        <Binding Source="{StaticResource IMM.RowPaddingBase}" />
+                                        <Binding Source="{StaticResource IMM.CompactRowHeightOffset}" />
+                                    </MultiBinding>
+                                </Setter.Value>
+                            </Setter>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding HasErrors}" Value="True">
                             <Setter Property="Background" Value="#FFFFE5E5" />
