@@ -351,7 +351,6 @@
                                 <ui:ToggleSwitch IsOn="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  HorizontalAlignment="Center"
                                                  Toggled="ActiveToggle_OnToggled"
-                                                 ClickMode="Press"
                                                  Margin="12,0"
                                                  OnContent="{x:Null}"
                                                  OffContent="{x:Null}">
