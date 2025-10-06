@@ -29,12 +29,19 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly string? _description;
     private readonly string? _metadataError;
     private string? _loadError;
-    private readonly IReadOnlyList<string> _databaseTags;
-    private readonly IReadOnlyList<string> _databaseRequiredGameVersions;
-    private readonly ModReleaseInfo? _latestRelease;
-    private readonly ModReleaseInfo? _latestCompatibleRelease;
-    private readonly IReadOnlyList<ModReleaseInfo> _releases;
-    private readonly int? _databaseDownloads;
+    private IReadOnlyList<string> _databaseTags;
+    private IReadOnlyList<string> _databaseRequiredGameVersions;
+    private ModReleaseInfo? _latestRelease;
+    private ModReleaseInfo? _latestCompatibleRelease;
+    private IReadOnlyList<ModReleaseInfo> _releases;
+    private int? _databaseDownloads;
+    private string? _modDatabaseAssetId;
+    private string? _modDatabasePageUrl;
+    private Uri? _modDatabasePageUri;
+    private ImageSource? _modDatabasePageFavicon;
+    private ICommand? _openModDatabasePageCommand;
+    private string? _latestDatabaseVersion;
+    private readonly string? _installedGameVersion;
     private readonly string _searchIndex;
     private IReadOnlyList<ModVersionOptionViewModel> _versionOptions = Array.Empty<ModVersionOptionViewModel>();
 
@@ -61,6 +68,7 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(entry);
         _activationHandler = activationHandler ?? throw new ArgumentNullException(nameof(activationHandler));
+        _installedGameVersion = installedGameVersion;
 
         ModId = entry.ModId;
         DisplayName = string.IsNullOrWhiteSpace(entry.Name) ? entry.ModId : entry.Name;
@@ -78,10 +86,17 @@ public sealed class ModListItemViewModel : ObservableObject
         _latestRelease = databaseInfo?.LatestRelease;
         _latestCompatibleRelease = databaseInfo?.LatestCompatibleRelease;
         _releases = databaseInfo?.Releases ?? Array.Empty<ModReleaseInfo>();
-        ModDatabaseAssetId = databaseInfo?.AssetId;
-        ModDatabasePageUrl = databaseInfo?.ModPageUrl;
+        _modDatabaseAssetId = databaseInfo?.AssetId;
+        _modDatabasePageUrl = databaseInfo?.ModPageUrl;
+        _modDatabasePageUri = TryCreateHttpUri(_modDatabasePageUrl);
+        _modDatabasePageFavicon = CreateFaviconImage(_modDatabasePageUri);
+        if (_modDatabasePageUri != null)
+        {
+            Uri commandUri = _modDatabasePageUri;
+            _openModDatabasePageCommand = new RelayCommand(() => LaunchUri(commandUri));
+        }
         _databaseDownloads = databaseInfo?.Downloads;
-        LatestDatabaseVersion = _latestRelease?.Version
+        _latestDatabaseVersion = _latestRelease?.Version
             ?? databaseInfo?.LatestVersion
             ?? _latestCompatibleRelease?.Version
             ?? databaseInfo?.LatestCompatibleVersion;
@@ -92,10 +107,6 @@ public sealed class ModListItemViewModel : ObservableObject
         WebsiteUri = TryCreateHttpUri(Website);
         WebsiteFavicon = CreateFaviconImage(WebsiteUri);
         OpenWebsiteCommand = WebsiteUri != null ? new RelayCommand(() => LaunchUri(WebsiteUri)) : null;
-
-        ModDatabasePageUri = TryCreateHttpUri(ModDatabasePageUrl);
-        ModDatabasePageFavicon = CreateFaviconImage(ModDatabasePageUri);
-        OpenModDatabasePageCommand = ModDatabasePageUri != null ? new RelayCommand(() => LaunchUri(ModDatabasePageUri)) : null;
 
         IReadOnlyList<ModDependencyInfo> dependencies = entry.Dependencies ?? Array.Empty<ModDependencyInfo>();
         _gameDependency = dependencies.FirstOrDefault(d => string.Equals(d.ModId, "game", StringComparison.OrdinalIgnoreCase))
@@ -123,7 +134,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
         InitializeUpdateAvailability();
         InitializeVersionOptions();
-        InitializeVersionWarning(installedGameVersion);
+        InitializeVersionWarning(_installedGameVersion);
         UpdateStatusFromErrors();
         UpdateTooltip();
         _searchIndex = BuildSearchIndex(entry, location);
@@ -168,11 +179,11 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public string DatabaseTagsDisplay => _databaseTags.Count == 0 ? "—" : string.Join(", ", _databaseTags);
 
-    public string? ModDatabaseAssetId { get; }
+    public string? ModDatabaseAssetId => _modDatabaseAssetId;
 
-    public string? ModDatabasePageUrl { get; }
+    public string? ModDatabasePageUrl => _modDatabasePageUrl;
 
-    public Uri? ModDatabasePageUri { get; }
+    public Uri? ModDatabasePageUri => _modDatabasePageUri;
 
     public bool HasModDatabasePageLink => ModDatabasePageUri != null;
 
@@ -182,7 +193,7 @@ public sealed class ModListItemViewModel : ObservableObject
         ? _databaseDownloads.Value.ToString("N0", CultureInfo.CurrentCulture)
         : "—";
 
-    public string? LatestDatabaseVersion { get; }
+    public string? LatestDatabaseVersion => _latestDatabaseVersion;
 
     public string LatestDatabaseVersionDisplay => string.IsNullOrWhiteSpace(LatestDatabaseVersion) ? "—" : LatestDatabaseVersion!;
 
@@ -280,11 +291,11 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public ImageSource? WebsiteFavicon { get; }
 
-    public ImageSource? ModDatabasePageFavicon { get; }
+    public ImageSource? ModDatabasePageFavicon => _modDatabasePageFavicon;
 
     public ICommand? OpenWebsiteCommand { get; }
 
-    public ICommand? OpenModDatabasePageCommand { get; }
+    public ICommand? OpenModDatabasePageCommand => _openModDatabasePageCommand;
 
     public string SourcePath { get; }
 
@@ -415,6 +426,106 @@ public sealed class ModListItemViewModel : ObservableObject
         _loadError = normalized;
         OnPropertyChanged(nameof(HasLoadError));
         OnPropertyChanged(nameof(CanToggle));
+        UpdateStatusFromErrors();
+        UpdateTooltip();
+    }
+
+    public void UpdateDatabaseInfo(ModDatabaseInfo info)
+    {
+        if (info is null)
+        {
+            return;
+        }
+
+        IReadOnlyList<string> tags = info.Tags ?? Array.Empty<string>();
+        if (HasDifferentContent(_databaseTags, tags))
+        {
+            _databaseTags = tags;
+            OnPropertyChanged(nameof(DatabaseTags));
+            OnPropertyChanged(nameof(DatabaseTagsDisplay));
+        }
+
+        IReadOnlyList<string> requiredVersions = info.RequiredGameVersions ?? Array.Empty<string>();
+        if (HasDifferentContent(_databaseRequiredGameVersions, requiredVersions))
+        {
+            _databaseRequiredGameVersions = requiredVersions;
+        }
+
+        ModReleaseInfo? latestRelease = info.LatestRelease;
+        ModReleaseInfo? latestCompatibleRelease = info.LatestCompatibleRelease;
+        IReadOnlyList<ModReleaseInfo> releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
+
+        _latestRelease = latestRelease;
+        _latestCompatibleRelease = latestCompatibleRelease;
+        _releases = releases;
+
+        int? downloads = info.Downloads;
+        if (_databaseDownloads != downloads)
+        {
+            _databaseDownloads = downloads;
+            OnPropertyChanged(nameof(DownloadsDisplay));
+        }
+
+        if (!string.Equals(_modDatabaseAssetId, info.AssetId, StringComparison.Ordinal))
+        {
+            _modDatabaseAssetId = info.AssetId;
+            OnPropertyChanged(nameof(ModDatabaseAssetId));
+        }
+
+        string? pageUrl = info.ModPageUrl;
+        if (!string.Equals(_modDatabasePageUrl, pageUrl, StringComparison.Ordinal))
+        {
+            _modDatabasePageUrl = pageUrl;
+            OnPropertyChanged(nameof(ModDatabasePageUrl));
+            OnPropertyChanged(nameof(ModDatabasePageUrlDisplay));
+        }
+
+        Uri? pageUri = TryCreateHttpUri(pageUrl);
+        if (_modDatabasePageUri != pageUri)
+        {
+            _modDatabasePageUri = pageUri;
+            OnPropertyChanged(nameof(ModDatabasePageUri));
+            OnPropertyChanged(nameof(HasModDatabasePageLink));
+        }
+
+        SetProperty(ref _modDatabasePageFavicon, CreateFaviconImage(pageUri), nameof(ModDatabasePageFavicon));
+
+        ICommand? pageCommand = null;
+        if (pageUri != null)
+        {
+            Uri commandUri = pageUri;
+            pageCommand = new RelayCommand(() => LaunchUri(commandUri));
+        }
+
+        SetProperty(ref _openModDatabasePageCommand, pageCommand, nameof(OpenModDatabasePageCommand));
+
+        string? latestDatabaseVersion = latestRelease?.Version
+            ?? info.LatestVersion
+            ?? latestCompatibleRelease?.Version
+            ?? info.LatestCompatibleVersion;
+
+        if (!string.Equals(_latestDatabaseVersion, latestDatabaseVersion, StringComparison.Ordinal))
+        {
+            _latestDatabaseVersion = latestDatabaseVersion;
+            OnPropertyChanged(nameof(LatestDatabaseVersion));
+            OnPropertyChanged(nameof(LatestDatabaseVersionDisplay));
+        }
+
+        InitializeUpdateAvailability();
+        InitializeVersionOptions();
+        InitializeVersionWarning(_installedGameVersion);
+
+        OnPropertyChanged(nameof(LatestRelease));
+        OnPropertyChanged(nameof(LatestCompatibleRelease));
+        OnPropertyChanged(nameof(LatestReleaseIsCompatible));
+        OnPropertyChanged(nameof(ShouldHighlightLatestVersion));
+        OnPropertyChanged(nameof(CanUpdate));
+        OnPropertyChanged(nameof(RequiresCompatibilitySelection));
+        OnPropertyChanged(nameof(HasCompatibleUpdate));
+        OnPropertyChanged(nameof(HasDownloadableRelease));
+        OnPropertyChanged(nameof(InstallButtonToolTip));
+        OnPropertyChanged(nameof(UpdateButtonToolTip));
+
         UpdateStatusFromErrors();
         UpdateTooltip();
     }
@@ -897,6 +1008,30 @@ public sealed class ModListItemViewModel : ObservableObject
         }
 
         builder.Append(value);
+    }
+
+    private static bool HasDifferentContent<T>(IReadOnlyList<T> current, IReadOnlyList<T> updated)
+    {
+        if (ReferenceEquals(current, updated))
+        {
+            return false;
+        }
+
+        if (current.Count != updated.Count)
+        {
+            return true;
+        }
+
+        EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+        for (int i = 0; i < current.Count; i++)
+        {
+            if (!comparer.Equals(current[i], updated[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string NormalizeSearchText(string value)
