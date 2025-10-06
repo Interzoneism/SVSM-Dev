@@ -281,6 +281,11 @@
                                         Margin="4,0,4,4"
                                         SnapsToDevicePixels="True">
                                     <Grid>
+                                        <Border x:Name="SelectionOverlay"
+                                                Background="{StaticResource IMM.AccentBrush}"
+                                                Opacity="0"
+                                                CornerRadius="6"
+                                                IsHitTestVisible="False" />
                                         <Border x:Name="HoverOverlay"
                                                 Background="{StaticResource IMM.RowHoverBrush}"
                                                 Opacity="0"
@@ -340,8 +345,8 @@
                             <Setter Property="Background" Value="#7FFF0000" />
                         </DataTrigger>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="BorderBrush" Value="{StaticResource IMM.RowSelectionBorderBrush}" />
-                            <Setter Property="BorderThickness" Value="2" />
+                            <Setter Property="Background" Value="{StaticResource IMM.RowSelectionBrush}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
                         </Trigger>
                     </Style.Triggers>
                 </Style>
