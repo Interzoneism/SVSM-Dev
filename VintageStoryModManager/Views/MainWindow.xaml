@@ -36,6 +36,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="50" MinHeight="10" />
             <RowDefinition />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" MinHeight="40" />
         </Grid.RowDefinitions>
 
@@ -120,15 +121,8 @@
         </Grid>
 
         <Grid Grid.Row="1"
-              Grid.RowSpan="2"
-              Margin="16,0,16,16">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
+              Margin="16,0,16,0">
             <DataGrid x:Name="ModsDataGrid"
-                      Grid.Row="0"
                       Margin="0"
                   ItemsSource="{Binding CurrentModsView}"
                   AutoGenerateColumns="False"
@@ -612,92 +606,25 @@
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
+        </Grid>
 
-
-            <Grid Grid.Row="1"
-                  Margin="0,12,0,0">
-                <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
-            <Grid Grid.Row="1" Margin="0,12,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Grid.Column="0"
-                           Text="{Binding StatusMessage}"
-                           TextWrapping="Wrap"
-                           HorizontalAlignment="Left"
-                           VerticalAlignment="Center"
-                           Margin="0,0,16,0">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                    <Setter Property="Foreground" Value="#FFD13438" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
-
-                <StackPanel Grid.Column="1"
-                            Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center">
-                    <Button Content="Open Logs Folder"
-                            Margin="0,0,8,0"
-                            Width="146"
-                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                            BorderBrush="{DynamicResource IMM.BorderBrush}"
-                            Click="OpenLogsFolderButton_OnClick"
-                            Height="32" />
-                    <Button Content="Open Config Folder"
-                            Margin="0,0,8,0"
-                            Width="146"
-                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                            BorderBrush="{DynamicResource IMM.BorderBrush}"
-                            Click="OpenConfigFolderButton_OnClick"
-                            Height="32" />
-                    <Button Content="Open Mods Folder"
-                            Margin="0,0,8,0"
-                            Width="159"
-                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                            BorderBrush="{DynamicResource IMM.BorderBrush}"
-                            Click="OpenModFolderButton_OnClick"
-                            Height="32" />
-                    <Button Content="Launch Vintage Story"
-                            Width="159"
-                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                            BorderBrush="{DynamicResource IMM.BorderBrush}"
-                            Click="LaunchGameButton_OnClick"
-                            Height="32"
-                            FontWeight="Bold" />
-                </StackPanel>
-            </Grid>
-            <Border x:Name="Border_MODINFO"
-                    Padding="16"
-                    Margin="0,0,0,12"
-                    Background="{StaticResource IMM.SurfaceBrush}"
-                    BorderBrush="{StaticResource IMM.BorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="0,0,8,8">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="MaxHeight" Value="0" />
-                        <Setter Property="Opacity" Value="0" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
-                                <Setter Property="MaxHeight" Value="600" />
-                                <Setter Property="Opacity" Value="1" />
+        <Border x:Name="Border_MODINFO"
+                Grid.Row="2"
+                Padding="16"
+                Background="{StaticResource IMM.SurfaceBrush}"
+                BorderBrush="{StaticResource IMM.BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="0,0,8,8">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="MaxHeight" Value="0" />
+                    <Setter Property="Opacity" Value="0" />
+                    <Setter Property="Margin" Value="16,0,16,0" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
+                            <Setter Property="MaxHeight" Value="600" />
+                            <Setter Property="Opacity" Value="1" />
+                            <Setter Property="Margin" Value="16,12,16,0" />
                                 <DataTrigger.EnterActions>
                                     <StopStoryboard BeginStoryboardName="HideModInfoStoryboard" />
                                     <BeginStoryboard x:Name="ShowModInfoStoryboard">
@@ -920,8 +847,70 @@
                         </StackPanel>
                     </Grid>
                 </Grid>
-            </Border>
-            </Grid>
+        </Border>
+
+        <Grid Grid.Row="3"
+              Margin="16,12,16,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="{Binding StatusMessage}"
+                       TextWrapping="Wrap"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Center"
+                       Margin="0,0,16,0">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
+                                <Setter Property="Foreground" Value="#FFD13438" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center">
+                <Button Content="Open Logs Folder"
+                        Margin="0,0,8,0"
+                        Width="146"
+                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                        Click="OpenLogsFolderButton_OnClick"
+                        Height="32" />
+                <Button Content="Open Config Folder"
+                        Margin="0,0,8,0"
+                        Width="146"
+                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                        Click="OpenConfigFolderButton_OnClick"
+                        Height="32" />
+                <Button Content="Open Mods Folder"
+                        Margin="0,0,8,0"
+                        Width="159"
+                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                        Click="OpenModFolderButton_OnClick"
+                        Height="32" />
+                <Button Content="Launch Vintage Story"
+                        Width="159"
+                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                        Click="LaunchGameButton_OnClick"
+                        Height="32"
+                        FontWeight="Bold" />
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>
