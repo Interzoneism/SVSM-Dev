@@ -373,9 +373,9 @@ public sealed class MainViewModel : ObservableObject
             {
                 var entries = await Task.Run(_discoveryService.LoadMods);
                 var entryList = entries.ToList();
-                await _databaseService.PopulateModDatabaseInfoAsync(entryList, _installedGameVersion);
                 _discoveryService.ApplyLoadStatuses(entryList);
                 ApplyFullReload(entryList, previousSelection);
+                QueueDatabaseInfoRefresh(entryList);
                 SetStatus($"Loaded {TotalMods} mods.", false);
             }
             else
@@ -403,15 +403,15 @@ public sealed class MainViewModel : ObservableObject
                     }
                 }
 
-                if (updatedEntries.Count > 0)
-                {
-                    await _databaseService.PopulateModDatabaseInfoAsync(updatedEntries, _installedGameVersion);
-                }
-
                 var allEntries = new List<ModEntry>(_modEntriesBySourcePath.Values);
                 _discoveryService.ApplyLoadStatuses(allEntries);
 
                 ApplyPartialUpdates(reloadResults, previousSelection);
+
+                if (updatedEntries.Count > 0)
+                {
+                    QueueDatabaseInfoRefresh(updatedEntries);
+                }
             }
 
             TotalMods = _mods.Count;
@@ -1071,5 +1071,76 @@ public sealed class MainViewModel : ObservableObject
 
         string summary = parts.Count == 0 ? $"{affected} changed" : string.Join(", ", parts);
         SetStatus($"Applied changes to mods ({summary}).", false);
+    }
+
+    private void QueueDatabaseInfoRefresh(IEnumerable<ModEntry> entries)
+    {
+        if (entries is null)
+        {
+            return;
+        }
+
+        ModEntry[] pending = entries
+            .Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.ModId))
+            .ToArray();
+
+        if (pending.Length == 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                foreach (ModEntry entry in pending)
+                {
+                    ModDatabaseInfo? info;
+                    try
+                    {
+                        info = await _databaseService
+                            .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion)
+                            .ConfigureAwait(false);
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
+                    if (info is null)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        await InvokeOnDispatcherAsync(
+                                () =>
+                                {
+                                    if (_modEntriesBySourcePath.TryGetValue(entry.SourcePath, out var currentEntry)
+                                        && ReferenceEquals(currentEntry, entry))
+                                    {
+                                        currentEntry.UpdateDatabaseInfo(info);
+
+                                        if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
+                                        {
+                                            viewModel.UpdateDatabaseInfo(info);
+                                        }
+                                    }
+                                },
+                                CancellationToken.None)
+                            .ConfigureAwait(false);
+                    }
+                    catch (Exception)
+                    {
+                        // Ignore dispatcher failures to keep refresh resilient.
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Swallow unexpected exceptions from the refresh loop.
+            }
+        });
     }
 }
