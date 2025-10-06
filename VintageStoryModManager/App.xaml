@@ -518,31 +518,19 @@
                                 <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroup x:Name="CommonStates">
                                     <VisualState x:Name="Normal" />
-                                    <VisualState x:Name="MouseOver">
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="Root"
+                                        <VisualState x:Name="MouseOver">
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
                                                             To="{StaticResource IMM.ButtonHoverColor}"
                                                             Duration="0:0:0.15" />
-                                            <ColorAnimation Storyboard.TargetName="Root"
+                                                <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
                                                             To="{StaticResource IMM.BorderHoverColor}"
                                                             Duration="0:0:0.15" />
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="Pressed">
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="Root"
-                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                             To="0.96"
-                                                             Duration="0:0:0.08" />
-                                            <DoubleAnimation Storyboard.TargetName="Root"
-                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                             To="0.96"
-                                                             Duration="0:0:0.08" />
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="Disabled">
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
                                         <Storyboard>
                                             <DoubleAnimation Storyboard.TargetName="Root"
                                                              Storyboard.TargetProperty="Opacity"
