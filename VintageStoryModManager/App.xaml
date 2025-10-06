@@ -19,6 +19,7 @@
             <Color x:Key="IMM.ButtonHoverColor">#FFE7F0FF</Color>
             <Color x:Key="IMM.ButtonPressedColor">#FFD5E3FF</Color>
             <Color x:Key="IMM.ButtonDisabledColor">#FFEEF1F6</Color>
+            <Color x:Key="IMM.PlaceholderForegroundColor">#661C2635</Color>
             <Color x:Key="IMM.ForegroundColor">#FF1C2635</Color>
             <Color x:Key="IMM.SuccessColor">#FF79C46E</Color>
             <Color x:Key="IMM.RowHoverColor">#FF7AA6F9</Color>
@@ -52,6 +53,7 @@
             <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource IMM.ButtonHoverColor}" />
             <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="{StaticResource IMM.ButtonPressedColor}" />
             <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="{StaticResource IMM.ButtonDisabledColor}" />
+            <SolidColorBrush x:Key="IMM.PlaceholderForegroundBrush" Color="{StaticResource IMM.PlaceholderForegroundColor}" />
             <SolidColorBrush x:Key="IMM.ForegroundBrush" Color="{StaticResource IMM.ForegroundColor}" />
             <SolidColorBrush x:Key="IMM.SuccessBrush" Color="{StaticResource IMM.SuccessColor}" />
             <SolidColorBrush x:Key="IMM.RowHoverBrush" Color="{StaticResource IMM.RowHoverColor}" />
@@ -208,6 +210,50 @@
                                                   SnapsToDevicePixels="True" />
                             </Border>
                             
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="IMM.SearchTextBoxStyle" TargetType="TextBox">
+                <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                <Setter Property="Background" Value="{StaticResource IMM.ButtonBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Padding" Value="10,6" />
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="SelectionBrush" Value="{StaticResource IMM.AccentBrush}" />
+                <Setter Property="SelectionTextBrush" Value="White" />
+                <Setter Property="CaretBrush" Value="{StaticResource IMM.AccentBrush}" />
+                <Setter Property="ui:ControlHelper.CornerRadius" Value="6" />
+                <Setter Property="ui:ControlHelper.PlaceholderForeground" Value="{StaticResource IMM.PlaceholderForegroundBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <Grid>
+                                <Border x:Name="Border"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}" />
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                              Margin="{TemplateBinding Padding}" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ButtonDisabledBrush}" />
+                                    <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                                    <Setter Property="Opacity" Value="0.6" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                    <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ButtonHoverBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
+                                    <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ButtonPressedBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
