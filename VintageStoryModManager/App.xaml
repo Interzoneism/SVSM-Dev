@@ -222,6 +222,8 @@
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Padding" Value="10,6" />
                 <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
                 <Setter Property="SelectionBrush" Value="{StaticResource IMM.AccentBrush}" />
                 <Setter Property="SelectionTextBrush" Value="White" />
                 <Setter Property="CaretBrush" Value="{StaticResource IMM.AccentBrush}" />
@@ -236,8 +238,23 @@
                                         BorderBrush="{TemplateBinding BorderBrush}"
                                         BorderThickness="{TemplateBinding BorderThickness}"
                                         CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}" />
-                                <ScrollViewer x:Name="PART_ContentHost"
-                                              Margin="{TemplateBinding Padding}" />
+                                <Grid Margin="{TemplateBinding Padding}">
+                                    <ScrollViewer x:Name="PART_ContentHost"
+                                                  Margin="0"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                    <TextBlock x:Name="PlaceholderTextBlock"
+                                               Margin="0"
+                                               Text="{TemplateBinding ui:ControlHelper.PlaceholderText}"
+                                               FontFamily="{TemplateBinding FontFamily}"
+                                               FontSize="{TemplateBinding FontSize}"
+                                               Foreground="{TemplateBinding ui:ControlHelper.PlaceholderForeground}"
+                                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                               IsHitTestVisible="False"
+                                               TextTrimming="CharacterEllipsis"
+                                               Visibility="Collapsed" />
+                                </Grid>
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsEnabled" Value="False">
@@ -252,6 +269,12 @@
                                 <Trigger Property="IsKeyboardFocused" Value="True">
                                     <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
                                     <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ButtonPressedBrush}" />
+                                </Trigger>
+                                <Trigger Property="Text" Value="">
+                                    <Setter TargetName="PlaceholderTextBlock" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                                <Trigger Property="Text" Value="{x:Null}">
+                                    <Setter TargetName="PlaceholderTextBlock" Property="Visibility" Value="Visible" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
