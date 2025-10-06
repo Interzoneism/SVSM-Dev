@@ -24,6 +24,7 @@
             <Color x:Key="IMM.SuccessColor">#FF79C46E</Color>
             <Color x:Key="IMM.RowHoverColor">#FF7AA6F9</Color>
             <Color x:Key="IMM.RowSelectionColor">#334C8BF5</Color>
+            <Color x:Key="IMM.RowSelectionBorderColor">#FF2F64E0</Color>
 
             <!-- Vintage Story dialog and text colors extracted from GuiStyle -->
             <Color x:Key="VS.DialogLightBackgroundColor">#BF403529</Color>
@@ -58,6 +59,7 @@
             <SolidColorBrush x:Key="IMM.SuccessBrush" Color="{StaticResource IMM.SuccessColor}" />
             <SolidColorBrush x:Key="IMM.RowHoverBrush" Color="{StaticResource IMM.RowHoverColor}" />
             <SolidColorBrush x:Key="IMM.RowSelectionBrush" Color="{StaticResource IMM.RowSelectionColor}" />
+            <SolidColorBrush x:Key="IMM.RowSelectionBorderBrush" Color="{StaticResource IMM.RowSelectionBorderColor}" />
 
             <SolidColorBrush x:Key="VS.DialogLightBackgroundBrush" Color="{StaticResource VS.DialogLightBackgroundColor}" />
             <SolidColorBrush x:Key="VS.DialogDefaultBackgroundBrush" Color="{StaticResource VS.DialogDefaultBackgroundColor}" />
