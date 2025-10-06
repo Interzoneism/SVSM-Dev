@@ -28,7 +28,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly IReadOnlyList<string> _contributors;
     private readonly string? _description;
     private readonly string? _metadataError;
-    private readonly string? _loadError;
+    private string? _loadError;
     private readonly IReadOnlyList<string> _databaseTags;
     private readonly IReadOnlyList<string> _databaseRequiredGameVersions;
     private readonly ModReleaseInfo? _latestRelease;
@@ -402,6 +402,21 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         get => _isSelected;
         set => SetProperty(ref _isSelected, value);
+    }
+
+    public void UpdateLoadError(string? loadError)
+    {
+        string? normalized = string.IsNullOrWhiteSpace(loadError) ? null : loadError;
+        if (string.Equals(_loadError, normalized, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _loadError = normalized;
+        OnPropertyChanged(nameof(HasLoadError));
+        OnPropertyChanged(nameof(CanToggle));
+        UpdateStatusFromErrors();
+        UpdateTooltip();
     }
 
     public void SetIsActiveSilently(bool isActive)

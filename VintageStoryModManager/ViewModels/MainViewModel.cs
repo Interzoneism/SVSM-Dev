@@ -25,6 +25,8 @@ public sealed class MainViewModel : ObservableObject
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
 
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
+    private readonly Dictionary<string, ModEntry> _modEntriesBySourcePath = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ModListItemViewModel> _modViewModelsBySourcePath = new(StringComparer.OrdinalIgnoreCase);
     private readonly ObservableCollection<ModListItemViewModel> _searchResults = new();
     private readonly ClientSettingsStore _settingsStore;
     private readonly ModDiscoveryService _discoveryService;
@@ -32,6 +34,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly ObservableCollection<SortOption> _sortOptions;
     private readonly string? _installedGameVersion;
     private readonly object _modsStateLock = new();
+    private readonly ModDirectoryWatcher _modsWatcher;
 
     private SortOption? _selectedSortOption;
     private bool _isBusy;
@@ -57,6 +60,7 @@ public sealed class MainViewModel : ObservableObject
         _discoveryService = new ModDiscoveryService(_settingsStore);
         _databaseService = new ModDatabaseService();
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion();
+        _modsWatcher = new ModDirectoryWatcher(_discoveryService);
 
         ModsView = CollectionViewSource.GetDefaultView(_mods);
         ModsView.Filter = FilterMod;
@@ -357,23 +361,63 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
-            var entries = await Task.Run(_discoveryService.LoadMods);
-            await _databaseService.PopulateModDatabaseInfoAsync(entries, _installedGameVersion);
-            var viewModels = entries
-                .Select(entry => CreateModViewModel(entry))
-                .ToList();
+            _modsWatcher.EnsureWatchers();
+            ModDirectoryChangeSet changeSet = _modsWatcher.ConsumeChanges();
+            bool requiresFullReload = _mods.Count == 0
+                || changeSet.RequiresFullRescan
+                || changeSet.Paths.Count == 0;
 
-            _mods.Clear();
-            foreach (var item in viewModels)
+            string? previousSelection = SelectedMod?.SourcePath;
+
+            if (requiresFullReload)
             {
-                _mods.Add(item);
+                var entries = await Task.Run(_discoveryService.LoadMods);
+                var entryList = entries.ToList();
+                await _databaseService.PopulateModDatabaseInfoAsync(entryList, _installedGameVersion);
+                _discoveryService.ApplyLoadStatuses(entryList);
+                ApplyFullReload(entryList, previousSelection);
+                SetStatus($"Loaded {TotalMods} mods.", false);
+            }
+            else
+            {
+                var reloadResults = await Task.Run(() => LoadChangedModEntries(changeSet.Paths));
+
+                foreach (var pair in reloadResults)
+                {
+                    if (pair.Value == null)
+                    {
+                        _modEntriesBySourcePath.Remove(pair.Key);
+                    }
+                    else
+                    {
+                        _modEntriesBySourcePath[pair.Key] = pair.Value;
+                    }
+                }
+
+                var updatedEntries = new List<ModEntry>();
+                foreach (var entry in reloadResults.Values)
+                {
+                    if (entry != null)
+                    {
+                        updatedEntries.Add(entry);
+                    }
+                }
+
+                if (updatedEntries.Count > 0)
+                {
+                    await _databaseService.PopulateModDatabaseInfoAsync(updatedEntries, _installedGameVersion);
+                }
+
+                var allEntries = new List<ModEntry>(_modEntriesBySourcePath.Values);
+                _discoveryService.ApplyLoadStatuses(allEntries);
+
+                ApplyPartialUpdates(reloadResults, previousSelection);
             }
 
             TotalMods = _mods.Count;
             UpdateActiveCount();
             SelectedSortOption?.Apply(ModsView);
             ModsView.Refresh();
-            SetStatus($"Loaded {TotalMods} mods.", false);
             await UpdateModsStateSnapshotAsync();
         }
         catch (Exception ex)
@@ -388,6 +432,18 @@ public sealed class MainViewModel : ObservableObject
 
     public async Task<bool> CheckForModStateChangesAsync()
     {
+        _modsWatcher.EnsureWatchers();
+
+        if (_modsWatcher.HasPendingChanges)
+        {
+            return true;
+        }
+
+        if (_modsWatcher.IsWatching)
+        {
+            return false;
+        }
+
         string? fingerprint = await CaptureModsStateFingerprintAsync().ConfigureAwait(false);
         if (fingerprint is null)
         {
@@ -421,6 +477,16 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task UpdateModsStateSnapshotAsync()
     {
+        if (_modsWatcher.IsWatching)
+        {
+            lock (_modsStateLock)
+            {
+                _modsStateFingerprint = null;
+            }
+
+            return;
+        }
+
         string? fingerprint = await CaptureModsStateFingerprintAsync().ConfigureAwait(false);
         if (fingerprint is null)
         {
@@ -844,5 +910,166 @@ public sealed class MainViewModel : ObservableObject
     {
         StatusMessage = message;
         IsErrorStatus = isError;
+    }
+
+    private Dictionary<string, ModEntry?> LoadChangedModEntries(IReadOnlyCollection<string> paths)
+    {
+        var results = new Dictionary<string, ModEntry?>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string path in paths)
+        {
+            ModEntry? entry = _discoveryService.LoadModFromPath(path);
+            results[path] = entry;
+        }
+
+        return results;
+    }
+
+    private void ApplyFullReload(IReadOnlyList<ModEntry> entries, string? previousSelection)
+    {
+        _modEntriesBySourcePath.Clear();
+        _modViewModelsBySourcePath.Clear();
+        _mods.Clear();
+
+        foreach (var entry in entries)
+        {
+            _modEntriesBySourcePath[entry.SourcePath] = entry;
+            var viewModel = CreateModViewModel(entry);
+            _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
+            _mods.Add(viewModel);
+        }
+
+        TotalMods = _mods.Count;
+
+        if (!string.IsNullOrWhiteSpace(previousSelection)
+            && _modViewModelsBySourcePath.TryGetValue(previousSelection, out var selected))
+        {
+            SelectedMod = selected;
+        }
+        else
+        {
+            SelectedMod = null;
+        }
+    }
+
+    private void ApplyPartialUpdates(IReadOnlyDictionary<string, ModEntry?> changes, string? previousSelection)
+    {
+        if (changes.Count == 0)
+        {
+            SetStatus("Mods are up to date.", false);
+            if (!string.IsNullOrWhiteSpace(previousSelection)
+                && _modViewModelsBySourcePath.TryGetValue(previousSelection, out var selected))
+            {
+                SelectedMod = selected;
+            }
+
+            return;
+        }
+
+        int added = 0;
+        int updated = 0;
+        int removed = 0;
+
+        foreach (var change in changes)
+        {
+            string path = change.Key;
+            ModEntry? entry = change.Value;
+
+            if (entry == null)
+            {
+                if (_modViewModelsBySourcePath.TryGetValue(path, out var existingVm))
+                {
+                    _mods.Remove(existingVm);
+                    _modViewModelsBySourcePath.Remove(path);
+                    removed++;
+
+                    if (ReferenceEquals(SelectedMod, existingVm))
+                    {
+                        SelectedMod = null;
+                    }
+                }
+
+                _modEntriesBySourcePath.Remove(path);
+                continue;
+            }
+
+            var viewModel = CreateModViewModel(entry);
+            if (_modViewModelsBySourcePath.TryGetValue(path, out var existing))
+            {
+                int index = _mods.IndexOf(existing);
+                if (index >= 0)
+                {
+                    _mods[index] = viewModel;
+                }
+                else
+                {
+                    _mods.Add(viewModel);
+                }
+
+                _modViewModelsBySourcePath[path] = viewModel;
+                updated++;
+
+                if (ReferenceEquals(SelectedMod, existing))
+                {
+                    SelectedMod = viewModel;
+                }
+            }
+            else
+            {
+                _mods.Add(viewModel);
+                _modViewModelsBySourcePath[path] = viewModel;
+                _modEntriesBySourcePath[path] = entry;
+                added++;
+            }
+        }
+
+        foreach (var pair in _modViewModelsBySourcePath)
+        {
+            if (changes.ContainsKey(pair.Key))
+            {
+                continue;
+            }
+
+            if (_modEntriesBySourcePath.TryGetValue(pair.Key, out var entry))
+            {
+                pair.Value.UpdateLoadError(entry.LoadError);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(previousSelection)
+            && _modViewModelsBySourcePath.TryGetValue(previousSelection, out var selectedAfter))
+        {
+            SelectedMod = selectedAfter;
+        }
+        else if (SelectedMod != null && !_mods.Contains(SelectedMod))
+        {
+            SelectedMod = null;
+        }
+
+        int affected = added + updated + removed;
+        if (affected == 0)
+        {
+            SetStatus("Mods are up to date.", false);
+            return;
+        }
+
+        var parts = new List<string>();
+        if (added > 0)
+        {
+            parts.Add($"{added} added");
+        }
+
+        if (updated > 0)
+        {
+            parts.Add($"{updated} updated");
+        }
+
+        if (removed > 0)
+        {
+            parts.Add($"{removed} removed");
+        }
+
+        string summary = parts.Count == 0 ? $"{affected} changed" : string.Join(", ", parts);
+        SetStatus($"Applied changes to mods ({summary}).", false);
     }
 }

@@ -95,13 +95,60 @@ public sealed class ModDiscoveryService
             }
         }
 
-        EvaluateLoadStatuses(results);
+        ApplyLoadStatuses(results);
         return results;
     }
 
-    private void EvaluateLoadStatuses(List<ModEntry> mods)
+    public IReadOnlyList<string> GetSearchPaths()
     {
-        if (mods.Count == 0)
+        return BuildSearchPaths().ToArray();
+    }
+
+    public ModEntry? LoadModFromPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        string fullPath;
+        try
+        {
+            fullPath = Path.GetFullPath(path);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (Directory.Exists(fullPath))
+        {
+            return TryLoadFromDirectory(new DirectoryInfo(fullPath));
+        }
+
+        if (!File.Exists(fullPath))
+        {
+            return null;
+        }
+
+        var fileInfo = new FileInfo(fullPath);
+        if (string.Equals(fileInfo.Extension, ".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            return TryLoadFromZip(fileInfo);
+        }
+
+        if (string.Equals(fileInfo.Extension, ".cs", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(fileInfo.Extension, ".dll", StringComparison.OrdinalIgnoreCase))
+        {
+            return CreateUnsupportedCodeModEntry(fileInfo);
+        }
+
+        return null;
+    }
+
+    public void ApplyLoadStatuses(IList<ModEntry> mods)
+    {
+        if (mods == null || mods.Count == 0)
         {
             return;
         }
