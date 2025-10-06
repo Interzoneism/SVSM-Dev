@@ -20,7 +20,7 @@
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenFalseConverter" IsInverted="True" />
         <converters:RowPaddingOffsetConverter x:Key="IMM.RowPaddingOffsetConverter" />
         <Thickness x:Key="IMM.RowPaddingBase">0,0,0,0</Thickness>
-        <sys:Double x:Key="IMM.NormalRowHeightOffset">0</sys:Double>
+        <sys:Double x:Key="IMM.NormalRowHeightOffset">15</sys:Double>
         <sys:Double x:Key="IMM.CompactRowHeightOffset">-12</sys:Double>
         <Style x:Key="IMM.DataGridCellBaseStyle" TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent" />
@@ -141,7 +141,7 @@
                   VerticalGridLinesBrush="Transparent"
                   HeadersVisibility="Column"
                   ui:ControlHelper.CornerRadius="10"
-                  CellStyle="{StaticResource IMM.DataGridCellBaseStyle}">
+                  CellStyle="{StaticResource IMM.DataGridCellBaseStyle}" FontSize="15">
             <DataGrid.Style>
                 <Style TargetType="DataGrid">
                     <Setter Property="CanUserSortColumns" Value="True" />
@@ -339,10 +339,10 @@
                             </Setter>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                            <Setter Property="Background" Value="#FFFFE5E5" />
+                            <Setter Property="Background" Value="#7FFF0000" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding HasActivationError}" Value="True">
-                            <Setter Property="Background" Value="#22F5D67B" />
+                            <Setter Property="Background" Value="#7FFF0000" />
                         </DataTrigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter Property="Background" Value="{StaticResource IMM.RowSelectionBrush}" />
@@ -513,8 +513,8 @@
                 <DataGridTextColumn x:Name="DownloadsColumn"
                                      Header="Downloads"
                                      Binding="{Binding DownloadsDisplay, Mode=OneWay}"
-                                     Width="90"
-                                     MinWidth="80"
+                                     Width="120"
+                                     MinWidth="110"
                                      IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
