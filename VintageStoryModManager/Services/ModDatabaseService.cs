@@ -39,12 +39,23 @@ public sealed class ModDatabaseService
                 continue;
             }
 
-            ModDatabaseInfo? info = await TryLoadDatabaseInfoAsync(mod.ModId, mod.Version, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
+            ModDatabaseInfo? info = await TryLoadDatabaseInfoInternalAsync(mod.ModId, mod.Version, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
             if (info != null)
             {
                 mod.DatabaseInfo = info;
             }
         }
+    }
+
+    public Task<ModDatabaseInfo?> TryLoadDatabaseInfoAsync(string modId, string? modVersion, string? installedGameVersion, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            return Task.FromResult<ModDatabaseInfo?>(null);
+        }
+
+        string? normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
+        return TryLoadDatabaseInfoInternalAsync(modId, modVersion, normalizedGameVersion, cancellationToken);
     }
 
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> SearchModsAsync(string query, int maxResults, CancellationToken cancellationToken = default)
@@ -122,7 +133,7 @@ public sealed class ModDatabaseService
         }
     }
 
-    private static async Task<ModDatabaseInfo?> TryLoadDatabaseInfoAsync(string modId, string? modVersion, string? normalizedGameVersion, CancellationToken cancellationToken)
+    private static async Task<ModDatabaseInfo?> TryLoadDatabaseInfoInternalAsync(string modId, string? modVersion, string? normalizedGameVersion, CancellationToken cancellationToken)
     {
         try
         {

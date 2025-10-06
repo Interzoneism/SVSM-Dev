@@ -50,6 +50,11 @@ public sealed class ModEntry
 
     public ModDatabaseInfo? DatabaseInfo { get; set; }
 
+    public void UpdateDatabaseInfo(ModDatabaseInfo? info)
+    {
+        DatabaseInfo = info;
+    }
+
     public override string ToString() => $"{Name} ({ModId})";
 }
 
