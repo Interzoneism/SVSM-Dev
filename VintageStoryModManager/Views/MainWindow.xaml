@@ -673,7 +673,7 @@
                             FontWeight="Bold" />
             </StackPanel>
         </Grid>
-        <Border
+        <Border x:Name="MODINFO_border"
                 VerticalAlignment="Top"
                 Background="{DynamicResource IMM.SurfaceBrush}"
                 BorderBrush="{DynamicResource VS.DialogBorderBrush}"
@@ -682,7 +682,7 @@
             <Border.Effect>
                 <DropShadowEffect Color="#33000000" BlurRadius="16" Direction="270" ShadowDepth="4" Opacity="0.15"/>
             </Border.Effect>
-            <Grid Height="223" Width="324" Background="Transparent">
+            <Grid x:Name="MODINFO_grid" Height="223" Width="324" Background="Transparent">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="53*" />
                     <ColumnDefinition Width="28*" />
