@@ -685,85 +685,27 @@
             </Grid>
             <Border x:Name="Border_MODINFO"
                     Padding="16"
-                    Margin="0,0,0,12"
+                    Margin="366,24,0,12"
                     Background="{StaticResource IMM.SurfaceBrush}"
                     BorderBrush="{StaticResource IMM.BorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="0,0,8,8"
+                    CornerRadius="8,8,8,8"
                     MaxHeight="600">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="12" Direction="270" ShadowDepth="4" Opacity="0.14" Color="#33000000" />
-                </Border.Effect>
-                <Expander x:Name="ModInfoExpander"
-                          IsExpanded="{Binding IsModInfoExpanded, Mode=TwoWay}"
-                          Background="Transparent"
-                          BorderThickness="0"
-                          HorizontalAlignment="Stretch"
-                          VerticalAlignment="Top">
-                    <Expander.Header>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource IMM.ForegroundBrush}">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value="Mod Details" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
-                                                <Setter Property="Text" Value="{Binding SelectedMod.DisplayName}" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <TextBlock Grid.Column="1"
-                                       Margin="12,0,0,0"
-                                       VerticalAlignment="Center"
-                                       Foreground="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value="Click to expand" />
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsModInfoExpanded}" Value="False">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </Grid>
-                    </Expander.Header>
-                    <Expander.Content>
-                        <Grid>
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="12" Direction="270" ShadowDepth="4" Opacity="0.14" Color="#33000000" />
+                    </Border.Effect>
+                    <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0"
-                                       Text="Select a mod to view its details."
-                                       Foreground="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                           
                             <Grid Grid.Row="1"
                                   Margin="0"
                                   VerticalAlignment="Center">
                                 <Grid.Style>
                                     <Style TargetType="{x:Type Grid}">
-                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Setter Property="Visibility" Value="Visible" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
                                                 <Setter Property="Visibility" Value="Visible" />
@@ -808,7 +750,7 @@
                                                 Padding="12,6"
                                                 Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                                                 BorderBrush="{DynamicResource IMM.BorderBrush}"
-                                                Visibility="Collapsed"
+                                                Visibility="Visible"
                                                 IsEnabled="False"
                                                 Click="ModDatabasePageButton_OnClick"
                                                 ToolTip="{Binding ModDatabasePageUrlDisplay}"
@@ -819,7 +761,7 @@
                                                 Padding="12,6"
                                                 Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                                                 BorderBrush="{DynamicResource IMM.BorderBrush}"
-                                                Visibility="Collapsed"
+                                                Visibility="Visible"
                                                 IsEnabled="False"
                                                 Click="EditConfigButton_OnClick"
                                                 ToolTip="{Binding DisplayName, StringFormat=Edit Config for \{0\}}"
@@ -829,7 +771,7 @@
                                                 Padding="12,6"
                                                 Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                                                 BorderBrush="{DynamicResource IMM.BorderBrush}"
-                                                Visibility="Collapsed"
+                                                Visibility="Visible"
                                                 IsEnabled="False"
                                                 Click="DeleteModButton_OnClick"
                                                 ToolTip="{Binding DisplayName, StringFormat=Delete \{0\}}">
@@ -842,7 +784,7 @@
                                                 Padding="12,6"
                                                 Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                                                 BorderBrush="{DynamicResource IMM.BorderBrush}"
-                                                Visibility="Collapsed"
+                                                Visibility="Visible"
                                                 IsEnabled="False"
                                                 Click="InstallModButton_OnClick"
                                                 ToolTip="{Binding InstallButtonToolTip}">
@@ -868,7 +810,7 @@
                                                   VerticalAlignment="Center">
                                             <ComboBox.Style>
                                                 <Style TargetType="ComboBox">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Setter Property="Visibility" Value="Visible" />
                                                     <Setter Property="IsEnabled" Value="False" />
                                                     <Setter Property="Background" Value="{DynamicResource IMM.ButtonBackgroundBrush}" />
                                                     <Style.Triggers>
@@ -877,7 +819,7 @@
                                                             <Setter Property="IsEnabled" Value="True" />
                                                         </DataTrigger>
                                                         <DataTrigger Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Setter Property="Visibility" Value="Visible" />
                                                             <Setter Property="IsEnabled" Value="False" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -891,7 +833,7 @@
                                                                    Margin="6,0,0,0">
                                                             <TextBlock.Style>
                                                                 <Style TargetType="TextBlock">
-                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                    <Setter Property="Visibility" Value="Visible" />
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding IsInstalled}" Value="True">
                                                                             <Setter Property="Visibility" Value="Visible" />
@@ -905,7 +847,7 @@
                                                                    Margin="6,0,0,0">
                                                             <TextBlock.Style>
                                                                 <Style TargetType="TextBlock">
-                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                    <Setter Property="Visibility" Value="Visible" />
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding IsCompatible}" Value="True">
                                                                             <Setter Property="Visibility" Value="Visible" />
@@ -922,7 +864,7 @@
                                                 Padding="12,6"
                                                 Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                                                 BorderBrush="{DynamicResource IMM.BorderBrush}"
-                                                Visibility="Collapsed"
+                                                Visibility="Visible"
                                                 IsEnabled="False"
                                                 Click="UpdateModButton_OnClick"
                                                 ToolTip="{Binding UpdateButtonToolTip}">
@@ -934,8 +876,8 @@
                                 </StackPanel>
                             </Grid>
                         </Grid>
-                    </Expander.Content>
-                </Expander>
+                    
+                
             </Border>
             </Grid>
         </Grid>
