@@ -11,7 +11,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
-        Height="688" Width="1004"
+        Height="710" Width="991"
         MinWidth="900" MinHeight="520"
         Background="{StaticResource IMM.SurfaceBrush}">
 
@@ -38,8 +38,7 @@
             <RowDefinition />
             <RowDefinition Height="Auto" MinHeight="40" />
         </Grid.RowDefinitions>
-
-        <Grid Grid.Row="0" Margin="0,0,0,0">
+        <Grid x:Name="TOP" Grid.Row="0" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -105,7 +104,7 @@
                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                     Margin="253,0,0,0" HorizontalAlignment="Left" Width="225" Height="32" VerticalAlignment="Center">
                     <TextBox.Style>
-                        <Style TargetType="TextBox" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
+                        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
                             <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
@@ -118,10 +117,8 @@
 
             </Grid>
         </Grid>
-
-        <Grid Grid.Row="1"
-              Grid.RowSpan="3"
-              Margin="16,0,16,16">
+        <Grid x:Name="MIDDLE" Grid.Row="1"
+              Margin="16,0,16,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
@@ -149,32 +146,15 @@
                   
                   HeadersVisibility="Column"
                   ui:ControlHelper.CornerRadius="10"
-                  CellStyle="{StaticResource IMM.DataGridCellBaseStyle}" FontSize="15" Margin="0,0,0,115">
-                <DataGrid.Style>
-                    <Style TargetType="DataGrid">
-                        <Setter Property="CanUserSortColumns" Value="True" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                <Setter Property="CanUserSortColumns" Value="False" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </DataGrid.Style>
-                <DataGrid.Effect>
-                    <DropShadowEffect BlurRadius="18"
-                                   Direction="270"
-                                   ShadowDepth="6"
-                                   Opacity="0.18"
-                                   Color="#33000000" />
-                </DataGrid.Effect>
+                  FontSize="15" Margin="0,0,0,10">
                 <DataGrid.Resources>
-                    <Style TargetType="ScrollBar">
+                    <Style TargetType="{x:Type ScrollBar}">
                         <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
                     </Style>
-                    <Style TargetType="TextBlock">
+                    <Style TargetType="{x:Type TextBlock}">
                         <Setter Property="TextWrapping" Value="Wrap" />
                     </Style>
-                    <Style TargetType="DataGridColumnHeader">
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
                         <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
                         <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
                         <Setter Property="BorderThickness" Value="1,0,0,1" />
@@ -184,7 +164,7 @@
                         <Setter Property="HorizontalContentAlignment" Value="Left" />
                         <Setter Property="Template">
                             <Setter.Value>
-                                <ControlTemplate TargetType="DataGridColumnHeader">
+                                <ControlTemplate TargetType="{x:Type DataGridColumnHeader}">
                                     <Border x:Name="HeaderBorder"
                                         Background="{TemplateBinding Background}"
                                         BorderBrush="{TemplateBinding BorderBrush}"
@@ -257,6 +237,26 @@
                         </Setter>
                     </Style>
                 </DataGrid.Resources>
+                <DataGrid.CellStyle>
+                    <StaticResource ResourceKey="IMM.DataGridCellBaseStyle"/>
+                </DataGrid.CellStyle>
+                <DataGrid.Style>
+                    <Style TargetType="{x:Type DataGrid}">
+                        <Setter Property="CanUserSortColumns" Value="True" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                <Setter Property="CanUserSortColumns" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.Style>
+                <DataGrid.Effect>
+                    <DropShadowEffect BlurRadius="18"
+                                   Direction="270"
+                                   ShadowDepth="6"
+                                   Opacity="0.18"
+                                   Color="#33000000" />
+                </DataGrid.Effect>
                 <DataGrid.BorderBrush>
                     <SolidColorBrush Color="{StaticResource IMM.BorderColor}" />
                 </DataGrid.BorderBrush>
@@ -264,7 +264,7 @@
                     <Style/>
                 </DataGrid.RowHeaderStyle>
                 <DataGrid.RowStyle>
-                    <Style TargetType="DataGridRow">
+                    <Style TargetType="{x:Type DataGridRow}">
                         <Setter Property="Background" Value="Transparent" />
                         <Setter Property="BorderBrush" Value="{StaticResource IMM.RowBorderBrush}" />
                         <Setter Property="BorderThickness" Value="1" />
@@ -279,7 +279,7 @@
                         <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
                         <Setter Property="Template">
                             <Setter.Value>
-                                <ControlTemplate TargetType="DataGridRow">
+                                <ControlTemplate TargetType="{x:Type DataGridRow}">
                                     <Border x:Name="RowBorder"
                                             Background="{TemplateBinding Background}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
@@ -335,11 +335,11 @@
                                 </ControlTemplate>
                             </Setter.Value>
                         </Setter>
-                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ModsDataGridRow_OnPreviewMouseLeftButtonDown" />
-                        <EventSetter Event="Loaded" Handler="ModsDataGridRow_OnLoaded" />
-                        <EventSetter Event="Unloaded" Handler="ModsDataGridRow_OnUnloaded" />
+                        <EventSetter Event="UIElement.PreviewMouseLeftButtonDown" Handler="ModsDataGridRow_OnPreviewMouseLeftButtonDown" />
+                        <EventSetter Event="FrameworkElement.Loaded" Handler="ModsDataGridRow_OnLoaded" />
+                        <EventSetter Event="FrameworkElement.Unloaded" Handler="ModsDataGridRow_OnUnloaded" />
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                            <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
                                 <Setter Property="Padding">
                                     <Setter.Value>
                                         <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
@@ -365,7 +365,7 @@
                 <DataGrid.Columns>
                     <DataGridTemplateColumn x:Name="ActiveColumn" Header="Active" SortMemberPath="IsActive" Width="90" MinWidth="85">
                         <DataGridTemplateColumn.CellStyle>
-                            <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                                 <Setter Property="Padding" Value="0" />
@@ -384,10 +384,10 @@
                                                  OnContent="{x:Null}"
                                                  OffContent="{x:Null}">
                                         <ui:ToggleSwitch.Style>
-                                            <Style TargetType="ui:ToggleSwitch">
+                                            <Style TargetType="{x:Type ui:ToggleSwitch}">
                                                 <Setter Property="IsEnabled" Value="{Binding CanToggle}" />
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                    <DataTrigger Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
                                                         <Setter Property="IsEnabled" Value="False" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
@@ -400,7 +400,7 @@
                     </DataGridTemplateColumn>
                     <DataGridTemplateColumn x:Name="IconColumn" Header="Icon" Width="76" IsReadOnly="True">
                         <DataGridTemplateColumn.CellStyle>
-                            <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                 <Setter Property="HorizontalContentAlignment" Value="Left" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                                 <Setter Property="Padding" Value="0,0,12,0" />
@@ -427,7 +427,7 @@
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="220" SortMemberPath="DisplayName" IsReadOnly="True">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="FontFamily" Value="Segoe UI" />
                                 <Setter Property="FontWeight" Value="Bold" />
                                 <Setter Property="ToolTipService.ShowDuration" Value="60000" />
@@ -448,7 +448,7 @@
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                         <DataGridTextColumn.CellStyle>
-                            <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                             </Style>
@@ -456,7 +456,7 @@
                     </DataGridTextColumn>
                     <DataGridTemplateColumn x:Name="InstalledColumn" Header="Installed" Width="85" IsReadOnly="True" Visibility="Collapsed">
                         <DataGridTemplateColumn.CellStyle>
-                            <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                             </Style>
@@ -470,7 +470,7 @@
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center">
                                     <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
+                                        <Style TargetType="{x:Type TextBlock}">
                                             <Setter Property="Visibility" Value="Collapsed" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsInstalled}" Value="True">
@@ -490,14 +490,14 @@
                                      IsReadOnly="True"
                                      MinWidth="80">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="HorizontalAlignment" Value="Center" />
                                 <Setter Property="VerticalAlignment" Value="Center" />
                                 <Setter Property="TextAlignment" Value="Center" />
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                         <DataGridTextColumn.CellStyle>
-                            <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                             </Style>
@@ -505,13 +505,13 @@
                     </DataGridTextColumn>
                     <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" Width="140" MinWidth="139" IsReadOnly="True">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="HorizontalAlignment" Value="Center" />
                                 <Setter Property="VerticalAlignment" Value="Center" />
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                         <DataGridTextColumn.CellStyle>
-                            <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                                 <Style.Triggers>
@@ -531,13 +531,13 @@
                                      MinWidth="110"
                                      IsReadOnly="True">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="HorizontalAlignment" Value="Center" />
                                 <Setter Property="VerticalAlignment" Value="Center" />
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                         <DataGridTextColumn.CellStyle>
-                            <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                             </Style>
@@ -548,7 +548,7 @@
 
                     <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay, Mode=OneWay}" Width="110" IsReadOnly="True">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="TextWrapping" Value="NoWrap" />
                                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
                                 <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -568,7 +568,7 @@
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                         <DataGridTextColumn.CellStyle>
-                            <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                             </Style>
@@ -582,12 +582,12 @@
                                        VerticalAlignment="Center"
                                        TextAlignment="Center">
                                     <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
+                                        <Style TargetType="{x:Type TextBlock}">
                                             <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseHighBrush}" />
                                             <Setter Property="Text" Value="" />
                                             <Setter Property="FontSize" Value="30" />
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
                                                     <Setter Property="FontSize" Value="22.5" />
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding StatusText}" Value="Error">
@@ -605,7 +605,7 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                         <DataGridTemplateColumn.CellStyle>
-                            <Style TargetType="DataGridCell" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                 <Setter Property="ToolTip" Value="{Binding StatusDetails}" />
                             </Style>
                         </DataGridTemplateColumn.CellStyle>
@@ -614,7 +614,7 @@
             </DataGrid>
             <Border x:Name="Border_MODINFO"
                     Padding="16"
-                    Margin="356,440,10,0"
+                    Margin="337,324,29,0"
                     Background="{StaticResource IMM.SurfaceBrush}"
                     BorderBrush="{StaticResource IMM.BorderBrush}"
                     BorderThickness="1"
@@ -809,77 +809,68 @@
 
 
             </Border>
-            <Grid Margin="0,530,0,0" VerticalAlignment="Top">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+        </Grid>
+        <Grid x:Name="BOTTOM" Margin="16,0,16,8" Grid.Row="2" VerticalAlignment="Bottom">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0"
+            <TextBlock Grid.Column="0"
                            Text="{Binding StatusMessage}"
                            TextWrapping="Wrap"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
                            Margin="0,0,16,0">
-                    <TextBlock.Style>
-                        <Style TargetType="{x:Type TextBlock}">
-                            <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                    <Setter Property="Foreground" Value="#FFD13438" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
+                <TextBlock.Style>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
+                                <Setter Property="Foreground" Value="#FFD13438" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
 
-                <StackPanel Grid.Column="1"
+            <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center">
-                    <Button Content="Open Logs Folder"
+                <Button Content="Open Logs Folder"
                             Margin="0,0,8,0"
                             Width="146"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="OpenLogsFolderButton_OnClick"
                             Height="32" />
-                    <Button Content="Open Config Folder"
+                <Button Content="Open Config Folder"
                             Margin="0,0,8,0"
                             Width="146"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="OpenConfigFolderButton_OnClick"
                             Height="32" />
-                    <Button Content="Open Mods Folder"
+                <Button Content="Open Mods Folder"
                             Margin="0,0,8,0"
                             Width="159"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="OpenModFolderButton_OnClick"
                             Height="32" />
-                    <Button Content="Launch Vintage Story"
+                <Button Content="Launch Vintage Story"
                             Width="159"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="LaunchGameButton_OnClick"
                             Height="32"
                             FontWeight="Bold" />
-                </StackPanel>
-            </Grid>
-
-
-            <Grid Grid.Row="1"
-                  Margin="0,6,0,6" VerticalAlignment="Bottom">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-            </Grid>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>
