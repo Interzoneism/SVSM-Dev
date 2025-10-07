@@ -577,31 +577,53 @@
                     <DataGridTemplateColumn x:Name="StatusColumn" Header="Status" Width="100" IsReadOnly="True" SortMemberPath="StatusSortOrder">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock FontFamily="Segoe Fluent Icons"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextAlignment="Center">
-                                    <TextBlock.Style>
-                                        <Style TargetType="{x:Type TextBlock}">
-                                            <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseHighBrush}" />
-                                            <Setter Property="Text" Value="" />
-                                            <Setter Property="FontSize" Value="30" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
-                                                    <Setter Property="FontSize" Value="22.5" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding StatusText}" Value="Error">
-                                                    <Setter Property="Foreground" Value="#FFD13438" />
-                                                    <Setter Property="Text" Value="&#xEA39;" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding StatusText}" Value="Warning">
-                                                    <Setter Property="Foreground" Value="#FFE17E00" />
-                                                    <Setter Property="Text" Value="&#xE7BA;" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                                <Grid HorizontalAlignment="Center"
+                                      VerticalAlignment="Center">
+                                    <Viewbox x:Name="StatusIconViewbox"
+                                             Width="30"
+                                             Height="30">
+                                        <Grid Width="24"
+                                              Height="24">
+                                            <Grid x:Name="ErrorIcon"
+                                                  Visibility="Collapsed">
+                                                <Ellipse Fill="#FFD13438"
+                                                         Width="24"
+                                                         Height="24" />
+                                                <Line X1="7" Y1="7" X2="17" Y2="17" Stroke="White" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                                <Line X1="17" Y1="7" X2="7" Y2="17" Stroke="White" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                            </Grid>
+                                            <Canvas x:Name="WarningIcon"
+                                                   Width="24"
+                                                   Height="24"
+                                                   Visibility="Collapsed">
+                                                <Polygon Points="12,2 22,20 2,20"
+                                                         Fill="#FFE17E00" />
+                                                <Rectangle Width="3"
+                                                           Height="8"
+                                                           Fill="White"
+                                                           Canvas.Left="10.5"
+                                                           Canvas.Top="8" />
+                                                <Ellipse Width="3"
+                                                         Height="3"
+                                                         Fill="White"
+                                                         Canvas.Left="10.5"
+                                                         Canvas.Top="17" />
+                                            </Canvas>
+                                        </Grid>
+                                    </Viewbox>
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
+                                        <Setter TargetName="StatusIconViewbox" Property="Width" Value="22.5" />
+                                        <Setter TargetName="StatusIconViewbox" Property="Height" Value="22.5" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding StatusText}" Value="Error">
+                                        <Setter TargetName="ErrorIcon" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding StatusText}" Value="Warning">
+                                        <Setter TargetName="WarningIcon" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                         <DataGridTemplateColumn.CellStyle>
