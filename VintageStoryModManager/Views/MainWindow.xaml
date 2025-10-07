@@ -668,11 +668,11 @@
             </StackPanel>
         </Grid>
         <Border
-                VerticalAlignment="Center"
+                VerticalAlignment="Top"
                 Background="{DynamicResource IMM.SurfaceBrush}"
                 BorderBrush="{DynamicResource IMM.BorderBrush}"
                 BorderThickness="1"
-                CornerRadius="15" Margin="845,0,0,0" Grid.Row="1" HorizontalAlignment="Left" Width="326">
+                CornerRadius="15" Margin="839,206,0,0" Grid.Row="1" HorizontalAlignment="Left" Width="326" Height="201">
             <Border.Effect>
                 <DropShadowEffect Color="#33000000" BlurRadius="10" Direction="270" ShadowDepth="4" Opacity="0.15"/>
             </Border.Effect>
