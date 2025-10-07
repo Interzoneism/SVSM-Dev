@@ -2744,7 +2744,12 @@ public partial class MainWindow : Window
         {
             if (!latest.IsCompatibleWithInstalledGame && mod.LatestCompatibleRelease == null)
             {
-                if (!PromptInstallIncompatibleLatest(mod, isBulk, out bool skipped, out bool aborted))
+                if (bulkPreference.HasValue && bulkPreference.Value == ModUpdateReleasePreference.Latest)
+                {
+                    return latest;
+                }
+
+                if (!PromptInstallIncompatibleLatest(mod, isBulk, ref bulkPreference, out bool skipped, out bool aborted))
                 {
                     if (aborted)
                     {
@@ -2772,7 +2777,7 @@ public partial class MainWindow : Window
                     return mod.LatestCompatibleRelease;
                 }
 
-                if (!PromptInstallIncompatibleLatest(mod, isBulk, out bool skipped, out bool aborted))
+                if (!PromptInstallIncompatibleLatest(mod, isBulk, ref bulkPreference, out bool skipped, out bool aborted))
                 {
                     if (aborted)
                     {
@@ -2798,19 +2803,22 @@ public partial class MainWindow : Window
         switch (decision)
         {
             case CompatibilityDecisionKind.Latest:
-                if (isBulk)
-                {
-                    bulkPreference = ModUpdateReleasePreference.Latest;
-                }
+                return latest;
+            case CompatibilityDecisionKind.LatestForAll:
+                bulkPreference = ModUpdateReleasePreference.Latest;
                 return latest;
             case CompatibilityDecisionKind.LatestCompatible:
                 if (mod.LatestCompatibleRelease != null)
                 {
-                    if (isBulk)
-                    {
-                        bulkPreference = ModUpdateReleasePreference.LatestCompatible;
-                    }
+                    return mod.LatestCompatibleRelease;
+                }
 
+                results.Add(ModUpdateOperationResult.Failure(mod, "No compatible release is available."));
+                return null;
+            case CompatibilityDecisionKind.LatestCompatibleForAll:
+                if (mod.LatestCompatibleRelease != null)
+                {
+                    bulkPreference = ModUpdateReleasePreference.LatestCompatible;
                     return mod.LatestCompatibleRelease;
                 }
 
@@ -2844,19 +2852,27 @@ public partial class MainWindow : Window
 
         if (hasCompatible)
         {
+            string compatibleMessage = isBulk
+                ? $"Choose whether to install the latest release ({latest.Version}) or the latest compatible release ({compatible!.Version})."
+                : $"Select Yes to install the latest release or No to install the latest compatible release ({compatible!.Version}).";
+
             message = string.Concat(
                 message,
                 Environment.NewLine,
                 Environment.NewLine,
-                $"Select Yes to install the latest release or No to install the latest compatible release ({compatible!.Version}).");
+                compatibleMessage);
         }
         else
         {
+            string noCompatibleMessage = isBulk
+                ? "No compatible alternative was found. Choose whether to install the latest release anyway or skip this mod."
+                : "No compatible alternative was found. Do you want to install the latest release anyway?";
+
             message = string.Concat(
                 message,
                 Environment.NewLine,
                 Environment.NewLine,
-                "No compatible alternative was found. Do you want to install the latest release anyway?");
+                noCompatibleMessage);
         }
 
         if (isBulk)
@@ -2865,7 +2881,21 @@ public partial class MainWindow : Window
                 message,
                 Environment.NewLine,
                 Environment.NewLine,
-                "Your selection will be used for the remaining mods in this update session.");
+                "Choose an option below. Selections that apply to all mods will be used for the remaining updates in this session.");
+
+            var prompt = new BulkCompatibilityPromptWindow(
+                message,
+                latest.Version,
+                hasCompatible ? compatible!.Version : null,
+                hasCompatible);
+
+            prompt.Owner = this;
+
+            bool? dialogResult = prompt.ShowDialog();
+
+            return dialogResult == true
+                ? prompt.Decision
+                : CompatibilityDecisionKind.Skip;
         }
 
         MessageBoxResult result = WpfMessageBox.Show(
@@ -2883,7 +2913,12 @@ public partial class MainWindow : Window
         };
     }
 
-    private bool PromptInstallIncompatibleLatest(ModListItemViewModel mod, bool isBulk, out bool skipped, out bool aborted)
+    private bool PromptInstallIncompatibleLatest(
+        ModListItemViewModel mod,
+        bool isBulk,
+        ref ModUpdateReleasePreference? bulkPreference,
+        out bool skipped,
+        out bool aborted)
     {
         skipped = false;
         aborted = false;
@@ -2897,23 +2932,52 @@ public partial class MainWindow : Window
 
         string message = $"The latest release ({latest.Version}) for {mod.DisplayName} is not marked as compatible with your Vintage Story version, and no compatible alternative was found.";
 
-        message = string.Concat(
+        if (isBulk)
+        {
+            string bulkMessage = string.Concat(
+                message,
+                Environment.NewLine,
+                Environment.NewLine,
+                "Choose whether to install the latest release anyway or skip this mod.",
+                Environment.NewLine,
+                Environment.NewLine,
+                "Choose an option below. Selections that apply to all mods will be used for the remaining updates in this session.");
+
+            var prompt = new BulkCompatibilityPromptWindow(bulkMessage, latest.Version, null, false);
+            prompt.Owner = this;
+
+            bool? dialogResult = prompt.ShowDialog();
+
+            if (dialogResult == true)
+            {
+                switch (prompt.Decision)
+                {
+                    case CompatibilityDecisionKind.Latest:
+                        return true;
+                    case CompatibilityDecisionKind.LatestForAll:
+                        bulkPreference = ModUpdateReleasePreference.Latest;
+                        return true;
+                    case CompatibilityDecisionKind.Skip:
+                        skipped = true;
+                        return false;
+                    case CompatibilityDecisionKind.Abort:
+                        aborted = true;
+                        return false;
+                }
+            }
+
+            skipped = true;
+            return false;
+        }
+
+        string promptMessage = string.Concat(
             message,
             Environment.NewLine,
             Environment.NewLine,
             "Select Yes to install the latest release, No to skip this mod, or Cancel to stop updating.");
 
-        if (isBulk)
-        {
-            message = string.Concat(
-                message,
-                Environment.NewLine,
-                Environment.NewLine,
-                "This prompt applies only to the current mod.");
-        }
-
         MessageBoxResult result = WpfMessageBox.Show(
-            message,
+            promptMessage,
             "Vintage Story Mod Manager",
             MessageBoxButton.YesNoCancel,
             MessageBoxImage.Warning);
@@ -3005,14 +3069,6 @@ public partial class MainWindow : Window
     {
         Latest,
         LatestCompatible
-    }
-
-    private enum CompatibilityDecisionKind
-    {
-        Latest,
-        LatestCompatible,
-        Skip,
-        Abort
     }
 
     private readonly record struct ModUpdateOperationResult(ModListItemViewModel Mod, bool Success, bool Skipped, string Message)
