@@ -51,10 +51,18 @@
             <SolidColorBrush x:Key="IMM.BorderBrush" Color="{StaticResource IMM.BorderColor}" />
             <SolidColorBrush x:Key="IMM.RowBorderBrush" Color="{StaticResource IMM.RowBorderColor}" />
             <SolidColorBrush x:Key="IMM.BorderHoverBrush" Color="{StaticResource IMM.BorderHoverColor}" />
-            <SolidColorBrush x:Key="IMM.ButtonBackgroundBrush" Color="{StaticResource IMM.ButtonBackgroundColor}" />
-            <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource IMM.ButtonHoverColor}" />
-            <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="{StaticResource IMM.ButtonPressedColor}" />
-            <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="{StaticResource IMM.ButtonDisabledColor}" />
+            <SolidColorBrush x:Key="IMM.ButtonBackgroundBrush"
+                              x:Shared="False"
+                              Color="{StaticResource IMM.ButtonBackgroundColor}" />
+            <SolidColorBrush x:Key="IMM.ButtonHoverBrush"
+                              x:Shared="False"
+                              Color="{StaticResource IMM.ButtonHoverColor}" />
+            <SolidColorBrush x:Key="IMM.ButtonPressedBrush"
+                              x:Shared="False"
+                              Color="{StaticResource IMM.ButtonPressedColor}" />
+            <SolidColorBrush x:Key="IMM.ButtonDisabledBrush"
+                              x:Shared="False"
+                              Color="{StaticResource IMM.ButtonDisabledColor}" />
             <SolidColorBrush x:Key="IMM.PlaceholderForegroundBrush" Color="{StaticResource IMM.PlaceholderForegroundColor}" />
             <SolidColorBrush x:Key="IMM.ForegroundBrush" Color="{StaticResource IMM.ForegroundColor}" />
             <SolidColorBrush x:Key="IMM.SuccessBrush" Color="{StaticResource IMM.SuccessColor}" />
