@@ -12,7 +12,27 @@ public static class StatusLogService
 {
     private const string TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff";
     private static readonly object SyncRoot = new();
-    private static readonly string LogFilePath = Path.Combine(AppContext.BaseDirectory, "VSModManagerStatus.log");
+    private static readonly string LogFilePath = InitializeLogFilePath();
+
+    private static string InitializeLogFilePath()
+    {
+        try
+        {
+            string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            if (!string.IsNullOrEmpty(documentsPath))
+            {
+                string directory = Path.Combine(documentsPath, "VS Mod Manager");
+                Directory.CreateDirectory(directory);
+                return Path.Combine(directory, "VSModManagerStatus.log");
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore failures when determining the documents directory and fall back to the app directory.
+        }
+
+        return Path.Combine(AppContext.BaseDirectory, "VSModManagerStatus.log");
+    }
 
     /// <summary>
     /// Appends a status entry to the log file using a timestamp and severity marker.
