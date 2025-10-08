@@ -190,7 +190,7 @@ public sealed class ModDatabaseService
             int? comments = GetNullableInt(modElement, "comments");
             int? follows = GetNullableInt(modElement, "follows");
             int? trendingPoints = GetNullableInt(modElement, "trendingpoints");
-            string? logoUrl = GetString(modElement, "logo");
+            string? logoUrl = GetLogoUrl(modElement);
             IReadOnlyList<ModReleaseInfo> releases = BuildReleaseInfos(modElement, normalizedGameVersion);
             ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
             ModReleaseInfo? latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
@@ -351,6 +351,35 @@ public sealed class ModDatabaseService
         return string.IsNullOrWhiteSpace(text) ? null : text;
     }
 
+    private static string? GetLogoUrl(JsonElement element)
+    {
+        string? logo = GetString(element, "logo");
+        if (!string.IsNullOrWhiteSpace(logo))
+        {
+            return logo;
+        }
+
+        logo = GetString(element, "logofile");
+        if (!string.IsNullOrWhiteSpace(logo))
+        {
+            return logo;
+        }
+
+        logo = GetString(element, "logofiledb");
+        if (!string.IsNullOrWhiteSpace(logo))
+        {
+            return logo;
+        }
+
+        logo = GetString(element, "logofilename");
+        if (!string.IsNullOrWhiteSpace(logo))
+        {
+            return logo;
+        }
+
+        return null;
+    }
+
     private static string? ConvertChangelogToPlainText(string? changelog)
     {
         if (string.IsNullOrWhiteSpace(changelog))
@@ -444,7 +473,7 @@ public sealed class ModDatabaseService
         string? assetId = TryGetAssetId(element);
         string? urlAlias = GetString(element, "urlalias");
         string? side = GetString(element, "side");
-        string? logo = GetString(element, "logo");
+        string? logo = GetLogoUrl(element);
 
         IReadOnlyList<string> tags = GetStringList(element, "tags");
         int downloads = GetInt(element, "downloads");
