@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using VintageStoryModManager.Models;
@@ -20,6 +22,34 @@ public sealed class ModDatabaseService
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
 
     private static readonly HttpClient HttpClient = new();
+
+    private static readonly Regex HtmlBreakRegex = new(
+        @"<\s*br\s*/?\s*>",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    private static readonly Regex HtmlParagraphOpenRegex = new(
+        @"<\s*p[^>]*>",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    private static readonly Regex HtmlParagraphCloseRegex = new(
+        @"</\s*p\s*>",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    private static readonly Regex HtmlListItemOpenRegex = new(
+        @"<\s*li[^>]*>",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    private static readonly Regex HtmlListItemCloseRegex = new(
+        @"</\s*li\s*>",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    private static readonly Regex HtmlBlockCloseRegex = new(
+        @"</\s*(div|section|article|h[1-6])\s*>",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    private static readonly Regex HtmlTagRegex = new(
+        @"<[^>]+>",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     public async Task PopulateModDatabaseInfoAsync(IEnumerable<ModEntry> mods, string? installedGameVersion, CancellationToken cancellationToken = default)
     {
@@ -286,6 +316,7 @@ public sealed class ModDatabaseService
         }
 
         string? fileName = GetString(releaseElement, "filename");
+        string? changelog = ConvertChangelogToPlainText(GetString(releaseElement, "changelog"));
 
         release = new ModReleaseInfo
         {
@@ -294,7 +325,8 @@ public sealed class ModDatabaseService
             DownloadUri = downloadUri,
             FileName = fileName,
             GameVersionTags = releaseTags,
-            IsCompatibleWithInstalledGame = isCompatible
+            IsCompatibleWithInstalledGame = isCompatible,
+            Changelog = changelog
         };
 
         return true;
@@ -309,6 +341,74 @@ public sealed class ModDatabaseService
 
         string? text = value.GetString();
         return string.IsNullOrWhiteSpace(text) ? null : text;
+    }
+
+    private static string? ConvertChangelogToPlainText(string? changelog)
+    {
+        if (string.IsNullOrWhiteSpace(changelog))
+        {
+            return null;
+        }
+
+        string text = changelog.Trim();
+        if (text.Length == 0)
+        {
+            return null;
+        }
+
+        text = text.Replace("\r\n", "\n", StringComparison.Ordinal);
+        text = text.Replace('\r', '\n');
+        text = HtmlBreakRegex.Replace(text, "\n");
+        text = HtmlParagraphCloseRegex.Replace(text, "\n\n");
+        text = HtmlParagraphOpenRegex.Replace(text, string.Empty);
+        text = HtmlListItemCloseRegex.Replace(text, "\n");
+        text = HtmlListItemOpenRegex.Replace(text, "\u2022 ");
+        text = HtmlBlockCloseRegex.Replace(text, "\n\n");
+        text = HtmlTagRegex.Replace(text, string.Empty);
+
+        text = WebUtility.HtmlDecode(text);
+
+        string[] lines = text.Split('\n');
+        var normalizedLines = new List<string>(lines.Length);
+
+        foreach (string line in lines)
+        {
+            string trimmedEnd = line.TrimEnd();
+            if (trimmedEnd.Length == 0)
+            {
+                if (normalizedLines.Count == 0 || normalizedLines[^1].Length == 0)
+                {
+                    continue;
+                }
+
+                normalizedLines.Add(string.Empty);
+                continue;
+            }
+
+            string trimmedStart = trimmedEnd.TrimStart();
+            if (trimmedStart.StartsWith("\u2022 ", StringComparison.Ordinal))
+            {
+                trimmedStart = "\u2022 " + trimmedStart[2..].Trim();
+            }
+            else
+            {
+                trimmedStart = trimmedStart.Trim();
+            }
+
+            normalizedLines.Add(trimmedStart);
+        }
+
+        while (normalizedLines.Count > 0 && normalizedLines[^1].Length == 0)
+        {
+            normalizedLines.RemoveAt(normalizedLines.Count - 1);
+        }
+
+        if (normalizedLines.Count == 0)
+        {
+            return null;
+        }
+
+        return string.Join(Environment.NewLine, normalizedLines);
     }
 
     private static ModDatabaseSearchResult? TryCreateSearchResult(JsonElement element, IReadOnlyList<string> tokens)

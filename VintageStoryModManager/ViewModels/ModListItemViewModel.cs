@@ -34,6 +34,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private ModReleaseInfo? _latestRelease;
     private ModReleaseInfo? _latestCompatibleRelease;
     private IReadOnlyList<ModReleaseInfo> _releases;
+    private IReadOnlyList<ReleaseChangelog> _newerReleaseChangelogs = Array.Empty<ReleaseChangelog>();
     private int? _databaseDownloads;
     private string? _modDatabaseAssetId;
     private string? _modDatabasePageUrl;
@@ -57,6 +58,8 @@ public sealed class ModListItemViewModel : ObservableObject
     private bool _hasUpdate;
     private string? _updateMessage;
     private ModVersionOptionViewModel? _selectedVersionOption;
+
+    public sealed record ReleaseChangelog(string Version, string Changelog);
 
     public ModListItemViewModel(
         ModEntry entry,
@@ -135,6 +138,7 @@ public sealed class ModListItemViewModel : ObservableObject
         InitializeUpdateAvailability();
         InitializeVersionOptions();
         InitializeVersionWarning(_installedGameVersion);
+        UpdateNewerReleaseChangelogs();
         UpdateStatusFromErrors();
         UpdateTooltip();
         _searchIndex = BuildSearchIndex(entry, location);
@@ -222,6 +226,10 @@ public sealed class ModListItemViewModel : ObservableObject
     public bool HasVersionOptions => _versionOptions.Count > 0;
 
     public bool HasDownloadableRelease => _latestRelease != null || _latestCompatibleRelease != null;
+
+    public IReadOnlyList<ReleaseChangelog> NewerReleaseChangelogs => _newerReleaseChangelogs;
+
+    public bool HasNewerReleaseChangelogs => _newerReleaseChangelogs.Count > 0;
 
     public string InstallButtonToolTip
     {
@@ -514,6 +522,7 @@ public sealed class ModListItemViewModel : ObservableObject
         InitializeUpdateAvailability();
         InitializeVersionOptions();
         InitializeVersionWarning(_installedGameVersion);
+        UpdateNewerReleaseChangelogs();
 
         OnPropertyChanged(nameof(LatestRelease));
         OnPropertyChanged(nameof(LatestCompatibleRelease));
@@ -750,6 +759,84 @@ public sealed class ModListItemViewModel : ObservableObject
             ?? finalized.FirstOrDefault();
 
         SetProperty(ref _selectedVersionOption, selected);
+    }
+
+    private void UpdateNewerReleaseChangelogs()
+    {
+        IReadOnlyList<ReleaseChangelog> updated = BuildNewerReleaseChangelogList();
+        if (ReferenceEquals(_newerReleaseChangelogs, updated))
+        {
+            return;
+        }
+
+        _newerReleaseChangelogs = updated;
+        OnPropertyChanged(nameof(NewerReleaseChangelogs));
+        OnPropertyChanged(nameof(HasNewerReleaseChangelogs));
+    }
+
+    private IReadOnlyList<ReleaseChangelog> BuildNewerReleaseChangelogList()
+    {
+        if (_releases.Count == 0)
+        {
+            return Array.Empty<ReleaseChangelog>();
+        }
+
+        int installedIndex = FindInstalledReleaseIndex();
+        int endExclusive = installedIndex >= 0 ? installedIndex : _releases.Count;
+        if (endExclusive <= 0)
+        {
+            return Array.Empty<ReleaseChangelog>();
+        }
+
+        var results = new List<ReleaseChangelog>();
+        for (int i = 0; i < endExclusive; i++)
+        {
+            ModReleaseInfo release = _releases[i];
+            if (string.IsNullOrWhiteSpace(release.Changelog))
+            {
+                continue;
+            }
+
+            string trimmed = release.Changelog.Trim();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            results.Add(new ReleaseChangelog(release.Version, trimmed));
+        }
+
+        return results.Count == 0 ? Array.Empty<ReleaseChangelog>() : results;
+    }
+
+    private int FindInstalledReleaseIndex()
+    {
+        if (_releases.Count == 0 || string.IsNullOrWhiteSpace(Version))
+        {
+            return -1;
+        }
+
+        string trimmedInstalled = Version!.Trim();
+        string? normalizedInstalled = VersionStringUtility.Normalize(Version);
+
+        for (int i = 0; i < _releases.Count; i++)
+        {
+            ModReleaseInfo release = _releases[i];
+            if (!string.IsNullOrWhiteSpace(release.Version)
+                && string.Equals(release.Version.Trim(), trimmedInstalled, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+
+            if (normalizedInstalled != null
+                && !string.IsNullOrWhiteSpace(release.NormalizedVersion)
+                && string.Equals(release.NormalizedVersion, normalizedInstalled, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private static bool IsReleaseInstalled(ModReleaseInfo release, string? installedVersion, string? normalizedInstalled)
