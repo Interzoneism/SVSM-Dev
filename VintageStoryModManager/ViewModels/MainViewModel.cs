@@ -915,6 +915,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void SetStatus(string message, bool isError)
     {
+        StatusLogService.AppendStatus(message, isError);
         StatusMessage = message;
         IsErrorStatus = isError;
     }
