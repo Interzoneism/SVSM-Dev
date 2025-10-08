@@ -1385,7 +1385,7 @@ public sealed class ModListItemViewModel : ObservableObject
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.UriSource = uri;
-                bitmap.CacheOption = BitmapCacheOption.OnDemand;
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
                 bitmap.EndInit();
                 bitmap.Freeze();
