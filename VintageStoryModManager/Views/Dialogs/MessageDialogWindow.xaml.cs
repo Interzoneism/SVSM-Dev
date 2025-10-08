@@ -53,13 +53,13 @@ public partial class MessageDialogWindow : Window
                 ConfigureButton(ButtonTwo, "OK", MessageBoxResult.OK, isDefault: true);
                 break;
             case MessageBoxButton.YesNo:
-                ConfigureButton(ButtonOne, "No", MessageBoxResult.No);
-                ConfigureButton(ButtonTwo, "Yes", MessageBoxResult.Yes, isDefault: true);
+                ConfigureButton(ButtonOne, "Yes", MessageBoxResult.Yes, isDefault: true);
+                ConfigureButton(ButtonTwo, "No", MessageBoxResult.No);
                 break;
             case MessageBoxButton.YesNoCancel:
                 ConfigureButton(ButtonOne, "Cancel", MessageBoxResult.Cancel, isCancel: true);
-                ConfigureButton(ButtonTwo, "No", MessageBoxResult.No);
-                ConfigureButton(ButtonThree, "Yes", MessageBoxResult.Yes, isDefault: true);
+                ConfigureButton(ButtonTwo, "Yes", MessageBoxResult.Yes, isDefault: true);
+                ConfigureButton(ButtonThree, "No", MessageBoxResult.No);
                 break;
             default:
                 ConfigureButton(ButtonOne, "OK", MessageBoxResult.OK, isDefault: true, isCancel: true);
