@@ -886,33 +886,13 @@
                                 </Grid.RowDefinitions>
 
                                 <Grid>
-                                    <Border Background="{DynamicResource IMM.SurfaceAltBrush}">
-                                        <Border.Style>
-                                            <Style TargetType="{x:Type Border}">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding HasModDatabasePreviewImage}" Value="False">
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <TextBlock Text="No preview"
-                                                       Foreground="{DynamicResource IMM.ForegroundBrush}"
-                                                       FontWeight="SemiBold"
-                                                       FontSize="14"
-                                                       HorizontalAlignment="Center" />
-                                        </StackPanel>
-                                    </Border>
-                                    <Image Source="{Binding ModDatabasePreviewImage}"
-                                           Stretch="UniformToFill">
+                                    <Image Stretch="UniformToFill">
                                         <Image.Style>
                                             <Style TargetType="{x:Type Image}">
-                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Setter Property="Source" Value="/VintageStoryModManager;component/Resources/mod-default.png" />
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding HasModDatabasePreviewImage}" Value="False">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    <DataTrigger Binding="{Binding HasModDatabasePreviewImage}" Value="True">
+                                                        <Setter Property="Source" Value="{Binding ModDatabasePreviewImage}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>

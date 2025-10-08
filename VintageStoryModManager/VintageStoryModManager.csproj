@@ -20,6 +20,9 @@
     <Resource Include="configicon.png" />
     <Resource Include="webicon.png" />
     <Resource Include="deleteicon.png" />
+    <Resource Include="..\Moddb_website\Vintage Story Mod DB_files\mod-default.png">
+      <Link>Resources\mod-default.png</Link>
+    </Resource>
   </ItemGroup>
 
   <ItemGroup>
