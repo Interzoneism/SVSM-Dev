@@ -36,6 +36,8 @@ public sealed class ModDatabaseSearchResult
 
     public string? LogoUrl { get; init; }
 
+    public string? LogoFile { get; init; }
+
     public DateTime? LastReleasedUtc { get; init; }
 
     internal double Score { get; init; }
