@@ -256,14 +256,46 @@ public sealed class MainViewModel : ObservableObject
     public async Task<bool> ApplyPresetAsync(ModPreset preset)
     {
         string? localError = null;
-        IReadOnlyList<string> entries = preset.DisabledEntries ?? Array.Empty<string>();
 
-        bool success = await Task.Run(() =>
+        bool success;
+        if (preset.IncludesModStatus && preset.ModStates.Count > 0)
         {
-            bool result = _settingsStore.TryApplyDisabledEntries(entries, out var error);
-            localError = error;
-            return result;
-        });
+            success = await Task.Run(() =>
+            {
+                foreach (var state in preset.ModStates)
+                {
+                    if (state is null || string.IsNullOrWhiteSpace(state.ModId) || state.IsActive is not bool desiredState)
+                    {
+                        continue;
+                    }
+
+                    string normalizedId = state.ModId.Trim();
+                    string? version = preset.IncludesModVersions
+                        ? (string.IsNullOrWhiteSpace(state.Version) ? null : state.Version!.Trim())
+                        : null;
+
+                    if (!_settingsStore.TrySetActive(normalizedId, version, desiredState, out string? error))
+                    {
+                        localError = error;
+                        return false;
+                    }
+                }
+
+                localError = null;
+                return true;
+            });
+        }
+        else
+        {
+            IReadOnlyList<string> entries = preset.DisabledEntries ?? Array.Empty<string>();
+
+            success = await Task.Run(() =>
+            {
+                bool result = _settingsStore.TryApplyDisabledEntries(entries, out var error);
+                localError = error;
+                return result;
+            });
+        }
 
         if (!success)
         {
