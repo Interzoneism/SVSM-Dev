@@ -415,6 +415,68 @@ public sealed class MainViewModel : ObservableObject
         return new ActivationResult(true, null);
     }
 
+    internal async Task RefreshModsWithErrorsAsync()
+    {
+        if (_mods.Count == 0 || _modEntriesBySourcePath.Count == 0)
+        {
+            return;
+        }
+
+        var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var mod in _mods)
+        {
+            if (mod is null || string.IsNullOrWhiteSpace(mod.SourcePath))
+            {
+                continue;
+            }
+
+            if (mod.HasLoadError || mod.DependencyHasErrors)
+            {
+                candidates.Add(mod.SourcePath);
+            }
+        }
+
+        var entries = new List<ModEntry>(_modEntriesBySourcePath.Values);
+
+        await Task.Run(() => _discoveryService.ApplyLoadStatuses(entries)).ConfigureAwait(true);
+
+        foreach (var entry in entries)
+        {
+            if (entry is null || string.IsNullOrWhiteSpace(entry.SourcePath))
+            {
+                continue;
+            }
+
+            if (entry.HasLoadError
+                || entry.DependencyHasErrors
+                || (entry.MissingDependencies?.Count ?? 0) > 0)
+            {
+                candidates.Add(entry.SourcePath);
+            }
+        }
+
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        foreach (string path in candidates)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            if (_modEntriesBySourcePath.TryGetValue(path, out var entry)
+                && _modViewModelsBySourcePath.TryGetValue(path, out var viewModel))
+            {
+                viewModel.UpdateLoadError(entry.LoadError);
+                viewModel.UpdateDependencyIssues(entry.DependencyHasErrors, entry.MissingDependencies);
+            }
+        }
+    }
+
     private async Task LoadModsAsync()
     {
         if (IsBusy)
