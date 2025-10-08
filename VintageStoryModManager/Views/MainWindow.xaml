@@ -38,6 +38,11 @@
             <GradientStop Color="#FFEFF3F9" Offset="1"/>
             <GradientStop Color="#FFD2DFF3" Offset="0.263"/>
         </LinearGradientBrush>
+        <LinearGradientBrush x:Key="CardGradient3" EndPoint="1,0.5" StartPoint="0,0.5">
+            <GradientStop Color="#FFBED0F1"/>
+            <GradientStop Color="#FFEFF3F9" Offset="1"/>
+            <GradientStop Color="#FFD2DFF3" Offset="0.263"/>
+        </LinearGradientBrush>
     </Window.Resources>
 
     <Grid Background="{DynamicResource IMM.SurfaceBrush}" Margin="0,0,0,8">
@@ -277,7 +282,7 @@
                         <Style TargetType="{x:Type DataGrid}">
                             <Setter Property="CanUserSortColumns" Value="True" />
                             <Setter Property="Visibility" Value="Visible" />
-                            
+
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="CanUserSortColumns" Value="False" />
@@ -296,15 +301,15 @@
                         <SolidColorBrush Color="{DynamicResource VS.DialogTitleBarColor}" />
                     </DataGrid.BorderBrush>
                     <DataGrid.RowHeaderStyle>
-                        
+
                         <Style/>
                     </DataGrid.RowHeaderStyle>
                     <DataGrid.RowStyle>
                         <Style TargetType="{x:Type DataGridRow}">
                             <Setter Property="Background" Value="Transparent" />
                             <Setter Property="BorderBrush" Value="{StaticResource IMM.RowBorderBrush}" />
-                            <Setter Property="BorderThickness" Value="1" />
-                            <Setter Property="Margin" Value="0,0,0,0" />
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="Margin" Value="10,2,10,2" />
                             <Setter Property="Padding">
                                 <Setter.Value>
                                     <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
@@ -318,7 +323,7 @@
                                 <Setter.Value>
                                     <ControlTemplate TargetType="{x:Type DataGridRow}">
                                         <Border x:Name="RowBorder"
-                                            Background="{DynamicResource CardGradient2}"
+                                            Background="{DynamicResource CardGradient3}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}"
                                         CornerRadius="8"
@@ -1107,7 +1112,7 @@
                             FontWeight="Bold" />
             </StackPanel>
         </Grid>
-        <Border Background="{DynamicResource CardGradient2}" x:Name="MODINFO_border"
+        <Border Background="{DynamicResource CardGradient3}" x:Name="MODINFO_border"
                 VerticalAlignment="Top"
                 BorderBrush="{DynamicResource VS.DialogBorderBrush}"
                 BorderThickness="0"
