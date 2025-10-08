@@ -26,6 +26,7 @@ using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.ViewModels;
+using VintageStoryModManager.Views.Behaviors;
 using WinForms = System.Windows.Forms;
 using WpfApplication = System.Windows.Application;
 using WpfButton = System.Windows.Controls.Button;
@@ -38,6 +39,8 @@ public partial class MainWindow : Window
     private const double ModListScrollMultiplier = 0.5;
     private const double HoverOverlayOpacity = 0.12;
     private const double SelectionOverlayOpacity = 0.22;
+    private static readonly TimeSpan ScrollAnimationDuration = TimeSpan.FromMilliseconds(150);
+    private static readonly QuadraticEase ScrollAnimationEasing = CreateScrollAnimationEasing();
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/enhancedhandbook";
     private const string PresetDirectoryName = "Presets";
 
@@ -3093,7 +3096,7 @@ public partial class MainWindow : Window
 
         double targetOffset = scrollViewer.VerticalOffset - offsetChange;
         double clampedOffset = Math.Max(0, Math.Min(targetOffset, scrollViewer.ScrollableHeight));
-        scrollViewer.ScrollToVerticalOffset(clampedOffset);
+        ScrollViewerAnimator.AnimateToOffset(scrollViewer, clampedOffset, ScrollAnimationDuration, ScrollAnimationEasing);
         e.Handled = true;
     }
 
@@ -3110,6 +3113,21 @@ public partial class MainWindow : Window
         }
 
         return false;
+    }
+
+    private static QuadraticEase CreateScrollAnimationEasing()
+    {
+        var easing = new QuadraticEase
+        {
+            EasingMode = EasingMode.EaseOut,
+        };
+
+        if (easing.CanFreeze)
+        {
+            easing.Freeze();
+        }
+
+        return easing;
     }
 
     private static DependencyObject? GetParent(DependencyObject current)
