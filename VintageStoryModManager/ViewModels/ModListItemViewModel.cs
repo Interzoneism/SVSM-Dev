@@ -199,7 +199,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool HasDependencyIssues => _dependencyHasErrors || _missingDependencies.Count > 0;
 
-    public bool CanFixDependencyIssues => HasDependencyIssues;
+    public bool CanFixDependencyIssues => HasDependencyIssues || HasLoadError;
 
     public IReadOnlyList<string> DatabaseTags => _databaseTags;
 
@@ -468,6 +468,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _loadError = normalized;
         OnPropertyChanged(nameof(HasLoadError));
         OnPropertyChanged(nameof(CanToggle));
+        OnPropertyChanged(nameof(CanFixDependencyIssues));
         UpdateStatusFromErrors();
         UpdateTooltip();
     }
