@@ -28,7 +28,7 @@ using VintageStoryModManager.ViewModels;
 using WinForms = System.Windows.Forms;
 using WpfApplication = System.Windows.Application;
 using WpfButton = System.Windows.Controls.Button;
-using WpfMessageBox = System.Windows.MessageBox;
+using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 
 namespace VintageStoryModManager.Views;
 
