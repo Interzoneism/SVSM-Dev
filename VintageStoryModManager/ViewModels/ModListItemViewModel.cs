@@ -47,7 +47,6 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _latestDatabaseVersion;
     private ImageSource? _modDatabaseLogo;
     private string? _modDatabaseLogoUrl;
-    private string? _modDatabaseLogoFile;
     private readonly string? _installedGameVersion;
     private readonly string _searchIndex;
     private IReadOnlyList<ModVersionOptionViewModel> _versionOptions = Array.Empty<ModVersionOptionViewModel>();
@@ -106,7 +105,6 @@ public sealed class ModListItemViewModel : ObservableObject
         }
         _databaseDownloads = databaseInfo?.Downloads;
         _databaseComments = databaseInfo?.Comments;
-        _modDatabaseLogoFile = databaseInfo?.LogoFile;
         _modDatabaseLogoUrl = databaseInfo?.LogoUrl;
         _modDatabaseLogo = CreateModDatabaseLogoImage();
         _latestDatabaseVersion = _latestRelease?.Version
@@ -537,23 +535,10 @@ public sealed class ModListItemViewModel : ObservableObject
             OnPropertyChanged(nameof(CommentsDisplay));
         }
 
-        string? logoFile = info.LogoFile;
         string? logoUrl = info.LogoUrl;
-        bool logoFileChanged = !string.Equals(_modDatabaseLogoFile, logoFile, StringComparison.Ordinal);
-        bool logoUrlChanged = !string.Equals(_modDatabaseLogoUrl, logoUrl, StringComparison.Ordinal);
-
-        if (logoFileChanged)
-        {
-            _modDatabaseLogoFile = logoFile;
-        }
-
-        if (logoUrlChanged)
+        if (!string.Equals(_modDatabaseLogoUrl, logoUrl, StringComparison.Ordinal))
         {
             _modDatabaseLogoUrl = logoUrl;
-        }
-
-        if (logoFileChanged || logoUrlChanged)
-        {
             _modDatabaseLogo = CreateModDatabaseLogoImage();
             OnPropertyChanged(nameof(ModDatabasePreviewImage));
             OnPropertyChanged(nameof(HasModDatabasePreviewImage));
@@ -1363,32 +1348,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private ImageSource? CreateModDatabaseLogoImage()
     {
-        return CreateImageFromLogoFile(_modDatabaseLogoFile) ?? CreateImageFromUri(_modDatabaseLogoUrl);
-    }
-
-    private static ImageSource? CreateImageFromLogoFile(string? logoFile)
-    {
-        if (string.IsNullOrWhiteSpace(logoFile))
-        {
-            return null;
-        }
-
-        return CreateImageSafely(() =>
-        {
-            if (!Uri.TryCreate(logoFile, UriKind.RelativeOrAbsolute, out Uri? uri))
-            {
-                return null;
-            }
-
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.UriSource = uri;
-            bitmap.CacheOption = BitmapCacheOption.OnDemand;
-            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-            bitmap.EndInit();
-            bitmap.Freeze();
-            return bitmap;
-        });
+        return CreateImageFromUri(_modDatabaseLogoUrl);
     }
 
     private static ImageSource? CreateImageFromUri(string? url)
