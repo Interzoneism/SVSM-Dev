@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -25,6 +26,8 @@ public sealed class UserConfigurationService
     private bool _isAdvancedPresetMode;
     private bool _isCompactView;
     private bool _cacheAllVersionsLocally;
+    private string? _modsSortMemberPath;
+    private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
 
     public UserConfigurationService()
     {
@@ -44,6 +47,11 @@ public sealed class UserConfigurationService
     public bool IsCompactView => _isCompactView;
 
     public bool CacheAllVersionsLocally => _cacheAllVersionsLocally;
+
+    public (string? SortMemberPath, ListSortDirection Direction) GetModListSortPreference()
+    {
+        return (_modsSortMemberPath, _modsSortDirection);
+    }
 
     public string GetConfigurationDirectory()
     {
@@ -301,6 +309,23 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetModListSortPreference(string? sortMemberPath, ListSortDirection direction)
+    {
+        string? normalized = string.IsNullOrWhiteSpace(sortMemberPath)
+            ? null
+            : sortMemberPath.Trim();
+
+        if (string.Equals(_modsSortMemberPath, normalized, StringComparison.Ordinal)
+            && _modsSortDirection == direction)
+        {
+            return;
+        }
+
+        _modsSortMemberPath = normalized;
+        _modsSortDirection = direction;
+        Save();
+    }
+
     public void SetDataDirectory(string path)
     {
         DataDirectory = NormalizePath(path);
@@ -353,6 +378,8 @@ public sealed class UserConfigurationService
             _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
             _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
             _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? false;
+            _modsSortMemberPath = NormalizeSortMemberPath(obj["modsSortMemberPath"]?.GetValue<string?>());
+            _modsSortDirection = ParseSortDirection(obj["modsSortDirection"]?.GetValue<string?>());
             if (loadedFromPreferredLocation)
             {
                 LoadClassicPresets(obj["modPresets"]);
@@ -389,6 +416,8 @@ public sealed class UserConfigurationService
             _isAdvancedPresetMode = false;
             _isCompactView = false;
             _cacheAllVersionsLocally = false;
+            _modsSortMemberPath = null;
+            _modsSortDirection = ListSortDirection.Ascending;
             _selectedPresetName = null;
             _selectedAdvancedPresetName = null;
         }
@@ -408,6 +437,8 @@ public sealed class UserConfigurationService
                 ["isCompactView"] = _isCompactView,
                 ["useAdvancedPresets"] = _isAdvancedPresetMode,
                 ["cacheAllVersionsLocally"] = _cacheAllVersionsLocally,
+                ["modsSortMemberPath"] = _modsSortMemberPath,
+                ["modsSortDirection"] = _modsSortDirection.ToString(),
                 ["modPresets"] = BuildClassicPresetsJson(),
                 ["advancedModPresets"] = BuildAdvancedPresetsJson(),
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
@@ -773,6 +804,26 @@ public sealed class UserConfigurationService
         {
             return null;
         }
+    }
+
+    private static string? NormalizeSortMemberPath(string? sortMemberPath)
+    {
+        if (string.IsNullOrWhiteSpace(sortMemberPath))
+        {
+            return null;
+        }
+
+        return sortMemberPath.Trim();
+    }
+
+    private static ListSortDirection ParseSortDirection(string? value)
+    {
+        if (Enum.TryParse(value, ignoreCase: true, out ListSortDirection direction))
+        {
+            return direction;
+        }
+
+        return ListSortDirection.Ascending;
     }
 
     private static string? NormalizePresetName(string? name)

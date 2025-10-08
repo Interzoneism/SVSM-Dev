@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Data;
 
@@ -18,6 +19,8 @@ public sealed class SortOption
     }
 
     public string DisplayName { get; }
+
+    public IReadOnlyList<(string Property, ListSortDirection Direction)> SortDescriptions => _sorts;
 
     public void Apply(ICollectionView view)
     {

@@ -69,6 +69,7 @@ public partial class MainWindow : Window
     private readonly ModUpdateService _modUpdateService = new();
     private bool _isModUpdateInProgress;
     private ScrollViewer? _modsScrollViewer;
+    private bool _suppressSortPreferenceSave;
 
 
     public MainWindow()
@@ -182,11 +183,25 @@ public partial class MainWindow : Window
         ApplyCompactViewState(_viewModel.IsCompactView);
         UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
         AttachToModsView(_viewModel.CurrentModsView);
+        RestoreSortPreference();
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainViewModel.IsCompactView))
+        if (e.PropertyName == nameof(MainViewModel.SelectedSortOption))
+        {
+            if (_viewModel != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (_viewModel != null)
+                    {
+                        UpdateSortPreferenceFromSelectedOption(!_suppressSortPreferenceSave);
+                    }
+                });
+            }
+        }
+        else if (e.PropertyName == nameof(MainViewModel.IsCompactView))
         {
             if (_viewModel != null)
             {
@@ -301,6 +316,231 @@ public partial class MainWindow : Window
         if (ModsDataGrid.Items.SortDescriptions.Count > 0)
         {
             ModsDataGrid.Items.SortDescriptions.Clear();
+        }
+    }
+
+    private void RestoreSortPreference()
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        var preference = _userConfiguration.GetModListSortPreference();
+        string? sortMemberPath = preference.SortMemberPath;
+        if (!string.IsNullOrWhiteSpace(sortMemberPath))
+        {
+            ApplyModListSort(sortMemberPath, preference.Direction, persistPreference: false);
+        }
+        else
+        {
+            UpdateSortPreferenceFromSelectedOption(persistPreference: false);
+        }
+    }
+
+    private void ApplyModListSort(string sortMemberPath, ListSortDirection direction, bool persistPreference)
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(sortMemberPath))
+        {
+            return;
+        }
+
+        sortMemberPath = sortMemberPath.Trim();
+
+        SortOption? option = FindMatchingSortOption(sortMemberPath, direction);
+        if (option is null)
+        {
+            var sorts = BuildSortDescriptions(sortMemberPath, direction);
+            string displayName = BuildSortDisplayName(sortMemberPath, direction);
+            option = new SortOption(displayName, sorts);
+        }
+
+        ApplySortOption(option, persistPreference);
+    }
+
+    private void ApplySortOption(SortOption option, bool persistPreference)
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        bool changed = !ReferenceEquals(_viewModel.SelectedSortOption, option);
+        bool previousSuppression = _suppressSortPreferenceSave;
+        _suppressSortPreferenceSave = !persistPreference;
+
+        try
+        {
+            if (changed)
+            {
+                _viewModel.SelectedSortOption = option;
+            }
+            else
+            {
+                option.Apply(_viewModel.ModsView);
+                UpdateSortPreferenceFromSelectedOption(persistPreference);
+            }
+        }
+        finally
+        {
+            _suppressSortPreferenceSave = previousSuppression;
+        }
+    }
+
+    private SortOption? FindMatchingSortOption(string sortMemberPath, ListSortDirection direction)
+    {
+        if (_viewModel is null)
+        {
+            return null;
+        }
+
+        foreach (var option in _viewModel.SortOptions)
+        {
+            if (SortOptionMatches(option, sortMemberPath, direction))
+            {
+                return option;
+            }
+        }
+
+        if (_viewModel.SelectedSortOption != null
+            && SortOptionMatches(_viewModel.SelectedSortOption, sortMemberPath, direction))
+        {
+            return _viewModel.SelectedSortOption;
+        }
+
+        return null;
+    }
+
+    private static bool SortOptionMatches(SortOption option, string sortMemberPath, ListSortDirection direction)
+    {
+        if (option.SortDescriptions.Count == 0)
+        {
+            return false;
+        }
+
+        var primary = option.SortDescriptions[0];
+        if (!string.Equals(primary.Property, sortMemberPath, StringComparison.OrdinalIgnoreCase)
+            || primary.Direction != direction)
+        {
+            return false;
+        }
+
+        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.IsActive), StringComparison.OrdinalIgnoreCase))
+        {
+            if (option.SortDescriptions.Count < 2)
+            {
+                return false;
+            }
+
+            var secondary = option.SortDescriptions[1];
+            return string.Equals(secondary.Property, nameof(ModListItemViewModel.DisplayName), StringComparison.OrdinalIgnoreCase)
+                && secondary.Direction == ListSortDirection.Ascending;
+        }
+
+        return true;
+    }
+
+    private static (string Property, ListSortDirection Direction)[] BuildSortDescriptions(string sortMemberPath, ListSortDirection direction)
+    {
+        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.IsActive), StringComparison.OrdinalIgnoreCase))
+        {
+            return new[]
+            {
+                (nameof(ModListItemViewModel.IsActive), direction),
+                (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending)
+            };
+        }
+
+        return new[] { (sortMemberPath, direction) };
+    }
+
+    private static string BuildSortDisplayName(string sortMemberPath, ListSortDirection direction)
+    {
+        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.IsActive), StringComparison.OrdinalIgnoreCase))
+        {
+            return direction == ListSortDirection.Descending
+                ? "Active (Active → Inactive)"
+                : "Active (Inactive → Active)";
+        }
+
+        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.DisplayName), StringComparison.OrdinalIgnoreCase))
+        {
+            return direction == ListSortDirection.Ascending
+                ? "Name (A → Z)"
+                : "Name (Z → A)";
+        }
+
+        return $"{sortMemberPath} ({(direction == ListSortDirection.Ascending ? "Ascending" : "Descending")})";
+    }
+
+    private void UpdateSortPreferenceFromSelectedOption(bool persistPreference)
+    {
+        if (_viewModel?.SelectedSortOption is not { } option)
+        {
+            ClearColumnSortIndicators();
+            if (persistPreference)
+            {
+                _userConfiguration.SetModListSortPreference(null, ListSortDirection.Ascending);
+            }
+
+            return;
+        }
+
+        if (option.SortDescriptions.Count == 0)
+        {
+            ClearColumnSortIndicators();
+            if (persistPreference)
+            {
+                _userConfiguration.SetModListSortPreference(null, ListSortDirection.Ascending);
+            }
+
+            return;
+        }
+
+        var primary = option.SortDescriptions[0];
+        UpdateColumnSortVisuals(primary.Property, primary.Direction);
+
+        if (persistPreference)
+        {
+            _userConfiguration.SetModListSortPreference(primary.Property, primary.Direction);
+        }
+    }
+
+    private void UpdateColumnSortVisuals(string sortMemberPath, ListSortDirection direction)
+    {
+        if (ModsDataGrid == null)
+        {
+            return;
+        }
+
+        foreach (var column in ModsDataGrid.Columns)
+        {
+            if (string.Equals(column.SortMemberPath, sortMemberPath, StringComparison.OrdinalIgnoreCase))
+            {
+                column.SortDirection = direction;
+            }
+            else
+            {
+                column.SortDirection = null;
+            }
+        }
+    }
+
+    private void ClearColumnSortIndicators()
+    {
+        if (ModsDataGrid == null)
+        {
+            return;
+        }
+
+        foreach (var column in ModsDataGrid.Columns)
+        {
+            column.SortDirection = null;
         }
     }
 
@@ -721,6 +961,35 @@ public partial class MainWindow : Window
 
         normalizedPath = candidate;
         return true;
+    }
+
+    private void ModsDataGrid_OnSorting(object sender, DataGridSortingEventArgs e)
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        if (_viewModel.SearchModDatabase)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        string? sortMemberPath = e.Column.SortMemberPath;
+        if (string.IsNullOrWhiteSpace(sortMemberPath))
+        {
+            e.Handled = true;
+            return;
+        }
+
+        e.Handled = true;
+
+        ListSortDirection direction = e.Column.SortDirection == ListSortDirection.Ascending
+            ? ListSortDirection.Descending
+            : ListSortDirection.Ascending;
+
+        ApplyModListSort(sortMemberPath, direction, persistPreference: true);
     }
 
     private void ModsDataGrid_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
