@@ -27,6 +27,9 @@ public sealed class UserConfigurationService
     private bool _isCompactView;
     private bool _useModDbDesignView;
     private bool _cacheAllVersionsLocally;
+    private bool _includePresetModStatus = true;
+    private bool _includePresetModVersions;
+    private bool _exclusivePresetLoad;
     private string? _modsSortMemberPath;
     private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
 
@@ -50,6 +53,12 @@ public sealed class UserConfigurationService
     public bool UseModDbDesignView => _useModDbDesignView;
 
     public bool CacheAllVersionsLocally => _cacheAllVersionsLocally;
+
+    public bool IncludePresetModStatus => _includePresetModStatus;
+
+    public bool IncludePresetModVersions => _includePresetModVersions;
+
+    public bool ExclusivePresetLoad => _exclusivePresetLoad;
 
     public (string? SortMemberPath, ListSortDirection Direction) GetModListSortPreference()
     {
@@ -143,13 +152,19 @@ public sealed class UserConfigurationService
             return _advancedPresets
                 .OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
                 .Select(pair => new ModPreset(pair.Key, pair.Value.DisabledEntries.ToArray(),
-                    pair.Value.ModStates.Length == 0 ? Array.Empty<ModPresetModState>() : pair.Value.ModStates.Select(CloneState).ToArray()))
+                    pair.Value.ModStates.Length == 0 ? Array.Empty<ModPresetModState>() : pair.Value.ModStates.Select(CloneState).ToArray(),
+                    IncludesModStatus: pair.Value.ModStates.Any(state => state.IsActive.HasValue),
+                    IncludesModVersions: pair.Value.ModStates.Any(state => !string.IsNullOrWhiteSpace(state.Version)),
+                    IsExclusive: false))
                 .ToList();
         }
 
         return _presets
             .OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
-            .Select(pair => new ModPreset(pair.Key, pair.Value.ToArray(), Array.Empty<ModPresetModState>()))
+            .Select(pair => new ModPreset(pair.Key, pair.Value.ToArray(), Array.Empty<ModPresetModState>(),
+                IncludesModStatus: false,
+                IncludesModVersions: false,
+                IsExclusive: false))
             .ToList();
     }
 
@@ -184,13 +199,19 @@ public sealed class UserConfigurationService
                     data.DisabledEntries.ToArray(),
                     data.ModStates.Length == 0
                         ? Array.Empty<ModPresetModState>()
-                        : data.ModStates.Select(CloneState).ToArray());
+                        : data.ModStates.Select(CloneState).ToArray(),
+                    IncludesModStatus: data.ModStates.Any(state => state.IsActive.HasValue),
+                    IncludesModVersions: data.ModStates.Any(state => !string.IsNullOrWhiteSpace(state.Version)),
+                    IsExclusive: false);
                 return true;
             }
         }
         else if (_presets.TryGetValue(normalized, out string[]? entries))
         {
-            preset = new ModPreset(normalized, entries.ToArray(), Array.Empty<ModPresetModState>());
+            preset = new ModPreset(normalized, entries.ToArray(), Array.Empty<ModPresetModState>(),
+                IncludesModStatus: false,
+                IncludesModVersions: false,
+                IsExclusive: false);
             return true;
         }
 
@@ -323,6 +344,39 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetIncludePresetModStatus(bool include)
+    {
+        if (_includePresetModStatus == include)
+        {
+            return;
+        }
+
+        _includePresetModStatus = include;
+        Save();
+    }
+
+    public void SetIncludePresetModVersions(bool include)
+    {
+        if (_includePresetModVersions == include)
+        {
+            return;
+        }
+
+        _includePresetModVersions = include;
+        Save();
+    }
+
+    public void SetExclusivePresetLoad(bool exclusive)
+    {
+        if (_exclusivePresetLoad == exclusive)
+        {
+            return;
+        }
+
+        _exclusivePresetLoad = exclusive;
+        Save();
+    }
+
     public void SetModListSortPreference(string? sortMemberPath, ListSortDirection direction)
     {
         string? normalized = string.IsNullOrWhiteSpace(sortMemberPath)
@@ -393,6 +447,9 @@ public sealed class UserConfigurationService
             _useModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? false;
             _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
             _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? false;
+            _includePresetModStatus = obj["includePresetModStatus"]?.GetValue<bool?>() ?? true;
+            _includePresetModVersions = obj["includePresetModVersions"]?.GetValue<bool?>() ?? false;
+            _exclusivePresetLoad = obj["exclusivePresetLoad"]?.GetValue<bool?>() ?? false;
             _modsSortMemberPath = NormalizeSortMemberPath(obj["modsSortMemberPath"]?.GetValue<string?>());
             _modsSortDirection = ParseSortDirection(obj["modsSortDirection"]?.GetValue<string?>());
             if (loadedFromPreferredLocation)
@@ -432,6 +489,9 @@ public sealed class UserConfigurationService
             _isCompactView = false;
             _useModDbDesignView = false;
             _cacheAllVersionsLocally = false;
+            _includePresetModStatus = true;
+            _includePresetModVersions = false;
+            _exclusivePresetLoad = false;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
             _selectedPresetName = null;
@@ -454,6 +514,9 @@ public sealed class UserConfigurationService
                 ["useModDbDesignView"] = _useModDbDesignView,
                 ["useAdvancedPresets"] = _isAdvancedPresetMode,
                 ["cacheAllVersionsLocally"] = _cacheAllVersionsLocally,
+                ["includePresetModStatus"] = _includePresetModStatus,
+                ["includePresetModVersions"] = _includePresetModVersions,
+                ["exclusivePresetLoad"] = _exclusivePresetLoad,
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
                 ["modPresets"] = BuildClassicPresetsJson(),
@@ -539,10 +602,18 @@ public sealed class UserConfigurationService
             {
                 var modObject = new JsonObject
                 {
-                    ["modId"] = state.ModId,
-                    ["version"] = state.Version,
-                    ["isActive"] = state.IsActive
+                    ["modId"] = state.ModId
                 };
+
+                if (!string.IsNullOrWhiteSpace(state.Version))
+                {
+                    modObject["version"] = state.Version;
+                }
+
+                if (state.IsActive.HasValue)
+                {
+                    modObject["isActive"] = state.IsActive.Value;
+                }
 
                 modsArray.Add(modObject);
             }
@@ -618,7 +689,7 @@ public sealed class UserConfigurationService
 
                     string trimmedId = modId.Trim();
                     string? version = modObj["version"]?.GetValue<string?>();
-                    bool isActive = modObj["isActive"]?.GetValue<bool?>() ?? true;
+                    bool? isActive = modObj["isActive"]?.GetValue<bool?>();
                     states.Add(new ModPresetModState(trimmedId, string.IsNullOrWhiteSpace(version) ? null : version, isActive));
                 }
             }
@@ -678,7 +749,8 @@ public sealed class UserConfigurationService
                 continue;
             }
 
-            sanitized.Add(new ModPresetModState(trimmedId, string.IsNullOrWhiteSpace(state.Version) ? null : state.Version, state.IsActive));
+            string? version = string.IsNullOrWhiteSpace(state.Version) ? null : state.Version!.Trim();
+            sanitized.Add(new ModPresetModState(trimmedId, version, state.IsActive));
         }
 
         return sanitized.Count == 0 ? Array.Empty<ModPresetModState>() : sanitized.ToArray();

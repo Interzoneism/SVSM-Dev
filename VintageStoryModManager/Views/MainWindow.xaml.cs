@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -79,7 +80,9 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _userConfiguration = new UserConfigurationService();
-        AdvancedPresetsMenuItem.IsChecked = _userConfiguration.IsAdvancedPresetMode;
+        IncludeStatusMenuItem.IsChecked = _userConfiguration.IncludePresetModStatus;
+        IncludeVersionMenuItem.IsChecked = _userConfiguration.IncludePresetModVersions;
+        ExclusiveLoadMenuItem.IsChecked = _userConfiguration.ExclusivePresetLoad;
         CacheAllVersionsMenuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
 
         if (!TryInitializePaths())
@@ -115,20 +118,31 @@ public partial class MainWindow : Window
         }
     }
 
-    private void AdvancedPresetsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    private void IncludeStatusMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menuItem)
         {
             return;
         }
 
-        bool isCurrentlyEnabled = _userConfiguration.IsAdvancedPresetMode;
+        _userConfiguration.SetIncludePresetModStatus(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.IncludePresetModStatus;
+    }
+
+    private void IncludeVersionMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return;
+        }
+
+        bool isCurrentlyEnabled = _userConfiguration.IncludePresetModVersions;
         bool requestedState = menuItem.IsChecked;
 
         if (!isCurrentlyEnabled && requestedState)
         {
             MessageBoxResult confirm = WpfMessageBox.Show(
-                "This will activate advanced preset mode, which saves the specific versions of the mods as well, switching versions when presets are loaded.",
+                "Including mod versions will save the installed version for each mod and attempt to switch to those versions when presets are loaded.",
                 "Vintage Story Mod Manager",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
@@ -140,22 +154,37 @@ public partial class MainWindow : Window
             }
         }
 
-        if (isCurrentlyEnabled == requestedState)
+        _userConfiguration.SetIncludePresetModVersions(requestedState);
+        menuItem.IsChecked = _userConfiguration.IncludePresetModVersions;
+    }
+
+    private void ExclusiveLoadMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
         {
-            menuItem.IsChecked = isCurrentlyEnabled;
             return;
         }
 
-        _userConfiguration.SetAdvancedPresetMode(requestedState);
-        menuItem.IsChecked = requestedState;
+        bool isCurrentlyEnabled = _userConfiguration.ExclusivePresetLoad;
+        bool requestedState = menuItem.IsChecked;
 
-        if (_viewModel != null)
+        if (!isCurrentlyEnabled && requestedState)
         {
-            string status = requestedState
-                ? "Advanced presets enabled."
-                : "Advanced presets disabled.";
-            _viewModel.ReportStatus(status);
+            MessageBoxResult confirm = WpfMessageBox.Show(
+                "Exclusive load will remove any installed mods that are not part of the preset when it is loaded.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes)
+            {
+                menuItem.IsChecked = false;
+                return;
+            }
         }
+
+        _userConfiguration.SetExclusivePresetLoad(requestedState);
+        menuItem.IsChecked = _userConfiguration.ExclusivePresetLoad;
     }
 
     private void CacheAllVersionsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -2489,23 +2518,28 @@ public partial class MainWindow : Window
             filePath = Path.Combine(presetDirectory, presetName + ".json");
         }
 
+        bool includeStatus = _userConfiguration.IncludePresetModStatus;
+        bool includeVersions = _userConfiguration.IncludePresetModVersions;
+        bool exclusiveLoad = _userConfiguration.ExclusivePresetLoad;
+
         IReadOnlyList<string> disabledEntries = _viewModel.GetCurrentDisabledEntries();
-        IReadOnlyList<ModPresetModState> states = _userConfiguration.IsAdvancedPresetMode
-            ? _viewModel.GetCurrentModStates()
-            : Array.Empty<ModPresetModState>();
+        IReadOnlyList<ModPresetModState> states = _viewModel.GetCurrentModStates();
 
         var serializable = new SerializablePreset
         {
             Name = presetName,
             DisabledEntries = disabledEntries.ToList(),
-            Mods = _userConfiguration.IsAdvancedPresetMode
-                ? states.Select(state => new SerializablePresetModState
-                {
-                    ModId = state.ModId,
-                    Version = state.Version,
-                    IsActive = state.IsActive
-                }).ToList()
-                : new List<SerializablePresetModState>()
+            IncludeModStatus = includeStatus,
+            IncludeModVersions = includeVersions,
+            Exclusive = exclusiveLoad,
+            Mods = states.Select(state => new SerializablePresetModState
+            {
+                ModId = state.ModId,
+                Version = includeVersions && !string.IsNullOrWhiteSpace(state.Version)
+                    ? state.Version!.Trim()
+                    : null,
+                IsActive = includeStatus ? state.IsActive : null
+            }).ToList()
         };
 
         try
@@ -2513,7 +2547,8 @@ public partial class MainWindow : Window
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
 
             string json = JsonSerializer.Serialize(serializable, options);
@@ -2634,26 +2669,34 @@ public partial class MainWindow : Window
                 }
             }
 
-            var modStates = new List<ModPresetModState>();
-            if (data.Mods != null)
+        bool presetIndicatesStatus = data.IncludeModStatus
+            ?? (data.Mods?.Any(entry => entry?.IsActive is not null) ?? false);
+        bool presetIndicatesVersions = data.IncludeModVersions
+            ?? (data.Mods?.Any(entry => !string.IsNullOrWhiteSpace(entry?.Version)) ?? false);
+        bool includeStatus = _userConfiguration.IncludePresetModStatus && presetIndicatesStatus;
+        bool includeVersions = _userConfiguration.IncludePresetModVersions && presetIndicatesVersions;
+        bool exclusive = _userConfiguration.ExclusivePresetLoad || (data.Exclusive ?? false);
+
+        var modStates = new List<ModPresetModState>();
+        if (data.Mods != null)
+        {
+            foreach (var mod in data.Mods)
             {
-                foreach (var mod in data.Mods)
+                if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
                 {
-                    if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
-                    {
-                        continue;
-                    }
-
-                    string modId = mod.ModId.Trim();
-                    string? version = string.IsNullOrWhiteSpace(mod.Version)
-                        ? null
-                        : mod.Version!.Trim();
-                    modStates.Add(new ModPresetModState(modId, version, mod.IsActive));
+                    continue;
                 }
-            }
 
-            preset = new ModPreset(name, disabledEntries, modStates);
-            return true;
+                string modId = mod.ModId.Trim();
+                string? version = string.IsNullOrWhiteSpace(mod.Version)
+                    ? null
+                    : mod.Version!.Trim();
+                modStates.Add(new ModPresetModState(modId, version, mod.IsActive));
+            }
+        }
+
+        preset = new ModPreset(name, disabledEntries, modStates, includeStatus, includeVersions, exclusive);
+        return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -2714,13 +2757,16 @@ public partial class MainWindow : Window
         public string? Name { get; set; }
         public List<string>? DisabledEntries { get; set; }
         public List<SerializablePresetModState>? Mods { get; set; }
+        public bool? IncludeModStatus { get; set; }
+        public bool? IncludeModVersions { get; set; }
+        public bool? Exclusive { get; set; }
     }
 
     private sealed class SerializablePresetModState
     {
         public string? ModId { get; set; }
         public string? Version { get; set; }
-        public bool IsActive { get; set; }
+        public bool? IsActive { get; set; }
     }
 
     private async Task ApplyPresetAsync(ModPreset preset)
@@ -2733,7 +2779,7 @@ public partial class MainWindow : Window
         _isApplyingPreset = true;
         try
         {
-            if (preset.IsAdvanced && preset.ModStates.Count > 0)
+            if (preset.IncludesModVersions && preset.ModStates.Count > 0)
             {
                 await ApplyPresetModVersionsAsync(preset);
             }
@@ -2741,6 +2787,11 @@ public partial class MainWindow : Window
             bool applied = await _viewModel.ApplyPresetAsync(preset);
             if (applied)
             {
+                if (preset.IsExclusive)
+                {
+                    await ApplyExclusivePresetAsync(preset);
+                }
+
                 _viewModel.SelectedSortOption?.Apply(_viewModel.ModsView);
                 _viewModel.ModsView.Refresh();
             }
@@ -2865,6 +2916,111 @@ public partial class MainWindow : Window
         }
 
         await UpdateModsAsync(overrides.Keys.ToList(), isBulk: true, overrides, showSummary: false);
+    }
+
+
+    private async Task ApplyExclusivePresetAsync(ModPreset preset)
+    {
+        if (_viewModel?.ModsView is null)
+        {
+            return;
+        }
+
+        if (preset.ModStates.Count == 0)
+        {
+            return;
+        }
+
+        var keepSet = new HashSet<string>(
+            preset.ModStates.Select(state => state.ModId),
+            StringComparer.OrdinalIgnoreCase);
+
+        if (keepSet.Count == 0)
+        {
+            return;
+        }
+
+        var installedMods = _viewModel.ModsView.Cast<ModListItemViewModel>().ToList();
+        if (installedMods.Count == 0)
+        {
+            return;
+        }
+
+        var failures = new List<string>();
+        int removedCount = 0;
+
+        foreach (var mod in installedMods)
+        {
+            if (!mod.IsInstalled)
+            {
+                continue;
+            }
+
+            if (keepSet.Contains(mod.ModId))
+            {
+                continue;
+            }
+
+            if (!TryGetManagedModPath(mod, out string modPath, out string? errorMessage))
+            {
+                if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    failures.Add($"{mod.DisplayName}: {errorMessage}");
+                }
+
+                continue;
+            }
+
+            try
+            {
+                if (Directory.Exists(modPath))
+                {
+                    Directory.Delete(modPath, recursive: true);
+                    removedCount++;
+                }
+                else if (File.Exists(modPath))
+                {
+                    File.Delete(modPath);
+                    removedCount++;
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                failures.Add($"{mod.DisplayName}: {ex.Message}");
+                continue;
+            }
+
+            _userConfiguration.RemoveModConfigPath(mod.ModId);
+        }
+
+        if (removedCount > 0)
+        {
+            await RefreshModsAsync().ConfigureAwait(true);
+
+            string status = removedCount == 1
+                ? "Removed 1 mod not in the preset."
+                : $"Removed {removedCount} mods not in the preset.";
+            _viewModel?.ReportStatus(status);
+        }
+
+        if (failures.Count > 0)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("Some mods could not be removed:");
+            foreach (string failure in failures.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                builder.AppendLine($" • {failure}");
+            }
+
+            WpfMessageBox.Show(builder.ToString().Trim(),
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private static bool VersionsMatch(string? desiredVersion, string? installedVersion)
