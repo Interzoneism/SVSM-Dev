@@ -16,6 +16,8 @@ public sealed class UserConfigurationService
 {
     private const string ConfigurationFileName = "VS_ModManager_Config.json";
     private const string LegacyConfigurationFileName = "settings.json";
+    private const int DefaultModDatabaseSearchResultLimit = 30;
+
     private readonly string _configurationPath;
     private readonly string? _legacyConfigurationPath;
     private readonly Dictionary<string, string[]> _presets = new(StringComparer.OrdinalIgnoreCase);
@@ -30,6 +32,7 @@ public sealed class UserConfigurationService
     private bool _includePresetModStatus = true;
     private bool _includePresetModVersions;
     private bool _exclusivePresetLoad;
+    private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
     private string? _modsSortMemberPath;
     private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
 
@@ -59,6 +62,8 @@ public sealed class UserConfigurationService
     public bool IncludePresetModVersions => _includePresetModVersions;
 
     public bool ExclusivePresetLoad => _exclusivePresetLoad;
+
+    public int ModDatabaseSearchResultLimit => _modDatabaseSearchResultLimit;
 
     public (string? SortMemberPath, ListSortDirection Direction) GetModListSortPreference()
     {
@@ -377,6 +382,18 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetModDatabaseSearchResultLimit(int limit)
+    {
+        int normalized = NormalizeModDatabaseSearchResultLimit(limit);
+        if (_modDatabaseSearchResultLimit == normalized)
+        {
+            return;
+        }
+
+        _modDatabaseSearchResultLimit = normalized;
+        Save();
+    }
+
     public void SetModListSortPreference(string? sortMemberPath, ListSortDirection direction)
     {
         string? normalized = string.IsNullOrWhiteSpace(sortMemberPath)
@@ -452,6 +469,7 @@ public sealed class UserConfigurationService
             _exclusivePresetLoad = obj["exclusivePresetLoad"]?.GetValue<bool?>() ?? false;
             _modsSortMemberPath = NormalizeSortMemberPath(obj["modsSortMemberPath"]?.GetValue<string?>());
             _modsSortDirection = ParseSortDirection(obj["modsSortDirection"]?.GetValue<string?>());
+            _modDatabaseSearchResultLimit = NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
             if (loadedFromPreferredLocation)
             {
                 LoadClassicPresets(obj["modPresets"]);
@@ -496,6 +514,7 @@ public sealed class UserConfigurationService
             _modsSortDirection = ListSortDirection.Ascending;
             _selectedPresetName = null;
             _selectedAdvancedPresetName = null;
+            _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
         }
     }
 
@@ -519,6 +538,7 @@ public sealed class UserConfigurationService
                 ["exclusivePresetLoad"] = _exclusivePresetLoad,
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
+                ["modDatabaseSearchResultLimit"] = _modDatabaseSearchResultLimit,
                 ["modPresets"] = BuildClassicPresetsJson(),
                 ["advancedModPresets"] = BuildAdvancedPresetsJson(),
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
@@ -537,6 +557,22 @@ public sealed class UserConfigurationService
         {
             // Persisting the configuration is a best-effort attempt. Ignore failures silently.
         }
+    }
+
+    private static int NormalizeModDatabaseSearchResultLimit(int? value)
+    {
+        if (!value.HasValue)
+        {
+            return DefaultModDatabaseSearchResultLimit;
+        }
+
+        int normalized = value.Value;
+        if (normalized <= 0)
+        {
+            return DefaultModDatabaseSearchResultLimit;
+        }
+
+        return Math.Clamp(normalized, 1, 100);
     }
 
     private static (string path, string? legacyPath) DetermineConfigurationPaths()

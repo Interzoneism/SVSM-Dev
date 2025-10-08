@@ -19,6 +19,7 @@ public sealed class ModDatabaseService
 {
     private const string ApiEndpointFormat = "https://mods.vintagestory.at/api/mod/{0}";
     private const string SearchEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&limit={1}";
+    private const string MostDownloadedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=downloadsdesc&limit={0}";
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
 
     private static readonly HttpClient HttpClient = new();
@@ -109,6 +110,52 @@ public sealed class ModDatabaseService
             Uri.EscapeDataString(trimmed),
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
+        return await QueryModsAsync(
+                requestUri,
+                maxResults,
+                tokens,
+                requireTokenMatch: true,
+                candidates => candidates
+                    .OrderByDescending(candidate => candidate.Score)
+                    .ThenByDescending(candidate => candidate.Downloads)
+                    .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedModsAsync(int maxResults, CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
+        string requestUri = string.Format(
+            CultureInfo.InvariantCulture,
+            MostDownloadedEndpointFormat,
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        return await QueryModsAsync(
+                requestUri,
+                maxResults,
+                Array.Empty<string>(),
+                requireTokenMatch: false,
+                candidates => candidates
+                    .OrderByDescending(candidate => candidate.Downloads)
+                    .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<IReadOnlyList<ModDatabaseSearchResult>> QueryModsAsync(
+        string requestUri,
+        int maxResults,
+        IReadOnlyList<string> tokens,
+        bool requireTokenMatch,
+        Func<IEnumerable<ModDatabaseSearchResult>, IEnumerable<ModDatabaseSearchResult>> orderResults,
+        CancellationToken cancellationToken)
+    {
         try
         {
             using HttpRequestMessage request = new(HttpMethod.Get, requestUri);
@@ -139,17 +186,19 @@ public sealed class ModDatabaseService
                     continue;
                 }
 
-                ModDatabaseSearchResult? result = TryCreateSearchResult(modElement, tokens);
+                ModDatabaseSearchResult? result = TryCreateSearchResult(modElement, tokens, requireTokenMatch);
                 if (result != null)
                 {
                     candidates.Add(result);
                 }
             }
 
-            return candidates
-                .OrderByDescending(candidate => candidate.Score)
-                .ThenByDescending(candidate => candidate.Downloads)
-                .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
+            if (candidates.Count == 0)
+            {
+                return Array.Empty<ModDatabaseSearchResult>();
+            }
+
+            return orderResults(candidates)
                 .Take(maxResults)
                 .ToArray();
         }
@@ -419,7 +468,7 @@ public sealed class ModDatabaseService
         return string.Join(Environment.NewLine, normalizedLines);
     }
 
-    private static ModDatabaseSearchResult? TryCreateSearchResult(JsonElement element, IReadOnlyList<string> tokens)
+    private static ModDatabaseSearchResult? TryCreateSearchResult(JsonElement element, IReadOnlyList<string> tokens, bool requireTokenMatch)
     {
         string? name = GetString(element, "name");
         if (string.IsNullOrWhiteSpace(name))
@@ -455,21 +504,29 @@ public sealed class ModDatabaseService
 
         IReadOnlyList<string> alternateIds = modIds.Count == 0 ? new[] { primaryId } : modIds;
 
-        if (!TryCalculateSearchScore(
-                name,
-                primaryId,
-                summary,
-                alternateIds,
-                tags,
-                tokens,
-                downloads,
-                follows,
-                trendingPoints,
-                comments,
-                lastReleased,
-                out double score))
+        double score;
+        if (requireTokenMatch)
         {
-            return null;
+            if (!TryCalculateSearchScore(
+                    name,
+                    primaryId,
+                    summary,
+                    alternateIds,
+                    tags,
+                    tokens,
+                    downloads,
+                    follows,
+                    trendingPoints,
+                    comments,
+                    lastReleased,
+                    out score))
+            {
+                return null;
+            }
+        }
+        else
+        {
+            score = downloads;
         }
 
         return new ModDatabaseSearchResult
