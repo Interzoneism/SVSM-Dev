@@ -51,6 +51,7 @@ public sealed class MainViewModel : ObservableObject
     private string[] _searchTokens = Array.Empty<string>();
     private bool _searchModDatabase;
     private CancellationTokenSource? _modDatabaseSearchCts;
+    private readonly RelayCommand _clearSearchCommand;
 
     public MainViewModel(string dataDirectory)
     {
@@ -71,6 +72,9 @@ public sealed class MainViewModel : ObservableObject
         SortOptions = new ReadOnlyObservableCollection<SortOption>(_sortOptions);
         SelectedSortOption = SortOptions.FirstOrDefault();
         SelectedSortOption?.Apply(ModsView);
+
+        _clearSearchCommand = new RelayCommand(() => SearchText = string.Empty, () => HasSearchText);
+        ClearSearchCommand = _clearSearchCommand;
 
         RefreshCommand = new AsyncRelayCommand(LoadModsAsync);
         SetStatus("Ready.", false);
@@ -202,6 +206,7 @@ public sealed class MainViewModel : ObservableObject
             {
                 _searchTokens = CreateSearchTokens(newValue);
                 OnPropertyChanged(nameof(HasSearchText));
+                _clearSearchCommand.NotifyCanExecuteChanged();
                 if (SearchModDatabase)
                 {
                     TriggerModDatabaseSearch();
@@ -243,6 +248,8 @@ public sealed class MainViewModel : ObservableObject
     public string SummaryText => TotalMods == 0
         ? "No mods found."
         : $"{ActiveMods} active of {TotalMods} mods";
+
+    public IRelayCommand ClearSearchCommand { get; }
 
     public IAsyncRelayCommand RefreshCommand { get; }
 
