@@ -64,6 +64,7 @@ public partial class MainWindow : Window
     private bool _isAutomaticRefreshRunning;
 
     private readonly List<ModListItemViewModel> _selectedMods = new();
+    private readonly Dictionary<ModListItemViewModel, PropertyChangedEventHandler> _selectedModPropertyHandlers = new();
     private ModListItemViewModel? _selectionAnchor;
     private INotifyCollectionChanged? _modsCollection;
     private bool _isApplyingMultiToggle;
@@ -3264,6 +3265,7 @@ public partial class MainWindow : Window
         }
 
         _selectedMods.Add(mod);
+        SubscribeToSelectedMod(mod);
         mod.IsSelected = true;
         UpdateSelectedModButtons();
     }
@@ -3276,6 +3278,7 @@ public partial class MainWindow : Window
         }
 
         mod.IsSelected = false;
+        UnsubscribeFromSelectedMod(mod);
         UpdateSelectedModButtons();
     }
 
@@ -3286,6 +3289,7 @@ public partial class MainWindow : Window
             foreach (var mod in _selectedMods)
             {
                 mod.IsSelected = false;
+                UnsubscribeFromSelectedMod(mod);
             }
 
             _selectedMods.Clear();
@@ -3297,6 +3301,58 @@ public partial class MainWindow : Window
         }
 
         UpdateSelectedModButtons();
+    }
+
+    private void SubscribeToSelectedMod(ModListItemViewModel mod)
+    {
+        if (_selectedModPropertyHandlers.ContainsKey(mod))
+        {
+            return;
+        }
+
+        PropertyChangedEventHandler handler = (_, args) =>
+        {
+            if (string.IsNullOrEmpty(args.PropertyName)
+                || args.PropertyName == nameof(ModListItemViewModel.CanFixDependencyIssues)
+                || args.PropertyName == nameof(ModListItemViewModel.HasDependencyIssues)
+                || args.PropertyName == nameof(ModListItemViewModel.MissingDependencies)
+                || args.PropertyName == nameof(ModListItemViewModel.DependencyHasErrors))
+            {
+                if (Dispatcher.CheckAccess())
+                {
+                    RefreshSelectedModFixButton(mod);
+                }
+                else
+                {
+                    Dispatcher.Invoke(() => RefreshSelectedModFixButton(mod));
+                }
+            }
+        };
+
+        mod.PropertyChanged += handler;
+        _selectedModPropertyHandlers[mod] = handler;
+    }
+
+    private void UnsubscribeFromSelectedMod(ModListItemViewModel mod)
+    {
+        if (_selectedModPropertyHandlers.TryGetValue(mod, out var handler))
+        {
+            mod.PropertyChanged -= handler;
+            _selectedModPropertyHandlers.Remove(mod);
+        }
+    }
+
+    private void RefreshSelectedModFixButton(ModListItemViewModel mod)
+    {
+        if (_viewModel?.SearchModDatabase == true)
+        {
+            return;
+        }
+
+        if (_selectedMods.Count == 1 && ReferenceEquals(_selectedMods[0], mod))
+        {
+            UpdateSelectedModFixButton(mod);
+        }
     }
 
     private void UpdateSelectedModButtons()
