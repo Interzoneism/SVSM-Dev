@@ -29,6 +29,39 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Padding" Value="8,6" />
         </Style>
+        <Style x:Key="IMM.TopBarToggleStyle" TargetType="{x:Type CheckBox}">
+            <Setter Property="VerticalContentAlignment" Value="Bottom" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Height" Value="27" />
+            <Setter Property="Padding" Value="8,0,0,0" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="Width" Value="134" />
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <TransformGroup>
+                        <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
+                        <SkewTransform />
+                        <RotateTransform />
+                        <TranslateTransform />
+                    </TransformGroup>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="IMM.RecentlyUpdatedToggleStyle"
+               TargetType="{x:Type CheckBox}"
+               BasedOn="{StaticResource IMM.TopBarToggleStyle}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
+                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
         <LinearGradientBrush x:Key="CardGradient" EndPoint="1,0.5" StartPoint="0,0.5">
             <GradientStop Color="#FFA9C0E9"/>
             <GradientStop Color="#FFEFF3F9" Offset="1"/>
@@ -126,55 +159,12 @@
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center">
                     <CheckBox Content="Recently Updated"
-                              VerticalContentAlignment="Bottom"
                               IsChecked="{Binding ShowRecentlyUpdatedOnly, Mode=TwoWay}"
-                              FontSize="15"
-                              Height="27"
-                              Padding="8,0,0,0"
-                              Margin="0,0,12,0"
-                              RenderTransformOrigin="0.5,0.5">
-                        <CheckBox.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
-                                <SkewTransform />
-                                <RotateTransform />
-                                <TranslateTransform />
-                            </TransformGroup>
-                        </CheckBox.RenderTransform>
-                        <CheckBox.Style>
-                            <Style TargetType="{x:Type CheckBox}">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
-                                            <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </MultiDataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </CheckBox.Style>
-                    </CheckBox>
+                              Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
 
                     <CheckBox Content="Search Mod DB"
-                              VerticalContentAlignment="Bottom"
                               IsChecked="{Binding SearchModDatabase, Mode=TwoWay}"
-                              FontSize="15"
-                              Height="27"
-                              Padding="8,0,0,0"
-                              Margin="0,0,12,0"
-                              RenderTransformOrigin="0.5,0.5"
-                              Width="134">
-                        <CheckBox.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
-                                <SkewTransform />
-                                <RotateTransform />
-                                <TranslateTransform />
-                            </TransformGroup>
-                        </CheckBox.RenderTransform>
-                    </CheckBox>
+                              Style="{StaticResource IMM.TopBarToggleStyle}" />
 
                     <TextBox
                         MinWidth="200"
