@@ -39,6 +39,7 @@ public sealed class MainViewModel : ObservableObject
     private SortOption? _selectedSortOption;
     private bool _isBusy;
     private bool _isCompactView;
+    private bool _useModDbDesignView;
     private bool _isModInfoExpanded = true;
     private string _statusMessage = string.Empty;
     private bool _isErrorStatus;
@@ -107,6 +108,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _isCompactView;
         set => SetProperty(ref _isCompactView, value);
+    }
+
+    public bool UseModDbDesignView
+    {
+        get => _useModDbDesignView;
+        set => SetProperty(ref _useModDbDesignView, value);
     }
 
     public bool IsModInfoExpanded
@@ -788,7 +795,11 @@ public sealed class MainViewModel : ObservableObject
                 Tags = result.Tags,
                 AssetId = result.AssetId,
                 ModPageUrl = pageUrl,
-                Downloads = result.Downloads
+                Downloads = result.Downloads,
+                Comments = result.Comments,
+                Follows = result.Follows,
+                TrendingPoints = result.TrendingPoints,
+                LogoUrl = result.LogoUrl
             }
         };
     }

@@ -25,6 +25,7 @@ public sealed class UserConfigurationService
     private string? _selectedAdvancedPresetName;
     private bool _isAdvancedPresetMode;
     private bool _isCompactView;
+    private bool _useModDbDesignView;
     private bool _cacheAllVersionsLocally;
     private string? _modsSortMemberPath;
     private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
@@ -45,6 +46,8 @@ public sealed class UserConfigurationService
     public string? GameDirectory { get; private set; }
 
     public bool IsCompactView => _isCompactView;
+
+    public bool UseModDbDesignView => _useModDbDesignView;
 
     public bool CacheAllVersionsLocally => _cacheAllVersionsLocally;
 
@@ -298,6 +301,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetModDbDesignViewMode(bool useModDbDesignView)
+    {
+        if (_useModDbDesignView == useModDbDesignView)
+        {
+            return;
+        }
+
+        _useModDbDesignView = useModDbDesignView;
+        Save();
+    }
+
     public void SetCacheAllVersionsLocally(bool cacheAllVersionsLocally)
     {
         if (_cacheAllVersionsLocally == cacheAllVersionsLocally)
@@ -376,6 +390,7 @@ public sealed class UserConfigurationService
             DataDirectory = NormalizePath(obj["dataDirectory"]?.GetValue<string?>());
             GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
             _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
+            _useModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? false;
             _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
             _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? false;
             _modsSortMemberPath = NormalizeSortMemberPath(obj["modsSortMemberPath"]?.GetValue<string?>());
@@ -415,6 +430,7 @@ public sealed class UserConfigurationService
             _modConfigPaths.Clear();
             _isAdvancedPresetMode = false;
             _isCompactView = false;
+            _useModDbDesignView = false;
             _cacheAllVersionsLocally = false;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
@@ -435,6 +451,7 @@ public sealed class UserConfigurationService
                 ["dataDirectory"] = DataDirectory,
                 ["gameDirectory"] = GameDirectory,
                 ["isCompactView"] = _isCompactView,
+                ["useModDbDesignView"] = _useModDbDesignView,
                 ["useAdvancedPresets"] = _isAdvancedPresetMode,
                 ["cacheAllVersionsLocally"] = _cacheAllVersionsLocally,
                 ["modsSortMemberPath"] = _modsSortMemberPath,
