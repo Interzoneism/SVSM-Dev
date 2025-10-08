@@ -143,8 +143,9 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <DataGrid x:Name="ModsDataGrid"
-                      Grid.Row="0"
+            <Grid Grid.Row="0">
+                <DataGrid x:Name="ModsDataGrid"
+                          Grid.Row="0"
                   ItemsSource="{Binding CurrentModsView}"
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
@@ -687,7 +688,103 @@
                         </DataGridTemplateColumn.CellStyle>
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
-            </DataGrid>
+                </DataGrid>
+                <Grid x:Name="ModsLoadingOverlay"
+                      Background="#80000000"
+                      Opacity="0"
+                      Visibility="Collapsed"
+                      IsHitTestVisible="False"
+                      Panel.ZIndex="1">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Opacity" Value="0" />
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="IsHitTestVisible" Value="False" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Setter Property="IsHitTestVisible" Value="True" />
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                To="1"
+                                                                Duration="0:0:0.2" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                    <DataTrigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                To="0"
+                                                                Duration="0:0:0.2" />
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
+                                                    <DiscreteObjectKeyFrame KeyTime="0:0:0"
+                                                                           Value="{x:Static Visibility.Visible}" />
+                                                    <DiscreteObjectKeyFrame KeyTime="0:0:0.2"
+                                                                           Value="{x:Static Visibility.Collapsed}" />
+                                                </ObjectAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.ExitActions>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Margin="32">
+                        <ui:ProgressRing Width="64"
+                                         Height="64"
+                                         IsActive="{Binding IsBusy}" />
+                        <StackPanel Orientation="Vertical"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="0,24,0,0">
+                            <TextBlock Text="{Binding StatusMessage}"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource IMM.ForegroundBrush}"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
+                                       Margin="0,0,0,8">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="Loading mods..."
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource IMM.ForegroundBrush}"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsBusy}" Value="True" />
+                                                    <Condition Binding="{Binding HasStatusMessage}" Value="False" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Grid>
             <ListView x:Name="ModDatabaseCardsListView"
                       Grid.Row="0"
                       ItemsSource="{Binding CurrentModsView}"
