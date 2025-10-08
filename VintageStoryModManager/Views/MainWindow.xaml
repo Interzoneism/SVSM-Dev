@@ -541,8 +541,11 @@
                                 <Setter Property="ToolTipService.ShowDuration" Value="60000" />
                                 <Setter Property="ToolTip">
                                     <Setter.Value>
-                                        <ToolTip MaxHeight="600" Padding="0">
-                                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="600">
+                                        <ToolTip MaxHeight="600"
+                                                 Padding="0">
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                          HorizontalScrollBarVisibility="Disabled"
+                                                          MaxHeight="600">
                                                 <ItemsControl ItemsSource="{Binding NewerReleaseChangelogs}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -557,6 +560,8 @@
                                         </ToolTip>
                                     </Setter.Value>
                                 </Setter>
+                                <EventSetter Event="ToolTipOpening" Handler="LatestVersionTextBlock_OnToolTipOpening" />
+                                <EventSetter Event="ToolTipClosing" Handler="LatestVersionTextBlock_OnToolTipClosing" />
                                 <Style.Triggers>
                                     <MultiDataTrigger>
                                         <MultiDataTrigger.Conditions>

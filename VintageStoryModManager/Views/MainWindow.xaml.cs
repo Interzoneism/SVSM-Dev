@@ -30,6 +30,7 @@ using WinForms = System.Windows.Forms;
 using WpfApplication = System.Windows.Application;
 using WpfButton = System.Windows.Controls.Button;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
+using WpfToolTip = System.Windows.Controls.ToolTip;
 
 namespace VintageStoryModManager.Views;
 
@@ -3049,6 +3050,63 @@ public partial class MainWindow : Window
         }
 
         return false;
+    }
+
+    private void LatestVersionTextBlock_OnToolTipOpening(object sender, ToolTipEventArgs e)
+    {
+        if (sender is not FrameworkElement frameworkElement)
+        {
+            return;
+        }
+
+        if (frameworkElement.ToolTip is not WpfToolTip toolTip)
+        {
+            return;
+        }
+
+        toolTip.PreviewMouseWheel -= ChangelogToolTip_OnPreviewMouseWheel;
+        toolTip.PreviewMouseWheel += ChangelogToolTip_OnPreviewMouseWheel;
+    }
+
+    private void LatestVersionTextBlock_OnToolTipClosing(object sender, ToolTipEventArgs e)
+    {
+        if (sender is not FrameworkElement frameworkElement)
+        {
+            return;
+        }
+
+        if (frameworkElement.ToolTip is not WpfToolTip toolTip)
+        {
+            return;
+        }
+
+        toolTip.PreviewMouseWheel -= ChangelogToolTip_OnPreviewMouseWheel;
+    }
+
+    private void ChangelogToolTip_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (e.Handled || e.Delta == 0 || sender is not WpfToolTip toolTip)
+        {
+            return;
+        }
+
+        if (toolTip.Content is not ScrollViewer scrollViewer)
+        {
+            return;
+        }
+
+        double lines = Math.Max(1, SystemParameters.WheelScrollLines);
+        double deltaMultiplier = e.Delta / (double)Mouse.MouseWheelDeltaForOneLine;
+        double offsetChange = deltaMultiplier * lines * ModListScrollMultiplier;
+        if (Math.Abs(offsetChange) < double.Epsilon)
+        {
+            return;
+        }
+
+        double targetOffset = scrollViewer.VerticalOffset - offsetChange;
+        double clampedOffset = Math.Max(0, Math.Min(targetOffset, scrollViewer.ScrollableHeight));
+        scrollViewer.ScrollToVerticalOffset(clampedOffset);
+        e.Handled = true;
     }
 
     private void ModsDataGrid_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
