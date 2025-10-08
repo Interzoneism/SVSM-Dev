@@ -1443,6 +1443,8 @@ public partial class MainWindow : Window
 
         e.Handled = true;
 
+        bool modHadLoadError = mod.HasLoadError;
+
         IReadOnlyList<ModDependencyInfo> dependencies = mod.Dependencies;
         if (dependencies.Count == 0)
         {
@@ -1520,6 +1522,8 @@ public partial class MainWindow : Window
             UpdateSelectedModButtons();
         }
 
+        bool shouldRefreshErrorMods = !requiresRefresh && modHadLoadError && anySuccess;
+
         if (requiresRefresh)
         {
             try
@@ -1529,6 +1533,22 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 WpfMessageBox.Show($"The mod list could not be refreshed after fixing dependencies:{Environment.NewLine}{ex.Message}",
+                    "Vintage Story Mod Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+
+            UpdateSelectedModButtons();
+        }
+        else if (shouldRefreshErrorMods && _viewModel is { } viewModel)
+        {
+            try
+            {
+                await viewModel.RefreshModsWithErrorsAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show($"The mods with errors could not be refreshed after fixing dependencies:{Environment.NewLine}{ex.Message}",
                     "Vintage Story Mod Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
