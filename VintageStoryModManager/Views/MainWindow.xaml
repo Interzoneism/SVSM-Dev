@@ -543,9 +543,8 @@
                                     <Setter.Value>
                                         <ToolTip MaxHeight="600"
                                                  Padding="0">
-                                            <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                                          HorizontalScrollBarVisibility="Disabled"
-                                                          MaxHeight="600">
+                                            <Border MaxHeight="600"
+                                                    ClipToBounds="True">
                                                 <ItemsControl ItemsSource="{Binding NewerReleaseChangelogs}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -556,7 +555,7 @@
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
-                                            </ScrollViewer>
+                                            </Border>
                                         </ToolTip>
                                     </Setter.Value>
                                 </Setter>
