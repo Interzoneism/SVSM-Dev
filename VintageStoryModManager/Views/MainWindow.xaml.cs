@@ -1090,14 +1090,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!release.IsCompatibleWithInstalledGame && mod.LatestCompatibleRelease is null)
-        {
-            if (!ConfirmInstallIncompatibleRelease(mod, release))
-            {
-                return;
-            }
-        }
-
         if (!TryGetInstallTargetPath(mod, release, out string targetPath, out string? errorMessage))
         {
             if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -1186,23 +1178,6 @@ public partial class MainWindow : Window
         }
 
         return mod.LatestRelease;
-    }
-
-    private static bool ConfirmInstallIncompatibleRelease(ModListItemViewModel mod, ModReleaseInfo release)
-    {
-        string message = string.Concat(
-            $"No compatible release was found for {mod.DisplayName}.",
-            Environment.NewLine,
-            Environment.NewLine,
-            $"Do you want to install version {release.Version} anyway?");
-
-        MessageBoxResult result = WpfMessageBox.Show(
-            message,
-            "Vintage Story Mod Manager",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        return result == MessageBoxResult.Yes;
     }
 
     private async void UpdateModButton_OnClick(object sender, RoutedEventArgs e)
