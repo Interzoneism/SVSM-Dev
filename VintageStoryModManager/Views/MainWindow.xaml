@@ -79,6 +79,10 @@
                               Height="30"
                               IsCheckable="True"
                               IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
+                    <MenuItem Header="_ModDB Design"
+                              Height="30"
+                              IsCheckable="True"
+                              IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}" />
                 </MenuItem>
                 <MenuItem Header="_Help" Height="30">
                     <MenuItem Header="Manager _Data Folder"
@@ -250,10 +254,18 @@
                 <DataGrid.Style>
                     <Style TargetType="{x:Type DataGrid}">
                         <Setter Property="CanUserSortColumns" Value="True" />
+                        <Setter Property="Visibility" Value="Visible" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                 <Setter Property="CanUserSortColumns" Value="False" />
                             </DataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                    <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>
                 </DataGrid.Style>
@@ -665,6 +677,243 @@
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
+            <ListView x:Name="ModDatabaseCardsListView"
+                      Grid.Row="0"
+                      ItemsSource="{Binding CurrentModsView}"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      Margin="0,0,-29,0"
+                      SelectionMode="Single"
+                      SelectionChanged="ModDatabaseCardsListView_OnSelectionChanged"
+                      PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.CanContentScroll="False">
+                <ListView.Style>
+                    <Style TargetType="{x:Type ListView}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                    <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible" />
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.Style>
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"
+                                   ItemWidth="280"
+                                   ItemHeight="320"
+                                   Margin="0" />
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}">
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Margin" Value="0,0,16,16" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                        <Setter Property="Background" Value="Transparent" />
+                        <Setter Property="BorderThickness" Value="0" />
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                    <ContentPresenter />
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ModDatabaseCard_OnPreviewMouseLeftButtonDown" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate DataType="{x:Type viewModels:ModListItemViewModel}">
+                        <Border Width="280"
+                                Height="320"
+                                CornerRadius="6">
+                            <Border.Style>
+                                <Style TargetType="{x:Type Border}">
+                                    <Setter Property="BorderBrush" Value="White" />
+                                    <Setter Property="BorderThickness" Value="1" />
+                                    <Setter Property="Background" Value="{DynamicResource IMM.SurfaceBrush}" />
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource IMM.AccentBrush}" />
+                                        </Trigger>
+                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource IMM.AccentBrush}" />
+                                            <Setter Property="BorderThickness" Value="2" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="2*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Grid>
+                                    <Border Background="{DynamicResource IMM.SurfaceAltBrush}">
+                                        <Border.Style>
+                                            <Style TargetType="{x:Type Border}">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasModDatabasePreviewImage}" Value="False">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="No preview"
+                                                       Foreground="{DynamicResource IMM.ForegroundBrush}"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="14"
+                                                       HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Image Source="{Binding ModDatabasePreviewImage}"
+                                           Stretch="UniformToFill">
+                                        <Image.Style>
+                                            <Style TargetType="{x:Type Image}">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasModDatabasePreviewImage}" Value="False">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                    <TextBlock Text="Installed"
+                                               Margin="8"
+                                               Padding="6,2"
+                                               HorizontalAlignment="Left"
+                                               VerticalAlignment="Top"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Foreground="White"
+                                               Background="#CC2E7D32">
+                                        <TextBlock.Style>
+                                            <Style TargetType="{x:Type TextBlock}">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsInstalled}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+
+                                <Border Grid.Row="1"
+                                        Background="#CCFFFFFF"
+                                        Padding="12,10,12,12">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Orientation="Vertical">
+                                            <Button Command="{Binding OpenModDatabasePageCommand}"
+                                                    Content="{Binding DisplayName}"
+                                                    FontSize="16"
+                                                    FontWeight="SemiBold"
+                                                    Padding="0"
+                                                    Margin="0,0,0,4"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    HorizontalAlignment="Left"
+                                                    Cursor="Hand"
+                                                    IsEnabled="{Binding HasModDatabasePageLink}">
+                                                <Button.Style>
+                                                    <Style TargetType="{x:Type Button}">
+                                                        <Setter Property="Foreground" Value="{DynamicResource IMM.ForegroundBrush}" />
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="{x:Type Button}">
+                                                                    <ContentPresenter RecognizesAccessKey="True" />
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Foreground" Value="{DynamicResource IMM.AccentBrush}" />
+                                                            </Trigger>
+                                                            <Trigger Property="IsEnabled" Value="False">
+                                                                <Setter Property="Foreground" Value="#66000000" />
+                                                                <Setter Property="Cursor" Value="Arrow" />
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+                                            <TextBlock Text="{Binding DescriptionDisplay}"
+                                                       Margin="0,4,0,6"
+                                                       TextWrapping="Wrap"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       FontSize="13"
+                                                       Foreground="{DynamicResource IMM.ForegroundBrush}"
+                                                       MaxHeight="60" />
+                                            <TextBlock Text="{Binding DatabaseTagsDisplay}"
+                                                       FontSize="12"
+                                                       Foreground="#99333333"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       TextWrapping="NoWrap">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="{x:Type TextBlock}">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding DatabaseTagsDisplay}" Value="—">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1"
+                                                    Orientation="Vertical"
+                                                    HorizontalAlignment="Right"
+                                                    Margin="12,0,0,0">
+                                            <StackPanel Orientation="Horizontal"
+                                                        Margin="0,0,0,6"
+                                                        VerticalAlignment="Top">
+                                                <TextBlock Text="&#xE118;"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="14"
+                                                           Margin="0,0,4,0"
+                                                           Foreground="{DynamicResource IMM.ForegroundBrush}" />
+                                                <TextBlock Text="{Binding DownloadsDisplay}"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource IMM.ForegroundBrush}" />
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="&#xE15F;"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="14"
+                                                           Margin="0,0,4,0"
+                                                           Foreground="{DynamicResource IMM.ForegroundBrush}" />
+                                                <TextBlock Text="{Binding CommentsDisplay}"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource IMM.ForegroundBrush}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
         </Grid>
         <Grid x:Name="BOTTOM" Margin="16,0,16,8" Grid.Row="2" VerticalAlignment="Bottom">
             <Grid.ColumnDefinitions>

@@ -69,6 +69,7 @@ public partial class MainWindow : Window
     private readonly ModUpdateService _modUpdateService = new();
     private bool _isModUpdateInProgress;
     private ScrollViewer? _modsScrollViewer;
+    private ScrollViewer? _modDatabaseCardsScrollViewer;
     private bool _suppressSortPreferenceSave;
 
 
@@ -176,7 +177,8 @@ public partial class MainWindow : Window
 
         _viewModel = new MainViewModel(_dataDirectory)
         {
-            IsCompactView = _userConfiguration.IsCompactView
+            IsCompactView = _userConfiguration.IsCompactView,
+            UseModDbDesignView = _userConfiguration.UseModDbDesignView
         };
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         DataContext = _viewModel;
@@ -216,6 +218,19 @@ public partial class MainWindow : Window
                 });
             }
         }
+        else if (e.PropertyName == nameof(MainViewModel.UseModDbDesignView))
+        {
+            if (_viewModel != null)
+            {
+                _userConfiguration.SetModDbDesignViewMode(_viewModel.UseModDbDesignView);
+
+                Dispatcher.Invoke(() =>
+                {
+                    _modsScrollViewer = null;
+                    _modDatabaseCardsScrollViewer = null;
+                });
+            }
+        }
         else if (e.PropertyName == nameof(MainViewModel.SearchModDatabase))
         {
             if (_viewModel != null)
@@ -225,6 +240,8 @@ public partial class MainWindow : Window
                     if (_viewModel != null)
                     {
                         UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
+                        _modsScrollViewer = null;
+                        _modDatabaseCardsScrollViewer = null;
                     }
                 });
             }
@@ -1002,6 +1019,15 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ModDatabaseCardsListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.ListView listView)
+        {
+            listView.SelectedIndex = -1;
+            listView.UnselectAll();
+        }
+    }
+
     private void ModsDataGridRow_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (ShouldIgnoreRowSelection(e.OriginalSource as DependencyObject))
@@ -1015,6 +1041,23 @@ public partial class MainWindow : Window
         }
 
         row.Focus();
+        HandleModRowSelection(mod);
+        e.Handled = true;
+    }
+
+    private void ModDatabaseCard_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (ShouldIgnoreRowSelection(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        if (sender is not System.Windows.Controls.ListViewItem item || item.DataContext is not ModListItemViewModel mod)
+        {
+            return;
+        }
+
+        item.Focus();
         HandleModRowSelection(mod);
         e.Handled = true;
     }
@@ -2537,7 +2580,9 @@ public partial class MainWindow : Window
 
         ScrollViewer? scrollViewer = ReferenceEquals(dependencyObject, ModsDataGrid)
             ? GetModsScrollViewer()
-            : FindDescendantScrollViewer(dependencyObject);
+            : ReferenceEquals(dependencyObject, ModDatabaseCardsListView)
+                ? GetModsScrollViewer()
+                : FindDescendantScrollViewer(dependencyObject);
 
         if (scrollViewer is null)
         {
@@ -2570,6 +2615,9 @@ public partial class MainWindow : Window
             _modsCollection.CollectionChanged -= ModsView_OnCollectionChanged;
             _modsCollection = null;
         }
+
+        _modsScrollViewer = null;
+        _modDatabaseCardsScrollViewer = null;
 
         if (modsView is INotifyCollectionChanged notify)
         {
@@ -2671,12 +2719,13 @@ public partial class MainWindow : Window
 
     private List<ModListItemViewModel> GetModsInViewOrder()
     {
-        if (_viewModel?.ModsView == null)
+        ICollectionView? view = _viewModel?.CurrentModsView;
+        if (view == null)
         {
             return new List<ModListItemViewModel>();
         }
 
-        return _viewModel.ModsView.Cast<ModListItemViewModel>().ToList();
+        return view.Cast<ModListItemViewModel>().ToList();
     }
 
     private void AddToSelection(ModListItemViewModel mod)
@@ -2815,6 +2864,22 @@ public partial class MainWindow : Window
 
     private ScrollViewer? GetModsScrollViewer()
     {
+        if (_viewModel?.SearchModDatabase == true && _viewModel.UseModDbDesignView)
+        {
+            if (_modDatabaseCardsScrollViewer != null)
+            {
+                return _modDatabaseCardsScrollViewer;
+            }
+
+            if (ModDatabaseCardsListView == null)
+            {
+                return null;
+            }
+
+            _modDatabaseCardsScrollViewer = FindDescendantScrollViewer(ModDatabaseCardsListView);
+            return _modDatabaseCardsScrollViewer;
+        }
+
         if (_modsScrollViewer != null)
         {
             return _modsScrollViewer;

@@ -187,6 +187,10 @@ public sealed class ModDatabaseService
             string? assetId = TryGetAssetId(modElement);
             string? modPageUrl = assetId == null ? null : ModPageBaseUrl + assetId;
             int? downloads = GetNullableInt(modElement, "downloads");
+            int? comments = GetNullableInt(modElement, "comments");
+            int? follows = GetNullableInt(modElement, "follows");
+            int? trendingPoints = GetNullableInt(modElement, "trendingpoints");
+            string? logoUrl = GetString(modElement, "logo");
             IReadOnlyList<ModReleaseInfo> releases = BuildReleaseInfos(modElement, normalizedGameVersion);
             ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
             ModReleaseInfo? latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
@@ -203,6 +207,10 @@ public sealed class ModDatabaseService
                 LatestVersion = latestVersion,
                 RequiredGameVersions = requiredVersions,
                 Downloads = downloads,
+                Comments = comments,
+                Follows = follows,
+                TrendingPoints = trendingPoints,
+                LogoUrl = logoUrl,
                 LatestRelease = latestRelease,
                 LatestCompatibleRelease = latestCompatibleRelease,
                 Releases = releases
