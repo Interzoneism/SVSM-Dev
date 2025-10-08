@@ -122,32 +122,78 @@
             <Grid Grid.Column="1"
                 Margin="208,0,17,0"
                 VerticalAlignment="Center" Height="50">
-                <CheckBox Content="Search Mod DB" VerticalContentAlignment="Bottom"  IsChecked="{Binding SearchModDatabase, Mode=TwoWay}"  FontSize="15" Height="27" Checked="CheckBox_Checked" RenderTransformOrigin="0.5,0.5" Padding="8,0,0,0" Margin="0,0,223,0" HorizontalAlignment="Right" Width="134" >
-                    <CheckBox.RenderTransform>
-                        <TransformGroup>
-                            <ScaleTransform ScaleX="0.7" ScaleY="0.7"/>
-                            <SkewTransform/>
-                            <RotateTransform/>
-                            <TranslateTransform/>
-                        </TransformGroup>
-                    </CheckBox.RenderTransform>
-                </CheckBox>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                    <CheckBox Content="Recently Updated"
+                              VerticalContentAlignment="Bottom"
+                              IsChecked="{Binding ShowRecentlyUpdatedOnly, Mode=TwoWay}"
+                              FontSize="15"
+                              Height="27"
+                              Padding="8,0,0,0"
+                              Margin="0,0,12,0"
+                              RenderTransformOrigin="0.5,0.5">
+                        <CheckBox.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
+                                <SkewTransform />
+                                <RotateTransform />
+                                <TranslateTransform />
+                            </TransformGroup>
+                        </CheckBox.RenderTransform>
+                        <CheckBox.Style>
+                            <Style TargetType="{x:Type CheckBox}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
+                                            <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </CheckBox.Style>
+                    </CheckBox>
 
-                <TextBox
-                    MinWidth="200"
-                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Height="32" VerticalAlignment="Center" HorizontalAlignment="Right" Width="225">
-                    <TextBox.Style>
-                        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
-                            <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                    <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBox.Style>
-                </TextBox>
+                    <CheckBox Content="Search Mod DB"
+                              VerticalContentAlignment="Bottom"
+                              IsChecked="{Binding SearchModDatabase, Mode=TwoWay}"
+                              FontSize="15"
+                              Height="27"
+                              Padding="8,0,0,0"
+                              Margin="0,0,12,0"
+                              RenderTransformOrigin="0.5,0.5"
+                              Width="134">
+                        <CheckBox.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
+                                <SkewTransform />
+                                <RotateTransform />
+                                <TranslateTransform />
+                            </TransformGroup>
+                        </CheckBox.RenderTransform>
+                    </CheckBox>
 
+                    <TextBox
+                        MinWidth="200"
+                        Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                        Height="32"
+                        Width="225"
+                        VerticalAlignment="Center">
+                        <TextBox.Style>
+                            <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
+                                <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                        <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+                </StackPanel>
             </Grid>
         </Grid>
         <Grid x:Name="MIDDLE" Grid.Row="1"

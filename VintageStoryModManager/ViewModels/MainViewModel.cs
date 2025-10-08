@@ -21,7 +21,6 @@ namespace VintageStoryModManager.ViewModels;
 /// </summary>
 public sealed class MainViewModel : ObservableObject
 {
-    private const int ModDatabaseSearchResultLimit = 20;
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
 
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
@@ -31,6 +30,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly ClientSettingsStore _settingsStore;
     private readonly ModDiscoveryService _discoveryService;
     private readonly ModDatabaseService _databaseService;
+    private readonly int _modDatabaseSearchResultLimit;
     private readonly ObservableCollection<SortOption> _sortOptions;
     private readonly string? _installedGameVersion;
     private readonly object _modsStateLock = new();
@@ -52,8 +52,9 @@ public sealed class MainViewModel : ObservableObject
     private bool _searchModDatabase;
     private CancellationTokenSource? _modDatabaseSearchCts;
     private readonly RelayCommand _clearSearchCommand;
+    private bool _showRecentlyUpdatedOnly;
 
-    public MainViewModel(string dataDirectory)
+    public MainViewModel(string dataDirectory, int modDatabaseSearchResultLimit)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
 
@@ -62,6 +63,7 @@ public sealed class MainViewModel : ObservableObject
         _settingsStore = new ClientSettingsStore(DataDirectory);
         _discoveryService = new ModDiscoveryService(_settingsStore);
         _databaseService = new ModDatabaseService();
+        _modDatabaseSearchResultLimit = Math.Clamp(modDatabaseSearchResultLimit, 1, 100);
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion();
         _modsWatcher = new ModDirectoryWatcher(_discoveryService);
 
@@ -174,14 +176,7 @@ public sealed class MainViewModel : ObservableObject
                     ClearSearchResults();
                     SelectedMod = null;
 
-                    if (HasSearchText)
-                    {
-                        TriggerModDatabaseSearch();
-                    }
-                    else
-                    {
-                        SetStatus("Enter text to search the mod database.", false);
-                    }
+                    TriggerModDatabaseSearch();
                 }
                 else
                 {
@@ -192,6 +187,18 @@ public sealed class MainViewModel : ObservableObject
                 }
 
                 OnPropertyChanged(nameof(CurrentModsView));
+            }
+        }
+    }
+
+    public bool ShowRecentlyUpdatedOnly
+    {
+        get => _showRecentlyUpdatedOnly;
+        set
+        {
+            if (SetProperty(ref _showRecentlyUpdatedOnly, value) && SearchModDatabase)
+            {
+                TriggerModDatabaseSearch();
             }
         }
     }
@@ -685,21 +692,16 @@ public sealed class MainViewModel : ObservableObject
 
         _modDatabaseSearchCts?.Cancel();
 
-        if (!HasSearchText)
-        {
-            ClearSearchResults();
-            SetStatus("Enter text to search the mod database.", false);
-            return;
-        }
-
         var cts = new CancellationTokenSource();
         _modDatabaseSearchCts = cts;
-        SetStatus("Searching the mod database...", false);
 
-        _ = RunModDatabaseSearchAsync(SearchText, cts);
+        bool hasSearchTokens = HasSearchText;
+        SetStatus(hasSearchTokens ? "Searching the mod database..." : "Loading popular mods...", false);
+
+        _ = RunModDatabaseSearchAsync(SearchText, hasSearchTokens, cts);
     }
 
-    private async Task RunModDatabaseSearchAsync(string query, CancellationTokenSource cts)
+    private async Task RunModDatabaseSearchAsync(string query, bool hasSearchTokens, CancellationTokenSource cts)
     {
         CancellationToken cancellationToken = cts.Token;
 
@@ -707,26 +709,32 @@ public sealed class MainViewModel : ObservableObject
         {
             await Task.Delay(ModDatabaseSearchDebounce, cancellationToken).ConfigureAwait(false);
 
-            IReadOnlyList<ModDatabaseSearchResult> results = await _databaseService
-                .SearchModsAsync(query, ModDatabaseSearchResultLimit, cancellationToken)
-                .ConfigureAwait(false);
+            IReadOnlyList<ModDatabaseSearchResult> results = hasSearchTokens
+                ? await _databaseService.SearchModsAsync(query, _modDatabaseSearchResultLimit, cancellationToken)
+                    .ConfigureAwait(false)
+                : await _databaseService.GetMostDownloadedModsAsync(_modDatabaseSearchResultLimit, cancellationToken)
+                    .ConfigureAwait(false);
 
             if (cancellationToken.IsCancellationRequested)
             {
                 return;
             }
 
-            if (results.Count == 0)
+            IReadOnlyList<ModDatabaseSearchResult> filteredResults = ApplyModDatabaseFilters(results);
+
+            if (filteredResults.Count == 0)
             {
                 await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
-                await InvokeOnDispatcherAsync(() => SetStatus("No mods found in the mod database.", false), cancellationToken)
+                await InvokeOnDispatcherAsync(
+                        () => SetStatus(BuildNoModDatabaseResultsMessage(hasSearchTokens), false),
+                        cancellationToken)
                     .ConfigureAwait(false);
                 return;
             }
 
             HashSet<string> installedModIds = await GetInstalledModIdsAsync(cancellationToken).ConfigureAwait(false);
 
-            var entries = results
+            var entries = filteredResults
                 .Select(result => new
                 {
                     Entry = CreateSearchResultEntry(result),
@@ -737,7 +745,9 @@ public sealed class MainViewModel : ObservableObject
             if (entries.Count == 0)
             {
                 await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
-                await InvokeOnDispatcherAsync(() => SetStatus("No mods found in the mod database.", false), cancellationToken)
+                await InvokeOnDispatcherAsync(
+                        () => SetStatus(BuildNoModDatabaseResultsMessage(hasSearchTokens), false),
+                        cancellationToken)
                     .ConfigureAwait(false);
                 return;
             }
@@ -756,7 +766,7 @@ public sealed class MainViewModel : ObservableObject
 
             await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
             await InvokeOnDispatcherAsync(
-                    () => SetStatus($"Found {viewModels.Count} mods in the mod database.", false),
+                    () => SetStatus(BuildModDatabaseResultsMessage(hasSearchTokens, viewModels.Count), false),
                     cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -766,7 +776,8 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            await InvokeOnDispatcherAsync(() => SetStatus($"Failed to search the mod database: {ex.Message}", true),
+            await InvokeOnDispatcherAsync(
+                    () => SetStatus(BuildModDatabaseErrorMessage(hasSearchTokens, ex.Message), true),
                     cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -777,6 +788,55 @@ public sealed class MainViewModel : ObservableObject
                 _modDatabaseSearchCts = null;
             }
         }
+    }
+
+    private IReadOnlyList<ModDatabaseSearchResult> ApplyModDatabaseFilters(IReadOnlyList<ModDatabaseSearchResult> results)
+    {
+        if (!ShowRecentlyUpdatedOnly)
+        {
+            return results;
+        }
+
+        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+        return results
+            .Where(result => result.LastReleasedUtc.HasValue && result.LastReleasedUtc.Value >= threshold)
+            .ToList();
+    }
+
+    private string BuildModDatabaseResultsMessage(bool hasSearchTokens, int resultCount)
+    {
+        if (hasSearchTokens)
+        {
+            return ShowRecentlyUpdatedOnly
+                ? $"Found {resultCount} recently updated mods in the mod database."
+                : $"Found {resultCount} mods in the mod database.";
+        }
+
+        return ShowRecentlyUpdatedOnly
+            ? $"Showing {resultCount} recently updated popular mods."
+            : $"Showing {resultCount} of the most downloaded mods.";
+    }
+
+    private string BuildNoModDatabaseResultsMessage(bool hasSearchTokens)
+    {
+        if (hasSearchTokens)
+        {
+            return ShowRecentlyUpdatedOnly
+                ? "No recently updated mods found in the mod database."
+                : "No mods found in the mod database.";
+        }
+
+        return ShowRecentlyUpdatedOnly
+            ? "No recently updated popular mods were found."
+            : "No mods found in the mod database.";
+    }
+
+    private static string BuildModDatabaseErrorMessage(bool hasSearchTokens, string errorMessage)
+    {
+        string operation = hasSearchTokens
+            ? "search the mod database"
+            : "load popular mods from the mod database";
+        return $"Failed to {operation}: {errorMessage}";
     }
 
     private Task UpdateSearchResultsAsync(IReadOnlyList<ModListItemViewModel> items, CancellationToken cancellationToken)
