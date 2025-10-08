@@ -199,7 +199,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool HasDependencyIssues => _dependencyHasErrors || _missingDependencies.Count > 0;
 
-    public bool CanFixDependencyIssues => HasDependencyIssues;
+    public bool CanFixDependencyIssues => HasDependencyIssues || HasLoadError;
 
     public IReadOnlyList<string> DatabaseTags => _databaseTags;
 
@@ -468,6 +468,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _loadError = normalized;
         OnPropertyChanged(nameof(HasLoadError));
         OnPropertyChanged(nameof(CanToggle));
+        OnPropertyChanged(nameof(CanFixDependencyIssues));
         UpdateStatusFromErrors();
         UpdateTooltip();
     }
@@ -1332,7 +1333,7 @@ public sealed class ModListItemViewModel : ObservableObject
             return null;
         }
 
-        try
+        return CreateImageSafely(() =>
         {
             var bitmap = new BitmapImage();
             bitmap.BeginInit();
@@ -1342,11 +1343,7 @@ public sealed class ModListItemViewModel : ObservableObject
             bitmap.EndInit();
             bitmap.Freeze();
             return bitmap;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        });
     }
 
     private static ImageSource? CreateImage(byte[]? bytes)
@@ -1356,7 +1353,7 @@ public sealed class ModListItemViewModel : ObservableObject
             return null;
         }
 
-        try
+        return CreateImageSafely(() =>
         {
             using MemoryStream stream = new(bytes);
             var bitmap = new BitmapImage();
@@ -1366,6 +1363,26 @@ public sealed class ModListItemViewModel : ObservableObject
             bitmap.EndInit();
             bitmap.Freeze();
             return bitmap;
+        });
+    }
+
+    private static ImageSource? CreateImageSafely(Func<ImageSource?> factory)
+    {
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+        {
+            try
+            {
+                return dispatcher.Invoke(factory);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        try
+        {
+            return factory();
         }
         catch (Exception)
         {
