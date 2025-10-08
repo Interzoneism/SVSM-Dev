@@ -679,6 +679,18 @@
                 BorderBrush="{DynamicResource VS.DialogBorderBrush}"
                 BorderThickness="0"
                 CornerRadius="15" Margin="839,206,0,0" Grid.Row="1" HorizontalAlignment="Left" Width="326" Height="201">
+            <Border.Style>
+                <Style TargetType="{x:Type Border}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Setter Property="IsHitTestVisible" Value="False" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Setter Property="IsHitTestVisible" Value="True" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Border.Effect>
                 <DropShadowEffect Color="#33000000" BlurRadius="16" Direction="270" ShadowDepth="4" Opacity="0.15"/>
             </Border.Effect>
