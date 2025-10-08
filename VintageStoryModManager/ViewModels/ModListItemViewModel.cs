@@ -97,6 +97,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _modDatabaseAssetId = databaseInfo?.AssetId;
         _modDatabasePageUrl = databaseInfo?.ModPageUrl;
         _modDatabasePageUri = TryCreateHttpUri(_modDatabasePageUrl);
+        LogDebug($"Initial database page URL '{FormatValue(_modDatabasePageUrl)}' resolved to '{FormatUri(_modDatabasePageUri)}'.");
         _modDatabasePageFavicon = CreateFaviconImage(_modDatabasePageUri);
         if (_modDatabasePageUri != null)
         {
@@ -107,6 +108,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _databaseComments = databaseInfo?.Comments;
         _modDatabaseLogoUrl = databaseInfo?.LogoUrl;
         _modDatabaseLogo = CreateModDatabaseLogoImage();
+        LogDebug($"Initial database logo creation result: {_modDatabaseLogo is not null}. Source URL: '{FormatValue(_modDatabaseLogoUrl)}'.");
         _latestDatabaseVersion = _latestRelease?.Version
             ?? databaseInfo?.LatestVersion
             ?? _latestCompatibleRelease?.Version
@@ -116,7 +118,9 @@ public sealed class ModListItemViewModel : ObservableObject
         IsInstalled = isInstalled;
 
         WebsiteUri = TryCreateHttpUri(Website);
+        LogDebug($"Website URL '{FormatValue(Website)}' resolved to '{FormatUri(WebsiteUri)}'.");
         WebsiteFavicon = CreateFaviconImage(WebsiteUri);
+        LogDebug($"Website favicon creation result: {WebsiteFavicon is not null}.");
         OpenWebsiteCommand = WebsiteUri != null ? new RelayCommand(() => LaunchUri(WebsiteUri)) : null;
 
         IReadOnlyList<ModDependencyInfo> dependencies = entry.Dependencies ?? Array.Empty<ModDependencyInfo>();
@@ -142,7 +146,8 @@ public sealed class ModListItemViewModel : ObservableObject
         RequiredOnClient = entry.RequiredOnClient;
         RequiredOnServer = entry.RequiredOnServer;
 
-        Icon = CreateImage(entry.IconBytes);
+        Icon = CreateImage(entry.IconBytes, "Icon bytes");
+        LogDebug($"Icon image created: {Icon is not null}. Will fall back to database logo when null.");
 
         _isActive = isActive;
         HasErrors = entry.HasErrors;
@@ -535,6 +540,8 @@ public sealed class ModListItemViewModel : ObservableObject
             OnPropertyChanged(nameof(CommentsDisplay));
         }
 
+        LogDebug($"UpdateDatabaseInfo invoked. AssetId='{FormatValue(info.AssetId)}', PageUrl='{FormatValue(info.ModPageUrl)}', LogoUrl='{FormatValue(info.LogoUrl)}'.");
+
         string? logoUrl = info.LogoUrl;
         if (!string.Equals(_modDatabaseLogoUrl, logoUrl, StringComparison.Ordinal))
         {
@@ -542,12 +549,14 @@ public sealed class ModListItemViewModel : ObservableObject
             _modDatabaseLogo = CreateModDatabaseLogoImage();
             OnPropertyChanged(nameof(ModDatabasePreviewImage));
             OnPropertyChanged(nameof(HasModDatabasePreviewImage));
+            LogDebug($"Updated database logo. New URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
         }
 
         if (!string.Equals(_modDatabaseAssetId, info.AssetId, StringComparison.Ordinal))
         {
             _modDatabaseAssetId = info.AssetId;
             OnPropertyChanged(nameof(ModDatabaseAssetId));
+            LogDebug($"Database asset id updated to '{FormatValue(_modDatabaseAssetId)}'.");
         }
 
         string? pageUrl = info.ModPageUrl;
@@ -556,6 +565,7 @@ public sealed class ModListItemViewModel : ObservableObject
             _modDatabasePageUrl = pageUrl;
             OnPropertyChanged(nameof(ModDatabasePageUrl));
             OnPropertyChanged(nameof(ModDatabasePageUrlDisplay));
+            LogDebug($"Database page URL updated to '{FormatValue(_modDatabasePageUrl)}'.");
         }
 
         Uri? pageUri = TryCreateHttpUri(pageUrl);
@@ -564,15 +574,18 @@ public sealed class ModListItemViewModel : ObservableObject
             _modDatabasePageUri = pageUri;
             OnPropertyChanged(nameof(ModDatabasePageUri));
             OnPropertyChanged(nameof(HasModDatabasePageLink));
+            LogDebug($"Database page URI resolved to '{FormatUri(_modDatabasePageUri)}'.");
         }
 
         SetProperty(ref _modDatabasePageFavicon, CreateFaviconImage(pageUri), nameof(ModDatabasePageFavicon));
+        LogDebug($"Database page favicon creation result: {_modDatabasePageFavicon is not null}.");
 
         ICommand? pageCommand = null;
         if (pageUri != null)
         {
             Uri commandUri = pageUri;
             pageCommand = new RelayCommand(() => LaunchUri(commandUri));
+            LogDebug($"Database page command initialized for '{commandUri}'.");
         }
 
         SetProperty(ref _openModDatabasePageCommand, pageCommand, nameof(OpenModDatabasePageCommand));
@@ -588,6 +601,7 @@ public sealed class ModListItemViewModel : ObservableObject
             OnPropertyChanged(nameof(LatestDatabaseVersion));
             OnPropertyChanged(nameof(LatestDatabaseVersionDisplay));
             OnPropertyChanged(nameof(LatestVersionSortKey));
+            LogDebug($"Latest database version updated to '{FormatValue(_latestDatabaseVersion)}'.");
         }
 
         InitializeUpdateAvailability();
@@ -1348,72 +1362,130 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private ImageSource? CreateModDatabaseLogoImage()
     {
-        return CreateImageFromUri(_modDatabaseLogoUrl);
+        return CreateImageFromUri(_modDatabaseLogoUrl, "Mod database logo");
     }
 
-    private static ImageSource? CreateImageFromUri(string? url)
+    private ImageSource? CreateImageFromUri(string? url, string context)
     {
+        string formattedUrl = FormatValue(url);
+        LogDebug($"{context}: Attempting to create image from URL {formattedUrl}.");
+
         Uri? uri = TryCreateHttpUri(url);
         if (uri == null)
         {
+            LogDebug($"{context}: Unable to resolve absolute URI from {formattedUrl}.");
             return null;
         }
 
-        return CreateImageSafely(() =>
-        {
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.UriSource = uri;
-            bitmap.CacheOption = BitmapCacheOption.OnDemand;
-            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-            bitmap.EndInit();
-            bitmap.Freeze();
-            return bitmap;
-        });
+        LogDebug($"{context}: Resolved URI '{uri}'.");
+
+        ImageSource? image = CreateImageSafely(
+            () =>
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = uri;
+                bitmap.CacheOption = BitmapCacheOption.OnDemand;
+                bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                bitmap.EndInit();
+                bitmap.Freeze();
+                return bitmap;
+            },
+            $"{context} ({uri})");
+
+        LogDebug(image is null
+            ? $"{context}: Failed to load image from '{uri}'."
+            : $"{context}: Successfully loaded image from '{uri}'.");
+
+        return image;
     }
 
-    private static ImageSource? CreateImage(byte[]? bytes)
+    private ImageSource? CreateImage(byte[]? bytes, string context)
     {
-        if (bytes == null || bytes.Length == 0)
+        int length = bytes?.Length ?? 0;
+        LogDebug($"{context}: Received {length} byte(s) for image creation.");
+        if (bytes == null || length == 0)
         {
+            LogDebug($"{context}: No bytes available; skipping image creation.");
             return null;
         }
 
-        return CreateImageSafely(() =>
-        {
-            using MemoryStream stream = new(bytes);
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.StreamSource = stream;
-            bitmap.EndInit();
-            bitmap.Freeze();
-            return bitmap;
-        });
+        byte[] buffer = bytes;
+        ImageSource? image = CreateImageSafely(
+            () =>
+            {
+                using MemoryStream stream = new(buffer);
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.StreamSource = stream;
+                bitmap.EndInit();
+                bitmap.Freeze();
+                return bitmap;
+            },
+            $"{context} (byte stream)");
+
+        LogDebug(image is null
+            ? $"{context}: Failed to create bitmap from bytes."
+            : $"{context}: Successfully created bitmap from bytes.");
+
+        return image;
     }
 
-    private static ImageSource? CreateImageSafely(Func<ImageSource?> factory)
+    private ImageSource? CreateImageSafely(Func<ImageSource?> factory, string context)
     {
         if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
         {
             try
             {
-                return dispatcher.Invoke(factory);
+                LogDebug($"{context}: Invoking image creation on dispatcher thread.");
+                ImageSource? result = dispatcher.Invoke(factory);
+                LogDebug($"{context}: Dispatcher invocation completed with result {(result is null ? "null" : "available")}.");
+                return result;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                LogDebug($"{context}: Exception during dispatcher invocation: {ex.Message}.");
                 return null;
             }
         }
 
         try
         {
-            return factory();
+            ImageSource? result = factory();
+            LogDebug($"{context}: Image creation completed on current thread with result {(result is null ? "null" : "available")}.");
+            return result;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            LogDebug($"{context}: Exception during image creation: {ex.Message}.");
             return null;
         }
+    }
+
+    private void LogDebug(string message)
+    {
+        StatusLogService.AppendStatus($"[Debug][{DisplayName} ({ModId})] {message}", false);
+    }
+
+    private static string FormatValue(string? value)
+    {
+        if (value is null)
+        {
+            return "<null>";
+        }
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "<empty>";
+        }
+
+        return value;
+    }
+
+    private static string FormatUri(Uri? uri)
+    {
+        return uri?.AbsoluteUri ?? "<null>";
     }
 }
 
