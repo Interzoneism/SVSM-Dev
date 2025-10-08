@@ -353,13 +353,13 @@ public sealed class ModDatabaseService
 
     private static string? GetLogoUrl(JsonElement element)
     {
-        string? logo = GetString(element, "logo");
+        string? logo = GetString(element, "logofile");
         if (!string.IsNullOrWhiteSpace(logo))
         {
             return logo;
         }
 
-        logo = GetString(element, "logofile");
+        logo = GetString(element, "logo");
         if (!string.IsNullOrWhiteSpace(logo))
         {
             return logo;
