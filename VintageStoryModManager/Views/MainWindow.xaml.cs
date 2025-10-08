@@ -2530,6 +2530,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (e.OriginalSource is DependencyObject originalSource && IsDescendantOfToolTip(originalSource))
+        {
+            return;
+        }
+
         if (sender is not DependencyObject dependencyObject)
         {
             return;
@@ -2561,6 +2566,45 @@ public partial class MainWindow : Window
         double clampedOffset = Math.Max(0, Math.Min(targetOffset, scrollViewer.ScrollableHeight));
         scrollViewer.ScrollToVerticalOffset(clampedOffset);
         e.Handled = true;
+    }
+
+    private static bool IsDescendantOfToolTip(DependencyObject? source)
+    {
+        while (source != null)
+        {
+            if (source is System.Windows.Controls.ToolTip || source is Popup)
+            {
+                return true;
+            }
+
+            source = GetParent(source);
+        }
+
+        return false;
+    }
+
+    private static DependencyObject? GetParent(DependencyObject current)
+    {
+        if (current is Visual visual)
+        {
+            DependencyObject? parent = VisualTreeHelper.GetParent(visual);
+            if (parent != null)
+            {
+                return parent;
+            }
+
+            if (visual is FrameworkElement frameworkElement)
+            {
+                return frameworkElement.Parent;
+            }
+        }
+
+        if (current is FrameworkContentElement contentElement)
+        {
+            return contentElement.Parent ?? contentElement.TemplatedParent;
+        }
+
+        return LogicalTreeHelper.GetParent(current);
     }
 
     private void AttachToModsView(ICollectionView modsView)
