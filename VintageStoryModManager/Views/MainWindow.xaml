@@ -744,7 +744,7 @@
                 CornerRadius="15" Margin="0,206,26,0" Grid.Row="1" HorizontalAlignment="Right" Width="326" Height="201">
             <Border.Style>
                 <Style TargetType="{x:Type Border}">
-                    <Setter Property="Visibility" Value="Visible" />
+                    <Setter Property="Visibility" Value="Collapsed" />
                     <Setter Property="IsHitTestVisible" Value="False" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
