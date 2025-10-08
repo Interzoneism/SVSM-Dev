@@ -20,7 +20,7 @@
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenFalseConverter" IsInverted="True" />
         <converters:RowPaddingOffsetConverter x:Key="IMM.RowPaddingOffsetConverter" />
         <Thickness x:Key="IMM.RowPaddingBase">0,0,0,0</Thickness>
-        <sys:Double x:Key="IMM.NormalRowHeightOffset">15</sys:Double>
+        <sys:Double x:Key="IMM.NormalRowHeightOffset">10</sys:Double>
         <sys:Double x:Key="IMM.CompactRowHeightOffset">-12</sys:Double>
         <Style x:Key="IMM.DataGridCellBaseStyle" TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent" />
@@ -283,7 +283,7 @@
                                         Margin="4,0,4,4"
                                         SnapsToDevicePixels="True">
                                         <Border.Effect>
-                                            <DropShadowEffect Color="#33000000" BlurRadius="10" Direction="270" ShadowDepth="4" Opacity="0.15"/>
+                                            <DropShadowEffect Color="#33000000" BlurRadius="16" Direction="270" ShadowDepth="4" Opacity="0.15"/>
                                         </Border.Effect>
                                         <Grid>
                                             <Border x:Name="SelectionOverlay"
@@ -292,8 +292,8 @@
                                                 CornerRadius="8"
                                                 IsHitTestVisible="False" />
                                             <Border x:Name="HoverOverlay"
-                                                Background="{StaticResource IMM.RowHoverBrush}"
-                                                Opacity="0"
+                                                Background="{StaticResource IMM.SuccessBrush}"
+                                                Opacity="1"
                                                 CornerRadius="8"
                                                 IsHitTestVisible="False" />
                                             <Border Padding="{TemplateBinding Padding}"
@@ -319,15 +319,15 @@
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="DetailsVisibility" Value="Visible">
-                                            <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,0,2,2" />
+                                            <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
                                         </Trigger>
                                         <MultiTrigger>
                                             <MultiTrigger.Conditions>
                                                 <Condition Property="IsMouseOver" Value="True" />
                                                 <Condition Property="IsSelected" Value="False" />
                                             </MultiTrigger.Conditions>
-                                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.12" />
-                                            <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="1" />
+                                            <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
                                         </MultiTrigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
