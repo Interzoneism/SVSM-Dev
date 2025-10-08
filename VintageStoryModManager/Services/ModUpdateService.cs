@@ -20,7 +20,11 @@ public sealed class ModUpdateService
 
     private sealed record DownloadResult(string Path, bool IsTemporary, string? CachePath, bool IsCacheHit);
 
-    public async Task<ModUpdateResult> UpdateAsync(ModUpdateDescriptor descriptor, IProgress<ModUpdateProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<ModUpdateResult> UpdateAsync(
+        ModUpdateDescriptor descriptor,
+        bool cacheDownloads,
+        IProgress<ModUpdateProgress>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         if (descriptor is null)
         {
@@ -37,7 +41,7 @@ public sealed class ModUpdateService
                 ReportProgress(progress, ModUpdateStage.Validating, "Validating archive...");
                 ValidateArchive(download.Path);
 
-                if (!download.IsCacheHit && download.CachePath != null)
+                if (cacheDownloads && !download.IsCacheHit && download.CachePath != null)
                 {
                     TryCacheDownload(download.Path, download.CachePath);
                 }

@@ -24,6 +24,7 @@ public sealed class UserConfigurationService
     private string? _selectedAdvancedPresetName;
     private bool _isAdvancedPresetMode;
     private bool _isCompactView;
+    private bool _cacheAllVersionsLocally;
 
     public UserConfigurationService()
     {
@@ -41,6 +42,8 @@ public sealed class UserConfigurationService
     public string? GameDirectory { get; private set; }
 
     public bool IsCompactView => _isCompactView;
+
+    public bool CacheAllVersionsLocally => _cacheAllVersionsLocally;
 
     public string GetConfigurationDirectory()
     {
@@ -287,6 +290,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetCacheAllVersionsLocally(bool cacheAllVersionsLocally)
+    {
+        if (_cacheAllVersionsLocally == cacheAllVersionsLocally)
+        {
+            return;
+        }
+
+        _cacheAllVersionsLocally = cacheAllVersionsLocally;
+        Save();
+    }
+
     public void SetDataDirectory(string path)
     {
         DataDirectory = NormalizePath(path);
@@ -338,6 +352,7 @@ public sealed class UserConfigurationService
             GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
             _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
             _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
+            _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? false;
             if (loadedFromPreferredLocation)
             {
                 LoadClassicPresets(obj["modPresets"]);
@@ -373,6 +388,7 @@ public sealed class UserConfigurationService
             _modConfigPaths.Clear();
             _isAdvancedPresetMode = false;
             _isCompactView = false;
+            _cacheAllVersionsLocally = false;
             _selectedPresetName = null;
             _selectedAdvancedPresetName = null;
         }
@@ -391,6 +407,7 @@ public sealed class UserConfigurationService
                 ["gameDirectory"] = GameDirectory,
                 ["isCompactView"] = _isCompactView,
                 ["useAdvancedPresets"] = _isAdvancedPresetMode,
+                ["cacheAllVersionsLocally"] = _cacheAllVersionsLocally,
                 ["modPresets"] = BuildClassicPresetsJson(),
                 ["advancedModPresets"] = BuildAdvancedPresetsJson(),
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
