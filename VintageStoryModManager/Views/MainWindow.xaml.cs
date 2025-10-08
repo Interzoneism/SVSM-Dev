@@ -1462,6 +1462,7 @@ public partial class MainWindow : Window
         var failures = new List<string>();
         bool anySuccess = false;
         bool requiresRefresh = false;
+        bool hasRefreshedAllMods = false;
         var processedDependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         try
@@ -1529,6 +1530,7 @@ public partial class MainWindow : Window
         {
             try
             {
+                hasRefreshedAllMods = true;
                 await RefreshModsAsync();
             }
             catch (Exception ex)
@@ -1550,6 +1552,24 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 WpfMessageBox.Show($"The mods with errors could not be refreshed after fixing dependencies:{Environment.NewLine}{ex.Message}",
+                    "Vintage Story Mod Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+
+            UpdateSelectedModButtons();
+        }
+
+        if (!hasRefreshedAllMods)
+        {
+            try
+            {
+                hasRefreshedAllMods = true;
+                await RefreshModsAsync();
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show($"The mod list could not be refreshed after fixing dependencies:{Environment.NewLine}{ex.Message}",
                     "Vintage Story Mod Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
