@@ -1438,7 +1438,29 @@ public partial class MainWindow : Window
             }
         }
 
-        return releases[0];
+        ModReleaseInfo fallback = releases.FirstOrDefault(r => r.IsCompatibleWithInstalledGame)
+            ?? releases[0];
+
+        string availableVersion = string.IsNullOrWhiteSpace(fallback.Version)
+            ? "the latest available release"
+            : $"version {fallback.Version}";
+
+        string requirement = string.IsNullOrWhiteSpace(dependency.Version)
+            ? dependency.ModId
+            : $"{dependency.ModId} {dependency.Version} or newer";
+
+        string message =
+            $"No release that satisfies the required minimum version for {dependency.Display} could be found.{Environment.NewLine}{Environment.NewLine}" +
+            $"The mod database only provides {availableVersion}, which may not resolve the dependency requirement for {requirement}.{Environment.NewLine}{Environment.NewLine}" +
+            "Do you want to install this older release anyway?";
+
+        MessageBoxResult confirmation = WpfMessageBox.Show(
+            message,
+            "Vintage Story Mod Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        return confirmation == MessageBoxResult.Yes ? fallback : null;
     }
 
     private static ModReleaseInfo? SelectReleaseForInstall(ModListItemViewModel mod)
