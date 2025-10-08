@@ -87,6 +87,43 @@
             <SolidColorBrush x:Key="VS.DialogLinkTextBrush" Color="{StaticResource VS.DialogLinkTextColor}" />
             <SolidColorBrush x:Key="VS.DialogTitleBarBrush" Color="{StaticResource VS.DialogTitleBarColor}" />
 
+            <BooleanToVisibilityConverter x:Key="IMM.BooleanToVisibilityConverter" />
+
+            <Style x:Key="IMM.ClearTextButtonStyle" TargetType="Button">
+                <Setter Property="Width" Value="24" />
+                <Setter Property="Height" Value="24" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Border"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="12">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ButtonHoverBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ButtonPressedBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Border" Property="Background" Value="Transparent" />
+                                    <Setter Property="Opacity" Value="0.6" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <Style TargetType="Button">
                 <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
                 <Setter Property="Background" Value="{StaticResource IMM.ButtonBackgroundBrush}" />
@@ -249,6 +286,10 @@
                                         BorderThickness="{TemplateBinding BorderThickness}"
                                         CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}" />
                                 <Grid Margin="{TemplateBinding Padding}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
                                     <ScrollViewer x:Name="PART_ContentHost"
                                                   Margin="0"
                                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -264,6 +305,24 @@
                                                IsHitTestVisible="False"
                                                TextTrimming="CharacterEllipsis"
                                                Visibility="Collapsed" />
+                                    <Button x:Name="ClearButton"
+                                            Grid.Column="1"
+                                            Margin="6,0,0,0"
+                                            Focusable="False"
+                                            Style="{StaticResource IMM.ClearTextButtonStyle}"
+                                            ToolTip="Clear search"
+                                            AutomationProperties.Name="Clear search"
+                                            Visibility="{Binding DataContext.HasSearchText, RelativeSource={RelativeSource AncestorType=TextBox}, Converter={StaticResource IMM.BooleanToVisibilityConverter}}"
+                                            Command="{Binding DataContext.ClearSearchCommand, RelativeSource={RelativeSource AncestorType=TextBox}}">
+                                        <Path Width="12"
+                                              Height="12"
+                                              Stretch="Uniform"
+                                              Stroke="{StaticResource IMM.ForegroundBrush}"
+                                              StrokeThickness="1.6"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              Data="M2,2 L10,10 M10,2 L2,10" />
+                                    </Button>
                                 </Grid>
                             </Grid>
                             <ControlTemplate.Triggers>
