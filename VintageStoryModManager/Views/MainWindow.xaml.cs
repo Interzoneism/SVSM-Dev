@@ -37,6 +37,7 @@ namespace VintageStoryModManager.Views;
 public partial class MainWindow : Window
 {
     private const double ModListScrollMultiplier = 0.5;
+    private const double ModDbDesignScrollMultiplier = 1.0;
     private const double HoverOverlayOpacity = 0.12;
     private const double SelectionOverlayOpacity = 0.22;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/enhancedhandbook";
@@ -3133,7 +3134,7 @@ public partial class MainWindow : Window
 
         double lines = Math.Max(1, SystemParameters.WheelScrollLines);
         double deltaMultiplier = e.Delta / (double)Mouse.MouseWheelDeltaForOneLine;
-        double offsetChange = deltaMultiplier * lines * ModListScrollMultiplier;
+        double offsetChange = deltaMultiplier * lines * GetCurrentScrollMultiplier();
         if (Math.Abs(offsetChange) < double.Epsilon)
         {
             return;
@@ -3180,7 +3181,7 @@ public partial class MainWindow : Window
 
         double lines = Math.Max(1, SystemParameters.WheelScrollLines);
         double deltaMultiplier = e.Delta / (double)Mouse.MouseWheelDeltaForOneLine;
-        double offsetChange = deltaMultiplier * lines * ModListScrollMultiplier;
+        double offsetChange = deltaMultiplier * lines * GetCurrentScrollMultiplier();
         if (Math.Abs(offsetChange) < double.Epsilon)
         {
             return;
@@ -3229,6 +3230,16 @@ public partial class MainWindow : Window
         }
 
         return LogicalTreeHelper.GetParent(current);
+    }
+
+    private double GetCurrentScrollMultiplier()
+    {
+        if (_viewModel?.SearchModDatabase == true && _viewModel.UseModDbDesignView)
+        {
+            return ModDbDesignScrollMultiplier;
+        }
+
+        return ModListScrollMultiplier;
     }
 
     private void AttachToModsView(ICollectionView modsView)
