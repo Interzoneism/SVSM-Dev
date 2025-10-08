@@ -505,6 +505,15 @@ public partial class MainWindow : Window
             };
         }
 
+        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.LatestVersionSortKey), StringComparison.OrdinalIgnoreCase))
+        {
+            return new[]
+            {
+                (nameof(ModListItemViewModel.LatestVersionSortKey), direction),
+                (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending)
+            };
+        }
+
         return new[] { (sortMemberPath, direction) };
     }
 
@@ -522,6 +531,13 @@ public partial class MainWindow : Window
             return direction == ListSortDirection.Ascending
                 ? "Name (A → Z)"
                 : "Name (Z → A)";
+        }
+
+        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.LatestVersionSortKey), StringComparison.OrdinalIgnoreCase))
+        {
+            return direction == ListSortDirection.Ascending
+                ? "Latest Version (Updates First)"
+                : "Latest Version (Updates Last)";
         }
 
         return $"{sortMemberPath} ({(direction == ListSortDirection.Ascending ? "Ascending" : "Descending")})";

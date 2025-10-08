@@ -231,6 +231,25 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public string LatestDatabaseVersionDisplay => string.IsNullOrWhiteSpace(LatestDatabaseVersion) ? "—" : LatestDatabaseVersion!;
 
+    public string LatestVersionSortKey
+    {
+        get
+        {
+            string version = LatestDatabaseVersionDisplay;
+            int order = CanUpdate ? 0 : 1;
+
+            return string.Create(
+                version.Length + 2,
+                (Order: order, Version: version),
+                static (span, state) =>
+                {
+                    span[0] = (char)('0' + state.Order);
+                    span[1] = '|';
+                    state.Version.AsSpan().CopyTo(span[2..]);
+                });
+        }
+    }
+
     public bool IsInstalled { get; }
 
     public bool CanUpdate => _hasUpdate;
@@ -568,6 +587,7 @@ public sealed class ModListItemViewModel : ObservableObject
             _latestDatabaseVersion = latestDatabaseVersion;
             OnPropertyChanged(nameof(LatestDatabaseVersion));
             OnPropertyChanged(nameof(LatestDatabaseVersionDisplay));
+            OnPropertyChanged(nameof(LatestVersionSortKey));
         }
 
         InitializeUpdateAvailability();
@@ -580,6 +600,7 @@ public sealed class ModListItemViewModel : ObservableObject
         OnPropertyChanged(nameof(LatestReleaseIsCompatible));
         OnPropertyChanged(nameof(ShouldHighlightLatestVersion));
         OnPropertyChanged(nameof(CanUpdate));
+        OnPropertyChanged(nameof(LatestVersionSortKey));
         OnPropertyChanged(nameof(RequiresCompatibilitySelection));
         OnPropertyChanged(nameof(HasCompatibleUpdate));
         OnPropertyChanged(nameof(HasDownloadableRelease));
