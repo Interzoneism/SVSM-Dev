@@ -188,6 +188,7 @@
                             <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
                             <Setter Property="BorderThickness" Value="1,0,0,1" />
                             <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                            <Setter Property="Margin" Value="0,0,0,6" />
                             <Setter Property="Padding" Value="12,10" />
                             <Setter Property="FontWeight" Value="SemiBold" />
                             <Setter Property="HorizontalContentAlignment" Value="Left" />
