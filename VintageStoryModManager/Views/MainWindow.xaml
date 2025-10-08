@@ -693,7 +693,7 @@
                       ItemsSource="{Binding CurrentModsView}"
                       Background="Transparent"
                       BorderThickness="0"
-                      Margin="0,0,-29,0"
+                      Margin="0"
                       SelectionMode="Single"
                       SelectionChanged="ModDatabaseCardsListView_OnSelectionChanged"
                       PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
@@ -717,15 +717,13 @@
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel Orientation="Horizontal"
-                                   ItemWidth="280"
-                                   ItemHeight="320"
+                                   ItemWidth="296"
                                    Margin="0" />
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}">
                         <Setter Property="Padding" Value="0" />
-                        <Setter Property="Margin" Value="0,0,16,16" />
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         <Setter Property="VerticalContentAlignment" Value="Stretch" />
                         <Setter Property="Background" Value="Transparent" />
@@ -745,6 +743,7 @@
                     <DataTemplate DataType="{x:Type viewModels:ModListItemViewModel}">
                         <Border Width="280"
                                 Height="320"
+                                Margin="0,0,16,16"
                                 CornerRadius="6">
                             <Border.Style>
                                 <Style TargetType="{x:Type Border}">
