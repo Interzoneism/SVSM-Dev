@@ -38,12 +38,15 @@ public sealed class ModListItemViewModel : ObservableObject
     private IReadOnlyList<ModReleaseInfo> _releases;
     private IReadOnlyList<ReleaseChangelog> _newerReleaseChangelogs = Array.Empty<ReleaseChangelog>();
     private int? _databaseDownloads;
+    private int? _databaseComments;
     private string? _modDatabaseAssetId;
     private string? _modDatabasePageUrl;
     private Uri? _modDatabasePageUri;
     private ImageSource? _modDatabasePageFavicon;
     private ICommand? _openModDatabasePageCommand;
     private string? _latestDatabaseVersion;
+    private ImageSource? _modDatabaseLogo;
+    private string? _modDatabaseLogoUrl;
     private readonly string? _installedGameVersion;
     private readonly string _searchIndex;
     private IReadOnlyList<ModVersionOptionViewModel> _versionOptions = Array.Empty<ModVersionOptionViewModel>();
@@ -101,6 +104,9 @@ public sealed class ModListItemViewModel : ObservableObject
             _openModDatabasePageCommand = new RelayCommand(() => LaunchUri(commandUri));
         }
         _databaseDownloads = databaseInfo?.Downloads;
+        _databaseComments = databaseInfo?.Comments;
+        _modDatabaseLogoUrl = databaseInfo?.LogoUrl;
+        _modDatabaseLogo = CreateImageFromUri(_modDatabaseLogoUrl);
         _latestDatabaseVersion = _latestRelease?.Version
             ?? databaseInfo?.LatestVersion
             ?? _latestCompatibleRelease?.Version
@@ -212,6 +218,14 @@ public sealed class ModListItemViewModel : ObservableObject
     public string DownloadsDisplay => _databaseDownloads.HasValue
         ? _databaseDownloads.Value.ToString("N0", CultureInfo.CurrentCulture)
         : "—";
+
+    public string CommentsDisplay => _databaseComments.HasValue
+        ? _databaseComments.Value.ToString("N0", CultureInfo.CurrentCulture)
+        : "—";
+
+    public ImageSource? ModDatabasePreviewImage => Icon ?? _modDatabaseLogo;
+
+    public bool HasModDatabasePreviewImage => ModDatabasePreviewImage != null;
 
     public string? LatestDatabaseVersion => _latestDatabaseVersion;
 
@@ -492,6 +506,22 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             _databaseDownloads = downloads;
             OnPropertyChanged(nameof(DownloadsDisplay));
+        }
+
+        int? comments = info.Comments;
+        if (_databaseComments != comments)
+        {
+            _databaseComments = comments;
+            OnPropertyChanged(nameof(CommentsDisplay));
+        }
+
+        string? logoUrl = info.LogoUrl;
+        if (!string.Equals(_modDatabaseLogoUrl, logoUrl, StringComparison.Ordinal))
+        {
+            _modDatabaseLogoUrl = logoUrl;
+            _modDatabaseLogo = CreateImageFromUri(_modDatabaseLogoUrl);
+            OnPropertyChanged(nameof(ModDatabasePreviewImage));
+            OnPropertyChanged(nameof(HasModDatabasePreviewImage));
         }
 
         if (!string.Equals(_modDatabaseAssetId, info.AssetId, StringComparison.Ordinal))
@@ -1291,6 +1321,31 @@ public sealed class ModListItemViewModel : ObservableObject
         catch (Exception)
         {
             // Opening a browser is best-effort; ignore failures.
+        }
+    }
+
+    private static ImageSource? CreateImageFromUri(string? url)
+    {
+        Uri? uri = TryCreateHttpUri(url);
+        if (uri == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = uri;
+            bitmap.CacheOption = BitmapCacheOption.OnDemand;
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+            bitmap.EndInit();
+            bitmap.Freeze();
+            return bitmap;
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 

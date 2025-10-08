@@ -22,6 +22,14 @@ public sealed class ModDatabaseInfo
 
     public int? Downloads { get; init; }
 
+    public int? Comments { get; init; }
+
+    public int? Follows { get; init; }
+
+    public int? TrendingPoints { get; init; }
+
+    public string? LogoUrl { get; init; }
+
     public ModReleaseInfo? LatestRelease { get; init; }
 
     public ModReleaseInfo? LatestCompatibleRelease { get; init; }
