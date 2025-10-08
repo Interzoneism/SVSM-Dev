@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -1311,7 +1312,7 @@ public sealed class ModListItemViewModel : ObservableObject
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             bitmap.UriSource = builder.Uri;
             bitmap.EndInit();
-            bitmap.Freeze();
+            TryFreezeImageSource(bitmap, $"Favicon image ({builder.Uri})", null);
             return bitmap;
         }
         catch (Exception)
@@ -1388,7 +1389,7 @@ public sealed class ModListItemViewModel : ObservableObject
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
                 bitmap.EndInit();
-                bitmap.Freeze();
+                TryFreezeImageSource(bitmap, $"{context} ({uri})", LogDebug);
                 return bitmap;
             },
             $"{context} ({uri})");
@@ -1420,7 +1421,7 @@ public sealed class ModListItemViewModel : ObservableObject
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.StreamSource = stream;
                 bitmap.EndInit();
-                bitmap.Freeze();
+                TryFreezeImageSource(bitmap, $"{context} (byte stream)", LogDebug);
                 return bitmap;
             },
             $"{context} (byte stream)");
@@ -1466,6 +1467,34 @@ public sealed class ModListItemViewModel : ObservableObject
     private void LogDebug(string message)
     {
         StatusLogService.AppendStatus($"[Debug][{DisplayName} ({ModId})] {message}", false);
+    }
+
+    private static void TryFreezeImageSource(ImageSource image, string context, Action<string>? log)
+    {
+        if (image is not Freezable freezable)
+        {
+            return;
+        }
+
+        if (freezable.IsFrozen)
+        {
+            return;
+        }
+
+        if (!freezable.CanFreeze)
+        {
+            log?.Invoke($"{context}: Image cannot be frozen; continuing without freezing.");
+            return;
+        }
+
+        try
+        {
+            freezable.Freeze();
+        }
+        catch (Exception ex)
+        {
+            log?.Invoke($"{context}: Failed to freeze image: {ex.Message}. Continuing without freezing.");
+        }
     }
 
     private static string FormatValue(string? value)
