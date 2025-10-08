@@ -77,6 +77,7 @@ public partial class MainWindow : Window
 
         _userConfiguration = new UserConfigurationService();
         AdvancedPresetsMenuItem.IsChecked = _userConfiguration.IsAdvancedPresetMode;
+        CacheAllVersionsMenuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
 
         if (!TryInitializePaths())
         {
@@ -152,6 +153,17 @@ public partial class MainWindow : Window
                 : "Advanced presets disabled.";
             _viewModel.ReportStatus(status);
         }
+    }
+
+    private void CacheAllVersionsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return;
+        }
+
+        _userConfiguration.SetCacheAllVersionsLocally(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
     }
 
     private void InitializeViewModel()
@@ -1119,7 +1131,9 @@ public partial class MainWindow : Window
             var progress = new Progress<ModUpdateProgress>(p =>
                 _viewModel?.ReportStatus($"{mod.DisplayName}: {p.Message}"));
 
-            ModUpdateResult result = await _modUpdateService.UpdateAsync(descriptor, progress).ConfigureAwait(true);
+            ModUpdateResult result = await _modUpdateService
+                .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
+                .ConfigureAwait(true);
 
             if (!result.Success)
             {
@@ -2644,7 +2658,9 @@ public partial class MainWindow : Window
                 var progress = new Progress<ModUpdateProgress>(p =>
                     _viewModel.ReportStatus($"{mod.DisplayName}: {p.Message}"));
 
-                ModUpdateResult updateResult = await _modUpdateService.UpdateAsync(descriptor, progress).ConfigureAwait(true);
+                ModUpdateResult updateResult = await _modUpdateService
+                    .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
+                    .ConfigureAwait(true);
 
                 if (!updateResult.Success)
                 {

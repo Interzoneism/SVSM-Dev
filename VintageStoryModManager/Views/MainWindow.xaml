@@ -58,6 +58,11 @@
                 <MenuItem Header="_Mods" Height="30">
                     <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" />
                     <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" />
+                    <MenuItem x:Name="CacheAllVersionsMenuItem"
+                              Header="Cache all versions locally"
+                              Height="30"
+                              IsCheckable="True"
+                              Click="CacheAllVersionsMenuItem_OnClick" />
                     <MenuItem Header="_Delete Cached Mods" Height="30" Click="DeleteCachedModsMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_Presets" Height="30">
