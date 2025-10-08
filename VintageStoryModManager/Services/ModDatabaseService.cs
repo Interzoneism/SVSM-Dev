@@ -21,6 +21,9 @@ public sealed class ModDatabaseService
     private const string SearchEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&limit={1}";
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
 
+    private static readonly Uri ModDatabaseSiteBaseUri = new("https://mods.vintagestory.at/");
+    private static readonly Uri ModDatabaseCdnBaseUri = new("https://moddbcdn.vintagestory.at/");
+
     private static readonly HttpClient HttpClient = new();
 
     private static readonly Regex HtmlBreakRegex = new(
@@ -353,32 +356,101 @@ public sealed class ModDatabaseService
 
     private static string? GetLogoUrl(JsonElement element)
     {
-        string? logo = GetString(element, "logofile");
-        if (!string.IsNullOrWhiteSpace(logo))
+        string? logo = TryGetLogoUrlFromProperties(element);
+        if (logo != null)
         {
             return logo;
         }
 
-        logo = GetString(element, "logo");
-        if (!string.IsNullOrWhiteSpace(logo))
+        if (element.TryGetProperty("screenshots", out JsonElement screenshots)
+            && screenshots.ValueKind == JsonValueKind.Array)
         {
-            return logo;
-        }
+            foreach (JsonElement screenshot in screenshots.EnumerateArray())
+            {
+                string? screenshotUrl = screenshot.ValueKind switch
+                {
+                    JsonValueKind.String => NormalizeLogoUrl(screenshot.GetString()),
+                    JsonValueKind.Object => NormalizeLogoUrl(
+                        GetString(screenshot, "url")
+                        ?? GetString(screenshot, "image")
+                        ?? GetString(screenshot, "filename")),
+                    _ => null
+                };
 
-        logo = GetString(element, "logofiledb");
-        if (!string.IsNullOrWhiteSpace(logo))
-        {
-            return logo;
-        }
-
-        logo = GetString(element, "logofilename");
-        if (!string.IsNullOrWhiteSpace(logo))
-        {
-            return logo;
+                if (screenshotUrl != null)
+                {
+                    return screenshotUrl;
+                }
+            }
         }
 
         return null;
     }
+
+    private static string? TryGetLogoUrlFromProperties(JsonElement element)
+    {
+        string[] propertyNames =
+        {
+            "logofile",
+            "logo",
+            "logofiledb",
+            "logofilename",
+            "image"
+        };
+
+        foreach (string property in propertyNames)
+        {
+            string? url = NormalizeLogoUrl(GetString(element, property));
+            if (url != null)
+            {
+                return url;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? NormalizeLogoUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        string trimmed = value.Trim();
+
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out Uri? absolute) && IsSupportedScheme(absolute))
+        {
+            return absolute.AbsoluteUri;
+        }
+
+        if (trimmed.StartsWith("//", StringComparison.Ordinal))
+        {
+            if (Uri.TryCreate($"https:{trimmed}", UriKind.Absolute, out absolute) && IsSupportedScheme(absolute))
+            {
+                return absolute.AbsoluteUri;
+            }
+        }
+
+        if (trimmed.StartsWith("/", StringComparison.Ordinal))
+        {
+            if (Uri.TryCreate(ModDatabaseSiteBaseUri, trimmed, out absolute) && IsSupportedScheme(absolute))
+            {
+                return absolute.AbsoluteUri;
+            }
+        }
+
+        if (Uri.TryCreate(ModDatabaseCdnBaseUri, trimmed, out absolute) && IsSupportedScheme(absolute))
+        {
+            return absolute.AbsoluteUri;
+        }
+
+        return null;
+    }
+
+    private static bool IsSupportedScheme(Uri uri) =>
+        string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
 
     private static string? ConvertChangelogToPlainText(string? changelog)
     {
