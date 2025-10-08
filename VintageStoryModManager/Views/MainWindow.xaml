@@ -508,6 +508,25 @@
                                 <Setter Property="VerticalAlignment" Value="Center" />
                                 <Setter Property="Padding" Value="4,2" />
                                 <Setter Property="Margin" Value="2" />
+                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                                <Setter Property="ToolTip">
+                                    <Setter.Value>
+                                        <ToolTip MaxHeight="600" Padding="0">
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="600">
+                                                <ItemsControl ItemsSource="{Binding NewerReleaseChangelogs}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel Margin="0,0,0,12">
+                                                                <TextBlock Text="{Binding Version}" FontWeight="Bold" Margin="0,0,0,4" />
+                                                                <TextBlock Text="{Binding Changelog}" TextWrapping="Wrap" />
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </ScrollViewer>
+                                        </ToolTip>
+                                    </Setter.Value>
+                                </Setter>
                                 <Style.Triggers>
                                     <MultiDataTrigger>
                                         <MultiDataTrigger.Conditions>
@@ -517,6 +536,9 @@
                                         <Setter Property="Background" Value="{StaticResource IMM.SuccessBrush}" />
                                         <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
                                     </MultiDataTrigger>
+                                    <DataTrigger Binding="{Binding HasNewerReleaseChangelogs}" Value="False">
+                                        <Setter Property="ToolTip" Value="{x:Null}" />
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </DataGridTextColumn.ElementStyle>

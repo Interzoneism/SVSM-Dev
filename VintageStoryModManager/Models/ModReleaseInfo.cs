@@ -19,5 +19,7 @@ public sealed class ModReleaseInfo
     public IReadOnlyList<string> GameVersionTags { get; init; } = Array.Empty<string>();
 
     public bool IsCompatibleWithInstalledGame { get; init; }
+
+    public string? Changelog { get; init; }
 }
 
