@@ -21,9 +21,6 @@ public sealed class ModDatabaseService
     private const string SearchEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&limit={1}";
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
 
-    private static readonly Uri ModDatabaseSiteBaseUri = new("https://mods.vintagestory.at/");
-    private static readonly Uri ModDatabaseCdnBaseUri = new("https://moddbcdn.vintagestory.at/");
-
     private static readonly HttpClient HttpClient = new();
 
     private static readonly Regex HtmlBreakRegex = new(
@@ -193,8 +190,7 @@ public sealed class ModDatabaseService
             int? comments = GetNullableInt(modElement, "comments");
             int? follows = GetNullableInt(modElement, "follows");
             int? trendingPoints = GetNullableInt(modElement, "trendingpoints");
-            string? logoUrl = GetLogoUrl(modElement);
-            string? logoFile = GetString(modElement, "logofile");
+            string? logoUrl = GetString(modElement, "logofile");
             IReadOnlyList<ModReleaseInfo> releases = BuildReleaseInfos(modElement, normalizedGameVersion);
             ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
             ModReleaseInfo? latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
@@ -215,7 +211,6 @@ public sealed class ModDatabaseService
                 Follows = follows,
                 TrendingPoints = trendingPoints,
                 LogoUrl = logoUrl,
-                LogoFile = logoFile,
                 LatestRelease = latestRelease,
                 LatestCompatibleRelease = latestCompatibleRelease,
                 Releases = releases
@@ -356,104 +351,6 @@ public sealed class ModDatabaseService
         return string.IsNullOrWhiteSpace(text) ? null : text;
     }
 
-    private static string? GetLogoUrl(JsonElement element)
-    {
-        string? logo = TryGetLogoUrlFromProperties(element);
-        if (logo != null)
-        {
-            return logo;
-        }
-
-        if (element.TryGetProperty("screenshots", out JsonElement screenshots)
-            && screenshots.ValueKind == JsonValueKind.Array)
-        {
-            foreach (JsonElement screenshot in screenshots.EnumerateArray())
-            {
-                string? screenshotUrl = screenshot.ValueKind switch
-                {
-                    JsonValueKind.String => NormalizeLogoUrl(screenshot.GetString()),
-                    JsonValueKind.Object => NormalizeLogoUrl(
-                        GetString(screenshot, "url")
-                        ?? GetString(screenshot, "image")
-                        ?? GetString(screenshot, "filename")),
-                    _ => null
-                };
-
-                if (screenshotUrl != null)
-                {
-                    return screenshotUrl;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private static string? TryGetLogoUrlFromProperties(JsonElement element)
-    {
-        string[] propertyNames =
-        {
-            "logofile",
-            "logo",
-            "logofiledb",
-            "logofilename",
-            "image"
-        };
-
-        foreach (string property in propertyNames)
-        {
-            string? url = NormalizeLogoUrl(GetString(element, property));
-            if (url != null)
-            {
-                return url;
-            }
-        }
-
-        return null;
-    }
-
-    private static string? NormalizeLogoUrl(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        string trimmed = value.Trim();
-
-        if (Uri.TryCreate(trimmed, UriKind.Absolute, out Uri? absolute) && IsSupportedScheme(absolute))
-        {
-            return absolute.AbsoluteUri;
-        }
-
-        if (trimmed.StartsWith("//", StringComparison.Ordinal))
-        {
-            if (Uri.TryCreate($"https:{trimmed}", UriKind.Absolute, out absolute) && IsSupportedScheme(absolute))
-            {
-                return absolute.AbsoluteUri;
-            }
-        }
-
-        if (trimmed.StartsWith("/", StringComparison.Ordinal))
-        {
-            if (Uri.TryCreate(ModDatabaseSiteBaseUri, trimmed, out absolute) && IsSupportedScheme(absolute))
-            {
-                return absolute.AbsoluteUri;
-            }
-        }
-
-        if (Uri.TryCreate(ModDatabaseCdnBaseUri, trimmed, out absolute) && IsSupportedScheme(absolute))
-        {
-            return absolute.AbsoluteUri;
-        }
-
-        return null;
-    }
-
-    private static bool IsSupportedScheme(Uri uri) =>
-        string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
-        || string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
-
     private static string? ConvertChangelogToPlainText(string? changelog)
     {
         if (string.IsNullOrWhiteSpace(changelog))
@@ -547,8 +444,7 @@ public sealed class ModDatabaseService
         string? assetId = TryGetAssetId(element);
         string? urlAlias = GetString(element, "urlalias");
         string? side = GetString(element, "side");
-        string? logo = GetLogoUrl(element);
-        string? logoFile = GetString(element, "logofile");
+        string? logo = GetString(element, "logofile");
 
         IReadOnlyList<string> tags = GetStringList(element, "tags");
         int downloads = GetInt(element, "downloads");
@@ -592,7 +488,6 @@ public sealed class ModDatabaseService
             UrlAlias = urlAlias,
             Side = side,
             LogoUrl = logo,
-            LogoFile = logoFile,
             LastReleasedUtc = lastReleased,
             Score = score
         };
