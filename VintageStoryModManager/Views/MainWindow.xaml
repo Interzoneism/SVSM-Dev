@@ -29,6 +29,15 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Padding" Value="8,6" />
         </Style>
+        <LinearGradientBrush x:Key="CardGradient" EndPoint="1,0.5" StartPoint="0,0.5">
+            <GradientStop Color="#FFA9C0E9"/>
+            <GradientStop Color="#FFEFF3F9" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="CardGradient2" EndPoint="1,0.5" StartPoint="0,0.5">
+            <GradientStop Color="#FFA9C0E9"/>
+            <GradientStop Color="#FFEFF3F9" Offset="1"/>
+            <GradientStop Color="#FFD2DFF3" Offset="0.263"/>
+        </LinearGradientBrush>
     </Window.Resources>
 
     <Grid Background="{DynamicResource IMM.SurfaceBrush}" Margin="0,0,0,8">
@@ -156,6 +165,7 @@
                   SelectionUnit="FullRow"
                   SelectionMode="Single"
                   RowHeaderWidth="0"
+                  
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
                   SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="Black"
                   PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
@@ -163,7 +173,6 @@
                   RowBackground="White"
                   HorizontalGridLinesBrush="Transparent"
                   VerticalGridLinesBrush="Transparent"
-                  
                   HeadersVisibility="Column"
                   ui:ControlHelper.CornerRadius="10"
                   FontSize="15" Margin="0,0,-29,0">
@@ -258,7 +267,7 @@
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Background>
-                        <SolidColorBrush Color="{DynamicResource IMM.ButtonPressedColor}"/>
+                        <SolidColorBrush Color="{DynamicResource IMM.SurfaceColor}"/>
                     </DataGrid.Background>
                     <DataGrid.CellStyle>
                         <StaticResource ResourceKey="IMM.DataGridCellBaseStyle"/>
@@ -267,6 +276,7 @@
                         <Style TargetType="{x:Type DataGrid}">
                             <Setter Property="CanUserSortColumns" Value="True" />
                             <Setter Property="Visibility" Value="Visible" />
+                            
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="CanUserSortColumns" Value="False" />
@@ -285,6 +295,7 @@
                         <SolidColorBrush Color="{DynamicResource VS.DialogTitleBarColor}" />
                     </DataGrid.BorderBrush>
                     <DataGrid.RowHeaderStyle>
+                        
                         <Style/>
                     </DataGrid.RowHeaderStyle>
                     <DataGrid.RowStyle>
@@ -306,14 +317,14 @@
                                 <Setter.Value>
                                     <ControlTemplate TargetType="{x:Type DataGridRow}">
                                         <Border x:Name="RowBorder"
-                                            Background="{TemplateBinding Background}"
+                                            Background="{DynamicResource CardGradient2}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}"
                                         CornerRadius="8"
                                         Margin="4,0,4,4"
                                         SnapsToDevicePixels="True">
                                             <Border.Effect>
-                                                <DropShadowEffect Color="#33000000" BlurRadius="16" Direction="270" ShadowDepth="4" Opacity="0.15"/>
+                                                <DropShadowEffect Color="#33000000" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
                                             </Border.Effect>
                                             <Grid>
                                                 <Border x:Name="SelectionOverlay"
@@ -517,73 +528,73 @@
                                      Width="85"
                                      IsReadOnly="True"
                                      MinWidth="80">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                <Setter Property="VerticalAlignment" Value="Center" />
-                                <Setter Property="TextAlignment" Value="Center" />
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                        <DataGridTextColumn.CellStyle>
-                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                            </Style>
-                        </DataGridTextColumn.CellStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" SortMemberPath="LatestVersionSortKey" Width="140" MinWidth="139" IsReadOnly="True">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                <Setter Property="VerticalAlignment" Value="Center" />
-                                <Setter Property="Padding" Value="4,2" />
-                                <Setter Property="Margin" Value="2" />
-                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                                <Setter Property="ToolTip">
-                                    <Setter.Value>
-                                        <ToolTip MaxHeight="600"
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="TextAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                            <DataGridTextColumn.CellStyle>
+                                <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.CellStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" SortMemberPath="LatestVersionSortKey" Width="140" MinWidth="139" IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="Padding" Value="4,2" />
+                                    <Setter Property="Margin" Value="2" />
+                                    <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                                    <Setter Property="ToolTip">
+                                        <Setter.Value>
+                                            <ToolTip MaxHeight="600"
                                                  Padding="0">
-                                            <Border MaxHeight="600"
+                                                <Border MaxHeight="600"
                                                     ClipToBounds="True">
-                                                <ItemsControl ItemsSource="{Binding NewerReleaseChangelogs}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <StackPanel Margin="0,0,0,12">
-                                                                <TextBlock Text="{Binding Version}" FontWeight="Bold" Margin="0,0,0,4" />
-                                                                <TextBlock Text="{Binding Changelog}" TextWrapping="Wrap" />
-                                                            </StackPanel>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </Border>
-                                        </ToolTip>
-                                    </Setter.Value>
-                                </Setter>
-                                <EventSetter Event="ToolTipOpening" Handler="LatestVersionTextBlock_OnToolTipOpening" />
-                                <EventSetter Event="ToolTipClosing" Handler="LatestVersionTextBlock_OnToolTipClosing" />
-                                <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding ShouldHighlightLatestVersion}" Value="True" />
-                                            <Condition Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="Background" Value="{StaticResource IMM.SuccessBrush}" />
-                                        <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
-                                    </MultiDataTrigger>
-                                    <DataTrigger Binding="{Binding HasNewerReleaseChangelogs}" Value="False">
-                                        <Setter Property="ToolTip" Value="{x:Null}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                        <DataGridTextColumn.CellStyle>
-                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                            </Style>
-                        </DataGridTextColumn.CellStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn x:Name="DownloadsColumn"
+                                                    <ItemsControl ItemsSource="{Binding NewerReleaseChangelogs}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <StackPanel Margin="0,0,0,12">
+                                                                    <TextBlock Text="{Binding Version}" FontWeight="Bold" Margin="0,0,0,4" />
+                                                                    <TextBlock Text="{Binding Changelog}" TextWrapping="Wrap" />
+                                                                </StackPanel>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </Border>
+                                            </ToolTip>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <EventSetter Event="ToolTipOpening" Handler="LatestVersionTextBlock_OnToolTipOpening" />
+                                    <EventSetter Event="ToolTipClosing" Handler="LatestVersionTextBlock_OnToolTipClosing" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding ShouldHighlightLatestVersion}" Value="True" />
+                                                <Condition Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Background" Value="{StaticResource IMM.SuccessBrush}" />
+                                            <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                                        </MultiDataTrigger>
+                                        <DataTrigger Binding="{Binding HasNewerReleaseChangelogs}" Value="False">
+                                            <Setter Property="ToolTip" Value="{x:Null}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                            <DataGridTextColumn.CellStyle>
+                                <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.CellStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn x:Name="DownloadsColumn"
                                      Header="Downloads"
                                      Binding="{Binding DownloadsDisplay, Mode=OneWay}"
                                      Width="120"
@@ -1095,17 +1106,11 @@
                             FontWeight="Bold" />
             </StackPanel>
         </Grid>
-        <Border x:Name="MODINFO_border"
+        <Border Background="{DynamicResource CardGradient2}" x:Name="MODINFO_border"
                 VerticalAlignment="Top"
                 BorderBrush="{DynamicResource VS.DialogBorderBrush}"
                 BorderThickness="0"
                 CornerRadius="15,15,15,15" Margin="0,210,55,0" Grid.Row="1" HorizontalAlignment="Right" Width="326" Height="201">
-            <Border.Background>
-                <LinearGradientBrush EndPoint="1,0.5" StartPoint="0,0.5">
-                    <GradientStop Color="#FFA9C0E9"/>
-                    <GradientStop Color="#FFEFF3F9" Offset="1"/>
-                </LinearGradientBrush>
-            </Border.Background>
             <Border.Style>
                 <Style TargetType="{x:Type Border}">
                     <Setter Property="Visibility" Value="Collapsed" />
