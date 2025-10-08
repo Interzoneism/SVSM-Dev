@@ -737,13 +737,13 @@
         <Border x:Name="MODINFO_border"
                 VerticalAlignment="Top"
                 
-                Background="{DynamicResource IMM.SurfaceBrush}"
+                Background="{DynamicResource {x:Static SystemColors.ActiveCaptionBrushKey}}"
                 BorderBrush="{DynamicResource VS.DialogBorderBrush}"
                 BorderThickness="0"
                 CornerRadius="15" Margin="0,206,26,0" Grid.Row="1" HorizontalAlignment="Right" Width="326" Height="201">
             <Border.Style>
                 <Style TargetType="{x:Type Border}">
-                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Setter Property="Visibility" Value="Visible" />
                     <Setter Property="IsHitTestVisible" Value="False" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
@@ -773,7 +773,7 @@
                 Click="ModDatabasePageButton_OnClick"
                 ToolTip="{Binding ModDatabasePageUrlDisplay}"
                 VerticalContentAlignment="Center"
-                Content="Mod Page" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.Column="1" Margin="0,51,0,0" />
+                Content="Mod Page" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.Column="1" Margin="0,45,0,0" />
                 <Button x:Name="SelectedModEditConfigButton"
                 Padding="12,6"
                 Background="{DynamicResource IMM.ButtonBackgroundBrush}"
@@ -791,10 +791,23 @@
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="DeleteModButton_OnClick"
-                ToolTip="{Binding DisplayName, StringFormat=Delete \{0\}}" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,92,0,0" Grid.Column="1">
+                ToolTip="{Binding DisplayName, StringFormat=Delete \{0\}}" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,80,0,0" Grid.Column="1">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
                         <TextBlock Text="Delete" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="SelectedModFixButton"
+                        Padding="12,6"
+                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                        Visibility="Visible"
+                        IsEnabled="False"
+                        Click="DeleteModButton_OnClick"
+                        ToolTip="{Binding DisplayName, StringFormat=Delete \{0\}}" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,115,0,0" Grid.Column="1">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                        <TextBlock Text="Fix" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
                 <Button x:Name="SelectedModInstallButton"
@@ -820,7 +833,7 @@
                 ItemsSource="{Binding SelectedMod.VersionOptions}"
                 SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
                 SelectionChanged="SelectedModVersionComboBox_OnSelectionChanged"
-                VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,155,0,0">
+                VerticalAlignment="Top" HorizontalAlignment="Left" Margin="17,155,0,0">
                     <ComboBox.Style>
                         <Style TargetType="{x:Type ComboBox}">
                             <Setter Property="Visibility" Value="Visible" />
@@ -880,9 +893,9 @@
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="UpdateModButton_OnClick"
-                ToolTip="{Binding UpdateButtonToolTip}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="112" Margin="202,155,0,0" Height="30" Grid.ColumnSpan="2">
+                ToolTip="{Binding UpdateButtonToolTip}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="116" Margin="198,155,0,0" Height="30" Grid.ColumnSpan="2">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Width="Auto" ><Run Text="Update to latest"/><LineBreak/><Run/></TextBlock>
+                        <TextBlock Width="90" ><Run Text="Update to latest"/><LineBreak/><Run/></TextBlock>
                     </StackPanel>
                 </Button>
                 <TextBlock
