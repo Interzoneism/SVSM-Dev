@@ -193,7 +193,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool HasDependencyIssues => _dependencyHasErrors || _missingDependencies.Count > 0;
 
-    public bool CanFixDependencyIssues => !IsActive && HasDependencyIssues;
+    public bool CanFixDependencyIssues => HasDependencyIssues;
 
     public IReadOnlyList<string> DatabaseTags => _databaseTags;
 
