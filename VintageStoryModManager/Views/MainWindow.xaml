@@ -117,7 +117,7 @@
             </Grid>
         </Grid>
         <Grid x:Name="MIDDLE" Grid.Row="1"
-              Margin="16,0,41,31">
+              Margin="16,0,41,19">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
@@ -144,7 +144,7 @@
                   
                   HeadersVisibility="Column"
                   ui:ControlHelper.CornerRadius="10"
-                  FontSize="15" Margin="0,0,-29,10">
+                  FontSize="15" Margin="0,0,-29,0">
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type ScrollBar}">
                         <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
@@ -669,6 +669,13 @@
                             Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center">
+                <Button Content="Update All"
+                            Margin="0,0,8,0"
+                            Width="146"
+                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                            BorderBrush="{DynamicResource IMM.BorderBrush}"
+                            Click="UpdateAllModsMenuItem_OnClick"
+                            Height="32" />
                 <Button Content="Open Logs Folder"
                             Margin="0,0,8,0"
                             Width="146"
