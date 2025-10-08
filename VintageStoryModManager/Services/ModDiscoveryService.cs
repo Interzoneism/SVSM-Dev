@@ -180,6 +180,9 @@ public sealed class ModDiscoveryService
 
         foreach (var mod in mods)
         {
+            mod.MissingDependencies = Array.Empty<ModDependencyInfo>();
+            mod.DependencyHasErrors = false;
+
             if (mod.HasErrors || mod.HasLoadError || mod.Dependencies.Count == 0)
             {
                 continue;
@@ -208,7 +211,7 @@ public sealed class ModDiscoveryService
                     break;
                 }
 
-                if (!SatisfiesVersion(dependency.Version, provider.Version))
+                if (!VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, provider.Version))
                 {
                     missingDependencies ??= new List<ModDependencyInfo>();
                     missingDependencies.Add(dependency);
@@ -217,78 +220,16 @@ public sealed class ModDiscoveryService
 
             if (dependencyHasError)
             {
+                mod.DependencyHasErrors = true;
                 mod.LoadError = DependencyErrorMessage;
             }
             else if (missingDependencies is { Count: > 0 })
             {
-                mod.LoadError = BuildMissingDependencyMessage(missingDependencies);
+                ModDependencyInfo[] missing = missingDependencies.ToArray();
+                mod.MissingDependencies = missing;
+                mod.LoadError = BuildMissingDependencyMessage(missing);
             }
         }
-    }
-
-    private static bool SatisfiesVersion(string? requested, string? provided)
-    {
-        if (string.IsNullOrWhiteSpace(requested) || string.Equals(requested.Trim(), "*", StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        if (!TryParseVersion(requested, out var requestedParts))
-        {
-            return true;
-        }
-
-        if (!TryParseVersion(provided, out var providedParts))
-        {
-            return false;
-        }
-
-        int length = Math.Max(requestedParts.Length, providedParts.Length);
-        for (int i = 0; i < length; i++)
-        {
-            int requestedPart = i < requestedParts.Length ? requestedParts[i] : 0;
-            int providedPart = i < providedParts.Length ? providedParts[i] : 0;
-            if (providedPart > requestedPart)
-            {
-                return true;
-            }
-
-            if (providedPart < requestedPart)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static bool TryParseVersion(string? value, out int[] parts)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            parts = Array.Empty<int>();
-            return false;
-        }
-
-        string? normalized = VersionStringUtility.Normalize(value);
-        if (normalized == null)
-        {
-            parts = Array.Empty<int>();
-            return false;
-        }
-
-        string[] tokens = normalized.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        parts = new int[tokens.Length];
-        for (int i = 0; i < tokens.Length; i++)
-        {
-            if (!int.TryParse(tokens[i], out parts[i]))
-            {
-                parts = Array.Empty<int>();
-                return false;
-            }
-        }
-
-        return parts.Length > 0;
     }
 
     private static string BuildMissingDependencyMessage(IReadOnlyList<ModDependencyInfo> dependencies)

@@ -312,6 +312,26 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    internal ModListItemViewModel? FindInstalledModById(string modId)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            return null;
+        }
+
+        foreach (var mod in _mods)
+        {
+            if (string.Equals(mod.ModId, modId, StringComparison.OrdinalIgnoreCase))
+            {
+                return mod;
+            }
+        }
+
+        return null;
+    }
+
+    internal string? InstalledGameVersion => _installedGameVersion;
+
     internal async Task<bool> PreserveActivationStateAsync(string modId, string? previousVersion, string? newVersion, bool wasActive)
     {
         string? localError = null;
@@ -1041,6 +1061,7 @@ public sealed class MainViewModel : ObservableObject
             if (_modEntriesBySourcePath.TryGetValue(pair.Key, out var entry))
             {
                 pair.Value.UpdateLoadError(entry.LoadError);
+                pair.Value.UpdateDependencyIssues(entry.DependencyHasErrors, entry.MissingDependencies);
             }
         }
 

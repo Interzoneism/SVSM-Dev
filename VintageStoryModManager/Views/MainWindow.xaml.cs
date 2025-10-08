@@ -66,6 +66,7 @@ public partial class MainWindow : Window
     private ModListItemViewModel? _selectionAnchor;
     private INotifyCollectionChanged? _modsCollection;
     private bool _isApplyingMultiToggle;
+    private readonly ModDatabaseService _modDatabaseService = new();
     private readonly ModUpdateService _modUpdateService = new();
     private bool _isModUpdateInProgress;
     private ScrollViewer? _modsScrollViewer;
@@ -1064,6 +1065,138 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void FixModButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_isModUpdateInProgress)
+        {
+            return;
+        }
+
+        if (_viewModel is null || _viewModel.SearchModDatabase)
+        {
+            return;
+        }
+
+        if (sender is not WpfButton { DataContext: ModListItemViewModel mod })
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        IReadOnlyList<ModDependencyInfo> dependencies = mod.Dependencies;
+        if (dependencies.Count == 0)
+        {
+            WpfMessageBox.Show("This mod does not declare dependencies that can be fixed automatically.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        _isModUpdateInProgress = true;
+        UpdateSelectedModButtons();
+
+        var failures = new List<string>();
+        bool anySuccess = false;
+        bool requiresRefresh = false;
+        var processedDependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            foreach (var dependency in dependencies)
+            {
+                if (dependency.IsGameOrCoreDependency || !processedDependencies.Add(dependency.ModId))
+                {
+                    continue;
+                }
+
+                ModListItemViewModel? installedDependency = _viewModel.FindInstalledModById(dependency.ModId);
+
+                bool isMissing = mod.MissingDependencies.Any(d => string.Equals(d.ModId, dependency.ModId, StringComparison.OrdinalIgnoreCase));
+                if (!isMissing && installedDependency is null)
+                {
+                    isMissing = true;
+                }
+
+                if (!isMissing && installedDependency != null)
+                {
+                    bool satisfies = VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, installedDependency.Version);
+                    if (!satisfies)
+                    {
+                        isMissing = true;
+                    }
+                }
+
+                if (isMissing)
+                {
+                    var result = await InstallOrUpdateDependencyAsync(dependency, installedDependency).ConfigureAwait(true);
+                    if (!result.Success)
+                    {
+                        failures.Add($"{dependency.Display}: {result.Message}");
+                        _viewModel.ReportStatus($"Failed to install dependency {dependency.Display}: {result.Message}", true);
+                    }
+                    else
+                    {
+                        anySuccess = true;
+                        requiresRefresh = true;
+                        _viewModel.ReportStatus(result.Message);
+                    }
+
+                    continue;
+                }
+
+                if (installedDependency != null && !installedDependency.IsActive)
+                {
+                    installedDependency.IsActive = true;
+                    anySuccess = true;
+                    requiresRefresh = true;
+                    _viewModel.ReportStatus($"Activated dependency {installedDependency.DisplayName}.");
+                }
+            }
+        }
+        finally
+        {
+            _isModUpdateInProgress = false;
+            UpdateSelectedModButtons();
+        }
+
+        if (requiresRefresh)
+        {
+            try
+            {
+                await RefreshModsAsync();
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show($"The mod list could not be refreshed after fixing dependencies:{Environment.NewLine}{ex.Message}",
+                    "Vintage Story Mod Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+
+            UpdateSelectedModButtons();
+        }
+
+        if (failures.Count > 0)
+        {
+            string message = string.Join(Environment.NewLine, failures);
+            WpfMessageBox.Show($"Some dependencies could not be resolved:{Environment.NewLine}{message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            _viewModel.ReportStatus($"Failed to resolve all dependencies for {mod.DisplayName}.", true);
+        }
+        else if (anySuccess)
+        {
+            _viewModel.ReportStatus($"Resolved dependencies for {mod.DisplayName}.");
+        }
+        else
+        {
+            _viewModel.ReportStatus($"Dependencies for {mod.DisplayName} are already satisfied.");
+        }
+    }
+
     private async void InstallModButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (_isModUpdateInProgress)
@@ -1177,6 +1310,135 @@ public partial class MainWindow : Window
             _isModUpdateInProgress = false;
             UpdateSelectedModButtons();
         }
+    }
+
+    private async Task<(bool Success, string Message)> InstallOrUpdateDependencyAsync(
+        ModDependencyInfo dependency,
+        ModListItemViewModel? installedMod)
+    {
+        try
+        {
+            ModDatabaseInfo? info = await _modDatabaseService
+                .TryLoadDatabaseInfoAsync(dependency.ModId, installedMod?.Version, _viewModel?.InstalledGameVersion)
+                .ConfigureAwait(true);
+
+            if (info is null)
+            {
+                return (false, "Mod not found on the mod database.");
+            }
+
+            ModReleaseInfo? release = SelectReleaseForDependency(dependency, info);
+            if (release is null)
+            {
+                return (false, "No compatible releases were found.");
+            }
+
+            string targetPath;
+            bool targetIsDirectory;
+
+            if (installedMod != null)
+            {
+                if (!TryGetManagedModPath(installedMod, out targetPath, out string? pathError))
+                {
+                    return (false, pathError ?? "The mod path could not be determined.");
+                }
+
+                targetIsDirectory = Directory.Exists(targetPath);
+                bool targetIsFile = File.Exists(targetPath);
+                if (!targetIsDirectory && !targetIsFile && installedMod.SourceKind == ModSourceKind.Folder)
+                {
+                    targetIsDirectory = true;
+                }
+            }
+            else
+            {
+                if (!TryGetDependencyInstallTargetPath(dependency.ModId, release, out targetPath, out string? errorMessage))
+                {
+                    return (false, errorMessage ?? "The Mods folder is not available.");
+                }
+
+                targetIsDirectory = false;
+            }
+
+            bool wasActive = installedMod?.IsActive == true;
+
+            var descriptor = new ModUpdateDescriptor(
+                dependency.ModId,
+                release.DownloadUri,
+                targetPath,
+                targetIsDirectory,
+                release.FileName,
+                release.Version);
+
+            var progress = new Progress<ModUpdateProgress>(p =>
+                _viewModel?.ReportStatus($"{dependency.ModId}: {p.Message}"));
+
+            ModUpdateResult updateResult = await _modUpdateService
+                .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
+                .ConfigureAwait(true);
+
+            if (!updateResult.Success)
+            {
+                string message = string.IsNullOrWhiteSpace(updateResult.ErrorMessage)
+                    ? "The installation failed."
+                    : updateResult.ErrorMessage!;
+                return (false, message);
+            }
+
+            if (installedMod != null && _viewModel != null)
+            {
+                await _viewModel.PreserveActivationStateAsync(
+                    dependency.ModId,
+                    installedMod.Version,
+                    release.Version,
+                    wasActive).ConfigureAwait(true);
+            }
+
+            string action = installedMod != null ? "Updated" : "Installed";
+            string versionSuffix = string.IsNullOrWhiteSpace(release.Version) ? string.Empty : $" {release.Version}";
+            return (true, $"{action} dependency {dependency.Display}{versionSuffix}.");
+        }
+        catch (OperationCanceledException)
+        {
+            return (false, "The operation was cancelled.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            return (false, ex.Message);
+        }
+    }
+
+    private static ModReleaseInfo? SelectReleaseForDependency(ModDependencyInfo dependency, ModDatabaseInfo info)
+    {
+        if (info is null)
+        {
+            return null;
+        }
+
+        IReadOnlyList<ModReleaseInfo> releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
+        if (releases.Count == 0)
+        {
+            return null;
+        }
+
+        foreach (var release in releases)
+        {
+            if (release.IsCompatibleWithInstalledGame
+                && VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, release.Version))
+            {
+                return release;
+            }
+        }
+
+        foreach (var release in releases)
+        {
+            if (VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, release.Version))
+            {
+                return release;
+            }
+        }
+
+        return releases[0];
     }
 
     private static ModReleaseInfo? SelectReleaseForInstall(ModListItemViewModel mod)
@@ -1606,6 +1868,50 @@ public partial class MainWindow : Window
             return false;
         }
 
+        return true;
+    }
+
+    private bool TryGetDependencyInstallTargetPath(string modId, ModReleaseInfo release, out string fullPath, out string? errorMessage)
+    {
+        fullPath = string.Empty;
+        errorMessage = null;
+
+        if (_dataDirectory is null)
+        {
+            errorMessage = "The VintagestoryData folder is not available. Please verify it from File > Set Data Folder.";
+            return false;
+        }
+
+        string modsDirectory = Path.Combine(_dataDirectory, "Mods");
+
+        try
+        {
+            Directory.CreateDirectory(modsDirectory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            errorMessage = $"The Mods folder could not be accessed:{Environment.NewLine}{ex.Message}";
+            return false;
+        }
+
+        string defaultName = string.IsNullOrWhiteSpace(modId) ? "mod" : modId;
+        string versionPart = string.IsNullOrWhiteSpace(release.Version) ? "latest" : release.Version!;
+        string fallbackFileName = $"{defaultName}-{versionPart}.zip";
+
+        string? releaseFileName = release.FileName;
+        if (!string.IsNullOrWhiteSpace(releaseFileName))
+        {
+            releaseFileName = Path.GetFileName(releaseFileName);
+        }
+
+        string sanitizedFileName = SanitizeFileName(releaseFileName, fallbackFileName);
+        if (string.IsNullOrWhiteSpace(Path.GetExtension(sanitizedFileName)))
+        {
+            sanitizedFileName += ".zip";
+        }
+
+        string candidatePath = Path.Combine(modsDirectory, sanitizedFileName);
+        fullPath = EnsureUniqueFilePath(candidatePath);
         return true;
     }
 
@@ -2464,6 +2770,7 @@ public partial class MainWindow : Window
             UpdateSelectedModButton(SelectedModEditConfigButton, null, requireModDatabaseLink: false);
             UpdateSelectedModButton(SelectedModDeleteButton, null, requireModDatabaseLink: false);
             UpdateSelectedModInstallButton(singleSelection);
+            UpdateSelectedModFixButton(null);
         }
         else
         {
@@ -2472,6 +2779,7 @@ public partial class MainWindow : Window
             UpdateSelectedModButton(SelectedModUpdateButton, singleSelection, requireModDatabaseLink: false, requireUpdate: true);
             UpdateSelectedModButton(SelectedModEditConfigButton, singleSelection, requireModDatabaseLink: false);
             UpdateSelectedModButton(SelectedModDeleteButton, singleSelection, requireModDatabaseLink: false);
+            UpdateSelectedModFixButton(singleSelection);
         }
 
         _viewModel?.SetSelectedMod(singleSelection);
@@ -2495,6 +2803,26 @@ public partial class MainWindow : Window
         SelectedModInstallButton.DataContext = mod;
         SelectedModInstallButton.Visibility = Visibility.Visible;
         SelectedModInstallButton.IsEnabled = mod.HasDownloadableRelease && !_isModUpdateInProgress;
+    }
+
+    private void UpdateSelectedModFixButton(ModListItemViewModel? mod)
+    {
+        if (SelectedModFixButton is null)
+        {
+            return;
+        }
+
+        if (mod is null || !mod.CanFixDependencyIssues || _isModUpdateInProgress)
+        {
+            SelectedModFixButton.DataContext = null;
+            SelectedModFixButton.Visibility = Visibility.Collapsed;
+            SelectedModFixButton.IsEnabled = false;
+            return;
+        }
+
+        SelectedModFixButton.DataContext = mod;
+        SelectedModFixButton.Visibility = Visibility.Visible;
+        SelectedModFixButton.IsEnabled = true;
     }
 
     private static void UpdateSelectedModButton(WpfButton? button, ModListItemViewModel? mod, bool requireModDatabaseLink, bool requireUpdate = false)

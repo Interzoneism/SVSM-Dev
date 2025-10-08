@@ -101,6 +101,56 @@ internal static class VersionStringUtility
         return !string.Equals(normalizedCandidate, normalizedCurrent, StringComparison.OrdinalIgnoreCase);
     }
 
+    public static bool SatisfiesMinimumVersion(string? requestedVersion, string? providedVersion)
+    {
+        if (string.IsNullOrWhiteSpace(requestedVersion)
+            || string.Equals(requestedVersion.Trim(), "*", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        string? normalizedRequested = Normalize(requestedVersion);
+        if (normalizedRequested is null)
+        {
+            return true;
+        }
+
+        string? normalizedProvided = Normalize(providedVersion);
+        if (normalizedProvided is null)
+        {
+            return false;
+        }
+
+        if (!TryParseVersionParts(normalizedRequested, out var requestedParts))
+        {
+            return true;
+        }
+
+        if (!TryParseVersionParts(normalizedProvided, out var providedParts))
+        {
+            return false;
+        }
+
+        int length = Math.Max(requestedParts.Length, providedParts.Length);
+        for (int i = 0; i < length; i++)
+        {
+            int requestedPart = i < requestedParts.Length ? requestedParts[i] : 0;
+            int providedPart = i < providedParts.Length ? providedParts[i] : 0;
+
+            if (providedPart > requestedPart)
+            {
+                return true;
+            }
+
+            if (providedPart < requestedPart)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static bool TryParseVersionParts(string normalizedVersion, out int[] parts)
     {
         string[] tokens = normalizedVersion.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

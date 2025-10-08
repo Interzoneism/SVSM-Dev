@@ -801,10 +801,10 @@
                         Padding="12,6"
                         Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                         BorderBrush="{DynamicResource IMM.BorderBrush}"
-                        Visibility="Visible"
+                        Visibility="Collapsed"
                         IsEnabled="False"
-                        Click="DeleteModButton_OnClick"
-                        ToolTip="{Binding DisplayName, StringFormat=Delete \{0\}}" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,115,0,0" Grid.Column="1">
+                        Click="FixModButton_OnClick"
+                        ToolTip="Resolve dependency issues" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,115,0,0" Grid.Column="1">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
                         <TextBlock Text="Fix" VerticalAlignment="Center" />

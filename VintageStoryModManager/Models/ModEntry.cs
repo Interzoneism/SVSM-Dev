@@ -42,6 +42,12 @@ public sealed class ModEntry
 
     public bool HasLoadError => !string.IsNullOrWhiteSpace(LoadError);
 
+    public IReadOnlyList<ModDependencyInfo> MissingDependencies { get; set; } = Array.Empty<ModDependencyInfo>();
+
+    public bool DependencyHasErrors { get; set; }
+
+    public bool HasDependencyIssues => DependencyHasErrors || MissingDependencies.Count > 0;
+
     public string? Side { get; init; }
 
     public bool? RequiredOnClient { get; init; }
