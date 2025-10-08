@@ -194,6 +194,7 @@ public sealed class ModDatabaseService
             int? follows = GetNullableInt(modElement, "follows");
             int? trendingPoints = GetNullableInt(modElement, "trendingpoints");
             string? logoUrl = GetLogoUrl(modElement);
+            string? logoFile = GetString(modElement, "logofile");
             IReadOnlyList<ModReleaseInfo> releases = BuildReleaseInfos(modElement, normalizedGameVersion);
             ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
             ModReleaseInfo? latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
@@ -214,6 +215,7 @@ public sealed class ModDatabaseService
                 Follows = follows,
                 TrendingPoints = trendingPoints,
                 LogoUrl = logoUrl,
+                LogoFile = logoFile,
                 LatestRelease = latestRelease,
                 LatestCompatibleRelease = latestCompatibleRelease,
                 Releases = releases
@@ -546,6 +548,7 @@ public sealed class ModDatabaseService
         string? urlAlias = GetString(element, "urlalias");
         string? side = GetString(element, "side");
         string? logo = GetLogoUrl(element);
+        string? logoFile = GetString(element, "logofile");
 
         IReadOnlyList<string> tags = GetStringList(element, "tags");
         int downloads = GetInt(element, "downloads");
@@ -589,6 +592,7 @@ public sealed class ModDatabaseService
             UrlAlias = urlAlias,
             Side = side,
             LogoUrl = logo,
+            LogoFile = logoFile,
             LastReleasedUtc = lastReleased,
             Score = score
         };

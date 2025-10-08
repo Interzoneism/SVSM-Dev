@@ -30,6 +30,8 @@ public sealed class ModDatabaseInfo
 
     public string? LogoUrl { get; init; }
 
+    public string? LogoFile { get; init; }
+
     public ModReleaseInfo? LatestRelease { get; init; }
 
     public ModReleaseInfo? LatestCompatibleRelease { get; init; }

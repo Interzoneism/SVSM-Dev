@@ -893,7 +893,8 @@ public sealed class MainViewModel : ObservableObject
                 Comments = result.Comments,
                 Follows = result.Follows,
                 TrendingPoints = result.TrendingPoints,
-                LogoUrl = result.LogoUrl
+                LogoUrl = result.LogoUrl,
+                LogoFile = result.LogoFile
             }
         };
     }
