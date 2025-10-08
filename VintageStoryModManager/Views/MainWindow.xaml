@@ -11,7 +11,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
-        Height="736" Width="1206"
+        Height="754" Width="1218"
         MinWidth="900" MinHeight="520"
         Background="{StaticResource IMM.SurfaceBrush}">
 
@@ -262,7 +262,7 @@
                         <Setter Property="Background" Value="Transparent" />
                         <Setter Property="BorderBrush" Value="{StaticResource IMM.RowBorderBrush}" />
                         <Setter Property="BorderThickness" Value="1" />
-                        <Setter Property="Margin" Value="0,5,0,0" />
+                        <Setter Property="Margin" Value="0,0,0,0" />
                         <Setter Property="Padding">
                             <Setter.Value>
                                 <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
@@ -697,10 +697,11 @@
         </Grid>
         <Border x:Name="MODINFO_border"
                 VerticalAlignment="Top"
+                
                 Background="{DynamicResource IMM.SurfaceBrush}"
                 BorderBrush="{DynamicResource VS.DialogBorderBrush}"
                 BorderThickness="0"
-                CornerRadius="15" Margin="839,206,0,0" Grid.Row="1" HorizontalAlignment="Left" Width="326" Height="201">
+                CornerRadius="15" Margin="0,206,26,0" Grid.Row="1" HorizontalAlignment="Right" Width="326" Height="201">
             <Border.Style>
                 <Style TargetType="{x:Type Border}">
                     <Setter Property="Visibility" Value="Collapsed" />
