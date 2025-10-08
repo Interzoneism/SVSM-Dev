@@ -29,6 +29,8 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly string? _description;
     private readonly string? _metadataError;
     private string? _loadError;
+    private IReadOnlyList<ModDependencyInfo> _missingDependencies;
+    private bool _dependencyHasErrors;
     private IReadOnlyList<string> _databaseTags;
     private IReadOnlyList<string> _databaseRequiredGameVersions;
     private ModReleaseInfo? _latestRelease;
@@ -124,6 +126,10 @@ public sealed class ModListItemViewModel : ObservableObject
             ModDependencyInfo[] filtered = dependencies.Where(d => !d.IsGameOrCoreDependency).ToArray();
             _dependencies = filtered.Length == 0 ? Array.Empty<ModDependencyInfo>() : filtered;
         }
+        _missingDependencies = entry.MissingDependencies is { Count: > 0 }
+            ? entry.MissingDependencies.ToArray()
+            : Array.Empty<ModDependencyInfo>();
+        _dependencyHasErrors = entry.DependencyHasErrors;
         _description = entry.Description;
         _metadataError = entry.Error;
         Side = entry.Side;
@@ -178,6 +184,16 @@ public sealed class ModListItemViewModel : ObservableObject
     public string DependenciesDisplay => _dependencies.Count == 0
         ? "—"
         : string.Join(", ", _dependencies.Select(dependency => dependency.Display));
+
+    public IReadOnlyList<ModDependencyInfo> Dependencies => _dependencies;
+
+    public IReadOnlyList<ModDependencyInfo> MissingDependencies => _missingDependencies;
+
+    public bool DependencyHasErrors => _dependencyHasErrors;
+
+    public bool HasDependencyIssues => _dependencyHasErrors || _missingDependencies.Count > 0;
+
+    public bool CanFixDependencyIssues => !IsActive && HasDependencyIssues;
 
     public IReadOnlyList<string> DatabaseTags => _databaseTags;
 
@@ -398,7 +414,10 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             if (_suppressState)
             {
-                SetProperty(ref _isActive, value);
+                if (SetProperty(ref _isActive, value))
+                {
+                    OnPropertyChanged(nameof(CanFixDependencyIssues));
+                }
                 return;
             }
 
@@ -413,6 +432,7 @@ public sealed class ModListItemViewModel : ObservableObject
                 return;
             }
 
+            OnPropertyChanged(nameof(CanFixDependencyIssues));
             _ = ApplyActivationChangeAsync(previous, value);
         }
     }
@@ -549,12 +569,48 @@ public sealed class ModListItemViewModel : ObservableObject
         _suppressState = true;
         try
         {
-            SetProperty(ref _isActive, isActive);
-            ActivationError = null;
+            if (SetProperty(ref _isActive, isActive))
+            {
+                ActivationError = null;
+                OnPropertyChanged(nameof(CanFixDependencyIssues));
+            }
         }
         finally
         {
             _suppressState = false;
+        }
+    }
+
+    public void UpdateDependencyIssues(bool hasDependencyErrors, IReadOnlyList<ModDependencyInfo> missingDependencies)
+    {
+        bool changed = false;
+
+        if (_dependencyHasErrors != hasDependencyErrors)
+        {
+            _dependencyHasErrors = hasDependencyErrors;
+            OnPropertyChanged(nameof(DependencyHasErrors));
+            changed = true;
+        }
+
+        IReadOnlyList<ModDependencyInfo> normalizedMissing = missingDependencies is { Count: > 0 }
+            ? missingDependencies.ToArray()
+            : Array.Empty<ModDependencyInfo>();
+
+        if (!ReferenceEquals(_missingDependencies, normalizedMissing))
+        {
+            if (_missingDependencies.Count != normalizedMissing.Count
+                || !_missingDependencies.SequenceEqual(normalizedMissing))
+            {
+                _missingDependencies = normalizedMissing;
+                OnPropertyChanged(nameof(MissingDependencies));
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            OnPropertyChanged(nameof(HasDependencyIssues));
+            OnPropertyChanged(nameof(CanFixDependencyIssues));
         }
     }
 
