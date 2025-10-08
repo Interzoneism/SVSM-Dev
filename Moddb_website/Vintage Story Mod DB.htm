@@ -1,0 +1,4490 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Vintage Story Mod DB</title>
+	
+	<link rel="apple-touch-icon" sizes="180x180" href="https://mods.vintagestory.at/web/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="https://mods.vintagestory.at/web/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="https://mods.vintagestory.at/web/favicon/favicon-16x16.png">
+	<link rel="manifest" href="https://mods.vintagestory.at/web/favicon/site.webmanifest">
+	<link rel="mask-icon" href="https://mods.vintagestory.at/web/favicon/safari-pinned-tab.svg" color="#5bbad5">
+	<meta name="msapplication-TileColor" content="#da532c">
+	<meta name="theme-color" content="#ffffff">
+
+	<link href="Vintage%20Story%20Mod%20DB_files/boxicons.min.css" rel="stylesheet">
+
+	<link href="Vintage%20Story%20Mod%20DB_files/chosen.min.css" rel="stylesheet" type="text/css">
+	<link href="Vintage%20Story%20Mod%20DB_files/dialog.css" rel="stylesheet" type="text/css">
+	<link href="Vintage%20Story%20Mod%20DB_files/jquery.fancybox.min.css" rel="stylesheet" type="text/css">
+	<link href="Vintage%20Story%20Mod%20DB_files/chosen.min_002.css" rel="stylesheet" type="text/css">
+	<link href="Vintage%20Story%20Mod%20DB_files/datepicker.min.css" rel="stylesheet" type="text/css">
+	<link href="Vintage%20Story%20Mod%20DB_files/spoiler.css" rel="stylesheet" type="text/css">
+
+	<link href="https://mods.vintagestory.at/web/js/tinymce/skins/ui/oxide/skin.mobile.min.css" as="style">
+	<link href="https://mods.vintagestory.at/web/js/tinymce/skins/ui/oxide/content.mobile.min.css" as="style">
+	<link href="https://mods.vintagestory.at/web/js/tinymce/skins/ui/oxide/fonts/tinymce-mobile.woff?8x92w3" as="font">
+
+	<link href="https://mods.vintagestory.at/web/js/tinymce/skins/ui/oxide/skin.min.css" as="style">
+	<link href="https://mods.vintagestory.at/web/js/tinymce/skins/ui/oxide/content.min.css" as="style">
+	<link href="https://mods.vintagestory.at/web/css/editor_content.css?ver=4" as="style">
+
+	<link href="Vintage%20Story%20Mod%20DB_files/style.css" rel="stylesheet" type="text/css">
+
+	<link rel="dns-prefetch" href="https://moddbcdn.vintagestory.at/">
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/jquery-1.11.1.min.js"></script>
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/chosen.jquery.min.js"></script>
+	<style type="text/css"></style></head>
+
+<body>
+	<script>try{if(+window.localStorage.getItem('opaque-desc'))document.body.classList.add('opaque-desc')}catch{}</script>
+	<a name="top"></a>
+	
+	<div class="content">
+		<a href="https://mods.vintagestory.at/" class="logo"><img src="Vintage%20Story%20Mod%20DB_files/vsmoddb-logo-s.png" align="left"></a>
+		
+		<nav id="main-nav">
+			<a href="https://mods.vintagestory.at/home">Home</a>
+			<a href="https://mods.vintagestory.at/list/mod" class="active">All Mods</a>
+							<a href="https://mods.vintagestory.at/edit/mod"><img src="Vintage%20Story%20Mod%20DB_files/upload.png"><span>Submit a mod</span></a>
+						<span class="flex-spacer" style="max-width: 6em; flex-grow: .5"></span>
+			<a class="external" href="https://wiki.vintagestory.at/Troubleshooting_Mods" target="_blank">Mod Troubleshooting</a>
+
+			<span class="flex-spacer"></span>
+
+							<span class="icon-only submenu notifications">
+					<a href="https://mods.vintagestory.at/notifications">
+						<span class="notificationcount">0</span>
+						<i class="bx bxs-bell"></i>
+					</a>
+					<nav>
+																												<span>No new notifications, you're all caught up!</span>
+																		</nav>
+				</span>
+				
+				
+				<span class="submenu" tabindex="0">
+					<span>Interzoneism</span>
+					<nav>
+						<a href="https://mods.vintagestory.at/show/user/71468CCA26F2C650DA18">Profile</a>
+						<a href="https://mods.vintagestory.at/accountsettings">Settings</a>
+						<a href="https://mods.vintagestory.at/logout?at=995F603BD7FA2735">Logout</a>
+					</nav>
+				</span>
+					</nav>
+
+		<div id="message-container"></div>
+
+		<main class="innercontent padded">
+	
+	<form method="get" autocomplete="off" class="flex-list" style="margin-bottom: 1em;">
+		<input type="hidden" name="sortby" value="lastReleased">
+		<input type="hidden" name="sortdir" value="d">
+
+		<span data-label="Text" title="Searches mod names, summaries and descriptions.">
+			<input type="text" name="text" style="width:12em;">
+		</span>
+
+		<span data-label="Side">
+			<select name="side" style="width: 10em; display: none;">
+				<option value="" selected="selected">Any</option>
+				<option value="both">Both</option>
+				<option value="client">Client side mod</option>
+				<option value="server">Server side mod</option>
+			</select><div class="chosen-container chosen-container-single" title="" style="width: 133px;"><a class="chosen-single">
+  <input class="chosen-focus-input" type="text" autocomplete="off">
+  <span>Any</span>
+  <div><b></b></div>
+</a>
+<div class="chosen-drop">
+  <div class="chosen-search">
+    <input class="chosen-search-input" type="text" autocomplete="off">
+  </div>
+  <ul class="chosen-results"></ul>
+</div></div>
+		</span>
+
+		<span data-label="Tags">
+			<select style="width: 20em; display: none;" name="tagids[]" multiple="multiple">
+									<option value="136" title="Mods that allow you to circumvent mechanics / cheats">Cheat</option>
+									<option value="253" title="Mods that add new wearables for the player">Clothing</option>
+									<option value="7" title="Minor changes or improvement to existing mechanics">Cosmetics</option>
+									<option value="8" title="New crafting recipes or new crafting mechanics">Crafting</option>
+									<option value="14" title="Mods that add or modify existing creatures">Creatures</option>
+									<option value="12" title="Mods that add new types of food or food mechanics">Food</option>
+									<option value="13" title="Mods that add new furniture blocks to the game">Furniture</option>
+									<option value="15" title="Mods that primarily affect the games graphics">Graphics</option>
+									<option value="186" title="A mod that usually does nothing on its own, but other mods depend on it">Library</option>
+									<option value="5" title="Mods that add magic mechanics to the game">Magic</option>
+									<option value="10" title="">Other</option>
+									<option value="22" title="Quality Of Life changes">QoL</option>
+									<option value="184" title="Mods that make the game easier / less complex to play">Simplification</option>
+									<option value="9" title="Mods that affect, improve or add new storage mechanics or blocks">Storage</option>
+									<option value="4" title="Mods that add new or modify technology related mechanics">Technology</option>
+									<option value="155" title="Mods that primarily alter the textures of the game">Texture Pack</option>
+									<option value="23" title="A mod that modifies existing game mechanics">Tweak</option>
+									<option value="6" title="Mods that add useful quirks to the game">Utility</option>
+									<option value="138" title="Mods that add or improve the games weaponry">Weapons</option>
+									<option value="3" title="Mods that affect or add new world generation mechanics">Worldgen</option>
+							</select><div class="chosen-container chosen-container-multi" title="" style="width: 267px;"><ul class="chosen-choices">
+  <li class="search-field">
+    <input class="chosen-search-input default" type="text" autocomplete="off" value=" " style="width: 29px;">
+  </li>
+</ul>
+<div class="chosen-drop">
+  <ul class="chosen-results"></ul>
+</div></div>
+		</span>
+		
+		<span id="contributor-box" data-label="Contributor">
+			<select style="width: 10em; display: none;" name="a" data-url="/api/v2/users/by-name/{name}?contributors-only=1" data-placeholder="Search Users">
+				<option value="" selected="selected">-</option>
+							</select><div class="chosen-container chosen-container-single" title="" style="width: 133px;"><a class="chosen-single">
+  <input class="chosen-focus-input" type="text" autocomplete="off">
+  <span>-</span>
+  <div><b></b></div>
+</a>
+<div class="chosen-drop">
+  <div class="chosen-search">
+    <input class="chosen-search-input" type="text" autocomplete="off">
+  </div>
+  <ul class="chosen-results"></ul>
+</div></div>
+		</span>
+		
+		<span data-label="Game Version">
+			<select style="width: 10em; display: none;" name="mv" nosearch="noSearch">
+				<option value="" selected="selected">Any</option>
+									<option value="1.21">1.21.x</option>
+									<option value="1.20">1.20.x</option>
+									<option value="1.19">1.19.x</option>
+									<option value="1.18">1.18.x</option>
+									<option value="1.17">1.17.x</option>
+									<option value="1.16">1.16.x</option>
+									<option value="1.15">1.15.x</option>
+									<option value="1.14">1.14.x</option>
+									<option value="1.13">1.13.x</option>
+									<option value="1.12">1.12.x</option>
+									<option value="1.11">1.11.x</option>
+									<option value="1.10">1.10.x</option>
+									<option value="1.9">1.9.x</option>
+									<option value="1.8">1.8.x</option>
+									<option value="1.7">1.7.x</option>
+									<option value="1.6">1.6.x</option>
+									<option value="1.5">1.5.x</option>
+									<option value="1.4">1.4.x</option>
+							</select><div class="chosen-container chosen-container-single chosen-container-single-nosearch" title="" style="width: 133px;"><a class="chosen-single">
+  <input class="chosen-focus-input" type="text" autocomplete="off" readonly="readonly">
+  <span>Any</span>
+  <div><b></b></div>
+</a>
+<div class="chosen-drop">
+  <div class="chosen-search">
+    <input class="chosen-search-input" type="text" autocomplete="off" readonly="readonly">
+  </div>
+  <ul class="chosen-results"></ul>
+</div></div>
+		</span>
+		
+		<span data-label="Game Version Exact">
+			<select style="width: 12em; display: none;" name="gv[]" multiple="multiple">
+									<option value="1.21.4">1.21.4</option>
+									<option value="1.21.3">1.21.3</option>
+									<option value="1.21.2">1.21.2</option>
+									<option value="1.21.2-rc.3">1.21.2-rc.3</option>
+									<option value="1.21.2-rc.2">1.21.2-rc.2</option>
+									<option value="1.21.2-rc.1">1.21.2-rc.1</option>
+									<option value="1.21.1">1.21.1</option>
+									<option value="1.21.1-rc.2">1.21.1-rc.2</option>
+									<option value="1.21.1-rc.1">1.21.1-rc.1</option>
+									<option value="1.21.0">1.21.0</option>
+									<option value="1.21.0-rc.7">1.21.0-rc.7</option>
+									<option value="1.21.0-rc.6">1.21.0-rc.6</option>
+									<option value="1.21.0-rc.5">1.21.0-rc.5</option>
+									<option value="1.21.0-rc.4">1.21.0-rc.4</option>
+									<option value="1.21.0-rc.3">1.21.0-rc.3</option>
+									<option value="1.21.0-rc.2">1.21.0-rc.2</option>
+									<option value="1.21.0-rc.1">1.21.0-rc.1</option>
+									<option value="1.21.0-pre.3">1.21.0-pre.3</option>
+									<option value="1.21.0-pre.2">1.21.0-pre.2</option>
+									<option value="1.21.0-pre.1">1.21.0-pre.1</option>
+									<option value="1.20.12">1.20.12</option>
+									<option value="1.20.11">1.20.11</option>
+									<option value="1.20.11-rc.1">1.20.11-rc.1</option>
+									<option value="1.20.10">1.20.10</option>
+									<option value="1.20.9">1.20.9</option>
+									<option value="1.20.8">1.20.8</option>
+									<option value="1.20.8-rc.2">1.20.8-rc.2</option>
+									<option value="1.20.8-rc.1">1.20.8-rc.1</option>
+									<option value="1.20.7">1.20.7</option>
+									<option value="1.20.6">1.20.6</option>
+									<option value="1.20.5">1.20.5</option>
+									<option value="1.20.5-rc.3">1.20.5-rc.3</option>
+									<option value="1.20.5-rc.2">1.20.5-rc.2</option>
+									<option value="1.20.5-rc.1">1.20.5-rc.1</option>
+									<option value="1.20.4">1.20.4</option>
+									<option value="1.20.4-rc.4">1.20.4-rc.4</option>
+									<option value="1.20.4-rc.3">1.20.4-rc.3</option>
+									<option value="1.20.4-rc.2">1.20.4-rc.2</option>
+									<option value="1.20.4-rc.1">1.20.4-rc.1</option>
+									<option value="1.20.3">1.20.3</option>
+									<option value="1.20.2">1.20.2</option>
+									<option value="1.20.1">1.20.1</option>
+									<option value="1.20.0">1.20.0</option>
+									<option value="1.20.0-rc.9">1.20.0-rc.9</option>
+									<option value="1.20.0-rc.8">1.20.0-rc.8</option>
+									<option value="1.20.0-rc.7">1.20.0-rc.7</option>
+									<option value="1.20.0-rc.6">1.20.0-rc.6</option>
+									<option value="1.20.0-rc.5">1.20.0-rc.5</option>
+									<option value="1.20.0-rc.4">1.20.0-rc.4</option>
+									<option value="1.20.0-rc.3">1.20.0-rc.3</option>
+									<option value="1.20.0-rc.2">1.20.0-rc.2</option>
+									<option value="1.20.0-rc.1">1.20.0-rc.1</option>
+									<option value="1.20.0-pre.0">1.20.0-pre.0</option>
+									<option value="1.19.8">1.19.8</option>
+									<option value="1.19.7">1.19.7</option>
+									<option value="1.19.6">1.19.6</option>
+									<option value="1.19.5">1.19.5</option>
+									<option value="1.19.5-rc.3">1.19.5-rc.3</option>
+									<option value="1.19.5-rc.2">1.19.5-rc.2</option>
+									<option value="1.19.5-rc.1">1.19.5-rc.1</option>
+									<option value="1.19.4">1.19.4</option>
+									<option value="1.19.4-rc.3">1.19.4-rc.3</option>
+									<option value="1.19.4-rc.2">1.19.4-rc.2</option>
+									<option value="1.19.4-rc.1">1.19.4-rc.1</option>
+									<option value="1.19.3">1.19.3</option>
+									<option value="1.19.2">1.19.2</option>
+									<option value="1.19.1">1.19.1</option>
+									<option value="1.19.0">1.19.0</option>
+									<option value="1.19.0-rc.8">1.19.0-rc.8</option>
+									<option value="1.19.0-rc.7">1.19.0-rc.7</option>
+									<option value="1.19.0-rc.6">1.19.0-rc.6</option>
+									<option value="1.19.0-rc.5">1.19.0-rc.5</option>
+									<option value="1.19.0-rc.4">1.19.0-rc.4</option>
+									<option value="1.19.0-rc.3">1.19.0-rc.3</option>
+									<option value="1.19.0-rc.2">1.19.0-rc.2</option>
+									<option value="1.19.0-rc.1">1.19.0-rc.1</option>
+									<option value="1.19.0-pre.0">1.19.0-pre.0</option>
+									<option value="1.18.15">1.18.15</option>
+									<option value="1.18.14">1.18.14</option>
+									<option value="1.18.13">1.18.13</option>
+									<option value="1.18.12">1.18.12</option>
+									<option value="1.18.11">1.18.11</option>
+									<option value="1.18.10">1.18.10</option>
+									<option value="1.18.9">1.18.9</option>
+									<option value="1.18.9-rc.1">1.18.9-rc.1</option>
+									<option value="1.18.8">1.18.8</option>
+									<option value="1.18.8-rc.1">1.18.8-rc.1</option>
+									<option value="1.18.7">1.18.7</option>
+									<option value="1.18.6">1.18.6</option>
+									<option value="1.18.6-rc.2">1.18.6-rc.2</option>
+									<option value="1.18.6-rc.1">1.18.6-rc.1</option>
+									<option value="1.18.5">1.18.5</option>
+									<option value="1.18.4">1.18.4</option>
+									<option value="1.18.3">1.18.3</option>
+									<option value="1.18.2">1.18.2</option>
+									<option value="1.18.2-rc.4">1.18.2-rc.4</option>
+									<option value="1.18.2-rc.3">1.18.2-rc.3</option>
+									<option value="1.18.2-rc.2">1.18.2-rc.2</option>
+									<option value="1.18.2-rc.1">1.18.2-rc.1</option>
+									<option value="1.18.1">1.18.1</option>
+									<option value="1.18.0">1.18.0</option>
+									<option value="1.18.0-rc.8">1.18.0-rc.8</option>
+									<option value="1.18.0-rc.7">1.18.0-rc.7</option>
+									<option value="1.18.0-rc.6">1.18.0-rc.6</option>
+									<option value="1.18.0-rc.5">1.18.0-rc.5</option>
+									<option value="1.18.0-rc.4">1.18.0-rc.4</option>
+									<option value="1.18.0-rc.3">1.18.0-rc.3</option>
+									<option value="1.18.0-rc.2">1.18.0-rc.2</option>
+									<option value="1.18.0-rc.1">1.18.0-rc.1</option>
+									<option value="1.18.0-pre.0">1.18.0-pre.0</option>
+									<option value="1.17.12">1.17.12</option>
+									<option value="1.17.11">1.17.11</option>
+									<option value="1.17.10">1.17.10</option>
+									<option value="1.17.9">1.17.9</option>
+									<option value="1.17.8">1.17.8</option>
+									<option value="1.17.7">1.17.7</option>
+									<option value="1.17.6">1.17.6</option>
+									<option value="1.17.5">1.17.5</option>
+									<option value="1.17.4">1.17.4</option>
+									<option value="1.17.3">1.17.3</option>
+									<option value="1.17.2">1.17.2</option>
+									<option value="1.17.1">1.17.1</option>
+									<option value="1.17.0">1.17.0</option>
+									<option value="1.17.0-rc.8">1.17.0-rc.8</option>
+									<option value="1.17.0-rc.7">1.17.0-rc.7</option>
+									<option value="1.17.0-rc.6">1.17.0-rc.6</option>
+									<option value="1.17.0-rc.5">1.17.0-rc.5</option>
+									<option value="1.17.0-rc.4">1.17.0-rc.4</option>
+									<option value="1.17.0-rc.3">1.17.0-rc.3</option>
+									<option value="1.17.0-rc.2">1.17.0-rc.2</option>
+									<option value="1.17.0-rc.1">1.17.0-rc.1</option>
+									<option value="1.17.0-pre.0">1.17.0-pre.0</option>
+									<option value="1.16.5">1.16.5</option>
+									<option value="1.16.5-rc.1">1.16.5-rc.1</option>
+									<option value="1.16.4">1.16.4</option>
+									<option value="1.16.4-rc.3">1.16.4-rc.3</option>
+									<option value="1.16.4-rc.2">1.16.4-rc.2</option>
+									<option value="1.16.4-rc.1">1.16.4-rc.1</option>
+									<option value="1.16.3">1.16.3</option>
+									<option value="1.16.2">1.16.2</option>
+									<option value="1.16.2-rc.1">1.16.2-rc.1</option>
+									<option value="1.16.1">1.16.1</option>
+									<option value="1.16.1-rc.3">1.16.1-rc.3</option>
+									<option value="1.16.1-rc.2">1.16.1-rc.2</option>
+									<option value="1.16.1-rc.1">1.16.1-rc.1</option>
+									<option value="1.16.0">1.16.0</option>
+									<option value="1.16.0-rc.8">1.16.0-rc.8</option>
+									<option value="1.16.0-rc.7">1.16.0-rc.7</option>
+									<option value="1.16.0-rc.6">1.16.0-rc.6</option>
+									<option value="1.16.0-rc.5">1.16.0-rc.5</option>
+									<option value="1.16.0-rc.4">1.16.0-rc.4</option>
+									<option value="1.16.0-rc.3">1.16.0-rc.3</option>
+									<option value="1.16.0-rc.2">1.16.0-rc.2</option>
+									<option value="1.16.0-rc.1">1.16.0-rc.1</option>
+									<option value="1.16.0-pre.0">1.16.0-pre.0</option>
+									<option value="1.15.10">1.15.10</option>
+									<option value="1.15.9">1.15.9</option>
+									<option value="1.15.8">1.15.8</option>
+									<option value="1.15.8-rc.1">1.15.8-rc.1</option>
+									<option value="1.15.7">1.15.7</option>
+									<option value="1.15.7-rc.2">1.15.7-rc.2</option>
+									<option value="1.15.7-rc.1">1.15.7-rc.1</option>
+									<option value="1.15.6">1.15.6</option>
+									<option value="1.15.6-rc.3">1.15.6-rc.3</option>
+									<option value="1.15.6-rc.2">1.15.6-rc.2</option>
+									<option value="1.15.6-rc.1">1.15.6-rc.1</option>
+									<option value="1.15.5">1.15.5</option>
+									<option value="1.15.4">1.15.4</option>
+									<option value="1.15.4-rc.1">1.15.4-rc.1</option>
+									<option value="1.15.3">1.15.3</option>
+									<option value="1.15.3-rc.1">1.15.3-rc.1</option>
+									<option value="1.15.2">1.15.2</option>
+									<option value="1.15.1">1.15.1</option>
+									<option value="1.15.0">1.15.0</option>
+									<option value="1.15.0-rc.4">1.15.0-rc.4</option>
+									<option value="1.15.0-rc.3">1.15.0-rc.3</option>
+									<option value="1.15.0-rc.2">1.15.0-rc.2</option>
+									<option value="1.15.0-rc.1">1.15.0-rc.1</option>
+									<option value="1.14.10">1.14.10</option>
+									<option value="1.14.9">1.14.9</option>
+									<option value="1.14.9-rc.1">1.14.9-rc.1</option>
+									<option value="1.14.8">1.14.8</option>
+									<option value="1.14.8-rc.1">1.14.8-rc.1</option>
+									<option value="1.14.7">1.14.7</option>
+									<option value="1.14.6">1.14.6</option>
+									<option value="1.14.6-rc.1">1.14.6-rc.1</option>
+									<option value="1.14.5">1.14.5</option>
+									<option value="1.14.4">1.14.4</option>
+									<option value="1.14.3">1.14.3</option>
+									<option value="1.14.3-rc.3">1.14.3-rc.3</option>
+									<option value="1.14.3-rc.2">1.14.3-rc.2</option>
+									<option value="1.14.3-rc.1">1.14.3-rc.1</option>
+									<option value="1.14.2">1.14.2</option>
+									<option value="1.14.1">1.14.1</option>
+									<option value="1.14.0">1.14.0</option>
+									<option value="1.13.4">1.13.4</option>
+									<option value="1.13.3">1.13.3</option>
+									<option value="1.13.2">1.13.2</option>
+									<option value="1.13.1">1.13.1</option>
+									<option value="1.13.0">1.13.0</option>
+									<option value="1.12.14">1.12.14</option>
+									<option value="1.11.11">1.11.11</option>
+									<option value="1.10.19">1.10.19</option>
+									<option value="1.9.14">1.9.14</option>
+									<option value="1.8.6">1.8.6</option>
+									<option value="1.7.9">1.7.9</option>
+									<option value="1.6.12">1.6.12</option>
+									<option value="1.6.0">1.6.0</option>
+									<option value="1.5.8">1.5.8</option>
+									<option value="1.5.5">1.5.5</option>
+									<option value="1.5.4">1.5.4</option>
+									<option value="1.5.2-dev.6">1.5.2-dev.6</option>
+									<option value="1.5.1-dev.6">1.5.1-dev.6</option>
+									<option value="1.5.0-dev.4">1.5.0-dev.4</option>
+									<option value="1.4.9-dev.3">1.4.9-dev.3</option>
+									<option value="1.4.8">1.4.8</option>
+									<option value="1.4.7-dev.2">1.4.7-dev.2</option>
+									<option value="1.4.6-dev.2">1.4.6-dev.2</option>
+									<option value="1.4.5-dev.2">1.4.5-dev.2</option>
+									<option value="1.4.4-dev.2">1.4.4-dev.2</option>
+							</select><div class="chosen-container chosen-container-multi" title="" style="width: 160px;"><ul class="chosen-choices">
+  <li class="search-field">
+    <input class="chosen-search-input default" type="text" autocomplete="off" value=" " style="width: 29px;">
+  </li>
+</ul>
+<div class="chosen-drop">
+  <ul class="chosen-results"></ul>
+</div></div>
+		</span>
+
+		<span data-label="Category">
+			<select name="c" style="width: 10em; display: none;">
+				<option value="" selected="selected">Any</option>
+				<option value="m">Game mod</option>
+				<option value="e">External Tool</option>
+				<option value="o">Other</option>
+			</select><div class="chosen-container chosen-container-single" title="" style="width: 133px;"><a class="chosen-single">
+  <input class="chosen-focus-input" type="text" autocomplete="off">
+  <span>Any</span>
+  <div><b></b></div>
+</a>
+<div class="chosen-drop">
+  <div class="chosen-search">
+    <input class="chosen-search-input" type="text" autocomplete="off">
+  </div>
+  <ul class="chosen-results"></ul>
+</div></div>
+		</span>
+
+		<span data-label="Mod Type">
+			<select name="t" style="width: 10em; display: none;">
+				<option value="" selected="selected">Any</option>
+				<option value="v">* Theme Pack (purely visual)</option>
+				<option value="d">* Content mod</option>
+				<option value="c">* Code mod</option>
+			</select><div class="chosen-container chosen-container-single" title="" style="width: 133px;"><a class="chosen-single">
+  <input class="chosen-focus-input" type="text" autocomplete="off">
+  <span>Any</span>
+  <div><b></b></div>
+</a>
+<div class="chosen-drop">
+  <div class="chosen-search">
+    <input class="chosen-search-input" type="text" autocomplete="off">
+  </div>
+  <ul class="chosen-results"></ul>
+</div></div>
+		</span>
+
+		<span data-label="">
+			<button class="button shine" type="submit" name="">Search</button>
+		</span>
+	</form>
+	
+	<p id="warn-missing-data" style="display: none;">
+		<small><sup>*</sup> Mod releases from before July 1st 2025 do not have
+ this information available and will not show up when this filter is 
+selected. This data will become available in the future.</small>
+	</p>
+	<div class="sort" style="margin-bottom: 1em;">
+		<small>
+		Sort by: 
+					<span style="margin-right: 5px;">
+									<a href="https://mods.vintagestory.at/list/mod?&amp;sortby=trendingPoints&amp;sortdir=d">Most trending</a>
+							</span>
+					<span style="margin-right: 5px;">
+									<a href="https://mods.vintagestory.at/list/mod?&amp;sortby=downloads&amp;sortdir=d">Most downloaded</a>
+							</span>
+					<span style="margin-right: 5px;">
+									<a href="https://mods.vintagestory.at/list/mod?&amp;sortby=comments&amp;sortdir=d">Most comments</a>
+							</span>
+					<span style="margin-right: 5px;">
+									<a href="https://mods.vintagestory.at/list/mod?&amp;sortby=name&amp;sortdir=d">Name descending</a>
+							</span>
+					<span style="margin-right: 5px;">
+									<a href="https://mods.vintagestory.at/list/mod?&amp;sortby=lastReleased&amp;sortdir=a">Least updated</a>
+							</span>
+					<span style="margin-right: 5px;">
+									<a href="https://mods.vintagestory.at/list/mod?&amp;sortby=created&amp;sortdir=d">Recently added</a>
+							</span>
+				</small>
+	</div>
+
+			<p>List of mods, ordered by Recently updated</p>
+		<div class="mods">
+			<div class="mod published">
+	<a href="https://mods.vintagestory.at/bloodtrail">
+		<img src="Vintage%20Story%20Mod%20DB_files/logo_08505386f5244ab1d26bd89c5c7f95d9.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bloodtrail#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 19167</a><br>
+			<a href="https://mods.vintagestory.at/bloodtrail#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 63</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bloodtrail">
+							<h4>Blood Trail</h4>
+						<p>
+				Animals leave blood trails when wounded by a player.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bedspawn">
+		<img src="Vintage%20Story%20Mod%20DB_files/moddb_5489be22bcfb9ca9e41028dc8ddc9e02.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bedspawn#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 97873</a><br>
+			<a href="https://mods.vintagestory.at/bedspawn#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 77</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bedspawn">
+							<h4>BedSpawn</h4>
+						<p>
+				Sets your "return point" when you sleep in a bed. Resets when the bed is destroyed.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/betterhoneyinmeals">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_dfdac2eb0587a5edb5cd624ebe05b9fc.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/betterhoneyinmeals#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 11</a><br>
+			<a href="https://mods.vintagestory.at/betterhoneyinmeals#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/betterhoneyinmeals">
+							<h4>Better Honey in Meals</h4>
+						<p>
+				Makes honey give the same amount of satiety in a meal as most fruits, but not as much as breadfruit.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/uncraftmoreitems">
+		<img src="Vintage%20Story%20Mod%20DB_files/Screenshot_a6fe4e494108dfba464d406c3ff81852.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/uncraftmoreitems#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 10</a><br>
+			<a href="https://mods.vintagestory.at/uncraftmoreitems#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/uncraftmoreitems">
+							<h4>Uncraft More Items</h4>
+						<p>
+				Adds more grid recipes for items to uncraft 			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/skavenratplayermodel">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_8552089c84b68389b124417144b5039e.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/skavenratplayermodel#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1041</a><br>
+			<a href="https://mods.vintagestory.at/skavenratplayermodel#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 38</a>
+		</p>
+		<a href="https://mods.vintagestory.at/skavenratplayermodel">
+							<h4>Skaven/Rat Player Model</h4>
+						<p>
+				Adds a Skaven/Rat player model to the game it uses Player Model Lib by Maltiez!			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/volumetricshadingrefreshed">
+		<img src="Vintage%20Story%20Mod%20DB_files/vfrsmall_caf2dcd27366cb584e9033fee87836a9.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/volumetricshadingrefreshed#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 12384</a><br>
+			<a href="https://mods.vintagestory.at/volumetricshadingrefreshed#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 138</a>
+		</p>
+		<a href="https://mods.vintagestory.at/volumetricshadingrefreshed">
+							<h4>Volumetric Shading Refreshed</h4>
+						<p>
+				Adds volumetrics, SSR, and multiple other graphics tweaks.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/morecolors">
+		<img src="Vintage%20Story%20Mod%20DB_files/icon_ced9fa7a120eb424be2e59f55e7b637a.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/morecolors#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 64</a><br>
+			<a href="https://mods.vintagestory.at/morecolors#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 7</a>
+		</p>
+		<a href="https://mods.vintagestory.at/morecolors">
+							<h4>More Colors</h4>
+						<p>
+				Specially designed for builders, this mod expands the variety of wattle &amp; daub colors to 32.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/randomthings">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/randomthings#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 103</a><br>
+			<a href="https://mods.vintagestory.at/randomthings#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 2</a>
+		</p>
+		<a href="https://mods.vintagestory.at/randomthings">
+							<h4>Random things</h4>
+						<p>
+				The mod adds small QoL improvements that came to my mind completely randomly			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/kyuubs">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_514c67b3a710bd3d8825388093b515cd.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/kyuubs#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1146</a><br>
+			<a href="https://mods.vintagestory.at/kyuubs#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 4</a>
+		</p>
+		<a href="https://mods.vintagestory.at/kyuubs">
+							<h4>Kyuubs</h4>
+						<p>
+				Blocks for your building and chiseling needs!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/25742">
+		<img src="Vintage%20Story%20Mod%20DB_files/VisorModIcon_c18c519aa1b55b633c62786e6eb671f4.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/25742#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 11809</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/25742#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 52</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/25742">
+							<h4>Visored Helmets</h4>
+						<p>
+				Adds new models, recipes, and function for helmets with openable visors for each standard metal.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/primitivesurvival">
+		<img src="Vintage%20Story%20Mod%20DB_files/logo3_dd03713f749ef0cf43fa5a03bf7991fa.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/primitivesurvival#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 575649</a><br>
+			<a href="https://mods.vintagestory.at/primitivesurvival#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 1553</a>
+		</p>
+		<a href="https://mods.vintagestory.at/primitivesurvival">
+							<h4>Primitive Survival</h4>
+						<p>
+				Fishing, trapping, irrigation, smoker, earthworms, snakes, Cthulhu, and much more!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/moreundergarmentsupdated">
+		<img src="Vintage%20Story%20Mod%20DB_files/banner_25514bb808d16063ec67442aa9d8c8c7.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/moreundergarmentsupdated#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1450</a><br>
+			<a href="https://mods.vintagestory.at/moreundergarmentsupdated#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 14</a>
+		</p>
+		<a href="https://mods.vintagestory.at/moreundergarmentsupdated">
+							<h4>More Undergarments: Updated</h4>
+						<p>
+				Separates underwear tops from bottoms, and adds 3 bottoms and 6 tops, including 3 binders.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bottomsup">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_91985bcd1fd846e658f2a51e101241c1.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bottomsup#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 58</a><br>
+			<a href="https://mods.vintagestory.at/bottomsup#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 3</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bottomsup">
+							<h4>Bottoms Up!</h4>
+						<p>
+				Fancy glass bottles for your bar			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/31020">
+		<img src="Vintage%20Story%20Mod%20DB_files/putitinthebagicon_ca41f60be04ed39ba3fd4443fe6355ee.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/31020#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 260</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/31020#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 7</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/31020">
+							<h4>Put it in the bag.</h4>
+						<p>
+				Adds a hotkey to quickly drop your selected hotbar item into your bags.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/jonasengine">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/jonasengine#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 14</a><br>
+			<a href="https://mods.vintagestory.at/jonasengine#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/jonasengine">
+							<h4>Jonas Engine</h4>
+						<p>
+				This mod attempts to create a player made version of the engine from one of the story locations.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/toolsmith">
+		<img src="Vintage%20Story%20Mod%20DB_files/ToolsmithBasicLogo_06fd914d5c6806815e1fd9d972e964b6.png" loading="lazy">
+	</a>
+
+	<i title="You are following this mod" class="followed-star ico star"></i>
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/toolsmith#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 67711</a><br>
+			<a href="https://mods.vintagestory.at/toolsmith#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 867</a>
+		</p>
+		<a href="https://mods.vintagestory.at/toolsmith">
+							<h4>Toolsmith</h4>
+						<p>
+				Take better care of your tools and they will last you a long time!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/ndlexpandedgrowth">
+		<img src="Vintage%20Story%20Mod%20DB_files/NDLExpandedGrowth(48_59293e2004cb28662da1e7f3a600df21.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/ndlexpandedgrowth#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 6053</a><br>
+			<a href="https://mods.vintagestory.at/ndlexpandedgrowth#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 81</a>
+		</p>
+		<a href="https://mods.vintagestory.at/ndlexpandedgrowth">
+							<h4>NDL Expanded Growth</h4>
+						<p>
+				Add various growth methods/options to the game			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/krpgenchantment">
+		<img src="Vintage%20Story%20Mod%20DB_files/NewGui3-Square_57c124accca68ddf9c5ced0108d5899a.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/krpgenchantment#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 50938</a><br>
+			<a href="https://mods.vintagestory.at/krpgenchantment#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 244</a>
+		</p>
+		<a href="https://mods.vintagestory.at/krpgenchantment">
+							<h4>KRPG Enchantment</h4>
+						<p>
+				Adds MC-like enchantment system to VS.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/configlib">
+		<img src="Vintage%20Story%20Mod%20DB_files/moddb_25fa98f09cd30c_5ce9015cc02c343e081f6a80309ce7ac.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/configlib#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 275071</a><br>
+			<a href="https://mods.vintagestory.at/configlib#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 92</a>
+		</p>
+		<a href="https://mods.vintagestory.at/configlib">
+							<h4>Config lib</h4>
+						<p>
+				Config library for content mods			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/pemmicantofu">
+		<img src="Vintage%20Story%20Mod%20DB_files/modDBPemmicanTofu_03a7b8e0cbe1cac87f7b50fb7eecb399.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/pemmicantofu#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 667</a><br>
+			<a href="https://mods.vintagestory.at/pemmicantofu#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 13</a>
+		</p>
+		<a href="https://mods.vintagestory.at/pemmicantofu">
+							<h4>Pemmican and Tofu</h4>
+						<p>
+				Adds pemmican, soymilk and tofu, can be used in meals.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/overhaullib">
+		<img src="Vintage%20Story%20Mod%20DB_files/moddb-thumb_2dd73811473d7e686e3a67fe850d4427.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/overhaullib#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 251772</a><br>
+			<a href="https://mods.vintagestory.at/overhaullib#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 93</a>
+		</p>
+		<a href="https://mods.vintagestory.at/overhaullib">
+							<h4>Overhaul lib</h4>
+						<p>
+				Library for Combat Overhaul, Firearms and other mods			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32343">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_ec555d1af2641ac5670c5f21f0c41681.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32343#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 66</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32343#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32343">
+							<h4>Reforged Meteoric Steel</h4>
+						<p>
+				Compatibility for Meteoric Steel and Reforged Tools			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/14390">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/14390#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 36317</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/14390#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 86</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/14390">
+							<h4>Gourmand</h4>
+						<p>
+				Health buff for eating a greater variety of foods			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32420">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32420#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 20</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32420#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 6</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32420">
+							<h4>Zarathrustra</h4>
+						<p>
+				Fork of JeanSummers' SpawnHighlight mod with corrected light level.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/specializedbagsrevived">
+		<img src="Vintage%20Story%20Mod%20DB_files/Modicon_10333561747e8789b74d8b48fd15ec18.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/specializedbagsrevived#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 6714</a><br>
+			<a href="https://mods.vintagestory.at/specializedbagsrevived#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 85</a>
+		</p>
+		<a href="https://mods.vintagestory.at/specializedbagsrevived">
+							<h4>SpecializedBags Revived</h4>
+						<p>
+				Specialty bags that only hold items related to their bag type.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/forlornadditionsco">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_16342b483f712dca74a83bee5d3dae9b.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/forlornadditionsco#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 372</a><br>
+			<a href="https://mods.vintagestory.at/forlornadditionsco#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 7</a>
+		</p>
+		<a href="https://mods.vintagestory.at/forlornadditionsco">
+							<h4>Forlorn Additions Combat Overhaul Compatible</h4>
+						<p>
+				Expands the arsenal of armor and equipment once used by the oath-bound knights of the Forlorn Hope.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/30367">
+		<img src="Vintage%20Story%20Mod%20DB_files/Nugget-galena+-+Copy_0b8837af7044f0e0b2db1fd8b2a1bc17.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/30367#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 61</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/30367#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/30367">
+							<h4>Leaded Traders</h4>
+						<p>
+				A simple mod that adds galena (lead) to the things commodities trader sells.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/blackguardadditionscoredux">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_ba10aa11e93b14829ccf0b40f074d016.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/blackguardadditionscoredux#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 439</a><br>
+			<a href="https://mods.vintagestory.at/blackguardadditionscoredux#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 11</a>
+		</p>
+		<a href="https://mods.vintagestory.at/blackguardadditionscoredux">
+							<h4>Blackguard Additions: Combat Overhaul Compati...</h4>
+						<p>
+				Expands the arsenal of armor and equipment once used by the legendary Dread Company, the Blackguard.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32435">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32435#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 131</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32435#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32435">
+							<h4>Bed Spawn Point</h4>
+						<p>
+				Simple, place a bed and sleep to set a new spawn point. Should see a message that spawn point set.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/vsmodupdatetool">
+		<img src="Vintage%20Story%20Mod%20DB_files/VS-Mod-Update-Tool48_a8b3e109abbe888bd5ea4628ab9f989d.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/vsmodupdatetool#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 575</a><br>
+			<a href="https://mods.vintagestory.at/vsmodupdatetool#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 49</a>
+		</p>
+		<a href="https://mods.vintagestory.at/vsmodupdatetool">
+							<h4>VS Mod Update Tool</h4>
+						<p>
+				A tool for quickly updating mods for Vintage Story, for use on servers and singleplayer			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/rustboundmagicesla">
+		<img src="Vintage%20Story%20Mod%20DB_files/ModDB+logo_550fa1ba93a7fd1af6334ff13bbe846b.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/rustboundmagicesla#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 62</a><br>
+			<a href="https://mods.vintagestory.at/rustboundmagicesla#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 2</a>
+		</p>
+		<a href="https://mods.vintagestory.at/rustboundmagicesla">
+							<h4>Rustbound Magic Spanish Patch</h4>
+						<p>
+				Parche de traducción al español para el mod rustbound magic			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/conquest">
+		<img src="Vintage%20Story%20Mod%20DB_files/Resourcepack_11760a4e0b109f7aed085458c22cee42.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/conquest#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 14278</a><br>
+			<a href="https://mods.vintagestory.at/conquest#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 117</a>
+		</p>
+		<a href="https://mods.vintagestory.at/conquest">
+							<h4>Conquest VS Edition</h4>
+						<p>
+				A port of the Conquest texturepack to Vintage Story.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/fueledwearablelights">
+		<img src="Vintage%20Story%20Mod%20DB_files/moddb-thumbnail_e1d4102b746ad0a3e6b5a20a99bfe4fe.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/fueledwearablelights#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 17039</a><br>
+			<a href="https://mods.vintagestory.at/fueledwearablelights#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 21</a>
+		</p>
+		<a href="https://mods.vintagestory.at/fueledwearablelights">
+							<h4>Fueled Wearable Lights</h4>
+						<p>
+				Now you can free your offhand for a sheild or two handed sword!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/simpleconcrete">
+		<img src="Vintage%20Story%20Mod%20DB_files/1.2+Logo+Size_dcf3262cde31bceaf5623f407dced9ad.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/simpleconcrete#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1547</a><br>
+			<a href="https://mods.vintagestory.at/simpleconcrete#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 4</a>
+		</p>
+		<a href="https://mods.vintagestory.at/simpleconcrete">
+							<h4>Simple Concrete; Blocks &amp; lights</h4>
+						<p>
+				Adds a colorful array of blocks for building.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32425">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32425#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 4</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32425#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32425">
+							<h4>Patch Aldi's Handwright out</h4>
+						<p>
+				Aldi's Classes patch to disable the handwright for Servers.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/viescraftmachinesla">
+		<img src="Vintage%20Story%20Mod%20DB_files/modDBlogo_146fad03f8e547cc1e94bec19ddd402a.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/viescraftmachinesla#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 4</a><br>
+			<a href="https://mods.vintagestory.at/viescraftmachinesla#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/viescraftmachinesla">
+							<h4>Viescraft machines spanish patch</h4>
+						<p>
+				Spanish translation for viescraft machines mod			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/cabtraduccionesjuego">
+		<img src="Vintage%20Story%20Mod%20DB_files/C4B+-+Traducciones-E_98e80465d4fd4ace0d5ef797a4c63228.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/cabtraduccionesjuego#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 3784</a><br>
+			<a href="https://mods.vintagestory.at/cabtraduccionesjuego#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 5</a>
+		</p>
+		<a href="https://mods.vintagestory.at/cabtraduccionesjuego">
+							<h4>C4B Traducciones-ES (Juego)</h4>
+						<p>
+				Traducción alternativa del juego realmente en Español (España)			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/apanserbjornstory">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_2fc89b7a8f7008548db82793af4e173b.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/apanserbjornstory#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 15975</a><br>
+			<a href="https://mods.vintagestory.at/apanserbjornstory#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 47</a>
+		</p>
+		<a href="https://mods.vintagestory.at/apanserbjornstory">
+							<h4>A Panserbjørn Story</h4>
+						<p>
+				A mod about Taming Bears and making them your companions fighting the evil anchient machines			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/immersivelanterns">
+		<img src="Vintage%20Story%20Mod%20DB_files/Salty%C2%B4s+(1)_bb7fb9973ca24066477da6f2f96d370e.png" loading="lazy">
+	</a>
+
+	<i title="You are following this mod" class="followed-star ico star"></i>
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/immersivelanterns#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 4728</a><br>
+			<a href="https://mods.vintagestory.at/immersivelanterns#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 45</a>
+		</p>
+		<a href="https://mods.vintagestory.at/immersivelanterns">
+							<h4>Salty´s Immersive: Lanterns</h4>
+						<p>
+				Lanterns that react to movement and wind, swinging and making noise.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32325">
+		<img src="Vintage%20Story%20Mod%20DB_files/Aldi's+Classes+480_d34b6d50e0efd9228580662f8e35e3cd.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32325#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 67</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32325#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 2</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32325">
+							<h4>Aldi's Classes [Fork] big RP servers</h4>
+						<p>
+				Aldi's Classes / balanced for big servers with trading communities			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/31627">
+		<img src="Vintage%20Story%20Mod%20DB_files/Aldi's+Classes+480_d34b6d50e0efd9228580662f8e35e3cd.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/31627#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1337</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/31627#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 31</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/31627">
+							<h4>Aldi's Classes</h4>
+						<p>
+				All-new classes alongside reimagined favorites! Balanced for small groups of friends			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/rustboundmagicpactchfr">
+		<img src="Vintage%20Story%20Mod%20DB_files/FRENCH+TRANSLATE+(2)_0cb2c7a767e9a94a385fa80a8b73ca9e.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/rustboundmagicpactchfr#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 342</a><br>
+			<a href="https://mods.vintagestory.at/rustboundmagicpactchfr#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 6</a>
+		</p>
+		<a href="https://mods.vintagestory.at/rustboundmagicpactchfr">
+							<h4>Rustboundmagic patch FR</h4>
+						<p>
+				French translation patch for the Rustbound Magic mod.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/adminpanel">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/adminpanel#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 26</a><br>
+			<a href="https://mods.vintagestory.at/adminpanel#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 2</a>
+		</p>
+		<a href="https://mods.vintagestory.at/adminpanel">
+							<h4>Admin Panel</h4>
+						<p>
+				Admin Panel - only for use by Lucky Story server			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/fendragonsmp">
+		<img src="Vintage%20Story%20Mod%20DB_files/%25D0%25A4%25D0%25B5%25D0%25BD%25D0%2594%25D1%2580%25D0%25B0%25D0%25B3%25D0%25BE%25D0%259D%25D0%25BE.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/fendragonsmp#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 6637</a><br>
+			<a href="https://mods.vintagestory.at/fendragonsmp#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 5</a>
+		</p>
+		<a href="https://mods.vintagestory.at/fendragonsmp">
+							<h4>Fendragon Server Mod Patch</h4>
+						<p>
+				Fendragon Server Mod Patch - designed specifically for playing on a private server.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/lkgrenades">
+		<img src="Vintage%20Story%20Mod%20DB_files/Thumbnail_de1e395ff645550196ea7266de94720e.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/lkgrenades#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 2101</a><br>
+			<a href="https://mods.vintagestory.at/lkgrenades#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 31</a>
+		</p>
+		<a href="https://mods.vintagestory.at/lkgrenades">
+							<h4>Grenades!</h4>
+						<p>
+				Adds grenades for your combat blasting needs			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/nosurfacemonsters">
+		<img src="Vintage%20Story%20Mod%20DB_files/nomobsthumb_5741988bc6092190d3d10a3da99e0720.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/nosurfacemonsters#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1262</a><br>
+			<a href="https://mods.vintagestory.at/nosurfacemonsters#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 12</a>
+		</p>
+		<a href="https://mods.vintagestory.at/nosurfacemonsters">
+							<h4>No Surface Monsters</h4>
+						<p>
+				Blocks monsters from spawning on the surface, outside of Temporal Storms. 			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/crushablelime">
+		<img src="Vintage%20Story%20Mod%20DB_files/limethumb_f8d4b474eb32e0e41e9977470659bb2d.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/crushablelime#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 705</a><br>
+			<a href="https://mods.vintagestory.at/crushablelime#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 2</a>
+		</p>
+		<a href="https://mods.vintagestory.at/crushablelime">
+							<h4>Crushable Lime</h4>
+						<p>
+				You can crush limestone and chalk stones with a hammer again.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/canclaims">
+		<img src="Vintage%20Story%20Mod%20DB_files/480480c_8ef2cd55e217c300f67c9840878affd5.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/canclaims#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 17485</a><br>
+			<a href="https://mods.vintagestory.at/canclaims#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 50</a>
+		</p>
+		<a href="https://mods.vintagestory.at/canclaims">
+							<h4>CAN Claims</h4>
+						<p>
+				Land protection mod.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bola">
+		<img src="Vintage%20Story%20Mod%20DB_files/bola_preview_452e06334e7ba84dbc1d3ace124ceb6d.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bola#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 18937</a><br>
+			<a href="https://mods.vintagestory.at/bola#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 42</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bola">
+							<h4>Bola</h4>
+						<p>
+				Adds Bola - throwing weapon that immobilizes creatures!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/betterjonasdevicesfixed">
+		<img src="Vintage%20Story%20Mod%20DB_files/BJDlogo2-updated_e502ff0ebdbc7e5fea2cd4c28e7ae79d.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/betterjonasdevicesfixed#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 17387</a><br>
+			<a href="https://mods.vintagestory.at/betterjonasdevicesfixed#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 44</a>
+		</p>
+		<a href="https://mods.vintagestory.at/betterjonasdevicesfixed">
+							<h4>Better Jonas Devices - Fixed</h4>
+						<p>
+				works with 1.21			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/projectiletracker">
+		<img src="Vintage%20Story%20Mod%20DB_files/ProjectileTrackerLog_530917f6fae99cfa74abb68c8b9eb9cd.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/projectiletracker#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 5352</a><br>
+			<a href="https://mods.vintagestory.at/projectiletracker#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 23</a>
+		</p>
+		<a href="https://mods.vintagestory.at/projectiletracker">
+							<h4>Projectile Tracker</h4>
+						<p>
+				A QoL mod that automatically creates and deletes waypoints for projectiles you fire.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/secretfoxfiretweaks">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/secretfoxfiretweaks#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 522</a><br>
+			<a href="https://mods.vintagestory.at/secretfoxfiretweaks#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/secretfoxfiretweaks">
+							<h4>Secret Foxfire Server Tweaks</h4>
+						<p>
+				Secret Foxfire community server tweaks.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/naturalfertilizer">
+		<img src="Vintage%20Story%20Mod%20DB_files/NaturalFertilizerLog_f103a85cb789a8755440ced4d6866ca7.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/naturalfertilizer#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1714</a><br>
+			<a href="https://mods.vintagestory.at/naturalfertilizer#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 20</a>
+		</p>
+		<a href="https://mods.vintagestory.at/naturalfertilizer">
+							<h4>Natural Fertilizer</h4>
+						<p>
+				Adds natural fertilizer created from animal droppings			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/21814">
+		<img src="Vintage%20Story%20Mod%20DB_files/image_477c32f86cafeb4bdbbc87a7b1561a3c.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/21814#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 22950</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/21814#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 71</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/21814">
+							<h4>Substrate</h4>
+						<p>
+				Harvest and cultivate your own mushrooms!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/charcoalreforged">
+		<img src="Vintage%20Story%20Mod%20DB_files/Charcoal_Balanced_Ex_3590ecdf625b8262d5734578f6738b8d.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/charcoalreforged#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 726</a><br>
+			<a href="https://mods.vintagestory.at/charcoalreforged#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 12</a>
+		</p>
+		<a href="https://mods.vintagestory.at/charcoalreforged">
+							<h4>Charcoal Reforged – Balanced &amp; Modernized</h4>
+						<p>
+				Updated uses for Charcoal. New recipes/process for Saltpeter, poultice, soil, and more.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/hatrunesclasses">
+		<img src="Vintage%20Story%20Mod%20DB_files/2025-06-14_20-29-332_ed4824071249bfaababb62cc9b4e5a35.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/hatrunesclasses#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 786</a><br>
+			<a href="https://mods.vintagestory.at/hatrunesclasses#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 15</a>
+		</p>
+		<a href="https://mods.vintagestory.at/hatrunesclasses">
+							<h4>Hatrune's Classes</h4>
+						<p>
+				Goal of the mod is to add few more balanced classes that wont too much break lore of the game.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/rdoaddon">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/rdoaddon#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 115</a><br>
+			<a href="https://mods.vintagestory.at/rdoaddon#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 3</a>
+		</p>
+		<a href="https://mods.vintagestory.at/rdoaddon">
+							<h4>RDO_addon</h4>
+						<p>
+				Alters the generation of copper, cassiterite, and bismuthin			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/svanaxtoe">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/svanaxtoe#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 460</a><br>
+			<a href="https://mods.vintagestory.at/svanaxtoe#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 1</a>
+		</p>
+		<a href="https://mods.vintagestory.at/svanaxtoe">
+							<h4>ToE Patches</h4>
+						<p>
+				A collection of all patches for the ToE Server			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/xvshaders">
+		<img src="Vintage%20Story%20Mod%20DB_files/newcard_fb7c96eeae77b04fff8170ba7d155f63.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/xvshaders#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 141</a><br>
+			<a href="https://mods.vintagestory.at/xvshaders#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 4</a>
+		</p>
+		<a href="https://mods.vintagestory.at/xvshaders">
+							<h4>XV Shaders</h4>
+						<p>
+				Softens and rounds particles			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/darcesdriftersredone">
+		<img src="Vintage%20Story%20Mod%20DB_files/DDR+Thumbnail+LQ_3bd36ea9a467a29b978220c20f5a599a.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/darcesdriftersredone#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 29326</a><br>
+			<a href="https://mods.vintagestory.at/darcesdriftersredone#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 43</a>
+		</p>
+		<a href="https://mods.vintagestory.at/darcesdriftersredone">
+							<h4>Darce's Drifters Redone</h4>
+						<p>
+				Redone version of Darce's Drifters. Reworks textures and animations alongside a few new ones.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/redclaytoredceramics">
+		<img src="Vintage%20Story%20Mod%20DB_files/redclaypottery_bdc53bc62b982e7957d5296353762841.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/redclaytoredceramics#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 957</a><br>
+			<a href="https://mods.vintagestory.at/redclaytoredceramics#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 12</a>
+		</p>
+		<a href="https://mods.vintagestory.at/redclaytoredceramics">
+							<h4>Red Clay to Red Ceramics</h4>
+						<p>
+				Like red shingles, raw red clay pottery fires into red ceramics in pit kilns			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bonebroth">
+		<img src="Vintage%20Story%20Mod%20DB_files/DBthumbnail_29cdaf3425c159fb2b9e94f7ebadba76.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bonebroth#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 4180</a><br>
+			<a href="https://mods.vintagestory.at/bonebroth#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 27</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bonebroth">
+							<h4>Bone Broth</h4>
+						<p>
+				Adds broths that can be added to soups for extra satiety			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bushmeatstew">
+		<img src="Vintage%20Story%20Mod%20DB_files/bushmeatstewmodDB_pf_69bae0a8effc6a2a6a964d8beeac1ed9.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bushmeatstew#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1891</a><br>
+			<a href="https://mods.vintagestory.at/bushmeatstew#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 4</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bushmeatstew">
+							<h4>Bushmeat In Stew</h4>
+						<p>
+				Simple mod that allows you to put bushmeats in stews and soups			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/betterbreadsatiety">
+		<img src="Vintage%20Story%20Mod%20DB_files/2025-09-10_15-03-35__73861f116f4a78ce58cac3fd2fc092fc.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/betterbreadsatiety#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1479</a><br>
+			<a href="https://mods.vintagestory.at/betterbreadsatiety#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 7</a>
+		</p>
+		<a href="https://mods.vintagestory.at/betterbreadsatiety">
+							<h4>Better Bread Satiety</h4>
+						<p>
+				Increases the satiety of bread to make it more competitive with other grain options			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32289">
+		<img src="Vintage%20Story%20Mod%20DB_files/canantiqatlas_4abb3328f997eb8313a40424d6f277e9.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32289#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 81</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32289#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 12</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32289">
+							<h4>CAN Antique Atlas</h4>
+						<p>
+				Replacement of default map with item atlas			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/obsidiancraft">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_cd828c0021c749074c1834c9a2b70aae.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/obsidiancraft#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 8401</a><br>
+			<a href="https://mods.vintagestory.at/obsidiancraft#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 40</a>
+		</p>
+		<a href="https://mods.vintagestory.at/obsidiancraft">
+							<h4>Obsidiancraft</h4>
+						<p>
+				Adds new obsidian items, including crude arrows, saws, scythes, macuahuitl and tepoztopilli			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/combatoverhaul">
+		<img src="Vintage%20Story%20Mod%20DB_files/moddb_logo_ee81731f3685a5d590d86e9a99894ec6.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/combatoverhaul#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 332748</a><br>
+			<a href="https://mods.vintagestory.at/combatoverhaul#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 685</a>
+		</p>
+		<a href="https://mods.vintagestory.at/combatoverhaul">
+							<h4>Combat Overhaul</h4>
+						<p>
+				Combat Overhaul			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32390">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32390#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 9</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32390#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32390">
+							<h4>NeverendingStory</h4>
+						<p>
+				Server patch for custon server			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/transmapeporter">
+		<img src="Vintage%20Story%20Mod%20DB_files/Transmapeporter-thum_900545febd5e8778a0ecb7cb2a0fa666.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/transmapeporter#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 2649</a><br>
+			<a href="https://mods.vintagestory.at/transmapeporter#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 10</a>
+		</p>
+		<a href="https://mods.vintagestory.at/transmapeporter">
+							<h4>Transmapeporter</h4>
+						<p>
+				Adds a teleport button to the Add/Edit Waypoint GUI Dialogs.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/longtermfood">
+		<img src="Vintage%20Story%20Mod%20DB_files/%25D0%2591%25D0%25B5%25D0%25B7+%25D0%25B8%25D0%25BC%25D0%25B5%25D0%25BD%25D0%25B8-1_1136b84e.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/longtermfood#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 33748</a><br>
+			<a href="https://mods.vintagestory.at/longtermfood#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 195</a>
+		</p>
+		<a href="https://mods.vintagestory.at/longtermfood">
+							<h4>Long-term food</h4>
+						<p>
+				Adds food that does not spoil for a very long time.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/rustboundmagic">
+		<img src="Vintage%20Story%20Mod%20DB_files/RBM+mod+logo_585ffc8070a25ee173856260ec30321f.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/rustboundmagic#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 112773</a><br>
+			<a href="https://mods.vintagestory.at/rustboundmagic#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 1130</a>
+		</p>
+		<a href="https://mods.vintagestory.at/rustboundmagic">
+							<h4>Rustbound Magic</h4>
+						<p>
+				Adds magic to Vintage Story.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/jaunt">
+		<img src="Vintage%20Story%20Mod%20DB_files/dotnet_0BAd8XNlS4_25_e1592d03d9cf5ae965cda5892aca3156.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/jaunt#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 46023</a><br>
+			<a href="https://mods.vintagestory.at/jaunt#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 43</a>
+		</p>
+		<a href="https://mods.vintagestory.at/jaunt">
+							<h4>Jaunt: Entity Movement System</h4>
+						<p>
+				Library providing an extended entity riding system with additional control patterns and stamina			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/shadowrealmserverpatches">
+		<img src="Vintage%20Story%20Mod%20DB_files/Logo-v2-480px_37a52010a2ed3ea70af0f7b9b7be03ba.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/shadowrealmserverpatches#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 846</a><br>
+			<a href="https://mods.vintagestory.at/shadowrealmserverpatches#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 2</a>
+		</p>
+		<a href="https://mods.vintagestory.at/shadowrealmserverpatches">
+							<h4>The Shadow Realm Server Patches</h4>
+						<p>
+				A collection of patches for The Shadow Realm | VS Server.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32378">
+		<img src="Vintage%20Story%20Mod%20DB_files/Sans+titre-1_50e042d9015766cacdfb1af75bdc0f66.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32378#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 97</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32378#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 4</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32378">
+							<h4>I Can't Bear it</h4>
+						<p>
+				Turns bear raw hides into huge raw hides. We need to centralize our bear hides production Milord!			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/26797">
+		<img src="Vintage%20Story%20Mod%20DB_files/MFS_de1256dd47f8bb41fff48d0a8c99cb11.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/26797#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 3479</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/26797#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 8</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/26797">
+							<h4>More Chance for High Fertility Soil</h4>
+						<p>
+				More high fertility soil generated in the world.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/29933">
+		<img src="Vintage%20Story%20Mod%20DB_files/480ltrifts_83a814ffdbc229fbd3bd95dde5b85769.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/29933#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 568</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/29933#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 8</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/29933">
+							<h4>Light Rifts </h4>
+						<p>
+				Reduces the chance for high rift activity and makes them weaker.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/26812">
+		<img src="Vintage%20Story%20Mod%20DB_files/log_8b8cb24d55a07ffc23756a76ba300262.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/26812#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 917</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/26812#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 16</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/26812">
+							<h4>No Surface Shivers</h4>
+						<p>
+				Disable Shiver spawning on the world surface.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/draconisrebalanced">
+		<img src="Vintage%20Story%20Mod%20DB_files/logo480_6aad5b79fb0baa50406f3ae98bd7891a.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/draconisrebalanced#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 529</a><br>
+			<a href="https://mods.vintagestory.at/draconisrebalanced#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 4</a>
+		</p>
+		<a href="https://mods.vintagestory.at/draconisrebalanced">
+							<h4>Draconis Rebalanced</h4>
+						<p>
+				Rebalances mounts from the Draconis to make them more in line with other transport vehicles.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bettererprospecting">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_db9278f27244b0f0c6d45abab8a94e07.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bettererprospecting#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 6905</a><br>
+			<a href="https://mods.vintagestory.at/bettererprospecting#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 51</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bettererprospecting">
+							<h4>BetterEr Prospecting</h4>
+						<p>
+				Altered prospecting experience with focus on reducing randomness			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/dressmakers">
+		<img src="Vintage%20Story%20Mod%20DB_files/moddb_thumbnail_2_958ba4ba4c37075a0379a4f1324fb507.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/dressmakers#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 69604</a><br>
+			<a href="https://mods.vintagestory.at/dressmakers#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 60</a>
+		</p>
+		<a href="https://mods.vintagestory.at/dressmakers">
+							<h4>Dressmakers</h4>
+						<p>
+				Add crafting recipes for almost all VS clothing items			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/vsrecipes">
+		<img src="Vintage%20Story%20Mod%20DB_files/moddb_icon_480_79b91e100de4861a0b2a70d59bb713c1.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/vsrecipes#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 3013</a><br>
+			<a href="https://mods.vintagestory.at/vsrecipes#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 39</a>
+		</p>
+		<a href="https://mods.vintagestory.at/vsrecipes">
+							<h4>Vintage Recipes</h4>
+						<p>
+				This Vintage Story mod tweaks some crafting recipes to be more realistic.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bricklayers">
+		<img src="Vintage%20Story%20Mod%20DB_files/terasses_480_d0aa03edcbbc5f185d58aa24de276660.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bricklayers#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 161030</a><br>
+			<a href="https://mods.vintagestory.at/bricklayers#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 515</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bricklayers">
+							<h4>Bricklayers</h4>
+						<p>
+				More clay, bricks, porcelain, glazings, colored glass, luminous glass.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/wool">
+		<img src="Vintage%20Story%20Mod%20DB_files/wool_title_card_modd_2b2a76da47e1347ba821d188eaeb061c.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/wool#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 78787</a><br>
+			<a href="https://mods.vintagestory.at/wool#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 150</a>
+		</p>
+		<a href="https://mods.vintagestory.at/wool">
+							<h4>Wool 🙵 More</h4>
+						<p>
+				Harvest, process, trade and craft with animal fleece and wool.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/em">
+		<img src="Vintage%20Story%20Mod%20DB_files/modlogo_metal_ac45ddc317aa440d44cf92a17505b5a7.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/em#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 266394</a><br>
+			<a href="https://mods.vintagestory.at/em#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 110</a>
+		</p>
+		<a href="https://mods.vintagestory.at/em">
+							<h4>Expanded Matter</h4>
+						<p>
+				Library for ore, materials and item variants. Extends VS existing ore.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/tailorsdelight">
+		<img src="Vintage%20Story%20Mod%20DB_files/tailors_delight_titl_abdc5d97c4881febb0bc9b118ba5e2ca.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/tailorsdelight#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 140829</a><br>
+			<a href="https://mods.vintagestory.at/tailorsdelight#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 172</a>
+		</p>
+		<a href="https://mods.vintagestory.at/tailorsdelight">
+							<h4>Tailor's Delight</h4>
+						<p>
+				Craft and decorate with cloth, leather and hide.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/additionalvisoredhelmets">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/additionalvisoredhelmets#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 74</a><br>
+			<a href="https://mods.vintagestory.at/additionalvisoredhelmets#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 2</a>
+		</p>
+		<a href="https://mods.vintagestory.at/additionalvisoredhelmets">
+							<h4>Fourteenth Century Armoury</h4>
+						<p>
+				Adds arms and armour from the fourteenth (and early 15th) centuries			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/quickndirtyvisorhelmetspatch">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/quickndirtyvisorhelmetspatch#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 26</a><br>
+			<a href="https://mods.vintagestory.at/quickndirtyvisorhelmetspatch#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/quickndirtyvisorhelmetspatch">
+							<h4>(Unofficial) Quick and Dirty Visored Helmets ...</h4>
+						<p>
+				Quick and Dirty Patch to Bronze_Granum's Visored Helmets Mod to Work with Combat Overhaul Again			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/wearandtear">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_70d7af7d3038fe3df2496f7c604a4f99.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/wearandtear#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 12095</a><br>
+			<a href="https://mods.vintagestory.at/wearandtear#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 137</a>
+		</p>
+		<a href="https://mods.vintagestory.at/wearandtear">
+							<h4>Wear And Tear</h4>
+						<p>
+				Mechanic that adds durability and maintenance to parts of the game that are missing it			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/shiverpet">
+		<img src="Vintage%20Story%20Mod%20DB_files/shiver+my+beloved_4f904c3fae7b8f4d74d47a7df9ec331f.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/shiverpet#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 20</a><br>
+			<a href="https://mods.vintagestory.at/shiverpet#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 2</a>
+		</p>
+		<a href="https://mods.vintagestory.at/shiverpet">
+							<h4>Tameable Shivers!</h4>
+						<p>
+				Adds tameable Shivers. Malefactors only, cause who else is insane enough to do something like that?			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/7922">
+		<img src="Vintage%20Story%20Mod%20DB_files/PlumpkinCover_74c5f9e6af8b0e98c6eb2072492065a3.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/7922#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 16092</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/7922#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 55</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/7922">
+							<h4>Plumpkins</h4>
+						<p>
+				This mod aims to improve the visual aesthetic of pumpkins.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/28514">
+		<img src="Vintage%20Story%20Mod%20DB_files/NoLoreCreatures-Logo_46d8a846b1ac00ff16019fab19ed40df.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/28514#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 693</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/28514#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 25</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/28514">
+							<h4>No Lore Creatures</h4>
+						<p>
+				Disables all lore creatures.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/2526">
+		<img src="Vintage%20Story%20Mod%20DB_files/dbicon_e3c5f12798f906d96990479376429e4a.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/2526#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 94690</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/2526#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 366</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/2526">
+							<h4>The Critters Pack</h4>
+						<p>
+				Cutely Critters and more where ever you go			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published legacy">
+	<a href="https://mods.vintagestory.at/playerlist">
+		<img src="Vintage%20Story%20Mod%20DB_files/columns_e59ae01d813c7783fc069543a7dd996d.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/playerlist#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 103176</a><br>
+			<a href="https://mods.vintagestory.at/playerlist#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 36</a>
+		</p>
+		<a href="https://mods.vintagestory.at/playerlist">
+							<h4>PlayerList</h4>
+						<p>
+				Shows a player list when you hold down tab (similar to Minecraft)			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/freedomunits">
+		<img src="Vintage%20Story%20Mod%20DB_files/FreedomUnits_58532a17d4c88fe41898b574e555dbed.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/freedomunits#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 25797</a><br>
+			<a href="https://mods.vintagestory.at/freedomunits#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 117</a>
+		</p>
+		<a href="https://mods.vintagestory.at/freedomunits">
+							<h4>Freedom Units</h4>
+						<p>
+				Converts Celsius to Fahrenheit. That's it.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/translocatorengineeringredux">
+		<img src="Vintage%20Story%20Mod%20DB_files/logo3_046da4db919f4ed777a335635f21d98f.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/translocatorengineeringredux#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 109062</a><br>
+			<a href="https://mods.vintagestory.at/translocatorengineeringredux#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 117</a>
+		</p>
+		<a href="https://mods.vintagestory.at/translocatorengineeringredux">
+							<h4>Translocator Engineering - Redux</h4>
+						<p>
+				Deconstruction, construction, and linking of static translocators.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/traderssellcrowbars">
+		<img src="Vintage%20Story%20Mod%20DB_files/logo3_29cb5a048288ae107ef4a7ef8aea90e9.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/traderssellcrowbars#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 5110</a><br>
+			<a href="https://mods.vintagestory.at/traderssellcrowbars#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 7</a>
+		</p>
+		<a href="https://mods.vintagestory.at/traderssellcrowbars">
+							<h4>Traders Sell Crowbars</h4>
+						<p>
+				The treasure hunter trader sells crowbars from the Translocator Engineering - Redux mod.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/millwright">
+		<img src="Vintage%20Story%20Mod%20DB_files/logo3_24b54abedee379b6b3825fc526025328.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/millwright#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 253466</a><br>
+			<a href="https://mods.vintagestory.at/millwright#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 230</a>
+		</p>
+		<a href="https://mods.vintagestory.at/millwright">
+							<h4>Millwright</h4>
+						<p>
+				Building better horizontal and vertical windmills, rotors, axles, and brakes since 1386. 			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/wildfarmingrevival">
+		<img src="Vintage%20Story%20Mod%20DB_files/logo3_d0054c6b41e8dc1d1dec9f07780d731c.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/wildfarmingrevival#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 186418</a><br>
+			<a href="https://mods.vintagestory.at/wildfarmingrevival#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 470</a>
+		</p>
+		<a href="https://mods.vintagestory.at/wildfarmingrevival">
+							<h4>Wild Farming - Revival</h4>
+						<p>
+				Seed extraction, farming of various plants &amp; mushrooms, and more. 			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/buzzwords">
+		<img src="Vintage%20Story%20Mod%20DB_files/logo3_aa91decfe38daeef2803c96ffa7dce6c.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/buzzwords#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 55735</a><br>
+			<a href="https://mods.vintagestory.at/buzzwords#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 75</a>
+		</p>
+		<a href="https://mods.vintagestory.at/buzzwords">
+							<h4>Buzzwords</h4>
+						<p>
+				Accessibility mod that shows a 'BzZzZzZ...' text alert to notify you that bees are nearby.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/notemporalstability">
+		<img src="Vintage%20Story%20Mod%20DB_files/thumb_de40149669bb4e5363122620fb23f9ca.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/notemporalstability#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 60</a><br>
+			<a href="https://mods.vintagestory.at/notemporalstability#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 10</a>
+		</p>
+		<a href="https://mods.vintagestory.at/notemporalstability">
+							<h4>No Temporal Stability</h4>
+						<p>
+				Makes the entire world temporally unstable			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/stanimationlibrary">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/stanimationlibrary#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 421</a><br>
+			<a href="https://mods.vintagestory.at/stanimationlibrary#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 2</a>
+		</p>
+		<a href="https://mods.vintagestory.at/stanimationlibrary">
+							<h4>SpearAndFang's Animation Library</h4>
+						<p>
+				Various animation classes			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/sortablestorage">
+		<img src="Vintage%20Story%20Mod%20DB_files/logo3_64d95975ac75950279208cd595e7f1e4.png" loading="lazy">
+	</a>
+
+	<i title="You are following this mod" class="followed-star ico star"></i>
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/sortablestorage#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 118530</a><br>
+			<a href="https://mods.vintagestory.at/sortablestorage#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 126</a>
+		</p>
+		<a href="https://mods.vintagestory.at/sortablestorage">
+							<h4>Sortable Storage</h4>
+						<p>
+				Put vanilla storage containers back in the crafting grid to add a sort button to them.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/zoombutton">
+		<img src="Vintage%20Story%20Mod%20DB_files/logo3_bfe2de101144731aea5fa78b0d97179c.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/zoombutton#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 63636</a><br>
+			<a href="https://mods.vintagestory.at/zoombutton#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 73</a>
+		</p>
+		<a href="https://mods.vintagestory.at/zoombutton">
+							<h4>Zoom Button - Reborn</h4>
+						<p>
+				Where's all that damn wolf howling coming from?  Press Z to squint and find out.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/stepupcontinued">
+		<img src="Vintage%20Story%20Mod%20DB_files/thumb_2c0f3762c78f65385ed90b9ca11e74e3.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/stepupcontinued#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 16334</a><br>
+			<a href="https://mods.vintagestory.at/stepupcontinued#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 28</a>
+		</p>
+		<a href="https://mods.vintagestory.at/stepupcontinued">
+							<h4>StepUp  (continued)</h4>
+						<p>
+				An ultra low impact mod to automatically step up single blocks without jumping. One line of code!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/simplemastersword">
+		<img src="Vintage%20Story%20Mod%20DB_files/2025-08-29_21-19-00+_75ef32b509d45b36537021b05a77eb5c.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/simplemastersword#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 46</a><br>
+			<a href="https://mods.vintagestory.at/simplemastersword#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/simplemastersword">
+							<h4>Simple Master Sword</h4>
+						<p>
+				A simple mod that adds a replica Master Sword as an endgame weapon.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32357">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_5a3df39039bae1044be197dc50566c43.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32357#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 127</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32357#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 5</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32357">
+							<h4>Combat Overhaul: Idle Reanimation</h4>
+						<p>
+				Adds/Adjusts animations for Combat Overhaul.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/31050">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/31050#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1547</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/31050#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/31050">
+							<h4>VR Traders Fork</h4>
+						<p>
+				changes to traders			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/liquidcontainers">
+		<img src="Vintage%20Story%20Mod%20DB_files/LiquidContainers_574315287339f892fae82938a034c73c.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/liquidcontainers#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 16587</a><br>
+			<a href="https://mods.vintagestory.at/liquidcontainers#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 23</a>
+		</p>
+		<a href="https://mods.vintagestory.at/liquidcontainers">
+							<h4>Liquid Containers v1.3.1</h4>
+						<p>
+				Adds an array of fancy new containers to carry liquids around in!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/carryon">
+		<img src="Vintage%20Story%20Mod%20DB_files/CarryOnLogo_aef8a4cbdf80f8b3851b5dc3b23e1a28.png" loading="lazy">
+	</a>
+
+	<i title="You are following this mod" class="followed-star ico star"></i>
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/carryon#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 527263</a><br>
+			<a href="https://mods.vintagestory.at/carryon#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 489</a>
+		</p>
+		<a href="https://mods.vintagestory.at/carryon">
+							<h4>Carry On</h4>
+						<p>
+				Adds the capability to carry various things. Replaces CarryCapacity.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/30791">
+		<img src="Vintage%20Story%20Mod%20DB_files/Mod+Logo_7757bb22a113d6a0b6918178626006e2.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/30791#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 719</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/30791#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 8</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/30791">
+							<h4>Immersive Bandage Animation</h4>
+						<p>
+				Adds an animation to healing bandages			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/navarliocustoms">
+		<img src="Vintage%20Story%20Mod%20DB_files/2025-03-21_00-46-13_a7c0f89e93ae602bdf9493d0c0e0ceb1.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/navarliocustoms#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 16002</a><br>
+			<a href="https://mods.vintagestory.at/navarliocustoms#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 22</a>
+		</p>
+		<a href="https://mods.vintagestory.at/navarliocustoms">
+							<h4>Navarlio Customs</h4>
+						<p>
+				Custom crafts for the Navarlio server.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32339">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32339#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 12</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32339#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32339">
+							<h4>WooTwo</h4>
+						<p>
+				Early content mod for WOO s2			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/armory">
+		<img src="Vintage%20Story%20Mod%20DB_files/moddb-thumbnail_ce8d7672bf3cecc1564a6c0451b09ea1.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/armory#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 230490</a><br>
+			<a href="https://mods.vintagestory.at/armory#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 192</a>
+		</p>
+		<a href="https://mods.vintagestory.at/armory">
+							<h4>Combat Overhaul: Armory</h4>
+						<p>
+				Adds new weapons, shields and armor			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/31844">
+		<img src="Vintage%20Story%20Mod%20DB_files/ModIcon+(Custom)_43f75e34133365f2b2cd090152bccca3.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/31844#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 225</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/31844#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 8</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/31844">
+							<h4>Dreadful Delight: Homesteading</h4>
+						<p>
+				Replaces the Tailor with a class that is more resourceful, but prefers the safety of home.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/31087">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/31087#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 30</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/31087#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 1</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/31087">
+							<h4>Azzy's Additions</h4>
+						<p>
+				A small content mod for Vintage Story, adding some Vanilla+ stuff. Intended for a friend's server.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/28881">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/28881#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 749</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/28881#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 4</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/28881">
+							<h4>Canoe Mod [Unofficial Patch]</h4>
+						<p>
+				[Unofficial Patch] Adds Luna's canoe mod for 1.21 Clients			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/29326">
+		<img src="Vintage%20Story%20Mod%20DB_files/RSLFLOGO1_43a4b8a820c2213b2a8aeec1a1c91c3b.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/29326#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 896</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/29326#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 4</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/29326">
+							<h4>Re-Smeltables Light 1.21 Hotfix</h4>
+						<p>
+				Reupload / Hotfix for Re-smeltables till original is updated!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/koboldrdx">
+		<img src="Vintage%20Story%20Mod%20DB_files/2025-08-30_16-39-22_0c4b68f9592019efccf177d6ddbe9c80.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/koboldrdx#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 11528</a><br>
+			<a href="https://mods.vintagestory.at/koboldrdx#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 106</a>
+		</p>
+		<a href="https://mods.vintagestory.at/koboldrdx">
+							<h4>Kobold Player Model Redux</h4>
+						<p>
+				A complete 1.21+ remake of Soi's Kobold player model, for PlayerModelLib by Maltiez!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/playermodellib">
+		<img src="Vintage%20Story%20Mod%20DB_files/moddb-small_973d9a09ea5b474b24e8de2ac4ccc66a.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/playermodellib#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 64615</a><br>
+			<a href="https://mods.vintagestory.at/playermodellib#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 82</a>
+		</p>
+		<a href="https://mods.vintagestory.at/playermodellib">
+							<h4>Player Model lib</h4>
+						<p>
+				Library for adding new player races			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published legacy">
+	<a href="https://mods.vintagestory.at/viescraftmachines">
+		<img src="Vintage%20Story%20Mod%20DB_files/VM01_5108b48c89944f3c17c9846a58617e1c_480_320.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/viescraftmachines#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 43152</a><br>
+			<a href="https://mods.vintagestory.at/viescraftmachines#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 177</a>
+		</p>
+		<a href="https://mods.vintagestory.at/viescraftmachines">
+							<h4>ViesCraft Machines</h4>
+						<p>
+				Adds machines to Vintage Story.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/eldritchmonsters">
+		<img src="Vintage%20Story%20Mod%20DB_files/em-pic1new_1fb29c7c6fa5cdb7accf240f14f66e82.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/eldritchmonsters#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 8724</a><br>
+			<a href="https://mods.vintagestory.at/eldritchmonsters#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 85</a>
+		</p>
+		<a href="https://mods.vintagestory.at/eldritchmonsters">
+							<h4>Eldritch Monsters</h4>
+						<p>
+				Adds various cosmic horror creatures.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/ruststones">
+		<img src="Vintage%20Story%20Mod%20DB_files/ruststones1new_6fa69ab0ba943dc1fe4bb55e3979e083.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/ruststones#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 5957</a><br>
+			<a href="https://mods.vintagestory.at/ruststones#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 22</a>
+		</p>
+		<a href="https://mods.vintagestory.at/ruststones">
+							<h4>Ruststones</h4>
+						<p>
+				Adds various 'ruststones' to VS. Hearthstones and Warpstones via the rift.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/viesblocks">
+		<img src="Vintage%20Story%20Mod%20DB_files/vb-01new_4c4d507f0bad2d63b0d11e81fef641c5.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/viesblocks#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 21462</a><br>
+			<a href="https://mods.vintagestory.at/viesblocks#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 65</a>
+		</p>
+		<a href="https://mods.vintagestory.at/viesblocks">
+							<h4>Vies Blocks</h4>
+						<p>
+				Adds various blocks to play with. 			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/murlokvspatch">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/murlokvspatch#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 88</a><br>
+			<a href="https://mods.vintagestory.at/murlokvspatch#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/murlokvspatch">
+							<h4>Murlok Vintage Server Patch</h4>
+						<p>
+				Collection of tweaks for the Murlok server and playthrough.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published legacy">
+	<a href="https://mods.vintagestory.at/hieronymusreptiles">
+		<img src="Vintage%20Story%20Mod%20DB_files/2025-03-05_21-30-05_cbb9ba7e1588841f371904e8255a547c_480_320.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/hieronymusreptiles#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 2584</a><br>
+			<a href="https://mods.vintagestory.at/hieronymusreptiles#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 39</a>
+		</p>
+		<a href="https://mods.vintagestory.at/hieronymusreptiles">
+							<h4>Updated Hieronymus's reptiles collection</h4>
+						<p>
+				An unofficial update of Hieronymus's various mobs			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/saltandsands">
+		<img src="Vintage%20Story%20Mod%20DB_files/VSSaltAndSands_cover_62703a6c38d56f5f70320378a6522053.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/saltandsands#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 23046</a><br>
+			<a href="https://mods.vintagestory.at/saltandsands#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 114</a>
+		</p>
+		<a href="https://mods.vintagestory.at/saltandsands">
+							<h4>Salt and Sands</h4>
+						<p>
+				Enriches water environments in both fresh and saltwater			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/simplemapmarkers">
+		<img src="Vintage%20Story%20Mod%20DB_files/modiconModDB_0d95d672c9b7c62b2cfda4586e347208.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/simplemapmarkers#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 879</a><br>
+			<a href="https://mods.vintagestory.at/simplemapmarkers#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 11</a>
+		</p>
+		<a href="https://mods.vintagestory.at/simplemapmarkers">
+							<h4>Simple Map Markers</h4>
+						<p>
+				Adds in a few equally sized markers for the map without overdoing it			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bgacocadjustment">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bgacocadjustment#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 111</a><br>
+			<a href="https://mods.vintagestory.at/bgacocadjustment#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 2</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bgacocadjustment">
+							<h4>Blackguard Additions CO Compat Adjustment</h4>
+						<p>
+				An adjustment the Blackgaurd Additions armor balance			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/statushudcont">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_3489a5fef4022c00d26f960aed2d9f92.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/statushudcont#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 64546</a><br>
+			<a href="https://mods.vintagestory.at/statushudcont#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 125</a>
+		</p>
+		<a href="https://mods.vintagestory.at/statushudcont">
+							<h4>Status Hud Continued</h4>
+						<p>
+				Displays status information on the HUD.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/canoemodcircuitspatch">
+		<img src="Vintage%20Story%20Mod%20DB_files/thumbnail_9f5bd62df15d923054775231a52347e5.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/canoemodcircuitspatch#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 3904</a><br>
+			<a href="https://mods.vintagestory.at/canoemodcircuitspatch#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 12</a>
+		</p>
+		<a href="https://mods.vintagestory.at/canoemodcircuitspatch">
+							<h4>Canoe Mod: Circuit's Patch</h4>
+						<p>
+				Patches Canoe Mod by iuno with some personal tweaks. More Chests, Lantern &amp; Oil Lamp, etc. Now 1.21!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/oldmansenhancededition">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_thumb_2936e35bc0c88eda8bdc92b4f05c38bd.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/oldmansenhancededition#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 119</a><br>
+			<a href="https://mods.vintagestory.at/oldmansenhancededition#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 17</a>
+		</p>
+		<a href="https://mods.vintagestory.at/oldmansenhancededition">
+							<h4>OldMans Enhanced Edition</h4>
+						<p>
+				(WIP) Custom curated way of experiencing VS			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32323">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32323#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 97</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32323#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 3</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32323">
+							<h4>ratatoulli</h4>
+						<p>
+				Transform your server's player nametags with custom colors, stunning effects, andl rank titles!			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/smithingplus">
+		<img src="Vintage%20Story%20Mod%20DB_files/smithingpluslogo2_1c117baa69dfb2d780b9fc68ed0b2cf6.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/smithingplus#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 146967</a><br>
+			<a href="https://mods.vintagestory.at/smithingplus#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 605</a>
+		</p>
+		<a href="https://mods.vintagestory.at/smithingplus">
+							<h4>Smithing Plus</h4>
+						<p>
+				Add bits when smithing, repair your tools on an anvil and other tweaks			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/feverstonehorses">
+		<img src="Vintage%20Story%20Mod%20DB_files/FSHorsesCard_4246706bd96bdbedf18df8312b4843fa.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/feverstonehorses#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 67562</a><br>
+			<a href="https://mods.vintagestory.at/feverstonehorses#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 249</a>
+		</p>
+		<a href="https://mods.vintagestory.at/feverstonehorses">
+							<h4>Feverstone's Horses</h4>
+						<p>
+				Introduces tameable, rideable horses to Vintage Story			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/beararmorrepair">
+		<img src="Vintage%20Story%20Mod%20DB_files/beararmor_5e129059879c3ed3ad4f1203b593047b.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/beararmorrepair#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 3340</a><br>
+			<a href="https://mods.vintagestory.at/beararmorrepair#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 8</a>
+		</p>
+		<a href="https://mods.vintagestory.at/beararmorrepair">
+							<h4>Bear Armor Repair</h4>
+						<p>
+				Lets you repair your Trophy Bear Armor!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32315">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32315#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 11</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32315#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 1</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32315">
+							<h4>Sawdust (Bark) Additive</h4>
+						<p>
+				This is a joke mod made for a friend, It just adds the ability to have bark in soup			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/astriaporta">
+		<img src="Vintage%20Story%20Mod%20DB_files/stargate_preview_a258a62d7deb1c7f8b58744afd7d9ab3.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/astriaporta#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 4777</a><br>
+			<a href="https://mods.vintagestory.at/astriaporta#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 66</a>
+		</p>
+		<a href="https://mods.vintagestory.at/astriaporta">
+							<h4>Astria Porta</h4>
+						<p>
+				Use ancient artifacts of a long lost race to explore distant lands			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/realsmoke">
+		<img src="Vintage%20Story%20Mod%20DB_files/cabin_42c07df221b4e196c60cc63674f60fa8.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/realsmoke#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 30969</a><br>
+			<a href="https://mods.vintagestory.at/realsmoke#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 124</a>
+		</p>
+		<a href="https://mods.vintagestory.at/realsmoke">
+							<h4>Real Smoke</h4>
+						<p>
+				Physics-based smoke			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/expandedmoldslite">
+		<img src="Vintage%20Story%20Mod%20DB_files/Expanded_molds_lite_0cf0cb96ae9ef66ef4df34ae518df39d.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/expandedmoldslite#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 7335</a><br>
+			<a href="https://mods.vintagestory.at/expandedmoldslite#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 9</a>
+		</p>
+		<a href="https://mods.vintagestory.at/expandedmoldslite">
+							<h4>Expanded Molds - Lite</h4>
+						<p>
+				A fork of RowdyArt's mod "Expanded Molds" that pares it down to simple molds.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/23330">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon480_548c35206f9b40e00f887cc9b232d319.png" loading="lazy">
+	</a>
+
+	<i title="You are following this mod" class="followed-star ico star"></i>
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/23330#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 11396</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/23330#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 47</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/23330">
+							<h4>Item Pickup Notifier</h4>
+						<p>
+				Item Pickup Notifier shows a simple overlay that displays the information of that were just picked u			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/25352">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_thumb_2705a0baa9d6ff41ea605ccfa84dba0b.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/25352#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 5457</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/25352#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 37</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/25352">
+							<h4>Item Pickup Highlighter</h4>
+						<p>
+				Simple client side mod that allows you to reveal nearby items on the ground			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/simplehealthbar">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_thumb_ce7cbc8b81e9a7467380f1858a4392d9.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/simplehealthbar#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 3233</a><br>
+			<a href="https://mods.vintagestory.at/simplehealthbar#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 14</a>
+		</p>
+		<a href="https://mods.vintagestory.at/simplehealthbar">
+							<h4>Simple Entity HealthBar</h4>
+						<p>
+				Simple Entity Healthbar			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/truethirdperson">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_thumb_d24c496686cd0810910a9978987ca2e7.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/truethirdperson#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 938</a><br>
+			<a href="https://mods.vintagestory.at/truethirdperson#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 27</a>
+		</p>
+		<a href="https://mods.vintagestory.at/truethirdperson">
+							<h4>True Third Person</h4>
+						<p>
+				True Third Person aims to provide a different approach to playing in third person.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/electricalprogressiveindustry">
+		<img src="Vintage%20Story%20Mod%20DB_files/2025-09-15_22-16-55_e32ce4041a45ce2da05734e3eefdee49.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/electricalprogressiveindustry#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 2689</a><br>
+			<a href="https://mods.vintagestory.at/electricalprogressiveindustry#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 20</a>
+		</p>
+		<a href="https://mods.vintagestory.at/electricalprogressiveindustry">
+							<h4>Electrical Progressive: Industry (BETA)</h4>
+						<p>
+				Adds industrial devices			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/starlessskies">
+		<img src="Vintage%20Story%20Mod%20DB_files/starless+skies+NOT+h_ecfe6b982a47a79481204880c96a54c6.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/starlessskies#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 70</a><br>
+			<a href="https://mods.vintagestory.at/starlessskies#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 11</a>
+		</p>
+		<a href="https://mods.vintagestory.at/starlessskies">
+							<h4>Starless Skies</h4>
+						<p>
+				Removes the sun, moon, and sky, and changes shaders to cause absolute darkness			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/5749">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/5749#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 805</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/5749#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 30</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/5749">
+							<h4>Alarm Clock</h4>
+						<p>
+				Set an alarm			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/interestingoregen">
+		<img src="Vintage%20Story%20Mod%20DB_files/480x480+IOG+Logo_dd434135dc66d296c60e629cc2a295ee.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/interestingoregen#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 11055</a><br>
+			<a href="https://mods.vintagestory.at/interestingoregen#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 189</a>
+		</p>
+		<a href="https://mods.vintagestory.at/interestingoregen">
+							<h4>Interesting Ore Gen</h4>
+						<p>
+				Complete oregen overhaul! Changes ore generation to be more interesting and engaging to mine!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/vsds">
+		<img src="Vintage%20Story%20Mod%20DB_files/vsds-logo-moddb_060ea0cb9bd2606556a967723a3eaf60.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/vsds#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 547</a><br>
+			<a href="https://mods.vintagestory.at/vsds#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 23</a>
+		</p>
+		<a href="https://mods.vintagestory.at/vsds">
+							<h4>VSDS · Vintage Story Dockerized Server</h4>
+						<p>
+				Vintage Story Dockerized Server to easily deploy a Vintage Story Server anywhere!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/27871">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_4981ea0a3e647fbc0ae542a8778d67c9.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/27871#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1120</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/27871#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 73</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/27871">
+							<h4>SleepNeed</h4>
+						<p>
+				Gives the player a need for sleep by adding an in-depth energy and sleepiness mechanic.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/24903">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/24903#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 211</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/24903#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 1</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/24903">
+							<h4>Finding Creatures</h4>
+						<p>
+				Regular mob radar that highlights chunks.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bcbonebark">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bcbonebark#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 36</a><br>
+			<a href="https://mods.vintagestory.at/bcbonebark#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bcbonebark">
+							<h4>Bone and Bark</h4>
+						<p>
+				Adds a lumberjack class, woodcutting QoL recipes, some more uses for bones, and other minor tweaks.			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/32298">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/32298#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 23</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/32298#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/32298">
+							<h4>Working Classes &amp; X Skills Compatibility ...</h4>
+						<p>
+				This is an update to LadyCassandra's excellent patch. This is mostly for our own personal server!			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/molds">
+		<img src="Vintage%20Story%20Mod%20DB_files/%25D0%2591%25D0%25B5%25D0%25B7+%25D0%25B8%25D0%25BC%25D0%25B5%25D0%25BD%25D0%25B8-22_4cb222a.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/molds#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 46149</a><br>
+			<a href="https://mods.vintagestory.at/molds#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 74</a>
+		</p>
+		<a href="https://mods.vintagestory.at/molds">
+							<h4>Molds</h4>
+						<p>
+				New molds for your survival.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/explosives">
+		<img src="Vintage%20Story%20Mod%20DB_files/dfgdfgdfg_1d7b862221cba0e4bbaf4af053328492.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/explosives#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 10531</a><br>
+			<a href="https://mods.vintagestory.at/explosives#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 30</a>
+		</p>
+		<a href="https://mods.vintagestory.at/explosives">
+							<h4>Explosives</h4>
+						<p>
+				Mod adds various explosive content. Make your life easier - blow up all the problems! 			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/slings">
+		<img src="Vintage%20Story%20Mod%20DB_files/%25D0%2591%25D0%25B5%25D0%25B7+%25D0%25B8%25D0%25BC%25D0%25B5%25D0%25BD%25D0%25B8-1_606d706b.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/slings#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 533</a><br>
+			<a href="https://mods.vintagestory.at/slings#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 6</a>
+		</p>
+		<a href="https://mods.vintagestory.at/slings">
+							<h4>Slings Progression</h4>
+						<p>
+				Adds new slingshots that can be obtained by progressing through the game.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/morefuel">
+		<img src="Vintage%20Story%20Mod%20DB_files/121212_3388a6d40edc9464de8f0aee98923d66.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/morefuel#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 6616</a><br>
+			<a href="https://mods.vintagestory.at/morefuel#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 33</a>
+		</p>
+		<a href="https://mods.vintagestory.at/morefuel">
+							<h4>More fuel</h4>
+						<p>
+				Adds a new types of fuel.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/ndlchiselpicks">
+		<img src="Vintage%20Story%20Mod%20DB_files/NDLChiselPickBackgro_03bcddeb504381052317ee8d95714111.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/ndlchiselpicks#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 3585</a><br>
+			<a href="https://mods.vintagestory.at/ndlchiselpicks#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 16</a>
+		</p>
+		<a href="https://mods.vintagestory.at/ndlchiselpicks">
+							<h4>NDL ChiselPicks</h4>
+						<p>
+				Adds a tool that breaks rock and gives you ashlar blocks or pure rock blocks			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/ndlwoodentorchholders">
+		<img src="Vintage%20Story%20Mod%20DB_files/NDLWoodenTorchHolder_673af98935016ad2617a6687809e529a.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/ndlwoodentorchholders#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 15641</a><br>
+			<a href="https://mods.vintagestory.at/ndlwoodentorchholders#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 34</a>
+		</p>
+		<a href="https://mods.vintagestory.at/ndlwoodentorchholders">
+							<h4>NDL Wooden Torch Holders</h4>
+						<p>
+				Adds craftable wooden torch holders to the game.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/ndltimetracker">
+		<img src="Vintage%20Story%20Mod%20DB_files/NDLTimeTrackerBackgr_5f00b51931d4646b6c47bb8e0cefeda6.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/ndltimetracker#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1507</a><br>
+			<a href="https://mods.vintagestory.at/ndltimetracker#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 19</a>
+		</p>
+		<a href="https://mods.vintagestory.at/ndltimetracker">
+							<h4>NDL TimeTracker</h4>
+						<p>
+				Track your playtime on any given world (SP or MP worlds)			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/ndlvillagers">
+		<img src="Vintage%20Story%20Mod%20DB_files/NDLVillagers(480x320_5622d418a37461f092c7bbc048bd3fda.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/ndlvillagers#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 6990</a><br>
+			<a href="https://mods.vintagestory.at/ndlvillagers#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 73</a>
+		</p>
+		<a href="https://mods.vintagestory.at/ndlvillagers">
+							<h4>NDL Villagers</h4>
+						<p>
+				Allows the ability to spawn villagers(traders) and General NPCs at specified locations!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/betterloot">
+		<img src="Vintage%20Story%20Mod%20DB_files/Better+Loot+480x480_8c1ef0178b867ca4946f2e9040b4af8f.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/betterloot#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 25740</a><br>
+			<a href="https://mods.vintagestory.at/betterloot#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 44</a>
+		</p>
+		<a href="https://mods.vintagestory.at/betterloot">
+							<h4>Better Loot</h4>
+						<p>
+				Gives the player better loot from hostile entities like Drifters, Shivers, Bowtorns			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/31936">
+		<img src="Vintage%20Story%20Mod%20DB_files/mod-default.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/31936#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 65</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/31936#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/31936">
+							<h4>QuickerLime</h4>
+						<p>
+				25% of the smelting time for lime into quicklime			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/31827">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_46511576af34_46511576af34b0058289a7c0c269ce05.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/31827#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 109</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/31827#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 0</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/31827">
+							<h4>Ironfall Events</h4>
+						<p>
+				Mod for the Ironfall server			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/pastoralism">
+		<img src="Vintage%20Story%20Mod%20DB_files/herding(1)_bb300b9540562e7dc7935e99182a3f02.jpg" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/pastoralism#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 420</a><br>
+			<a href="https://mods.vintagestory.at/pastoralism#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 10</a>
+		</p>
+		<a href="https://mods.vintagestory.at/pastoralism">
+							<h4>Pastoralism</h4>
+						<p>
+				Herd and graze tamed animals!			</p>
+		</a>
+	</div>
+
+	<span class="ribbon-tr" style="background: #ffe300">New!</span>	</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/purposefulstorage">
+		<img src="Vintage%20Story%20Mod%20DB_files/thumbnailsmall_7a419d341fd9e4894f3ffb77d541789f.png" loading="lazy">
+	</a>
+
+	<i title="You are following this mod" class="followed-star ico star"></i>
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/purposefulstorage#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 67937</a><br>
+			<a href="https://mods.vintagestory.at/purposefulstorage#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 144</a>
+		</p>
+		<a href="https://mods.vintagestory.at/purposefulstorage">
+							<h4>Purposeful Storage</h4>
+						<p>
+				Adds a variety of storage blocks designed for both aesthetic appeal and functional item organization			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/foodshelves">
+		<img src="Vintage%20Story%20Mod%20DB_files/thumbnailsmallnew_b2ff8d7ef92ea2060f7acb49a35f4ab2.png" loading="lazy">
+	</a>
+
+	<i title="You are following this mod" class="followed-star ico star"></i>
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/foodshelves#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 240247</a><br>
+			<a href="https://mods.vintagestory.at/foodshelves#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 691</a>
+		</p>
+		<a href="https://mods.vintagestory.at/foodshelves">
+							<h4>Food Shelves</h4>
+						<p>
+				Contains various food shelves and food storage, mainly made to be used alongside Expanded Foods.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/cartwrightscaravan">
+		<img src="Vintage%20Story%20Mod%20DB_files/320xicon_487860d185350c25dc091c4a32ced769.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/cartwrightscaravan#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 73414</a><br>
+			<a href="https://mods.vintagestory.at/cartwrightscaravan#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 202</a>
+		</p>
+		<a href="https://mods.vintagestory.at/cartwrightscaravan">
+							<h4>Cartwright´s Caravan</h4>
+						<p>
+				adds movable carts, sleds, and market stalls with storage and decoration options.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/chelonioidea">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_e8177a8efa8cd493468d83708e063c07.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/chelonioidea#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 23901</a><br>
+			<a href="https://mods.vintagestory.at/chelonioidea#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 28</a>
+		</p>
+		<a href="https://mods.vintagestory.at/chelonioidea">
+							<h4>Fauna of the Stone Age: Chelonioidea</h4>
+						<p>
+				A collection of sea turtles from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/diversediets">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_41e5899490829ba9b265887e4d258ad3.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/diversediets#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 15721</a><br>
+			<a href="https://mods.vintagestory.at/diversediets#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 19</a>
+		</p>
+		<a href="https://mods.vintagestory.at/diversediets">
+							<h4>Diverse Diets</h4>
+						<p>
+				Allows base game foods to be used for feeding animals and placed in troughs			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/thylacinidae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_4f1e65f1f46e39c627149398efd056cd.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/thylacinidae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 18030</a><br>
+			<a href="https://mods.vintagestory.at/thylacinidae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 25</a>
+		</p>
+		<a href="https://mods.vintagestory.at/thylacinidae">
+							<h4>Fauna of the Stone Age: Thylacinidae Plus</h4>
+						<p>
+				A collection of carnivorous Marsupials from Human history.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/iniidae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_4b8e1049e8377a2c757cb65b2ef65690.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/iniidae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 31552</a><br>
+			<a href="https://mods.vintagestory.at/iniidae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 26</a>
+		</p>
+		<a href="https://mods.vintagestory.at/iniidae">
+							<h4>Fauna of the Stone Age: Iniidae Plus</h4>
+						<p>
+				A collection of freshwater dolphins from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/floralzonescosmopolitanregion">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_3640ab29c66907818eb28207a7684a22.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/floralzonescosmopolitanregion#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 30343</a><br>
+			<a href="https://mods.vintagestory.at/floralzonescosmopolitanregion#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 62</a>
+		</p>
+		<a href="https://mods.vintagestory.at/floralzonescosmopolitanregion">
+							<h4>Floral Zones: Cosmopolitan Region</h4>
+						<p>
+				Adds plants with wide native ranges to the game.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/cervinae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_8f776698b0f81ff70efe23ba070aadc7.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/cervinae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 47376</a><br>
+			<a href="https://mods.vintagestory.at/cervinae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 122</a>
+		</p>
+		<a href="https://mods.vintagestory.at/cervinae">
+							<h4>Fauna of the Stone Age: Cervinae</h4>
+						<p>
+				A collection of Old World deer from the Holocene			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/viverridae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_c7c6cbc41947489b5d794bb99a12dcb5.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/viverridae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 37114</a><br>
+			<a href="https://mods.vintagestory.at/viverridae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 33</a>
+		</p>
+		<a href="https://mods.vintagestory.at/viverridae">
+							<h4>Fauna of the Stone Age: Viverridae Plus</h4>
+						<p>
+				A collection of civets, genets and oyans from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/meiolaniidae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_107a6f5c87bb612f757a1a2df482b479.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/meiolaniidae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 35666</a><br>
+			<a href="https://mods.vintagestory.at/meiolaniidae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 17</a>
+		</p>
+		<a href="https://mods.vintagestory.at/meiolaniidae">
+							<h4>Fauna of the Stone Age: Meiolaniidae</h4>
+						<p>
+				A collection of horned turtles from human history.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bovinae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_da6a74e94ac4d9b78d858349df5f6f58.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bovinae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 77567</a><br>
+			<a href="https://mods.vintagestory.at/bovinae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 151</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bovinae">
+							<h4>Fauna of the Stone Age: Bovinae</h4>
+						<p>
+				A collection of antelopes, bison, buffalo and cattle from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/show/mod/25155">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon+(3)_3bc1fac19c8c16ec10de223de72c4db2.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/show/mod/25155#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 1585</a><br>
+			<a href="https://mods.vintagestory.at/show/mod/25155#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 10</a>
+		</p>
+		<a href="https://mods.vintagestory.at/show/mod/25155">
+							<h4>Khazad-Dûm</h4>
+						<p>
+				for Khazad-Dûm server			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/vombatidae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_1cbe2f5e45f3b135bf51edfe2fc2e795.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/vombatidae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 44756</a><br>
+			<a href="https://mods.vintagestory.at/vombatidae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 42</a>
+		</p>
+		<a href="https://mods.vintagestory.at/vombatidae">
+							<h4>Fauna of the Stone Age: Vombatidae Plus</h4>
+						<p>
+				A collection of wombats and relatives from the Holocene			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/elephantidae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_befcffdf8e5e0caff34874eaaa2e95ba.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/elephantidae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 87117</a><br>
+			<a href="https://mods.vintagestory.at/elephantidae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 176</a>
+		</p>
+		<a href="https://mods.vintagestory.at/elephantidae">
+							<h4>Fauna of the Stone Age: Elephantidae</h4>
+						<p>
+				A collection of elephants from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/felinae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_8c2b161727bfd03e4e62ada18c9bb5f4.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/felinae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 62723</a><br>
+			<a href="https://mods.vintagestory.at/felinae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 58</a>
+		</p>
+		<a href="https://mods.vintagestory.at/felinae">
+							<h4>Fauna of the Stone Age: Felinae</h4>
+						<p>
+				A collection of cats from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/floralzonesmediterraneanregion">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_083567ad1be4f5f14ee0e3710c4af114.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/floralzonesmediterraneanregion#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 49253</a><br>
+			<a href="https://mods.vintagestory.at/floralzonesmediterraneanregion#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 68</a>
+		</p>
+		<a href="https://mods.vintagestory.at/floralzonesmediterraneanregion">
+							<h4>Floral Zones: Mediterranean Region</h4>
+						<p>
+				Adds plants from the Mediterranean Region to the game.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/spheniscidae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_aae973385fbc229dca78e48cc1cae4a0.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/spheniscidae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 61915</a><br>
+			<a href="https://mods.vintagestory.at/spheniscidae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 45</a>
+		</p>
+		<a href="https://mods.vintagestory.at/spheniscidae">
+							<h4>Fauna of the Stone Age: Spheniscidae</h4>
+						<p>
+				A collection of penguins from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/dinornithidae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_f18c7f384691f52b5ec84f67ffb751d3.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/dinornithidae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 75118</a><br>
+			<a href="https://mods.vintagestory.at/dinornithidae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 160</a>
+		</p>
+		<a href="https://mods.vintagestory.at/dinornithidae">
+							<h4>Fauna of the Stone Age: Dinornithiformes Plus</h4>
+						<p>
+				A collection of Moa and other New Zealand flightless birds from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/floralzonesneozeylandicregion">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_6e05457c6d55f830b2b7a5c1e12ed670.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/floralzonesneozeylandicregion#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 50754</a><br>
+			<a href="https://mods.vintagestory.at/floralzonesneozeylandicregion#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 65</a>
+		</p>
+		<a href="https://mods.vintagestory.at/floralzonesneozeylandicregion">
+							<h4>Floral Zones: Neozeylandic Region</h4>
+						<p>
+				Adds plants from the Neozeylandic Region to the game.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/manidae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_466c5e1ebba2aab83c9b151e2f262165.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/manidae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 68220</a><br>
+			<a href="https://mods.vintagestory.at/manidae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 30</a>
+		</p>
+		<a href="https://mods.vintagestory.at/manidae">
+							<h4>Fauna of the Stone Age: Manidae</h4>
+						<p>
+				A collection of pangolins from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/rhinocerotidae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_e764ab46d70436f6cda6c074d3a56ab4.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/rhinocerotidae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 98743</a><br>
+			<a href="https://mods.vintagestory.at/rhinocerotidae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 69</a>
+		</p>
+		<a href="https://mods.vintagestory.at/rhinocerotidae">
+							<h4>Fauna of the Stone Age: Rhinocerotidae</h4>
+						<p>
+				A collection of rhinos from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/floralzoneseastasiaticregion">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_994df69ce4467bfecdd746734e6e8259.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/floralzoneseastasiaticregion#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 51905</a><br>
+			<a href="https://mods.vintagestory.at/floralzoneseastasiaticregion#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 42</a>
+		</p>
+		<a href="https://mods.vintagestory.at/floralzoneseastasiaticregion">
+							<h4>Floral Zones: East Asiatic Region</h4>
+						<p>
+				Adds plants from the East Asiatic Region to the game.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/casuariidae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_0701aaaf78d149014611d14a5573d33f.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/casuariidae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 92974</a><br>
+			<a href="https://mods.vintagestory.at/casuariidae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 98</a>
+		</p>
+		<a href="https://mods.vintagestory.at/casuariidae">
+							<h4>Fauna of the Stone Age: Casuariidae Plus</h4>
+						<p>
+				A collection of Cassowary, Emu and flightless Australian birds from human history.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/sirenia">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_a62fdfac238491beaff0916f70f1ac7d.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/sirenia#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 90830</a><br>
+			<a href="https://mods.vintagestory.at/sirenia#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 66</a>
+		</p>
+		<a href="https://mods.vintagestory.at/sirenia">
+							<h4>Fauna of the Stone Age: Sirenia</h4>
+						<p>
+				A collection of manatee and dugong from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/floralzonescentralaustralianregion">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_1de985e683812cc8f0c237d2bdd4c6fa.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/floralzonescentralaustralianregion#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 53636</a><br>
+			<a href="https://mods.vintagestory.at/floralzonescentralaustralianregion#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 37</a>
+		</p>
+		<a href="https://mods.vintagestory.at/floralzonescentralaustralianregion">
+							<h4>Floral Zones: Central Australian Region</h4>
+						<p>
+				Adds plants from the Central Australian Region to the game.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/machairodontinae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_dca168600f3b4b13b32cb1cd72609297.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/machairodontinae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 92804</a><br>
+			<a href="https://mods.vintagestory.at/machairodontinae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 74</a>
+		</p>
+		<a href="https://mods.vintagestory.at/machairodontinae">
+							<h4>Fauna of the Stone Age: Machairodontinae</h4>
+						<p>
+				A collection of saber cats from human history.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/floralzonescaribbeanregion">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_0eb91c9e87b8167deabd9ea5cd91944c.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/floralzonescaribbeanregion#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 57855</a><br>
+			<a href="https://mods.vintagestory.at/floralzonescaribbeanregion#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 90</a>
+		</p>
+		<a href="https://mods.vintagestory.at/floralzonescaribbeanregion">
+							<h4>Floral Zones: Caribbean Region</h4>
+						<p>
+				Adds plants from the Caribbean Region to the game.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/floralzonescaperegion">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_5b82642c23999989eb8bb8a2a96bdb31.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/floralzonescaperegion#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 55835</a><br>
+			<a href="https://mods.vintagestory.at/floralzonescaperegion#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 68</a>
+		</p>
+		<a href="https://mods.vintagestory.at/floralzonescaperegion">
+							<h4>Floral Zones: Cape Region</h4>
+						<p>
+				Adds plants from the Cape Region to the game.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/caninae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_d3760fe6452f0e98014b36ef583ac73a.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/caninae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 113299</a><br>
+			<a href="https://mods.vintagestory.at/caninae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 256</a>
+		</p>
+		<a href="https://mods.vintagestory.at/caninae">
+							<h4>Fauna of the Stone Age: Caninae</h4>
+						<p>
+				A collection of dogs from the Holocene.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published legacy">
+	<a href="https://mods.vintagestory.at/fieldsandplateaus">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_27bc761a33a18487296a07044bdf7e13.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/fieldsandplateaus#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 31699</a><br>
+			<a href="https://mods.vintagestory.at/fieldsandplateaus#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 40</a>
+		</p>
+		<a href="https://mods.vintagestory.at/fieldsandplateaus">
+							<h4>Fields and Plateaus</h4>
+						<p>
+				Changes world gen to a more natural world that favors fields and plateaus.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/pantherinae">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon_6a732b8a12ba48b2fb4ca89289a9f25a.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/pantherinae#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 128637</a><br>
+			<a href="https://mods.vintagestory.at/pantherinae#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 176</a>
+		</p>
+		<a href="https://mods.vintagestory.at/pantherinae">
+							<h4>Fauna of the Stone Age: Pantherinae</h4>
+						<p>
+				A collection of big cats from human history.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published legacy">
+	<a href="https://mods.vintagestory.at/plainsandvalleys">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon2_e1b82cc942a6796e9bbd5cd8ea47d631.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/plainsandvalleys#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 92270</a><br>
+			<a href="https://mods.vintagestory.at/plainsandvalleys#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 155</a>
+		</p>
+		<a href="https://mods.vintagestory.at/plainsandvalleys">
+							<h4>Plains and Valleys</h4>
+						<p>
+				Changes world gen to a more natural world that favors open plains and valleys.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bettertraders">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon1_7248ee872ba9ef4a3956e91dde60e8ee.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bettertraders#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 122395</a><br>
+			<a href="https://mods.vintagestory.at/bettertraders#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 100</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bettertraders">
+							<h4>BetterTraders</h4>
+						<p>
+				Replaces vanilla traders with new trader structures.			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/bettertranslations">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon1_cf1fa1f1f0d94fd06bf4b11be0706c46.png" loading="lazy">
+	</a>
+
+	
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/bettertranslations#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 10144</a><br>
+			<a href="https://mods.vintagestory.at/bettertranslations#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 25</a>
+		</p>
+		<a href="https://mods.vintagestory.at/bettertranslations">
+							<h4>BetterTranslations</h4>
+						<p>
+				Translations from the Community for all kinds of mods. All credits to the translators!			</p>
+		</a>
+	</div>
+
+		</div>
+<div class="mod published">
+	<a href="https://mods.vintagestory.at/betterruins">
+		<img src="Vintage%20Story%20Mod%20DB_files/modicon1_c4dff1d57426dd7a9e6fec18057f1fc7.png" loading="lazy">
+	</a>
+
+	<i title="You are following this mod" class="followed-star ico star"></i>
+	<div class="moddesc">
+		<p class="stats">
+			<a href="https://mods.vintagestory.at/betterruins#tab-files"><img src="Vintage%20Story%20Mod%20DB_files/download.png"> 543129</a><br>
+			<a href="https://mods.vintagestory.at/betterruins#comments"><img src="Vintage%20Story%20Mod%20DB_files/comments.png"> 902</a>
+		</p>
+		<a href="https://mods.vintagestory.at/betterruins">
+							<h4>BetterRuins</h4>
+						<p>
+				Adds many new ruins over and underground to your survival game world.			</p>
+		</a>
+	</div>
+
+		</div>
+					</div>
+		<div id="scroll-trigger" style="text-align: center; margin-top: 1em;">Loading More...</div>	
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/user-search.js"></script>
+	<script type="text/javascript">
+		$("select").each(function() {
+			if ($(this).parents(".template").length == 0) {
+				var ds = $(this).attr("noSearch") == 'noSearch';
+				$(this).chosen({ placeholder_text_multiple: " ", disable_search:ds, });
+			}
+		});
+
+		const missingDataLabelEl = document.getElementById('warn-missing-data');
+		const categorySelectEl = document.querySelector('select[name="c"]');
+		const typeSelectEl = document.querySelector('select[name="t"]');
+		$(typeSelectEl).on('change', function(e) {
+			if(e.target.value) {
+				missingDataLabelEl.style.display = '';
+				categorySelectEl.value = 'm';
+				$(categorySelectEl).trigger('chosen:updated');
+			}
+			else {
+				missingDataLabelEl.style.display = 'none';
+			}
+		});
+
+		$(categorySelectEl).on('change', function(e) {
+			if(e.target.value !== 'm') {
+				missingDataLabelEl.style.display = 'none';
+				typeSelectEl.value = '';
+				$(typeSelectEl).trigger('chosen:updated');
+			}
+		});
+
+		$(() => attachUserSearchHandler(document.getElementById('contributor-box')));
+
+		let fetchCursor = '&cursor[]=2025-10-06%2015%3A19%3A45&cursor[]=792&cursor[]=0';
+		const scrollTrigger = document.getElementById('scroll-trigger');
+		if(scrollTrigger) {
+			let isFetching = false;
+
+			if('IntersectionObserver' in window) {
+				const elementHeight = 300;
+				const observer = new IntersectionObserver(entries => {
+					if(isFetching)   return;
+
+					let fetchEntry = null;
+					for(const e of entries) {
+						if(e.intersectionRatio === 0) continue;
+						fetchEntry = e;
+						isFetching = true;
+					}
+					if(fetchEntry === null)  return;
+
+					(async () => {
+						for(let i = 0; fetchEntry.target.getBoundingClientRect().top < (window.innerHeight + elementHeight) && i < 20; i++) {
+							await fetchMore()
+								.catch((d) => {
+									if(d === 'DONE') {
+										observer.disconnect();
+										i = 99;
+									}
+									isFetching = false;
+								});
+						}
+						isFetching = false;
+					})();
+				}, {
+					root: document.body, // needs to the the scroll ancestor
+					rootMargin: `0px 0px ${elementHeight}px 0px`,
+				});
+				observer.observe(scrollTrigger);
+			}
+			else {
+				const btn = document.createElement('button');
+				btn.textContent = 'Load More';
+				btn.addEventListener('click', onFetchMoreClick);
+				scrollTrigger.replaceChildren(btn);
+				
+				function onFetchMoreClick() {
+					if(isFetching) return;
+
+					isFetching = true;
+					btn.setAttribute('disabled', 'true')
+					fetchMore()
+						.finally(() => {
+							btn.removeAttribute('disabled');
+							isFetching = false;
+						});
+				}
+			}
+
+			const modsContainer = document.getElementsByClassName('mods')[0];
+			let pageFetchUrl = window.location.search;
+			pageFetchUrl += pageFetchUrl ? '&paging=1' : '?paging=1';
+			function fetchMore() {
+				if(!fetchCursor) {
+					//TODO @cleanup: Remove trigger/button immediately after response without cursor.
+					// Will remove the trigger / button one request after the response where we already know that there is nothing more to get.
+					// This is only really noticeable with the fallback mode, since you click the button and it just adds nothing before it finally vanishes.
+					scrollTrigger.remove();
+					return Promise.reject('DONE');
+				}
+
+				return fetch(pageFetchUrl + fetchCursor)
+					.then(r => new Promise((resolve, reject) => r.text().then(t => resolve([t, r])).catch(e => reject(e))))
+					.then(c => {
+						const fragment = document.createRange().createContextualFragment(c[0]);
+						modsContainer.append(fragment);
+						
+						fetchCursor = c[1].headers.get('X-Fetch-Cursor');
+					})
+					.catch((t) => {
+						addMessage(MSG_CLASS_ERROR, 'Failed to fetch more mods: ' + t, true)
+					});
+			}
+		}
+	</script>
+
+		
+		</main>
+	</div>
+
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/jquery.are-you-sure.js"></script>
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/ays-beforeunload-shim.js"></script>
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/jquery.cookie.js"></script>
+
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/wysiwyg.js"></script>
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/tinymce.min.js"></script>
+
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/jquery.filedrop.js"></script>
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/datepicker.min.js"></script>
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/datepicker.en.js"></script>
+
+	<script type="text/javascript" src="Vintage%20Story%20Mod%20DB_files/jquery.fancybox.min.js" async=""></script>
+
+	<link href="Vintage%20Story%20Mod%20DB_files/fotorama.css" rel="stylesheet">
+	<script src="Vintage%20Story%20Mod%20DB_files/fotorama.js"></script>
+
+	<script type="text/javascript">
+		assetid = 0;
+		assettypeid = 0;
+		actiontoken = "995F603BD7FA2735";
+		
+		$(document).ready(function() {
+			$("select").each(function() {
+				if ($(this).parents(".template").length == 0) {
+					var ds = $(this).attr("noSearch") == 'noSearch';
+					$(this).chosen({ placeholder_text_multiple: " ", disable_search:ds, });
+				}
+			});
+			
+			$('form[name=form1]').areYouSure();
+		});
+
+		const MSG_CLASS_OK = 'bg-success text-success';
+		const MSG_CLASS_WARN = 'bg-warning';
+		const MSG_CLASS_ERROR = 'bg-error text-error';
+
+		const msgContainer = document.getElementById('message-container');
+		function addMessage(clazz, html, escapeMessage) {
+			escapeMessage = escapeMessage || false;
+			const msgEl = document.createElement('div');
+			msgEl.classList.add(...(clazz.split(' ')));
+			if(escapeMessage) {
+				msgEl.textContent = html;
+				const d = document.createElement('span');
+				d.classList.add('dismiss');
+				msgEl.append(d)
+			}
+			else {
+				msgEl.innerHTML = html+'<span class="dismiss"></span>';
+			}
+			msgContainer.append(msgEl);
+		}
+
+		msgContainer.addEventListener('click', function(e) {
+			let t = e.target;
+			if(!t || !t.classList.contains('dismiss')) return;
+			t = t.parentElement;
+			$(t).slideUp(400, () => t.remove());
+		})
+	</script>
+	
+	<footer>
+		<ul class="no-mark">
+			<li style="text-align: center;">Copyright © 2021-2025 Anego Studios | <span style="white-space: nowrap;">Currently hosting <b>4590 Mods</b></span></li>
+			<li><a href="https://www.vintagestory.at/impressum.html/">Impressum</a></li>
+			<li><a href="https://github.com/anegostudios/vsmoddb#vs-mod-db-api-docs">Json Api</a></li>
+			<li><a rel="terms-of-service" href="https://mods.vintagestory.at/terms">Terms of use</a></li>
+			<li><a rel="privacy-policy" href="https://www.vintagestory.at/privacy/">Privacy Policy</a></li>
+			<li><a rel="nofollow" href="https://www.vintagestory.at/contact/">Contact Us</a></li>
+		</ul>
+	</footer>
+
+
+</body></html>
