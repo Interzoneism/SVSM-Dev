@@ -20,7 +20,7 @@
     <Resource Include="configicon.png" />
     <Resource Include="webicon.png" />
     <Resource Include="deleteicon.png" />
-    <Resource Include="..\Moddb_website\Vintage Story Mod DB_files\mod-default.png">
+    <Resource Include="mod-default.png">
       <Link>Resources\mod-default.png</Link>
     </Resource>
   </ItemGroup>
@@ -28,7 +28,6 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
-    <PackageReference Include="MicrosoftExpressionInteractions" Version="3.0.40218" />
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
   </ItemGroup>
 
