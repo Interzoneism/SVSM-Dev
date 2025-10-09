@@ -58,6 +58,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly RelayCommand _showInstalledModsCommand;
     private readonly RelayCommand _showModDatabaseCommand;
     private bool _showRecentlyUpdatedOnly;
+    private bool _showPopularRecently;
 
     public MainViewModel(string dataDirectory, int modDatabaseSearchResultLimit)
     {
@@ -223,6 +224,18 @@ public sealed class MainViewModel : ObservableObject
         set
         {
             if (SetProperty(ref _showRecentlyUpdatedOnly, value) && SearchModDatabase)
+            {
+                TriggerModDatabaseSearch();
+            }
+        }
+    }
+
+    public bool ShowPopularRecently
+    {
+        get => _showPopularRecently;
+        set
+        {
+            if (SetProperty(ref _showPopularRecently, value) && SearchModDatabase)
             {
                 TriggerModDatabaseSearch();
             }
@@ -724,9 +737,25 @@ public sealed class MainViewModel : ObservableObject
         _modDatabaseSearchCts = cts;
 
         bool hasSearchTokens = HasSearchText;
-        string statusMessage = hasSearchTokens
-            ? (ShowRecentlyUpdatedOnly ? "Searching for recently updated mods..." : "Searching the mod database...")
-            : (ShowRecentlyUpdatedOnly ? "Loading recently updated mods..." : "Loading popular mods...");
+        string statusMessage;
+        if (hasSearchTokens)
+        {
+            statusMessage = ShowRecentlyUpdatedOnly
+                ? "Searching for recently updated mods..."
+                : "Searching the mod database...";
+        }
+        else if (ShowRecentlyUpdatedOnly)
+        {
+            statusMessage = "Loading recently updated mods...";
+        }
+        else if (ShowPopularRecently)
+        {
+            statusMessage = "Loading recently popular mods...";
+        }
+        else
+        {
+            statusMessage = "Loading popular mods...";
+        }
         SetStatus(statusMessage, false);
 
         _ = RunModDatabaseSearchAsync(SearchText, hasSearchTokens, cts);
@@ -752,6 +781,11 @@ public sealed class MainViewModel : ObservableObject
                         .ConfigureAwait(false)
                     : await _databaseService.GetRecentlyUpdatedModsAsync(maxResults, cancellationToken)
                         .ConfigureAwait(false);
+            }
+            else if (!hasSearchTokens && ShowPopularRecently)
+            {
+                results = await _databaseService.GetPopularRecentlyModsAsync(maxResults, cancellationToken)
+                    .ConfigureAwait(false);
             }
             else
             {
@@ -908,9 +942,17 @@ public sealed class MainViewModel : ObservableObject
                 : $"Found {resultCount} mods in the mod database.";
         }
 
-        return ShowRecentlyUpdatedOnly
-            ? $"Showing {resultCount} recently updated popular mods."
-            : $"Showing {resultCount} of the most downloaded mods.";
+        if (ShowRecentlyUpdatedOnly)
+        {
+            return $"Showing {resultCount} recently updated popular mods.";
+        }
+
+        if (ShowPopularRecently)
+        {
+            return $"Showing {resultCount} recently popular mods.";
+        }
+
+        return $"Showing {resultCount} of the most downloaded mods.";
     }
 
     private string BuildNoModDatabaseResultsMessage(bool hasSearchTokens)
@@ -922,16 +964,41 @@ public sealed class MainViewModel : ObservableObject
                 : "No mods found in the mod database.";
         }
 
-        return ShowRecentlyUpdatedOnly
-            ? "No recently updated popular mods were found."
-            : "No mods found in the mod database.";
+        if (ShowRecentlyUpdatedOnly)
+        {
+            return "No recently updated popular mods were found.";
+        }
+
+        if (ShowPopularRecently)
+        {
+            return "No recently popular mods were found.";
+        }
+
+        return "No mods found in the mod database.";
     }
 
-    private static string BuildModDatabaseErrorMessage(bool hasSearchTokens, string errorMessage)
+    private string BuildModDatabaseErrorMessage(bool hasSearchTokens, string errorMessage)
     {
-        string operation = hasSearchTokens
-            ? "search the mod database"
-            : "load popular mods from the mod database";
+        string operation;
+        if (hasSearchTokens)
+        {
+            operation = ShowRecentlyUpdatedOnly
+                ? "search for recently updated mods in the mod database"
+                : "search the mod database";
+        }
+        else if (ShowRecentlyUpdatedOnly)
+        {
+            operation = "load recently updated mods from the mod database";
+        }
+        else if (ShowPopularRecently)
+        {
+            operation = "load recently popular mods from the mod database";
+        }
+        else
+        {
+            operation = "load popular mods from the mod database";
+        }
+
         return $"Failed to {operation}: {errorMessage}";
     }
 
@@ -1057,6 +1124,19 @@ public sealed class MainViewModel : ObservableObject
         string? description = BuildSearchResultDescription(result);
         string? pageUrl = BuildModDatabasePageUrl(result);
 
+        ModDatabaseInfo databaseInfo = result.DetailedInfo ?? new ModDatabaseInfo
+        {
+            Tags = result.Tags,
+            AssetId = result.AssetId,
+            ModPageUrl = pageUrl,
+            Downloads = result.Downloads,
+            Comments = result.Comments,
+            Follows = result.Follows,
+            TrendingPoints = result.TrendingPoints,
+            LogoUrl = result.LogoUrl,
+            LastReleasedUtc = result.LastReleasedUtc
+        };
+
         return new ModEntry
         {
             ModId = result.ModId,
@@ -1068,18 +1148,7 @@ public sealed class MainViewModel : ObservableObject
             SourcePath = string.Empty,
             Side = result.Side,
             ModDatabaseSearchScore = result.Score,
-            DatabaseInfo = new ModDatabaseInfo
-            {
-                Tags = result.Tags,
-                AssetId = result.AssetId,
-                ModPageUrl = pageUrl,
-                Downloads = result.Downloads,
-                Comments = result.Comments,
-                Follows = result.Follows,
-                TrendingPoints = result.TrendingPoints,
-                LogoUrl = result.LogoUrl,
-                LastReleasedUtc = result.LastReleasedUtc
-            }
+            DatabaseInfo = databaseInfo
         };
     }
 
