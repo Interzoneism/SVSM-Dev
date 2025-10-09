@@ -240,12 +240,14 @@ public sealed class ModDatabaseService
             int? follows = GetNullableInt(modElement, "follows");
             int? trendingPoints = GetNullableInt(modElement, "trendingpoints");
             string? logoUrl = GetString(modElement, "logofile");
+            DateTime? lastReleasedUtc = TryParseDateTime(GetString(modElement, "lastreleased"));
             IReadOnlyList<ModReleaseInfo> releases = BuildReleaseInfos(modElement, normalizedGameVersion);
             ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
             ModReleaseInfo? latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
             string? latestVersion = latestRelease?.Version;
             string? latestCompatibleVersion = latestCompatibleRelease?.Version;
             IReadOnlyList<string> requiredVersions = FindRequiredGameVersions(modElement, modVersion);
+            int? recentDownloads = CalculateRecentDownloads(releases);
 
             return new ModDatabaseInfo
             {
@@ -260,6 +262,8 @@ public sealed class ModDatabaseService
                 Follows = follows,
                 TrendingPoints = trendingPoints,
                 LogoUrl = logoUrl,
+                DownloadsLastThreeMonths = recentDownloads,
+                LastReleasedUtc = lastReleasedUtc,
                 LatestRelease = latestRelease,
                 LatestCompatibleRelease = latestCompatibleRelease,
                 Releases = releases
@@ -339,6 +343,40 @@ public sealed class ModDatabaseService
         return releases.Count == 0 ? Array.Empty<ModReleaseInfo>() : releases;
     }
 
+    private static int? CalculateRecentDownloads(IReadOnlyList<ModReleaseInfo> releases)
+    {
+        if (releases.Count == 0)
+        {
+            return null;
+        }
+
+        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+        int total = 0;
+        bool hasData = false;
+
+        foreach (var release in releases)
+        {
+            if (release is null)
+            {
+                continue;
+            }
+
+            DateTime? createdUtc = release.CreatedUtc;
+            if (createdUtc.HasValue && createdUtc.Value < threshold)
+            {
+                continue;
+            }
+
+            if (release.Downloads.HasValue)
+            {
+                hasData = true;
+                total += Math.Max(0, release.Downloads.Value);
+            }
+        }
+
+        return hasData ? total : null;
+    }
+
     private static bool TryCreateReleaseInfo(JsonElement releaseElement, string? normalizedGameVersion, out ModReleaseInfo release)
     {
         release = default!;
@@ -374,6 +412,8 @@ public sealed class ModDatabaseService
 
         string? fileName = GetString(releaseElement, "filename");
         string? changelog = ConvertChangelogToPlainText(GetString(releaseElement, "changelog"));
+        int? downloads = GetNullableInt(releaseElement, "downloads");
+        DateTime? createdUtc = TryParseDateTime(GetString(releaseElement, "created"));
 
         release = new ModReleaseInfo
         {
@@ -383,7 +423,9 @@ public sealed class ModDatabaseService
             FileName = fileName,
             GameVersionTags = releaseTags,
             IsCompatibleWithInstalledGame = isCompatible,
-            Changelog = changelog
+            Changelog = changelog,
+            Downloads = downloads,
+            CreatedUtc = createdUtc
         };
 
         return true;

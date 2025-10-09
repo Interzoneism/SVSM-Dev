@@ -40,6 +40,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private IReadOnlyList<ReleaseChangelog> _newerReleaseChangelogs = Array.Empty<ReleaseChangelog>();
     private int? _databaseDownloads;
     private int? _databaseComments;
+    private int? _databaseRecentDownloads;
     private string? _modDatabaseAssetId;
     private string? _modDatabasePageUrl;
     private Uri? _modDatabasePageUri;
@@ -51,6 +52,9 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly string? _installedGameVersion;
     private readonly string _searchIndex;
     private IReadOnlyList<ModVersionOptionViewModel> _versionOptions = Array.Empty<ModVersionOptionViewModel>();
+
+    private double _modDatabaseRelevancyScore;
+    private DateTime? _modDatabaseLastUpdatedUtc;
 
     private bool _isActive;
     private bool _suppressState;
@@ -107,9 +111,16 @@ public sealed class ModListItemViewModel : ObservableObject
         }
         _databaseDownloads = databaseInfo?.Downloads;
         _databaseComments = databaseInfo?.Comments;
+        _databaseRecentDownloads = databaseInfo?.DownloadsLastThreeMonths;
         _modDatabaseLogoUrl = databaseInfo?.LogoUrl;
         _modDatabaseLogo = CreateModDatabaseLogoImage();
         LogDebug($"Initial database logo creation result: {_modDatabaseLogo is not null}. Source URL: '{FormatValue(_modDatabaseLogoUrl)}'.");
+        _modDatabaseRelevancyScore = entry.ModDatabaseSearchScore ?? 0;
+        _modDatabaseLastUpdatedUtc = databaseInfo?.LastReleasedUtc ?? DetermineLastUpdatedFromReleases(_releases);
+        if (_databaseRecentDownloads is null)
+        {
+            _databaseRecentDownloads = CalculateRecentDownloadsFromReleases(_releases);
+        }
         _latestDatabaseVersion = _latestRelease?.Version
             ?? databaseInfo?.LatestVersion
             ?? _latestCompatibleRelease?.Version
@@ -224,6 +235,14 @@ public sealed class ModListItemViewModel : ObservableObject
     public string DownloadsDisplay => _databaseDownloads.HasValue
         ? _databaseDownloads.Value.ToString("N0", CultureInfo.CurrentCulture)
         : "—";
+
+    public int ModDatabaseDownloadsSortKey => _databaseDownloads ?? 0;
+
+    public int ModDatabaseRecentDownloadsSortKey => _databaseRecentDownloads ?? 0;
+
+    public double ModDatabaseRelevancySortKey => _modDatabaseRelevancyScore;
+
+    public long ModDatabaseLastUpdatedSortKey => _modDatabaseLastUpdatedUtc?.Ticks ?? 0L;
 
     public string CommentsDisplay => _databaseComments.HasValue
         ? _databaseComments.Value.ToString("N0", CultureInfo.CurrentCulture)
@@ -527,11 +546,14 @@ public sealed class ModListItemViewModel : ObservableObject
         _latestCompatibleRelease = latestCompatibleRelease;
         _releases = releases;
 
+        UpdateModDatabaseMetrics(info, releases);
+
         int? downloads = info.Downloads;
         if (_databaseDownloads != downloads)
         {
             _databaseDownloads = downloads;
             OnPropertyChanged(nameof(DownloadsDisplay));
+            OnPropertyChanged(nameof(ModDatabaseDownloadsSortKey));
         }
 
         int? comments = info.Comments;
@@ -1153,6 +1175,81 @@ public sealed class ModListItemViewModel : ObservableObject
         }
 
         return string.Join(", ", filtered.Take(filtered.Length - 1)) + " or " + filtered[^1];
+    }
+
+    private void UpdateModDatabaseMetrics(ModDatabaseInfo info, IReadOnlyList<ModReleaseInfo> releases)
+    {
+        int? recentDownloads = info?.DownloadsLastThreeMonths ?? CalculateRecentDownloadsFromReleases(releases);
+        if (_databaseRecentDownloads != recentDownloads)
+        {
+            _databaseRecentDownloads = recentDownloads;
+            OnPropertyChanged(nameof(ModDatabaseRecentDownloadsSortKey));
+        }
+
+        DateTime? lastUpdated = DetermineLastUpdated(info, releases);
+        if (_modDatabaseLastUpdatedUtc != lastUpdated)
+        {
+            _modDatabaseLastUpdatedUtc = lastUpdated;
+            OnPropertyChanged(nameof(ModDatabaseLastUpdatedSortKey));
+        }
+    }
+
+    private static int? CalculateRecentDownloadsFromReleases(IReadOnlyList<ModReleaseInfo> releases)
+    {
+        if (releases.Count == 0)
+        {
+            return null;
+        }
+
+        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+        int total = 0;
+        bool hasData = false;
+
+        foreach (var release in releases)
+        {
+            if (release?.CreatedUtc is not { } createdUtc || createdUtc < threshold)
+            {
+                continue;
+            }
+
+            if (release.Downloads.HasValue)
+            {
+                hasData = true;
+                total += Math.Max(0, release.Downloads.Value);
+            }
+        }
+
+        return hasData ? total : null;
+    }
+
+    private static DateTime? DetermineLastUpdated(ModDatabaseInfo? info, IReadOnlyList<ModReleaseInfo> releases)
+    {
+        if (info?.LastReleasedUtc is DateTime lastReleased)
+        {
+            return lastReleased;
+        }
+
+        return DetermineLastUpdatedFromReleases(releases);
+    }
+
+    private static DateTime? DetermineLastUpdatedFromReleases(IReadOnlyList<ModReleaseInfo> releases)
+    {
+        DateTime? latest = null;
+
+        foreach (var release in releases)
+        {
+            if (release?.CreatedUtc is not { } createdUtc)
+            {
+                continue;
+            }
+
+            if (!latest.HasValue || createdUtc > latest.Value)
+            {
+                latest = createdUtc;
+            }
+        }
+
+        return latest;
     }
 
     private static bool TryGetMajorMinor(string version, out int major, out int minor)

@@ -18,6 +18,7 @@
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenTrueConverter" />
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenFalseConverter" IsInverted="True" />
+        <converters:BooleanToTabIndexConverter x:Key="IMM.BooleanToTabIndexConverter" />
         <converters:RowPaddingOffsetConverter x:Key="IMM.RowPaddingOffsetConverter" />
         <Thickness x:Key="IMM.RowPaddingBase">0,0,0,0</Thickness>
         <sys:Double x:Key="IMM.NormalRowHeightOffset">10</sys:Double>
@@ -29,37 +30,66 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Padding" Value="8,6" />
         </Style>
-        <Style x:Key="IMM.TopBarToggleStyle" TargetType="{x:Type CheckBox}">
-            <Setter Property="VerticalContentAlignment" Value="Bottom" />
-            <Setter Property="FontSize" Value="15" />
-            <Setter Property="Height" Value="27" />
-            <Setter Property="Padding" Value="8,0,0,0" />
-            <Setter Property="Margin" Value="0,0,12,0" />
-            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
-            <Setter Property="Width" Value="134" />
-            <Setter Property="RenderTransform">
+        <Style x:Key="IMM.TabHeaderOnlyTabControlStyle" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Template">
                 <Setter.Value>
-                    <TransformGroup>
-                        <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
-                        <SkewTransform />
-                        <RotateTransform />
-                        <TranslateTransform />
-                    </TransformGroup>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+                            <TabPanel x:Name="HeaderPanel"
+                                      Grid.Row="0"
+                                      Margin="0,0,0,0"
+                                      IsItemsHost="True"
+                                      Background="Transparent" />
+                        </Grid>
+                    </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="IMM.RecentlyUpdatedToggleStyle"
-               TargetType="{x:Type CheckBox}"
-               BasedOn="{StaticResource IMM.TopBarToggleStyle}">
+        <Style x:Key="IMM.TabHeaderItemStyle" TargetType="TabItem">
+            <Setter Property="Foreground" Value="{DynamicResource IMM.BodyForegroundBrush}" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Padding" Value="16,6" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabBorder"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="1"
+                                CornerRadius="6,6,0,0">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource IMM.AccentBrush}" />
+                                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource IMM.SurfaceBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource IMM.AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource IMM.DisabledForegroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="IMM.RecentlyUpdatedToggleStyle" TargetType="{x:Type CheckBox}">
             <Setter Property="Visibility" Value="Collapsed" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="8,0,8,0" />
+            <Setter Property="FontSize" Value="15" />
             <Style.Triggers>
-                <MultiDataTrigger>
-                    <MultiDataTrigger.Conditions>
-                        <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
-                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                    </MultiDataTrigger.Conditions>
+                <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                     <Setter Property="Visibility" Value="Visible" />
-                </MultiDataTrigger>
+                </DataTrigger>
             </Style.Triggers>
         </Style>
         <LinearGradientBrush x:Key="CardGradient" EndPoint="1,0.5" StartPoint="0,0.5">
@@ -158,13 +188,18 @@
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center">
-                    <CheckBox Content="Recently Updated"
+                    <CheckBox Content="Only show recently updated"
                               IsChecked="{Binding ShowRecentlyUpdatedOnly, Mode=TwoWay}"
                               Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
 
-                    <CheckBox Content="Search Mod DB"
-                              IsChecked="{Binding SearchModDatabase, Mode=TwoWay}"
-                              Style="{StaticResource IMM.TopBarToggleStyle}" />
+                    <ComboBox Width="220"
+                              Height="32"
+                              Padding="8,0,8,0"
+                              Margin="0,0,12,0"
+                              ItemsSource="{Binding ModDatabaseSortOptions}"
+                              SelectedItem="{Binding SelectedModDatabaseSortOption, Mode=TwoWay}"
+                              DisplayMemberPath="DisplayName"
+                              Visibility="{Binding SearchModDatabase, Converter={StaticResource IMM.VisibleWhenTrueConverter}}" />
 
                     <TextBox
                         MinWidth="200"
@@ -194,9 +229,23 @@
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <TabControl Grid.Row="0"
+                            Margin="0,0,0,8"
+                            Style="{StaticResource IMM.TabHeaderOnlyTabControlStyle}"
+                            ItemContainerStyle="{StaticResource IMM.TabHeaderItemStyle}"
+                            SelectedIndex="{Binding SearchModDatabase, Mode=TwoWay, Converter={StaticResource IMM.BooleanToTabIndexConverter}}">
+                    <TabItem Header="Mods" />
+                    <TabItem Header="ModDB" />
+                </TabControl>
+
                 <DataGrid x:Name="ModsDataGrid"
-                          Grid.Row="0"
-                  ItemsSource="{Binding CurrentModsView}"
+                          Grid.Row="1"
+                          ItemsSource="{Binding CurrentModsView}"
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
