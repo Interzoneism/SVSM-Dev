@@ -149,15 +149,6 @@
                               IsChecked="{Binding ShowRecentlyUpdatedOnly, Mode=TwoWay}"
                               Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
 
-                    <ComboBox Width="220"
-                              Height="32"
-                              Padding="8,0,8,0"
-                              Margin="0,0,12,0"
-                              ItemsSource="{Binding ModDatabaseSortOptions}"
-                              SelectedItem="{Binding SelectedModDatabaseSortOption, Mode=TwoWay}"
-                              DisplayMemberPath="DisplayName"
-                              Visibility="{Binding SearchModDatabase, Converter={StaticResource IMM.VisibleWhenTrueConverter}}" />
-
                     <TextBox
                         MinWidth="200"
                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"

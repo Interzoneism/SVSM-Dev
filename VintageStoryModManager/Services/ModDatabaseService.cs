@@ -20,6 +20,8 @@ public sealed class ModDatabaseService
     private const string ApiEndpointFormat = "https://mods.vintagestory.at/api/mod/{0}";
     private const string SearchEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&limit={1}";
     private const string MostDownloadedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=downloadsdesc&limit={0}";
+    private const string RecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=updateddesc&limit={0}";
+    private const string SearchRecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&sort=updateddesc&limit={1}";
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
 
     private static readonly HttpClient HttpClient = new();
@@ -143,6 +145,68 @@ public sealed class ModDatabaseService
                 requireTokenMatch: false,
                 candidates => candidates
                     .OrderByDescending(candidate => candidate.Downloads)
+                    .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetRecentlyUpdatedModsAsync(int maxResults, CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
+        string requestUri = string.Format(
+            CultureInfo.InvariantCulture,
+            RecentlyUpdatedEndpointFormat,
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+
+        return await QueryModsAsync(
+                requestUri,
+                maxResults,
+                Array.Empty<string>(),
+                requireTokenMatch: false,
+                candidates => candidates
+                    .Where(candidate => candidate.LastReleasedUtc.HasValue && candidate.LastReleasedUtc.Value >= threshold)
+                    .OrderByDescending(candidate => candidate.LastReleasedUtc)
+                    .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> SearchRecentlyUpdatedModsAsync(string query, int maxResults, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query) || maxResults <= 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        string trimmed = query.Trim();
+        IReadOnlyList<string> tokens = CreateSearchTokens(trimmed);
+        if (tokens.Count == 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
+        string requestUri = string.Format(
+            CultureInfo.InvariantCulture,
+            SearchRecentlyUpdatedEndpointFormat,
+            Uri.EscapeDataString(trimmed),
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+
+        return await QueryModsAsync(
+                requestUri,
+                maxResults,
+                tokens,
+                requireTokenMatch: true,
+                candidates => candidates
+                    .Where(candidate => candidate.LastReleasedUtc.HasValue && candidate.LastReleasedUtc.Value >= threshold)
+                    .OrderByDescending(candidate => candidate.LastReleasedUtc)
                     .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
                 cancellationToken)
             .ConfigureAwait(false);
