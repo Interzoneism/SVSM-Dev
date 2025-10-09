@@ -832,7 +832,7 @@
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel Orientation="Horizontal"
-                                   ItemWidth="296"
+                                   ItemWidth="496"
                                    Margin="0" />
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel>
@@ -856,8 +856,8 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="{x:Type viewModels:ModListItemViewModel}">
-                        <Border Width="280"
-                                Height="320"
+                        <Border Width="480"
+                                Height="480"
                                 Margin="0,0,16,16"
                                 CornerRadius="12"
                                 ClipToBounds="False">
