@@ -30,7 +30,7 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Padding" Value="8,6" />
         </Style>
-        <Style x:Key="IMM.RecentlyUpdatedToggleStyle" TargetType="{x:Type CheckBox}">
+        <Style x:Key="IMM.ModDatabaseToggleStyle" TargetType="{x:Type CheckBox}">
             <Setter Property="Visibility" Value="Collapsed" />
             <Setter Property="Margin" Value="0,0,12,0" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -139,18 +139,14 @@
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center">
-                    <CheckBox Content="Only show recently updated"
+                    <CheckBox Content="Recently updated"
                               IsChecked="{Binding ShowRecentlyUpdatedOnly, Mode=TwoWay}"
-                              Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
+                              Style="{StaticResource IMM.ModDatabaseToggleStyle}" />
 
-                    <ComboBox Width="220"
-                              Height="32"
-                              Padding="8,0,8,0"
-                              Margin="0,0,12,0"
-                              ItemsSource="{Binding ModDatabaseSortOptions}"
-                              SelectedItem="{Binding SelectedModDatabaseSortOption, Mode=TwoWay}"
-                              DisplayMemberPath="DisplayName"
-                              Visibility="{Binding SearchModDatabase, Converter={StaticResource IMM.VisibleWhenTrueConverter}}" />
+                    <CheckBox Content="Popular recently"
+                              IsChecked="{Binding ShowPopularRecently, Mode=TwoWay}"
+                              Style="{StaticResource IMM.ModDatabaseToggleStyle}"
+                              IsEnabled="{Binding IsPopularRecentlyEnabled}" />
 
                     <TextBox
                         MinWidth="200"

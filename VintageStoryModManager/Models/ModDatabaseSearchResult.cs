@@ -38,5 +38,9 @@ public sealed class ModDatabaseSearchResult
 
     public DateTime? LastReleasedUtc { get; init; }
 
+    public ModDatabaseInfo? PrefetchedInfo { get; init; }
+
+    public int? LatestReleaseDownloads { get; init; }
+
     internal double Score { get; init; }
 }

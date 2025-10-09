@@ -22,6 +22,24 @@ namespace VintageStoryModManager.ViewModels;
 public sealed class MainViewModel : ObservableObject
 {
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
+    private static readonly SortOption ModDatabaseRelevancySortOption = new(
+        "Relevancy",
+        (nameof(ModListItemViewModel.ModDatabaseRelevancySortKey), ListSortDirection.Descending),
+        (nameof(ModListItemViewModel.ModDatabaseDownloadsSortKey), ListSortDirection.Descending),
+        (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending));
+    private static readonly SortOption ModDatabaseDownloadsSortOption = new(
+        "Downloads",
+        (nameof(ModListItemViewModel.ModDatabaseDownloadsSortKey), ListSortDirection.Descending),
+        (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending));
+    private static readonly SortOption ModDatabaseLastUpdatedSortOption = new(
+        "Last Updated",
+        (nameof(ModListItemViewModel.ModDatabaseLastUpdatedSortKey), ListSortDirection.Descending),
+        (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending));
+    private static readonly SortOption ModDatabaseLatestReleaseDownloadsSortOption = new(
+        "Latest Release Downloads",
+        (nameof(ModListItemViewModel.ModDatabaseLatestReleaseDownloadsSortKey), ListSortDirection.Descending),
+        (nameof(ModListItemViewModel.ModDatabaseDownloadsSortKey), ListSortDirection.Descending),
+        (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending));
 
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
     private readonly Dictionary<string, ModEntry> _modEntriesBySourcePath = new(StringComparer.OrdinalIgnoreCase);
@@ -32,13 +50,11 @@ public sealed class MainViewModel : ObservableObject
     private readonly ModDatabaseService _databaseService;
     private readonly int _modDatabaseSearchResultLimit;
     private readonly ObservableCollection<SortOption> _sortOptions;
-    private readonly ObservableCollection<SortOption> _modDatabaseSortOptions;
     private readonly string? _installedGameVersion;
     private readonly object _modsStateLock = new();
     private readonly ModDirectoryWatcher _modsWatcher;
 
     private SortOption? _selectedSortOption;
-    private SortOption? _selectedModDatabaseSortOption;
     private bool _isBusy;
     private bool _isCompactView;
     private bool _useModDbDesignView;
@@ -59,6 +75,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly RelayCommand _showInstalledModsCommand;
     private readonly RelayCommand _showModDatabaseCommand;
     private bool _showRecentlyUpdatedOnly;
+    private bool _showPopularRecently;
 
     public MainViewModel(string dataDirectory, int modDatabaseSearchResultLimit)
     {
@@ -80,11 +97,6 @@ public sealed class MainViewModel : ObservableObject
         SortOptions = new ReadOnlyObservableCollection<SortOption>(_sortOptions);
         SelectedSortOption = SortOptions.FirstOrDefault();
         SelectedSortOption?.Apply(ModsView);
-
-        _modDatabaseSortOptions = new ObservableCollection<SortOption>(CreateModDatabaseSortOptions());
-        ModDatabaseSortOptions = new ReadOnlyObservableCollection<SortOption>(_modDatabaseSortOptions);
-        SelectedModDatabaseSortOption = ModDatabaseSortOptions.FirstOrDefault();
-        SelectedModDatabaseSortOption?.Apply(SearchResultsView);
 
         _clearSearchCommand = new RelayCommand(() => SearchText = string.Empty, () => HasSearchText);
         ClearSearchCommand = _clearSearchCommand;
@@ -108,8 +120,6 @@ public sealed class MainViewModel : ObservableObject
 
     public ReadOnlyObservableCollection<SortOption> SortOptions { get; }
 
-    public ReadOnlyObservableCollection<SortOption> ModDatabaseSortOptions { get; }
-
     public SortOption? SelectedSortOption
     {
         get => _selectedSortOption;
@@ -118,18 +128,6 @@ public sealed class MainViewModel : ObservableObject
             if (SetProperty(ref _selectedSortOption, value))
             {
                 value?.Apply(ModsView);
-            }
-        }
-    }
-
-    public SortOption? SelectedModDatabaseSortOption
-    {
-        get => _selectedModDatabaseSortOption;
-        set
-        {
-            if (SetProperty(ref _selectedModDatabaseSortOption, value))
-            {
-                value?.Apply(SearchResultsView);
             }
         }
     }
@@ -217,14 +215,6 @@ public sealed class MainViewModel : ObservableObject
                 {
                     ClearSearchResults();
                     SelectedMod = null;
-
-                    if (SelectedModDatabaseSortOption is null)
-                    {
-                        SelectedModDatabaseSortOption = ModDatabaseSortOptions.FirstOrDefault();
-                    }
-
-                    SelectedModDatabaseSortOption?.Apply(SearchResultsView);
-
                     TriggerModDatabaseSearch();
                 }
                 else
@@ -236,6 +226,7 @@ public sealed class MainViewModel : ObservableObject
                 }
 
                 OnPropertyChanged(nameof(CurrentModsView));
+                OnPropertyChanged(nameof(IsPopularRecentlyEnabled));
             }
         }
     }
@@ -256,6 +247,18 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    public bool ShowPopularRecently
+    {
+        get => _showPopularRecently;
+        set
+        {
+            if (SetProperty(ref _showPopularRecently, value) && SearchModDatabase)
+            {
+                TriggerModDatabaseSearch();
+            }
+        }
+    }
+
     public string SearchText
     {
         get => _searchText;
@@ -266,6 +269,7 @@ public sealed class MainViewModel : ObservableObject
             {
                 _searchTokens = CreateSearchTokens(newValue);
                 OnPropertyChanged(nameof(HasSearchText));
+                OnPropertyChanged(nameof(IsPopularRecentlyEnabled));
                 _clearSearchCommand.NotifyCanExecuteChanged();
                 if (SearchModDatabase)
                 {
@@ -280,6 +284,8 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public bool HasSearchText => _searchTokens.Length > 0;
+
+    public bool IsPopularRecentlyEnabled => SearchModDatabase && !HasSearchText;
 
     public int TotalMods
     {
@@ -751,9 +757,55 @@ public sealed class MainViewModel : ObservableObject
         _modDatabaseSearchCts = cts;
 
         bool hasSearchTokens = HasSearchText;
-        SetStatus(hasSearchTokens ? "Searching the mod database..." : "Loading popular mods...", false);
+        SetStatus(BuildModDatabaseLoadingMessage(hasSearchTokens), false);
 
         _ = RunModDatabaseSearchAsync(SearchText, hasSearchTokens, cts);
+    }
+
+    private string BuildModDatabaseLoadingMessage(bool hasSearchTokens)
+    {
+        if (hasSearchTokens)
+        {
+            return ShowRecentlyUpdatedOnly
+                ? "Searching recently updated mods..."
+                : "Searching the mod database...";
+        }
+
+        if (ShowPopularRecently && ShowRecentlyUpdatedOnly)
+        {
+            return "Loading recently updated, recently popular mods...";
+        }
+
+        if (ShowPopularRecently)
+        {
+            return "Loading recently popular mods...";
+        }
+
+        return ShowRecentlyUpdatedOnly
+            ? "Loading recently updated popular mods..."
+            : "Loading popular mods...";
+    }
+
+    private Task<IReadOnlyList<ModDatabaseSearchResult>> FetchModDatabaseResultsAsync(string query, bool hasSearchTokens, CancellationToken cancellationToken)
+    {
+        if (hasSearchTokens)
+        {
+            return ShowRecentlyUpdatedOnly
+                ? _databaseService.SearchRecentlyUpdatedModsAsync(query, _modDatabaseSearchResultLimit, cancellationToken)
+                : _databaseService.SearchModsAsync(query, _modDatabaseSearchResultLimit, cancellationToken);
+        }
+
+        if (ShowPopularRecently)
+        {
+            return _databaseService.GetPopularRecentlyModsAsync(_modDatabaseSearchResultLimit, ShowRecentlyUpdatedOnly, cancellationToken);
+        }
+
+        if (ShowRecentlyUpdatedOnly)
+        {
+            return _databaseService.GetRecentlyUpdatedModsAsync(_modDatabaseSearchResultLimit, cancellationToken);
+        }
+
+        return _databaseService.GetMostDownloadedModsAsync(_modDatabaseSearchResultLimit, cancellationToken);
     }
 
     private async Task RunModDatabaseSearchAsync(string query, bool hasSearchTokens, CancellationTokenSource cts)
@@ -764,11 +816,8 @@ public sealed class MainViewModel : ObservableObject
         {
             await Task.Delay(ModDatabaseSearchDebounce, cancellationToken).ConfigureAwait(false);
 
-            IReadOnlyList<ModDatabaseSearchResult> results = hasSearchTokens
-                ? await _databaseService.SearchModsAsync(query, _modDatabaseSearchResultLimit, cancellationToken)
-                    .ConfigureAwait(false)
-                : await _databaseService.GetMostDownloadedModsAsync(_modDatabaseSearchResultLimit, cancellationToken)
-                    .ConfigureAwait(false);
+            IReadOnlyList<ModDatabaseSearchResult> results = await FetchModDatabaseResultsAsync(query, hasSearchTokens, cancellationToken)
+                .ConfigureAwait(false);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -819,7 +868,7 @@ public sealed class MainViewModel : ObservableObject
             }
 
             await InvokeOnDispatcherAsync(
-                    () => _selectedModDatabaseSortOption?.Apply(SearchResultsView),
+                    () => ApplyModDatabaseSort(hasSearchTokens),
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -897,6 +946,34 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    private void ApplyModDatabaseSort(bool hasSearchTokens)
+    {
+        if (!SearchModDatabase)
+        {
+            return;
+        }
+
+        if (hasSearchTokens)
+        {
+            ModDatabaseRelevancySortOption.Apply(SearchResultsView);
+            return;
+        }
+
+        if (ShowPopularRecently)
+        {
+            ModDatabaseLatestReleaseDownloadsSortOption.Apply(SearchResultsView);
+            return;
+        }
+
+        if (ShowRecentlyUpdatedOnly)
+        {
+            ModDatabaseLastUpdatedSortOption.Apply(SearchResultsView);
+            return;
+        }
+
+        ModDatabaseDownloadsSortOption.Apply(SearchResultsView);
+    }
+
     private IReadOnlyList<ModDatabaseSearchResult> ApplyModDatabaseFilters(IReadOnlyList<ModDatabaseSearchResult> results)
     {
         if (!ShowRecentlyUpdatedOnly)
@@ -906,8 +983,27 @@ public sealed class MainViewModel : ObservableObject
 
         DateTime threshold = DateTime.UtcNow.AddMonths(-3);
         return results
-            .Where(result => result.LastReleasedUtc.HasValue && result.LastReleasedUtc.Value >= threshold)
+            .Where(result =>
+            {
+                DateTime? lastReleased = GetResultLastReleasedUtc(result);
+                return lastReleased.HasValue && lastReleased.Value >= threshold;
+            })
             .ToList();
+    }
+
+    private static DateTime? GetResultLastReleasedUtc(ModDatabaseSearchResult result)
+    {
+        if (result?.PrefetchedInfo?.LatestRelease?.CreatedUtc is DateTime createdUtc)
+        {
+            return createdUtc;
+        }
+
+        if (result?.PrefetchedInfo?.LastReleasedUtc is DateTime prefetchedLastReleased)
+        {
+            return prefetchedLastReleased;
+        }
+
+        return result?.LastReleasedUtc;
     }
 
     private string BuildModDatabaseResultsMessage(bool hasSearchTokens, int resultCount)
@@ -917,6 +1013,16 @@ public sealed class MainViewModel : ObservableObject
             return ShowRecentlyUpdatedOnly
                 ? $"Found {resultCount} recently updated mods in the mod database."
                 : $"Found {resultCount} mods in the mod database.";
+        }
+
+        if (ShowPopularRecently && ShowRecentlyUpdatedOnly)
+        {
+            return $"Showing {resultCount} recently updated mods by latest release downloads.";
+        }
+
+        if (ShowPopularRecently)
+        {
+            return $"Showing {resultCount} recently popular mods.";
         }
 
         return ShowRecentlyUpdatedOnly
@@ -933,17 +1039,44 @@ public sealed class MainViewModel : ObservableObject
                 : "No mods found in the mod database.";
         }
 
+        if (ShowPopularRecently && ShowRecentlyUpdatedOnly)
+        {
+            return "No recently updated, recently popular mods were found.";
+        }
+
+        if (ShowPopularRecently)
+        {
+            return "No recently popular mods were found.";
+        }
+
         return ShowRecentlyUpdatedOnly
             ? "No recently updated popular mods were found."
             : "No mods found in the mod database.";
     }
 
-    private static string BuildModDatabaseErrorMessage(bool hasSearchTokens, string errorMessage)
+    private string BuildModDatabaseErrorMessage(bool hasSearchTokens, string errorMessage)
     {
         string operation = hasSearchTokens
-            ? "search the mod database"
-            : "load popular mods from the mod database";
+            ? (ShowRecentlyUpdatedOnly ? "search for recently updated mods in the mod database" : "search the mod database")
+            : BuildPopularLoadingOperationDescription();
         return $"Failed to {operation}: {errorMessage}";
+    }
+
+    private string BuildPopularLoadingOperationDescription()
+    {
+        if (ShowPopularRecently && ShowRecentlyUpdatedOnly)
+        {
+            return "load recently updated, recently popular mods from the mod database";
+        }
+
+        if (ShowPopularRecently)
+        {
+            return "load recently popular mods from the mod database";
+        }
+
+        return ShowRecentlyUpdatedOnly
+            ? "load recently updated popular mods from the mod database"
+            : "load popular mods from the mod database";
     }
 
     private Task UpdateSearchResultsAsync(IReadOnlyList<ModListItemViewModel> items, CancellationToken cancellationToken)
@@ -1068,6 +1201,19 @@ public sealed class MainViewModel : ObservableObject
         string? description = BuildSearchResultDescription(result);
         string? pageUrl = BuildModDatabasePageUrl(result);
 
+        ModDatabaseInfo databaseInfo = result.PrefetchedInfo ?? new ModDatabaseInfo
+        {
+            Tags = result.Tags,
+            AssetId = result.AssetId,
+            ModPageUrl = pageUrl,
+            Downloads = result.Downloads,
+            Comments = result.Comments,
+            Follows = result.Follows,
+            TrendingPoints = result.TrendingPoints,
+            LogoUrl = result.LogoUrl,
+            LastReleasedUtc = result.LastReleasedUtc
+        };
+
         return new ModEntry
         {
             ModId = result.ModId,
@@ -1079,18 +1225,7 @@ public sealed class MainViewModel : ObservableObject
             SourcePath = string.Empty,
             Side = result.Side,
             ModDatabaseSearchScore = result.Score,
-            DatabaseInfo = new ModDatabaseInfo
-            {
-                Tags = result.Tags,
-                AssetId = result.AssetId,
-                ModPageUrl = pageUrl,
-                Downloads = result.Downloads,
-                Comments = result.Comments,
-                Follows = result.Follows,
-                TrendingPoints = result.TrendingPoints,
-                LogoUrl = result.LogoUrl,
-                LastReleasedUtc = result.LastReleasedUtc
-            }
+            DatabaseInfo = databaseInfo
         };
     }
 
@@ -1232,22 +1367,6 @@ public sealed class MainViewModel : ObservableObject
             "Active (Inactive → Active)",
             (nameof(ModListItemViewModel.IsActive), ListSortDirection.Ascending),
             (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending));
-    }
-
-    private static IEnumerable<SortOption> CreateModDatabaseSortOptions()
-    {
-        yield return new SortOption(
-            "Relevancy",
-            (nameof(ModListItemViewModel.ModDatabaseRelevancySortKey), ListSortDirection.Descending));
-        yield return new SortOption(
-            "Downloads (total)",
-            (nameof(ModListItemViewModel.ModDatabaseDownloadsSortKey), ListSortDirection.Descending));
-        yield return new SortOption(
-            "Downloads (last 3 months)",
-            (nameof(ModListItemViewModel.ModDatabaseRecentDownloadsSortKey), ListSortDirection.Descending));
-        yield return new SortOption(
-            "Time updated",
-            (nameof(ModListItemViewModel.ModDatabaseLastUpdatedSortKey), ListSortDirection.Descending));
     }
 
     private void SetStatus(string message, bool isError)

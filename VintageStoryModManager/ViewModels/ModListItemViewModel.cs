@@ -41,6 +41,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private int? _databaseDownloads;
     private int? _databaseComments;
     private int? _databaseRecentDownloads;
+    private int? _latestReleaseDownloads;
     private string? _modDatabaseAssetId;
     private string? _modDatabasePageUrl;
     private Uri? _modDatabasePageUri;
@@ -112,6 +113,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _databaseDownloads = databaseInfo?.Downloads;
         _databaseComments = databaseInfo?.Comments;
         _databaseRecentDownloads = databaseInfo?.DownloadsLastThreeMonths;
+        _latestReleaseDownloads = _latestRelease?.Downloads;
         _modDatabaseLogoUrl = databaseInfo?.LogoUrl;
         _modDatabaseLogo = CreateModDatabaseLogoImage();
         LogDebug($"Initial database logo creation result: {_modDatabaseLogo is not null}. Source URL: '{FormatValue(_modDatabaseLogoUrl)}'.");
@@ -239,6 +241,8 @@ public sealed class ModListItemViewModel : ObservableObject
     public int ModDatabaseDownloadsSortKey => _databaseDownloads ?? 0;
 
     public int ModDatabaseRecentDownloadsSortKey => _databaseRecentDownloads ?? 0;
+
+    public int ModDatabaseLatestReleaseDownloadsSortKey => _latestReleaseDownloads ?? 0;
 
     public double ModDatabaseRelevancySortKey => _modDatabaseRelevancyScore;
 
@@ -545,6 +549,13 @@ public sealed class ModListItemViewModel : ObservableObject
         _latestRelease = latestRelease;
         _latestCompatibleRelease = latestCompatibleRelease;
         _releases = releases;
+
+        int? latestReleaseDownloads = latestRelease?.Downloads;
+        if (_latestReleaseDownloads != latestReleaseDownloads)
+        {
+            _latestReleaseDownloads = latestReleaseDownloads;
+            OnPropertyChanged(nameof(ModDatabaseLatestReleaseDownloadsSortKey));
+        }
 
         UpdateModDatabaseMetrics(info, releases);
 
