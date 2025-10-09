@@ -498,7 +498,7 @@ public sealed class ModListItemViewModel : ObservableObject
         UpdateTooltip();
     }
 
-    public void UpdateDatabaseInfo(ModDatabaseInfo info)
+    public void UpdateDatabaseInfo(ModDatabaseInfo info, bool loadLogoImmediately = true)
     {
         if (info is null)
         {
@@ -544,13 +544,35 @@ public sealed class ModListItemViewModel : ObservableObject
         LogDebug($"UpdateDatabaseInfo invoked. AssetId='{FormatValue(info.AssetId)}', PageUrl='{FormatValue(info.ModPageUrl)}', LogoUrl='{FormatValue(info.LogoUrl)}'.");
 
         string? logoUrl = info.LogoUrl;
-        if (!string.Equals(_modDatabaseLogoUrl, logoUrl, StringComparison.Ordinal))
+        bool logoUrlChanged = !string.Equals(_modDatabaseLogoUrl, logoUrl, StringComparison.Ordinal);
+        if (logoUrlChanged)
         {
             _modDatabaseLogoUrl = logoUrl;
+            if (loadLogoImmediately)
+            {
+                _modDatabaseLogo = CreateModDatabaseLogoImage();
+                LogDebug($"Updated database logo. New URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
+            }
+            else
+            {
+                if (_modDatabaseLogo is not null)
+                {
+                    LogDebug("Clearing previously loaded database logo to defer image refresh.");
+                }
+
+                _modDatabaseLogo = null;
+                LogDebug($"Deferred database logo update. New URL='{FormatValue(_modDatabaseLogoUrl)}'.");
+            }
+
+            OnPropertyChanged(nameof(ModDatabasePreviewImage));
+            OnPropertyChanged(nameof(HasModDatabasePreviewImage));
+        }
+        else if (loadLogoImmediately && _modDatabaseLogo is null && !string.IsNullOrWhiteSpace(_modDatabaseLogoUrl))
+        {
             _modDatabaseLogo = CreateModDatabaseLogoImage();
             OnPropertyChanged(nameof(ModDatabasePreviewImage));
             OnPropertyChanged(nameof(HasModDatabasePreviewImage));
-            LogDebug($"Updated database logo. New URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
+            LogDebug($"Loaded deferred database logo. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
         }
 
         if (!string.Equals(_modDatabaseAssetId, info.AssetId, StringComparison.Ordinal))
@@ -624,6 +646,24 @@ public sealed class ModListItemViewModel : ObservableObject
 
         UpdateStatusFromErrors();
         UpdateTooltip();
+    }
+
+    public void EnsureModDatabaseLogoLoaded()
+    {
+        if (_modDatabaseLogo is not null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_modDatabaseLogoUrl))
+        {
+            return;
+        }
+
+        _modDatabaseLogo = CreateModDatabaseLogoImage();
+        OnPropertyChanged(nameof(ModDatabasePreviewImage));
+        OnPropertyChanged(nameof(HasModDatabasePreviewImage));
+        LogDebug($"Deferred database logo load complete. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
     }
 
     public void SetIsActiveSilently(bool isActive)
