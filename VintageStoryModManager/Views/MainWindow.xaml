@@ -859,7 +859,7 @@
                                 Height="320"
                                 Margin="0,0,16,16"
                                 CornerRadius="12"
-                                ClipToBounds="True">
+                                ClipToBounds="False">
                             <Border.Effect>
                                 <DropShadowEffect Color="#33000000"
                                                   BlurRadius="20"
