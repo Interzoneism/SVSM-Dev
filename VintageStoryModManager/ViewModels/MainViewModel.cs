@@ -47,6 +47,8 @@ public sealed class MainViewModel : ObservableObject
     private int _activeMods;
     private string? _modsStateFingerprint;
     private ModListItemViewModel? _selectedMod;
+    private bool _hasSelectedMods;
+    private bool _hasMultipleSelectedMods;
     private string _searchText = string.Empty;
     private string[] _searchTokens = Array.Empty<string>();
     private bool _searchModDatabase;
@@ -155,6 +157,18 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public bool HasSelectedMod => SelectedMod != null;
+
+    public bool HasSelectedMods
+    {
+        get => _hasSelectedMods;
+        private set => SetProperty(ref _hasSelectedMods, value);
+    }
+
+    public bool HasMultipleSelectedMods
+    {
+        get => _hasMultipleSelectedMods;
+        private set => SetProperty(ref _hasMultipleSelectedMods, value);
+    }
 
     public bool IsErrorStatus
     {
@@ -345,8 +359,10 @@ public sealed class MainViewModel : ObservableObject
         SetStatus(message, isError);
     }
 
-    internal void SetSelectedMod(ModListItemViewModel? mod)
+    internal void SetSelectedMod(ModListItemViewModel? mod, int selectionCount)
     {
+        HasSelectedMods = selectionCount > 0;
+        HasMultipleSelectedMods = selectionCount > 1;
         SelectedMod = mod;
     }
 

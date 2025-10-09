@@ -1138,7 +1138,7 @@
                     <Setter Property="Visibility" Value="Collapsed" />
                     <Setter Property="IsHitTestVisible" Value="False" />
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding HasSelectedMod}" Value="True">
+                        <DataTrigger Binding="{Binding HasSelectedMods}" Value="True">
                             <Setter Property="Visibility" Value="Visible" />
                             <Setter Property="IsHitTestVisible" Value="True" />
                         </DataTrigger>
@@ -1182,8 +1182,21 @@
                 BorderBrush="{DynamicResource IMM.BorderBrush}"
                 Visibility="Visible"
                 IsEnabled="False"
-                Click="DeleteModButton_OnClick"
-                ToolTip="{Binding DisplayName, StringFormat=Delete \{0\}}" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,80,0,0" Grid.Column="1">
+                Click="DeleteModButton_OnClick" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,80,0,0" Grid.Column="1">
+                    <Button.Style>
+                        <Style TargetType="{x:Type Button}">
+                            <Setter Property="ToolTip">
+                                <Setter.Value>
+                                    <Binding Path="DisplayName" StringFormat="Delete {0}" />
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.HasMultipleSelectedMods, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
+                                    <Setter Property="ToolTip" Value="Delete selected mods" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
                         <TextBlock Text="Delete" VerticalAlignment="Center" />
@@ -1240,6 +1253,10 @@
                                     <Setter Property="Visibility" Value="Visible" />
                                     <Setter Property="IsEnabled" Value="False" />
                                 </DataTrigger>
+                                <DataTrigger Binding="{Binding HasMultipleSelectedMods}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </ComboBox.Style>
@@ -1291,17 +1308,38 @@
                     </StackPanel>
                 </Button>
                 <TextBlock
-                Text="{Binding SelectedMod.DisplayName}"
                 FontWeight="SemiBold"
                 Foreground="{StaticResource IMM.ForegroundBrush}"
-                TextAlignment="Left" VerticalAlignment="Top" HorizontalAlignment="Left" Width="189" Margin="23,15,0,0" Height="25" FontSize="14" />
+                TextAlignment="Left" VerticalAlignment="Top" HorizontalAlignment="Left" Width="189" Margin="23,15,0,0" Height="25" FontSize="14">
+                    <TextBlock.Style>
+                        <Style TargetType="{x:Type TextBlock}">
+                            <Setter Property="Text" Value="{Binding SelectedMod.DisplayName}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasMultipleSelectedMods}" Value="True">
+                                    <Setter Property="Text" Value="Multiple mods selected" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
                 <TextBlock
                 Text="{Binding SelectedMod.DescriptionDisplay}"
                 Foreground="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}"
                 MaxWidth="420"
                 TextWrapping="Wrap"
                 TextTrimming="CharacterEllipsis"
-                TextAlignment="Left" HorizontalAlignment="Left" VerticalAlignment="Top" Width="189" Height="105" MaxHeight="143" Margin="23,45,0,0" FontSize="14" />
+                TextAlignment="Left" HorizontalAlignment="Left" VerticalAlignment="Top" Width="189" Height="105" MaxHeight="143" Margin="23,45,0,0" FontSize="14">
+                    <TextBlock.Style>
+                        <Style TargetType="{x:Type TextBlock}">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasMultipleSelectedMods}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </Grid>
 
         </Border>
