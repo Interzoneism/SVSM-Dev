@@ -84,7 +84,7 @@
                                 <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource IMM.SurfaceBrush}" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Foreground" Value="{DynamicResource IMM.DisabledForegroundBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource VS.DialogWarningTextBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

@@ -31,6 +31,6 @@ public sealed class BooleanToTabIndexConverter : IValueConverter
             return parsed == 1;
         }
 
-        return Binding.DoNothing;
+        return System.Windows.Data.Binding.DoNothing;
     }
 }
