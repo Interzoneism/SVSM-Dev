@@ -898,12 +898,12 @@
                         <Border Width="280"
                                 Height="320"
                                 Margin="0,0,16,16"
-                                CornerRadius="6">
+                                CornerRadius="12">
                             <Border.Style>
                                 <Style TargetType="{x:Type Border}">
                                     <Setter Property="BorderBrush" Value="White" />
                                     <Setter Property="BorderThickness" Value="1" />
-                                    <Setter Property="Background" Value="{DynamicResource IMM.SurfaceBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource CardGradient3}" />
                                     <Style.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
                                             <Setter Property="BorderBrush" Value="{DynamicResource IMM.AccentBrush}" />
@@ -921,44 +921,52 @@
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
-                                <Grid>
-                                    <Image Stretch="UniformToFill">
-                                        <Image.Style>
-                                            <Style TargetType="{x:Type Image}">
-                                                <Setter Property="Source" Value="/VintageStoryModManager;component/Resources/mod-default.png" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding HasModDatabasePreviewImage}" Value="True">
-                                                        <Setter Property="Source" Value="{Binding ModDatabasePreviewImage}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Image.Style>
-                                    </Image>
-                                    <TextBlock Text="Installed"
-                                               Margin="8"
-                                               Padding="6,2"
-                                               HorizontalAlignment="Left"
-                                               VerticalAlignment="Top"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"
-                                               Foreground="White"
-                                               Background="#CC2E7D32">
-                                        <TextBlock.Style>
-                                            <Style TargetType="{x:Type TextBlock}">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsInstalled}" Value="True">
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </Grid>
+                                <Border x:Name="CardImageContainer"
+                                        CornerRadius="12,12,0,0"
+                                        ClipToBounds="True">
+                                    <Grid>
+                                        <Image Stretch="UniformToFill"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Width="{Binding ActualWidth, ElementName=CardImageContainer}">
+                                            <Image.Style>
+                                                <Style TargetType="{x:Type Image}">
+                                                    <Setter Property="Source" Value="/VintageStoryModManager;component/Resources/mod-default.png" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasModDatabasePreviewImage}" Value="True">
+                                                            <Setter Property="Source" Value="{Binding ModDatabasePreviewImage}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Image.Style>
+                                        </Image>
+                                        <TextBlock Text="Installed"
+                                                   Margin="8"
+                                                   Padding="6,2"
+                                                   HorizontalAlignment="Left"
+                                                   VerticalAlignment="Top"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="White"
+                                                   Background="#CC2E7D32">
+                                            <TextBlock.Style>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsInstalled}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+                                </Border>
 
                                 <Border Grid.Row="1"
                                         Background="#CCFFFFFF"
-                                        Padding="12,10,12,12">
+                                        Padding="12,10,12,12"
+                                        CornerRadius="0,0,12,12">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
