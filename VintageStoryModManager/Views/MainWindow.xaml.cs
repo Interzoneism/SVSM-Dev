@@ -37,9 +37,9 @@ namespace VintageStoryModManager.Views;
 public partial class MainWindow : Window
 {
     private const double ModListScrollMultiplier = 0.5;
-    private const double ModDbDesignScrollMultiplier = 15.0;
-    private const double HoverOverlayOpacity = 0.12;
-    private const double SelectionOverlayOpacity = 0.22;
+    private const double ModDbDesignScrollMultiplier = 20.0;
+    private const double HoverOverlayOpacity = 0.1;
+    private const double SelectionOverlayOpacity = 0.25;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/enhancedhandbook";
     private const string PresetDirectoryName = "Presets";
 

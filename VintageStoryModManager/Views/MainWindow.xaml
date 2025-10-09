@@ -12,8 +12,7 @@
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
         Height="754" Width="1218"
-        MinWidth="900" MinHeight="520"
-        Background="{StaticResource IMM.SurfaceBrush}">
+        MinWidth="900" MinHeight="520" Background="{DynamicResource GridBackground1}">
 
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenTrueConverter" />
@@ -57,16 +56,14 @@
             <GradientStop Color="#FFEFF3F9" Offset="1"/>
             <GradientStop Color="#FFD2DFF3" Offset="0.263"/>
         </LinearGradientBrush>
+        <LinearGradientBrush x:Key="GridBackground1" EndPoint="1,0.5" StartPoint="0,0.5">
+            <GradientStop Color="#FFE2EAF5"/>
+            <GradientStop Color="#FFDFE3EA" Offset="1"/>
+            <GradientStop Color="#FFD2DFF3" Offset="0.498"/>
+        </LinearGradientBrush>
     </Window.Resources>
 
-    <Grid Margin="0,0,0,8">
-        <Grid.Background>
-            <LinearGradientBrush EndPoint="1,0.5" StartPoint="0,0.5">
-                <GradientStop Color="#FFE2EAF5"/>
-                <GradientStop Color="#FFDFE3EA" Offset="1"/>
-                <GradientStop Color="#FFD2DFF3" Offset="0.498"/>
-            </LinearGradientBrush>
-        </Grid.Background>
+    <Grid Background="{DynamicResource GridBackground1}" Margin="0,0,0,8">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="50" MinHeight="10" />
@@ -83,7 +80,7 @@
             <Menu Grid.Column="0"
                   IsMainMenu="True"
                   BorderThickness="0" Margin="0,0,0,5" Background="Transparent">
-                 
+
                 <MenuItem Header="_File" Height="35">
                     <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
@@ -163,13 +160,11 @@
                     <CheckBox Content="Only show recently updated"
                               IsChecked="{Binding ShowRecentlyUpdatedOnly, Mode=TwoWay}"
                               Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
-
                     <TextBox
                         MinWidth="200"
                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                        Height="32"
-                        Width="225"
-                        VerticalAlignment="Center">
+                        Height="38"
+                        Width="225">
                         <TextBox.Style>
                             <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
                                 <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
@@ -881,7 +876,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            
+
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="2*" />
