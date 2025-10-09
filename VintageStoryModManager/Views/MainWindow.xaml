@@ -30,67 +30,6 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Padding" Value="8,6" />
         </Style>
-        <Style x:Key="IMM.TabHeaderOnlyTabControlStyle" TargetType="TabControl">
-            <Setter Property="Background" Value="{DynamicResource IMM.SurfaceAltBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource IMM.BorderBrush}" />
-            <Setter Property="BorderThickness" Value="1,1,1,0" />
-            <Setter Property="Padding" Value="6,6,6,0" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabControl">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8,8,0,0">
-                            <DockPanel>
-                                <TabPanel x:Name="HeaderPanel"
-                                          Margin="{TemplateBinding Padding}"
-                                          IsItemsHost="True"
-                                          Background="Transparent" />
-                            </DockPanel>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="IMM.TabHeaderItemStyle" TargetType="TabItem">
-            <Setter Property="Foreground" Value="{DynamicResource IMM.BodyForegroundBrush}" />
-            <Setter Property="FontSize" Value="15" />
-            <Setter Property="Padding" Value="16,6" />
-            <Setter Property="Margin" Value="0,0,8,0" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="TabBorder"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6,6,0,0">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
-                                              RecognizesAccessKey="True" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource IMM.AccentBrush}" />
-                                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource IMM.SurfaceBrush}" />
-                                <Setter Property="Foreground" Value="{DynamicResource IMM.AccentBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource IMM.BorderHoverBrush}" />
-                                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource IMM.SurfaceBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Foreground" Value="{DynamicResource VS.DialogWarningTextBrush}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
         <Style x:Key="IMM.RecentlyUpdatedToggleStyle" TargetType="{x:Type CheckBox}">
             <Setter Property="Visibility" Value="Collapsed" />
             <Setter Property="Margin" Value="0,0,12,0" />
@@ -245,15 +184,6 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-
-                <TabControl Grid.Row="0"
-                            Margin="0,0,0,8"
-                            Style="{StaticResource IMM.TabHeaderOnlyTabControlStyle}"
-                            ItemContainerStyle="{StaticResource IMM.TabHeaderItemStyle}"
-                            SelectedIndex="{Binding SearchModDatabase, Mode=TwoWay, Converter={StaticResource IMM.BooleanToTabIndexConverter}}">
-                    <TabItem Header="Mods" />
-                    <TabItem Header="ModDB" />
-                </TabControl>
 
                 <DataGrid x:Name="ModsDataGrid"
                           Grid.Row="1"
@@ -674,8 +604,8 @@
                                             </ToolTip>
                                         </Setter.Value>
                                     </Setter>
-                                    <EventSetter Event="ToolTipOpening" Handler="LatestVersionTextBlock_OnToolTipOpening" />
-                                    <EventSetter Event="ToolTipClosing" Handler="LatestVersionTextBlock_OnToolTipClosing" />
+                                    <EventSetter Event="FrameworkElement.ToolTipOpening" Handler="LatestVersionTextBlock_OnToolTipOpening" />
+                                    <EventSetter Event="FrameworkElement.ToolTipClosing" Handler="LatestVersionTextBlock_OnToolTipClosing" />
                                     <Style.Triggers>
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
@@ -808,101 +738,6 @@
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
-                <Grid x:Name="ModsLoadingOverlay"
-                      Background="#80000000"
-                      Opacity="0"
-                      Visibility="Collapsed"
-                      IsHitTestVisible="False"
-                      Panel.ZIndex="1">
-                    <Grid.Style>
-                        <Style TargetType="Grid">
-                            <Setter Property="Opacity" Value="0" />
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Setter Property="IsHitTestVisible" Value="False" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                    <Setter Property="IsHitTestVisible" Value="True" />
-                                    <DataTrigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                                To="1"
-                                                                Duration="0:0:0.2" />
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </DataTrigger.EnterActions>
-                                    <DataTrigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                                To="0"
-                                                                Duration="0:0:0.2" />
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
-                                                    <DiscreteObjectKeyFrame KeyTime="0:0:0"
-                                                                           Value="{x:Static Visibility.Visible}" />
-                                                    <DiscreteObjectKeyFrame KeyTime="0:0:0.2"
-                                                                           Value="{x:Static Visibility.Collapsed}" />
-                                                </ObjectAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </DataTrigger.ExitActions>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Grid.Style>
-                    <StackPanel HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Margin="32">
-                        <ui:ProgressRing Width="64"
-                                         Height="64"
-                                         IsActive="{Binding IsBusy}" />
-                        <StackPanel Orientation="Vertical"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Margin="0,24,0,0">
-                            <TextBlock Text="{Binding StatusMessage}"
-                                       FontSize="16"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource IMM.ForegroundBrush}"
-                                       HorizontalAlignment="Center"
-                                       TextAlignment="Center"
-                                       Margin="0,0,0,8">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <TextBlock Text="Loading mods..."
-                                       FontSize="16"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource IMM.ForegroundBrush}"
-                                       HorizontalAlignment="Center"
-                                       TextAlignment="Center">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding IsBusy}" Value="True" />
-                                                    <Condition Binding="{Binding HasStatusMessage}" Value="False" />
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </MultiDataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </StackPanel>
-                    </StackPanel>
-                </Grid>
             </Grid>
             <ListView x:Name="ModDatabaseCardsListView"
                       Grid.Row="0"
@@ -952,7 +787,7 @@
                                 </ControlTemplate>
                             </Setter.Value>
                         </Setter>
-                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ModDatabaseCard_OnPreviewMouseLeftButtonDown" />
+                        <EventSetter Event="UIElement.PreviewMouseLeftButtonDown" Handler="ModDatabaseCard_OnPreviewMouseLeftButtonDown" />
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
