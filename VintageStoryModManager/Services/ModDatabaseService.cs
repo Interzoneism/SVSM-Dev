@@ -23,6 +23,7 @@ public sealed class ModDatabaseService
     private const string RecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=updateddesc&limit={0}";
     private const string SearchRecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&sort=updateddesc&limit={1}";
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
+    private const int MaxConcurrentMetadataRequests = 4;
 
     private static readonly HttpClient HttpClient = new();
 
@@ -63,6 +64,9 @@ public sealed class ModDatabaseService
 
         string? normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
 
+        using var semaphore = new SemaphoreSlim(MaxConcurrentMetadataRequests);
+        var tasks = new List<Task>();
+
         foreach (var mod in mods)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -72,15 +76,30 @@ public sealed class ModDatabaseService
                 continue;
             }
 
-            if (mod.DatabaseInfo?.Releases.Count > 0)
-            {
-                continue;
-            }
+            tasks.Add(ProcessModAsync(mod));
+        }
 
-            ModDatabaseInfo? info = await TryLoadDatabaseInfoInternalAsync(mod.ModId, mod.Version, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
-            if (info != null)
+        if (tasks.Count == 0)
+        {
+            return;
+        }
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+
+        async Task ProcessModAsync(ModEntry modEntry)
+        {
+            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
             {
-                mod.DatabaseInfo = info;
+                ModDatabaseInfo? info = await TryLoadDatabaseInfoInternalAsync(modEntry.ModId, modEntry.Version, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
+                if (info != null)
+                {
+                    modEntry.DatabaseInfo = info;
+                }
+            }
+            finally
+            {
+                semaphore.Release();
             }
         }
     }
