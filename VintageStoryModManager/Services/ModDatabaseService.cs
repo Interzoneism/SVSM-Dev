@@ -22,6 +22,7 @@ public sealed class ModDatabaseService
     private const string MostDownloadedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=downloadsdesc&limit={0}";
     private const string RecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=updateddesc&limit={0}";
     private const string SearchRecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&sort=updateddesc&limit={1}";
+    private const int PopularRecentlyRequestLimit = 5000;
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
     private const int MaxConcurrentMetadataRequests = 4;
 
@@ -181,15 +182,14 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
-        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
             MostDownloadedEndpointFormat,
-            requestLimit.ToString(CultureInfo.InvariantCulture));
+            PopularRecentlyRequestLimit.ToString(CultureInfo.InvariantCulture));
 
         IReadOnlyList<ModDatabaseSearchResult> candidates = await QueryModsAsync(
                 requestUri,
-                requestLimit,
+                int.MaxValue,
                 Array.Empty<string>(),
                 requireTokenMatch: false,
                 results => results
@@ -206,7 +206,10 @@ public sealed class ModDatabaseService
         IReadOnlyList<ModDatabaseSearchResult> enriched = await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
             .ConfigureAwait(false);
 
+        DateTime threshold = DateTime.UtcNow.AddMonths(-1);
+
         return enriched
+            .Where(candidate => candidate.LastReleasedUtc.HasValue && candidate.LastReleasedUtc.Value >= threshold)
             .OrderByDescending(candidate => candidate.LatestReleaseDownloads ?? -1)
             .ThenByDescending(candidate => candidate.Downloads)
             .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
@@ -226,7 +229,7 @@ public sealed class ModDatabaseService
             CultureInfo.InvariantCulture,
             RecentlyUpdatedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
-        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+        DateTime threshold = DateTime.UtcNow.AddMonths(-1);
 
         return await QueryModsAsync(
                 requestUri,
@@ -261,7 +264,7 @@ public sealed class ModDatabaseService
             SearchRecentlyUpdatedEndpointFormat,
             Uri.EscapeDataString(trimmed),
             requestLimit.ToString(CultureInfo.InvariantCulture));
-        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+        DateTime threshold = DateTime.UtcNow.AddMonths(-1);
 
         return await QueryModsAsync(
                 requestUri,
