@@ -926,9 +926,10 @@
                                         CornerRadius="12,12,0,0"
                                         ClipToBounds="True">
                                     <Grid>
-                                        <Image Stretch="Uniform"
-                                               HorizontalAlignment="Stretch"
-                                               VerticalAlignment="Center">
+                                        <Image Stretch="UniformToFill"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Width="{Binding ActualWidth, ElementName=CardImageContainer}">
                                             <Image.Style>
                                                 <Style TargetType="{x:Type Image}">
                                                     <Setter Property="Source" Value="/VintageStoryModManager;component/Resources/mod-default.png" />
