@@ -1023,16 +1023,29 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        for (int i = 0; i < viewModels.Count; i++)
+        var tasks = new List<Task>(viewModels.Count);
+        foreach (ModListItemViewModel viewModel in viewModels)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return;
+                break;
             }
 
-            ModListItemViewModel viewModel = viewModels[i];
-            await InvokeOnDispatcherAsync(() => viewModel.EnsureModDatabaseLogoLoaded(), cancellationToken)
-                .ConfigureAwait(false);
+            tasks.Add(viewModel.LoadModDatabaseLogoAsync(cancellationToken));
+        }
+
+        if (tasks.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Swallow cancellation so callers can continue gracefully.
         }
     }
 
