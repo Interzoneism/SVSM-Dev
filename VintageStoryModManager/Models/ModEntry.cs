@@ -56,6 +56,8 @@ public sealed class ModEntry
 
     public ModDatabaseInfo? DatabaseInfo { get; set; }
 
+    public double? ModDatabaseSearchScore { get; set; }
+
     public void UpdateDatabaseInfo(ModDatabaseInfo? info)
     {
         DatabaseInfo = info;

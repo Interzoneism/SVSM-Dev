@@ -21,5 +21,9 @@ public sealed class ModReleaseInfo
     public bool IsCompatibleWithInstalledGame { get; init; }
 
     public string? Changelog { get; init; }
+
+    public int? Downloads { get; init; }
+
+    public DateTime? CreatedUtc { get; init; }
 }
 

@@ -32,11 +32,13 @@ public sealed class MainViewModel : ObservableObject
     private readonly ModDatabaseService _databaseService;
     private readonly int _modDatabaseSearchResultLimit;
     private readonly ObservableCollection<SortOption> _sortOptions;
+    private readonly ObservableCollection<SortOption> _modDatabaseSortOptions;
     private readonly string? _installedGameVersion;
     private readonly object _modsStateLock = new();
     private readonly ModDirectoryWatcher _modsWatcher;
 
     private SortOption? _selectedSortOption;
+    private SortOption? _selectedModDatabaseSortOption;
     private bool _isBusy;
     private bool _isCompactView;
     private bool _useModDbDesignView;
@@ -77,6 +79,11 @@ public sealed class MainViewModel : ObservableObject
         SelectedSortOption = SortOptions.FirstOrDefault();
         SelectedSortOption?.Apply(ModsView);
 
+        _modDatabaseSortOptions = new ObservableCollection<SortOption>(CreateModDatabaseSortOptions());
+        ModDatabaseSortOptions = new ReadOnlyObservableCollection<SortOption>(_modDatabaseSortOptions);
+        SelectedModDatabaseSortOption = ModDatabaseSortOptions.FirstOrDefault();
+        SelectedModDatabaseSortOption?.Apply(SearchResultsView);
+
         _clearSearchCommand = new RelayCommand(() => SearchText = string.Empty, () => HasSearchText);
         ClearSearchCommand = _clearSearchCommand;
 
@@ -94,6 +101,8 @@ public sealed class MainViewModel : ObservableObject
 
     public ReadOnlyObservableCollection<SortOption> SortOptions { get; }
 
+    public ReadOnlyObservableCollection<SortOption> ModDatabaseSortOptions { get; }
+
     public SortOption? SelectedSortOption
     {
         get => _selectedSortOption;
@@ -102,6 +111,18 @@ public sealed class MainViewModel : ObservableObject
             if (SetProperty(ref _selectedSortOption, value))
             {
                 value?.Apply(ModsView);
+            }
+        }
+    }
+
+    public SortOption? SelectedModDatabaseSortOption
+    {
+        get => _selectedModDatabaseSortOption;
+        set
+        {
+            if (SetProperty(ref _selectedModDatabaseSortOption, value))
+            {
+                value?.Apply(SearchResultsView);
             }
         }
     }
@@ -189,6 +210,13 @@ public sealed class MainViewModel : ObservableObject
                 {
                     ClearSearchResults();
                     SelectedMod = null;
+
+                    if (SelectedModDatabaseSortOption is null)
+                    {
+                        SelectedModDatabaseSortOption = ModDatabaseSortOptions.FirstOrDefault();
+                    }
+
+                    SelectedModDatabaseSortOption?.Apply(SearchResultsView);
 
                     TriggerModDatabaseSearch();
                 }
@@ -780,6 +808,16 @@ public sealed class MainViewModel : ObservableObject
             }
 
             await InvokeOnDispatcherAsync(
+                    () => _selectedModDatabaseSortOption?.Apply(SearchResultsView),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            await InvokeOnDispatcherAsync(
                     () => SetStatus("Loading mod details...", false),
                     cancellationToken)
                 .ConfigureAwait(false);
@@ -1029,6 +1067,7 @@ public sealed class MainViewModel : ObservableObject
             SourceKind = ModSourceKind.SourceCode,
             SourcePath = string.Empty,
             Side = result.Side,
+            ModDatabaseSearchScore = result.Score,
             DatabaseInfo = new ModDatabaseInfo
             {
                 Tags = result.Tags,
@@ -1038,7 +1077,8 @@ public sealed class MainViewModel : ObservableObject
                 Comments = result.Comments,
                 Follows = result.Follows,
                 TrendingPoints = result.TrendingPoints,
-                LogoUrl = result.LogoUrl
+                LogoUrl = result.LogoUrl,
+                LastReleasedUtc = result.LastReleasedUtc
             }
         };
     }
@@ -1181,6 +1221,22 @@ public sealed class MainViewModel : ObservableObject
             "Active (Inactive → Active)",
             (nameof(ModListItemViewModel.IsActive), ListSortDirection.Ascending),
             (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending));
+    }
+
+    private static IEnumerable<SortOption> CreateModDatabaseSortOptions()
+    {
+        yield return new SortOption(
+            "Relevancy",
+            (nameof(ModListItemViewModel.ModDatabaseRelevancySortKey), ListSortDirection.Descending));
+        yield return new SortOption(
+            "Downloads (total)",
+            (nameof(ModListItemViewModel.ModDatabaseDownloadsSortKey), ListSortDirection.Descending));
+        yield return new SortOption(
+            "Downloads (last 3 months)",
+            (nameof(ModListItemViewModel.ModDatabaseRecentDownloadsSortKey), ListSortDirection.Descending));
+        yield return new SortOption(
+            "Time updated",
+            (nameof(ModListItemViewModel.ModDatabaseLastUpdatedSortKey), ListSortDirection.Descending));
     }
 
     private void SetStatus(string message, bool isError)
