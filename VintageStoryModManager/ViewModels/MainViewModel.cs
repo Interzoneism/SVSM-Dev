@@ -56,6 +56,8 @@ public sealed class MainViewModel : ObservableObject
     private bool _searchModDatabase;
     private CancellationTokenSource? _modDatabaseSearchCts;
     private readonly RelayCommand _clearSearchCommand;
+    private readonly RelayCommand _showInstalledModsCommand;
+    private readonly RelayCommand _showModDatabaseCommand;
     private bool _showRecentlyUpdatedOnly;
 
     public MainViewModel(string dataDirectory, int modDatabaseSearchResultLimit)
@@ -86,6 +88,11 @@ public sealed class MainViewModel : ObservableObject
 
         _clearSearchCommand = new RelayCommand(() => SearchText = string.Empty, () => HasSearchText);
         ClearSearchCommand = _clearSearchCommand;
+
+        _showInstalledModsCommand = new RelayCommand(() => SearchModDatabase = false);
+        _showModDatabaseCommand = new RelayCommand(() => SearchModDatabase = true);
+        ShowInstalledModsCommand = _showInstalledModsCommand;
+        ShowModDatabaseCommand = _showModDatabaseCommand;
 
         RefreshCommand = new AsyncRelayCommand(LoadModsAsync);
         SetStatus("Ready.", false);
@@ -232,6 +239,10 @@ public sealed class MainViewModel : ObservableObject
             }
         }
     }
+
+    public IRelayCommand ShowInstalledModsCommand { get; }
+
+    public IRelayCommand ShowModDatabaseCommand { get; }
 
     public bool ShowRecentlyUpdatedOnly
     {

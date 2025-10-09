@@ -180,8 +180,54 @@
             </Grid.RowDefinitions>
 
 
-            <Button Content="Mod DB" VerticalContentAlignment="Top" Margin="142,-35,0,0" HorizontalAlignment="Left" Width="138" Height="44" VerticalAlignment="Top" FontSize="16"/>
-            <Button Content="Installed Mods" VerticalContentAlignment="Top" Margin="10,-35,0,0" HorizontalAlignment="Left" Width="138" Height="44" VerticalAlignment="Top" FontSize="16"/>
+            <Button Content="Installed Mods"
+                    Command="{Binding ShowInstalledModsCommand}"
+                    Margin="10,-35,0,0"
+                    HorizontalAlignment="Left"
+                    Width="138"
+                    Height="44"
+                    VerticalAlignment="Top"
+                    FontSize="16">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                        <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
+                        <Setter Property="Padding" Value="12,6" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="False">
+                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Content="Mod DB"
+                    Command="{Binding ShowModDatabaseCommand}"
+                    Margin="142,-35,0,0"
+                    HorizontalAlignment="Left"
+                    Width="138"
+                    Height="44"
+                    VerticalAlignment="Top"
+                    FontSize="16">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                        <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
+                        <Setter Property="Padding" Value="12,6" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
            
             
 
