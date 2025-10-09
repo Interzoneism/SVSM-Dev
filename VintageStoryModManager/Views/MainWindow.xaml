@@ -146,6 +146,20 @@
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center">
+                    <CheckBox Content="Popular recently"
+                              IsChecked="{Binding ShowPopularRecently, Mode=TwoWay}">
+                        <CheckBox.Style>
+                            <Style TargetType="{x:Type CheckBox}"
+                                   BasedOn="{StaticResource IMM.RecentlyUpdatedToggleStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShowRecentlyUpdatedOnly}" Value="True">
+                                        <Setter Property="IsEnabled" Value="False" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </CheckBox.Style>
+                    </CheckBox>
+
                     <CheckBox Content="Only show recently updated"
                               IsChecked="{Binding ShowRecentlyUpdatedOnly, Mode=TwoWay}"
                               Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />

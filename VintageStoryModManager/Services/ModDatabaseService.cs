@@ -174,6 +174,46 @@ public sealed class ModDatabaseService
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetPopularRecentlyModsAsync(int maxResults, CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
+        string requestUri = string.Format(
+            CultureInfo.InvariantCulture,
+            MostDownloadedEndpointFormat,
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        IReadOnlyList<ModDatabaseSearchResult> candidates = await QueryModsAsync(
+                requestUri,
+                requestLimit,
+                Array.Empty<string>(),
+                requireTokenMatch: false,
+                results => results
+                    .OrderByDescending(candidate => candidate.Downloads)
+                    .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (candidates.Count == 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        IReadOnlyList<ModDatabaseSearchResult> enriched = await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
+            .ConfigureAwait(false);
+
+        return enriched
+            .OrderByDescending(candidate => candidate.LatestReleaseDownloads ?? -1)
+            .ThenByDescending(candidate => candidate.Downloads)
+            .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
+            .Take(maxResults)
+            .ToArray();
+    }
+
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetRecentlyUpdatedModsAsync(int maxResults, CancellationToken cancellationToken = default)
     {
         if (maxResults <= 0)
@@ -298,6 +338,112 @@ public sealed class ModDatabaseService
         {
             return Array.Empty<ModDatabaseSearchResult>();
         }
+    }
+
+    private async Task<IReadOnlyList<ModDatabaseSearchResult>> EnrichWithLatestReleaseDownloadsAsync(
+        IReadOnlyList<ModDatabaseSearchResult> candidates,
+        CancellationToken cancellationToken)
+    {
+        if (candidates.Count == 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        const int MaxConcurrentRequests = 6;
+        using var semaphore = new SemaphoreSlim(MaxConcurrentRequests);
+
+        var tasks = new Task<ModDatabaseSearchResult>[candidates.Count];
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            ModDatabaseSearchResult candidate = candidates[i];
+            tasks[i] = EnrichCandidateWithLatestReleaseDownloadsAsync(candidate, semaphore, cancellationToken);
+        }
+
+        return await Task.WhenAll(tasks).ConfigureAwait(false);
+    }
+
+    private async Task<ModDatabaseSearchResult> EnrichCandidateWithLatestReleaseDownloadsAsync(
+        ModDatabaseSearchResult candidate,
+        SemaphoreSlim semaphore,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(candidate.ModId))
+        {
+            return CloneResultWithDetails(candidate, null, null);
+        }
+
+        await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            ModDatabaseInfo? info = await TryLoadDatabaseInfoInternalAsync(candidate.ModId, null, null, cancellationToken)
+                .ConfigureAwait(false);
+            int? latestDownloads = ExtractLatestReleaseDownloads(info);
+            return CloneResultWithDetails(candidate, info, latestDownloads);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return CloneResultWithDetails(candidate, null, null);
+        }
+        finally
+        {
+            semaphore.Release();
+        }
+    }
+
+    private static ModDatabaseSearchResult CloneResultWithDetails(
+        ModDatabaseSearchResult source,
+        ModDatabaseInfo? info,
+        int? latestDownloads)
+    {
+        return new ModDatabaseSearchResult
+        {
+            ModId = source.ModId,
+            Name = source.Name,
+            AlternateIds = source.AlternateIds,
+            Summary = source.Summary,
+            Author = source.Author,
+            Tags = source.Tags,
+            Downloads = source.Downloads,
+            Follows = source.Follows,
+            TrendingPoints = source.TrendingPoints,
+            Comments = source.Comments,
+            AssetId = source.AssetId,
+            UrlAlias = source.UrlAlias,
+            Side = source.Side,
+            LogoUrl = source.LogoUrl,
+            LastReleasedUtc = source.LastReleasedUtc,
+            Score = source.Score,
+            LatestReleaseDownloads = latestDownloads,
+            DetailedInfo = info
+        };
+    }
+
+    private static int? ExtractLatestReleaseDownloads(ModDatabaseInfo? info)
+    {
+        if (info is null)
+        {
+            return null;
+        }
+
+        if (info.LatestRelease?.Downloads is int downloads)
+        {
+            return downloads;
+        }
+
+        if (info.Releases.Count > 0)
+        {
+            ModReleaseInfo? latest = info.Releases[0];
+            if (latest?.Downloads is int releaseDownloads)
+            {
+                return releaseDownloads;
+            }
+        }
+
+        return null;
     }
 
     private static async Task<ModDatabaseInfo?> TryLoadDatabaseInfoInternalAsync(string modId, string? modVersion, string? normalizedGameVersion, CancellationToken cancellationToken)
