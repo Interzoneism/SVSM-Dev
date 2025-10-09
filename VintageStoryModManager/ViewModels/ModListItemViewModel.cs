@@ -4,12 +4,15 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VintageStoryModManager.Models;
@@ -22,6 +25,8 @@ namespace VintageStoryModManager.ViewModels;
 /// </summary>
 public sealed class ModListItemViewModel : ObservableObject
 {
+    private static readonly HttpClient HttpClient = new();
+
     private readonly Func<ModListItemViewModel, bool, Task<ActivationResult>> _activationHandler;
     private readonly IReadOnlyList<ModDependencyInfo> _dependencies;
     private readonly ModDependencyInfo? _gameDependency;
@@ -686,6 +691,77 @@ public sealed class ModListItemViewModel : ObservableObject
         OnPropertyChanged(nameof(ModDatabasePreviewImage));
         OnPropertyChanged(nameof(HasModDatabasePreviewImage));
         LogDebug($"Deferred database logo load complete. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
+    }
+
+    public async Task LoadModDatabaseLogoAsync(CancellationToken cancellationToken)
+    {
+        if (_modDatabaseLogo is not null)
+        {
+            return;
+        }
+
+        string? logoUrl = _modDatabaseLogoUrl;
+        if (string.IsNullOrWhiteSpace(logoUrl))
+        {
+            return;
+        }
+
+        Uri? uri = TryCreateHttpUri(logoUrl);
+        if (uri is null)
+        {
+            LogDebug($"Async database logo load skipped. Unable to resolve URI from '{FormatValue(logoUrl)}'.");
+            return;
+        }
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            using HttpResponseMessage response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                LogDebug($"Async database logo load failed for '{uri}'. HTTP status {(int)response.StatusCode} ({response.StatusCode}).");
+                return;
+            }
+
+            byte[] payload = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            if (payload.Length == 0)
+            {
+                LogDebug($"Async database logo load returned no data for '{uri}'.");
+                return;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            ImageSource? image = CreateBitmapFromBytes(payload, uri);
+            if (image is null)
+            {
+                return;
+            }
+
+            await InvokeOnDispatcherAsync(
+                    () =>
+                    {
+                        if (_modDatabaseLogo is not null)
+                        {
+                            return;
+                        }
+
+                        _modDatabaseLogo = image;
+                        OnPropertyChanged(nameof(ModDatabasePreviewImage));
+                        OnPropertyChanged(nameof(HasModDatabasePreviewImage));
+                        LogDebug($"Async database logo load complete. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
+                    },
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // Respect cancellation requests without surfacing an error.
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"Async database logo load failed with error: {ex.Message}.");
+        }
     }
 
     public void SetIsActiveSilently(bool isActive)
@@ -1503,6 +1579,27 @@ public sealed class ModListItemViewModel : ObservableObject
         return CreateImageFromUri(_modDatabaseLogoUrl, "Mod database logo", enableLogging: false);
     }
 
+    private ImageSource? CreateBitmapFromBytes(byte[] payload, Uri sourceUri)
+    {
+        try
+        {
+            using var stream = new MemoryStream(payload, writable: false);
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+            bitmap.StreamSource = stream;
+            bitmap.EndInit();
+            TryFreezeImageSource(bitmap, $"Async mod database logo ({sourceUri})", LogDebug);
+            return bitmap;
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"Async database logo load failed to create bitmap: {ex.Message}.");
+            return null;
+        }
+    }
+
     private ImageSource? CreateImageFromUri(string? url, string context, bool enableLogging = true)
     {
         string formattedUrl = FormatValue(url);
@@ -1627,6 +1724,28 @@ public sealed class ModListItemViewModel : ObservableObject
             }
             return null;
         }
+    }
+
+    private static Task InvokeOnDispatcherAsync(Action action, CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher)
+        {
+            if (dispatcher.CheckAccess())
+            {
+                action();
+                return Task.CompletedTask;
+            }
+
+            return dispatcher.InvokeAsync(action, DispatcherPriority.Normal, cancellationToken).Task;
+        }
+
+        action();
+        return Task.CompletedTask;
     }
 
     private void LogDebug(string message)
