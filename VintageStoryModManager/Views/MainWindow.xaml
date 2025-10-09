@@ -951,7 +951,13 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0" Orientation="Vertical">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Grid.Column="0"
+                                                    Grid.RowSpan="2"
+                                                    Orientation="Vertical">
                                             <Button Command="{Binding OpenModDatabasePageCommand}"
                                                     Content="{Binding DisplayName}"
                                                     FontSize="16"
@@ -1010,6 +1016,7 @@
                                             </TextBlock>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1"
+                                                    Grid.Row="0"
                                                     Orientation="Vertical"
                                                     HorizontalAlignment="Right"
                                                     Margin="12,0,0,0">
@@ -1038,6 +1045,37 @@
                                                            Foreground="{DynamicResource IMM.ForegroundBrush}" />
                                             </StackPanel>
                                         </StackPanel>
+                                        <Button Grid.Column="1"
+                                                Grid.Row="1"
+                                                Padding="12,6"
+                                                Width="90"
+                                                Height="30"
+                                                HorizontalAlignment="Right"
+                                                Margin="0,12,0,0"
+                                                Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                                                BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                                Click="InstallModButton_OnClick"
+                                                ToolTip="{Binding InstallButtonToolTip}">
+                                            <Button.Style>
+                                                <Style TargetType="{x:Type Button}">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                                    <Setter Property="IsEnabled">
+                                                        <Setter.Value>
+                                                            <Binding Path="HasDownloadableRelease" />
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsInstalled}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                            <TextBlock Text="Install"
+                                                       VerticalAlignment="Center" />
+                                        </Button>
                                     </Grid>
                                 </Border>
                             </Grid>
@@ -1129,6 +1167,14 @@
                             <Setter Property="Visibility" Value="Visible" />
                             <Setter Property="IsHitTestVisible" Value="True" />
                         </DataTrigger>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="IsHitTestVisible" Value="False" />
+                        </MultiDataTrigger>
                     </Style.Triggers>
                 </Style>
             </Border.Style>
