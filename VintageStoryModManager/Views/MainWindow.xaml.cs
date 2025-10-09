@@ -1177,17 +1177,33 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ModsDataGridRow_OnMouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is DataGridRow row)
+        {
+            ResetRowOverlays(row);
+        }
+    }
+
+    private void ModsDataGridRow_OnMouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is DataGridRow row)
+        {
+            ResetRowOverlays(row);
+        }
+    }
+
     private static void ResetRowOverlays(DataGridRow row)
     {
         row.ApplyTemplate();
+
+        bool isModSelected = row.DataContext is ModListItemViewModel { IsSelected: true };
 
         if (row.Template?.FindName("SelectionOverlay", row) is Border selectionOverlay)
         {
             selectionOverlay.BeginAnimation(UIElement.OpacityProperty, null);
 
-            double targetOpacity = row.DataContext is ModListItemViewModel { IsSelected: true }
-                ? SelectionOverlayOpacity
-                : 0;
+            double targetOpacity = isModSelected ? SelectionOverlayOpacity : 0;
 
             selectionOverlay.Opacity = targetOpacity;
         }
@@ -1195,7 +1211,9 @@ public partial class MainWindow : Window
         if (row.Template?.FindName("HoverOverlay", row) is Border hoverOverlay)
         {
             hoverOverlay.BeginAnimation(UIElement.OpacityProperty, null);
-            hoverOverlay.Opacity = row.IsMouseOver ? HoverOverlayOpacity : 0;
+
+            bool shouldShowHover = row.IsMouseOver && !isModSelected;
+            hoverOverlay.Opacity = shouldShowHover ? HoverOverlayOpacity : 0;
         }
     }
 

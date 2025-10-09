@@ -469,7 +469,6 @@
                                                     <Condition Property="IsMouseOver" Value="True" />
                                                     <Condition Property="IsSelected" Value="False" />
                                                 </MultiTrigger.Conditions>
-                                                <Setter TargetName="HoverOverlay" Property="Opacity" Value="1" />
                                                 <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
                                             </MultiTrigger>
                                         </ControlTemplate.Triggers>
@@ -479,6 +478,8 @@
                             <EventSetter Event="UIElement.PreviewMouseLeftButtonDown" Handler="ModsDataGridRow_OnPreviewMouseLeftButtonDown" />
                             <EventSetter Event="FrameworkElement.Loaded" Handler="ModsDataGridRow_OnLoaded" />
                             <EventSetter Event="FrameworkElement.Unloaded" Handler="ModsDataGridRow_OnUnloaded" />
+                            <EventSetter Event="UIElement.MouseEnter" Handler="ModsDataGridRow_OnMouseEnter" />
+                            <EventSetter Event="UIElement.MouseLeave" Handler="ModsDataGridRow_OnMouseLeave" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
                                     <Setter Property="Padding">
