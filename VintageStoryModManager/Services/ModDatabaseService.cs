@@ -474,6 +474,10 @@ public sealed class ModDatabaseService
             int? follows = GetNullableInt(modElement, "follows");
             int? trendingPoints = GetNullableInt(modElement, "trendingpoints");
             string? logoUrl = GetString(modElement, "logofile");
+            if (string.IsNullOrWhiteSpace(logoUrl))
+            {
+                logoUrl = GetString(modElement, "logo");
+            }
             DateTime? lastReleasedUtc = TryParseDateTime(GetString(modElement, "lastreleased"));
             IReadOnlyList<ModReleaseInfo> releases = BuildReleaseInfos(modElement, normalizedGameVersion);
             ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
@@ -769,7 +773,11 @@ public sealed class ModDatabaseService
         string? assetId = TryGetAssetId(element);
         string? urlAlias = GetString(element, "urlalias");
         string? side = GetString(element, "side");
-        string? logo = GetString(element, "logofile");
+        string? logo = GetString(element, "logo");
+        if (string.IsNullOrWhiteSpace(logo))
+        {
+            logo = GetString(element, "logofile");
+        }
 
         IReadOnlyList<string> tags = GetStringList(element, "tags");
         int downloads = GetInt(element, "downloads");
