@@ -31,19 +31,24 @@
             <Setter Property="Padding" Value="8,6" />
         </Style>
         <Style x:Key="IMM.TabHeaderOnlyTabControlStyle" TargetType="TabControl">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="{DynamicResource IMM.SurfaceAltBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource IMM.BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1,1,1,0" />
+            <Setter Property="Padding" Value="6,6,6,0" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabControl">
-                        <Grid>
-                            <TabPanel x:Name="HeaderPanel"
-                                      Grid.Row="0"
-                                      Margin="0,0,0,0"
-                                      IsItemsHost="True"
-                                      Background="Transparent" />
-                        </Grid>
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8,8,0,0">
+                            <DockPanel>
+                                <TabPanel x:Name="HeaderPanel"
+                                          Margin="{TemplateBinding Padding}"
+                                          IsItemsHost="True"
+                                          Background="Transparent" />
+                            </DockPanel>
+                        </Border>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -53,13 +58,16 @@
             <Setter Property="FontSize" Value="15" />
             <Setter Property="Padding" Value="16,6" />
             <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
                         <Border x:Name="TabBorder"
-                                Background="Transparent"
-                                BorderBrush="Transparent"
-                                BorderThickness="1"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="6,6,0,0">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"
@@ -70,6 +78,10 @@
                                 <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource IMM.AccentBrush}" />
                                 <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource IMM.SurfaceBrush}" />
                                 <Setter Property="Foreground" Value="{DynamicResource IMM.AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource IMM.BorderHoverBrush}" />
+                                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource IMM.SurfaceBrush}" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Foreground" Value="{DynamicResource IMM.DisabledForegroundBrush}" />
