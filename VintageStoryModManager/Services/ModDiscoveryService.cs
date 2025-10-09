@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Globalization;
@@ -7,6 +8,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using VintageStoryModManager.Models;
 
 namespace VintageStoryModManager.Services;
@@ -38,6 +40,7 @@ public sealed class ModDiscoveryService
     private byte[]? _defaultIconBytes;
     private string? _defaultIconDescription;
     private bool _defaultIconResolved;
+    private readonly object _defaultIconLock = new();
 
     public ModDiscoveryService(ClientSettingsStore settingsStore)
     {
@@ -46,8 +49,9 @@ public sealed class ModDiscoveryService
 
     public IReadOnlyList<ModEntry> LoadMods()
     {
-        var results = new List<ModEntry>();
         var seenSources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var orderedEntries = new List<(int Order, FileSystemInfo Entry)>();
+        int order = 0;
 
         foreach (string searchPath in BuildSearchPaths())
         {
@@ -61,42 +65,75 @@ public sealed class ModDiscoveryService
                 continue;
             }
 
-            foreach (FileSystemInfo entry in new DirectoryInfo(searchPath).EnumerateFileSystemInfos())
+            IEnumerable<FileSystemInfo> entries;
+            try
+            {
+                entries = new DirectoryInfo(searchPath).EnumerateFileSystemInfos();
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            foreach (FileSystemInfo entry in entries)
             {
                 if (!seenSources.Add(entry.FullName))
                 {
                     continue;
                 }
 
-                switch (entry)
-                {
-                    case DirectoryInfo directory:
-                        var fromDirectory = TryLoadFromDirectory(directory);
-                        if (fromDirectory != null)
-                        {
-                            results.Add(fromDirectory);
-                        }
-                        break;
-                    case FileInfo file:
-                        if (string.Equals(file.Extension, ".zip", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var fromZip = TryLoadFromZip(file);
-                            if (fromZip != null)
-                            {
-                                results.Add(fromZip);
-                            }
-                        }
-                        else if (string.Equals(file.Extension, ".cs", StringComparison.OrdinalIgnoreCase) || string.Equals(file.Extension, ".dll", StringComparison.OrdinalIgnoreCase))
-                        {
-                            results.Add(CreateUnsupportedCodeModEntry(file));
-                        }
-                        break;
-                }
+                orderedEntries.Add((order++, entry));
             }
         }
 
+        if (orderedEntries.Count == 0)
+        {
+            return Array.Empty<ModEntry>();
+        }
+
+        const int BatchSize = 16;
+        int maxDegree = Math.Clamp(Environment.ProcessorCount, 1, 8);
+        var collected = new ConcurrentBag<(int Order, ModEntry Entry)>();
+        var options = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = maxDegree
+        };
+
+        Parallel.ForEach(orderedEntries.Chunk(BatchSize), options, batch =>
+        {
+            foreach (var (batchOrder, fileSystemInfo) in batch)
+            {
+                ModEntry? entry = ProcessEntry(fileSystemInfo);
+                if (entry != null)
+                {
+                    collected.Add((batchOrder, entry));
+                }
+            }
+        });
+
+        var results = collected
+            .OrderBy(tuple => tuple.Order)
+            .Select(tuple => tuple.Entry)
+            .ToList();
+
         ApplyLoadStatuses(results);
         return results;
+
+        ModEntry? ProcessEntry(FileSystemInfo entry)
+        {
+            switch (entry)
+            {
+                case DirectoryInfo directory:
+                    return TryLoadFromDirectory(directory);
+                case FileInfo file when string.Equals(file.Extension, ".zip", StringComparison.OrdinalIgnoreCase):
+                    return TryLoadFromZip(file);
+                case FileInfo file when string.Equals(file.Extension, ".cs", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(file.Extension, ".dll", StringComparison.OrdinalIgnoreCase):
+                    return CreateUnsupportedCodeModEntry(file);
+                default:
+                    return null;
+            }
+        }
     }
 
     public IReadOnlyList<string> GetSearchPaths()
@@ -771,43 +808,43 @@ public sealed class ModDiscoveryService
 
     private byte[]? LoadDefaultIcon(out string? description)
     {
-        if (_defaultIconResolved)
+        lock (_defaultIconLock)
         {
+            if (!_defaultIconResolved)
+            {
+                foreach (string candidate in EnumerateDefaultIconCandidates())
+                {
+                    try
+                    {
+                        if (!File.Exists(candidate))
+                        {
+                            continue;
+                        }
+
+                        _defaultIconBytes = File.ReadAllBytes(candidate);
+                        _defaultIconDescription = candidate;
+                        break;
+                    }
+                    catch (IOException)
+                    {
+                        // Ignore IO failures and continue with other candidates.
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // Ignore permission issues and continue with other candidates.
+                    }
+                    catch (NotSupportedException)
+                    {
+                        // Ignore invalid path formats and continue with other candidates.
+                    }
+                }
+
+                _defaultIconResolved = true;
+            }
+
             description = _defaultIconDescription;
             return _defaultIconBytes;
         }
-
-        _defaultIconResolved = true;
-
-        foreach (string candidate in EnumerateDefaultIconCandidates())
-        {
-            try
-            {
-                if (!File.Exists(candidate))
-                {
-                    continue;
-                }
-
-                _defaultIconBytes = File.ReadAllBytes(candidate);
-                _defaultIconDescription = candidate;
-                break;
-            }
-            catch (IOException)
-            {
-                // Ignore IO failures and continue with other candidates.
-            }
-            catch (UnauthorizedAccessException)
-            {
-                // Ignore permission issues and continue with other candidates.
-            }
-            catch (NotSupportedException)
-            {
-                // Ignore invalid path formats and continue with other candidates.
-            }
-        }
-
-        description = _defaultIconDescription;
-        return _defaultIconBytes;
     }
 
     private IEnumerable<string> EnumerateDefaultIconCandidates()
