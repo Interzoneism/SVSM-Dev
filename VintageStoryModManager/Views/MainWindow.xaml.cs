@@ -4426,6 +4426,11 @@ public partial class MainWindow : Window
 
     }
 
+    private void Button_Click(object sender, RoutedEventArgs e)
+    {
+
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         StopModsWatcher();

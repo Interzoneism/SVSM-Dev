@@ -173,11 +173,17 @@
             </Grid>
         </Grid>
         <Grid x:Name="MIDDLE" Grid.Row="1"
-              Margin="16,0,41,19">
+              Margin="16,35,41,24" Grid.RowSpan="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
+
+
+            <Button Content="Mod DB" VerticalContentAlignment="Top" Margin="142,-35,0,0" HorizontalAlignment="Left" Width="138" Height="44" VerticalAlignment="Top" FontSize="16"/>
+            <Button Content="Installed Mods" VerticalContentAlignment="Top" Margin="10,-35,0,0" HorizontalAlignment="Left" Width="138" Height="44" VerticalAlignment="Top" FontSize="16"/>
+           
+            
 
             <Grid Grid.Row="0">
                 <Grid.RowDefinitions>
