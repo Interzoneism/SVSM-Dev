@@ -83,53 +83,54 @@
             <Menu Grid.Column="0"
                   IsMainMenu="True"
                   BorderThickness="0" Margin="0,0,0,5" Background="Transparent">
-                <MenuItem Header="_File" Height="30">
-                    <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" />
-                    <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" />
+                 
+                <MenuItem Header="_File" Height="35">
+                    <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
+                    <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
                     <Separator />
-                    <MenuItem Header="E_xit" Height="30" Click="ExitMenuItem_OnClick" />
+                    <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
                 </MenuItem>
-                <MenuItem Header="_Mods" Height="30">
-                    <MenuItem Header="_Refresh Mods" Height="30" Click="RefreshModsMenuItem_OnClick" />
-                    <MenuItem Header="_Update All Mods" Height="30" Click="UpdateAllModsMenuItem_OnClick" />
+                <MenuItem Header="_Mods" Height="35">
+                    <MenuItem Header="_Refresh Mods" Height="35" Click="RefreshModsMenuItem_OnClick" />
+                    <MenuItem Header="_Update All Mods" Height="35" Click="UpdateAllModsMenuItem_OnClick" />
                     <MenuItem x:Name="CacheAllVersionsMenuItem"
                               Header="Cache all versions locally"
-                              Height="30"
+                              Height="35"
                               IsCheckable="True"
                               Click="CacheAllVersionsMenuItem_OnClick" />
-                    <MenuItem Header="_Delete Cached Mods" Height="30" Click="DeleteCachedModsMenuItem_OnClick" />
+                    <MenuItem Header="_Delete Cached Mods" Height="35" Click="DeleteCachedModsMenuItem_OnClick" />
                 </MenuItem>
-                <MenuItem Header="_Presets" Height="30">
-                    <MenuItem Header="_Save Preset..." Height="30" Click="SavePresetMenuItem_OnClick" />
-                    <MenuItem Header="_Load Preset..." Height="30" Click="LoadPresetMenuItem_OnClick" />
+                <MenuItem Header="_Presets" Height="35">
+                    <MenuItem Header="_Save Preset..." Height="35" Click="SavePresetMenuItem_OnClick" />
+                    <MenuItem Header="_Load Preset..." Height="35" Click="LoadPresetMenuItem_OnClick" />
                     <Separator />
                     <MenuItem x:Name="IncludeStatusMenuItem"
                               Header="Include _Active/Disabled Status"
-                              Height="30"
+                              Height="35"
                               IsCheckable="True"
                               Click="IncludeStatusMenuItem_OnClick" />
                     <MenuItem x:Name="IncludeVersionMenuItem"
                               Header="Include Mod _Version"
-                              Height="30"
+                              Height="35"
                               IsCheckable="True"
                               Click="IncludeVersionMenuItem_OnClick" />
                     <MenuItem x:Name="ExclusiveLoadMenuItem"
-                              Header="_Exclusive Load"
-                              Height="30"
+                              Header="_Exclusive Modlist"
+                              Height="35"
                               IsCheckable="True"
                               Click="ExclusiveLoadMenuItem_OnClick" />
                 </MenuItem>
-                <MenuItem Header="_View" Height="30">
+                <MenuItem Header="_View" Height="35">
                     <MenuItem Header="_Compact View"
-                              Height="30"
+                              Height="35"
                               IsCheckable="True"
                               IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
                     <MenuItem Header="_ModDB Design"
-                              Height="30"
+                              Height="35"
                               IsCheckable="True"
                               IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}" />
                 </MenuItem>
-                <MenuItem Header="_Help" Height="30">
+                <MenuItem Header="_Help" Height="35">
                     <MenuItem Header="Manager _Data Folder"
                               Padding="12,6"
                               Click="ManagerDataFolderMenuItem_OnClick" />
