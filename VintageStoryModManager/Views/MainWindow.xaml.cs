@@ -1438,14 +1438,8 @@ public partial class MainWindow : Window
         }
 
         bool removed = TryDeleteModAtPath(mod, modPath);
-        bool viewUpdated = false;
 
-        if (removed && _viewModel is { } viewModel)
-        {
-            viewUpdated = viewModel.RemoveMods(new[] { mod }) > 0;
-        }
-
-        if (_viewModel?.RefreshCommand != null && (!removed || !viewUpdated))
+        if (_viewModel?.RefreshCommand != null)
         {
             try
             {
@@ -1532,21 +1526,15 @@ public partial class MainWindow : Window
         }
 
         int removedCount = 0;
-        List<ModListItemViewModel>? removedMods = null;
         foreach ((ModListItemViewModel mod, string path) in deletable)
         {
             if (TryDeleteModAtPath(mod, path))
             {
                 removedCount++;
-                (removedMods ??= new List<ModListItemViewModel>()).Add(mod);
             }
         }
 
-        bool viewUpdated = removedMods is not null
-            && _viewModel is { } viewModel
-            && viewModel.RemoveMods(removedMods) >= removedMods.Count;
-
-        if (_viewModel?.RefreshCommand != null && (!viewUpdated || removedCount == 0))
+        if (_viewModel?.RefreshCommand != null)
         {
             try
             {

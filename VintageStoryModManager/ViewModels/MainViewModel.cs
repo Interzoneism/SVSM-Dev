@@ -394,69 +394,6 @@ public sealed class MainViewModel : ObservableObject
         SelectedMod = mod;
     }
 
-    internal int RemoveMods(IEnumerable<ModListItemViewModel> mods)
-    {
-        if (mods is null)
-        {
-            return 0;
-        }
-
-        var uniqueMods = new HashSet<ModListItemViewModel>();
-        foreach (var mod in mods)
-        {
-            if (mod != null)
-            {
-                uniqueMods.Add(mod);
-            }
-        }
-
-        if (uniqueMods.Count == 0)
-        {
-            return 0;
-        }
-
-        int removed = 0;
-
-        foreach (var mod in uniqueMods)
-        {
-            if (!TryRemoveMod(mod))
-            {
-                continue;
-            }
-
-            removed++;
-        }
-
-        if (removed > 0)
-        {
-            TotalMods = _mods.Count;
-            UpdateActiveCount();
-        }
-
-        return removed;
-    }
-
-    private bool TryRemoveMod(ModListItemViewModel mod)
-    {
-        if (!_mods.Remove(mod))
-        {
-            return false;
-        }
-
-        if (!string.IsNullOrWhiteSpace(mod.SourcePath))
-        {
-            _modViewModelsBySourcePath.Remove(mod.SourcePath);
-            _modEntriesBySourcePath.Remove(mod.SourcePath);
-        }
-
-        if (ReferenceEquals(SelectedMod, mod))
-        {
-            SelectedMod = null;
-        }
-
-        return true;
-    }
-
     internal void RemoveSearchResult(ModListItemViewModel mod)
     {
         if (mod is null)
