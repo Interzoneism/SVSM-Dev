@@ -928,7 +928,7 @@ public sealed class MainViewModel : ObservableObject
             return results;
         }
 
-        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+        DateTime threshold = DateTime.UtcNow.AddMonths(-1);
         int limit = Math.Max(0, maxResults);
 
         return results
