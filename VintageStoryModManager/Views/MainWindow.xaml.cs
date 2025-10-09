@@ -1068,6 +1068,42 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ModsDataGrid_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.Handled)
+        {
+            return;
+        }
+
+        if (sender is not DataGrid)
+        {
+            return;
+        }
+
+        if (ShouldIgnoreRowSelection(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        DependencyObject? source = e.OriginalSource as DependencyObject;
+        if (FindAncestor<DataGridRow>(source) != null)
+        {
+            return;
+        }
+
+        if (FindAncestor<DataGridColumnHeader>(source) != null)
+        {
+            return;
+        }
+
+        if (FindAncestor<ScrollBar>(source) != null)
+        {
+            return;
+        }
+
+        ClearSelection(resetAnchor: true);
+    }
+
     private void ModDatabaseCardsListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (sender is System.Windows.Controls.ListView listView)
@@ -3382,6 +3418,22 @@ public partial class MainWindow : Window
         }
 
         return LogicalTreeHelper.GetParent(current);
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? source)
+        where T : DependencyObject
+    {
+        while (source != null)
+        {
+            if (source is T match)
+            {
+                return match;
+            }
+
+            source = GetParent(source);
+        }
+
+        return null;
     }
 
     private double GetCurrentScrollMultiplier()
