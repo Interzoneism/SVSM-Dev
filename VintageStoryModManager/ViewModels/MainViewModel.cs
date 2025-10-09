@@ -47,6 +47,8 @@ public sealed class MainViewModel : ObservableObject
     private int _activeMods;
     private string? _modsStateFingerprint;
     private ModListItemViewModel? _selectedMod;
+    private bool _hasSelectedMods;
+    private bool _hasMultipleSelectedMods;
     private string _searchText = string.Empty;
     private string[] _searchTokens = Array.Empty<string>();
     private bool _searchModDatabase;
@@ -155,6 +157,18 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public bool HasSelectedMod => SelectedMod != null;
+
+    public bool HasSelectedMods
+    {
+        get => _hasSelectedMods;
+        private set => SetProperty(ref _hasSelectedMods, value);
+    }
+
+    public bool HasMultipleSelectedMods
+    {
+        get => _hasMultipleSelectedMods;
+        private set => SetProperty(ref _hasMultipleSelectedMods, value);
+    }
 
     public bool IsErrorStatus
     {
@@ -345,8 +359,10 @@ public sealed class MainViewModel : ObservableObject
         SetStatus(message, isError);
     }
 
-    internal void SetSelectedMod(ModListItemViewModel? mod)
+    internal void SetSelectedMod(ModListItemViewModel? mod, int selectionCount)
     {
+        HasSelectedMods = selectionCount > 0;
+        HasMultipleSelectedMods = selectionCount > 1;
         SelectedMod = mod;
     }
 
@@ -752,6 +768,22 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
+            var viewModels = entries
+                .Select(item => CreateSearchResultViewModel(item.Entry, item.IsInstalled))
+                .ToList();
+
+            await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            await InvokeOnDispatcherAsync(
+                    () => SetStatus("Loading mod details...", false),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             await _databaseService.PopulateModDatabaseInfoAsync(entries.Select(item => item.Entry), _installedGameVersion, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -760,11 +792,37 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
-            var viewModels = entries
-                .Select(item => CreateSearchResultViewModel(item.Entry, item.IsInstalled))
-                .ToList();
+            await InvokeOnDispatcherAsync(
+                () =>
+                {
+                    for (int i = 0; i < entries.Count; i++)
+                    {
+                        ModDatabaseInfo? info = entries[i].Entry.DatabaseInfo;
+                        if (info != null)
+                        {
+                            viewModels[i].UpdateDatabaseInfo(info, loadLogoImmediately: false);
+                        }
+                    }
+                },
+                cancellationToken).ConfigureAwait(false);
 
-            await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            await InvokeOnDispatcherAsync(
+                    () => SetStatus("Loading mod images...", false),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            await LoadModDatabaseLogosAsync(viewModels, cancellationToken).ConfigureAwait(false);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             await InvokeOnDispatcherAsync(
                     () => SetStatus(BuildModDatabaseResultsMessage(hasSearchTokens, viewModels.Count), false),
                     cancellationToken)
@@ -851,6 +909,26 @@ public sealed class MainViewModel : ObservableObject
 
             SelectedMod = null;
         }, cancellationToken);
+    }
+
+    private async Task LoadModDatabaseLogosAsync(IReadOnlyList<ModListItemViewModel> viewModels, CancellationToken cancellationToken)
+    {
+        if (viewModels.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < viewModels.Count; i++)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            ModListItemViewModel viewModel = viewModels[i];
+            await InvokeOnDispatcherAsync(() => viewModel.EnsureModDatabaseLogoLoaded(), cancellationToken)
+                .ConfigureAwait(false);
+        }
     }
 
     private Task<HashSet<string>> GetInstalledModIdsAsync(CancellationToken cancellationToken)

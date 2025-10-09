@@ -1338,13 +1338,45 @@ public partial class MainWindow : Window
 
     private async void DeleteModButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not WpfButton { DataContext: ModListItemViewModel mod })
+        if (_viewModel?.SearchModDatabase == true)
+        {
+            return;
+        }
+
+        if (sender is not WpfButton button)
+        {
+            return;
+        }
+
+        IReadOnlyList<ModListItemViewModel> modsToDelete;
+
+        if (button.DataContext is ModListItemViewModel mod)
+        {
+            modsToDelete = new[] { mod };
+        }
+        else if (_selectedMods.Count > 0)
+        {
+            modsToDelete = _selectedMods.ToList();
+        }
+        else
         {
             return;
         }
 
         e.Handled = true;
 
+        if (modsToDelete.Count == 1)
+        {
+            await DeleteSingleModAsync(modsToDelete[0]);
+        }
+        else
+        {
+            await DeleteMultipleModsAsync(modsToDelete);
+        }
+    }
+
+    private async Task DeleteSingleModAsync(ModListItemViewModel mod)
+    {
         if (!TryGetManagedModPath(mod, out string modPath, out string? errorMessage))
         {
             if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -1369,40 +1401,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        bool removed = false;
-        try
-        {
-            if (Directory.Exists(modPath))
-            {
-                Directory.Delete(modPath, recursive: true);
-                removed = true;
-            }
-            else if (File.Exists(modPath))
-            {
-                File.Delete(modPath);
-                removed = true;
-            }
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            WpfMessageBox.Show($"Failed to delete {mod.DisplayName}:{Environment.NewLine}{ex.Message}",
-                "Vintage Story Mod Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-            return;
-        }
-
-        if (!removed)
-        {
-            WpfMessageBox.Show($"The mod could not be found at:{Environment.NewLine}{modPath}{Environment.NewLine}It may have already been removed.",
-                "Vintage Story Mod Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-        else
-        {
-            _userConfiguration.RemoveModConfigPath(mod.ModId);
-        }
+        bool removed = TryDeleteModAtPath(mod, modPath);
 
         if (_viewModel?.RefreshCommand != null)
         {
@@ -1423,6 +1422,139 @@ public partial class MainWindow : Window
         {
             _viewModel?.ReportStatus($"Deleted {mod.DisplayName}.");
         }
+    }
+
+    private async Task DeleteMultipleModsAsync(IReadOnlyList<ModListItemViewModel> mods)
+    {
+        if (mods.Count == 0)
+        {
+            return;
+        }
+
+        List<(ModListItemViewModel Mod, string Path)> deletable = new();
+        foreach (ModListItemViewModel mod in mods)
+        {
+            if (!TryGetManagedModPath(mod, out string modPath, out string? errorMessage))
+            {
+                if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    WpfMessageBox.Show(errorMessage!,
+                        "Vintage Story Mod Manager",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+
+                continue;
+            }
+
+            deletable.Add((mod, modPath));
+        }
+
+        if (deletable.Count == 0)
+        {
+            return;
+        }
+
+        StringBuilder confirmationBuilder = new();
+        confirmationBuilder.Append($"Are you sure you want to delete {deletable.Count} mods? This will remove them from disk.");
+        confirmationBuilder.AppendLine();
+        confirmationBuilder.AppendLine();
+
+        const int maxListedMods = 10;
+        int listedCount = 0;
+        foreach ((ModListItemViewModel mod, _) in deletable)
+        {
+            if (listedCount >= maxListedMods)
+            {
+                break;
+            }
+
+            confirmationBuilder.AppendLine($"• {mod.DisplayName}");
+            listedCount++;
+        }
+
+        if (deletable.Count > maxListedMods)
+        {
+            confirmationBuilder.AppendLine("• …");
+        }
+
+        MessageBoxResult confirmation = WpfMessageBox.Show(
+            confirmationBuilder.ToString(),
+            "Vintage Story Mod Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirmation != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        int removedCount = 0;
+        foreach ((ModListItemViewModel mod, string path) in deletable)
+        {
+            if (TryDeleteModAtPath(mod, path))
+            {
+                removedCount++;
+            }
+        }
+
+        if (_viewModel?.RefreshCommand != null)
+        {
+            try
+            {
+                await RefreshModsAsync();
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show($"The mod list could not be refreshed:{Environment.NewLine}{ex.Message}",
+                    "Vintage Story Mod Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        if (removedCount > 0)
+        {
+            _viewModel?.ReportStatus($"Deleted {removedCount} mod{(removedCount == 1 ? string.Empty : "s")}.");
+        }
+    }
+
+    private bool TryDeleteModAtPath(ModListItemViewModel mod, string modPath)
+    {
+        bool removed = false;
+        try
+        {
+            if (Directory.Exists(modPath))
+            {
+                Directory.Delete(modPath, recursive: true);
+                removed = true;
+            }
+            else if (File.Exists(modPath))
+            {
+                File.Delete(modPath);
+                removed = true;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            WpfMessageBox.Show($"Failed to delete {mod.DisplayName}:{Environment.NewLine}{ex.Message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return false;
+        }
+
+        if (!removed)
+        {
+            WpfMessageBox.Show($"The mod could not be found at:{Environment.NewLine}{modPath}{Environment.NewLine}It may have already been removed.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return false;
+        }
+
+        _userConfiguration.RemoveModConfigPath(mod.ModId);
+        return true;
     }
 
     private async void FixModButton_OnClick(object sender, RoutedEventArgs e)
@@ -3482,9 +3614,27 @@ public partial class MainWindow : Window
 
     private void UpdateSelectedModButtons()
     {
-        ModListItemViewModel? singleSelection = _selectedMods.Count == 1 ? _selectedMods[0] : null;
+        int selectionCount = _selectedMods.Count;
+        ModListItemViewModel? singleSelection = selectionCount == 1 ? _selectedMods[0] : null;
+        bool hasMultipleSelection = selectionCount > 1;
 
-        if (_viewModel?.SearchModDatabase == true)
+        if (hasMultipleSelection)
+        {
+            UpdateSelectedModInstallButton(null);
+            UpdateSelectedModButton(SelectedModDatabasePageButton, null, requireModDatabaseLink: true);
+            UpdateSelectedModButton(SelectedModUpdateButton, null, requireModDatabaseLink: false, requireUpdate: true);
+            UpdateSelectedModButton(SelectedModEditConfigButton, null, requireModDatabaseLink: false);
+            UpdateSelectedModFixButton(null);
+
+            if (SelectedModDeleteButton is not null)
+            {
+                bool allowDeletion = _viewModel?.SearchModDatabase != true;
+                SelectedModDeleteButton.DataContext = null;
+                SelectedModDeleteButton.Visibility = allowDeletion ? Visibility.Visible : Visibility.Collapsed;
+                SelectedModDeleteButton.IsEnabled = allowDeletion;
+            }
+        }
+        else if (_viewModel?.SearchModDatabase == true)
         {
             UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, requireModDatabaseLink: true);
             UpdateSelectedModButton(SelectedModUpdateButton, null, requireModDatabaseLink: false, requireUpdate: true);
@@ -3503,7 +3653,7 @@ public partial class MainWindow : Window
             UpdateSelectedModFixButton(singleSelection);
         }
 
-        _viewModel?.SetSelectedMod(singleSelection);
+        _viewModel?.SetSelectedMod(singleSelection, selectionCount);
     }
 
     private void UpdateSelectedModInstallButton(ModListItemViewModel? mod)
