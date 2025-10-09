@@ -8,6 +8,7 @@
         xmlns:viewModels="clr-namespace:VintageStoryModManager.ViewModels"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:converters="clr-namespace:VintageStoryModManager.Converters"
+        xmlns:b="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
@@ -218,6 +219,18 @@
                   HeadersVisibility="Column"
                   ui:ControlHelper.CornerRadius="10"
                   FontSize="15" Margin="0,0,-29,0">
+                    <b:Interaction.Behaviors>
+                        <b:FluidMoveBehavior AppliesTo="Children"
+                                             Duration="0:0:0.30"
+                                             FloatAbove="True">
+                            <b:FluidMoveBehavior.EaseX>
+                                <QuarticEase EasingMode="EaseOut" />
+                            </b:FluidMoveBehavior.EaseX>
+                            <b:FluidMoveBehavior.EaseY>
+                                <QuarticEase EasingMode="EaseOut" />
+                            </b:FluidMoveBehavior.EaseY>
+                        </b:FluidMoveBehavior>
+                    </b:Interaction.Behaviors>
                     <DataGrid.Resources>
                         <Style TargetType="{x:Type ScrollBar}">
                             <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
@@ -343,6 +356,7 @@
                     </DataGrid.RowHeaderStyle>
                     <DataGrid.RowStyle>
                         <Style TargetType="{x:Type DataGridRow}">
+                            <Setter Property="Tag" Value="{Binding ModId}" />
                             <Setter Property="Background" Value="Transparent" />
                             <Setter Property="BorderBrush" Value="{StaticResource IMM.RowBorderBrush}" />
                             <Setter Property="BorderThickness" Value="0" />

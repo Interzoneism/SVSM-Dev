@@ -1096,7 +1096,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (FindAncestor<ScrollBar>(source) != null)
+        if (FindAncestor<System.Windows.Controls.Primitives.ScrollBar>(source) != null)
         {
             return;
         }
