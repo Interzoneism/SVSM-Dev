@@ -1403,22 +1403,31 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private ImageSource? CreateModDatabaseLogoImage()
     {
-        return CreateImageFromUri(_modDatabaseLogoUrl, "Mod database logo");
+        return CreateImageFromUri(_modDatabaseLogoUrl, "Mod database logo", enableLogging: false);
     }
 
-    private ImageSource? CreateImageFromUri(string? url, string context)
+    private ImageSource? CreateImageFromUri(string? url, string context, bool enableLogging = true)
     {
         string formattedUrl = FormatValue(url);
-        LogDebug($"{context}: Attempting to create image from URL {formattedUrl}.");
+        if (enableLogging)
+        {
+            LogDebug($"{context}: Attempting to create image from URL {formattedUrl}.");
+        }
 
         Uri? uri = TryCreateHttpUri(url);
         if (uri == null)
         {
-            LogDebug($"{context}: Unable to resolve absolute URI from {formattedUrl}.");
+            if (enableLogging)
+            {
+                LogDebug($"{context}: Unable to resolve absolute URI from {formattedUrl}.");
+            }
             return null;
         }
 
-        LogDebug($"{context}: Resolved URI '{uri}'.");
+        if (enableLogging)
+        {
+            LogDebug($"{context}: Resolved URI '{uri}'.");
+        }
 
         ImageSource? image = CreateImageSafely(
             () =>
@@ -1429,14 +1438,18 @@ public sealed class ModListItemViewModel : ObservableObject
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
                 bitmap.EndInit();
-                TryFreezeImageSource(bitmap, $"{context} ({uri})", LogDebug);
+                TryFreezeImageSource(bitmap, $"{context} ({uri})", enableLogging ? LogDebug : null);
                 return bitmap;
             },
-            $"{context} ({uri})");
+            $"{context} ({uri})",
+            enableLogging);
 
-        LogDebug(image is null
-            ? $"{context}: Failed to load image from '{uri}'."
-            : $"{context}: Successfully loaded image from '{uri}'.");
+        if (enableLogging)
+        {
+            LogDebug(image is null
+                ? $"{context}: Failed to load image from '{uri}'."
+                : $"{context}: Successfully loaded image from '{uri}'.");
+        }
 
         return image;
     }
@@ -1473,20 +1486,29 @@ public sealed class ModListItemViewModel : ObservableObject
         return image;
     }
 
-    private ImageSource? CreateImageSafely(Func<ImageSource?> factory, string context)
+    private ImageSource? CreateImageSafely(Func<ImageSource?> factory, string context, bool enableLogging = true)
     {
         if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
         {
             try
             {
-                LogDebug($"{context}: Invoking image creation on dispatcher thread.");
+                if (enableLogging)
+                {
+                    LogDebug($"{context}: Invoking image creation on dispatcher thread.");
+                }
                 ImageSource? result = dispatcher.Invoke(factory);
-                LogDebug($"{context}: Dispatcher invocation completed with result {(result is null ? "null" : "available")}.");
+                if (enableLogging)
+                {
+                    LogDebug($"{context}: Dispatcher invocation completed with result {(result is null ? "null" : "available")}.");
+                }
                 return result;
             }
             catch (Exception ex)
             {
-                LogDebug($"{context}: Exception during dispatcher invocation: {ex.Message}.");
+                if (enableLogging)
+                {
+                    LogDebug($"{context}: Exception during dispatcher invocation: {ex.Message}.");
+                }
                 return null;
             }
         }
@@ -1494,12 +1516,18 @@ public sealed class ModListItemViewModel : ObservableObject
         try
         {
             ImageSource? result = factory();
-            LogDebug($"{context}: Image creation completed on current thread with result {(result is null ? "null" : "available")}.");
+            if (enableLogging)
+            {
+                LogDebug($"{context}: Image creation completed on current thread with result {(result is null ? "null" : "available")}.");
+            }
             return result;
         }
         catch (Exception ex)
         {
-            LogDebug($"{context}: Exception during image creation: {ex.Message}.");
+            if (enableLogging)
+            {
+                LogDebug($"{context}: Exception during image creation: {ex.Message}.");
+            }
             return null;
         }
     }
