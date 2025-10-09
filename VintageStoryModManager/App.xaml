@@ -65,6 +65,7 @@
                               Color="{StaticResource IMM.ButtonDisabledColor}" />
             <SolidColorBrush x:Key="IMM.PlaceholderForegroundBrush" Color="{StaticResource IMM.PlaceholderForegroundColor}" />
             <SolidColorBrush x:Key="IMM.ForegroundBrush" Color="{StaticResource IMM.ForegroundColor}" />
+            <SolidColorBrush x:Key="IMM.BodyForegroundBrush" Color="{StaticResource IMM.ForegroundColor}" />
             <SolidColorBrush x:Key="IMM.SuccessBrush" Color="{StaticResource IMM.SuccessColor}" />
             <SolidColorBrush x:Key="IMM.RowHoverBrush" Color="{StaticResource IMM.RowHoverColor}" />
             <SolidColorBrush x:Key="IMM.RowSelectionBrush" Color="{StaticResource IMM.RowSelectionColor}" />
