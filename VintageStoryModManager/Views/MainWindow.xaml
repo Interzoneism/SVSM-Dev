@@ -925,22 +925,31 @@
                                 <Border x:Name="CardImageContainer"
                                         CornerRadius="12,12,0,0"
                                         ClipToBounds="True">
+                                    <Border.Style>
+                                        <Style TargetType="{x:Type Border}">
+                                            <Setter Property="Background">
+                                                <Setter.Value>
+                                                    <ImageBrush ImageSource="/VintageStoryModManager;component/Resources/mod-default.png"
+                                                                Stretch="UniformToFill"
+                                                                AlignmentX="Center"
+                                                                AlignmentY="Center" />
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasModDatabasePreviewImage}" Value="True">
+                                                    <Setter Property="Background">
+                                                        <Setter.Value>
+                                                            <ImageBrush ImageSource="{Binding ModDatabasePreviewImage}"
+                                                                        Stretch="UniformToFill"
+                                                                        AlignmentX="Center"
+                                                                        AlignmentY="Center" />
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
                                     <Grid>
-                                        <Image Stretch="UniformToFill"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               Width="{Binding ActualWidth, ElementName=CardImageContainer}">
-                                            <Image.Style>
-                                                <Style TargetType="{x:Type Image}">
-                                                    <Setter Property="Source" Value="/VintageStoryModManager;component/Resources/mod-default.png" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding HasModDatabasePreviewImage}" Value="True">
-                                                            <Setter Property="Source" Value="{Binding ModDatabasePreviewImage}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Image.Style>
-                                        </Image>
                                         <TextBlock Text="Installed"
                                                    Margin="8"
                                                    Padding="6,2"
