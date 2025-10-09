@@ -209,6 +209,7 @@
                   
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
                   SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="Black"
+                  PreviewMouseLeftButtonDown="ModsDataGrid_OnPreviewMouseLeftButtonDown"
                   PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                   Sorting="ModsDataGrid_OnSorting"
                   RowBackground="White"
