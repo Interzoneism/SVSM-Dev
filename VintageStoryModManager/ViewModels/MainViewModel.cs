@@ -776,11 +776,17 @@ public sealed class MainViewModel : ObservableObject
             IReadOnlyList<ModDatabaseSearchResult> results;
             if (ShowRecentlyUpdatedOnly)
             {
-                results = hasSearchTokens
-                    ? await _databaseService.SearchRecentlyUpdatedModsAsync(query, maxResults, cancellationToken)
-                        .ConfigureAwait(false)
-                    : await _databaseService.GetRecentlyUpdatedModsAsync(maxResults, cancellationToken)
+                if (hasSearchTokens)
+                {
+                    results = await _databaseService.SearchRecentlyUpdatedModsAsync(query, maxResults, cancellationToken)
                         .ConfigureAwait(false);
+                }
+                else
+                {
+                    int fetchLimit = Math.Clamp(maxResults * 4, maxResults, 100);
+                    results = await _databaseService.GetMostDownloadedModsAsync(fetchLimit, cancellationToken)
+                        .ConfigureAwait(false);
+                }
             }
             else if (!hasSearchTokens && ShowPopularRecently)
             {
@@ -927,8 +933,6 @@ public sealed class MainViewModel : ObservableObject
 
         return results
             .Where(result => result.LastReleasedUtc.HasValue && result.LastReleasedUtc.Value >= threshold)
-            .OrderByDescending(result => result.LastReleasedUtc)
-            .ThenBy(result => result.Name, StringComparer.OrdinalIgnoreCase)
             .Take(limit)
             .ToList();
     }
