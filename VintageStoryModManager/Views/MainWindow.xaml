@@ -59,7 +59,14 @@
         </LinearGradientBrush>
     </Window.Resources>
 
-    <Grid Background="{DynamicResource IMM.SurfaceBrush}" Margin="0,0,0,8">
+    <Grid Margin="0,0,0,8">
+        <Grid.Background>
+            <LinearGradientBrush EndPoint="1,0.5" StartPoint="0,0.5">
+                <GradientStop Color="#FFE2EAF5"/>
+                <GradientStop Color="#FFDFE3EA" Offset="1"/>
+                <GradientStop Color="#FFD2DFF3" Offset="0.498"/>
+            </LinearGradientBrush>
+        </Grid.Background>
 
         <Grid.RowDefinitions>
             <RowDefinition Height="50" MinHeight="10" />
@@ -75,8 +82,7 @@
 
             <Menu Grid.Column="0"
                   IsMainMenu="True"
-                  Background="{DynamicResource IMM.SurfaceBrush}"
-                  BorderThickness="0" Margin="0,0,0,5">
+                  BorderThickness="0" Margin="0,0,0,5" Background="Transparent">
                 <MenuItem Header="_File" Height="30">
                     <MenuItem Header="Set _Data Folder..." Height="30" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="30" Click="SelectGameFolderMenuItem_OnClick" />
@@ -173,7 +179,7 @@
             </Grid>
         </Grid>
         <Grid x:Name="MIDDLE" Grid.Row="1"
-              Margin="16,35,41,24" Grid.RowSpan="2">
+              Margin="16,35,41,10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
@@ -182,21 +188,23 @@
 
             <Button Content="Installed Mods"
                     Command="{Binding ShowInstalledModsCommand}"
-                    Margin="10,-35,0,0"
+                    Margin="10,-36,0,0"
                     HorizontalAlignment="Left"
                     Width="138"
-                    Height="44"
+                    Height="63"
                     VerticalAlignment="Top"
                     FontSize="16">
                 <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                        <Setter Property="VerticalContentAlignment" Value="Top" />
                         <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
                         <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                        <Setter Property="Opacity" Value="0.3" />
                         <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                         <Setter Property="Padding" Value="12,6" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding SearchModDatabase}" Value="False">
+                                <Setter Property="Opacity" Value="1" />
                                 <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
                                 <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
                             </DataTrigger>
@@ -206,21 +214,23 @@
             </Button>
             <Button Content="Mod DB"
                     Command="{Binding ShowModDatabaseCommand}"
-                    Margin="142,-35,0,0"
+                    Margin="148,-36,0,0"
                     HorizontalAlignment="Left"
                     Width="138"
-                    Height="44"
+                    Height="63"
                     VerticalAlignment="Top"
                     FontSize="16">
                 <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                        <Setter Property="VerticalContentAlignment" Value="Top" />
                         <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
                         <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                        <Setter Property="Opacity" Value="0.3" />
                         <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                         <Setter Property="Padding" Value="12,6" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                <Setter Property="Opacity" Value="1" />
                                 <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
                                 <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
                             </DataTrigger>
@@ -228,8 +238,8 @@
                     </Style>
                 </Button.Style>
             </Button>
-           
-            
+
+
 
             <Grid Grid.Row="0">
                 <Grid.RowDefinitions>
@@ -249,7 +259,7 @@
                   SelectionUnit="FullRow"
                   SelectionMode="Single"
                   RowHeaderWidth="0"
-                  
+                  BorderThickness="2,1,2,1"
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
                   SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="Black"
                   PreviewMouseLeftButtonDown="ModsDataGrid_OnPreviewMouseLeftButtonDown"
@@ -794,8 +804,8 @@
             <ListView x:Name="ModDatabaseCardsListView"
                       Grid.Row="0"
                       ItemsSource="{Binding CurrentModsView}"
-                      Background="Transparent"
-                      BorderThickness="0"
+                      Background="{DynamicResource IMM.SurfaceBrush}"
+                      BorderThickness="0,0,0,0"
                       Margin="0"
                       SelectionMode="Single"
                       SelectionChanged="ModDatabaseCardsListView_OnSelectionChanged"
@@ -865,6 +875,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
+                            
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="2*" />
