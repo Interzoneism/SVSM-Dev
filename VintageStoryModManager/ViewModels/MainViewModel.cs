@@ -92,6 +92,8 @@ public sealed class MainViewModel : ObservableObject
 
         RefreshCommand = new AsyncRelayCommand(LoadModsAsync);
         SetStatus("Ready.", false);
+
+        InternetAccessManager.InternetAccessChanged += OnInternetAccessChanged;
     }
 
     public string DataDirectory { get; }
@@ -1962,6 +1964,38 @@ public sealed class MainViewModel : ObservableObject
         return lastUpdatedUtc ?? TryGetLastWriteTimeUtc(entry.SourcePath, entry.SourceKind);
     }
 
+    private void OnInternetAccessChanged(object? sender, EventArgs e)
+    {
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher)
+        {
+            if (dispatcher.CheckAccess())
+            {
+                RefreshInternetAccessDependentState();
+            }
+            else
+            {
+                dispatcher.BeginInvoke(DispatcherPriority.Normal, RefreshInternetAccessDependentState);
+            }
+
+            return;
+        }
+
+        RefreshInternetAccessDependentState();
+    }
+
+    private void RefreshInternetAccessDependentState()
+    {
+        foreach (ModListItemViewModel mod in _mods)
+        {
+            mod.RefreshInternetAccessDependentState();
+        }
+
+        foreach (ModListItemViewModel mod in _searchResults)
+        {
+            mod.RefreshInternetAccessDependentState();
+        }
+    }
+
     private static int CompareOfflineReleases(ModReleaseInfo? left, ModReleaseInfo? right)
     {
         if (ReferenceEquals(left, right))
@@ -1979,14 +2013,6 @@ public sealed class MainViewModel : ObservableObject
             return -1;
         }
 
-        DateTime leftTimestamp = left.CreatedUtc ?? DateTime.MinValue;
-        DateTime rightTimestamp = right.CreatedUtc ?? DateTime.MinValue;
-        int dateComparison = rightTimestamp.CompareTo(leftTimestamp);
-        if (dateComparison != 0)
-        {
-            return dateComparison;
-        }
-
         if (VersionStringUtility.IsCandidateVersionNewer(left.Version, right.Version))
         {
             return -1;
@@ -1995,6 +2021,14 @@ public sealed class MainViewModel : ObservableObject
         if (VersionStringUtility.IsCandidateVersionNewer(right.Version, left.Version))
         {
             return 1;
+        }
+
+        DateTime leftTimestamp = left.CreatedUtc ?? DateTime.MinValue;
+        DateTime rightTimestamp = right.CreatedUtc ?? DateTime.MinValue;
+        int dateComparison = rightTimestamp.CompareTo(leftTimestamp);
+        if (dateComparison != 0)
+        {
+            return dateComparison;
         }
 
         return string.Compare(left.Version, right.Version, StringComparison.OrdinalIgnoreCase);
