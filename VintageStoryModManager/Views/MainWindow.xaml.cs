@@ -76,6 +76,8 @@ public partial class MainWindow : Window
     private ScrollViewer? _modsScrollViewer;
     private ScrollViewer? _modDatabaseCardsScrollViewer;
     private bool _suppressSortPreferenceSave;
+    private string? _cachedSortMemberPath;
+    private ListSortDirection? _cachedSortDirection;
 
 
     public MainWindow()
@@ -394,23 +396,101 @@ public partial class MainWindow : Window
             return;
         }
 
-        ModsDataGrid.CanUserSortColumns = !isSearchingModDatabase;
+        if (isSearchingModDatabase)
+        {
+            CacheCurrentSortState();
+            ModsDataGrid.CanUserSortColumns = false;
 
-        if (!isSearchingModDatabase)
+            ICollectionView? view = _viewModel?.SearchResultsView;
+            if (view != null && view.SortDescriptions.Count > 0)
+            {
+                view.SortDescriptions.Clear();
+            }
+
+            if (ModsDataGrid.Items.SortDescriptions.Count > 0)
+            {
+                ModsDataGrid.Items.SortDescriptions.Clear();
+            }
+            return;
+        }
+
+        ModsDataGrid.CanUserSortColumns = true;
+        RestoreCachedSortState();
+    }
+
+    private void CacheCurrentSortState()
+    {
+        _cachedSortMemberPath = null;
+        _cachedSortDirection = null;
+
+        if (ModsDataGrid != null)
+        {
+            foreach (DataGridColumn column in ModsDataGrid.Columns)
+            {
+                if (!column.SortDirection.HasValue)
+                {
+                    continue;
+                }
+
+                string? memberPath = column.SortMemberPath;
+                if (string.IsNullOrWhiteSpace(memberPath))
+                {
+                    continue;
+                }
+
+                _cachedSortMemberPath = NormalizeSortMemberPath(memberPath);
+                _cachedSortDirection = column.SortDirection;
+                break;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(_cachedSortMemberPath) && _cachedSortDirection.HasValue)
         {
             return;
         }
 
-        ICollectionView? view = _viewModel?.SearchResultsView;
-        if (view != null && view.SortDescriptions.Count > 0)
+        if (_viewModel?.SelectedSortOption is { SortDescriptions: { Count: > 0 } sorts })
         {
-            view.SortDescriptions.Clear();
+            var primary = sorts[0];
+            _cachedSortMemberPath = NormalizeSortMemberPath(primary.Property);
+            _cachedSortDirection = primary.Direction;
+            return;
         }
 
-        if (ModsDataGrid.Items.SortDescriptions.Count > 0)
+        if (ModsDataGrid?.Items.SortDescriptions.Count > 0)
         {
-            ModsDataGrid.Items.SortDescriptions.Clear();
+            SortDescription description = ModsDataGrid.Items.SortDescriptions[0];
+            _cachedSortMemberPath = NormalizeSortMemberPath(description.PropertyName);
+            _cachedSortDirection = description.Direction;
         }
+    }
+
+    private void RestoreCachedSortState()
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        string? cachedMemberPath = _cachedSortMemberPath;
+        ListSortDirection? cachedDirection = _cachedSortDirection;
+        _cachedSortMemberPath = null;
+        _cachedSortDirection = null;
+
+        if (!string.IsNullOrWhiteSpace(cachedMemberPath) && cachedDirection.HasValue)
+        {
+            ApplyModListSort(cachedMemberPath, cachedDirection.Value, persistPreference: false);
+            return;
+        }
+
+        if (_viewModel.SelectedSortOption is { } selectedOption)
+        {
+            selectedOption.Apply(_viewModel.ModsView);
+            UpdateSortPreferenceFromSelectedOption(persistPreference: false);
+            return;
+        }
+
+        RestoreSortPreference();
     }
 
     private void RestoreSortPreference()
@@ -444,7 +524,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        sortMemberPath = sortMemberPath.Trim();
+        sortMemberPath = NormalizeSortMemberPath(sortMemberPath.Trim());
 
         SortOption? option = FindMatchingSortOption(sortMemberPath, direction);
         if (option is null)
@@ -486,12 +566,50 @@ public partial class MainWindow : Window
         }
     }
 
+    private static bool IsActiveSortMember(string? sortMemberPath)
+    {
+        if (string.IsNullOrWhiteSpace(sortMemberPath))
+        {
+            return false;
+        }
+
+        return string.Equals(sortMemberPath, nameof(ModListItemViewModel.IsActive), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(sortMemberPath, nameof(ModListItemViewModel.ActiveSortOrder), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeSortMemberPath(string sortMemberPath)
+    {
+        if (string.IsNullOrWhiteSpace(sortMemberPath))
+        {
+            return sortMemberPath;
+        }
+
+        return IsActiveSortMember(sortMemberPath)
+            ? nameof(ModListItemViewModel.ActiveSortOrder)
+            : sortMemberPath;
+    }
+
+    private static bool SortMemberMatches(string? columnSortMemberPath, string sortMemberPath)
+    {
+        if (string.IsNullOrWhiteSpace(columnSortMemberPath))
+        {
+            return false;
+        }
+
+        return string.Equals(
+            NormalizeSortMemberPath(columnSortMemberPath),
+            NormalizeSortMemberPath(sortMemberPath),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
     private SortOption? FindMatchingSortOption(string sortMemberPath, ListSortDirection direction)
     {
         if (_viewModel is null)
         {
             return null;
         }
+
+        sortMemberPath = NormalizeSortMemberPath(sortMemberPath);
 
         foreach (var option in _viewModel.SortOptions)
         {
@@ -524,7 +642,7 @@ public partial class MainWindow : Window
             return false;
         }
 
-        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.IsActive), StringComparison.OrdinalIgnoreCase))
+        if (IsActiveSortMember(sortMemberPath))
         {
             if (option.SortDescriptions.Count < 2)
             {
@@ -541,11 +659,11 @@ public partial class MainWindow : Window
 
     private static (string Property, ListSortDirection Direction)[] BuildSortDescriptions(string sortMemberPath, ListSortDirection direction)
     {
-        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.IsActive), StringComparison.OrdinalIgnoreCase))
+        if (IsActiveSortMember(sortMemberPath))
         {
             return new[]
             {
-                (nameof(ModListItemViewModel.IsActive), direction),
+                (nameof(ModListItemViewModel.ActiveSortOrder), direction),
                 (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending)
             };
         }
@@ -564,9 +682,9 @@ public partial class MainWindow : Window
 
     private static string BuildSortDisplayName(string sortMemberPath, ListSortDirection direction)
     {
-        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.IsActive), StringComparison.OrdinalIgnoreCase))
+        if (IsActiveSortMember(sortMemberPath))
         {
-            return direction == ListSortDirection.Descending
+            return direction == ListSortDirection.Ascending
                 ? "Active (Active → Inactive)"
                 : "Active (Inactive → Active)";
         }
@@ -630,7 +748,7 @@ public partial class MainWindow : Window
 
         foreach (var column in ModsDataGrid.Columns)
         {
-            if (string.Equals(column.SortMemberPath, sortMemberPath, StringComparison.OrdinalIgnoreCase))
+            if (SortMemberMatches(column.SortMemberPath, sortMemberPath))
             {
                 column.SortDirection = direction;
             }

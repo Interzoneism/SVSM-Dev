@@ -494,6 +494,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         UpdateActiveCount();
+        ReapplyActiveSortIfNeeded();
         SetStatus(isActive ? $"Activated {mod.DisplayName}." : $"Deactivated {mod.DisplayName}.", false);
         return new ActivationResult(true, null);
     }
@@ -1257,12 +1258,40 @@ public sealed class MainViewModel : ObservableObject
         yield return new SortOption("Name (Z → A)", (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Descending));
         yield return new SortOption(
             "Active (Active → Inactive)",
-            (nameof(ModListItemViewModel.IsActive), ListSortDirection.Descending),
+            (nameof(ModListItemViewModel.ActiveSortOrder), ListSortDirection.Ascending),
             (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending));
         yield return new SortOption(
             "Active (Inactive → Active)",
-            (nameof(ModListItemViewModel.IsActive), ListSortDirection.Ascending),
+            (nameof(ModListItemViewModel.ActiveSortOrder), ListSortDirection.Descending),
             (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending));
+    }
+
+    private void ReapplyActiveSortIfNeeded()
+    {
+        if (SelectedSortOption?.SortDescriptions is not { Count: > 0 } sorts)
+        {
+            return;
+        }
+
+        var primary = sorts[0];
+        if (!IsActiveSortProperty(primary.Property))
+        {
+            return;
+        }
+
+        SelectedSortOption.Apply(ModsView);
+        ModsView.Refresh();
+    }
+
+    private static bool IsActiveSortProperty(string? propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(propertyName))
+        {
+            return false;
+        }
+
+        return string.Equals(propertyName, nameof(ModListItemViewModel.IsActive), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(propertyName, nameof(ModListItemViewModel.ActiveSortOrder), StringComparison.OrdinalIgnoreCase);
     }
 
     private void SetStatus(string message, bool isError)

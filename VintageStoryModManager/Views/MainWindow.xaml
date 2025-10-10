@@ -528,7 +528,7 @@
                         </Style>
                     </DataGrid.RowStyle>
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn x:Name="ActiveColumn" Header="Active" SortMemberPath="IsActive" Width="90" MinWidth="85">
+                        <DataGridTemplateColumn x:Name="ActiveColumn" Header="Active" SortMemberPath="ActiveSortOrder" Width="90" MinWidth="85">
                             <DataGridTemplateColumn.CellStyle>
                                 <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                     <Setter Property="HorizontalContentAlignment" Value="Center" />
