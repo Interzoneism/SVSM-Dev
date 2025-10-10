@@ -35,6 +35,8 @@ public sealed class UserConfigurationService
     private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
     private string? _modsSortMemberPath;
     private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
+    private double? _windowWidth;
+    private double? _windowHeight;
 
     public UserConfigurationService()
     {
@@ -64,6 +66,10 @@ public sealed class UserConfigurationService
     public bool ExclusivePresetLoad => _exclusivePresetLoad;
 
     public int ModDatabaseSearchResultLimit => _modDatabaseSearchResultLimit;
+
+    public double? WindowWidth => _windowWidth;
+
+    public double? WindowHeight => _windowHeight;
 
     public (string? SortMemberPath, ListSortDirection Direction) GetModListSortPreference()
     {
@@ -411,6 +417,29 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetWindowDimensions(double width, double height)
+    {
+        double? normalizedWidth = NormalizeWindowDimension(width);
+        double? normalizedHeight = NormalizeWindowDimension(height);
+
+        if (!normalizedWidth.HasValue || !normalizedHeight.HasValue)
+        {
+            return;
+        }
+
+        bool hasWidthChanged = !_windowWidth.HasValue || Math.Abs(_windowWidth.Value - normalizedWidth.Value) > 0.1;
+        bool hasHeightChanged = !_windowHeight.HasValue || Math.Abs(_windowHeight.Value - normalizedHeight.Value) > 0.1;
+
+        if (!hasWidthChanged && !hasHeightChanged)
+        {
+            return;
+        }
+
+        _windowWidth = normalizedWidth;
+        _windowHeight = normalizedHeight;
+        Save();
+    }
+
     public void SetDataDirectory(string path)
     {
         DataDirectory = NormalizePath(path);
@@ -470,6 +499,8 @@ public sealed class UserConfigurationService
             _modsSortMemberPath = NormalizeSortMemberPath(obj["modsSortMemberPath"]?.GetValue<string?>());
             _modsSortDirection = ParseSortDirection(obj["modsSortDirection"]?.GetValue<string?>());
             _modDatabaseSearchResultLimit = NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
+            _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
+            _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             if (loadedFromPreferredLocation)
             {
                 LoadClassicPresets(obj["modPresets"]);
@@ -515,6 +546,8 @@ public sealed class UserConfigurationService
             _selectedPresetName = null;
             _selectedAdvancedPresetName = null;
             _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
+            _windowWidth = null;
+            _windowHeight = null;
         }
     }
 
@@ -539,6 +572,8 @@ public sealed class UserConfigurationService
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
                 ["modDatabaseSearchResultLimit"] = _modDatabaseSearchResultLimit,
+                ["windowWidth"] = _windowWidth,
+                ["windowHeight"] = _windowHeight,
                 ["modPresets"] = BuildClassicPresetsJson(),
                 ["advancedModPresets"] = BuildAdvancedPresetsJson(),
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
@@ -573,6 +608,22 @@ public sealed class UserConfigurationService
         }
 
         return Math.Clamp(normalized, 1, 100);
+    }
+
+    private static double? NormalizeWindowDimension(double? dimension)
+    {
+        if (!dimension.HasValue)
+        {
+            return null;
+        }
+
+        double value = dimension.Value;
+        if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0)
+        {
+            return null;
+        }
+
+        return value;
     }
 
     private static (string path, string? legacyPath) DetermineConfigurationPaths()

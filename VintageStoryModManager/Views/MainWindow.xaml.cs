@@ -83,6 +83,7 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _userConfiguration = new UserConfigurationService();
+        ApplyStoredWindowDimensions();
         IncludeStatusMenuItem.IsChecked = _userConfiguration.IncludePresetModStatus;
         IncludeVersionMenuItem.IsChecked = _userConfiguration.IncludePresetModVersions;
         ExclusiveLoadMenuItem.IsChecked = _userConfiguration.ExclusivePresetLoad;
@@ -109,6 +110,7 @@ public partial class MainWindow : Window
         }
 
         Loaded += MainWindow_Loaded;
+        Closing += MainWindow_OnClosing;
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -119,6 +121,48 @@ public partial class MainWindow : Window
         {
             await InitializeViewModelAsync(_viewModel);
         }
+    }
+
+    private void MainWindow_OnClosing(object? sender, CancelEventArgs e)
+    {
+        SaveWindowDimensions();
+    }
+
+    private void ApplyStoredWindowDimensions()
+    {
+        double? storedWidth = _userConfiguration.WindowWidth;
+        double? storedHeight = _userConfiguration.WindowHeight;
+
+        if (!storedWidth.HasValue && !storedHeight.HasValue)
+        {
+            return;
+        }
+
+        SizeToContent = SizeToContent.Manual;
+
+        if (storedWidth.HasValue)
+        {
+            Width = storedWidth.Value;
+        }
+
+        if (storedHeight.HasValue)
+        {
+            Height = storedHeight.Value;
+        }
+    }
+
+    private void SaveWindowDimensions()
+    {
+        if (_userConfiguration is null)
+        {
+            return;
+        }
+
+        Rect bounds = WindowState == WindowState.Normal
+            ? new Rect(Left, Top, ActualWidth, ActualHeight)
+            : RestoreBounds;
+
+        _userConfiguration.SetWindowDimensions(bounds.Width, bounds.Height);
     }
 
     private void IncludeStatusMenuItem_OnClick(object sender, RoutedEventArgs e)
