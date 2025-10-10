@@ -62,6 +62,11 @@ public sealed class ModUpdateService
             Trace.TraceWarning("Mod update cancelled for {0}", descriptor.TargetPath);
             throw;
         }
+        catch (InternetAccessDisabledException ex)
+        {
+            Trace.TraceWarning("Mod update blocked for {0}: {1}", descriptor.TargetPath, ex.Message);
+            return new ModUpdateResult(false, "Internet access is disabled. Enable Internet Access in the File menu to download updates.");
+        }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or HttpRequestException or NotSupportedException)
         {
             Trace.TraceError("Mod update failed for {0}: {1}", descriptor.TargetPath, ex);
@@ -100,6 +105,8 @@ public sealed class ModUpdateService
         }
         else
         {
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
+
             using HttpRequestMessage request = new(HttpMethod.Get, descriptor.DownloadUri);
             using HttpResponseMessage response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();

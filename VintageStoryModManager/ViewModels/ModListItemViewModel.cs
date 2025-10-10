@@ -708,6 +708,11 @@ public sealed class ModListItemViewModel : ObservableObject
             return;
         }
 
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            return;
+        }
+
         string? logoUrl = _modDatabaseLogoUrl;
         if (string.IsNullOrWhiteSpace(logoUrl))
         {
@@ -723,6 +728,8 @@ public sealed class ModListItemViewModel : ObservableObject
 
         try
         {
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
+
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
             using HttpResponseMessage response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
@@ -1527,6 +1534,11 @@ public sealed class ModListItemViewModel : ObservableObject
             return null;
         }
 
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            return null;
+        }
+
         try
         {
             var builder = new UriBuilder(uri.GetLeftPart(UriPartial.Authority))
@@ -1574,6 +1586,16 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private static void LaunchUri(Uri uri)
     {
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            ModManagerMessageBox.Show(
+                "Internet access is disabled. Enable Internet Access in the File menu to open web links.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo
@@ -1635,6 +1657,16 @@ public sealed class ModListItemViewModel : ObservableObject
         if (enableLogging)
         {
             LogDebug($"{context}: Resolved URI '{uri}'.");
+        }
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            if (enableLogging)
+            {
+                LogDebug($"{context}: Skipping image load because internet access is disabled.");
+            }
+
+            return null;
         }
 
         ImageSource? image = CreateImageSafely(

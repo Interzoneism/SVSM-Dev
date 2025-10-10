@@ -63,6 +63,11 @@ public sealed class ModDatabaseService
             throw new ArgumentNullException(nameof(mods));
         }
 
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            return;
+        }
+
         string? normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
 
         using var semaphore = new SemaphoreSlim(MaxConcurrentMetadataRequests);
@@ -130,6 +135,8 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
         int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
@@ -157,6 +164,8 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
         int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
@@ -183,6 +192,8 @@ public sealed class ModDatabaseService
         {
             return Array.Empty<ModDatabaseSearchResult>();
         }
+
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
 
         int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
         string requestUri = string.Format(
@@ -238,6 +249,8 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
         int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
@@ -272,6 +285,8 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
         int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
@@ -301,6 +316,8 @@ public sealed class ModDatabaseService
         Func<IEnumerable<ModDatabaseSearchResult>, IEnumerable<ModDatabaseSearchResult>> orderResults,
         CancellationToken cancellationToken)
     {
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
         try
         {
             using HttpRequestMessage request = new(HttpMethod.Get, requestUri);
@@ -366,6 +383,8 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
         const int MaxConcurrentRequests = 6;
         using var semaphore = new SemaphoreSlim(MaxConcurrentRequests);
 
@@ -388,6 +407,8 @@ public sealed class ModDatabaseService
         {
             return CloneResultWithDetails(candidate, null, null);
         }
+
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
 
         await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -465,6 +486,11 @@ public sealed class ModDatabaseService
 
     private static async Task<ModDatabaseInfo?> TryLoadDatabaseInfoInternalAsync(string modId, string? modVersion, string? normalizedGameVersion, CancellationToken cancellationToken)
     {
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            return null;
+        }
+
         try
         {
             string requestUri = string.Format(CultureInfo.InvariantCulture, ApiEndpointFormat, Uri.EscapeDataString(modId));

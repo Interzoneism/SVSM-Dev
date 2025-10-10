@@ -32,6 +32,7 @@ public sealed class UserConfigurationService
     private bool _includePresetModStatus = true;
     private bool _includePresetModVersions;
     private bool _exclusivePresetLoad;
+    private bool _disableInternetAccess;
     private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
     private string? _modsSortMemberPath;
     private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
@@ -64,6 +65,8 @@ public sealed class UserConfigurationService
     public bool IncludePresetModVersions => _includePresetModVersions;
 
     public bool ExclusivePresetLoad => _exclusivePresetLoad;
+
+    public bool DisableInternetAccess => _disableInternetAccess;
 
     public int ModDatabaseSearchResultLimit => _modDatabaseSearchResultLimit;
 
@@ -452,6 +455,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetDisableInternetAccess(bool disable)
+    {
+        if (_disableInternetAccess == disable)
+        {
+            return;
+        }
+
+        _disableInternetAccess = disable;
+        Save();
+    }
+
     private void Load()
     {
         _presets.Clear();
@@ -496,6 +510,7 @@ public sealed class UserConfigurationService
             _includePresetModStatus = obj["includePresetModStatus"]?.GetValue<bool?>() ?? true;
             _includePresetModVersions = obj["includePresetModVersions"]?.GetValue<bool?>() ?? false;
             _exclusivePresetLoad = obj["exclusivePresetLoad"]?.GetValue<bool?>() ?? false;
+            _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _modsSortMemberPath = NormalizeSortMemberPath(obj["modsSortMemberPath"]?.GetValue<string?>());
             _modsSortDirection = ParseSortDirection(obj["modsSortDirection"]?.GetValue<string?>());
             _modDatabaseSearchResultLimit = NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
@@ -541,6 +556,7 @@ public sealed class UserConfigurationService
             _includePresetModStatus = true;
             _includePresetModVersions = false;
             _exclusivePresetLoad = false;
+            _disableInternetAccess = false;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
             _selectedPresetName = null;
@@ -569,6 +585,7 @@ public sealed class UserConfigurationService
                 ["includePresetModStatus"] = _includePresetModStatus,
                 ["includePresetModVersions"] = _includePresetModVersions,
                 ["exclusivePresetLoad"] = _exclusivePresetLoad,
+                ["disableInternetAccess"] = _disableInternetAccess,
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
                 ["modDatabaseSearchResultLimit"] = _modDatabaseSearchResultLimit,
