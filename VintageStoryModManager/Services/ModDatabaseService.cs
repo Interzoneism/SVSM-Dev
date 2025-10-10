@@ -26,6 +26,8 @@ public sealed class ModDatabaseService
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
     private const int MaxConcurrentMetadataRequests = 4;
     private const int MinimumTotalDownloadsForTrending = 1000;
+    private const int DefaultNewModsMonths = 3;
+    private const int MaxNewModsMonths = 24;
 
     private static readonly HttpClient HttpClient = new();
 
@@ -243,7 +245,8 @@ public sealed class ModDatabaseService
             .ToArray();
     }
 
-    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedNewModsLastThreeMonthsAsync(
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedNewModsAsync(
+        int months,
         int maxResults,
         CancellationToken cancellationToken = default)
     {
@@ -253,6 +256,8 @@ public sealed class ModDatabaseService
         }
 
         InternetAccessManager.ThrowIfInternetAccessDisabled();
+
+        int normalizedMonths = months <= 0 ? DefaultNewModsMonths : Math.Clamp(months, 1, MaxNewModsMonths);
 
         int requestLimit = Math.Clamp(maxResults * 6, Math.Max(maxResults, 60), 150);
         string requestUri = string.Format(
@@ -282,7 +287,7 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
-        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+        DateTime threshold = DateTime.UtcNow.AddMonths(-normalizedMonths);
 
         ModDatabaseSearchResult[] filtered = enriched
             .Where(candidate => WasCreatedOnOrAfter(candidate, threshold))

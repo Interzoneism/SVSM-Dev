@@ -17,6 +17,8 @@ public sealed class UserConfigurationService
     private const string ConfigurationFileName = "VS_ModManager_Config.json";
     private const string LegacyConfigurationFileName = "settings.json";
     private const int DefaultModDatabaseSearchResultLimit = 30;
+    private const int DefaultModDatabaseNewModsRecentMonths = 3;
+    private const int MaxModDatabaseNewModsRecentMonths = 24;
 
     private readonly string _configurationPath;
     private readonly string? _legacyConfigurationPath;
@@ -31,6 +33,7 @@ public sealed class UserConfigurationService
     private bool _cacheAllVersionsLocally;
     private bool _disableInternetAccess;
     private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
+    private int _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
     private string? _modsSortMemberPath;
     private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
     private double? _windowWidth;
@@ -60,6 +63,8 @@ public sealed class UserConfigurationService
     public bool DisableInternetAccess => _disableInternetAccess;
 
     public int ModDatabaseSearchResultLimit => _modDatabaseSearchResultLimit;
+
+    public int ModDatabaseNewModsRecentMonths => _modDatabaseNewModsRecentMonths;
 
     public double? WindowWidth => _windowWidth;
 
@@ -361,6 +366,18 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetModDatabaseNewModsRecentMonths(int months)
+    {
+        int normalized = NormalizeModDatabaseNewModsRecentMonths(months);
+        if (_modDatabaseNewModsRecentMonths == normalized)
+        {
+            return;
+        }
+
+        _modDatabaseNewModsRecentMonths = normalized;
+        Save();
+    }
+
     public void SetModListSortPreference(string? sortMemberPath, ListSortDirection direction)
     {
         string? normalized = string.IsNullOrWhiteSpace(sortMemberPath)
@@ -469,6 +486,8 @@ public sealed class UserConfigurationService
             _modsSortMemberPath = NormalizeSortMemberPath(obj["modsSortMemberPath"]?.GetValue<string?>());
             _modsSortDirection = ParseSortDirection(obj["modsSortDirection"]?.GetValue<string?>());
             _modDatabaseSearchResultLimit = NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
+            _modDatabaseNewModsRecentMonths = NormalizeModDatabaseNewModsRecentMonths(
+                obj["modDatabaseNewModsRecentMonths"]?.GetValue<int?>());
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             if (loadedFromPreferredLocation)
@@ -514,6 +533,7 @@ public sealed class UserConfigurationService
             _selectedPresetName = null;
             _selectedAdvancedPresetName = null;
             _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
+            _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
             _windowWidth = null;
             _windowHeight = null;
         }
@@ -538,6 +558,7 @@ public sealed class UserConfigurationService
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
                 ["modDatabaseSearchResultLimit"] = _modDatabaseSearchResultLimit,
+                ["modDatabaseNewModsRecentMonths"] = _modDatabaseNewModsRecentMonths,
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["modPresets"] = BuildClassicPresetsJson(),
@@ -574,6 +595,22 @@ public sealed class UserConfigurationService
         }
 
         return Math.Clamp(normalized, 1, 100);
+    }
+
+    private static int NormalizeModDatabaseNewModsRecentMonths(int? value)
+    {
+        if (!value.HasValue)
+        {
+            return DefaultModDatabaseNewModsRecentMonths;
+        }
+
+        int normalized = value.Value;
+        if (normalized <= 0)
+        {
+            return DefaultModDatabaseNewModsRecentMonths;
+        }
+
+        return Math.Clamp(normalized, 1, MaxModDatabaseNewModsRecentMonths);
     }
 
     private static double? NormalizeWindowDimension(double? dimension)
