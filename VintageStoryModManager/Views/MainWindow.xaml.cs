@@ -4449,11 +4449,6 @@ public partial class MainWindow : Window
 
     }
 
-    private void RadioButton_Checked(object sender, RoutedEventArgs e)
-    {
-
-    }
-
     protected override void OnClosed(EventArgs e)
     {
         StopModsWatcher();

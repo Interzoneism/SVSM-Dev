@@ -116,7 +116,7 @@ public sealed class ModListItemViewModel : ObservableObject
         }
         _databaseDownloads = databaseInfo?.Downloads;
         _databaseComments = databaseInfo?.Comments;
-        _databaseRecentDownloads = databaseInfo?.DownloadsLastThreeMonths;
+        _databaseRecentDownloads = databaseInfo?.DownloadsLastThirtyDays;
         _modDatabaseLogoUrl = databaseInfo?.LogoUrl;
         _modDatabaseLogo = CreateModDatabaseLogoImage();
         LogDebug($"Initial database logo creation result: {_modDatabaseLogo is not null}. Source URL: '{FormatValue(_modDatabaseLogoUrl)}'.");
@@ -124,7 +124,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _modDatabaseLastUpdatedUtc = databaseInfo?.LastReleasedUtc ?? DetermineLastUpdatedFromReleases(_releases);
         if (_databaseRecentDownloads is null)
         {
-            _databaseRecentDownloads = CalculateRecentDownloadsFromReleases(_releases);
+            _databaseRecentDownloads = CalculateDownloadsLastThirtyDaysFromReleases(_releases);
         }
         _latestDatabaseVersion = _latestRelease?.Version
             ?? databaseInfo?.LatestVersion
@@ -242,6 +242,10 @@ public sealed class ModListItemViewModel : ObservableObject
         : "—";
 
     public int ModDatabaseDownloadsSortKey => _databaseDownloads ?? 0;
+
+    public string RecentDownloadsDisplay => _databaseRecentDownloads.HasValue
+        ? _databaseRecentDownloads.Value.ToString("N0", CultureInfo.CurrentCulture)
+        : "—";
 
     public int ModDatabaseRecentDownloadsSortKey => _databaseRecentDownloads ?? 0;
 
@@ -1255,10 +1259,11 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private void UpdateModDatabaseMetrics(ModDatabaseInfo info, IReadOnlyList<ModReleaseInfo> releases)
     {
-        int? recentDownloads = info?.DownloadsLastThreeMonths ?? CalculateRecentDownloadsFromReleases(releases);
+        int? recentDownloads = info?.DownloadsLastThirtyDays ?? CalculateDownloadsLastThirtyDaysFromReleases(releases);
         if (_databaseRecentDownloads != recentDownloads)
         {
             _databaseRecentDownloads = recentDownloads;
+            OnPropertyChanged(nameof(RecentDownloadsDisplay));
             OnPropertyChanged(nameof(ModDatabaseRecentDownloadsSortKey));
         }
 
@@ -1270,14 +1275,14 @@ public sealed class ModListItemViewModel : ObservableObject
         }
     }
 
-    private static int? CalculateRecentDownloadsFromReleases(IReadOnlyList<ModReleaseInfo> releases)
+    private static int? CalculateDownloadsLastThirtyDaysFromReleases(IReadOnlyList<ModReleaseInfo> releases)
     {
         if (releases.Count == 0)
         {
             return null;
         }
 
-        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+        DateTime threshold = DateTime.UtcNow.AddDays(-30);
         int total = 0;
         bool hasData = false;
 
