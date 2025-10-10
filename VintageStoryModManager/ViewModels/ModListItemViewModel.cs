@@ -483,6 +483,7 @@ public sealed class ModListItemViewModel : ObservableObject
             {
                 if (SetProperty(ref _isActive, value))
                 {
+                    OnPropertyChanged(nameof(ActiveSortOrder));
                     OnPropertyChanged(nameof(CanFixDependencyIssues));
                 }
                 return;
@@ -499,10 +500,13 @@ public sealed class ModListItemViewModel : ObservableObject
                 return;
             }
 
+            OnPropertyChanged(nameof(ActiveSortOrder));
             OnPropertyChanged(nameof(CanFixDependencyIssues));
             _ = ApplyActivationChangeAsync(previous, value);
         }
     }
+
+    public int ActiveSortOrder => _isActive ? 0 : 1;
 
     public bool IsSelected
     {
@@ -781,6 +785,7 @@ public sealed class ModListItemViewModel : ObservableObject
             if (SetProperty(ref _isActive, isActive))
             {
                 ActivationError = null;
+                OnPropertyChanged(nameof(ActiveSortOrder));
                 OnPropertyChanged(nameof(CanFixDependencyIssues));
             }
         }
@@ -840,7 +845,11 @@ public sealed class ModListItemViewModel : ObservableObject
             _suppressState = true;
             try
             {
-                SetProperty(ref _isActive, previous);
+                if (SetProperty(ref _isActive, previous, nameof(IsActive)))
+                {
+                    OnPropertyChanged(nameof(ActiveSortOrder));
+                    OnPropertyChanged(nameof(CanFixDependencyIssues));
+                }
             }
             finally
             {
