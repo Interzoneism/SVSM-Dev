@@ -21,6 +21,7 @@ public sealed class ModDatabaseService
     private const string SearchEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&limit={1}";
     private const string MostDownloadedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=downloadsdesc&limit={0}";
     private const string RecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=updateddesc&limit={0}";
+    private const string RecentlyCreatedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=createddesc&limit={0}";
     private const string SearchRecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&sort=updateddesc&limit={1}";
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
     private const int MaxConcurrentMetadataRequests = 4;
@@ -253,10 +254,10 @@ public sealed class ModDatabaseService
 
         InternetAccessManager.ThrowIfInternetAccessDisabled();
 
-        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
+        int requestLimit = Math.Clamp(maxResults * 6, Math.Max(maxResults, 60), 150);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
-            MostDownloadedEndpointFormat,
+            RecentlyCreatedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
         IReadOnlyList<ModDatabaseSearchResult> candidates = await QueryModsAsync(
@@ -264,9 +265,7 @@ public sealed class ModDatabaseService
                 requestLimit,
                 Array.Empty<string>(),
                 requireTokenMatch: false,
-                results => results
-                    .OrderByDescending(candidate => candidate.Downloads)
-                    .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
+                results => results,
                 cancellationToken)
             .ConfigureAwait(false);
 
