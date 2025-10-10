@@ -78,6 +78,7 @@ public partial class MainWindow : Window
     private bool _suppressSortPreferenceSave;
     private string? _cachedSortMemberPath;
     private ListSortDirection? _cachedSortDirection;
+    private SortOption? _cachedSortOption;
 
 
     public MainWindow()
@@ -438,6 +439,7 @@ public partial class MainWindow : Window
     {
         _cachedSortMemberPath = null;
         _cachedSortDirection = null;
+        _cachedSortOption = _viewModel?.SelectedSortOption;
 
         if (ModsDataGrid != null)
         {
@@ -488,10 +490,18 @@ public partial class MainWindow : Window
             return;
         }
 
+        SortOption? cachedOption = _cachedSortOption;
         string? cachedMemberPath = _cachedSortMemberPath;
         ListSortDirection? cachedDirection = _cachedSortDirection;
         _cachedSortMemberPath = null;
         _cachedSortDirection = null;
+        _cachedSortOption = null;
+
+        if (cachedOption is not null)
+        {
+            ApplySortOption(cachedOption, persistPreference: false);
+            return;
+        }
 
         if (!string.IsNullOrWhiteSpace(cachedMemberPath) && cachedDirection.HasValue)
         {
