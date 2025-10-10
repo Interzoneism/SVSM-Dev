@@ -2033,7 +2033,8 @@ public partial class MainWindow : Window
                 targetPath,
                 false,
                 release.FileName,
-                release.Version);
+                release.Version,
+                mod.Version);
 
             var progress = new Progress<ModUpdateProgress>(p =>
                 _viewModel?.ReportStatus($"{mod.DisplayName}: {p.Message}"));
@@ -2142,7 +2143,8 @@ public partial class MainWindow : Window
                 targetPath,
                 targetIsDirectory,
                 release.FileName,
-                release.Version);
+                release.Version,
+                installedMod?.Version);
 
             var progress = new Progress<ModUpdateProgress>(p =>
                 _viewModel?.ReportStatus($"{dependency.ModId}: {p.Message}"));
@@ -2463,26 +2465,9 @@ public partial class MainWindow : Window
         }
     }
 
-    private static string? GetCachedModsDirectory()
-    {
-        string? managerDirectory = GetManagerDataDirectory();
-        return managerDirectory is null
-            ? null
-            : Path.Combine(managerDirectory, "Cached Mods");
-    }
+    private static string? GetCachedModsDirectory() => ModCacheLocator.GetCachedModsDirectory();
 
-    private static string? GetManagerDataDirectory()
-    {
-        string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            path = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-        }
-
-        return string.IsNullOrWhiteSpace(path)
-            ? null
-            : Path.Combine(path, "VS Mod Manager");
-    }
+    private static string? GetManagerDataDirectory() => ModCacheLocator.GetManagerDataDirectory();
 
     private async void RefreshModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
@@ -4136,7 +4121,8 @@ public partial class MainWindow : Window
                     modPath,
                     targetIsDirectory,
                     release.FileName,
-                    release.Version);
+                    release.Version,
+                    mod.Version);
 
                 var progress = new Progress<ModUpdateProgress>(p =>
                     _viewModel.ReportStatus($"{mod.DisplayName}: {p.Message}"));

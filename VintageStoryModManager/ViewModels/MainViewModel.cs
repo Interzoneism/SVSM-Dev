@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -1637,20 +1639,61 @@ public sealed class MainViewModel : ObservableObject
         }
 
         var dependencies = entry.Dependencies ?? Array.Empty<ModDependencyInfo>();
-        IReadOnlyList<string> requiredGameVersions = ExtractRequiredGameVersions(dependencies);
-        ModReleaseInfo? release = CreateOfflineRelease(entry, requiredGameVersions, dependencies);
-        DateTime? lastUpdatedUtc = release?.CreatedUtc ?? TryGetLastWriteTimeUtc(entry.SourcePath, entry.SourceKind);
+        IReadOnlyList<string> installedRequiredGameVersions = ExtractRequiredGameVersions(dependencies);
+        IReadOnlyList<ModReleaseInfo> releases = CreateOfflineReleases(entry, installedRequiredGameVersions, dependencies);
+        IReadOnlyList<string> aggregatedRequiredGameVersions = AggregateRequiredGameVersions(installedRequiredGameVersions, releases);
+
+        ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
+        ModReleaseInfo? latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
+        DateTime? lastUpdatedUtc = DetermineOfflineLastUpdatedUtc(entry, releases);
+
+        string? latestVersion = latestRelease?.Version ?? entry.Version;
+        string? latestCompatibleVersion = latestCompatibleRelease?.Version ?? entry.Version;
 
         return new ModDatabaseInfo
         {
-            RequiredGameVersions = requiredGameVersions,
-            LatestVersion = entry.Version,
-            LatestCompatibleVersion = entry.Version,
-            LatestRelease = release,
-            LatestCompatibleRelease = release,
-            Releases = release is null ? Array.Empty<ModReleaseInfo>() : new[] { release },
+            RequiredGameVersions = aggregatedRequiredGameVersions,
+            LatestVersion = latestVersion,
+            LatestCompatibleVersion = latestCompatibleVersion,
+            LatestRelease = latestRelease,
+            LatestCompatibleRelease = latestCompatibleRelease ?? latestRelease,
+            Releases = releases,
             LastReleasedUtc = lastUpdatedUtc
         };
+    }
+
+    private IReadOnlyList<ModReleaseInfo> CreateOfflineReleases(
+        ModEntry entry,
+        IReadOnlyList<string> installedRequiredGameVersions,
+        IReadOnlyList<ModDependencyInfo> installedDependencies)
+    {
+        var releases = new List<ModReleaseInfo>();
+        var seenVersions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        ModReleaseInfo? installedRelease = CreateOfflineRelease(entry, installedRequiredGameVersions, installedDependencies);
+        if (installedRelease != null)
+        {
+            releases.Add(installedRelease);
+            seenVersions.Add(installedRelease.Version);
+        }
+
+        foreach (ModReleaseInfo cachedRelease in EnumerateCachedModReleases(entry.ModId))
+        {
+            if (!seenVersions.Add(cachedRelease.Version))
+            {
+                continue;
+            }
+
+            releases.Add(cachedRelease);
+        }
+
+        if (releases.Count == 0)
+        {
+            return Array.Empty<ModReleaseInfo>();
+        }
+
+        releases.Sort(CompareOfflineReleases);
+        return releases.AsReadOnly();
     }
 
     private ModReleaseInfo? CreateOfflineRelease(
@@ -1680,6 +1723,281 @@ public sealed class MainViewModel : ObservableObject
             IsCompatibleWithInstalledGame = DetermineInstalledGameCompatibility(dependencies),
             CreatedUtc = createdUtc
         };
+    }
+
+    private IEnumerable<ModReleaseInfo> EnumerateCachedModReleases(string modId)
+    {
+        string? cacheDirectory = ModCacheLocator.GetModCacheDirectory(modId);
+        if (string.IsNullOrWhiteSpace(cacheDirectory))
+        {
+            yield break;
+        }
+
+        try
+        {
+            if (!Directory.Exists(cacheDirectory))
+            {
+                yield break;
+            }
+        }
+        catch (Exception)
+        {
+            yield break;
+        }
+
+        IEnumerable<string> files;
+        try
+        {
+            files = Directory.EnumerateFiles(cacheDirectory, "*", SearchOption.TopDirectoryOnly);
+        }
+        catch (Exception)
+        {
+            yield break;
+        }
+
+        foreach (string file in files)
+        {
+            ModReleaseInfo? release = TryCreateCachedRelease(file, modId);
+            if (release != null)
+            {
+                yield return release;
+            }
+        }
+    }
+
+    private ModReleaseInfo? TryCreateCachedRelease(string archivePath, string expectedModId)
+    {
+        try
+        {
+            using ZipArchive archive = ZipFile.OpenRead(archivePath);
+            ZipArchiveEntry? infoEntry = FindArchiveEntry(archive, "modinfo.json");
+            if (infoEntry == null)
+            {
+                return null;
+            }
+
+            using Stream infoStream = infoEntry.Open();
+            using JsonDocument document = JsonDocument.Parse(infoStream);
+            JsonElement root = document.RootElement;
+
+            string? modId = GetString(root, "modid") ?? GetString(root, "modID");
+            if (!string.IsNullOrWhiteSpace(expectedModId)
+                && !string.IsNullOrWhiteSpace(modId)
+                && !string.Equals(modId, expectedModId, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            string? version = GetString(root, "version") ?? TryResolveVersionFromMap(root);
+            if (string.IsNullOrWhiteSpace(version))
+            {
+                return null;
+            }
+
+            IReadOnlyList<ModDependencyInfo> dependencies = ParseDependencies(root);
+            IReadOnlyList<string> requiredGameVersions = ExtractRequiredGameVersions(dependencies);
+
+            if (!TryCreateFileUri(archivePath, ModSourceKind.ZipArchive, out Uri? downloadUri))
+            {
+                return null;
+            }
+
+            DateTime? createdUtc = TryGetLastWriteTimeUtc(archivePath, ModSourceKind.ZipArchive);
+
+            return new ModReleaseInfo
+            {
+                Version = version!,
+                NormalizedVersion = VersionStringUtility.Normalize(version),
+                DownloadUri = downloadUri!,
+                FileName = Path.GetFileName(archivePath),
+                GameVersionTags = requiredGameVersions,
+                IsCompatibleWithInstalledGame = DetermineInstalledGameCompatibility(dependencies),
+                CreatedUtc = createdUtc
+            };
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static ZipArchiveEntry? FindArchiveEntry(ZipArchive archive, string entryName)
+    {
+        foreach (ZipArchiveEntry entry in archive.Entries)
+        {
+            if (string.Equals(entry.FullName, entryName, StringComparison.OrdinalIgnoreCase))
+            {
+                return entry;
+            }
+        }
+
+        return archive.Entries.FirstOrDefault(entry =>
+            string.Equals(Path.GetFileName(entry.FullName), entryName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string? GetString(JsonElement element, string propertyName)
+    {
+        if (TryGetProperty(element, propertyName, out JsonElement value) && value.ValueKind == JsonValueKind.String)
+        {
+            return value.GetString();
+        }
+
+        return null;
+    }
+
+    private static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement value)
+    {
+        foreach (JsonProperty property in element.EnumerateObject())
+        {
+            if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                value = property.Value;
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
+    }
+
+    private static string? TryResolveVersionFromMap(JsonElement root)
+    {
+        if (!TryGetProperty(root, "versionmap", out JsonElement map) && !TryGetProperty(root, "VersionMap", out map))
+        {
+            return null;
+        }
+
+        if (map.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        string? preferred = null;
+        string? fallback = null;
+        foreach (JsonProperty property in map.EnumerateObject())
+        {
+            string? version = property.Value.GetString();
+            if (version == null)
+            {
+                continue;
+            }
+
+            fallback = version;
+            if (property.Name.Contains("1.21", StringComparison.OrdinalIgnoreCase))
+            {
+                preferred = version;
+            }
+        }
+
+        return preferred ?? fallback;
+    }
+
+    private static IReadOnlyList<ModDependencyInfo> ParseDependencies(JsonElement root)
+    {
+        if (!TryGetProperty(root, "dependencies", out JsonElement dependenciesElement)
+            || dependenciesElement.ValueKind != JsonValueKind.Object)
+        {
+            return Array.Empty<ModDependencyInfo>();
+        }
+
+        var dependencies = new List<ModDependencyInfo>();
+        foreach (JsonProperty property in dependenciesElement.EnumerateObject())
+        {
+            string version = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() ?? string.Empty : string.Empty;
+            dependencies.Add(new ModDependencyInfo(property.Name, version));
+        }
+
+        return dependencies.Count == 0 ? Array.Empty<ModDependencyInfo>() : dependencies;
+    }
+
+    private static IReadOnlyList<string> AggregateRequiredGameVersions(
+        IReadOnlyList<string> installedRequiredGameVersions,
+        IReadOnlyList<ModReleaseInfo> releases)
+    {
+        var versions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string version in installedRequiredGameVersions)
+        {
+            if (!string.IsNullOrWhiteSpace(version))
+            {
+                versions.Add(version);
+            }
+        }
+
+        foreach (ModReleaseInfo release in releases)
+        {
+            if (release?.GameVersionTags is null)
+            {
+                continue;
+            }
+
+            foreach (string tag in release.GameVersionTags)
+            {
+                if (!string.IsNullOrWhiteSpace(tag))
+                {
+                    versions.Add(tag);
+                }
+            }
+        }
+
+        return versions.Count == 0 ? Array.Empty<string>() : versions.ToArray();
+    }
+
+    private static DateTime? DetermineOfflineLastUpdatedUtc(ModEntry entry, IReadOnlyList<ModReleaseInfo> releases)
+    {
+        DateTime? lastUpdatedUtc = null;
+        foreach (ModReleaseInfo release in releases)
+        {
+            if (release?.CreatedUtc is not DateTime created)
+            {
+                continue;
+            }
+
+            if (!lastUpdatedUtc.HasValue || created > lastUpdatedUtc)
+            {
+                lastUpdatedUtc = created;
+            }
+        }
+
+        return lastUpdatedUtc ?? TryGetLastWriteTimeUtc(entry.SourcePath, entry.SourceKind);
+    }
+
+    private static int CompareOfflineReleases(ModReleaseInfo? left, ModReleaseInfo? right)
+    {
+        if (ReferenceEquals(left, right))
+        {
+            return 0;
+        }
+
+        if (left is null)
+        {
+            return 1;
+        }
+
+        if (right is null)
+        {
+            return -1;
+        }
+
+        DateTime leftTimestamp = left.CreatedUtc ?? DateTime.MinValue;
+        DateTime rightTimestamp = right.CreatedUtc ?? DateTime.MinValue;
+        int dateComparison = rightTimestamp.CompareTo(leftTimestamp);
+        if (dateComparison != 0)
+        {
+            return dateComparison;
+        }
+
+        if (VersionStringUtility.IsCandidateVersionNewer(left.Version, right.Version))
+        {
+            return -1;
+        }
+
+        if (VersionStringUtility.IsCandidateVersionNewer(right.Version, left.Version))
+        {
+            return 1;
+        }
+
+        return string.Compare(left.Version, right.Version, StringComparison.OrdinalIgnoreCase);
     }
 
     private static IReadOnlyList<string> ExtractRequiredGameVersions(IReadOnlyList<ModDependencyInfo> dependencies)
