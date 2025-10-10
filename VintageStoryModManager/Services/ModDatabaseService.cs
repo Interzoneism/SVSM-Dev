@@ -242,6 +242,92 @@ public sealed class ModDatabaseService
             .ToArray();
     }
 
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedNewModsLastThreeMonthsAsync(
+        int maxResults,
+        CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
+        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
+        string requestUri = string.Format(
+            CultureInfo.InvariantCulture,
+            MostDownloadedEndpointFormat,
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        IReadOnlyList<ModDatabaseSearchResult> candidates = await QueryModsAsync(
+                requestUri,
+                requestLimit,
+                Array.Empty<string>(),
+                requireTokenMatch: false,
+                results => results
+                    .OrderByDescending(candidate => candidate.Downloads)
+                    .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (candidates.Count == 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        IReadOnlyList<ModDatabaseSearchResult> enriched = await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (enriched.Count == 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+
+        ModDatabaseSearchResult[] filtered = enriched
+            .Where(candidate => WasCreatedOnOrAfter(candidate, threshold))
+            .OrderByDescending(candidate => candidate.Downloads)
+            .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
+            .Take(maxResults)
+            .ToArray();
+
+        return filtered.Length == 0 ? Array.Empty<ModDatabaseSearchResult>() : filtered;
+    }
+
+    private static bool WasCreatedOnOrAfter(ModDatabaseSearchResult candidate, DateTime thresholdUtc)
+    {
+        ModDatabaseInfo? info = candidate.DetailedInfo;
+        if (info?.Releases is { Count: > 0 } releases)
+        {
+            DateTime? earliest = null;
+            foreach (ModReleaseInfo? release in releases)
+            {
+                if (release?.CreatedUtc is not { } createdUtc)
+                {
+                    continue;
+                }
+
+                if (earliest is null || createdUtc < earliest.Value)
+                {
+                    earliest = createdUtc;
+                }
+            }
+
+            if (earliest.HasValue)
+            {
+                return earliest.Value >= thresholdUtc;
+            }
+        }
+
+        if (candidate.LastReleasedUtc is { } lastReleasedUtc)
+        {
+            return lastReleasedUtc >= thresholdUtc;
+        }
+
+        return false;
+    }
+
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetRecentlyUpdatedModsAsync(int maxResults, CancellationToken cancellationToken = default)
     {
         if (maxResults <= 0)

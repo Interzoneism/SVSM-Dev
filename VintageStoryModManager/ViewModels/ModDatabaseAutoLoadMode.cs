@@ -6,5 +6,6 @@ namespace VintageStoryModManager.ViewModels;
 public enum ModDatabaseAutoLoadMode
 {
     TotalDownloads,
-    DownloadsLastThirtyDays
+    DownloadsLastThirtyDays,
+    DownloadsNewModsLastThreeMonths
 }
