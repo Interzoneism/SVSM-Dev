@@ -11,7 +11,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
-        Height="754" Width="1218"
+        Height="727" Width="1215"
         MinWidth="900" MinHeight="520" Background="{DynamicResource GridBackground1}">
 
     <Window.Resources>
@@ -68,11 +68,11 @@
     <Grid Background="{DynamicResource GridBackground1}" Margin="0,0,0,8">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="50" MinHeight="10" />
+            <RowDefinition Height="35" MinHeight="10" />
             <RowDefinition />
             <RowDefinition Height="Auto" MinHeight="40" />
         </Grid.RowDefinitions>
-        <Grid x:Name="TOP" Grid.Row="0" Margin="0,0,0,0">
+        <Grid x:Name="TOP" Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -142,27 +142,43 @@
 
         </Grid>
         <Grid x:Name="MIDDLE" Grid.Row="1"
-              Margin="16,35,41,10">
+              Margin="16,10,41,10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid Grid.Row="0" Margin="0,-15,-27,0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" MinWidth="290" />
+                    <ColumnDefinition />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
+                <TextBox Grid.Column="1"
+                         Margin="0,12,0,31"
+                         MinWidth="200"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         FontSize="14" HorizontalAlignment="Right" Width="227">
+                    <TextBox.Style>
+                        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
+                            <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                    <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
+
                 <StackPanel Grid.Column="0"
                             Orientation="Horizontal"
-                            VerticalAlignment="Center">
+                            VerticalAlignment="Top" Height="64" Margin="5,12,0,0" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="292">
                     <Button Content="Installed Mods"
                             Command="{Binding ShowInstalledModsCommand}"
                             Width="138"
                             Height="63"
-                            FontSize="16"
-                            Margin="0,0,12,0">
+                            FontSize="16" Margin="0,0,1,0">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="VerticalContentAlignment" Value="Top" />
@@ -185,7 +201,7 @@
                             Command="{Binding ShowModDatabaseCommand}"
                             Width="138"
                             Height="63"
-                            FontSize="16">
+                            FontSize="16" BorderBrush="#FFCAD7EB">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="VerticalContentAlignment" Value="Top" />
@@ -206,38 +222,19 @@
                     </Button>
                 </StackPanel>
 
-                <TextBox Grid.Column="1"
-                         Margin="16,0,16,0"
-                         MinWidth="200"
-                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         Height="43"
-                         FontSize="14"
-                         VerticalAlignment="Center">
-                    <TextBox.Style>
-                        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
-                            <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                    <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBox.Style>
-                </TextBox>
-
-                <StackPanel Grid.Column="2"
+                <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
-                            VerticalAlignment="Center">
+                            VerticalAlignment="Top" Height="30" Margin="15,15,186,0">
                     <RadioButton Content="Top downloads"
                                  GroupName="ModDatabaseAutoLoadMode"
                                  IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}"
-                                 Margin="0,0,12,0" />
+                                 />
                     <RadioButton Content="Top downloads last 30 days"
                                  GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" />
+                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" Margin="10,0,0,0" />
                 </StackPanel>
             </Grid>
-            <Grid Grid.Row="1">
+            <Grid Margin="0,32,0,0" Grid.RowSpan="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -807,17 +804,16 @@
                 </DataGrid>
             </Grid>
             <ListView x:Name="ModDatabaseCardsListView"
-                      Grid.Row="1"
                       ItemsSource="{Binding CurrentModsView}"
                       Background="{DynamicResource IMM.SurfaceBrush}"
-                      BorderThickness="0,0,0,0"
-                      Margin="0"
+                      BorderThickness="1,1,1,1"
+                      Margin="0,32,0,0"
                       SelectionMode="Single"
                       SelectionChanged="ModDatabaseCardsListView_OnSelectionChanged"
                       PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      ScrollViewer.CanContentScroll="False">
+                      ScrollViewer.CanContentScroll="False" Grid.RowSpan="2" BorderBrush="#FFCAD7EB">
                 <ListView.Style>
                     <Style TargetType="{x:Type ListView}">
                         <Setter Property="Visibility" Value="Collapsed" />
@@ -909,7 +905,7 @@
                                                     <ImageBrush ImageSource="/VintageStoryModManager;component/Resources/mod-default.png"
                                                                 Stretch="UniformToFill"
                                                                 AlignmentX="Center"
-                                                                AlignmentY="Center" />
+                                                                AlignmentY="Top" />
                                                 </Setter.Value>
                                             </Setter>
                                             <Style.Triggers>
@@ -919,7 +915,7 @@
                                                             <ImageBrush ImageSource="{Binding ModDatabasePreviewImage}"
                                                                         Stretch="UniformToFill"
                                                                         AlignmentX="Center"
-                                                                        AlignmentY="Center" />
+                                                                        AlignmentY="Top" />
                                                         </Setter.Value>
                                                     </Setter>
                                                 </DataTrigger>
@@ -1095,7 +1091,7 @@
                 </ListView.ItemTemplate>
             </ListView>
         </Grid>
-        <Grid x:Name="BOTTOM" Margin="16,0,16,8" Grid.Row="2" VerticalAlignment="Bottom">
+        <Grid x:Name="BOTTOM" Margin="16,6,16,2" Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -1106,7 +1102,7 @@
                            TextWrapping="Wrap"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           Margin="0,0,16,0">
+                           Margin="0,0,16,0" FontSize="14" Foreground="#CC000000">
                 <TextBlock.Style>
                     <Style TargetType="{x:Type TextBlock}">
                         <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
