@@ -33,7 +33,7 @@
         </Style>
         <Style x:Key="IMM.ModDatabaseAutoLoadToggleStyle" TargetType="{x:Type RadioButton}">
             <Setter Property="Visibility" Value="Collapsed" />
-            <Setter Property="Margin" Value="0,0,12,0" />
+            <Setter Property="Margin" Value="0,0,0,0" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Height" Value="32" />
             <Setter Property="Padding" Value="8,0,8,0" />
@@ -139,7 +139,7 @@
                 </MenuItem>
             </Menu>
 
-            
+
         </Grid>
         <Grid x:Name="MIDDLE" Grid.Row="1"
               Margin="16,35,41,10">
@@ -147,37 +147,30 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-
-
-            <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Top" Margin="0,12,0,0">
-                    <RadioButton Content="Total downloads"
-                                 GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}"
-                                 Style="{StaticResource IMM.ModDatabaseAutoLoadToggleStyle}" />
-
-                    <RadioButton Content="Downloads last 30 days"
-                                 GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}"
-                                 Style="{StaticResource IMM.ModDatabaseAutoLoadToggleStyle}" />
-                    <TextBox
+            <TextBox
                         MinWidth="200"
                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                         Height="43"
                         Width="266" FontSize="14">
-                    <TextBox.Style>
-                        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
-                            <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                    <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBox.Style>
-                </TextBox>
-            </StackPanel>
+                <TextBox.Style>
+                    <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
+                        <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
+            <RadioButton Content="Top downloads"
+                                 GroupName="ModDatabaseAutoLoadMode"
+                                 IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}"
+                                  Margin="296,-33,0,0" VerticalAlignment="Top" />
+
+            <RadioButton Content="Top downloads last 30 days"
+                     GroupName="ModDatabaseAutoLoadMode"
+                     IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" Height="NaN" Margin="428,-33,0,0" VerticalAlignment="Top"  />
 
 
             <Button Content="Installed Mods"
