@@ -23,6 +23,7 @@
         <sys:Double x:Key="IMM.NormalRowHeightOffset">10</sys:Double>
         <sys:Double x:Key="IMM.CompactRowHeightOffset">-12</sys:Double>
         <sys:Double x:Key="IMM.ModDbCardScale">0.75</sys:Double>
+        <converters:DownloadMetricDisplayConverter x:Key="IMM.DownloadMetricDisplayConverter" />
         <Style x:Key="IMM.DataGridCellBaseStyle" TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -30,7 +31,7 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Padding" Value="8,6" />
         </Style>
-        <Style x:Key="IMM.RecentlyUpdatedToggleStyle" TargetType="{x:Type CheckBox}">
+        <Style x:Key="IMM.ModDatabaseAutoLoadToggleStyle" TargetType="{x:Type RadioButton}">
             <Setter Property="Visibility" Value="Collapsed" />
             <Setter Property="Margin" Value="0,0,12,0" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -144,13 +145,15 @@
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Top" Margin="0,12,0,0">
-                    <CheckBox Content="Popular recently"
-                              IsChecked="{Binding ShowPopularRecently, Mode=TwoWay}"
-                              Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
+                    <RadioButton Content="Total downloads"
+                                 GroupName="ModDatabaseAutoLoadMode"
+                                 IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}"
+                                 Style="{StaticResource IMM.ModDatabaseAutoLoadToggleStyle}" />
 
-                    <CheckBox Content="Only show recently updated"
-                              IsChecked="{Binding ShowRecentlyUpdatedOnly, Mode=TwoWay}"
-                              Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
+                    <RadioButton Content="Downloads last 30 days"
+                                 GroupName="ModDatabaseAutoLoadMode"
+                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}"
+                                 Style="{StaticResource IMM.ModDatabaseAutoLoadToggleStyle}" />
                     <TextBox
                         MinWidth="200"
                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
@@ -684,11 +687,19 @@
                             </DataGridTextColumn.CellStyle>
                         </DataGridTextColumn>
                         <DataGridTextColumn x:Name="DownloadsColumn"
-                                     Header="Downloads"
-                                     Binding="{Binding DownloadsDisplay, Mode=OneWay}"
                                      Width="120"
                                      MinWidth="110"
                                      IsReadOnly="True">
+                            <DataGridTextColumn.Header>
+                                <TextBlock Text="{Binding DataContext.DownloadsColumnHeader, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+                            </DataGridTextColumn.Header>
+                            <DataGridTextColumn.Binding>
+                                <MultiBinding Converter="{StaticResource IMM.DownloadMetricDisplayConverter}">
+                                    <Binding Path="DataContext.IsShowingRecentDownloadMetric" RelativeSource="{RelativeSource AncestorType={x:Type Window}}" />
+                                    <Binding Path="DownloadsDisplay" />
+                                    <Binding Path="RecentDownloadsDisplay" />
+                                </MultiBinding>
+                            </DataGridTextColumn.Binding>
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="{x:Type TextBlock}">
                                     <Setter Property="HorizontalAlignment" Value="Center" />
@@ -1024,10 +1035,17 @@
                                                            FontSize="14"
                                                            Margin="0,0,4,0"
                                                            Foreground="{DynamicResource IMM.ForegroundBrush}" />
-                                                <TextBlock Text="{Binding DownloadsDisplay}"
-                                                           FontSize="13"
+                                                <TextBlock FontSize="13"
                                                            FontWeight="SemiBold"
-                                                           Foreground="{DynamicResource IMM.ForegroundBrush}" />
+                                                           Foreground="{DynamicResource IMM.ForegroundBrush}">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding Converter="{StaticResource IMM.DownloadMetricDisplayConverter}">
+                                                            <Binding Path="DataContext.IsShowingRecentDownloadMetric" RelativeSource="{RelativeSource AncestorType={x:Type Window}}" />
+                                                            <Binding Path="DownloadsDisplay" />
+                                                            <Binding Path="RecentDownloadsDisplay" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Text="&#xE15F;"
@@ -1079,8 +1097,6 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-            <RadioButton Content="Total downloads" Margin="298,-33,0,0" VerticalAlignment="Top" ClickMode="Press" Height="31"/>
-            <RadioButton Content="Downloads last 30 days" Margin="438,-33,0,0" VerticalAlignment="Top" ClickMode="Press" Height="31" Checked="RadioButton_Checked"/>
         </Grid>
         <Grid x:Name="BOTTOM" Margin="16,0,16,8" Grid.Row="2" VerticalAlignment="Bottom">
             <Grid.ColumnDefinitions>

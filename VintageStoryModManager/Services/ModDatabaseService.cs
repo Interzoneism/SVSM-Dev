@@ -22,8 +22,6 @@ public sealed class ModDatabaseService
     private const string MostDownloadedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=downloadsdesc&limit={0}";
     private const string RecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=updateddesc&limit={0}";
     private const string SearchRecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&sort=updateddesc&limit={1}";
-    private const int PopularRecentlyRequestLimit = 200;
-    private const int PopularRecentlyMinimumDownloads = 200;
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
     private const int MaxConcurrentMetadataRequests = 4;
 
@@ -176,20 +174,20 @@ public sealed class ModDatabaseService
             .ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetPopularRecentlyModsAsync(int maxResults, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedModsLastThirtyDaysAsync(
+        int maxResults,
+        CancellationToken cancellationToken = default)
     {
         if (maxResults <= 0)
         {
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
-        int requestLimit = Math.Clamp(maxResults * 4, maxResults, PopularRecentlyRequestLimit);
+        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
-            RecentlyUpdatedEndpointFormat,
+            MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
-
-        DateTime threshold = DateTime.UtcNow.AddMonths(-1);
 
         IReadOnlyList<ModDatabaseSearchResult> candidates = await QueryModsAsync(
                 requestUri,
@@ -197,11 +195,7 @@ public sealed class ModDatabaseService
                 Array.Empty<string>(),
                 requireTokenMatch: false,
                 results => results
-                    .Where(candidate => candidate.LastReleasedUtc.HasValue && candidate.LastReleasedUtc.Value >= threshold)
-                    .Where(candidate => candidate.Downloads >= PopularRecentlyMinimumDownloads)
                     .OrderByDescending(candidate => candidate.Downloads)
-                    .ThenByDescending(candidate => candidate.Follows)
-                    .ThenByDescending(candidate => candidate.TrendingPoints)
                     .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
                 cancellationToken)
             .ConfigureAwait(false);
@@ -211,7 +205,18 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
-        return candidates
+        IReadOnlyList<ModDatabaseSearchResult> enriched = await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (enriched.Count == 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        return enriched
+            .OrderByDescending(candidate => candidate.DetailedInfo?.DownloadsLastThirtyDays ?? 0)
+            .ThenByDescending(candidate => candidate.Downloads)
+            .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
             .Take(maxResults)
             .ToArray();
     }
@@ -487,7 +492,7 @@ public sealed class ModDatabaseService
             string? latestVersion = latestRelease?.Version;
             string? latestCompatibleVersion = latestCompatibleRelease?.Version;
             IReadOnlyList<string> requiredVersions = FindRequiredGameVersions(modElement, modVersion);
-            int? recentDownloads = CalculateRecentDownloads(releases);
+            int? recentDownloads = CalculateDownloadsLastThirtyDays(releases);
 
             return new ModDatabaseInfo
             {
@@ -502,7 +507,7 @@ public sealed class ModDatabaseService
                 Follows = follows,
                 TrendingPoints = trendingPoints,
                 LogoUrl = logoUrl,
-                DownloadsLastThreeMonths = recentDownloads,
+                DownloadsLastThirtyDays = recentDownloads,
                 LastReleasedUtc = lastReleasedUtc,
                 LatestRelease = latestRelease,
                 LatestCompatibleRelease = latestCompatibleRelease,
@@ -583,14 +588,14 @@ public sealed class ModDatabaseService
         return releases.Count == 0 ? Array.Empty<ModReleaseInfo>() : releases;
     }
 
-    private static int? CalculateRecentDownloads(IReadOnlyList<ModReleaseInfo> releases)
+    private static int? CalculateDownloadsLastThirtyDays(IReadOnlyList<ModReleaseInfo> releases)
     {
         if (releases.Count == 0)
         {
             return null;
         }
 
-        DateTime threshold = DateTime.UtcNow.AddMonths(-3);
+        DateTime threshold = DateTime.UtcNow.AddDays(-30);
         int total = 0;
         bool hasData = false;
 

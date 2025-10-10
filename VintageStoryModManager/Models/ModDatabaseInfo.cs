@@ -30,7 +30,7 @@ public sealed class ModDatabaseInfo
 
     public string? LogoUrl { get; init; }
 
-    public int? DownloadsLastThreeMonths { get; init; }
+    public int? DownloadsLastThirtyDays { get; init; }
 
     public DateTime? LastReleasedUtc { get; init; }
 
