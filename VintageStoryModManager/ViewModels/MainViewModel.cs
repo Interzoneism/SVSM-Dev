@@ -247,6 +247,18 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    public bool IsDownloadsNewModsLastThreeMonthsMode
+    {
+        get => _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths;
+        set
+        {
+            if (value)
+            {
+                SetAutoLoadMode(ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths);
+            }
+        }
+    }
+
     public bool IsShowingRecentDownloadMetric => SearchModDatabase && !HasSearchText
         && _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays;
 
@@ -264,6 +276,7 @@ public sealed class MainViewModel : ObservableObject
         _modDatabaseAutoLoadMode = mode;
         OnPropertyChanged(nameof(IsTotalDownloadsMode));
         OnPropertyChanged(nameof(IsDownloadsLastThirtyDaysMode));
+        OnPropertyChanged(nameof(IsDownloadsNewModsLastThreeMonthsMode));
         OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
         OnPropertyChanged(nameof(DownloadsColumnHeader));
 
@@ -808,9 +821,13 @@ public sealed class MainViewModel : ObservableObject
         }
         else
         {
-            statusMessage = _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays
-                ? "Loading top mods from the last 30 days..."
-                : "Loading most downloaded mods...";
+            statusMessage = _modDatabaseAutoLoadMode switch
+            {
+                ModDatabaseAutoLoadMode.DownloadsLastThirtyDays => "Loading top mods from the last 30 days...",
+                ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths =>
+                    "Loading most downloaded new mods from the last three months...",
+                _ => "Loading most downloaded mods..."
+            };
         }
         SetStatus(statusMessage, false);
 
@@ -843,11 +860,20 @@ public sealed class MainViewModel : ObservableObject
             }
             else
             {
-                results = _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays
-                    ? await _databaseService.GetMostDownloadedModsLastThirtyDaysAsync(_modDatabaseSearchResultLimit, cancellationToken)
+                results = _modDatabaseAutoLoadMode switch
+                {
+                    ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
+                        await _databaseService
+                            .GetMostDownloadedModsLastThirtyDaysAsync(_modDatabaseSearchResultLimit, cancellationToken)
+                            .ConfigureAwait(false),
+                    ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths =>
+                        await _databaseService
+                            .GetMostDownloadedNewModsLastThreeMonthsAsync(_modDatabaseSearchResultLimit, cancellationToken)
+                            .ConfigureAwait(false),
+                    _ => await _databaseService
+                        .GetMostDownloadedModsAsync(_modDatabaseSearchResultLimit, cancellationToken)
                         .ConfigureAwait(false)
-                    : await _databaseService.GetMostDownloadedModsAsync(_modDatabaseSearchResultLimit, cancellationToken)
-                        .ConfigureAwait(false);
+                };
             }
 
             if (cancellationToken.IsCancellationRequested)
@@ -980,9 +1006,14 @@ public sealed class MainViewModel : ObservableObject
             return $"Found {resultCount} mods in the mod database.";
         }
 
-        return _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays
-            ? $"Showing {resultCount} of the most downloaded mods from the last 30 days."
-            : $"Showing {resultCount} of the most downloaded mods.";
+        return _modDatabaseAutoLoadMode switch
+        {
+            ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
+                $"Showing {resultCount} of the most downloaded mods from the last 30 days.",
+            ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths =>
+                $"Showing {resultCount} of the most downloaded new mods from the last three months.",
+            _ => $"Showing {resultCount} of the most downloaded mods."
+        };
     }
 
     private string BuildNoModDatabaseResultsMessage(bool hasSearchTokens)
@@ -992,9 +1023,14 @@ public sealed class MainViewModel : ObservableObject
             return "No mods found in the mod database.";
         }
 
-        return _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays
-            ? "No mods with downloads in the last 30 days were found."
-            : "No mods found in the mod database.";
+        return _modDatabaseAutoLoadMode switch
+        {
+            ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
+                "No mods with downloads in the last 30 days were found.",
+            ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths =>
+                "No mods created in the last three months were found.",
+            _ => "No mods found in the mod database."
+        };
     }
 
     private string BuildModDatabaseErrorMessage(bool hasSearchTokens, string errorMessage)
@@ -1004,13 +1040,16 @@ public sealed class MainViewModel : ObservableObject
         {
             operation = "search the mod database";
         }
-        else if (_modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays)
-        {
-            operation = "load the most downloaded mods from the last 30 days";
-        }
         else
         {
-            operation = "load the most downloaded mods from the mod database";
+            operation = _modDatabaseAutoLoadMode switch
+            {
+                ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
+                    "load the most downloaded mods from the last 30 days",
+                ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths =>
+                    "load the most downloaded new mods from the last three months",
+                _ => "load the most downloaded mods from the mod database"
+            };
         }
 
         return $"Failed to {operation}: {errorMessage}";
