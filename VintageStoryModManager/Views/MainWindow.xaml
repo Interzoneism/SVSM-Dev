@@ -138,37 +138,7 @@
                 </MenuItem>
             </Menu>
 
-            <Grid Grid.Column="1"
-                Margin="210,33,16,0"
-                VerticalAlignment="Top" Height="50">
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Top" Margin="0,12,0,0">
-                    <CheckBox Content="Popular recently"
-                              IsChecked="{Binding ShowPopularRecently, Mode=TwoWay}"
-                              Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
-
-                    <CheckBox Content="Only show recently updated"
-                              IsChecked="{Binding ShowRecentlyUpdatedOnly, Mode=TwoWay}"
-                              Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
-                    <TextBox
-                        MinWidth="200"
-                        Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                        Height="38"
-                        Width="225">
-                        <TextBox.Style>
-                            <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
-                                <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                        <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Style>
-                    </TextBox>
-                </StackPanel>
-            </Grid>
+            
         </Grid>
         <Grid x:Name="MIDDLE" Grid.Row="1"
               Margin="16,35,41,10">
@@ -176,6 +146,35 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
+
+
+            <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top" Margin="0,-48,-27,0">
+                <CheckBox Content="Popular recently"
+                              IsChecked="{Binding ShowPopularRecently, Mode=TwoWay}"
+                              Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
+
+                <CheckBox Content="Only show recently updated"
+                              IsChecked="{Binding ShowRecentlyUpdatedOnly, Mode=TwoWay}"
+                              Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
+                <TextBox
+                        MinWidth="200"
+                        Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                        Height="43"
+                        Width="266" FontSize="14">
+                    <TextBox.Style>
+                        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
+                            <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                    <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
+            </StackPanel>
 
 
             <Button Content="Installed Mods"
@@ -187,7 +186,7 @@
                     VerticalAlignment="Top"
                     FontSize="16">
                 <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                         <Setter Property="VerticalContentAlignment" Value="Top" />
                         <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
                         <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
@@ -213,7 +212,7 @@
                     VerticalAlignment="Top"
                     FontSize="16">
                 <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                         <Setter Property="VerticalContentAlignment" Value="Top" />
                         <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
                         <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
@@ -825,7 +824,7 @@
                         <WrapPanel Orientation="Horizontal"
                                    HorizontalAlignment="Center"
                                    Margin="0"
-                                   ItemWidth="{Binding Source={StaticResource IMM.ModDbCardScale}, Converter={StaticResource IMM.ScaledDoubleConverter}, ConverterParameter=496}" />
+                                   ItemWidth="{Binding ConverterParameter=496, Converter={StaticResource IMM.ScaledDoubleConverter}, Source={StaticResource IMM.ModDbCardScale}}" />
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel>
                 <ListView.ItemContainerStyle>
@@ -850,7 +849,7 @@
                     <DataTemplate DataType="{x:Type viewModels:ModListItemViewModel}">
                         <Border Width="480"
                                 Height="480"
-                                Margin="{Binding Path=LayoutTransform.(ScaleTransform.ScaleX), RelativeSource={RelativeSource Self}, Converter={StaticResource IMM.ScaledThicknessConverter}, ConverterParameter='0,0,16,16'}"
+                                Margin="{Binding LayoutTransform.(ScaleTransform.ScaleX), ConverterParameter=0\,0\,16\,16, Converter={StaticResource IMM.ScaledThicknessConverter}, RelativeSource={RelativeSource Mode=Self}}"
                                 CornerRadius="12"
                                 ClipToBounds="False">
                             <Border.LayoutTransform>
@@ -1057,11 +1056,7 @@
                                                     <Setter Property="Visibility" Value="Visible" />
                                                     <Setter Property="HorizontalContentAlignment" Value="Center" />
                                                     <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                    <Setter Property="IsEnabled">
-                                                        <Setter.Value>
-                                                            <Binding Path="HasDownloadableRelease" />
-                                                        </Setter.Value>
-                                                    </Setter>
+                                                    <Setter Property="IsEnabled" Value="{Binding HasDownloadableRelease}"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsInstalled}" Value="True">
                                                             <Setter Property="Visibility" Value="Collapsed" />
