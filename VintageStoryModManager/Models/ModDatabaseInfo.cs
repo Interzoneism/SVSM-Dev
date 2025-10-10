@@ -34,6 +34,8 @@ public sealed class ModDatabaseInfo
 
     public DateTime? LastReleasedUtc { get; init; }
 
+    public DateTime? CreatedUtc { get; init; }
+
     public ModReleaseInfo? LatestRelease { get; init; }
 
     public ModReleaseInfo? LatestCompatibleRelease { get; init; }
