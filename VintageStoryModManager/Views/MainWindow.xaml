@@ -833,8 +833,9 @@
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel Orientation="Horizontal"
-                                   ItemWidth="496"
-                                   Margin="0" />
+                                   HorizontalAlignment="Center"
+                                   Margin="0"
+                                   ItemWidth="{Binding Source={StaticResource IMM.ModDbCardScale}, Converter={StaticResource IMM.ScaledDoubleConverter}, ConverterParameter=496}" />
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel>
                 <ListView.ItemContainerStyle>
