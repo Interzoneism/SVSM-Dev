@@ -144,91 +144,100 @@
         <Grid x:Name="MIDDLE" Grid.Row="1"
               Margin="16,35,41,10">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <TextBox
-                        MinWidth="200"
-                        Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                        Height="43"
-                        Width="266" FontSize="14">
-                <TextBox.Style>
-                    <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
-                        <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBox.Style>
-            </TextBox>
-            <RadioButton Content="Top downloads"
+            <Grid Grid.Row="0" Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <Button Content="Installed Mods"
+                            Command="{Binding ShowInstalledModsCommand}"
+                            Width="138"
+                            Height="63"
+                            FontSize="16"
+                            Margin="0,0,12,0">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="VerticalContentAlignment" Value="Top" />
+                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                                <Setter Property="Opacity" Value="0.3" />
+                                <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
+                                <Setter Property="Padding" Value="12,6" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SearchModDatabase}" Value="False">
+                                        <Setter Property="Opacity" Value="1" />
+                                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="Mod DB"
+                            Command="{Binding ShowModDatabaseCommand}"
+                            Width="138"
+                            Height="63"
+                            FontSize="16">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="VerticalContentAlignment" Value="Top" />
+                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                                <Setter Property="Opacity" Value="0.3" />
+                                <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
+                                <Setter Property="Padding" Value="12,6" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                        <Setter Property="Opacity" Value="1" />
+                                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+
+                <TextBox Grid.Column="1"
+                         Margin="16,0,16,0"
+                         MinWidth="200"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         Height="43"
+                         FontSize="14"
+                         VerticalAlignment="Center">
+                    <TextBox.Style>
+                        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
+                            <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                    <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
+
+                <StackPanel Grid.Column="2"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <RadioButton Content="Top downloads"
                                  GroupName="ModDatabaseAutoLoadMode"
                                  IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}"
-                                  Margin="296,-33,0,0" VerticalAlignment="Top" />
-
-            <RadioButton Content="Top downloads last 30 days"
-                     GroupName="ModDatabaseAutoLoadMode"
-                     IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" Height="NaN" Margin="428,-33,0,0" VerticalAlignment="Top"  />
-
-
-            <Button Content="Installed Mods"
-                    Command="{Binding ShowInstalledModsCommand}"
-                    Margin="10,-36,0,0"
-                    HorizontalAlignment="Left"
-                    Width="138"
-                    Height="63"
-                    VerticalAlignment="Top"
-                    FontSize="16">
-                <Button.Style>
-                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
-                        <Setter Property="VerticalContentAlignment" Value="Top" />
-                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
-                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
-                        <Setter Property="Opacity" Value="0.3" />
-                        <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
-                        <Setter Property="Padding" Value="12,6" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="False">
-                                <Setter Property="Opacity" Value="1" />
-                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
-            <Button Content="Mod DB"
-                    Command="{Binding ShowModDatabaseCommand}"
-                    Margin="148,-36,0,0"
-                    HorizontalAlignment="Left"
-                    Width="138"
-                    Height="63"
-                    VerticalAlignment="Top"
-                    FontSize="16">
-                <Button.Style>
-                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
-                        <Setter Property="VerticalContentAlignment" Value="Top" />
-                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
-                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
-                        <Setter Property="Opacity" Value="0.3" />
-                        <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
-                        <Setter Property="Padding" Value="12,6" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                <Setter Property="Opacity" Value="1" />
-                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
-
-
-
-            <Grid Grid.Row="0">
+                                 Margin="0,0,12,0" />
+                    <RadioButton Content="Top downloads last 30 days"
+                                 GroupName="ModDatabaseAutoLoadMode"
+                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" />
+                </StackPanel>
+            </Grid>
+            <Grid Grid.Row="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -798,7 +807,7 @@
                 </DataGrid>
             </Grid>
             <ListView x:Name="ModDatabaseCardsListView"
-                      Grid.Row="0"
+                      Grid.Row="1"
                       ItemsSource="{Binding CurrentModsView}"
                       Background="{DynamicResource IMM.SurfaceBrush}"
                       BorderThickness="0,0,0,0"
