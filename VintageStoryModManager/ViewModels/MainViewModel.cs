@@ -415,21 +415,24 @@ public sealed class MainViewModel : ObservableObject
 
     public void OnInternetAccessStateChanged()
     {
-        if (!SearchModDatabase)
+        if (SearchModDatabase)
         {
-            return;
+            _modDatabaseSearchCts?.Cancel();
+
+            if (InternetAccessManager.IsInternetAccessDisabled)
+            {
+                ClearSearchResults();
+                SetStatus(InternetAccessDisabledStatusMessage, false);
+            }
+            else
+            {
+                TriggerModDatabaseSearch();
+            }
         }
 
-        _modDatabaseSearchCts?.Cancel();
-
-        if (InternetAccessManager.IsInternetAccessDisabled)
+        if (_modEntriesBySourcePath.Count > 0)
         {
-            ClearSearchResults();
-            SetStatus(InternetAccessDisabledStatusMessage, false);
-        }
-        else
-        {
-            TriggerModDatabaseSearch();
+            QueueDatabaseInfoRefresh(_modEntriesBySourcePath.Values.ToArray());
         }
     }
 
@@ -1529,6 +1532,12 @@ public sealed class MainViewModel : ObservableObject
         {
             try
             {
+                if (InternetAccessManager.IsInternetAccessDisabled)
+                {
+                    await PopulateOfflineDatabaseInfoAsync(pending).ConfigureAwait(false);
+                    return;
+                }
+
                 foreach (ModEntry entry in pending)
                 {
                     ModDatabaseInfo? info;
@@ -1545,32 +1554,14 @@ public sealed class MainViewModel : ObservableObject
 
                     if (info is null)
                     {
+                        if (InternetAccessManager.IsInternetAccessDisabled)
+                        {
+                            await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                        }
                         continue;
                     }
 
-                    try
-                    {
-                        await InvokeOnDispatcherAsync(
-                                () =>
-                                {
-                                    if (_modEntriesBySourcePath.TryGetValue(entry.SourcePath, out var currentEntry)
-                                        && ReferenceEquals(currentEntry, entry))
-                                    {
-                                        currentEntry.UpdateDatabaseInfo(info);
-
-                                        if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
-                                        {
-                                            viewModel.UpdateDatabaseInfo(info);
-                                        }
-                                    }
-                                },
-                                CancellationToken.None)
-                            .ConfigureAwait(false);
-                    }
-                    catch (Exception)
-                    {
-                        // Ignore dispatcher failures to keep refresh resilient.
-                    }
+                    await ApplyDatabaseInfoAsync(entry, info).ConfigureAwait(false);
                 }
             }
             catch (Exception)
@@ -1578,5 +1569,231 @@ public sealed class MainViewModel : ObservableObject
                 // Swallow unexpected exceptions from the refresh loop.
             }
         });
+    }
+
+    private async Task PopulateOfflineDatabaseInfoAsync(IEnumerable<ModEntry> entries)
+    {
+        foreach (ModEntry entry in entries)
+        {
+            await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+        }
+    }
+
+    private async Task PopulateOfflineInfoForEntryAsync(ModEntry entry)
+    {
+        if (entry is null)
+        {
+            return;
+        }
+
+        ModDatabaseInfo? offlineInfo = CreateOfflineDatabaseInfo(entry);
+        if (offlineInfo is null)
+        {
+            return;
+        }
+
+        await ApplyDatabaseInfoAsync(entry, offlineInfo).ConfigureAwait(false);
+    }
+
+    private async Task ApplyDatabaseInfoAsync(ModEntry entry, ModDatabaseInfo info)
+    {
+        if (info is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await InvokeOnDispatcherAsync(
+                    () =>
+                    {
+                        if (!_modEntriesBySourcePath.TryGetValue(entry.SourcePath, out var currentEntry)
+                            || !ReferenceEquals(currentEntry, entry))
+                        {
+                            return;
+                        }
+
+                        currentEntry.UpdateDatabaseInfo(info);
+
+                        if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
+                        {
+                            viewModel.UpdateDatabaseInfo(info);
+                        }
+                    },
+                    CancellationToken.None)
+                .ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // Ignore dispatcher failures to keep refresh resilient.
+        }
+    }
+
+    private ModDatabaseInfo? CreateOfflineDatabaseInfo(ModEntry entry)
+    {
+        if (entry is null)
+        {
+            return null;
+        }
+
+        var dependencies = entry.Dependencies ?? Array.Empty<ModDependencyInfo>();
+        IReadOnlyList<string> requiredGameVersions = ExtractRequiredGameVersions(dependencies);
+        ModReleaseInfo? release = CreateOfflineRelease(entry, requiredGameVersions, dependencies);
+        DateTime? lastUpdatedUtc = release?.CreatedUtc ?? TryGetLastWriteTimeUtc(entry.SourcePath, entry.SourceKind);
+
+        return new ModDatabaseInfo
+        {
+            RequiredGameVersions = requiredGameVersions,
+            LatestVersion = entry.Version,
+            LatestCompatibleVersion = entry.Version,
+            LatestRelease = release,
+            LatestCompatibleRelease = release,
+            Releases = release is null ? Array.Empty<ModReleaseInfo>() : new[] { release },
+            LastReleasedUtc = lastUpdatedUtc
+        };
+    }
+
+    private ModReleaseInfo? CreateOfflineRelease(
+        ModEntry entry,
+        IReadOnlyList<string> requiredGameVersions,
+        IReadOnlyList<ModDependencyInfo> dependencies)
+    {
+        if (string.IsNullOrWhiteSpace(entry.Version))
+        {
+            return null;
+        }
+
+        if (!TryCreateFileUri(entry.SourcePath, entry.SourceKind, out Uri? downloadUri))
+        {
+            return null;
+        }
+
+        DateTime? createdUtc = TryGetLastWriteTimeUtc(entry.SourcePath, entry.SourceKind);
+
+        return new ModReleaseInfo
+        {
+            Version = entry.Version!,
+            NormalizedVersion = VersionStringUtility.Normalize(entry.Version),
+            DownloadUri = downloadUri!,
+            FileName = TryGetReleaseFileName(entry.SourcePath),
+            GameVersionTags = requiredGameVersions,
+            IsCompatibleWithInstalledGame = DetermineInstalledGameCompatibility(dependencies),
+            CreatedUtc = createdUtc
+        };
+    }
+
+    private static IReadOnlyList<string> ExtractRequiredGameVersions(IReadOnlyList<ModDependencyInfo> dependencies)
+    {
+        if (dependencies is null || dependencies.Count == 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        var versions = dependencies
+            .Where(dependency => dependency != null && dependency.IsGameOrCoreDependency)
+            .Select(dependency => dependency.Version?.Trim())
+            .Where(version => !string.IsNullOrWhiteSpace(version))
+            .Select(version => version!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return versions.Length == 0 ? Array.Empty<string>() : versions;
+    }
+
+    private bool DetermineInstalledGameCompatibility(IReadOnlyList<ModDependencyInfo> dependencies)
+    {
+        if (dependencies is null || dependencies.Count == 0)
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(_installedGameVersion))
+        {
+            return true;
+        }
+
+        foreach (var dependency in dependencies)
+        {
+            if (dependency is null || !dependency.IsGameOrCoreDependency)
+            {
+                continue;
+            }
+
+            if (!VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, _installedGameVersion))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryCreateFileUri(string? path, ModSourceKind kind, out Uri? uri)
+    {
+        uri = null;
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            string fullPath = Path.GetFullPath(path);
+            if (kind == ModSourceKind.Folder)
+            {
+                fullPath = Path.TrimEndingDirectorySeparator(fullPath) + Path.DirectorySeparatorChar;
+            }
+
+            return Uri.TryCreate(fullPath, UriKind.Absolute, out uri);
+        }
+        catch (Exception)
+        {
+            uri = null;
+            return false;
+        }
+    }
+
+    private static string? TryGetReleaseFileName(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            string normalized = Path.GetFullPath(path);
+            if (Directory.Exists(normalized))
+            {
+                normalized = Path.TrimEndingDirectorySeparator(normalized);
+            }
+
+            string fileName = Path.GetFileName(normalized);
+            return string.IsNullOrWhiteSpace(fileName) ? null : fileName;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static DateTime? TryGetLastWriteTimeUtc(string? path, ModSourceKind kind)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            return kind == ModSourceKind.Folder
+                ? Directory.Exists(path) ? Directory.GetLastWriteTimeUtc(path) : null
+                : File.Exists(path) ? File.GetLastWriteTimeUtc(path) : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 }
