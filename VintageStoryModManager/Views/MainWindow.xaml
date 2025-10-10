@@ -859,13 +859,13 @@
                     <DataTemplate DataType="{x:Type viewModels:ModListItemViewModel}">
                         <Border Width="480"
                                 Height="480"
+                                Margin="{Binding Path=LayoutTransform.(ScaleTransform.ScaleX), RelativeSource={RelativeSource Self}, Converter={StaticResource IMM.ScaledThicknessConverter}, ConverterParameter='0,0,16,16'}"
                                 CornerRadius="12"
-                                RenderTransformOrigin="0.5,0.5"
                                 ClipToBounds="False">
-                            <Border.RenderTransform>
+                            <Border.LayoutTransform>
                                 <ScaleTransform ScaleX="{StaticResource IMM.ModDbCardScale}"
                                                 ScaleY="{StaticResource IMM.ModDbCardScale}" />
-                            </Border.RenderTransform>
+                            </Border.LayoutTransform>
                             <Border.Effect>
                                 <DropShadowEffect Color="#33000000"
                                                   BlurRadius="20"
