@@ -151,7 +151,7 @@
                         MinWidth="200"
                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                         Height="43"
-                        Width="266" FontSize="14">
+                        Width="266" FontSize="14" Margin="924,-48,-29,600">
                 <TextBox.Style>
                     <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
                         <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
