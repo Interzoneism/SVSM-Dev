@@ -42,6 +42,12 @@ public partial class MainWindow : Window
     private const double SelectionOverlayOpacity = 0.25;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/enhancedhandbook";
     private const string PresetDirectoryName = "Presets";
+    private const string ModListDirectoryName = "Modlists";
+
+    private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
+
+    private static readonly PresetLoadOptions StandardPresetLoadOptions = new(true, false, false);
+    private static readonly PresetLoadOptions ModListLoadOptions = new(true, true, true);
 
     private static readonly DependencyProperty BoundModProperty =
         DependencyProperty.RegisterAttached(
@@ -87,9 +93,6 @@ public partial class MainWindow : Window
 
         _userConfiguration = new UserConfigurationService();
         ApplyStoredWindowDimensions();
-        IncludeStatusMenuItem.IsChecked = _userConfiguration.IncludePresetModStatus;
-        IncludeVersionMenuItem.IsChecked = _userConfiguration.IncludePresetModVersions;
-        ExclusiveLoadMenuItem.IsChecked = _userConfiguration.ExclusivePresetLoad;
         CacheAllVersionsMenuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
         DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
@@ -182,75 +185,6 @@ public partial class MainWindow : Window
             : RestoreBounds;
 
         _userConfiguration.SetWindowDimensions(bounds.Width, bounds.Height);
-    }
-
-    private void IncludeStatusMenuItem_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem)
-        {
-            return;
-        }
-
-        _userConfiguration.SetIncludePresetModStatus(menuItem.IsChecked);
-        menuItem.IsChecked = _userConfiguration.IncludePresetModStatus;
-    }
-
-    private void IncludeVersionMenuItem_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem)
-        {
-            return;
-        }
-
-        bool isCurrentlyEnabled = _userConfiguration.IncludePresetModVersions;
-        bool requestedState = menuItem.IsChecked;
-
-        if (!isCurrentlyEnabled && requestedState)
-        {
-            MessageBoxResult confirm = WpfMessageBox.Show(
-                "Including mod versions will save the installed version for each mod and attempt to switch to those versions when presets are loaded.",
-                "Vintage Story Mod Manager",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (confirm != MessageBoxResult.Yes)
-            {
-                menuItem.IsChecked = false;
-                return;
-            }
-        }
-
-        _userConfiguration.SetIncludePresetModVersions(requestedState);
-        menuItem.IsChecked = _userConfiguration.IncludePresetModVersions;
-    }
-
-    private void ExclusiveLoadMenuItem_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem)
-        {
-            return;
-        }
-
-        bool isCurrentlyEnabled = _userConfiguration.ExclusivePresetLoad;
-        bool requestedState = menuItem.IsChecked;
-
-        if (!isCurrentlyEnabled && requestedState)
-        {
-            MessageBoxResult confirm = WpfMessageBox.Show(
-                "Exclusive load will remove any installed mods that are not part of the preset when it is loaded.",
-                "Vintage Story Mod Manager",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (confirm != MessageBoxResult.Yes)
-            {
-                menuItem.IsChecked = false;
-                return;
-            }
-        }
-
-        _userConfiguration.SetExclusivePresetLoad(requestedState);
-        menuItem.IsChecked = _userConfiguration.ExclusivePresetLoad;
     }
 
     private void CacheAllVersionsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -2923,78 +2857,83 @@ public partial class MainWindow : Window
         }
     }
 
-    private void SavePresetMenuItem_OnClick(object sender, RoutedEventArgs e)
+    private bool TrySaveSnapshot(
+        string directory,
+        string title,
+        string filter,
+        string folderWarningMessage,
+        string fallbackName,
+        Func<string?>? suggestedNameProvider,
+        Action<string>? onSuccess,
+        string failureContext,
+        bool includeModVersions,
+        bool exclusive)
     {
         if (_viewModel is null)
         {
-            return;
+            return false;
         }
 
-        string presetDirectory = EnsurePresetDirectory();
         var dialog = new SaveFileDialog
         {
-            Title = "Save Mod Preset",
-            Filter = "Preset files (*.json)|*.json|All files (*.*)|*.*",
+            Title = title,
+            Filter = filter,
             DefaultExt = ".json",
             AddExtension = true,
             OverwritePrompt = true,
-            InitialDirectory = presetDirectory
+            InitialDirectory = directory
         };
 
         dialog.FileOk += (_, args) =>
         {
-            if (IsPathWithinDirectory(presetDirectory, dialog.FileName))
+            if (IsPathWithinDirectory(directory, dialog.FileName))
             {
                 return;
             }
 
-            WpfMessageBox.Show("Presets must be saved inside the Presets folder.",
+            WpfMessageBox.Show(folderWarningMessage,
                 "Vintage Story Mod Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             args.Cancel = true;
         };
 
-        string? suggestedName = _userConfiguration.GetLastSelectedPresetName();
+        string? suggestedName = suggestedNameProvider?.Invoke();
         if (!string.IsNullOrWhiteSpace(suggestedName))
         {
-            dialog.FileName = BuildSuggestedPresetFileName(suggestedName);
+            dialog.FileName = BuildSuggestedFileName(suggestedName, fallbackName);
         }
 
         bool? result = dialog.ShowDialog(this);
         if (result != true)
         {
-            return;
+            return false;
         }
 
         string filePath = dialog.FileName;
-        string presetName = BuildSuggestedPresetFileName(Path.GetFileNameWithoutExtension(filePath));
-        if (!string.Equals(presetName, Path.GetFileNameWithoutExtension(filePath), StringComparison.Ordinal))
+        string entryName = BuildSuggestedFileName(Path.GetFileNameWithoutExtension(filePath), fallbackName);
+        if (!string.Equals(entryName, Path.GetFileNameWithoutExtension(filePath), StringComparison.Ordinal))
         {
-            filePath = Path.Combine(presetDirectory, presetName + ".json");
+            filePath = Path.Combine(directory, entryName + ".json");
         }
-
-        bool includeStatus = _userConfiguration.IncludePresetModStatus;
-        bool includeVersions = _userConfiguration.IncludePresetModVersions;
-        bool exclusiveLoad = _userConfiguration.ExclusivePresetLoad;
 
         IReadOnlyList<string> disabledEntries = _viewModel.GetCurrentDisabledEntries();
         IReadOnlyList<ModPresetModState> states = _viewModel.GetCurrentModStates();
 
         var serializable = new SerializablePreset
         {
-            Name = presetName,
+            Name = entryName,
             DisabledEntries = disabledEntries.ToList(),
-            IncludeModStatus = includeStatus,
-            IncludeModVersions = includeVersions,
-            Exclusive = exclusiveLoad,
+            IncludeModStatus = true,
+            IncludeModVersions = includeModVersions ? true : null,
+            Exclusive = exclusive ? true : null,
             Mods = states.Select(state => new SerializablePresetModState
             {
                 ModId = state.ModId,
-                Version = includeVersions && !string.IsNullOrWhiteSpace(state.Version)
+                Version = includeModVersions && !string.IsNullOrWhiteSpace(state.Version)
                     ? state.Version!.Trim()
                     : null,
-                IsActive = includeStatus ? state.IsActive : null
+                IsActive = state.IsActive
             }).ToList()
         };
 
@@ -3010,16 +2949,58 @@ public partial class MainWindow : Window
             string json = JsonSerializer.Serialize(serializable, options);
             File.WriteAllText(filePath, json);
 
-            _userConfiguration.SetLastSelectedPresetName(presetName);
-            _viewModel.ReportStatus($"Saved preset \"{presetName}\".");
+            onSuccess?.Invoke(entryName);
+            return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            WpfMessageBox.Show($"Failed to save the preset:\n{ex.Message}",
+            WpfMessageBox.Show($"Failed to save the {failureContext}:\n{ex.Message}",
                 "Vintage Story Mod Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
+            return false;
         }
+    }
+
+    private void SavePresetMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        string presetDirectory = EnsurePresetDirectory();
+        TrySaveSnapshot(
+            presetDirectory,
+            "Save Mod Preset",
+            "Preset files (*.json)|*.json|All files (*.*)|*.*",
+            "Presets must be saved inside the Presets folder.",
+            "Preset",
+            () => _userConfiguration.GetLastSelectedPresetName(),
+            name =>
+            {
+                _userConfiguration.SetLastSelectedPresetName(name);
+                _viewModel?.ReportStatus($"Saved preset \"{name}\".");
+            },
+            "preset",
+            includeModVersions: false,
+            exclusive: false);
+    }
+
+    private bool TrySaveModlist()
+    {
+        string modListDirectory = EnsureModListDirectory();
+        return TrySaveSnapshot(
+            modListDirectory,
+            "Save Modlist",
+            "Modlist files (*.json)|*.json|All files (*.*)|*.*",
+            "Modlists must be saved inside the Modlists folder.",
+            "Modlist",
+            suggestedNameProvider: null,
+            onSuccess: name => _viewModel?.ReportStatus($"Saved modlist \"{name}\"."),
+            failureContext: "modlist",
+            includeModVersions: true,
+            exclusive: true);
+    }
+
+    private void SaveModlistMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        TrySaveModlist();
     }
 
     private async void LoadPresetMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -3059,7 +3040,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!TryLoadPresetFromFile(dialog.FileName, out ModPreset? preset, out string? errorMessage))
+        if (!TryLoadPresetFromFile(dialog.FileName, "Preset", StandardPresetLoadOptions, out ModPreset? preset, out string? errorMessage))
         {
             string message = string.IsNullOrWhiteSpace(errorMessage)
                 ? "The selected file is not a valid preset."
@@ -3071,12 +3052,86 @@ public partial class MainWindow : Window
             return;
         }
 
-        _userConfiguration.SetLastSelectedPresetName(preset!.Name);
-        await ApplyPresetAsync(preset);
-        _viewModel.ReportStatus($"Loaded preset \"{preset.Name}\".");
+        ModPreset loadedPreset = preset!;
+        _userConfiguration.SetLastSelectedPresetName(loadedPreset.Name);
+        await ApplyPresetAsync(loadedPreset);
+        _viewModel?.ReportStatus($"Loaded preset \"{loadedPreset.Name}\".");
     }
 
-    private bool TryLoadPresetFromFile(string filePath, out ModPreset? preset, out string? errorMessage)
+    private async void LoadModlistMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        string modListDirectory = EnsureModListDirectory();
+        var dialog = new OpenFileDialog
+        {
+            Title = "Load Modlist",
+            Filter = "Modlist files (*.json)|*.json|All files (*.*)|*.*",
+            DefaultExt = ".json",
+            InitialDirectory = modListDirectory,
+            Multiselect = false
+        };
+
+        dialog.FileOk += (_, args) =>
+        {
+            if (IsPathWithinDirectory(modListDirectory, dialog.FileName))
+            {
+                return;
+            }
+
+            WpfMessageBox.Show("Please select a modlist from the Modlists folder.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            args.Cancel = true;
+        };
+
+        bool? dialogResult = dialog.ShowDialog(this);
+        if (dialogResult != true)
+        {
+            return;
+        }
+
+        MessageBoxResult prompt = WpfMessageBox.Show(
+            "Would you like to save your current modlist before loading the selected modlist?",
+            "Vintage Story Mod Manager",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
+
+        if (prompt == MessageBoxResult.Cancel)
+        {
+            return;
+        }
+
+        if (prompt == MessageBoxResult.Yes)
+        {
+            if (!TrySaveModlist())
+            {
+                return;
+            }
+        }
+
+        if (!TryLoadPresetFromFile(dialog.FileName, "Modlist", ModListLoadOptions, out ModPreset? preset, out string? errorMessage))
+        {
+            string message = string.IsNullOrWhiteSpace(errorMessage)
+                ? "The selected file is not a valid modlist."
+                : errorMessage!;
+            WpfMessageBox.Show($"Failed to load the modlist:\n{message}",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        ModPreset loadedModlist = preset!;
+        await ApplyPresetAsync(loadedModlist);
+        _viewModel?.ReportStatus($"Loaded modlist \"{loadedModlist.Name}\".");
+    }
+
+    private bool TryLoadPresetFromFile(string filePath, string fallbackName, PresetLoadOptions options, out ModPreset? preset, out string? errorMessage)
     {
         preset = null;
         errorMessage = null;
@@ -3085,26 +3140,26 @@ public partial class MainWindow : Window
         {
             if (!File.Exists(filePath))
             {
-                errorMessage = "The selected preset could not be found.";
+                errorMessage = "The selected file could not be found.";
                 return false;
             }
 
-            var options = new JsonSerializerOptions
+            var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             };
 
             using FileStream stream = File.OpenRead(filePath);
-            SerializablePreset? data = JsonSerializer.Deserialize<SerializablePreset>(stream, options);
+            SerializablePreset? data = JsonSerializer.Deserialize<SerializablePreset>(stream, jsonOptions);
             if (data is null)
             {
-                errorMessage = "The preset file was empty.";
+                errorMessage = "The selected file was empty.";
                 return false;
             }
 
             string name = !string.IsNullOrWhiteSpace(data.Name)
                 ? data.Name!.Trim()
-                : GetPresetNameFromFilePath(filePath);
+                : GetSnapshotNameFromFilePath(filePath, fallbackName);
 
             var disabledEntries = new List<string>();
             var seenDisabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -3125,34 +3180,34 @@ public partial class MainWindow : Window
                 }
             }
 
-        bool presetIndicatesStatus = data.IncludeModStatus
-            ?? (data.Mods?.Any(entry => entry?.IsActive is not null) ?? false);
-        bool presetIndicatesVersions = data.IncludeModVersions
-            ?? (data.Mods?.Any(entry => !string.IsNullOrWhiteSpace(entry?.Version)) ?? false);
-        bool includeStatus = _userConfiguration.IncludePresetModStatus && presetIndicatesStatus;
-        bool includeVersions = _userConfiguration.IncludePresetModVersions && presetIndicatesVersions;
-        bool exclusive = _userConfiguration.ExclusivePresetLoad || (data.Exclusive ?? false);
+            bool presetIndicatesStatus = data.IncludeModStatus
+                ?? (data.Mods?.Any(entry => entry?.IsActive is not null) ?? false);
+            bool presetIndicatesVersions = data.IncludeModVersions
+                ?? (data.Mods?.Any(entry => !string.IsNullOrWhiteSpace(entry?.Version)) ?? false);
+            bool includeStatus = options.ApplyModStatus && presetIndicatesStatus;
+            bool includeVersions = options.ApplyModVersions && presetIndicatesVersions;
+            bool exclusive = options.ForceExclusive;
 
-        var modStates = new List<ModPresetModState>();
-        if (data.Mods != null)
-        {
-            foreach (var mod in data.Mods)
+            var modStates = new List<ModPresetModState>();
+            if (data.Mods != null)
             {
-                if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
+                foreach (var mod in data.Mods)
                 {
-                    continue;
+                    if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
+                    {
+                        continue;
+                    }
+
+                    string modId = mod.ModId.Trim();
+                    string? version = string.IsNullOrWhiteSpace(mod.Version)
+                        ? null
+                        : mod.Version!.Trim();
+                    modStates.Add(new ModPresetModState(modId, version, mod.IsActive));
                 }
-
-                string modId = mod.ModId.Trim();
-                string? version = string.IsNullOrWhiteSpace(mod.Version)
-                    ? null
-                    : mod.Version!.Trim();
-                modStates.Add(new ModPresetModState(modId, version, mod.IsActive));
             }
-        }
 
-        preset = new ModPreset(name, disabledEntries, modStates, includeStatus, includeVersions, exclusive);
-        return true;
+            preset = new ModPreset(name, disabledEntries, modStates, includeStatus, includeVersions, exclusive);
+            return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -3167,6 +3222,14 @@ public partial class MainWindow : Window
         string presetDirectory = Path.Combine(baseDirectory, PresetDirectoryName);
         Directory.CreateDirectory(presetDirectory);
         return presetDirectory;
+    }
+
+    private string EnsureModListDirectory()
+    {
+        string baseDirectory = _userConfiguration.GetConfigurationDirectory();
+        string modListDirectory = Path.Combine(baseDirectory, ModListDirectoryName);
+        Directory.CreateDirectory(modListDirectory);
+        return modListDirectory;
     }
 
     private static bool IsPathWithinDirectory(string directory, string candidatePath)
@@ -3184,28 +3247,28 @@ public partial class MainWindow : Window
         }
     }
 
-    private static string BuildSuggestedPresetFileName(string? presetName)
+    private static string BuildSuggestedFileName(string? name, string fallback)
     {
-        if (string.IsNullOrWhiteSpace(presetName))
+        if (string.IsNullOrWhiteSpace(name))
         {
-            return "Preset";
+            return fallback;
         }
 
         var invalid = Path.GetInvalidFileNameChars();
-        var builder = new StringBuilder(presetName.Length);
-        foreach (char ch in presetName)
+        var builder = new StringBuilder(name.Length);
+        foreach (char ch in name)
         {
             builder.Append(Array.IndexOf(invalid, ch) >= 0 ? '_' : ch);
         }
 
         string sanitized = builder.ToString().Trim();
-        return string.IsNullOrWhiteSpace(sanitized) ? "Preset" : sanitized;
+        return string.IsNullOrWhiteSpace(sanitized) ? fallback : sanitized;
     }
 
-    private static string GetPresetNameFromFilePath(string filePath)
+    private static string GetSnapshotNameFromFilePath(string filePath, string fallback)
     {
         string name = Path.GetFileNameWithoutExtension(filePath);
-        return string.IsNullOrWhiteSpace(name) ? "Preset" : name.Trim();
+        return string.IsNullOrWhiteSpace(name) ? fallback : name.Trim();
     }
 
     private sealed class SerializablePreset

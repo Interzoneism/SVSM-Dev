@@ -29,9 +29,6 @@ public sealed class UserConfigurationService
     private bool _isCompactView;
     private bool _useModDbDesignView;
     private bool _cacheAllVersionsLocally;
-    private bool _includePresetModStatus = true;
-    private bool _includePresetModVersions;
-    private bool _exclusivePresetLoad;
     private bool _disableInternetAccess;
     private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
     private string? _modsSortMemberPath;
@@ -59,12 +56,6 @@ public sealed class UserConfigurationService
     public bool UseModDbDesignView => _useModDbDesignView;
 
     public bool CacheAllVersionsLocally => _cacheAllVersionsLocally;
-
-    public bool IncludePresetModStatus => _includePresetModStatus;
-
-    public bool IncludePresetModVersions => _includePresetModVersions;
-
-    public bool ExclusivePresetLoad => _exclusivePresetLoad;
 
     public bool DisableInternetAccess => _disableInternetAccess;
 
@@ -358,39 +349,6 @@ public sealed class UserConfigurationService
         Save();
     }
 
-    public void SetIncludePresetModStatus(bool include)
-    {
-        if (_includePresetModStatus == include)
-        {
-            return;
-        }
-
-        _includePresetModStatus = include;
-        Save();
-    }
-
-    public void SetIncludePresetModVersions(bool include)
-    {
-        if (_includePresetModVersions == include)
-        {
-            return;
-        }
-
-        _includePresetModVersions = include;
-        Save();
-    }
-
-    public void SetExclusivePresetLoad(bool exclusive)
-    {
-        if (_exclusivePresetLoad == exclusive)
-        {
-            return;
-        }
-
-        _exclusivePresetLoad = exclusive;
-        Save();
-    }
-
     public void SetModDatabaseSearchResultLimit(int limit)
     {
         int normalized = NormalizeModDatabaseSearchResultLimit(limit);
@@ -507,9 +465,6 @@ public sealed class UserConfigurationService
             _useModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? false;
             _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
             _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? false;
-            _includePresetModStatus = obj["includePresetModStatus"]?.GetValue<bool?>() ?? true;
-            _includePresetModVersions = obj["includePresetModVersions"]?.GetValue<bool?>() ?? false;
-            _exclusivePresetLoad = obj["exclusivePresetLoad"]?.GetValue<bool?>() ?? false;
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _modsSortMemberPath = NormalizeSortMemberPath(obj["modsSortMemberPath"]?.GetValue<string?>());
             _modsSortDirection = ParseSortDirection(obj["modsSortDirection"]?.GetValue<string?>());
@@ -553,9 +508,6 @@ public sealed class UserConfigurationService
             _isCompactView = false;
             _useModDbDesignView = false;
             _cacheAllVersionsLocally = false;
-            _includePresetModStatus = true;
-            _includePresetModVersions = false;
-            _exclusivePresetLoad = false;
             _disableInternetAccess = false;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
@@ -582,9 +534,6 @@ public sealed class UserConfigurationService
                 ["useModDbDesignView"] = _useModDbDesignView,
                 ["useAdvancedPresets"] = _isAdvancedPresetMode,
                 ["cacheAllVersionsLocally"] = _cacheAllVersionsLocally,
-                ["includePresetModStatus"] = _includePresetModStatus,
-                ["includePresetModVersions"] = _includePresetModVersions,
-                ["exclusivePresetLoad"] = _exclusivePresetLoad,
                 ["disableInternetAccess"] = _disableInternetAccess,
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
