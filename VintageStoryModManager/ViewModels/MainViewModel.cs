@@ -21,8 +21,6 @@ namespace VintageStoryModManager.ViewModels;
 /// </summary>
 public sealed class MainViewModel : ObservableObject
 {
-    private const int RecentlyUpdatedSearchResultLimit = 30;
-    private const int PopularRecentlyMinimumDownloads = 200;
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
 
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
@@ -58,9 +56,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly RelayCommand _clearSearchCommand;
     private readonly RelayCommand _showInstalledModsCommand;
     private readonly RelayCommand _showModDatabaseCommand;
-    private bool _showRecentlyUpdatedOnly;
-    private bool _showPopularRecently;
-    private bool _suppressPopularRecentlyTrigger;
+    private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
 
     public MainViewModel(string dataDirectory, int modDatabaseSearchResultLimit)
     {
@@ -212,6 +208,8 @@ public sealed class MainViewModel : ObservableObject
                 }
 
                 OnPropertyChanged(nameof(CurrentModsView));
+                OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
+                OnPropertyChanged(nameof(DownloadsColumnHeader));
             }
         }
     }
@@ -220,43 +218,53 @@ public sealed class MainViewModel : ObservableObject
 
     public IRelayCommand ShowModDatabaseCommand { get; }
 
-    public bool ShowRecentlyUpdatedOnly
+    public bool IsTotalDownloadsMode
     {
-        get => _showRecentlyUpdatedOnly;
+        get => _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.TotalDownloads;
         set
         {
-            if (SetProperty(ref _showRecentlyUpdatedOnly, value) && SearchModDatabase && !_suppressPopularRecentlyTrigger)
+            if (value)
             {
-                TriggerModDatabaseSearch();
+                SetAutoLoadMode(ModDatabaseAutoLoadMode.TotalDownloads);
             }
         }
     }
 
-    public bool ShowPopularRecently
+    public bool IsDownloadsLastThirtyDaysMode
     {
-        get => _showPopularRecently;
+        get => _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays;
         set
         {
-            if (SetProperty(ref _showPopularRecently, value))
+            if (value)
             {
-                if (value && !ShowRecentlyUpdatedOnly)
-                {
-                    _suppressPopularRecentlyTrigger = true;
-                    try
-                    {
-                        ShowRecentlyUpdatedOnly = true;
-                    }
-                    finally
-                    {
-                        _suppressPopularRecentlyTrigger = false;
-                    }
-                }
-
-                if (SearchModDatabase)
-                {
-                    TriggerModDatabaseSearch();
-                }
+                SetAutoLoadMode(ModDatabaseAutoLoadMode.DownloadsLastThirtyDays);
             }
+        }
+    }
+
+    public bool IsShowingRecentDownloadMetric => SearchModDatabase && !HasSearchText
+        && _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays;
+
+    public string DownloadsColumnHeader => IsShowingRecentDownloadMetric
+        ? "Downloads (30 days)"
+        : "Downloads";
+
+    private void SetAutoLoadMode(ModDatabaseAutoLoadMode mode)
+    {
+        if (_modDatabaseAutoLoadMode == mode)
+        {
+            return;
+        }
+
+        _modDatabaseAutoLoadMode = mode;
+        OnPropertyChanged(nameof(IsTotalDownloadsMode));
+        OnPropertyChanged(nameof(IsDownloadsLastThirtyDaysMode));
+        OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
+        OnPropertyChanged(nameof(DownloadsColumnHeader));
+
+        if (SearchModDatabase && !HasSearchText)
+        {
+            TriggerModDatabaseSearch();
         }
     }
 
@@ -270,6 +278,8 @@ public sealed class MainViewModel : ObservableObject
             {
                 _searchTokens = CreateSearchTokens(newValue);
                 OnPropertyChanged(nameof(HasSearchText));
+                OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
+                OnPropertyChanged(nameof(DownloadsColumnHeader));
                 _clearSearchCommand.NotifyCanExecuteChanged();
                 if (SearchModDatabase)
                 {
@@ -758,32 +768,13 @@ public sealed class MainViewModel : ObservableObject
         string statusMessage;
         if (hasSearchTokens)
         {
-            if (ShowPopularRecently && ShowRecentlyUpdatedOnly)
-            {
-                statusMessage = "Searching for recently popular mods...";
-            }
-            else
-            {
-                statusMessage = ShowRecentlyUpdatedOnly
-                    ? "Searching for recently updated mods..."
-                    : "Searching the mod database...";
-            }
-        }
-        else if (ShowPopularRecently && ShowRecentlyUpdatedOnly)
-        {
-            statusMessage = "Loading recently popular mods...";
-        }
-        else if (ShowRecentlyUpdatedOnly)
-        {
-            statusMessage = "Loading recently updated mods...";
-        }
-        else if (ShowPopularRecently)
-        {
-            statusMessage = "Loading recently popular mods...";
+            statusMessage = "Searching the mod database...";
         }
         else
         {
-            statusMessage = "Loading popular mods...";
+            statusMessage = _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays
+                ? "Loading top mods from the last 30 days..."
+                : "Loading most downloaded mods...";
         }
         SetStatus(statusMessage, false);
 
@@ -798,40 +789,18 @@ public sealed class MainViewModel : ObservableObject
         {
             await Task.Delay(ModDatabaseSearchDebounce, cancellationToken).ConfigureAwait(false);
 
-            int maxResults = ShowRecentlyUpdatedOnly
-                ? RecentlyUpdatedSearchResultLimit
-                : _modDatabaseSearchResultLimit;
-
             IReadOnlyList<ModDatabaseSearchResult> results;
-            if (ShowRecentlyUpdatedOnly)
+            if (hasSearchTokens)
             {
-                if (ShowPopularRecently && !hasSearchTokens)
-                {
-                    results = await _databaseService.GetPopularRecentlyModsAsync(maxResults, cancellationToken)
-                        .ConfigureAwait(false);
-                }
-                else if (hasSearchTokens)
-                {
-                    results = await _databaseService.SearchRecentlyUpdatedModsAsync(query, maxResults, cancellationToken)
-                        .ConfigureAwait(false);
-                }
-                else
-                {
-                    results = await _databaseService.GetRecentlyUpdatedModsAsync(maxResults, cancellationToken)
-                        .ConfigureAwait(false);
-                }
-            }
-            else if (!hasSearchTokens && ShowPopularRecently)
-            {
-                results = await _databaseService.GetPopularRecentlyModsAsync(maxResults, cancellationToken)
+                results = await _databaseService.SearchModsAsync(query, _modDatabaseSearchResultLimit, cancellationToken)
                     .ConfigureAwait(false);
             }
             else
             {
-                results = hasSearchTokens
-                    ? await _databaseService.SearchModsAsync(query, maxResults, cancellationToken)
+                results = _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays
+                    ? await _databaseService.GetMostDownloadedModsLastThirtyDaysAsync(_modDatabaseSearchResultLimit, cancellationToken)
                         .ConfigureAwait(false)
-                    : await _databaseService.GetMostDownloadedModsAsync(maxResults, cancellationToken)
+                    : await _databaseService.GetMostDownloadedModsAsync(_modDatabaseSearchResultLimit, cancellationToken)
                         .ConfigureAwait(false);
             }
 
@@ -840,9 +809,7 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
-            IReadOnlyList<ModDatabaseSearchResult> filteredResults = ApplyModDatabaseFilters(results, maxResults);
-
-            if (filteredResults.Count == 0)
+            if (results.Count == 0)
             {
                 await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
                 await InvokeOnDispatcherAsync(
@@ -854,7 +821,7 @@ public sealed class MainViewModel : ObservableObject
 
             HashSet<string> installedModIds = await GetInstalledModIdsAsync(cancellationToken).ConfigureAwait(false);
 
-            var entries = filteredResults
+            var entries = results
                 .Select(result => new
                 {
                     Entry = CreateSearchResultEntry(result),
@@ -952,73 +919,28 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    private IReadOnlyList<ModDatabaseSearchResult> ApplyModDatabaseFilters(
-        IReadOnlyList<ModDatabaseSearchResult> results,
-        int maxResults)
-    {
-        if (!ShowRecentlyUpdatedOnly)
-        {
-            return results;
-        }
-
-        DateTime threshold = DateTime.UtcNow.AddMonths(-1);
-        int limit = Math.Max(0, maxResults);
-
-        IEnumerable<ModDatabaseSearchResult> filtered = results
-            .Where(result => result.LastReleasedUtc.HasValue && result.LastReleasedUtc.Value >= threshold);
-
-        if (ShowPopularRecently)
-        {
-            filtered = filtered.Where(result => result.Downloads >= PopularRecentlyMinimumDownloads);
-        }
-
-        return filtered
-            .Take(limit)
-            .ToList();
-    }
-
     private string BuildModDatabaseResultsMessage(bool hasSearchTokens, int resultCount)
     {
         if (hasSearchTokens)
         {
-            return ShowRecentlyUpdatedOnly
-                ? $"Found {resultCount} recently updated mods in the mod database."
-                : $"Found {resultCount} mods in the mod database.";
+            return $"Found {resultCount} mods in the mod database.";
         }
 
-        if (ShowRecentlyUpdatedOnly)
-        {
-            return $"Showing {resultCount} recently updated popular mods.";
-        }
-
-        if (ShowPopularRecently)
-        {
-            return $"Showing {resultCount} recently popular mods.";
-        }
-
-        return $"Showing {resultCount} of the most downloaded mods.";
+        return _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays
+            ? $"Showing {resultCount} of the most downloaded mods from the last 30 days."
+            : $"Showing {resultCount} of the most downloaded mods.";
     }
 
     private string BuildNoModDatabaseResultsMessage(bool hasSearchTokens)
     {
         if (hasSearchTokens)
         {
-            return ShowRecentlyUpdatedOnly
-                ? "No recently updated mods found in the mod database."
-                : "No mods found in the mod database.";
+            return "No mods found in the mod database.";
         }
 
-        if (ShowRecentlyUpdatedOnly)
-        {
-            return "No recently updated popular mods were found.";
-        }
-
-        if (ShowPopularRecently)
-        {
-            return "No recently popular mods were found.";
-        }
-
-        return "No mods found in the mod database.";
+        return _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays
+            ? "No mods with downloads in the last 30 days were found."
+            : "No mods found in the mod database.";
     }
 
     private string BuildModDatabaseErrorMessage(bool hasSearchTokens, string errorMessage)
@@ -1026,21 +948,15 @@ public sealed class MainViewModel : ObservableObject
         string operation;
         if (hasSearchTokens)
         {
-            operation = ShowRecentlyUpdatedOnly
-                ? "search for recently updated mods in the mod database"
-                : "search the mod database";
+            operation = "search the mod database";
         }
-        else if (ShowRecentlyUpdatedOnly)
+        else if (_modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays)
         {
-            operation = "load recently updated mods from the mod database";
-        }
-        else if (ShowPopularRecently)
-        {
-            operation = "load recently popular mods from the mod database";
+            operation = "load the most downloaded mods from the last 30 days";
         }
         else
         {
-            operation = "load popular mods from the mod database";
+            operation = "load the most downloaded mods from the mod database";
         }
 
         return $"Failed to {operation}: {errorMessage}";
