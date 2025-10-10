@@ -283,21 +283,22 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="TextBox">
-                            <Grid>
-                                <Border x:Name="Border"
-                                        Background="{TemplateBinding Background}"
-                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                        BorderThickness="{TemplateBinding BorderThickness}"
-                                        CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}" />
-                                <Grid Margin="{TemplateBinding Padding}">
+                            <Border x:Name="Border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                    Padding="{TemplateBinding Padding}">
+                                <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <ScrollViewer x:Name="PART_ContentHost"
-                                                  Margin="0"
-                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                                  HorizontalAlignment="Stretch"
+                                                  VerticalAlignment="Stretch"
+                                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
                                     <TextBlock x:Name="PlaceholderTextBlock"
                                                Margin="0"
                                                Text="{TemplateBinding ui:ControlHelper.PlaceholderText}"
@@ -328,7 +329,7 @@
                                               Data="M2,2 L10,10 M10,2 L2,10" />
                                     </Button>
                                 </Grid>
-                            </Grid>
+                            </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ButtonDisabledBrush}" />
