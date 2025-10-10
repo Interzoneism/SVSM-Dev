@@ -91,6 +91,11 @@
                 <MenuItem Header="_File" Height="35">
                     <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
+                    <MenuItem x:Name="DisableInternetAccessMenuItem"
+                              Header="_Disable Internet Access"
+                              Height="35"
+                              IsCheckable="True"
+                              Click="DisableInternetAccessMenuItem_OnClick" />
                     <Separator />
                     <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
                 </MenuItem>

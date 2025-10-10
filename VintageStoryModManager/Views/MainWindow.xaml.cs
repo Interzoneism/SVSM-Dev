@@ -88,6 +88,8 @@ public partial class MainWindow : Window
         IncludeVersionMenuItem.IsChecked = _userConfiguration.IncludePresetModVersions;
         ExclusiveLoadMenuItem.IsChecked = _userConfiguration.ExclusivePresetLoad;
         CacheAllVersionsMenuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
+        DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
+        InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
 
         if (!TryInitializePaths())
         {
@@ -126,6 +128,20 @@ public partial class MainWindow : Window
     private void MainWindow_OnClosing(object? sender, CancelEventArgs e)
     {
         SaveWindowDimensions();
+    }
+
+    private void DisableInternetAccessMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return;
+        }
+
+        bool isDisabled = menuItem.IsChecked;
+        InternetAccessManager.SetInternetAccessDisabled(isDisabled);
+        _userConfiguration.SetDisableInternetAccess(isDisabled);
+
+        _viewModel?.OnInternetAccessStateChanged();
     }
 
     private void ApplyStoredWindowDimensions()
@@ -2291,6 +2307,16 @@ public partial class MainWindow : Window
 
     private void ManagerModDbPageMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            WpfMessageBox.Show(
+                "Internet access is disabled. Enable Internet Access in the File menu to open the mod database page.",
+                "Vintage Story Mod Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo

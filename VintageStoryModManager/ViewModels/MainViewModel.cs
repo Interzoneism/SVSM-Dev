@@ -22,6 +22,7 @@ namespace VintageStoryModManager.ViewModels;
 public sealed class MainViewModel : ObservableObject
 {
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
+    private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
 
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
     private readonly Dictionary<string, ModEntry> _modEntriesBySourcePath = new(StringComparer.OrdinalIgnoreCase);
@@ -412,6 +413,26 @@ public sealed class MainViewModel : ObservableObject
         SetStatus(message, isError);
     }
 
+    public void OnInternetAccessStateChanged()
+    {
+        if (!SearchModDatabase)
+        {
+            return;
+        }
+
+        _modDatabaseSearchCts?.Cancel();
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            ClearSearchResults();
+            SetStatus(InternetAccessDisabledStatusMessage, false);
+        }
+        else
+        {
+            TriggerModDatabaseSearch();
+        }
+    }
+
     internal void SetSelectedMod(ModListItemViewModel? mod, int selectionCount)
     {
         HasSelectedMods = selectionCount > 0;
@@ -759,6 +780,13 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            ClearSearchResults();
+            SetStatus(InternetAccessDisabledStatusMessage, false);
+            return;
+        }
+
         _modDatabaseSearchCts?.Cancel();
 
         var cts = new CancellationTokenSource();
@@ -788,6 +816,16 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             await Task.Delay(ModDatabaseSearchDebounce, cancellationToken).ConfigureAwait(false);
+
+            if (InternetAccessManager.IsInternetAccessDisabled)
+            {
+                await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
+                await InvokeOnDispatcherAsync(
+                        () => SetStatus(InternetAccessDisabledStatusMessage, false),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                return;
+            }
 
             IReadOnlyList<ModDatabaseSearchResult> results;
             if (hasSearchTokens)
@@ -902,6 +940,14 @@ public sealed class MainViewModel : ObservableObject
         catch (OperationCanceledException)
         {
             // Intentionally ignored.
+        }
+        catch (InternetAccessDisabledException)
+        {
+            await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
+            await InvokeOnDispatcherAsync(
+                    () => SetStatus(InternetAccessDisabledStatusMessage, false),
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (Exception ex)
         {
