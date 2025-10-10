@@ -263,13 +263,26 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public string? LatestDatabaseVersion => _latestDatabaseVersion;
 
-    public string LatestDatabaseVersionDisplay => string.IsNullOrWhiteSpace(LatestDatabaseVersion) ? "—" : LatestDatabaseVersion!;
+    public string LatestDatabaseVersionDisplay
+    {
+        get
+        {
+            if (InternetAccessManager.IsInternetAccessDisabled)
+            {
+                return "?";
+            }
+
+            return string.IsNullOrWhiteSpace(LatestDatabaseVersion) ? "—" : LatestDatabaseVersion!;
+        }
+    }
 
     public string LatestVersionSortKey
     {
         get
         {
-            string version = LatestDatabaseVersionDisplay;
+            string version = string.IsNullOrWhiteSpace(LatestDatabaseVersion)
+                ? LatestDatabaseVersionDisplay
+                : LatestDatabaseVersion!;
             int order = CanUpdate ? 0 : 1;
 
             return string.Create(
@@ -282,6 +295,12 @@ public sealed class ModListItemViewModel : ObservableObject
                     state.Version.AsSpan().CopyTo(span[2..]);
                 });
         }
+    }
+
+    public void RefreshInternetAccessDependentState()
+    {
+        OnPropertyChanged(nameof(LatestDatabaseVersionDisplay));
+        OnPropertyChanged(nameof(LatestVersionSortKey));
     }
 
     public bool IsInstalled { get; }
