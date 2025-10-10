@@ -24,6 +24,7 @@ public sealed class ModDatabaseService
     private const string SearchRecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&sort=updateddesc&limit={1}";
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
     private const int MaxConcurrentMetadataRequests = 4;
+    private const int MinimumTotalDownloadsForTrending = 1000;
 
     private static readonly HttpClient HttpClient = new();
 
@@ -205,7 +206,16 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
-        IReadOnlyList<ModDatabaseSearchResult> enriched = await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
+        IReadOnlyList<ModDatabaseSearchResult> filtered = candidates
+            .Where(candidate => candidate.Downloads >= MinimumTotalDownloadsForTrending)
+            .ToArray();
+
+        if (filtered.Count == 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        IReadOnlyList<ModDatabaseSearchResult> enriched = await EnrichWithLatestReleaseDownloadsAsync(filtered, cancellationToken)
             .ConfigureAwait(false);
 
         if (enriched.Count == 0)
@@ -595,31 +605,67 @@ public sealed class ModDatabaseService
             return null;
         }
 
-        DateTime threshold = DateTime.UtcNow.AddDays(-30);
-        int total = 0;
-        bool hasData = false;
+        DateTime now = DateTime.UtcNow;
+        DateTime windowStart = now.AddDays(-30);
 
-        foreach (var release in releases)
+        ModReleaseInfo[] relevantReleases = releases
+            .Where(release => release?.CreatedUtc.HasValue == true && release.Downloads.HasValue)
+            .OrderByDescending(release => release!.CreatedUtc!.Value)
+            .ToArray();
+
+        if (relevantReleases.Length == 0)
         {
-            if (release is null)
+            return null;
+        }
+
+        const double MinimumIntervalDays = 1d / 24d; // One hour.
+
+        double estimatedDownloads = 0;
+        DateTime intervalEnd = now;
+
+        foreach (var release in relevantReleases)
+        {
+            if (intervalEnd <= windowStart)
             {
+                break;
+            }
+
+            DateTime releaseDate = release.CreatedUtc!.Value;
+            if (releaseDate > intervalEnd)
+            {
+                releaseDate = intervalEnd;
+            }
+
+            double intervalLengthDays = (intervalEnd - releaseDate).TotalDays;
+            if (intervalLengthDays <= 0)
+            {
+                intervalEnd = releaseDate;
                 continue;
             }
 
-            DateTime? createdUtc = release.CreatedUtc;
-            if (createdUtc.HasValue && createdUtc.Value < threshold)
+            double dailyDownloads = Math.Max(release.Downloads!.Value, 0) / Math.Max(intervalLengthDays, MinimumIntervalDays);
+
+            DateTime effectiveStart = releaseDate < windowStart ? windowStart : releaseDate;
+            double effectiveIntervalDays = (intervalEnd - effectiveStart).TotalDays;
+            if (effectiveIntervalDays > 0)
             {
-                continue;
+                estimatedDownloads += dailyDownloads * effectiveIntervalDays;
             }
 
-            if (release.Downloads.HasValue)
+            intervalEnd = releaseDate;
+
+            if (releaseDate <= windowStart)
             {
-                hasData = true;
-                total += Math.Max(0, release.Downloads.Value);
+                break;
             }
         }
 
-        return hasData ? total : null;
+        if (estimatedDownloads <= 0)
+        {
+            return 0;
+        }
+
+        return (int)Math.Round(estimatedDownloads, MidpointRounding.AwayFromZero);
     }
 
     private static bool TryCreateReleaseInfo(JsonElement releaseElement, string? normalizedGameVersion, out ModReleaseInfo release)
