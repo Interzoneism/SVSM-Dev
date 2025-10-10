@@ -22,7 +22,8 @@ public sealed class ModDatabaseService
     private const string MostDownloadedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=downloadsdesc&limit={0}";
     private const string RecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=updateddesc&limit={0}";
     private const string SearchRecentlyUpdatedEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&sort=updateddesc&limit={1}";
-    private const int PopularRecentlyRequestLimit = 5000;
+    private const int PopularRecentlyRequestLimit = 200;
+    private const int PopularRecentlyMinimumDownloads = 200;
     private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
     private const int MaxConcurrentMetadataRequests = 4;
 
@@ -182,18 +183,25 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
+        int requestLimit = Math.Clamp(maxResults * 4, maxResults, PopularRecentlyRequestLimit);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
-            MostDownloadedEndpointFormat,
-            PopularRecentlyRequestLimit.ToString(CultureInfo.InvariantCulture));
+            RecentlyUpdatedEndpointFormat,
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        DateTime threshold = DateTime.UtcNow.AddMonths(-1);
 
         IReadOnlyList<ModDatabaseSearchResult> candidates = await QueryModsAsync(
                 requestUri,
-                int.MaxValue,
+                requestLimit,
                 Array.Empty<string>(),
                 requireTokenMatch: false,
                 results => results
+                    .Where(candidate => candidate.LastReleasedUtc.HasValue && candidate.LastReleasedUtc.Value >= threshold)
+                    .Where(candidate => candidate.Downloads >= PopularRecentlyMinimumDownloads)
                     .OrderByDescending(candidate => candidate.Downloads)
+                    .ThenByDescending(candidate => candidate.Follows)
+                    .ThenByDescending(candidate => candidate.TrendingPoints)
                     .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
                 cancellationToken)
             .ConfigureAwait(false);
@@ -203,16 +211,7 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
-        IReadOnlyList<ModDatabaseSearchResult> enriched = await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
-            .ConfigureAwait(false);
-
-        DateTime threshold = DateTime.UtcNow.AddMonths(-1);
-
-        return enriched
-            .Where(candidate => candidate.LastReleasedUtc.HasValue && candidate.LastReleasedUtc.Value >= threshold)
-            .OrderByDescending(candidate => candidate.LatestReleaseDownloads ?? -1)
-            .ThenByDescending(candidate => candidate.Downloads)
-            .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
+        return candidates
             .Take(maxResults)
             .ToArray();
     }
