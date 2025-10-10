@@ -58,6 +58,11 @@
             <GradientStop Color="#FFEFF3F9" Offset="1"/>
             <GradientStop Color="#FFD2DFF3" Offset="0.263"/>
         </LinearGradientBrush>
+        <LinearGradientBrush x:Key="CardDisabledGradient" EndPoint="1,0.5" StartPoint="0,0.5">
+            <GradientStop Color="#FFC6CEDF"/>
+            <GradientStop Color="#FFE6EAF3" Offset="1"/>
+            <GradientStop Color="#FFD7DEE9" Offset="0.263"/>
+        </LinearGradientBrush>
         <LinearGradientBrush x:Key="GridBackground1" EndPoint="1,0.5" StartPoint="0,0.5">
             <GradientStop Color="#FFE2EAF5"/>
             <GradientStop Color="#FFDFE3EA" Offset="1"/>
@@ -469,6 +474,15 @@
                                             </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding HasErrors}" Value="True">
+                                                <Setter TargetName="RowBorder" Property="Background" Value="#7FFF0000" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding HasActivationError}" Value="True">
+                                                <Setter TargetName="RowBorder" Property="Background" Value="#7FFF0000" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                                <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource CardDisabledGradient}" />
+                                            </DataTrigger>
                                             <Trigger Property="DetailsVisibility" Value="Visible">
                                                 <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
                                             </Trigger>
