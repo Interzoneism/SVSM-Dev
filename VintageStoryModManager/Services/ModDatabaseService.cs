@@ -297,20 +297,26 @@ public sealed class ModDatabaseService
 
     private static bool WasCreatedOnOrAfter(ModDatabaseSearchResult candidate, DateTime thresholdUtc)
     {
+        DateTime? createdUtc = candidate.CreatedUtc ?? candidate.DetailedInfo?.CreatedUtc;
+        if (createdUtc.HasValue)
+        {
+            return createdUtc.Value >= thresholdUtc;
+        }
+
         ModDatabaseInfo? info = candidate.DetailedInfo;
         if (info?.Releases is { Count: > 0 } releases)
         {
             DateTime? earliest = null;
             foreach (ModReleaseInfo? release in releases)
             {
-                if (release?.CreatedUtc is not { } createdUtc)
+                if (release?.CreatedUtc is not { } releaseCreatedUtc)
                 {
                     continue;
                 }
 
-                if (earliest is null || createdUtc < earliest.Value)
+                if (earliest is null || releaseCreatedUtc < earliest.Value)
                 {
-                    earliest = createdUtc;
+                    earliest = releaseCreatedUtc;
                 }
             }
 
@@ -540,6 +546,7 @@ public sealed class ModDatabaseService
             Side = source.Side,
             LogoUrl = source.LogoUrl,
             LastReleasedUtc = source.LastReleasedUtc,
+            CreatedUtc = info?.CreatedUtc ?? source.CreatedUtc,
             Score = source.Score,
             LatestReleaseDownloads = latestDownloads,
             DetailedInfo = info
@@ -608,6 +615,7 @@ public sealed class ModDatabaseService
                 logoUrl = GetString(modElement, "logo");
             }
             DateTime? lastReleasedUtc = TryParseDateTime(GetString(modElement, "lastreleased"));
+            DateTime? createdUtc = TryParseDateTime(GetString(modElement, "created"));
             IReadOnlyList<ModReleaseInfo> releases = BuildReleaseInfos(modElement, normalizedGameVersion);
             ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
             ModReleaseInfo? latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
@@ -631,6 +639,7 @@ public sealed class ModDatabaseService
                 LogoUrl = logoUrl,
                 DownloadsLastThirtyDays = recentDownloads,
                 LastReleasedUtc = lastReleasedUtc,
+                CreatedUtc = createdUtc,
                 LatestRelease = latestRelease,
                 LatestCompatibleRelease = latestCompatibleRelease,
                 Releases = releases
@@ -950,6 +959,7 @@ public sealed class ModDatabaseService
         int trendingPoints = GetInt(element, "trendingpoints");
         int comments = GetInt(element, "comments");
         DateTime? lastReleased = TryParseDateTime(GetString(element, "lastreleased"));
+        DateTime? createdUtc = TryParseDateTime(GetString(element, "created"));
 
         IReadOnlyList<string> alternateIds = modIds.Count == 0 ? new[] { primaryId } : modIds;
 
@@ -995,6 +1005,7 @@ public sealed class ModDatabaseService
             Side = side,
             LogoUrl = logo,
             LastReleasedUtc = lastReleased,
+            CreatedUtc = createdUtc,
             Score = score
         };
     }
