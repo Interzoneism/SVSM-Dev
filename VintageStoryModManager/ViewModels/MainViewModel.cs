@@ -22,6 +22,7 @@ namespace VintageStoryModManager.ViewModels;
 public sealed class MainViewModel : ObservableObject
 {
     private const int RecentlyUpdatedSearchResultLimit = 30;
+    private const int PopularRecentlyMinimumDownloads = 200;
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
 
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
@@ -59,6 +60,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly RelayCommand _showModDatabaseCommand;
     private bool _showRecentlyUpdatedOnly;
     private bool _showPopularRecently;
+    private bool _suppressPopularRecentlyTrigger;
 
     public MainViewModel(string dataDirectory, int modDatabaseSearchResultLimit)
     {
@@ -223,7 +225,7 @@ public sealed class MainViewModel : ObservableObject
         get => _showRecentlyUpdatedOnly;
         set
         {
-            if (SetProperty(ref _showRecentlyUpdatedOnly, value) && SearchModDatabase)
+            if (SetProperty(ref _showRecentlyUpdatedOnly, value) && SearchModDatabase && !_suppressPopularRecentlyTrigger)
             {
                 TriggerModDatabaseSearch();
             }
@@ -235,9 +237,25 @@ public sealed class MainViewModel : ObservableObject
         get => _showPopularRecently;
         set
         {
-            if (SetProperty(ref _showPopularRecently, value) && SearchModDatabase)
+            if (SetProperty(ref _showPopularRecently, value))
             {
-                TriggerModDatabaseSearch();
+                if (value && !ShowRecentlyUpdatedOnly)
+                {
+                    _suppressPopularRecentlyTrigger = true;
+                    try
+                    {
+                        ShowRecentlyUpdatedOnly = true;
+                    }
+                    finally
+                    {
+                        _suppressPopularRecentlyTrigger = false;
+                    }
+                }
+
+                if (SearchModDatabase)
+                {
+                    TriggerModDatabaseSearch();
+                }
             }
         }
     }
@@ -740,9 +758,20 @@ public sealed class MainViewModel : ObservableObject
         string statusMessage;
         if (hasSearchTokens)
         {
-            statusMessage = ShowRecentlyUpdatedOnly
-                ? "Searching for recently updated mods..."
-                : "Searching the mod database...";
+            if (ShowPopularRecently && ShowRecentlyUpdatedOnly)
+            {
+                statusMessage = "Searching for recently popular mods...";
+            }
+            else
+            {
+                statusMessage = ShowRecentlyUpdatedOnly
+                    ? "Searching for recently updated mods..."
+                    : "Searching the mod database...";
+            }
+        }
+        else if (ShowPopularRecently && ShowRecentlyUpdatedOnly)
+        {
+            statusMessage = "Loading recently popular mods...";
         }
         else if (ShowRecentlyUpdatedOnly)
         {
@@ -776,15 +805,19 @@ public sealed class MainViewModel : ObservableObject
             IReadOnlyList<ModDatabaseSearchResult> results;
             if (ShowRecentlyUpdatedOnly)
             {
-                if (hasSearchTokens)
+                if (ShowPopularRecently && !hasSearchTokens)
+                {
+                    results = await _databaseService.GetPopularRecentlyModsAsync(maxResults, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else if (hasSearchTokens)
                 {
                     results = await _databaseService.SearchRecentlyUpdatedModsAsync(query, maxResults, cancellationToken)
                         .ConfigureAwait(false);
                 }
                 else
                 {
-                    int fetchLimit = Math.Clamp(maxResults * 4, maxResults, 100);
-                    results = await _databaseService.GetMostDownloadedModsAsync(fetchLimit, cancellationToken)
+                    results = await _databaseService.GetRecentlyUpdatedModsAsync(maxResults, cancellationToken)
                         .ConfigureAwait(false);
                 }
             }
@@ -931,8 +964,15 @@ public sealed class MainViewModel : ObservableObject
         DateTime threshold = DateTime.UtcNow.AddMonths(-1);
         int limit = Math.Max(0, maxResults);
 
-        return results
-            .Where(result => result.LastReleasedUtc.HasValue && result.LastReleasedUtc.Value >= threshold)
+        IEnumerable<ModDatabaseSearchResult> filtered = results
+            .Where(result => result.LastReleasedUtc.HasValue && result.LastReleasedUtc.Value >= threshold);
+
+        if (ShowPopularRecently)
+        {
+            filtered = filtered.Where(result => result.Downloads >= PopularRecentlyMinimumDownloads);
+        }
+
+        return filtered
             .Take(limit)
             .ToList();
     }
