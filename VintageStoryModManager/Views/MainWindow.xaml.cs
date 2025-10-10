@@ -3329,11 +3329,6 @@ public partial class MainWindow : Window
         }
 
         var mods = _viewModel.ModsView.Cast<ModListItemViewModel>().ToList();
-        if (mods.Count == 0)
-        {
-            return;
-        }
-
         var modLookup = mods.ToDictionary(mod => mod.ModId, StringComparer.OrdinalIgnoreCase);
         var overrides = new Dictionary<ModListItemViewModel, ModReleaseInfo>();
         var missingVersions = new List<string>();
