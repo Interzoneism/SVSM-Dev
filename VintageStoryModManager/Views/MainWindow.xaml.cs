@@ -3336,14 +3336,16 @@ public partial class MainWindow : Window
 
         var modLookup = mods.ToDictionary(mod => mod.ModId, StringComparer.OrdinalIgnoreCase);
         var overrides = new Dictionary<ModListItemViewModel, ModReleaseInfo>();
-        var missingMods = new List<string>();
         var missingVersions = new List<string>();
+        var missingMods = new List<string>();
+        var installFailures = new List<string>();
+        var installCandidates = new List<ModPresetModState>();
 
         foreach (var state in preset.ModStates)
         {
             if (!modLookup.TryGetValue(state.ModId, out ModListItemViewModel? mod))
             {
-                missingMods.Add(state.ModId);
+                installCandidates.Add(state);
                 continue;
             }
 
@@ -3392,13 +3394,62 @@ public partial class MainWindow : Window
             overrides[mod] = option.Release;
         }
 
-        if (missingMods.Count > 0 || missingVersions.Count > 0)
+        bool installedAnyMods = false;
+        if (installCandidates.Count > 0)
+        {
+            foreach (var candidate in installCandidates)
+            {
+                var installResult = await TryInstallPresetModAsync(candidate).ConfigureAwait(true);
+                if (installResult.Success)
+                {
+                    installedAnyMods = true;
+                    continue;
+                }
+
+                string desiredVersion = string.IsNullOrWhiteSpace(candidate.Version)
+                    ? "Unknown"
+                    : candidate.Version!.Trim();
+
+                if (installResult.ModMissing)
+                {
+                    string modDisplay = string.IsNullOrWhiteSpace(candidate.ModId)
+                        ? "<unknown mod>"
+                        : candidate.ModId!;
+                    string display = string.IsNullOrWhiteSpace(installResult.ErrorMessage)
+                        ? modDisplay
+                        : $"{modDisplay} — {installResult.ErrorMessage}";
+                    missingMods.Add(display);
+                    continue;
+                }
+
+                if (installResult.VersionMissing)
+                {
+                    string modDisplay = string.IsNullOrWhiteSpace(candidate.ModId)
+                        ? "<unknown mod>"
+                        : candidate.ModId!;
+                    missingVersions.Add($"{modDisplay} ({desiredVersion})");
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(installResult.ErrorMessage))
+                {
+                    installFailures.Add($"{candidate.ModId}: {installResult.ErrorMessage}");
+                }
+            }
+
+            if (installedAnyMods)
+            {
+                await RefreshModsAsync().ConfigureAwait(true);
+            }
+        }
+
+        if (missingMods.Count > 0 || missingVersions.Count > 0 || installFailures.Count > 0)
         {
             var builder = new StringBuilder();
 
             if (missingMods.Count > 0)
             {
-                builder.AppendLine("The following mods from the preset are not installed:");
+                builder.AppendLine("The following mods from the preset could not be installed:");
                 foreach (string modId in missingMods.Distinct(StringComparer.OrdinalIgnoreCase))
                 {
                     builder.AppendLine($" • {modId}");
@@ -3419,6 +3470,20 @@ public partial class MainWindow : Window
                 }
             }
 
+            if (installFailures.Count > 0)
+            {
+                if (builder.Length > 0)
+                {
+                    builder.AppendLine();
+                }
+
+                builder.AppendLine("Some mods failed to install:");
+                foreach (string failure in installFailures.Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    builder.AppendLine($" • {failure}");
+                }
+            }
+
             string message = builder.ToString().Trim();
             if (!string.IsNullOrWhiteSpace(message))
             {
@@ -3435,6 +3500,85 @@ public partial class MainWindow : Window
         }
 
         await UpdateModsAsync(overrides.Keys.ToList(), isBulk: true, overrides, showSummary: false);
+    }
+
+    private readonly record struct PresetModInstallResult(bool Success, bool ModMissing, bool VersionMissing, string? ErrorMessage);
+
+    private async Task<PresetModInstallResult> TryInstallPresetModAsync(ModPresetModState state)
+    {
+        if (_viewModel is null)
+        {
+            return new PresetModInstallResult(false, false, false, "The mod view model is not available.");
+        }
+
+        string modId = state.ModId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            return new PresetModInstallResult(false, false, false, "The preset entry is missing a mod identifier.");
+        }
+
+        string? desiredVersion = string.IsNullOrWhiteSpace(state.Version) ? null : state.Version!.Trim();
+        if (string.IsNullOrWhiteSpace(desiredVersion))
+        {
+            return new PresetModInstallResult(false, false, true, "No version was recorded for this mod.");
+        }
+
+        ModDatabaseInfo? info = await _modDatabaseService
+            .TryLoadDatabaseInfoAsync(modId, desiredVersion, _viewModel.InstalledGameVersion)
+            .ConfigureAwait(true);
+
+        if (info is null)
+        {
+            return new PresetModInstallResult(false, true, false, "Mod not found on the mod database.");
+        }
+
+        string? desiredNormalized = VersionStringUtility.Normalize(desiredVersion);
+        IReadOnlyList<ModReleaseInfo> releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
+        ModReleaseInfo? release = releases.FirstOrDefault(r =>
+            (!string.IsNullOrWhiteSpace(r.Version)
+                && string.Equals(r.Version.Trim(), desiredVersion, StringComparison.OrdinalIgnoreCase))
+            || (!string.IsNullOrWhiteSpace(desiredNormalized)
+                && !string.IsNullOrWhiteSpace(r.NormalizedVersion)
+                && string.Equals(r.NormalizedVersion, desiredNormalized, StringComparison.OrdinalIgnoreCase)));
+
+        if (release is null)
+        {
+            return new PresetModInstallResult(false, false, true, "The specified version could not be found on the mod database.");
+        }
+
+        if (!TryGetDependencyInstallTargetPath(modId, release, out string targetPath, out string? pathError))
+        {
+            return new PresetModInstallResult(false, false, false, pathError);
+        }
+
+        var descriptor = new ModUpdateDescriptor(
+            modId,
+            release.DownloadUri,
+            targetPath,
+            false,
+            release.FileName,
+            release.Version,
+            null);
+
+        var progress = new Progress<ModUpdateProgress>(p =>
+            _viewModel.ReportStatus($"{modId}: {p.Message}"));
+
+        ModUpdateResult result = await _modUpdateService
+            .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
+            .ConfigureAwait(true);
+
+        if (!result.Success)
+        {
+            string message = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                ? "The installation failed."
+                : result.ErrorMessage!;
+            return new PresetModInstallResult(false, false, false, message);
+        }
+
+        string versionSuffix = string.IsNullOrWhiteSpace(release.Version) ? string.Empty : $" {release.Version}";
+        _viewModel.ReportStatus($"Installed {modId}{versionSuffix}.");
+
+        return new PresetModInstallResult(true, false, false, null);
     }
 
 
