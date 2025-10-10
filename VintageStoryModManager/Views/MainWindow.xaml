@@ -225,6 +225,27 @@
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
                             VerticalAlignment="Top" Height="30" Margin="15,15,186,0">
+                    <StackPanel.Style>
+                        <Style TargetType="{x:Type StackPanel}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                        <Condition Binding="{Binding SearchText}" Value="" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                        <Condition Binding="{Binding SearchText}" Value="{x:Null}" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
                     <RadioButton Content="Top downloads"
                                  GroupName="ModDatabaseAutoLoadMode"
                                  IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}"
