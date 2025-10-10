@@ -147,7 +147,7 @@
 
         </Grid>
         <Grid x:Name="MIDDLE" Grid.Row="1"
-              Margin="16,10,41,10">
+              Margin="16,10,16,10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -160,7 +160,7 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBox Grid.Column="1"
-                         Margin="0,12,0,31"
+                         Margin="0,10,24,33"
                          MinWidth="200"
                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                          FontSize="14" HorizontalAlignment="Right" Width="227">
@@ -260,7 +260,7 @@
                                  IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" Margin="10,0,0,0" />
                 </StackPanel>
             </Grid>
-            <Grid Margin="0,32,0,0" Grid.RowSpan="2">
+            <Grid Margin="0,32,25,0" Grid.RowSpan="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -849,7 +849,7 @@
                       PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      ScrollViewer.CanContentScroll="False" Grid.RowSpan="2" BorderBrush="#FFCAD7EB">
+                      ScrollViewer.CanContentScroll="False" Grid.RowSpan="2" BorderBrush="#FFCAD7EB" FontSize="16">
                 <ListView.Style>
                     <Style TargetType="{x:Type ListView}">
                         <Setter Property="Visibility" Value="Collapsed" />
@@ -868,7 +868,7 @@
                     <ItemsPanelTemplate>
                         <WrapPanel Orientation="Horizontal"
                                    HorizontalAlignment="Center"
-                                   Margin="0"
+                                   Margin="0,20,0,0"
                                    ItemWidth="{Binding ConverterParameter=496, Converter={StaticResource IMM.ScaledDoubleConverter}, Source={StaticResource IMM.ModDbCardScale}}" />
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel>
@@ -999,7 +999,7 @@
                                                     Grid.RowSpan="2"
                                                     Orientation="Vertical">
                                             <Button Command="{Binding OpenModDatabasePageCommand}"
-                                                    FontSize="16"
+                                                    FontSize="24"
                                                     FontWeight="SemiBold"
                                                     Padding="0"
                                                     Margin="0,0,0,4"
@@ -1049,7 +1049,7 @@
                                                        Margin="0,4,0,6"
                                                        TextWrapping="Wrap"
                                                        TextTrimming="CharacterEllipsis"
-                                                       FontSize="13"
+                                                       FontSize="20"
                                                        Foreground="{DynamicResource IMM.ForegroundBrush}"
                                                        MaxHeight="60" />
                                             <TextBlock Text="{Binding DatabaseTagsDisplay}"
@@ -1082,7 +1082,7 @@
                                                            FontSize="14"
                                                            Margin="0,0,4,0"
                                                            Foreground="{DynamicResource IMM.ForegroundBrush}" />
-                                                <TextBlock FontSize="13"
+                                                <TextBlock FontSize="20"
                                                            FontWeight="SemiBold"
                                                            Foreground="{DynamicResource IMM.ForegroundBrush}">
                                                     <TextBlock.Text>
@@ -1101,7 +1101,7 @@
                                                            Margin="0,0,4,0"
                                                            Foreground="{DynamicResource IMM.ForegroundBrush}" />
                                                 <TextBlock Text="{Binding CommentsDisplay}"
-                                                           FontSize="13"
+                                                           FontSize="20"
                                                            FontWeight="SemiBold"
                                                            Foreground="{DynamicResource IMM.ForegroundBrush}" />
                                             </StackPanel>
