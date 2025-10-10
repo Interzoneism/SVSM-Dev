@@ -139,11 +139,11 @@
             </Menu>
 
             <Grid Grid.Column="1"
-                Margin="208,0,17,0"
-                VerticalAlignment="Center" Height="50">
+                Margin="210,33,16,0"
+                VerticalAlignment="Top" Height="50">
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right"
-                            VerticalAlignment="Center">
+                            VerticalAlignment="Top" Margin="0,12,0,0">
                     <CheckBox Content="Popular recently"
                               IsChecked="{Binding ShowPopularRecently, Mode=TwoWay}"
                               Style="{StaticResource IMM.RecentlyUpdatedToggleStyle}" />
@@ -1079,6 +1079,8 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
+            <RadioButton Content="Total downloads" Margin="298,-33,0,0" VerticalAlignment="Top" ClickMode="Press" Height="31"/>
+            <RadioButton Content="Downloads last 30 days" Margin="438,-33,0,0" VerticalAlignment="Top" ClickMode="Press" Height="31" Checked="RadioButton_Checked"/>
         </Grid>
         <Grid x:Name="BOTTOM" Margin="16,0,16,8" Grid.Row="2" VerticalAlignment="Bottom">
             <Grid.ColumnDefinitions>
