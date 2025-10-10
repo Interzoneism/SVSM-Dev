@@ -113,21 +113,8 @@
                     <MenuItem Header="_Save Preset..." Height="35" Click="SavePresetMenuItem_OnClick" />
                     <MenuItem Header="_Load Preset..." Height="35" Click="LoadPresetMenuItem_OnClick" />
                     <Separator />
-                    <MenuItem x:Name="IncludeStatusMenuItem"
-                              Header="Include _Active/Disabled Status"
-                              Height="35"
-                              IsCheckable="True"
-                              Click="IncludeStatusMenuItem_OnClick" />
-                    <MenuItem x:Name="IncludeVersionMenuItem"
-                              Header="Include Mod _Version"
-                              Height="35"
-                              IsCheckable="True"
-                              Click="IncludeVersionMenuItem_OnClick" />
-                    <MenuItem x:Name="ExclusiveLoadMenuItem"
-                              Header="_Exclusive Modlist"
-                              Height="35"
-                              IsCheckable="True"
-                              Click="ExclusiveLoadMenuItem_OnClick" />
+                    <MenuItem Header="Save _Modlist" Height="35" Click="SaveModlistMenuItem_OnClick" />
+                    <MenuItem Header="Load _Modlist" Height="35" Click="LoadModlistMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_View" Height="35">
                     <MenuItem Header="_Compact View"
