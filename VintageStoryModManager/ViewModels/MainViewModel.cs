@@ -25,6 +25,7 @@ public sealed class MainViewModel : ObservableObject
 {
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
+    private const int MaxNewModsRecentMonths = 24;
 
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
     private readonly Dictionary<string, ModEntry> _modEntriesBySourcePath = new(StringComparer.OrdinalIgnoreCase);
@@ -38,6 +39,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly string? _installedGameVersion;
     private readonly object _modsStateLock = new();
     private readonly ModDirectoryWatcher _modsWatcher;
+    private readonly int _newModsRecentMonths;
 
     private SortOption? _selectedSortOption;
     private bool _isBusy;
@@ -61,7 +63,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly RelayCommand _showModDatabaseCommand;
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
 
-    public MainViewModel(string dataDirectory, int modDatabaseSearchResultLimit)
+    public MainViewModel(string dataDirectory, int modDatabaseSearchResultLimit, int newModsRecentMonths)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
 
@@ -71,6 +73,7 @@ public sealed class MainViewModel : ObservableObject
         _discoveryService = new ModDiscoveryService(_settingsStore);
         _databaseService = new ModDatabaseService();
         _modDatabaseSearchResultLimit = Math.Clamp(modDatabaseSearchResultLimit, 1, 100);
+        _newModsRecentMonths = Math.Clamp(newModsRecentMonths <= 0 ? 1 : newModsRecentMonths, 1, MaxNewModsRecentMonths);
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion();
         _modsWatcher = new ModDirectoryWatcher(_discoveryService);
 
@@ -247,17 +250,20 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    public bool IsDownloadsNewModsLastThreeMonthsMode
+    public bool IsDownloadsNewModsRecentMonthsMode
     {
-        get => _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths;
+        get => _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths;
         set
         {
             if (value)
             {
-                SetAutoLoadMode(ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths);
+                SetAutoLoadMode(ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths);
             }
         }
     }
+
+    public string DownloadsNewModsRecentMonthsLabel =>
+        $"Most downloads - mods created in the {BuildRecentMonthsPhrase()}";
 
     public bool IsShowingRecentDownloadMetric => SearchModDatabase && !HasSearchText
         && _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays;
@@ -276,7 +282,7 @@ public sealed class MainViewModel : ObservableObject
         _modDatabaseAutoLoadMode = mode;
         OnPropertyChanged(nameof(IsTotalDownloadsMode));
         OnPropertyChanged(nameof(IsDownloadsLastThirtyDaysMode));
-        OnPropertyChanged(nameof(IsDownloadsNewModsLastThreeMonthsMode));
+        OnPropertyChanged(nameof(IsDownloadsNewModsRecentMonthsMode));
         OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
         OnPropertyChanged(nameof(DownloadsColumnHeader));
 
@@ -824,8 +830,8 @@ public sealed class MainViewModel : ObservableObject
             statusMessage = _modDatabaseAutoLoadMode switch
             {
                 ModDatabaseAutoLoadMode.DownloadsLastThirtyDays => "Loading top mods from the last 30 days...",
-                ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths =>
-                    "Loading most downloaded new mods from the last three months...",
+                ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
+                    $"Loading most downloaded new mods from the {BuildRecentMonthsPhrase()}...",
                 _ => "Loading most downloaded mods..."
             };
         }
@@ -866,9 +872,12 @@ public sealed class MainViewModel : ObservableObject
                         await _databaseService
                             .GetMostDownloadedModsLastThirtyDaysAsync(_modDatabaseSearchResultLimit, cancellationToken)
                             .ConfigureAwait(false),
-                    ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths =>
+                    ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
                         await _databaseService
-                            .GetMostDownloadedNewModsLastThreeMonthsAsync(_modDatabaseSearchResultLimit, cancellationToken)
+                            .GetMostDownloadedNewModsAsync(
+                                _newModsRecentMonths,
+                                _modDatabaseSearchResultLimit,
+                                cancellationToken)
                             .ConfigureAwait(false),
                     _ => await _databaseService
                         .GetMostDownloadedModsAsync(_modDatabaseSearchResultLimit, cancellationToken)
@@ -1010,8 +1019,8 @@ public sealed class MainViewModel : ObservableObject
         {
             ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
                 $"Showing {resultCount} of the most downloaded mods from the last 30 days.",
-            ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths =>
-                $"Showing {resultCount} of the most downloaded new mods from the last three months.",
+            ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
+                $"Showing {resultCount} of the most downloaded new mods from the {BuildRecentMonthsPhrase()}.",
             _ => $"Showing {resultCount} of the most downloaded mods."
         };
     }
@@ -1027,8 +1036,8 @@ public sealed class MainViewModel : ObservableObject
         {
             ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
                 "No mods with downloads in the last 30 days were found.",
-            ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths =>
-                "No mods created in the last three months were found.",
+            ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
+                $"No mods created in the {BuildRecentMonthsPhrase()} were found.",
             _ => "No mods found in the mod database."
         };
     }
@@ -1046,13 +1055,20 @@ public sealed class MainViewModel : ObservableObject
             {
                 ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
                     "load the most downloaded mods from the last 30 days",
-                ModDatabaseAutoLoadMode.DownloadsNewModsLastThreeMonths =>
-                    "load the most downloaded new mods from the last three months",
+                ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
+                    $"load the most downloaded new mods from the {BuildRecentMonthsPhrase()}",
                 _ => "load the most downloaded mods from the mod database"
             };
         }
 
         return $"Failed to {operation}: {errorMessage}";
+    }
+
+    private string BuildRecentMonthsPhrase()
+    {
+        return _newModsRecentMonths == 1
+            ? "last month"
+            : $"last {_newModsRecentMonths} months";
     }
 
     private Task UpdateSearchResultsAsync(IReadOnlyList<ModListItemViewModel> items, CancellationToken cancellationToken)

@@ -205,7 +205,10 @@ public partial class MainWindow : Window
             throw new InvalidOperationException("The data directory is not set.");
         }
 
-        _viewModel = new MainViewModel(_dataDirectory, _userConfiguration.ModDatabaseSearchResultLimit)
+        _viewModel = new MainViewModel(
+            _dataDirectory,
+            _userConfiguration.ModDatabaseSearchResultLimit,
+            _userConfiguration.ModDatabaseNewModsRecentMonths)
         {
             IsCompactView = _userConfiguration.IsCompactView,
             UseModDbDesignView = _userConfiguration.UseModDbDesignView
@@ -947,7 +950,10 @@ public partial class MainWindow : Window
 
         try
         {
-            var viewModel = new MainViewModel(_dataDirectory, _userConfiguration.ModDatabaseSearchResultLimit);
+            var viewModel = new MainViewModel(
+                _dataDirectory,
+                _userConfiguration.ModDatabaseSearchResultLimit,
+                _userConfiguration.ModDatabaseNewModsRecentMonths);
             _viewModel = viewModel;
             DataContext = viewModel;
             AttachToModsView(viewModel.CurrentModsView);

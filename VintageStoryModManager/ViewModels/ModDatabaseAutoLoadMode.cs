@@ -7,5 +7,5 @@ public enum ModDatabaseAutoLoadMode
 {
     TotalDownloads,
     DownloadsLastThirtyDays,
-    DownloadsNewModsLastThreeMonths
+    DownloadsNewModsRecentMonths
 }
