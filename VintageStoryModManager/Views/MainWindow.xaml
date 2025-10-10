@@ -12,7 +12,7 @@
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Vintage Story Mod Manager"
         Height="727" Width="1215"
-        MinWidth="900" MinHeight="520" Background="{DynamicResource GridBackground1}">
+        MinWidth="900" MinHeight="520" Background="{DynamicResource GridBackground1}" WindowStartupLocation="CenterScreen" Icon="/modmanager.ico" SizeToContent="Height">
 
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenTrueConverter" />
@@ -482,6 +482,7 @@
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding IsActive}" Value="False">
                                                 <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource CardDisabledGradient}" />
+                                                <Setter TargetName="RowBorder" Property="Opacity" Value="0.5" />
                                             </DataTrigger>
                                             <Trigger Property="DetailsVisibility" Value="Visible">
                                                 <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
