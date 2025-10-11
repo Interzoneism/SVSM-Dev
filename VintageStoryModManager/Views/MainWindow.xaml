@@ -238,7 +238,6 @@
                               Click="ManagerModDbPageMenuItem_OnClick" />
                 </MenuItem>
             </Menu>
-            <Ellipse Name="PROGRESS" Grid.Column="1" HorizontalAlignment="Left" Height="30" Margin="815,5,0,0" Stroke="Black" VerticalAlignment="Top" Width="30"/>
 
 
         </Grid>
