@@ -266,7 +266,7 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public string DownloadsNewModsRecentMonthsLabel =>
-        $"Most downloads - created {BuildRecentMonthsPhrase()}";
+        $"Top downloads (created {BuildRecentMonthsPhrase()})";
 
     public bool IsShowingRecentDownloadMetric => SearchModDatabase && !HasSearchText
         && _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays;
