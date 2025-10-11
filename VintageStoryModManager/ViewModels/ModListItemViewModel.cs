@@ -73,6 +73,10 @@ public sealed class ModListItemViewModel : ObservableObject
     private bool _hasUpdate;
     private string? _updateMessage;
     private ModVersionOptionViewModel? _selectedVersionOption;
+    private string[] _configPaths = Array.Empty<string>();
+    private string _configPathsDisplay = "—";
+    private string _configPathsTooltip = "—";
+    private IReadOnlyList<string> _configPathDisplayLines = Array.Empty<string>();
 
     public sealed record ReleaseChangelog(string Version, string Changelog);
 
@@ -365,6 +369,85 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         get => _selectedVersionOption;
         set => SetProperty(ref _selectedVersionOption, value);
+    }
+
+    public string ConfigPathsDisplay
+    {
+        get => _configPathsDisplay;
+        private set => SetProperty(ref _configPathsDisplay, value);
+    }
+
+    public string ConfigPathsTooltip
+    {
+        get => _configPathsTooltip;
+        private set => SetProperty(ref _configPathsTooltip, value);
+    }
+
+    public IReadOnlyList<string> ConfigPathDisplayLines
+    {
+        get => _configPathDisplayLines;
+        private set => SetProperty(ref _configPathDisplayLines, value);
+    }
+
+    public bool HasConfigPaths => _configPaths.Length > 0;
+
+    public void UpdateConfigPaths(IEnumerable<string>? paths)
+    {
+        string[] normalized = paths?.Where(p => !string.IsNullOrWhiteSpace(p))
+            .Select(p => p.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray() ?? Array.Empty<string>();
+
+        if (AreConfigPathsEqual(_configPaths, normalized))
+        {
+            return;
+        }
+
+        _configPaths = normalized;
+        OnPropertyChanged(nameof(HasConfigPaths));
+
+        IReadOnlyList<string> displayLines = _configPaths.Length == 0
+            ? Array.Empty<string>()
+            : _configPaths.Select(GetConfigDisplayName).ToArray();
+        string display = displayLines.Count == 0
+            ? "—"
+            : string.Join(Environment.NewLine, displayLines);
+        string tooltip = _configPaths.Length == 0
+            ? "—"
+            : string.Join(Environment.NewLine, _configPaths);
+
+        ConfigPathDisplayLines = displayLines;
+        ConfigPathsDisplay = display;
+        ConfigPathsTooltip = tooltip;
+    }
+
+    private static bool AreConfigPathsEqual(string[] current, string[] updated)
+    {
+        if (ReferenceEquals(current, updated))
+        {
+            return true;
+        }
+
+        if (current.Length != updated.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < current.Length; i++)
+        {
+            if (!string.Equals(current[i], updated[i], StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static string GetConfigDisplayName(string path)
+    {
+        string? fileName = Path.GetFileName(path);
+        return string.IsNullOrWhiteSpace(fileName) ? path : fileName!;
     }
 
     public string UpdateButtonToolTip

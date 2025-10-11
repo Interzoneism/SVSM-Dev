@@ -883,6 +883,49 @@
                                 </Style>
                             </DataGridTextColumn.CellStyle>
                         </DataGridTextColumn>
+                        <DataGridTemplateColumn Header="Config" Width="220" IsReadOnly="True">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <ItemsControl x:Name="ConfigPathList"
+                                                      ItemsSource="{Binding ConfigPathDisplayLines}"
+                                                      VerticalAlignment="Center">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}"
+                                                               TextWrapping="Wrap"
+                                                               TextTrimming="None" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock x:Name="NoConfigPlaceholder"
+                                                   Text="—"
+                                                   VerticalAlignment="Center" />
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding HasConfigPaths}" Value="True">
+                                            <Setter TargetName="NoConfigPlaceholder" Property="UIElement.Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding HasConfigPaths}" Value="False">
+                                            <Setter TargetName="ConfigPathList" Property="UIElement.Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellStyle>
+                                <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                    <Setter Property="ToolTip">
+                                        <Setter.Value>
+                                            <TextBlock Text="{Binding ConfigPathsTooltip}"
+                                                       TextWrapping="Wrap"
+                                                       MaxWidth="360" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </DataGridTemplateColumn.CellStyle>
+                        </DataGridTemplateColumn>
                         <DataGridTemplateColumn x:Name="StatusColumn" Header="Status" Width="100" IsReadOnly="True" SortMemberPath="StatusSortOrder">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
