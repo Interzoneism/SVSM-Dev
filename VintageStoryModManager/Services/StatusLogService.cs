@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace VintageStoryModManager.Services;
 
@@ -52,6 +53,11 @@ public static class StatusLogService
         string severity = isError ? "ERROR" : "INFO";
         string line = $"[{timestamp}] [{severity}] {message}{Environment.NewLine}";
 
+        _ = Task.Run(() => WriteLogEntry(line));
+    }
+
+    private static void WriteLogEntry(string line)
+    {
         try
         {
             lock (SyncRoot)
