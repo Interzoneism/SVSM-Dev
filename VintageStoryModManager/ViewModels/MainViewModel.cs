@@ -502,6 +502,18 @@ public sealed class MainViewModel : ObservableObject
         return null;
     }
 
+    internal ModListItemViewModel? FindModBySourcePath(string? sourcePath)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePath))
+        {
+            return null;
+        }
+
+        return _modViewModelsBySourcePath.TryGetValue(sourcePath, out var viewModel)
+            ? viewModel
+            : null;
+    }
+
     internal string? InstalledGameVersion => _installedGameVersion;
 
     internal async Task<bool> PreserveActivationStateAsync(string modId, string? previousVersion, string? newVersion, bool wasActive)

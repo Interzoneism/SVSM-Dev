@@ -890,7 +890,40 @@ public partial class MainWindow : Window
         ScrollViewer? scrollViewer = GetModsScrollViewer();
         double? targetOffset = scrollViewer?.VerticalOffset;
 
+        List<string>? selectedSourcePaths = null;
+        string? anchorSourcePath = null;
+
+        if (_viewModel.SearchModDatabase != true && _selectedMods.Count > 0)
+        {
+            var dedup = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            selectedSourcePaths = new List<string>(_selectedMods.Count);
+
+            foreach (ModListItemViewModel selected in _selectedMods)
+            {
+                string? sourcePath = selected.SourcePath;
+                if (string.IsNullOrWhiteSpace(sourcePath))
+                {
+                    continue;
+                }
+
+                if (dedup.Add(sourcePath))
+                {
+                    selectedSourcePaths.Add(sourcePath);
+                }
+            }
+
+            if (selectedSourcePaths.Count > 0 && _selectionAnchor is { } anchor)
+            {
+                anchorSourcePath = anchor.SourcePath;
+            }
+        }
+
         await _viewModel.RefreshCommand.ExecuteAsync(null);
+
+        if (selectedSourcePaths is { Count: > 0 })
+        {
+            RestoreSelectionFromSourcePaths(selectedSourcePaths, anchorSourcePath);
+        }
 
         if (scrollViewer != null && targetOffset.HasValue)
         {
@@ -4220,6 +4253,89 @@ public partial class MainWindow : Window
         }
 
         UpdateSelectedModButtons();
+    }
+
+    private void RestoreSelectionFromSourcePaths(IReadOnlyList<string> sourcePaths, string? anchorSourcePath)
+    {
+        if (_viewModel is null || _viewModel.SearchModDatabase == true)
+        {
+            return;
+        }
+
+        var resolved = new List<ModListItemViewModel>(sourcePaths.Count);
+        foreach (string path in sourcePaths)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            ModListItemViewModel? current = _viewModel.FindModBySourcePath(path);
+            if (current != null && !resolved.Contains(current))
+            {
+                resolved.Add(current);
+            }
+        }
+
+        bool selectionChanged = resolved.Count != _selectedMods.Count;
+        if (!selectionChanged)
+        {
+            for (int i = 0; i < resolved.Count; i++)
+            {
+                if (!ReferenceEquals(resolved[i], _selectedMods[i]))
+                {
+                    selectionChanged = true;
+                    break;
+                }
+            }
+        }
+
+        if (!selectionChanged)
+        {
+            UpdateSelectionAnchorAfterRestore(resolved, anchorSourcePath);
+            return;
+        }
+
+        foreach (var mod in _selectedMods)
+        {
+            mod.IsSelected = false;
+            UnsubscribeFromSelectedMod(mod);
+        }
+
+        _selectedMods.Clear();
+
+        foreach (var mod in resolved)
+        {
+            _selectedMods.Add(mod);
+            mod.IsSelected = true;
+            SubscribeToSelectedMod(mod);
+        }
+
+        UpdateSelectionAnchorAfterRestore(resolved, anchorSourcePath);
+        UpdateSelectedModButtons();
+    }
+
+    private void UpdateSelectionAnchorAfterRestore(IReadOnlyList<ModListItemViewModel> selection, string? anchorSourcePath)
+    {
+        if (selection.Count == 0)
+        {
+            _selectionAnchor = null;
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(anchorSourcePath))
+        {
+            foreach (var mod in selection)
+            {
+                if (string.Equals(mod.SourcePath, anchorSourcePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    _selectionAnchor = mod;
+                    return;
+                }
+            }
+        }
+
+        _selectionAnchor = selection[selection.Count - 1];
     }
 
     private void SubscribeToSelectedMod(ModListItemViewModel mod)
