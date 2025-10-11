@@ -1609,7 +1609,7 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             ModManagerMessageBox.Show(
                 "Internet access is disabled. Enable Internet Access in the File menu to open web links.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;

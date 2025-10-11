@@ -111,7 +111,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             WpfMessageBox.Show($"Failed to initialize the mod manager:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             WpfApplication.Current?.Shutdown();
@@ -783,7 +783,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             WpfMessageBox.Show($"Failed to load mods:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -854,7 +854,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             WpfMessageBox.Show($"Failed to refresh mods automatically:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -897,7 +897,7 @@ public partial class MainWindow : Window
         if (_dataDirectory is null)
         {
             WpfMessageBox.Show("The Vintage Story data folder could not be located. Please select it to continue.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
 
@@ -921,7 +921,7 @@ public partial class MainWindow : Window
         if (_gameDirectory is null)
         {
             WpfMessageBox.Show("The Vintage Story installation folder could not be located. Please select it to continue.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
 
@@ -966,7 +966,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             WpfMessageBox.Show($"Failed to reload mods:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -1004,7 +1004,7 @@ public partial class MainWindow : Window
 
                 MessageBoxResult exit = WpfMessageBox.Show(
                     "You must select a folder to continue. Do you want to exit the application?",
-                    "Vintage Story Mod Manager",
+                    "Simple VS Manager",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
 
@@ -1023,7 +1023,7 @@ public partial class MainWindow : Window
             }
 
             WpfMessageBox.Show(errorMessage ?? "The selected folder is not valid.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -1507,7 +1507,7 @@ public partial class MainWindow : Window
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
             WpfMessageBox.Show($"Failed to store the configuration path:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             return;
@@ -1533,7 +1533,7 @@ public partial class MainWindow : Window
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
                     {
                         WpfMessageBox.Show($"Failed to store the configuration path:\n{ex.Message}",
-                            "Vintage Story Mod Manager",
+                            "Simple VS Manager",
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);
                     }
@@ -1545,7 +1545,7 @@ public partial class MainWindow : Window
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
             WpfMessageBox.Show($"Failed to open the configuration file:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             _userConfiguration.RemoveModConfigPath(mod.ModId);
@@ -1598,7 +1598,7 @@ public partial class MainWindow : Window
             if (!string.IsNullOrWhiteSpace(errorMessage))
             {
                 WpfMessageBox.Show(errorMessage!,
-                    "Vintage Story Mod Manager",
+                    "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
@@ -1608,7 +1608,7 @@ public partial class MainWindow : Window
 
         MessageBoxResult confirmation = WpfMessageBox.Show(
             $"Are you sure you want to delete {mod.DisplayName}? This will remove the mod from disk.",
-            "Vintage Story Mod Manager",
+            "Simple VS Manager",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
@@ -1628,7 +1628,7 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 WpfMessageBox.Show($"The mod list could not be refreshed:{Environment.NewLine}{ex.Message}",
-                    "Vintage Story Mod Manager",
+                    "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -1655,7 +1655,7 @@ public partial class MainWindow : Window
                 if (!string.IsNullOrWhiteSpace(errorMessage))
                 {
                     WpfMessageBox.Show(errorMessage!,
-                        "Vintage Story Mod Manager",
+                        "Simple VS Manager",
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
                 }
@@ -1696,7 +1696,7 @@ public partial class MainWindow : Window
 
         MessageBoxResult confirmation = WpfMessageBox.Show(
             confirmationBuilder.ToString(),
-            "Vintage Story Mod Manager",
+            "Simple VS Manager",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
@@ -1723,7 +1723,7 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 WpfMessageBox.Show($"The mod list could not be refreshed:{Environment.NewLine}{ex.Message}",
-                    "Vintage Story Mod Manager",
+                    "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -1754,7 +1754,7 @@ public partial class MainWindow : Window
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             WpfMessageBox.Show($"Failed to delete {mod.DisplayName}:{Environment.NewLine}{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             return false;
@@ -1763,7 +1763,7 @@ public partial class MainWindow : Window
         if (!removed)
         {
             WpfMessageBox.Show($"The mod could not be found at:{Environment.NewLine}{modPath}{Environment.NewLine}It may have already been removed.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return false;
@@ -1798,7 +1798,7 @@ public partial class MainWindow : Window
         if (dependencies.Count == 0)
         {
             WpfMessageBox.Show("This mod does not declare dependencies that can be fixed automatically.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
@@ -1884,7 +1884,7 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 WpfMessageBox.Show($"The mod list could not be refreshed after fixing dependencies:{Environment.NewLine}{ex.Message}",
-                    "Vintage Story Mod Manager",
+                    "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -1900,7 +1900,7 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 WpfMessageBox.Show($"The mods with errors could not be refreshed after fixing dependencies:{Environment.NewLine}{ex.Message}",
-                    "Vintage Story Mod Manager",
+                    "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -1918,7 +1918,7 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 WpfMessageBox.Show($"The mod list could not be refreshed after fixing dependencies:{Environment.NewLine}{ex.Message}",
-                    "Vintage Story Mod Manager",
+                    "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -1930,7 +1930,7 @@ public partial class MainWindow : Window
         {
             string message = string.Join(Environment.NewLine, failures);
             WpfMessageBox.Show($"Some dependencies could not be resolved:{Environment.NewLine}{message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             _viewModel.ReportStatus($"Failed to resolve all dependencies for {mod.DisplayName}.", true);
@@ -1967,7 +1967,7 @@ public partial class MainWindow : Window
         if (!mod.HasDownloadableRelease)
         {
             WpfMessageBox.Show("No downloadable releases are available for this mod.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
@@ -1977,7 +1977,7 @@ public partial class MainWindow : Window
         if (release is null)
         {
             WpfMessageBox.Show("No downloadable releases are available for this mod.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
@@ -1988,7 +1988,7 @@ public partial class MainWindow : Window
             if (!string.IsNullOrWhiteSpace(errorMessage))
             {
                 WpfMessageBox.Show(errorMessage!,
-                    "Vintage Story Mod Manager",
+                    "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -2024,7 +2024,7 @@ public partial class MainWindow : Window
                     : result.ErrorMessage!;
                 _viewModel?.ReportStatus($"Failed to install {mod.DisplayName}: {message}", true);
                 WpfMessageBox.Show($"Failed to install {mod.DisplayName}:{Environment.NewLine}{message}",
-                    "Vintage Story Mod Manager",
+                    "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 return;
@@ -2050,7 +2050,7 @@ public partial class MainWindow : Window
         {
             _viewModel?.ReportStatus($"Failed to install {mod.DisplayName}: {ex.Message}", true);
             WpfMessageBox.Show($"Failed to install {mod.DisplayName}:{Environment.NewLine}{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -2206,7 +2206,7 @@ public partial class MainWindow : Window
 
         MessageBoxResult confirmation = WpfMessageBox.Show(
             message,
-            "Vintage Story Mod Manager",
+            "Simple VS Manager",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
@@ -2313,7 +2313,7 @@ public partial class MainWindow : Window
         if (mods.Count == 0)
         {
             WpfMessageBox.Show("All mods are already up to date.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
@@ -2326,7 +2326,7 @@ public partial class MainWindow : Window
     {
         MessageBoxResult result = WpfMessageBox.Show(
             "This will only delete the managers cached mods to save some disk space, it will not affect your installed mods.",
-            "Vintage Story Mod Manager",
+            "Simple VS Manager",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
@@ -2340,7 +2340,7 @@ public partial class MainWindow : Window
         {
             WpfMessageBox.Show(
                 "Could not determine the cached mods directory.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             await RefreshDeleteCachedModsMenuHeaderAsync();
@@ -2351,7 +2351,7 @@ public partial class MainWindow : Window
         {
             WpfMessageBox.Show(
                 "No cached mods were found.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             await RefreshDeleteCachedModsMenuHeaderAsync();
@@ -2367,7 +2367,7 @@ public partial class MainWindow : Window
 
             WpfMessageBox.Show(
                 "Cached mods deleted successfully.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }
@@ -2375,7 +2375,7 @@ public partial class MainWindow : Window
         {
             WpfMessageBox.Show(
                 $"Failed to delete cached mods:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -2390,7 +2390,7 @@ public partial class MainWindow : Window
         {
             WpfMessageBox.Show(
                 "The manager data folder is not available on this system.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             return;
@@ -2404,7 +2404,7 @@ public partial class MainWindow : Window
         {
             WpfMessageBox.Show(
                 $"Failed to open the manager data folder:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             return;
@@ -2419,7 +2419,7 @@ public partial class MainWindow : Window
         {
             WpfMessageBox.Show(
                 "Internet access is disabled. Enable Internet Access in the File menu to open the mod database page.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
@@ -2437,7 +2437,7 @@ public partial class MainWindow : Window
         {
             WpfMessageBox.Show(
                 $"Failed to open the mod database page:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -2555,7 +2555,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             WpfMessageBox.Show($"Failed to refresh mods:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -2617,7 +2617,7 @@ public partial class MainWindow : Window
         if (executable is null)
         {
             WpfMessageBox.Show("The Vintage Story executable could not be found. Verify the game folder in File > Set Game Folder.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             return;
@@ -2635,7 +2635,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             WpfMessageBox.Show($"Failed to launch Vintage Story:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -2661,7 +2661,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(path))
         {
             WpfMessageBox.Show($"The {description} folder is not available. Please verify the VintagestoryData folder from File > Set Data Folder.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             return;
@@ -2670,7 +2670,7 @@ public partial class MainWindow : Window
         if (!Directory.Exists(path))
         {
             WpfMessageBox.Show($"The {description} folder could not be found at:\n{path}\nPlease verify the VintagestoryData folder from File > Set Data Folder.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             return;
@@ -2687,7 +2687,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             WpfMessageBox.Show($"Failed to open the {description} folder:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -3002,7 +3002,7 @@ public partial class MainWindow : Window
             }
 
             WpfMessageBox.Show(folderWarningMessage,
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             args.Cancel = true;
@@ -3065,7 +3065,7 @@ public partial class MainWindow : Window
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             WpfMessageBox.Show($"Failed to save the {failureContext}:\n{ex.Message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             return false;
@@ -3138,7 +3138,7 @@ public partial class MainWindow : Window
             }
 
             WpfMessageBox.Show("Please select a preset from the Presets folder.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             args.Cancel = true;
@@ -3156,7 +3156,7 @@ public partial class MainWindow : Window
                 ? "The selected file is not a valid preset."
                 : errorMessage!;
             WpfMessageBox.Show($"Failed to load the preset:\n{message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             return;
@@ -3193,7 +3193,7 @@ public partial class MainWindow : Window
             }
 
             WpfMessageBox.Show("Please select a modlist from the Modlists folder.",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             args.Cancel = true;
@@ -3207,7 +3207,7 @@ public partial class MainWindow : Window
 
         MessageBoxResult prompt = WpfMessageBox.Show(
             "Would you like to save your current modlist before loading the selected modlist?",
-            "Vintage Story Mod Manager",
+            "Simple VS Manager",
             MessageBoxButton.YesNoCancel,
             MessageBoxImage.Question);
 
@@ -3230,7 +3230,7 @@ public partial class MainWindow : Window
                 ? "The selected file is not a valid modlist."
                 : errorMessage!;
             WpfMessageBox.Show($"Failed to load the modlist:\n{message}",
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             return;
@@ -3593,7 +3593,7 @@ public partial class MainWindow : Window
             if (!string.IsNullOrWhiteSpace(message))
             {
                 WpfMessageBox.Show(message,
-                    "Vintage Story Mod Manager",
+                    "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
@@ -3785,7 +3785,7 @@ public partial class MainWindow : Window
             }
 
             WpfMessageBox.Show(builder.ToString().Trim(),
-                "Vintage Story Mod Manager",
+                "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -4497,7 +4497,7 @@ public partial class MainWindow : Window
                 catch (Exception ex)
                 {
                     WpfMessageBox.Show($"The mod list could not be refreshed after updating mods:{Environment.NewLine}{ex.Message}",
-                        "Vintage Story Mod Manager",
+                        "Simple VS Manager",
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
@@ -4515,7 +4515,7 @@ public partial class MainWindow : Window
             else if (abortRequested && showSummary)
             {
                 WpfMessageBox.Show(isBulk ? "Bulk update cancelled." : "Update cancelled.",
-                    "Vintage Story Mod Manager",
+                    "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
@@ -4703,7 +4703,7 @@ public partial class MainWindow : Window
 
         MessageBoxResult result = WpfMessageBox.Show(
             message,
-            "Vintage Story Mod Manager",
+            "Simple VS Manager",
             hasCompatible ? MessageBoxButton.YesNoCancel : MessageBoxButton.YesNoCancel,
             MessageBoxImage.Warning);
 
@@ -4781,7 +4781,7 @@ public partial class MainWindow : Window
 
         MessageBoxResult result = WpfMessageBox.Show(
             promptMessage,
-            "Vintage Story Mod Manager",
+            "Simple VS Manager",
             MessageBoxButton.YesNoCancel,
             MessageBoxImage.Warning);
 
@@ -4865,7 +4865,7 @@ public partial class MainWindow : Window
         {
             icon = failureCount > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information;
         }
-        WpfMessageBox.Show(builder.ToString(), "Vintage Story Mod Manager", MessageBoxButton.OK, icon);
+        WpfMessageBox.Show(builder.ToString(), "Simple VS Manager", MessageBoxButton.OK, icon);
     }
 
     private enum ModUpdateReleasePreference
