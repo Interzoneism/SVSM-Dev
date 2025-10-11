@@ -11,8 +11,8 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
         Title="Simple VS Manager"
-        Height="600" Width="1140"
-        MinWidth="900" MinHeight="520" Background="{DynamicResource GridBackground1}" WindowStartupLocation="CenterScreen">
+        Height="696" Width="1196"
+        MinWidth="900" MinHeight="740" Background="{DynamicResource GridBackground1}" WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenTrueConverter" />
@@ -1323,13 +1323,12 @@
             </StackPanel>
         </Grid>
         <Border Background="{DynamicResource CardGradient3}" x:Name="MODINFO_border"
-                VerticalAlignment="Top"
                 BorderBrush="{DynamicResource VS.DialogBorderBrush}"
                 BorderThickness="0"
-                CornerRadius="15,15,15,15" Margin="0,210,55,0" Grid.Row="1" HorizontalAlignment="Right" Width="326" Height="201">
+                CornerRadius="15,15,15,15" Margin="0,255,40,185" Grid.Row="1" Height="201" HorizontalAlignment="Right" Width="326" Panel.ZIndex="400">
             <Border.Style>
                 <Style TargetType="{x:Type Border}">
-                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Setter Property="Visibility" Value="Visible" />
                     <Setter Property="IsHitTestVisible" Value="False" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding HasSelectedMods}" Value="True">
