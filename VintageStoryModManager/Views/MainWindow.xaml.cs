@@ -3528,7 +3528,7 @@ public partial class MainWindow : Window
                 onClick: () => _userConfiguration.SetSuppressModlistSavePrompt(true));
 
             prompt = WpfMessageBox.Show(
-                "Would you like to save your current modlist before loading the selected modlist?",
+                "Would you like to backup your current mods as a Modlist before loading the selected Modlist? Your current mods will be deleted! ",
                 "Simple VS Manager",
                 MessageBoxButton.YesNoCancel,
                 MessageBoxImage.Question,
