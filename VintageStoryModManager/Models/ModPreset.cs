@@ -11,25 +11,16 @@ namespace VintageStoryModManager.Models;
 /// <param name="IncludesModStatus">Indicates whether the preset recorded activation state for mods.</param>
 /// <param name="IncludesModVersions">Indicates whether the preset recorded specific mod versions.</param>
 /// <param name="IsExclusive">Indicates whether loading the preset should remove mods that were not saved.</param>
-/// <param name="IncludesConfigs">Indicates whether the preset bundled mod configuration files.</param>
-/// <param name="ConfigFiles">Configuration files captured when the preset or modlist was saved.</param>
 public sealed record ModPreset(
     string Name,
     IReadOnlyList<string> DisabledEntries,
     IReadOnlyList<ModPresetModState> ModStates,
     bool IncludesModStatus,
     bool IncludesModVersions,
-    bool IsExclusive,
-    bool IncludesConfigs,
-    IReadOnlyList<ModPresetConfigFile> ConfigFiles)
+    bool IsExclusive)
 {
     /// <summary>
     /// Gets a value indicating whether the preset contains any recorded mod states.
     /// </summary>
     public bool HasModStates => ModStates.Count > 0;
-
-    /// <summary>
-    /// Gets a value indicating whether the preset contains any configuration files.
-    /// </summary>
-    public bool HasConfigFiles => ConfigFiles.Count > 0;
 }
