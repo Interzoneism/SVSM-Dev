@@ -14,14 +14,12 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public sealed class UserConfigurationService
 {
-    private const string ConfigurationFileName = "VS_ModManager_Config.json";
-    private const string LegacyConfigurationFileName = "settings.json";
+    private const string ConfigurationFileName = "SimpleVSManagerConfig.json";
     private const int DefaultModDatabaseSearchResultLimit = 30;
     private const int DefaultModDatabaseNewModsRecentMonths = 3;
     private const int MaxModDatabaseNewModsRecentMonths = 24;
 
     private readonly string _configurationPath;
-    private readonly string? _legacyConfigurationPath;
     private readonly Dictionary<string, string[]> _presets = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AdvancedPresetData> _advancedPresets = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
@@ -41,7 +39,7 @@ public sealed class UserConfigurationService
 
     public UserConfigurationService()
     {
-        (_configurationPath, _legacyConfigurationPath) = DetermineConfigurationPaths();
+        _configurationPath = DetermineConfigurationPath();
         Load();
 
         if (!File.Exists(_configurationPath))
@@ -451,30 +449,17 @@ public sealed class UserConfigurationService
 
         try
         {
-            string? pathToLoad = _configurationPath;
-            if (!File.Exists(pathToLoad)
-                && !string.IsNullOrWhiteSpace(_legacyConfigurationPath)
-                && File.Exists(_legacyConfigurationPath))
-            {
-                pathToLoad = _legacyConfigurationPath;
-            }
-
-            if (string.IsNullOrWhiteSpace(pathToLoad) || !File.Exists(pathToLoad))
+            if (!File.Exists(_configurationPath))
             {
                 return;
             }
 
-            using FileStream stream = File.OpenRead(pathToLoad);
+            using FileStream stream = File.OpenRead(_configurationPath);
             JsonNode? node = JsonNode.Parse(stream);
             if (node is not JsonObject obj)
             {
                 return;
             }
-
-            bool loadedFromPreferredLocation = string.Equals(
-                pathToLoad,
-                _configurationPath,
-                StringComparison.OrdinalIgnoreCase);
 
             DataDirectory = NormalizePath(obj["dataDirectory"]?.GetValue<string?>());
             GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
@@ -490,11 +475,8 @@ public sealed class UserConfigurationService
                 obj["modDatabaseNewModsRecentMonths"]?.GetValue<int?>());
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
-            if (loadedFromPreferredLocation)
-            {
-                LoadClassicPresets(obj["modPresets"]);
-                LoadAdvancedPresets(obj["advancedModPresets"]);
-            }
+            LoadClassicPresets(obj["modPresets"]);
+            LoadAdvancedPresets(obj["advancedModPresets"]);
             LoadModConfigPaths(obj["modConfigPaths"]);
             _selectedPresetName = NormalizePresetName(obj["selectedPreset"]?.GetValue<string?>());
             _selectedAdvancedPresetName = NormalizePresetName(obj["selectedAdvancedPreset"]?.GetValue<string?>());
@@ -511,10 +493,6 @@ public sealed class UserConfigurationService
                 _selectedAdvancedPresetName = null;
             }
 
-            if (!loadedFromPreferredLocation)
-            {
-                Save();
-            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -629,25 +607,11 @@ public sealed class UserConfigurationService
         return value;
     }
 
-    private static (string path, string? legacyPath) DetermineConfigurationPaths()
+    private static string DetermineConfigurationPath()
     {
         string preferredDirectory = GetPreferredConfigurationDirectory();
         Directory.CreateDirectory(preferredDirectory);
-        string preferredPath = Path.Combine(preferredDirectory, ConfigurationFileName);
-
-        string? legacyDirectory = GetLegacyConfigurationDirectory();
-        string? legacyPath = null;
-
-        if (!string.IsNullOrWhiteSpace(legacyDirectory))
-        {
-            legacyPath = Path.Combine(legacyDirectory!, LegacyConfigurationFileName);
-            if (string.Equals(preferredPath, legacyPath, StringComparison.OrdinalIgnoreCase))
-            {
-                legacyPath = null;
-            }
-        }
-
-        return (preferredPath, legacyPath);
+        return Path.Combine(preferredDirectory, ConfigurationFileName);
     }
 
     private JsonObject BuildClassicPresetsJson()
@@ -909,45 +873,28 @@ public sealed class UserConfigurationService
         string? documents = GetFolder(Environment.SpecialFolder.MyDocuments);
         if (!string.IsNullOrWhiteSpace(documents))
         {
-            return Path.Combine(documents!, "VS Mod Manager");
+            return Path.Combine(documents!, "Simple VS Manager");
         }
 
         string? personal = GetFolder(Environment.SpecialFolder.Personal);
         if (!string.IsNullOrWhiteSpace(personal))
         {
-            return Path.Combine(personal!, "VS Mod Manager");
+            return Path.Combine(personal!, "Simple VS Manager");
         }
 
         string? appData = GetFolder(Environment.SpecialFolder.ApplicationData);
         if (!string.IsNullOrWhiteSpace(appData))
         {
-            return Path.Combine(appData!, "VS Mod Manager");
+            return Path.Combine(appData!, "Simple VS Manager");
         }
 
         string? home = Environment.GetEnvironmentVariable("HOME");
         if (!string.IsNullOrWhiteSpace(home))
         {
-            return Path.Combine(home!, ".vs-mod-manager");
+            return Path.Combine(home!, ".simple-vs-manager");
         }
 
-        return Path.Combine(AppContext.BaseDirectory, "VS Mod Manager");
-    }
-
-    private static string? GetLegacyConfigurationDirectory()
-    {
-        string? appData = GetFolder(Environment.SpecialFolder.ApplicationData);
-        if (!string.IsNullOrWhiteSpace(appData))
-        {
-            return Path.Combine(appData!, "VintageStoryModManager");
-        }
-
-        string? home = Environment.GetEnvironmentVariable("HOME");
-        if (!string.IsNullOrWhiteSpace(home))
-        {
-            return Path.Combine(home!, ".config", "VintageStoryModManager");
-        }
-
-        return Path.Combine(AppContext.BaseDirectory, "Config");
+        return Path.Combine(AppContext.BaseDirectory, "Simple VS Manager");
     }
 
     private static string? GetFolder(Environment.SpecialFolder folder)

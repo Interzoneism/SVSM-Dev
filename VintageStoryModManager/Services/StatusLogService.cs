@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -11,6 +12,7 @@ namespace VintageStoryModManager.Services;
 public static class StatusLogService
 {
     private const string TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff";
+    private const int MaxLogLines = 5000;
     private static readonly object SyncRoot = new();
     private static readonly string LogFilePath = InitializeLogFilePath();
 
@@ -21,9 +23,9 @@ public static class StatusLogService
             string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             if (!string.IsNullOrEmpty(documentsPath))
             {
-                string directory = Path.Combine(documentsPath, "VS Mod Manager");
+                string directory = Path.Combine(documentsPath, "Simple VS Manager");
                 Directory.CreateDirectory(directory);
-                return Path.Combine(directory, "VSModManagerStatus.log");
+                return Path.Combine(directory, "SimpleVSManagerStatus.log");
             }
         }
         catch (Exception)
@@ -31,7 +33,7 @@ public static class StatusLogService
             // Ignore failures when determining the documents directory and fall back to the app directory.
         }
 
-        return Path.Combine(AppContext.BaseDirectory, "VSModManagerStatus.log");
+        return Path.Combine(AppContext.BaseDirectory, "SimpleVSManagerStatus.log");
     }
 
     /// <summary>
@@ -54,7 +56,16 @@ public static class StatusLogService
         {
             lock (SyncRoot)
             {
-                File.AppendAllText(LogFilePath, line, Encoding.UTF8);
+                EnsureLogDirectory();
+                using FileStream stream = new(LogFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+                stream.Seek(0, SeekOrigin.End);
+                using (var writer = new StreamWriter(stream, Encoding.UTF8, leaveOpen: true))
+                {
+                    writer.Write(line);
+                    writer.Flush();
+                }
+
+                TrimLogFileIfNecessary(stream);
             }
         }
         catch (IOException)
@@ -64,6 +75,72 @@ public static class StatusLogService
         catch (UnauthorizedAccessException)
         {
             // Ignore logging failures so that the UI does not crash when the log cannot be written.
+        }
+    }
+
+    private static void EnsureLogDirectory()
+    {
+        string? directory = Path.GetDirectoryName(LogFilePath);
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(directory);
+    }
+
+    private static void TrimLogFileIfNecessary(FileStream stream)
+    {
+        try
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+            using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true);
+
+            var lines = new Queue<string>(MaxLogLines + 1);
+            bool trimmed = false;
+            while (!reader.EndOfStream)
+            {
+                string? existingLine = reader.ReadLine();
+                if (existingLine is null)
+                {
+                    continue;
+                }
+
+                lines.Enqueue(existingLine);
+                if (lines.Count > MaxLogLines)
+                {
+                    lines.Dequeue();
+                    trimmed = true;
+                }
+            }
+
+            if (!trimmed)
+            {
+                stream.Seek(0, SeekOrigin.End);
+                return;
+            }
+
+            stream.SetLength(0);
+            stream.Seek(0, SeekOrigin.Begin);
+            using var writer = new StreamWriter(stream, Encoding.UTF8, leaveOpen: true);
+            foreach (string existingLine in lines)
+            {
+                writer.WriteLine(existingLine);
+            }
+
+            writer.Flush();
+        }
+        catch (IOException)
+        {
+            // Ignore trimming failures so that logging does not crash the UI.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Ignore trimming failures so that logging does not crash the UI.
+        }
+        finally
+        {
+            stream.Seek(0, SeekOrigin.End);
         }
     }
 }
