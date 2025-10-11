@@ -19,7 +19,7 @@ public sealed class UserConfigurationService
     private const int MaxModDatabaseNewModsRecentMonths = 24;
 
     private readonly string _configurationPath;
-    private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<string>> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private string? _selectedPresetName;
     private bool _isCompactView;
     private bool _useModDbDesignView = true;
@@ -109,16 +109,65 @@ public sealed class UserConfigurationService
 
     public bool TryGetModConfigPath(string? modId, out string? path)
     {
+        if (TryGetModConfigPaths(modId, out IReadOnlyList<string> paths) && paths.Count > 0)
+        {
+            path = paths[0];
+            return true;
+        }
+
+        path = null;
+        return false;
+    }
+
+    public bool TryGetModConfigPaths(string? modId, out IReadOnlyList<string> paths)
+    {
         if (string.IsNullOrWhiteSpace(modId))
         {
-            path = null;
+            paths = Array.Empty<string>();
             return false;
         }
 
-        return _modConfigPaths.TryGetValue(modId.Trim(), out path);
+        if (_modConfigPaths.TryGetValue(modId.Trim(), out List<string>? stored)
+            && stored.Count > 0)
+        {
+            paths = stored.ToArray();
+            return true;
+        }
+
+        paths = Array.Empty<string>();
+        return false;
     }
 
     public void SetModConfigPath(string modId, string path)
+    {
+        SetModConfigPaths(modId, new[] { path });
+    }
+
+    public void SetModConfigPaths(string modId, IEnumerable<string> paths)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            throw new ArgumentException("Mod ID cannot be empty.", nameof(modId));
+        }
+
+        string trimmedId = modId.Trim();
+        var normalized = NormalizeConfigPaths(paths);
+
+        if (normalized.Count == 0)
+        {
+            if (_modConfigPaths.Remove(trimmedId))
+            {
+                Save();
+            }
+
+            return;
+        }
+
+        _modConfigPaths[trimmedId] = normalized;
+        Save();
+    }
+
+    public void AddModConfigPath(string modId, string path)
     {
         if (string.IsNullOrWhiteSpace(modId))
         {
@@ -131,8 +180,18 @@ public sealed class UserConfigurationService
             throw new ArgumentException("The configuration path is invalid.", nameof(path));
         }
 
-        _modConfigPaths[modId.Trim()] = normalized;
-        Save();
+        string trimmedId = modId.Trim();
+        if (!_modConfigPaths.TryGetValue(trimmedId, out List<string>? stored))
+        {
+            stored = new List<string>();
+            _modConfigPaths[trimmedId] = stored;
+        }
+
+        if (!stored.Contains(normalized, StringComparer.OrdinalIgnoreCase))
+        {
+            stored.Add(normalized);
+            Save();
+        }
     }
 
     public void RemoveModConfigPath(string? modId)
@@ -148,9 +207,49 @@ public sealed class UserConfigurationService
         }
     }
 
-    public IReadOnlyList<KeyValuePair<string, string>> GetModConfigPathsSnapshot()
+    public bool RemoveModConfigPath(string modId, string path)
     {
-        return _modConfigPaths.ToList();
+        if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        string trimmedId = modId.Trim();
+        if (!_modConfigPaths.TryGetValue(trimmedId, out List<string>? stored))
+        {
+            return false;
+        }
+
+        string? normalized = NormalizePath(path) ?? path;
+        bool removed = false;
+        for (int i = stored.Count - 1; i >= 0; i--)
+        {
+            if (string.Equals(stored[i], normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                stored.RemoveAt(i);
+                removed = true;
+            }
+        }
+
+        if (!removed)
+        {
+            return false;
+        }
+
+        if (stored.Count == 0)
+        {
+            _modConfigPaths.Remove(trimmedId);
+        }
+
+        Save();
+        return true;
+    }
+
+    public IReadOnlyList<KeyValuePair<string, IReadOnlyList<string>>> GetModConfigPathsSnapshot()
+    {
+        return _modConfigPaths
+            .Select(pair => new KeyValuePair<string, IReadOnlyList<string>>(pair.Key, pair.Value.ToArray()))
+            .ToList();
     }
 
     public void SetCompactViewMode(bool isCompact)
@@ -497,7 +596,18 @@ public sealed class UserConfigurationService
 
         foreach (var pair in _modConfigPaths.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
-            result[pair.Key] = pair.Value;
+            if (pair.Value.Count == 0)
+            {
+                continue;
+            }
+
+            var array = new JsonArray();
+            foreach (string path in pair.Value)
+            {
+                array.Add(path);
+            }
+
+            result[pair.Key] = array;
         }
 
         return result;
@@ -520,15 +630,60 @@ public sealed class UserConfigurationService
                 continue;
             }
 
-            string? path = pair.Value?.GetValue<string?>();
-            string? normalized = NormalizePath(path);
-            if (string.IsNullOrWhiteSpace(normalized))
+            string trimmedId = modId.Trim();
+            switch (pair.Value)
+            {
+                case JsonArray array:
+                    var normalized = new List<string>();
+                    foreach (JsonNode? element in array)
+                    {
+                        string? normalizedPath = NormalizePath(element?.GetValue<string?>());
+                        if (!string.IsNullOrWhiteSpace(normalizedPath)
+                            && !normalized.Contains(normalizedPath, StringComparer.OrdinalIgnoreCase))
+                        {
+                            normalized.Add(normalizedPath);
+                        }
+                    }
+
+                    if (normalized.Count > 0)
+                    {
+                        _modConfigPaths[trimmedId] = normalized;
+                    }
+
+                    break;
+                default:
+                    string? path = pair.Value?.GetValue<string?>();
+                    string? singleNormalized = NormalizePath(path);
+                    if (!string.IsNullOrWhiteSpace(singleNormalized))
+                    {
+                        _modConfigPaths[trimmedId] = new List<string> { singleNormalized };
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    private static List<string> NormalizeConfigPaths(IEnumerable<string> paths)
+    {
+        var normalized = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string path in paths)
+        {
+            string? normalizedPath = NormalizePath(path);
+            if (string.IsNullOrWhiteSpace(normalizedPath))
             {
                 continue;
             }
 
-            _modConfigPaths[modId.Trim()] = normalized;
+            if (seen.Add(normalizedPath))
+            {
+                normalized.Add(normalizedPath);
+            }
         }
+
+        return normalized;
     }
 
     private static string GetPreferredConfigurationDirectory()

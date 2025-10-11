@@ -811,6 +811,7 @@ public partial class MainWindow : Window
         if (initialized)
         {
             StartModsWatcher();
+            RefreshAllModConfigDisplays();
         }
     }
 
@@ -1045,16 +1046,16 @@ public partial class MainWindow : Window
         }
     }
 
-    private string? PromptForConfigFile(ModListItemViewModel mod, string? previousPath)
+    private IReadOnlyList<string>? PromptForConfigFiles(ModListItemViewModel mod, string? previousPath)
     {
         string? initialDirectory = GetInitialConfigDirectory(previousPath);
 
         using var dialog = new WinForms.OpenFileDialog
         {
-            Title = $"Select config file for {mod.DisplayName}",
+            Title = $"Select config file(s) for {mod.DisplayName}",
             Filter = "Config files (*.json)|*.json|All files (*.*)|*.*",
             CheckFileExists = true,
-            Multiselect = false,
+            Multiselect = true,
             RestoreDirectory = true
         };
 
@@ -1074,14 +1075,37 @@ public partial class MainWindow : Window
             return null;
         }
 
-        try
+        string[] files = dialog.FileNames;
+        if (files is null || files.Length == 0)
         {
-            return Path.GetFullPath(dialog.FileName);
+            return null;
         }
-        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+
+        var selected = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string file in files)
         {
-            throw new ArgumentException("The selected configuration file path is invalid.", nameof(previousPath), ex);
+            if (string.IsNullOrWhiteSpace(file))
+            {
+                continue;
+            }
+
+            try
+            {
+                string normalized = Path.GetFullPath(file);
+                if (seen.Add(normalized))
+                {
+                    selected.Add(normalized);
+                }
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                // Skip invalid selections.
+            }
         }
+
+        return selected.Count > 0 ? selected : null;
     }
 
     private string? GetInitialConfigDirectory(string? previousPath)
@@ -1507,80 +1531,184 @@ public partial class MainWindow : Window
             return;
         }
 
-        string? configPath = null;
-        string? storedPath = null;
+        List<string> configPaths = new();
+        string? initialPath = null;
 
-        try
+        if (_userConfiguration.TryGetModConfigPaths(mod.ModId, out IReadOnlyList<string> storedPaths)
+            && storedPaths.Count > 0)
         {
-            if (_userConfiguration.TryGetModConfigPath(mod.ModId, out string? existing) && !string.IsNullOrWhiteSpace(existing))
+            initialPath = storedPaths[0];
+            bool removedInvalid = false;
+
+            foreach (string path in storedPaths)
             {
-                storedPath = existing;
-                if (File.Exists(existing))
+                if (string.IsNullOrWhiteSpace(path))
                 {
-                    configPath = existing;
+                    continue;
+                }
+
+                if (File.Exists(path))
+                {
+                    configPaths.Add(path);
                 }
                 else
                 {
-                    _userConfiguration.RemoveModConfigPath(mod.ModId);
+                    _userConfiguration.RemoveModConfigPath(mod.ModId, path);
+                    removedInvalid = true;
                 }
             }
 
-            if (configPath is null)
+            if (removedInvalid)
             {
-                configPath = PromptForConfigFile(mod, storedPath);
-                if (configPath is null)
-                {
-                    return;
-                }
-
-                _userConfiguration.SetModConfigPath(mod.ModId, configPath);
+                RefreshModConfigDisplay(mod.ModId);
             }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+
+        if (configPaths.Count == 0)
         {
-            WpfMessageBox.Show($"Failed to store the configuration path:\n{ex.Message}",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-            return;
+            IReadOnlyList<string>? selected = PromptForConfigFiles(mod, initialPath);
+            if (selected is null || selected.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                _userConfiguration.SetModConfigPaths(mod.ModId, selected);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                WpfMessageBox.Show($"Failed to store the configuration path(s):\n{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            RefreshModConfigDisplay(mod.ModId);
+
+            if (_userConfiguration.TryGetModConfigPaths(mod.ModId, out IReadOnlyList<string> refreshed)
+                && refreshed.Count > 0)
+            {
+                configPaths = refreshed.ToList();
+                initialPath = configPaths[0];
+            }
+            else
+            {
+                return;
+            }
         }
 
-        try
+        while (configPaths.Count > 0)
         {
-            var editorViewModel = new ModConfigEditorViewModel(mod.DisplayName, configPath);
-            var editorWindow = new ModConfigEditorWindow(editorViewModel)
+            var selectionDialog = new SelectConfigFileDialog(mod.DisplayName, configPaths)
             {
                 Owner = this
             };
 
-            bool? result = editorWindow.ShowDialog();
-            if (result == true)
+            bool? selectionResult = selectionDialog.ShowDialog();
+            if (selectionDialog.BrowseRequested)
             {
-                if (!string.Equals(configPath, editorViewModel.FilePath, StringComparison.OrdinalIgnoreCase))
+                IReadOnlyList<string>? additional = PromptForConfigFiles(mod, configPaths[0]);
+                if (additional is { Count: > 0 })
                 {
+                    List<string> merged = MergeConfigPaths(configPaths, additional);
+
                     try
                     {
-                        _userConfiguration.SetModConfigPath(mod.ModId, editorViewModel.FilePath);
+                        _userConfiguration.SetModConfigPaths(mod.ModId, merged);
                     }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
                     {
-                        WpfMessageBox.Show($"Failed to store the configuration path:\n{ex.Message}",
+                        WpfMessageBox.Show($"Failed to store the configuration path(s):\n{ex.Message}",
                             "Simple VS Manager",
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);
+                        return;
                     }
+
+                    RefreshModConfigDisplay(mod.ModId);
+
+                    if (_userConfiguration.TryGetModConfigPaths(mod.ModId, out IReadOnlyList<string> updated)
+                        && updated.Count > 0)
+                    {
+                        configPaths = updated.ToList();
+                        continue;
+                    }
+
+                    return;
                 }
 
-                _viewModel?.ReportStatus($"Saved config for {mod.DisplayName}.");
+                if (selectionResult != true)
+                {
+                    return;
+                }
+
+                continue;
             }
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
-        {
-            WpfMessageBox.Show($"Failed to open the configuration file:\n{ex.Message}",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-            _userConfiguration.RemoveModConfigPath(mod.ModId);
+
+            if (selectionResult != true || string.IsNullOrWhiteSpace(selectionDialog.SelectedPath))
+            {
+                return;
+            }
+
+            string selectedPath = selectionDialog.SelectedPath;
+            int selectedIndex = selectionDialog.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= configPaths.Count)
+            {
+                selectedIndex = configPaths.FindIndex(path => string.Equals(path, selectedPath, StringComparison.OrdinalIgnoreCase));
+                if (selectedIndex < 0)
+                {
+                    selectedIndex = 0;
+                }
+            }
+
+            try
+            {
+                var editorViewModel = new ModConfigEditorViewModel(mod.DisplayName, selectedPath);
+                var editorWindow = new ModConfigEditorWindow(editorViewModel)
+                {
+                    Owner = this
+                };
+
+                bool? result = editorWindow.ShowDialog();
+                if (result == true)
+                {
+                    string newPath = editorViewModel.FilePath;
+                    if (!string.Equals(selectedPath, newPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        configPaths[selectedIndex] = newPath;
+
+                        try
+                        {
+                            _userConfiguration.SetModConfigPaths(mod.ModId, configPaths);
+                        }
+                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+                        {
+                            WpfMessageBox.Show($"Failed to store the configuration path(s):\n{ex.Message}",
+                                "Simple VS Manager",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+                            return;
+                        }
+
+                        RefreshModConfigDisplay(mod.ModId);
+                    }
+
+                    _viewModel?.ReportStatus($"Saved config for {mod.DisplayName}.");
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+            {
+                WpfMessageBox.Show($"Failed to open the configuration file:\n{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                _userConfiguration.RemoveModConfigPath(mod.ModId, selectedPath);
+                RefreshModConfigDisplay(mod.ModId);
+            }
+
+            return;
         }
     }
 
@@ -1802,6 +1930,7 @@ public partial class MainWindow : Window
         }
 
         _userConfiguration.RemoveModConfigPath(mod.ModId);
+        RefreshModConfigDisplay(mod.ModId);
         return true;
     }
 
@@ -3167,9 +3296,9 @@ public partial class MainWindow : Window
         foreach (var kvp in _userConfiguration.GetModConfigPathsSnapshot())
         {
             string? modId = kvp.Key;
-            string? path = kvp.Value;
+            IReadOnlyList<string> paths = kvp.Value;
 
-            if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(path))
+            if (string.IsNullOrWhiteSpace(modId) || paths.Count == 0)
             {
                 continue;
             }
@@ -3180,50 +3309,58 @@ public partial class MainWindow : Window
                 continue;
             }
 
-            string normalizedPath;
-            try
+            foreach (string path in paths)
             {
-                normalizedPath = Path.GetFullPath(path);
-            }
-            catch (Exception)
-            {
-                continue;
-            }
-
-            if (!File.Exists(normalizedPath))
-            {
-                continue;
-            }
-
-            if (!IsPathWithinDirectory(baseDirectory, normalizedPath))
-            {
-                continue;
-            }
-
-            string? relativePath = TryGetRelativePath(baseDirectory, normalizedPath);
-            if (string.IsNullOrWhiteSpace(relativePath))
-            {
-                continue;
-            }
-
-            if (!seenTargets.Add(relativePath))
-            {
-                continue;
-            }
-
-            try
-            {
-                byte[] bytes = File.ReadAllBytes(normalizedPath);
-                configFiles.Add(new SerializablePresetConfigFile
+                if (string.IsNullOrWhiteSpace(path))
                 {
-                    ModId = trimmedModId,
-                    RelativePath = relativePath,
-                    Content = Convert.ToBase64String(bytes)
-                });
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                // Skip files that cannot be read.
+                    continue;
+                }
+
+                string normalizedPath;
+                try
+                {
+                    normalizedPath = Path.GetFullPath(path);
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                if (!File.Exists(normalizedPath))
+                {
+                    continue;
+                }
+
+                if (!IsPathWithinDirectory(baseDirectory, normalizedPath))
+                {
+                    continue;
+                }
+
+                string? relativePath = TryGetRelativePath(baseDirectory, normalizedPath);
+                if (string.IsNullOrWhiteSpace(relativePath))
+                {
+                    continue;
+                }
+
+                if (!seenTargets.Add(relativePath))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    byte[] bytes = File.ReadAllBytes(normalizedPath);
+                    configFiles.Add(new SerializablePresetConfigFile
+                    {
+                        ModId = trimmedModId,
+                        RelativePath = relativePath,
+                        Content = Convert.ToBase64String(bytes)
+                    });
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Skip files that cannot be read.
+                }
             }
         }
 
@@ -3317,6 +3454,7 @@ public partial class MainWindow : Window
         var errors = new List<string>();
         string baseDirectory = _dataDirectory!;
         var seenTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var updatedModIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var config in preset.ConfigFiles)
         {
@@ -3361,7 +3499,8 @@ public partial class MainWindow : Window
 
                 try
                 {
-                    _userConfiguration.SetModConfigPath(config.ModId, targetPath);
+                    _userConfiguration.AddModConfigPath(config.ModId, targetPath);
+                    updatedModIds.Add(config.ModId);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
                 {
@@ -3372,6 +3511,11 @@ public partial class MainWindow : Window
             {
                 errors.Add($"{config.ModId}: {ex.Message}");
             }
+        }
+
+        foreach (string modId in updatedModIds)
+        {
+            RefreshModConfigDisplay(modId);
         }
 
         return errors;
@@ -4173,6 +4317,7 @@ public partial class MainWindow : Window
             }
 
             _userConfiguration.RemoveModConfigPath(mod.ModId);
+            RefreshModConfigDisplay(mod.ModId);
         }
 
         if (removedCount > 0)
@@ -4415,11 +4560,117 @@ public partial class MainWindow : Window
         }
 
         ClearSelection(resetAnchor: true);
+        RefreshAllModConfigDisplays();
     }
 
     private void ModsView_OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        Dispatcher.Invoke(() => ClearSelection(resetAnchor: true));
+        Dispatcher.Invoke(() =>
+        {
+            ClearSelection(resetAnchor: true);
+            RefreshAllModConfigDisplays();
+        });
+    }
+
+    private void RefreshAllModConfigDisplays()
+    {
+        foreach (ModListItemViewModel mod in EnumerateModViewModels())
+        {
+            if (_userConfiguration.TryGetModConfigPaths(mod.ModId, out IReadOnlyList<string> paths) && paths.Count > 0)
+            {
+                mod.UpdateConfigPaths(paths);
+            }
+            else
+            {
+                mod.UpdateConfigPaths(null);
+            }
+        }
+    }
+
+    private void RefreshModConfigDisplay(string? modId)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            return;
+        }
+
+        string trimmedId = modId.Trim();
+        bool hasPaths = _userConfiguration.TryGetModConfigPaths(trimmedId, out IReadOnlyList<string> paths);
+        IReadOnlyList<string>? updatePaths = hasPaths ? paths : null;
+
+        foreach (ModListItemViewModel mod in EnumerateModViewModels())
+        {
+            if (string.Equals(mod.ModId, trimmedId, StringComparison.OrdinalIgnoreCase))
+            {
+                mod.UpdateConfigPaths(updatePaths);
+            }
+        }
+    }
+
+    private IEnumerable<ModListItemViewModel> EnumerateModViewModels()
+    {
+        if (_viewModel is null)
+        {
+            yield break;
+        }
+
+        var seen = new HashSet<ModListItemViewModel>();
+
+        if (_viewModel.ModsView is not null)
+        {
+            foreach (ModListItemViewModel mod in _viewModel.ModsView.Cast<ModListItemViewModel>())
+            {
+                if (seen.Add(mod))
+                {
+                    yield return mod;
+                }
+            }
+        }
+
+        if (_viewModel.CurrentModsView is not null)
+        {
+            foreach (ModListItemViewModel mod in _viewModel.CurrentModsView.Cast<ModListItemViewModel>())
+            {
+                if (seen.Add(mod))
+                {
+                    yield return mod;
+                }
+            }
+        }
+    }
+
+    private static List<string> MergeConfigPaths(IEnumerable<string> existing, IReadOnlyList<string> additional)
+    {
+        var merged = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string path in existing)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            if (seen.Add(path))
+            {
+                merged.Add(path);
+            }
+        }
+
+        foreach (string path in additional)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            if (seen.Add(path))
+            {
+                merged.Add(path);
+            }
+        }
+
+        return merged;
     }
 
     private void HandleModRowSelection(ModListItemViewModel mod)
