@@ -191,6 +191,7 @@
                               Header="_Disable Internet Access"
                               Height="35"
                               IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
                               Click="DisableInternetAccessMenuItem_OnClick" />
                     <Separator />
                     <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
@@ -220,10 +221,12 @@
                     <MenuItem Header="_Compact View"
                               Height="35"
                               IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
                               IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
                     <MenuItem Header="_ModDB Design"
                               Height="35"
                               IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
                               IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}" />
                 </MenuItem>
                 <MenuItem Header="_Help" Height="35">
@@ -1247,7 +1250,7 @@
                            TextWrapping="Wrap"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           Margin="0,0,16,0" FontSize="14" Foreground="#CC000000">
+                           Margin="0,0,16,0" FontSize="16" Foreground="Black" FontWeight="Bold">
                 <TextBlock.Style>
                     <Style TargetType="{x:Type TextBlock}">
                         <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
