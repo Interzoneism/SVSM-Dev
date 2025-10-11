@@ -158,7 +158,10 @@
                               IsCheckable="True"
                               Style="{StaticResource ToggleMenuItemStyle}"
                               Click="CacheAllVersionsMenuItem_OnClick" />
-                    <MenuItem Header="_Delete Cached Mods" Height="35" Click="DeleteCachedModsMenuItem_OnClick" />
+                    <MenuItem x:Name="DeleteCachedModsMenuItem"
+                              Header="_Delete Cached Mods"
+                              Height="35"
+                              Click="DeleteCachedModsMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_Presets" Height="35">
                     <MenuItem Header="_Save Preset..." Height="35" Click="SavePresetMenuItem_OnClick" />
