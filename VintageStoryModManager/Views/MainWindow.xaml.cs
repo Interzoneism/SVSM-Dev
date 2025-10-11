@@ -1246,6 +1246,22 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ModsDataGrid_OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key != Key.A || !Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+        {
+            return;
+        }
+
+        if (_viewModel?.SearchModDatabase == true)
+        {
+            return;
+        }
+
+        SelectAllModsInCurrentView();
+        e.Handled = true;
+    }
+
     private void ModsDataGrid_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.Handled)
@@ -4089,6 +4105,29 @@ public partial class MainWindow : Window
         ClearSelection();
         AddToSelection(mod);
         _selectionAnchor = mod;
+    }
+
+    private void SelectAllModsInCurrentView()
+    {
+        if (_viewModel?.SearchModDatabase == true)
+        {
+            return;
+        }
+
+        List<ModListItemViewModel> mods = GetModsInViewOrder();
+        ClearSelection(resetAnchor: true);
+
+        if (mods.Count == 0)
+        {
+            return;
+        }
+
+        foreach (ModListItemViewModel mod in mods)
+        {
+            AddToSelection(mod);
+        }
+
+        _selectionAnchor = mods[mods.Count - 1];
     }
 
     private bool ApplyRangeSelection(ModListItemViewModel start, ModListItemViewModel end, bool preserveExisting)
