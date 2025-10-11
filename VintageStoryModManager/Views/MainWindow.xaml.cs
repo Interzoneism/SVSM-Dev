@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -129,6 +130,8 @@ public partial class MainWindow : Window
         {
             await InitializeViewModelAsync(_viewModel);
         }
+
+        await RefreshDeleteCachedModsMenuHeaderAsync();
     }
 
     private void MainWindow_OnClosing(object? sender, CancelEventArgs e)
@@ -943,6 +946,7 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrWhiteSpace(_dataDirectory))
         {
+            await RefreshDeleteCachedModsMenuHeaderAsync();
             return;
         }
 
@@ -966,6 +970,8 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+
+        await RefreshDeleteCachedModsMenuHeaderAsync();
     }
 
     private delegate bool PathValidator(string? path, out string? normalizedPath, out string? errorMessage);
@@ -2316,7 +2322,7 @@ public partial class MainWindow : Window
         await UpdateModsAsync(mods, isBulk: true);
     }
 
-    private void DeleteCachedModsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    private async void DeleteCachedModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         MessageBoxResult result = WpfMessageBox.Show(
             "This will only delete the managers cached mods to save some disk space, it will not affect your installed mods.",
@@ -2337,6 +2343,7 @@ public partial class MainWindow : Window
                 "Vintage Story Mod Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
+            await RefreshDeleteCachedModsMenuHeaderAsync();
             return;
         }
 
@@ -2347,6 +2354,7 @@ public partial class MainWindow : Window
                 "Vintage Story Mod Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
+            await RefreshDeleteCachedModsMenuHeaderAsync();
             return;
         }
 
@@ -2371,6 +2379,8 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+
+        await RefreshDeleteCachedModsMenuHeaderAsync();
     }
 
     private void ManagerDataFolderMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -2431,6 +2441,100 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    private async Task RefreshDeleteCachedModsMenuHeaderAsync()
+    {
+        if (DeleteCachedModsMenuItem is null)
+        {
+            return;
+        }
+
+        const string baseHeader = "_Delete Cached Mods";
+        string header = baseHeader;
+
+        string? cachedModsDirectory = GetCachedModsDirectory();
+        if (!string.IsNullOrWhiteSpace(cachedModsDirectory) && Directory.Exists(cachedModsDirectory))
+        {
+            long cacheSize = await Task.Run(() => CalculateDirectorySize(cachedModsDirectory));
+            long cacheSizeInMegabytes = (long)Math.Round(cacheSize / (1024d * 1024d), MidpointRounding.AwayFromZero);
+            if (cacheSizeInMegabytes < 0)
+            {
+                cacheSizeInMegabytes = 0;
+            }
+
+            header = string.Format(CultureInfo.InvariantCulture, "{0} ({1}MB)", baseHeader, cacheSizeInMegabytes);
+        }
+
+        DeleteCachedModsMenuItem.Header = header;
+    }
+
+    private static long CalculateDirectorySize(string rootDirectory)
+    {
+        var pendingDirectories = new Stack<string>();
+        pendingDirectories.Push(rootDirectory);
+        long totalBytes = 0;
+
+        while (pendingDirectories.Count > 0)
+        {
+            string currentDirectory = pendingDirectories.Pop();
+            if (string.IsNullOrWhiteSpace(currentDirectory) || !Directory.Exists(currentDirectory))
+            {
+                continue;
+            }
+
+            try
+            {
+                foreach (string filePath in Directory.EnumerateFiles(currentDirectory))
+                {
+                    try
+                    {
+                        var fileInfo = new FileInfo(filePath);
+                        totalBytes += fileInfo.Length;
+                    }
+                    catch (IOException)
+                    {
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                    }
+                    catch (System.Security.SecurityException)
+                    {
+                    }
+                }
+            }
+            catch (IOException)
+            {
+                continue;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                continue;
+            }
+            catch (System.Security.SecurityException)
+            {
+                continue;
+            }
+
+            try
+            {
+                foreach (string directoryPath in Directory.EnumerateDirectories(currentDirectory))
+                {
+                    pendingDirectories.Push(directoryPath);
+                }
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+            catch (System.Security.SecurityException)
+            {
+            }
+        }
+
+        return totalBytes;
     }
 
     private static string? GetCachedModsDirectory() => ModCacheLocator.GetCachedModsDirectory();
@@ -4297,6 +4401,7 @@ public partial class MainWindow : Window
     {
         if (_viewModel is null || mods.Count == 0)
         {
+            await RefreshDeleteCachedModsMenuHeaderAsync();
             return;
         }
 
@@ -4420,6 +4525,8 @@ public partial class MainWindow : Window
             _isModUpdateInProgress = false;
             UpdateSelectedModButtons();
         }
+
+        await RefreshDeleteCachedModsMenuHeaderAsync();
     }
 
     private ModReleaseInfo? SelectReleaseForMod(
