@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace VintageStoryModManager.Services;
 
@@ -15,6 +16,13 @@ public static class StatusLogService
     private const int MaxLogLines = 5000;
     private static readonly object SyncRoot = new();
     private static readonly string LogFilePath = InitializeLogFilePath();
+    private static volatile bool _isLoggingEnabled;
+
+    public static bool IsLoggingEnabled
+    {
+        get => _isLoggingEnabled;
+        set => _isLoggingEnabled = value;
+    }
 
     private static string InitializeLogFilePath()
     {
@@ -43,7 +51,7 @@ public static class StatusLogService
     /// <param name="isError">Whether the status represents an error.</param>
     public static void AppendStatus(string message, bool isError)
     {
-        if (string.IsNullOrWhiteSpace(message))
+        if (!_isLoggingEnabled || string.IsNullOrWhiteSpace(message))
         {
             return;
         }
@@ -52,6 +60,11 @@ public static class StatusLogService
         string severity = isError ? "ERROR" : "INFO";
         string line = $"[{timestamp}] [{severity}] {message}{Environment.NewLine}";
 
+        _ = Task.Run(() => WriteLogEntry(line));
+    }
+
+    private static void WriteLogEntry(string line)
+    {
         try
         {
             lock (SyncRoot)
