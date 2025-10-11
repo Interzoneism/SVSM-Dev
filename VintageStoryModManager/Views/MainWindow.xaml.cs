@@ -1045,16 +1045,16 @@ public partial class MainWindow : Window
         }
     }
 
-    private string? PromptForConfigFile(ModListItemViewModel mod, string? previousPath)
+    private IReadOnlyList<string>? PromptForConfigFiles(ModListItemViewModel mod, IReadOnlyList<string>? previousPaths)
     {
-        string? initialDirectory = GetInitialConfigDirectory(previousPath);
+        string? initialDirectory = GetInitialConfigDirectory(previousPaths);
 
         using var dialog = new WinForms.OpenFileDialog
         {
             Title = $"Select config file for {mod.DisplayName}",
             Filter = "Config files (*.json)|*.json|All files (*.*)|*.*",
             CheckFileExists = true,
-            Multiselect = false,
+            Multiselect = true,
             RestoreDirectory = true
         };
 
@@ -1063,9 +1063,13 @@ public partial class MainWindow : Window
             dialog.InitialDirectory = initialDirectory;
         }
 
-        if (!string.IsNullOrWhiteSpace(previousPath))
+        if (previousPaths is { Count: > 0 })
         {
-            dialog.FileName = Path.GetFileName(previousPath);
+            string? previousPath = previousPaths.FirstOrDefault(path => !string.IsNullOrWhiteSpace(path));
+            if (!string.IsNullOrWhiteSpace(previousPath))
+            {
+                dialog.FileName = Path.GetFileName(previousPath);
+            }
         }
 
         WinForms.DialogResult result = dialog.ShowDialog();
@@ -1074,31 +1078,50 @@ public partial class MainWindow : Window
             return null;
         }
 
-        try
-        {
-            return Path.GetFullPath(dialog.FileName);
-        }
-        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
-        {
-            throw new ArgumentException("The selected configuration file path is invalid.", nameof(previousPath), ex);
-        }
-    }
+        var selectedPaths = new List<string>();
 
-    private string? GetInitialConfigDirectory(string? previousPath)
-    {
-        if (!string.IsNullOrWhiteSpace(previousPath))
+        foreach (string fileName in dialog.FileNames)
         {
             try
             {
-                string? directory = Path.GetDirectoryName(previousPath);
-                if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
+                string normalized = Path.GetFullPath(fileName);
+                if (!selectedPaths.Any(existing => string.Equals(existing, normalized, StringComparison.OrdinalIgnoreCase)))
                 {
-                    return directory;
+                    selectedPaths.Add(normalized);
                 }
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
             {
-                // Ignore invalid stored paths and fall back to the default directory.
+                throw new ArgumentException("The selected configuration file path is invalid.", nameof(previousPaths), ex);
+            }
+        }
+
+        return selectedPaths;
+    }
+
+    private string? GetInitialConfigDirectory(IReadOnlyList<string>? previousPaths)
+    {
+        if (previousPaths is { Count: > 0 })
+        {
+            foreach (string path in previousPaths)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    string? directory = Path.GetDirectoryName(path);
+                    if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
+                    {
+                        return directory;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Ignore invalid stored paths and fall back to the default directory.
+                }
             }
         }
 
@@ -1111,6 +1134,32 @@ public partial class MainWindow : Window
             }
 
             return _dataDirectory;
+        }
+
+        return null;
+    }
+
+    private string? SelectConfigFile(ModListItemViewModel mod, IReadOnlyList<string> existingPaths)
+    {
+        if (existingPaths.Count == 0)
+        {
+            return null;
+        }
+
+        if (existingPaths.Count == 1)
+        {
+            return existingPaths[0];
+        }
+
+        var dialog = new SelectConfigFileDialog(mod.DisplayName, existingPaths)
+        {
+            Owner = this
+        };
+
+        bool? result = dialog.ShowDialog();
+        if (result == true && !string.IsNullOrWhiteSpace(dialog.SelectedPath))
+        {
+            return dialog.SelectedPath;
         }
 
         return null;
@@ -1508,32 +1557,56 @@ public partial class MainWindow : Window
         }
 
         string? configPath = null;
-        string? storedPath = null;
+        IReadOnlyList<string>? storedPathsSnapshot = null;
+        List<string> existingPaths = new();
 
         try
         {
-            if (_userConfiguration.TryGetModConfigPath(mod.ModId, out string? existing) && !string.IsNullOrWhiteSpace(existing))
+            if (_userConfiguration.TryGetModConfigPaths(mod.ModId, out IReadOnlyList<string>? storedPaths)
+                && storedPaths is { Count: > 0 })
             {
-                storedPath = existing;
-                if (File.Exists(existing))
+                storedPathsSnapshot = storedPaths;
+                var missingPaths = new List<string>();
+
+                foreach (string path in storedPaths)
                 {
-                    configPath = existing;
+                    if (string.IsNullOrWhiteSpace(path))
+                    {
+                        continue;
+                    }
+
+                    if (File.Exists(path))
+                    {
+                        existingPaths.Add(path);
+                    }
+                    else
+                    {
+                        missingPaths.Add(path);
+                    }
                 }
-                else
+
+                foreach (string missing in missingPaths)
                 {
-                    _userConfiguration.RemoveModConfigPath(mod.ModId);
+                    _userConfiguration.RemoveModConfigPath(mod.ModId, missing);
                 }
             }
 
-            if (configPath is null)
+            if (existingPaths.Count == 0)
             {
-                configPath = PromptForConfigFile(mod, storedPath);
-                if (configPath is null)
+                IReadOnlyList<string>? selectedPaths = PromptForConfigFiles(mod, storedPathsSnapshot);
+                if (selectedPaths is null || selectedPaths.Count == 0)
                 {
                     return;
                 }
 
-                _userConfiguration.SetModConfigPath(mod.ModId, configPath);
+                _userConfiguration.SetModConfigPaths(mod.ModId, selectedPaths);
+                existingPaths = selectedPaths.ToList();
+            }
+
+            configPath = SelectConfigFile(mod, existingPaths);
+            if (configPath is null)
+            {
+                return;
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
@@ -1560,7 +1633,24 @@ public partial class MainWindow : Window
                 {
                     try
                     {
-                        _userConfiguration.SetModConfigPath(mod.ModId, editorViewModel.FilePath);
+                        var updatedPaths = new List<string>();
+                        if (_userConfiguration.TryGetModConfigPaths(mod.ModId, out IReadOnlyList<string>? currentPaths)
+                            && currentPaths is { Count: > 0 })
+                        {
+                            updatedPaths.AddRange(currentPaths);
+                        }
+
+                        if (updatedPaths.Count == 0)
+                        {
+                            updatedPaths.Add(editorViewModel.FilePath);
+                        }
+                        else
+                        {
+                            updatedPaths.RemoveAll(existing => string.Equals(existing, configPath, StringComparison.OrdinalIgnoreCase));
+                            updatedPaths.Add(editorViewModel.FilePath);
+                        }
+
+                        _userConfiguration.SetModConfigPaths(mod.ModId, updatedPaths);
                     }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
                     {
@@ -1580,7 +1670,7 @@ public partial class MainWindow : Window
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
-            _userConfiguration.RemoveModConfigPath(mod.ModId);
+            _userConfiguration.RemoveModConfigPath(mod.ModId, configPath);
         }
     }
 
@@ -3167,9 +3257,9 @@ public partial class MainWindow : Window
         foreach (var kvp in _userConfiguration.GetModConfigPathsSnapshot())
         {
             string? modId = kvp.Key;
-            string? path = kvp.Value;
+            IReadOnlyList<string>? paths = kvp.Value;
 
-            if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(path))
+            if (string.IsNullOrWhiteSpace(modId) || paths is null || paths.Count == 0)
             {
                 continue;
             }
@@ -3180,50 +3270,58 @@ public partial class MainWindow : Window
                 continue;
             }
 
-            string normalizedPath;
-            try
+            foreach (string path in paths)
             {
-                normalizedPath = Path.GetFullPath(path);
-            }
-            catch (Exception)
-            {
-                continue;
-            }
-
-            if (!File.Exists(normalizedPath))
-            {
-                continue;
-            }
-
-            if (!IsPathWithinDirectory(baseDirectory, normalizedPath))
-            {
-                continue;
-            }
-
-            string? relativePath = TryGetRelativePath(baseDirectory, normalizedPath);
-            if (string.IsNullOrWhiteSpace(relativePath))
-            {
-                continue;
-            }
-
-            if (!seenTargets.Add(relativePath))
-            {
-                continue;
-            }
-
-            try
-            {
-                byte[] bytes = File.ReadAllBytes(normalizedPath);
-                configFiles.Add(new SerializablePresetConfigFile
+                if (string.IsNullOrWhiteSpace(path))
                 {
-                    ModId = trimmedModId,
-                    RelativePath = relativePath,
-                    Content = Convert.ToBase64String(bytes)
-                });
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                // Skip files that cannot be read.
+                    continue;
+                }
+
+                string normalizedPath;
+                try
+                {
+                    normalizedPath = Path.GetFullPath(path);
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                if (!File.Exists(normalizedPath))
+                {
+                    continue;
+                }
+
+                if (!IsPathWithinDirectory(baseDirectory, normalizedPath))
+                {
+                    continue;
+                }
+
+                string? relativePath = TryGetRelativePath(baseDirectory, normalizedPath);
+                if (string.IsNullOrWhiteSpace(relativePath))
+                {
+                    continue;
+                }
+
+                if (!seenTargets.Add(relativePath))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    byte[] bytes = File.ReadAllBytes(normalizedPath);
+                    configFiles.Add(new SerializablePresetConfigFile
+                    {
+                        ModId = trimmedModId,
+                        RelativePath = relativePath,
+                        Content = Convert.ToBase64String(bytes)
+                    });
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Skip files that cannot be read.
+                }
             }
         }
 

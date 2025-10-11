@@ -19,7 +19,7 @@ public sealed class UserConfigurationService
     private const int MaxModDatabaseNewModsRecentMonths = 24;
 
     private readonly string _configurationPath;
-    private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<string>> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private string? _selectedPresetName;
     private bool _isCompactView;
     private bool _useModDbDesignView = true;
@@ -109,13 +109,33 @@ public sealed class UserConfigurationService
 
     public bool TryGetModConfigPath(string? modId, out string? path)
     {
+        if (TryGetModConfigPaths(modId, out IReadOnlyList<string>? paths) && paths is { Count: > 0 })
+        {
+            path = paths[0];
+            return true;
+        }
+
+        path = null;
+        return false;
+    }
+
+    public bool TryGetModConfigPaths(string? modId, out IReadOnlyList<string>? paths)
+    {
         if (string.IsNullOrWhiteSpace(modId))
         {
-            path = null;
+            paths = null;
             return false;
         }
 
-        return _modConfigPaths.TryGetValue(modId.Trim(), out path);
+        if (_modConfigPaths.TryGetValue(modId.Trim(), out List<string>? stored)
+            && stored.Count > 0)
+        {
+            paths = stored;
+            return true;
+        }
+
+        paths = null;
+        return false;
     }
 
     public void SetModConfigPath(string modId, string path)
@@ -131,7 +151,55 @@ public sealed class UserConfigurationService
             throw new ArgumentException("The configuration path is invalid.", nameof(path));
         }
 
-        _modConfigPaths[modId.Trim()] = normalized;
+        string trimmedModId = modId.Trim();
+        if (_modConfigPaths.TryGetValue(trimmedModId, out List<string>? existing) && existing.Count > 0)
+        {
+            if (!existing.Any(stored => string.Equals(stored, normalized, StringComparison.OrdinalIgnoreCase)))
+            {
+                existing.Add(normalized);
+                Save();
+            }
+        }
+        else
+        {
+            _modConfigPaths[trimmedModId] = new List<string> { normalized };
+            Save();
+        }
+    }
+
+    public void SetModConfigPaths(string modId, IEnumerable<string> paths)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            throw new ArgumentException("Mod ID cannot be empty.", nameof(modId));
+        }
+
+        if (paths is null)
+        {
+            throw new ArgumentNullException(nameof(paths));
+        }
+
+        var normalizedPaths = new List<string>();
+        foreach (string path in paths)
+        {
+            string? normalized = NormalizePath(path);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                continue;
+            }
+
+            if (!normalizedPaths.Any(existing => string.Equals(existing, normalized, StringComparison.OrdinalIgnoreCase)))
+            {
+                normalizedPaths.Add(normalized);
+            }
+        }
+
+        if (normalizedPaths.Count == 0)
+        {
+            throw new ArgumentException("At least one valid configuration path is required.", nameof(paths));
+        }
+
+        _modConfigPaths[modId.Trim()] = normalizedPaths;
         Save();
     }
 
@@ -148,9 +216,44 @@ public sealed class UserConfigurationService
         }
     }
 
-    public IReadOnlyList<KeyValuePair<string, string>> GetModConfigPathsSnapshot()
+    public void RemoveModConfigPath(string? modId, string? path)
     {
-        return _modConfigPaths.ToList();
+        if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        string trimmedModId = modId.Trim();
+        if (!_modConfigPaths.TryGetValue(trimmedModId, out List<string>? stored) || stored.Count == 0)
+        {
+            return;
+        }
+
+        string? normalized = NormalizePath(path);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return;
+        }
+
+        int removed = stored.RemoveAll(existing => string.Equals(existing, normalized, StringComparison.OrdinalIgnoreCase));
+        if (removed == 0)
+        {
+            return;
+        }
+
+        if (stored.Count == 0)
+        {
+            _modConfigPaths.Remove(trimmedModId);
+        }
+
+        Save();
+    }
+
+    public IReadOnlyList<KeyValuePair<string, IReadOnlyList<string>>> GetModConfigPathsSnapshot()
+    {
+        return _modConfigPaths
+            .Select(pair => new KeyValuePair<string, IReadOnlyList<string>>(pair.Key, pair.Value.AsReadOnly()))
+            .ToList();
     }
 
     public void SetCompactViewMode(bool isCompact)
@@ -497,7 +600,18 @@ public sealed class UserConfigurationService
 
         foreach (var pair in _modConfigPaths.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
-            result[pair.Key] = pair.Value;
+            if (pair.Value.Count == 0)
+            {
+                continue;
+            }
+
+            var array = new JsonArray();
+            foreach (string path in pair.Value.OrderBy(p => p, StringComparer.OrdinalIgnoreCase))
+            {
+                array.Add(path);
+            }
+
+            result[pair.Key] = array;
         }
 
         return result;
@@ -520,14 +634,39 @@ public sealed class UserConfigurationService
                 continue;
             }
 
-            string? path = pair.Value?.GetValue<string?>();
-            string? normalized = NormalizePath(path);
-            if (string.IsNullOrWhiteSpace(normalized))
+            var normalizedPaths = new List<string>();
+
+            if (pair.Value is JsonArray array)
+            {
+                foreach (JsonNode? item in array)
+                {
+                    string? normalized = NormalizePath(item?.GetValue<string?>());
+                    if (string.IsNullOrWhiteSpace(normalized))
+                    {
+                        continue;
+                    }
+
+                    if (!normalizedPaths.Any(existing => string.Equals(existing, normalized, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        normalizedPaths.Add(normalized);
+                    }
+                }
+            }
+            else
+            {
+                string? normalized = NormalizePath(pair.Value?.GetValue<string?>());
+                if (!string.IsNullOrWhiteSpace(normalized))
+                {
+                    normalizedPaths.Add(normalized);
+                }
+            }
+
+            if (normalizedPaths.Count == 0)
             {
                 continue;
             }
 
-            _modConfigPaths[modId.Trim()] = normalized;
+            _modConfigPaths[modId.Trim()] = normalizedPaths;
         }
     }
 
