@@ -238,6 +238,7 @@
                               Click="ManagerModDbPageMenuItem_OnClick" />
                 </MenuItem>
             </Menu>
+            <Ellipse Name="PROGRESS" Grid.Column="1" HorizontalAlignment="Left" Height="30" Margin="815,5,0,0" Stroke="Black" VerticalAlignment="Top" Width="30"/>
 
 
         </Grid>
@@ -1250,7 +1251,7 @@
                            TextWrapping="Wrap"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           Margin="0,0,16,0" FontSize="16" Foreground="Black" FontWeight="Bold">
+                           Margin="0,0,16,0" FontSize="14" Foreground="Black" FontWeight="Bold">
                 <TextBlock.Style>
                     <Style TargetType="{x:Type TextBlock}">
                         <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
