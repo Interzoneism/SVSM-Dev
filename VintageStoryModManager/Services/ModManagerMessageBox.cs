@@ -6,17 +6,34 @@ namespace VintageStoryModManager.Services;
 
 public static class ModManagerMessageBox
 {
-    public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
+    public static MessageBoxResult Show(
+        string messageBoxText,
+        string caption,
+        MessageBoxButton button,
+        MessageBoxImage icon,
+        MessageDialogExtraButton? extraButton = null)
     {
-        return ShowInternal(null, messageBoxText, caption, button, icon);
+        return ShowInternal(null, messageBoxText, caption, button, icon, extraButton);
     }
 
-    public static MessageBoxResult Show(Window owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
+    public static MessageBoxResult Show(
+        Window owner,
+        string messageBoxText,
+        string caption,
+        MessageBoxButton button,
+        MessageBoxImage icon,
+        MessageDialogExtraButton? extraButton = null)
     {
-        return ShowInternal(owner, messageBoxText, caption, button, icon);
+        return ShowInternal(owner, messageBoxText, caption, button, icon, extraButton);
     }
 
-    private static MessageBoxResult ShowInternal(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
+    private static MessageBoxResult ShowInternal(
+        Window? owner,
+        string messageBoxText,
+        string caption,
+        MessageBoxButton button,
+        MessageBoxImage icon,
+        MessageDialogExtraButton? extraButton)
     {
         Window? resolvedOwner = owner ?? GetActiveWindow();
 
@@ -27,7 +44,7 @@ public static class ModManagerMessageBox
             Topmost = resolvedOwner is null
         };
 
-        dialog.Initialize(messageBoxText, caption, button, icon);
+        dialog.Initialize(messageBoxText, caption, button, icon, extraButton);
         _ = dialog.ShowDialog();
         return dialog.Result;
     }

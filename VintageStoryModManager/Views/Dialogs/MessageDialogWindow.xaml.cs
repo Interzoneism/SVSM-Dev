@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows;
@@ -11,6 +12,7 @@ public partial class MessageDialogWindow : Window
 {
     private MessageBoxButton _buttons;
     private bool _resultSet;
+    private Action? _extraButtonCallback;
 
     public MessageDialogWindow()
     {
@@ -19,13 +21,19 @@ public partial class MessageDialogWindow : Window
 
     public MessageBoxResult Result { get; private set; } = MessageBoxResult.None;
 
-    public void Initialize(string message, string caption, MessageBoxButton buttons, MessageBoxImage icon)
+    public void Initialize(
+        string message,
+        string caption,
+        MessageBoxButton buttons,
+        MessageBoxImage icon,
+        MessageDialogExtraButton? extraButton = null)
     {
         _buttons = buttons;
         Title = caption;
         MessageTextBlock.Text = message;
 
         ConfigureButtons(buttons);
+        ConfigureExtraButton(extraButton);
         ConfigureIcon(icon);
     }
 
@@ -38,10 +46,12 @@ public partial class MessageDialogWindow : Window
         ButtonOne.IsDefault = false;
         ButtonTwo.IsDefault = false;
         ButtonThree.IsDefault = false;
+        ButtonExtra.IsDefault = false;
 
         ButtonOne.IsCancel = false;
         ButtonTwo.IsCancel = false;
         ButtonThree.IsCancel = false;
+        ButtonExtra.IsCancel = false;
 
         switch (buttons)
         {
@@ -65,6 +75,24 @@ public partial class MessageDialogWindow : Window
                 ConfigureButton(ButtonOne, "OK", MessageBoxResult.OK, isDefault: true, isCancel: true);
                 break;
         }
+    }
+
+    private void ConfigureExtraButton(MessageDialogExtraButton? extraButton)
+    {
+        if (extraButton is null)
+        {
+            ButtonExtra.Visibility = Visibility.Collapsed;
+            ButtonExtra.Tag = null;
+            _extraButtonCallback = null;
+            return;
+        }
+
+        ButtonExtra.Content = extraButton.Content;
+        ButtonExtra.Tag = extraButton.Result;
+        ButtonExtra.Visibility = Visibility.Visible;
+        ButtonExtra.IsDefault = extraButton.IsDefault;
+        ButtonExtra.IsCancel = extraButton.IsCancel;
+        _extraButtonCallback = extraButton.OnClick;
     }
 
     private static void ConfigureButton(System.Windows.Controls.Button button, string content, MessageBoxResult result, bool isDefault = false, bool isCancel = false)
@@ -113,6 +141,11 @@ public partial class MessageDialogWindow : Window
     {
         if (sender is System.Windows.Controls.Button button && button.Tag is MessageBoxResult result)
         {
+            if (ReferenceEquals(button, ButtonExtra))
+            {
+                _extraButtonCallback?.Invoke();
+            }
+
             Result = result;
             _resultSet = true;
             DialogResult = true;
