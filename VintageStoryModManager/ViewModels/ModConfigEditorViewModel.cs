@@ -61,7 +61,7 @@ public sealed class ModConfigEditorViewModel : ObservableObject
             node.ApplyChanges();
         }
 
-        var options = new JsonSerializerOptions
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.General)
         {
             WriteIndented = true
         };

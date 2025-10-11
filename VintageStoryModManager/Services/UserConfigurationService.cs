@@ -526,7 +526,7 @@ public sealed class UserConfigurationService
                 ["selectedPreset"] = _selectedPresetName
             };
 
-            var options = new JsonSerializerOptions
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.General)
             {
                 WriteIndented = true
             };

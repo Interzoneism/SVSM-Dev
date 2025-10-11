@@ -3204,7 +3204,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var options = new JsonSerializerOptions
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.General)
             {
                 WriteIndented = true,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -3677,7 +3677,7 @@ public partial class MainWindow : Window
                 return false;
             }
 
-            var jsonOptions = new JsonSerializerOptions
+            var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.General)
             {
                 PropertyNameCaseInsensitive = true
             };
