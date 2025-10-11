@@ -37,16 +37,27 @@ public static class ModManagerMessageBox
     {
         Window? resolvedOwner = owner ?? GetActiveWindow();
 
-        var dialog = new MessageDialogWindow
+        var dialog = new MessageDialogWindow();
+
+        if (IsEligibleOwner(resolvedOwner))
         {
-            Owner = resolvedOwner,
-            WindowStartupLocation = resolvedOwner is null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
-            Topmost = resolvedOwner is null
-        };
+            dialog.Owner = resolvedOwner;
+            dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        }
+        else
+        {
+            dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            dialog.Topmost = true;
+        }
 
         dialog.Initialize(messageBoxText, caption, button, icon, extraButton);
         _ = dialog.ShowDialog();
         return dialog.Result;
+    }
+
+    private static bool IsEligibleOwner(Window? window)
+    {
+        return window is { IsLoaded: true };
     }
 
     private static Window? GetActiveWindow()

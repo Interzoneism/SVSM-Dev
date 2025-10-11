@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 
 namespace VintageStoryModManager.Services;
 
@@ -528,7 +529,8 @@ public sealed class UserConfigurationService
 
             var options = new JsonSerializerOptions(JsonSerializerDefaults.General)
             {
-                WriteIndented = true
+                WriteIndented = true,
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
             };
 
             File.WriteAllText(_configurationPath, obj.ToJsonString(options));
