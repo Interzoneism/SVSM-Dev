@@ -19,7 +19,10 @@ public sealed class ClientSettingsStore
     private readonly string _backupPath;
     private readonly JsonObject _root;
     private readonly JsonObject _stringListSettings;
-    private readonly JsonSerializerOptions _serializerOptions = new() { WriteIndented = true };
+    private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.General)
+    {
+        WriteIndented = true
+    };
     private readonly List<string> _disabledMods;
     private readonly HashSet<string> _disabledLookup;
     private readonly List<string> _modPaths;
