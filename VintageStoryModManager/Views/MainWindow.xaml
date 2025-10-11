@@ -848,7 +848,7 @@
 
 
 
-                        <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay, Mode=OneWay}" Width="110" IsReadOnly="True">
+                        <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay, Mode=OneWay}" Width="150" IsReadOnly="True">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="{x:Type TextBlock}">
                                     <Setter Property="TextWrapping" Value="NoWrap" />
