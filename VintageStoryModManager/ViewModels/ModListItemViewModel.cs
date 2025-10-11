@@ -73,6 +73,8 @@ public sealed class ModListItemViewModel : ObservableObject
     private bool _hasUpdate;
     private string? _updateMessage;
     private ModVersionOptionViewModel? _selectedVersionOption;
+    private IReadOnlyList<string> _configFilePaths = Array.Empty<string>();
+    private string _configDisplay = "Not set";
 
     public sealed record ReleaseChangelog(string Version, string Changelog);
 
@@ -204,6 +206,10 @@ public sealed class ModListItemViewModel : ObservableObject
             return string.IsNullOrWhiteSpace(NetworkVersion) ? "—" : NetworkVersion!;
         }
     }
+
+    public IReadOnlyList<string> ConfigFilePaths => _configFilePaths;
+
+    public string ConfigDisplay => _configDisplay;
 
     public string AuthorsDisplay => _authors.Count == 0 ? "—" : string.Join(", ", _authors);
 
@@ -796,6 +802,22 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             LogDebug($"Async database logo load failed with error: {ex.Message}.");
         }
+    }
+
+    public void SetConfigFilePaths(IEnumerable<string>? paths)
+    {
+        IReadOnlyList<string> normalized = NormalizeConfigPaths(paths);
+
+        if (AreConfigListsEqual(_configFilePaths, normalized))
+        {
+            return;
+        }
+
+        _configFilePaths = normalized;
+        _configDisplay = BuildConfigDisplay(normalized);
+
+        OnPropertyChanged(nameof(ConfigFilePaths));
+        OnPropertyChanged(nameof(ConfigDisplay));
     }
 
     public void SetIsActiveSilently(bool isActive)
@@ -1789,6 +1811,81 @@ public sealed class ModListItemViewModel : ObservableObject
             }
             return null;
         }
+    }
+
+    private static IReadOnlyList<string> NormalizeConfigPaths(IEnumerable<string>? paths)
+    {
+        if (paths is null)
+        {
+            return Array.Empty<string>();
+        }
+
+        var normalized = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string path in paths)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            string trimmed = path.Trim();
+            if (seen.Add(trimmed))
+            {
+                normalized.Add(trimmed);
+            }
+        }
+
+        return normalized.Count == 0 ? Array.Empty<string>() : normalized.ToArray();
+    }
+
+    private static bool AreConfigListsEqual(IReadOnlyList<string> left, IReadOnlyList<string> right)
+    {
+        if (ReferenceEquals(left, right))
+        {
+            return true;
+        }
+
+        if (left.Count != right.Count)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < left.Count; i++)
+        {
+            if (!string.Equals(left[i], right[i], StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static string BuildConfigDisplay(IReadOnlyList<string> paths)
+    {
+        if (paths.Count == 0)
+        {
+            return "Not set";
+        }
+
+        string[] names = new string[paths.Count];
+        for (int i = 0; i < paths.Count; i++)
+        {
+            string path = paths[i];
+            string fileName = Path.GetFileName(path);
+            string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+
+            if (string.IsNullOrWhiteSpace(nameWithoutExtension))
+            {
+                nameWithoutExtension = string.IsNullOrWhiteSpace(fileName) ? path : fileName;
+            }
+
+            names[i] = nameWithoutExtension;
+        }
+
+        return string.Join(Environment.NewLine, names);
     }
 
     private static Task InvokeOnDispatcherAsync(Action action, CancellationToken cancellationToken)
