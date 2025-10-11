@@ -68,6 +68,56 @@
             <GradientStop Color="#FFDFE3EA" Offset="1"/>
             <GradientStop Color="#FFD2DFF3" Offset="0.498"/>
         </LinearGradientBrush>
+        <!-- Style for Toggleable MenuItem with custom check symbols -->
+        <Style x:Key="ToggleMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="IsCheckable" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type MenuItem}">
+                        <Border x:Name="templateRoot">
+                            <Grid Margin="-1">
+                                <Grid.ColumnDefinitions>
+                                    <!-- Column for the checkmark symbol -->
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIconColumnGroup"/>
+                                    <!-- Column for the header text -->
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Checkmark Symbol Area -->
+                                <TextBlock x:Name="CheckMark"
+                                       Text="☐" />
+
+                                <!-- Header Content -->
+                                <ContentPresenter x:Name="Content"
+                                              Grid.Column="1"
+                                              ContentSource="Header"
+                                              />
+                            </Grid>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <!-- Trigger to change the symbol and color when checked -->
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckMark" Property="Text" Value="🗹"/>
+                                <Setter TargetName="CheckMark" Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                            </Trigger>
+
+                            <!-- Trigger for highlight when mouse is over -->
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter Property="Background" TargetName="templateRoot" Value="#3D26A0DA"/>
+                                <Setter Property="BorderBrush" TargetName="templateRoot" Value="#FF26A0DA"/>
+                            </Trigger>
+
+                            <!-- Trigger for disabled state -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="TextElement.Foreground" TargetName="templateRoot" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                <Setter TargetName="CheckMark" Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid Background="{DynamicResource GridBackground1}" Margin="0,0,0,8">
@@ -106,6 +156,7 @@
                               Header="Cache all versions locally"
                               Height="35"
                               IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
                               Click="CacheAllVersionsMenuItem_OnClick" />
                     <MenuItem Header="_Delete Cached Mods" Height="35" Click="DeleteCachedModsMenuItem_OnClick" />
                 </MenuItem>
