@@ -62,6 +62,9 @@ public sealed class MainViewModel : ObservableObject
     private readonly RelayCommand _showInstalledModsCommand;
     private readonly RelayCommand _showModDatabaseCommand;
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
+    private readonly object _busyStateLock = new();
+    private int _busyOperationCount;
+    private bool _isLoadingMods;
 
     public MainViewModel(string dataDirectory, int modDatabaseSearchResultLimit, int newModsRecentMonths)
     {
@@ -610,12 +613,13 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task LoadModsAsync()
     {
-        if (IsBusy)
+        if (_isLoadingMods)
         {
             return;
         }
 
-        IsBusy = true;
+        _isLoadingMods = true;
+        using var busyScope = BeginBusyScope();
         SetStatus("Loading mods...", false);
 
         try
@@ -685,7 +689,7 @@ public sealed class MainViewModel : ObservableObject
         }
         finally
         {
-            IsBusy = false;
+            _isLoadingMods = false;
         }
     }
 
@@ -842,6 +846,7 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task RunModDatabaseSearchAsync(string query, bool hasSearchTokens, CancellationTokenSource cts)
     {
+        using var busyScope = BeginBusyScope();
         CancellationToken cancellationToken = cts.Token;
 
         try
@@ -1005,6 +1010,73 @@ public sealed class MainViewModel : ObservableObject
             {
                 _modDatabaseSearchCts = null;
             }
+        }
+    }
+
+    private IDisposable BeginBusyScope()
+    {
+        lock (_busyStateLock)
+        {
+            _busyOperationCount++;
+            UpdateIsBusy();
+        }
+
+        return new BusyScope(this);
+    }
+
+    private void EndBusyScope()
+    {
+        lock (_busyStateLock)
+        {
+            if (_busyOperationCount > 0)
+            {
+                _busyOperationCount--;
+            }
+
+            UpdateIsBusy();
+        }
+    }
+
+    private void UpdateIsBusy()
+    {
+        bool isBusy = _busyOperationCount > 0;
+
+        if (System.Windows.Application.Current?.Dispatcher is Dispatcher dispatcher)
+        {
+            if (dispatcher.CheckAccess())
+            {
+                IsBusy = isBusy;
+            }
+            else
+            {
+                dispatcher.Invoke(() => IsBusy = isBusy);
+            }
+        }
+        else
+        {
+            IsBusy = isBusy;
+        }
+    }
+
+    private sealed class BusyScope : IDisposable
+    {
+        private readonly MainViewModel _owner;
+        private bool _disposed;
+
+        public BusyScope(MainViewModel owner)
+        {
+            _owner = owner;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _owner.EndBusyScope();
         }
     }
 
