@@ -81,6 +81,7 @@ public partial class MainWindow : Window
     private readonly ModDatabaseService _modDatabaseService = new();
     private readonly ModUpdateService _modUpdateService = new();
     private bool _isModUpdateInProgress;
+    private bool _isDependencyResolutionRefreshPending;
     private ScrollViewer? _modsScrollViewer;
     private ScrollViewer? _modDatabaseCardsScrollViewer;
     private bool _suppressSortPreferenceSave;
@@ -311,6 +312,17 @@ public partial class MainWindow : Window
                 });
             }
         }
+        else if (e.PropertyName == nameof(MainViewModel.StatusMessage))
+        {
+            string? statusMessage = _viewModel?.StatusMessage;
+            if (ShouldRefreshAfterDependencyResolution(statusMessage))
+            {
+                Dispatcher.InvokeAsync(async () =>
+                {
+                    await RefreshModsAfterDependencyResolutionAsync().ConfigureAwait(true);
+                }, DispatcherPriority.Background);
+            }
+        }
     }
 
     private void ApplyCompactViewState(bool isCompactView)
@@ -437,6 +449,43 @@ public partial class MainWindow : Window
             SortDescription description = ModsDataGrid.Items.SortDescriptions[0];
             _cachedSortMemberPath = NormalizeSortMemberPath(description.PropertyName);
             _cachedSortDirection = description.Direction;
+        }
+    }
+
+    private static bool ShouldRefreshAfterDependencyResolution(string? statusMessage)
+    {
+        return !string.IsNullOrWhiteSpace(statusMessage)
+            && statusMessage.StartsWith("Resolved dependencies for ", StringComparison.Ordinal);
+    }
+
+    private async Task RefreshModsAfterDependencyResolutionAsync()
+    {
+        if (_isDependencyResolutionRefreshPending)
+        {
+            return;
+        }
+
+        if (_viewModel?.RefreshCommand == null)
+        {
+            return;
+        }
+
+        _isDependencyResolutionRefreshPending = true;
+
+        try
+        {
+            await RefreshModsAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show($"The mod list could not be refreshed after resolving dependencies:{Environment.NewLine}{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            _isDependencyResolutionRefreshPending = false;
         }
     }
 
