@@ -68,50 +68,96 @@
             <GradientStop Color="#FFDFE3EA" Offset="1"/>
             <GradientStop Color="#FFD2DFF3" Offset="0.498"/>
         </LinearGradientBrush>
-        <!-- Style for Toggleable MenuItem with custom check symbols -->
+        <!-- Style for toggleable MenuItem that keeps the default look and feel -->
         <Style x:Key="ToggleMenuItemStyle" TargetType="MenuItem">
             <Setter Property="IsCheckable" Value="True" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,0,12,0" />
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type MenuItem}">
-                        <Border x:Name="templateRoot">
-                            <Grid Margin="-1">
+                        <Border x:Name="templateRoot"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <Grid SnapsToDevicePixels="True"
+                                  Grid.IsSharedSizeScope="True">
                                 <Grid.ColumnDefinitions>
-                                    <!-- Column for the checkmark symbol -->
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIconColumnGroup"/>
-                                    <!-- Column for the header text -->
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIconColumnGroup" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIGTColumnGroup" />
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Checkmark Symbol Area -->
                                 <TextBlock x:Name="CheckMark"
-                                       Text="☐" />
+                                           Margin="0,0,8,0"
+                                           VerticalAlignment="Center"
+                                           FontFamily="{TemplateBinding FontFamily}"
+                                           FontSize="{TemplateBinding FontSize}"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           Text="☐"
+                                           Visibility="Collapsed" />
 
-                                <!-- Header Content -->
-                                <ContentPresenter x:Name="Content"
-                                              Grid.Column="1"
-                                              ContentSource="Header"
-                                              />
+                                <ContentPresenter x:Name="Icon"
+                                                  Margin="0,0,8,0"
+                                                  VerticalAlignment="Center"
+                                                  ContentSource="Icon"
+                                                  RecognizesAccessKey="True"
+                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+
+                                <ContentPresenter x:Name="HeaderHost"
+                                                  Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"
+                                                  ContentSource="Header"
+                                                  TextElement.Foreground="{TemplateBinding Foreground}" />
+
+                                <TextBlock x:Name="InputGestureText"
+                                           Grid.Column="2"
+                                           Margin="24,0,0,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           Text="{TemplateBinding InputGestureText}"
+                                           Visibility="Visible" />
                             </Grid>
                         </Border>
 
                         <ControlTemplate.Triggers>
-                            <!-- Trigger to change the symbol and color when checked -->
+                            <Trigger SourceName="Icon" Property="Content" Value="{x:Null}">
+                                <Setter TargetName="Icon" Property="Visibility" Value="Collapsed" />
+                            </Trigger>
+
+                            <Trigger Property="InputGestureText" Value="">
+                                <Setter TargetName="InputGestureText" Property="Visibility" Value="Collapsed" />
+                            </Trigger>
+
+                            <Trigger Property="InputGestureText" Value="{x:Null}">
+                                <Setter TargetName="InputGestureText" Property="Visibility" Value="Collapsed" />
+                            </Trigger>
+
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="CheckMark" Property="Text" Value="🗹"/>
-                                <Setter TargetName="CheckMark" Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="CheckMark" Property="Text" Value="🗹" />
                             </Trigger>
 
-                            <!-- Trigger for highlight when mouse is over -->
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="CheckMark" Property="Text" Value="☐" />
+                            </Trigger>
+
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter Property="Background" TargetName="templateRoot" Value="#3D26A0DA"/>
-                                <Setter Property="BorderBrush" TargetName="templateRoot" Value="#FF26A0DA"/>
+                                <Setter TargetName="templateRoot" Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                                <Setter TargetName="templateRoot" Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
                             </Trigger>
 
-                            <!-- Trigger for disabled state -->
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="TextElement.Foreground" TargetName="templateRoot" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
-                                <Setter TargetName="CheckMark" Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
