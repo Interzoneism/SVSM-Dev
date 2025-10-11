@@ -19,7 +19,7 @@ internal static class ModCacheLocator
 
         return string.IsNullOrWhiteSpace(path)
             ? null
-            : Path.Combine(path, "VS Mod Manager");
+            : Path.Combine(path, "Simple VS Manager");
     }
 
     public static string? GetCachedModsDirectory()
