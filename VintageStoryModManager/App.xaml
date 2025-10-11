@@ -636,9 +636,21 @@
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter Property="Foreground" Value="White" />
+                                    <Setter TargetName="Root"
+                                            Property="Background"
+                                            Value="{StaticResource IMM.AccentBrush}" />
+                                    <Setter TargetName="Root"
+                                            Property="BorderBrush"
+                                            Value="{StaticResource IMM.AccentBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsChecked" Value="False">
                                     <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                                    <Setter TargetName="Root"
+                                            Property="Background"
+                                            Value="{StaticResource IMM.ButtonBackgroundBrush}" />
+                                    <Setter TargetName="Root"
+                                            Property="BorderBrush"
+                                            Value="{StaticResource IMM.BorderBrush}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
