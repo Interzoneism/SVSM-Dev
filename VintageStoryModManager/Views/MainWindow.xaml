@@ -238,6 +238,15 @@
                               Click="ManagerModDbPageMenuItem_OnClick" />
                 </MenuItem>
             </Menu>
+            <ui:ProgressRing Grid.Column="1"
+                              Width="32"
+                              Height="32"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Top"
+                              Margin="0,6,16,0"
+                              IsActive="{Binding IsBusy}"
+                              Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
+                              Foreground="{StaticResource IMM.AccentBrush}" />
 
 
         </Grid>
@@ -1532,36 +1541,5 @@
 
         </Border>
 
-        <Border x:Name="BusyOverlay"
-                Grid.RowSpan="3"
-                Background="#80F6F8FB"
-                Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
-                Panel.ZIndex="50"
-                SnapsToDevicePixels="True">
-            <Border HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Padding="32"
-                    Background="{StaticResource IMM.SurfaceBrush}"
-                    BorderBrush="{StaticResource IMM.BorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="12">
-                <StackPanel HorizontalAlignment="Center"
-                            VerticalAlignment="Center">
-                    <ui:ProgressRing x:Name="PROGRESS"
-                                     Width="72"
-                                     Height="72"
-                                     IsActive="{Binding IsBusy}"
-                                     Foreground="{StaticResource IMM.AccentBrush}" />
-                    <TextBlock Text="{Binding StatusMessage}"
-                               Margin="0,16,0,0"
-                               Foreground="{StaticResource IMM.ForegroundBrush}"
-                               FontSize="16"
-                               FontWeight="SemiBold"
-                               TextAlignment="Center"
-                               TextWrapping="Wrap"
-                               MaxWidth="360" />
-                </StackPanel>
-            </Border>
-        </Border>
     </Grid>
 </Window>
