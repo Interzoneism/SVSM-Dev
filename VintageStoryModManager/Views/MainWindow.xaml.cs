@@ -97,6 +97,8 @@ public partial class MainWindow : Window
         CacheAllVersionsMenuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
         DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
+        EnableDebugLoggingMenuItem.IsChecked = _userConfiguration.EnableDebugLogging;
+        StatusLogService.IsLoggingEnabled = _userConfiguration.EnableDebugLogging;
 
         if (!TryInitializePaths())
         {
@@ -199,6 +201,19 @@ public partial class MainWindow : Window
 
         _userConfiguration.SetCacheAllVersionsLocally(menuItem.IsChecked);
         menuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
+    }
+
+    private void EnableDebugLoggingMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return;
+        }
+
+        _userConfiguration.SetEnableDebugLogging(menuItem.IsChecked);
+        bool isEnabled = _userConfiguration.EnableDebugLogging;
+        menuItem.IsChecked = isEnabled;
+        StatusLogService.IsLoggingEnabled = isEnabled;
     }
 
     private void InitializeViewModel()
