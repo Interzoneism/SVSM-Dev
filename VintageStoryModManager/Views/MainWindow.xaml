@@ -230,6 +230,12 @@
                               IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}" />
                 </MenuItem>
                 <MenuItem Header="_Help" Height="35">
+                    <MenuItem x:Name="EnableDebugLoggingMenuItem"
+                              Header="Enable debug logging"
+                              Height="35"
+                              IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
+                              Click="EnableDebugLoggingMenuItem_OnClick" />
                     <MenuItem Header="Manager _Data Folder"
                               Padding="12,6"
                               Click="ManagerDataFolderMenuItem_OnClick" />

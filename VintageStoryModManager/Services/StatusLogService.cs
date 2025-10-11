@@ -16,6 +16,13 @@ public static class StatusLogService
     private const int MaxLogLines = 5000;
     private static readonly object SyncRoot = new();
     private static readonly string LogFilePath = InitializeLogFilePath();
+    private static volatile bool _isLoggingEnabled;
+
+    public static bool IsLoggingEnabled
+    {
+        get => _isLoggingEnabled;
+        set => _isLoggingEnabled = value;
+    }
 
     private static string InitializeLogFilePath()
     {
@@ -44,7 +51,7 @@ public static class StatusLogService
     /// <param name="isError">Whether the status represents an error.</param>
     public static void AppendStatus(string message, bool isError)
     {
-        if (string.IsNullOrWhiteSpace(message))
+        if (!_isLoggingEnabled || string.IsNullOrWhiteSpace(message))
         {
             return;
         }

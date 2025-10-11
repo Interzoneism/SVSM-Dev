@@ -30,6 +30,7 @@ public sealed class UserConfigurationService
     private bool _useModDbDesignView = true;
     private bool _cacheAllVersionsLocally;
     private bool _disableInternetAccess;
+    private bool _enableDebugLogging;
     private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
     private int _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
     private string? _modsSortMemberPath;
@@ -59,6 +60,8 @@ public sealed class UserConfigurationService
     public bool CacheAllVersionsLocally => _cacheAllVersionsLocally;
 
     public bool DisableInternetAccess => _disableInternetAccess;
+
+    public bool EnableDebugLogging => _enableDebugLogging;
 
     public int ModDatabaseSearchResultLimit => _modDatabaseSearchResultLimit;
 
@@ -341,6 +344,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetEnableDebugLogging(bool enableDebugLogging)
+    {
+        if (_enableDebugLogging == enableDebugLogging)
+        {
+            return;
+        }
+
+        _enableDebugLogging = enableDebugLogging;
+        Save();
+    }
+
     public void SetCacheAllVersionsLocally(bool cacheAllVersionsLocally)
     {
         if (_cacheAllVersionsLocally == cacheAllVersionsLocally)
@@ -468,6 +482,7 @@ public sealed class UserConfigurationService
             _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
             _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? false;
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
+            _enableDebugLogging = obj["enableDebugLogging"]?.GetValue<bool?>() ?? false;
             _modsSortMemberPath = NormalizeSortMemberPath(obj["modsSortMemberPath"]?.GetValue<string?>());
             _modsSortDirection = ParseSortDirection(obj["modsSortDirection"]?.GetValue<string?>());
             _modDatabaseSearchResultLimit = NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
@@ -506,6 +521,7 @@ public sealed class UserConfigurationService
             _useModDbDesignView = true;
             _cacheAllVersionsLocally = false;
             _disableInternetAccess = false;
+            _enableDebugLogging = false;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
             _selectedPresetName = null;
@@ -533,6 +549,7 @@ public sealed class UserConfigurationService
                 ["useAdvancedPresets"] = _isAdvancedPresetMode,
                 ["cacheAllVersionsLocally"] = _cacheAllVersionsLocally,
                 ["disableInternetAccess"] = _disableInternetAccess,
+                ["enableDebugLogging"] = _enableDebugLogging,
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
                 ["modDatabaseSearchResultLimit"] = _modDatabaseSearchResultLimit,
