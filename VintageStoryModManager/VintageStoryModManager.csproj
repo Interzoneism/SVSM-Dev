@@ -9,12 +9,9 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AssetTargetFallback>$(AssetTargetFallback);net5.0-windows7.0;netcoreapp3.0</AssetTargetFallback>
-    <ApplicationIcon>modmanager.ico</ApplicationIcon>
+    <ApplicationIcon>SVSM.ico</ApplicationIcon>
 	  <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
-  <ItemGroup>
-    <Content Include="modmanager.ico" />
-  </ItemGroup>
 
   <ItemGroup>
     <Resource Include="configicon.png" />
