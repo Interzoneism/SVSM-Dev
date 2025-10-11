@@ -2993,7 +2993,9 @@ public partial class MainWindow : Window
         Action<string>? onSuccess,
         string failureContext,
         bool includeModVersions,
-        bool exclusive)
+        bool exclusive,
+        Func<bool>? includeConfigsSettingGetter = null,
+        Action<bool>? includeConfigsSettingSetter = null)
     {
         if (_viewModel is null)
         {
@@ -3046,6 +3048,25 @@ public partial class MainWindow : Window
         IReadOnlyList<string> disabledEntries = _viewModel.GetCurrentDisabledEntries();
         IReadOnlyList<ModPresetModState> states = _viewModel.GetCurrentModStates();
 
+        bool includeConfigs = false;
+        if (includeConfigsSettingGetter is not null && includeConfigsSettingSetter is not null)
+        {
+            bool defaultInclude = includeConfigsSettingGetter();
+            var optionsDialog = new SaveSnapshotOptionsDialog(fallbackName, entryName, defaultInclude)
+            {
+                Owner = this
+            };
+
+            bool? optionsResult = optionsDialog.ShowDialog();
+            if (optionsResult != true)
+            {
+                return false;
+            }
+
+            includeConfigs = optionsDialog.IncludeConfigs;
+            includeConfigsSettingSetter(includeConfigs);
+        }
+
         var serializable = new SerializablePreset
         {
             Name = entryName,
@@ -3062,6 +3083,18 @@ public partial class MainWindow : Window
                 IsActive = state.IsActive
             }).ToList()
         };
+
+        if (includeConfigs)
+        {
+            List<SerializablePresetConfigFile>? configFiles = BuildSerializableConfigFiles(states);
+            serializable.ConfigIncluded = true;
+            serializable.ConfigFiles = configFiles;
+
+            if (configFiles is null || configFiles.Count == 0)
+            {
+                _viewModel?.ReportStatus($"No mod config files were found to include for \"{entryName}\".");
+            }
+        }
 
         try
         {
@@ -3088,6 +3121,246 @@ public partial class MainWindow : Window
         }
     }
 
+    private List<SerializablePresetConfigFile>? BuildSerializableConfigFiles(IReadOnlyList<ModPresetModState> states)
+    {
+        if (states.Count == 0 || string.IsNullOrWhiteSpace(_dataDirectory))
+        {
+            return null;
+        }
+
+        var modIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var state in states)
+        {
+            if (state is null || string.IsNullOrWhiteSpace(state.ModId))
+            {
+                continue;
+            }
+
+            modIds.Add(state.ModId.Trim());
+        }
+
+        if (modIds.Count == 0)
+        {
+            return null;
+        }
+
+        string baseDirectory = _dataDirectory!;
+        var configFiles = new List<SerializablePresetConfigFile>();
+        var seenTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var kvp in _userConfiguration.GetModConfigPathsSnapshot())
+        {
+            string? modId = kvp.Key;
+            string? path = kvp.Value;
+
+            if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            string trimmedModId = modId.Trim();
+            if (!modIds.Contains(trimmedModId))
+            {
+                continue;
+            }
+
+            string normalizedPath;
+            try
+            {
+                normalizedPath = Path.GetFullPath(path);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            if (!File.Exists(normalizedPath))
+            {
+                continue;
+            }
+
+            if (!IsPathWithinDirectory(baseDirectory, normalizedPath))
+            {
+                continue;
+            }
+
+            string? relativePath = TryGetRelativePath(baseDirectory, normalizedPath);
+            if (string.IsNullOrWhiteSpace(relativePath))
+            {
+                continue;
+            }
+
+            if (!seenTargets.Add(relativePath))
+            {
+                continue;
+            }
+
+            try
+            {
+                byte[] bytes = File.ReadAllBytes(normalizedPath);
+                configFiles.Add(new SerializablePresetConfigFile
+                {
+                    ModId = trimmedModId,
+                    RelativePath = relativePath,
+                    Content = Convert.ToBase64String(bytes)
+                });
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Skip files that cannot be read.
+            }
+        }
+
+        return configFiles.Count > 0 ? configFiles : null;
+    }
+
+    private void HandleIncludedConfigsAfterLoad(ModPreset preset, string snapshotType)
+    {
+        if (preset is null || !preset.IncludesConfigs || !preset.HasConfigFiles)
+        {
+            return;
+        }
+
+        string typeDisplay = string.IsNullOrWhiteSpace(snapshotType)
+            ? "preset"
+            : snapshotType;
+
+        bool install;
+        bool? storedPreference = _userConfiguration.InstallIncludedConfigsPreference;
+        if (storedPreference.HasValue)
+        {
+            install = storedPreference.Value;
+        }
+        else
+        {
+            var prompt = new InstallIncludedConfigsDialog(typeDisplay, preset.Name, preset.ConfigFiles.Count)
+            {
+                Owner = this
+            };
+
+            _ = prompt.ShowDialog();
+
+            switch (prompt.Decision)
+            {
+                case IncludedConfigInstallDecision.Yes:
+                    install = true;
+                    break;
+                case IncludedConfigInstallDecision.YesAlways:
+                    install = true;
+                    _userConfiguration.SetInstallIncludedConfigsPreference(true);
+                    break;
+                case IncludedConfigInstallDecision.NoAlways:
+                    install = false;
+                    _userConfiguration.SetInstallIncludedConfigsPreference(false);
+                    break;
+                case IncludedConfigInstallDecision.No:
+                default:
+                    install = false;
+                    break;
+            }
+        }
+
+        if (!install)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_dataDirectory))
+        {
+            WpfMessageBox.Show(
+                "Unable to install configuration files because the Vintagestory data directory is not configured.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        List<string> errors = InstallConfigFiles(preset);
+        if (errors.Count > 0)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("Some configuration files could not be installed:");
+            foreach (string error in errors.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                builder.AppendLine($" • {error}");
+            }
+
+            WpfMessageBox.Show(
+                builder.ToString(),
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        _viewModel?.ReportStatus($"Installed {preset.ConfigFiles.Count} config file(s) from the {typeDisplay} \"{preset.Name}\".");
+    }
+
+    private List<string> InstallConfigFiles(ModPreset preset)
+    {
+        var errors = new List<string>();
+        string baseDirectory = _dataDirectory!;
+        var seenTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var config in preset.ConfigFiles)
+        {
+            if (config is null || string.IsNullOrWhiteSpace(config.ModId) || string.IsNullOrWhiteSpace(config.RelativePath))
+            {
+                continue;
+            }
+
+            string targetPath;
+            try
+            {
+                targetPath = Path.Combine(baseDirectory, config.RelativePath);
+                targetPath = Path.GetFullPath(targetPath);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                errors.Add($"{config.ModId}: {ex.Message}");
+                continue;
+            }
+
+            if (!IsPathWithinDirectory(baseDirectory, targetPath))
+            {
+                errors.Add($"{config.ModId}: Target path is outside of the Vintagestory data directory.");
+                continue;
+            }
+
+            if (!seenTargets.Add(targetPath))
+            {
+                continue;
+            }
+
+            try
+            {
+                string? directory = Path.GetDirectoryName(targetPath);
+                if (!string.IsNullOrWhiteSpace(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                byte[] data = config.Contents.ToArray();
+                File.WriteAllBytes(targetPath, data);
+
+                try
+                {
+                    _userConfiguration.SetModConfigPath(config.ModId, targetPath);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+                {
+                    errors.Add($"{config.ModId}: {ex.Message}");
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                errors.Add($"{config.ModId}: {ex.Message}");
+            }
+        }
+
+        return errors;
+    }
+
     private void SavePresetMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         string presetDirectory = EnsurePresetDirectory();
@@ -3105,7 +3378,9 @@ public partial class MainWindow : Window
             },
             "preset",
             includeModVersions: false,
-            exclusive: false);
+            exclusive: false,
+            includeConfigsSettingGetter: () => _userConfiguration.IncludeConfigsWhenSavingPresets,
+            includeConfigsSettingSetter: include => _userConfiguration.SetIncludeConfigsWhenSavingPresets(include));
     }
 
     private bool TrySaveModlist()
@@ -3121,7 +3396,9 @@ public partial class MainWindow : Window
             onSuccess: name => _viewModel?.ReportStatus($"Saved modlist \"{name}\"."),
             failureContext: "modlist",
             includeModVersions: true,
-            exclusive: true);
+            exclusive: true,
+            includeConfigsSettingGetter: () => _userConfiguration.IncludeConfigsWhenSavingModlists,
+            includeConfigsSettingSetter: include => _userConfiguration.SetIncludeConfigsWhenSavingModlists(include));
     }
 
     private void SaveModlistMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -3179,6 +3456,7 @@ public partial class MainWindow : Window
         }
 
         ModPreset loadedPreset = preset!;
+        HandleIncludedConfigsAfterLoad(loadedPreset, "preset");
         _userConfiguration.SetLastSelectedPresetName(loadedPreset.Name);
         await ApplyPresetAsync(loadedPreset);
         _viewModel?.ReportStatus($"Loaded preset \"{loadedPreset.Name}\".");
@@ -3267,6 +3545,7 @@ public partial class MainWindow : Window
         }
 
         ModPreset loadedModlist = preset!;
+        HandleIncludedConfigsAfterLoad(loadedModlist, "modlist");
         await ApplyPresetAsync(loadedModlist);
         _viewModel?.ReportStatus($"Loaded modlist \"{loadedModlist.Name}\".");
     }
@@ -3346,7 +3625,54 @@ public partial class MainWindow : Window
                 }
             }
 
-            preset = new ModPreset(name, disabledEntries, modStates, includeStatus, includeVersions, exclusive);
+            var configFiles = new List<ModPresetConfigFile>();
+            if (data.ConfigFiles != null)
+            {
+                foreach (var config in data.ConfigFiles)
+                {
+                    if (config is null
+                        || string.IsNullOrWhiteSpace(config.ModId)
+                        || string.IsNullOrWhiteSpace(config.RelativePath)
+                        || string.IsNullOrWhiteSpace(config.Content))
+                    {
+                        continue;
+                    }
+
+                    string modId = config.ModId.Trim();
+                    string relativePath = config.RelativePath.Trim()
+                        .TrimStart('/', '\\')
+                        .Replace('/', Path.DirectorySeparatorChar)
+                        .Replace('\\', Path.DirectorySeparatorChar);
+
+                    try
+                    {
+                        byte[] bytes = Convert.FromBase64String(config.Content);
+                        if (bytes.Length == 0)
+                        {
+                            configFiles.Add(new ModPresetConfigFile(modId, relativePath, Array.Empty<byte>()));
+                            continue;
+                        }
+
+                        configFiles.Add(new ModPresetConfigFile(modId, relativePath, bytes));
+                    }
+                    catch (FormatException)
+                    {
+                        // Skip malformed content entries.
+                    }
+                }
+            }
+
+            bool includesConfigs = data.ConfigIncluded ?? (configFiles.Count > 0);
+
+            preset = new ModPreset(
+                name,
+                disabledEntries,
+                modStates,
+                includeStatus,
+                includeVersions,
+                exclusive,
+                includesConfigs,
+                configFiles);
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -3387,6 +3713,35 @@ public partial class MainWindow : Window
         }
     }
 
+    private static string? TryGetRelativePath(string directory, string filePath)
+    {
+        try
+        {
+            string normalizedDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
+            string normalizedFile = Path.GetFullPath(filePath);
+
+            if (!IsPathWithinDirectory(normalizedDirectory, normalizedFile)
+                && !string.Equals(normalizedDirectory, normalizedFile, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            string relative = Path.GetRelativePath(normalizedDirectory, normalizedFile);
+            if (string.IsNullOrWhiteSpace(relative) || relative.StartsWith("..", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            return relative
+                .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+                .TrimStart(Path.DirectorySeparatorChar);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     private static string BuildSuggestedFileName(string? name, string fallback)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -3419,6 +3774,8 @@ public partial class MainWindow : Window
         public bool? IncludeModStatus { get; set; }
         public bool? IncludeModVersions { get; set; }
         public bool? Exclusive { get; set; }
+        public bool? ConfigIncluded { get; set; }
+        public List<SerializablePresetConfigFile>? ConfigFiles { get; set; }
     }
 
     private sealed class SerializablePresetModState
@@ -3426,6 +3783,13 @@ public partial class MainWindow : Window
         public string? ModId { get; set; }
         public string? Version { get; set; }
         public bool? IsActive { get; set; }
+    }
+
+    private sealed class SerializablePresetConfigFile
+    {
+        public string? ModId { get; set; }
+        public string? RelativePath { get; set; }
+        public string? Content { get; set; }
     }
 
     private async Task ApplyPresetAsync(ModPreset preset)
