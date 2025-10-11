@@ -24,9 +24,10 @@ using ModernWpf.Controls;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 
-using VintageStoryModManager.Services;
 using VintageStoryModManager.Models;
+using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
+using VintageStoryModManager.Views.Dialogs;
 using WinForms = System.Windows.Forms;
 using WpfApplication = System.Windows.Application;
 using WpfButton = System.Windows.Controls.Button;
@@ -3220,11 +3221,25 @@ public partial class MainWindow : Window
             return;
         }
 
-        MessageBoxResult prompt = WpfMessageBox.Show(
-            "Would you like to save your current modlist before loading the selected modlist?",
-            "Simple VS Manager",
-            MessageBoxButton.YesNoCancel,
-            MessageBoxImage.Question);
+        MessageBoxResult prompt;
+        if (_userConfiguration.SuppressModlistSavePrompt)
+        {
+            prompt = MessageBoxResult.No;
+        }
+        else
+        {
+            var suppressButton = new MessageDialogExtraButton(
+                "No, don't ask again",
+                MessageBoxResult.No,
+                onClick: () => _userConfiguration.SetSuppressModlistSavePrompt(true));
+
+            prompt = WpfMessageBox.Show(
+                "Would you like to save your current modlist before loading the selected modlist?",
+                "Simple VS Manager",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question,
+                suppressButton);
+        }
 
         if (prompt == MessageBoxResult.Cancel)
         {
