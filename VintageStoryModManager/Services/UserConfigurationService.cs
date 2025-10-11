@@ -19,7 +19,7 @@ public sealed class UserConfigurationService
     private const int MaxModDatabaseNewModsRecentMonths = 24;
 
     private readonly string _configurationPath;
-    private readonly Dictionary<string, List<string>> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private string? _selectedPresetName;
     private bool _isCompactView;
     private bool _useModDbDesignView = true;
@@ -107,55 +107,35 @@ public sealed class UserConfigurationService
         Save();
     }
 
-    public bool TryGetModConfigPaths(string? modId, out IReadOnlyList<string>? paths)
+    public bool TryGetModConfigPath(string? modId, out string? path)
     {
         if (string.IsNullOrWhiteSpace(modId))
         {
-            paths = null;
+            path = null;
             return false;
         }
 
-        if (_modConfigPaths.TryGetValue(modId.Trim(), out List<string>? stored) && stored.Count > 0)
-        {
-            paths = stored.ToArray();
-            return true;
-        }
-
-        paths = null;
-        return false;
+        return _modConfigPaths.TryGetValue(modId.Trim(), out path);
     }
 
-    public void SetModConfigPaths(string modId, IEnumerable<string> paths)
+    public void SetModConfigPath(string modId, string path)
     {
         if (string.IsNullOrWhiteSpace(modId))
         {
             throw new ArgumentException("Mod ID cannot be empty.", nameof(modId));
         }
 
-        string trimmedModId = modId.Trim();
-        List<string> normalizedPaths = NormalizePaths(paths);
-
-        if (normalizedPaths.Count == 0)
+        string? normalized = NormalizePath(path);
+        if (string.IsNullOrWhiteSpace(normalized))
         {
-            if (_modConfigPaths.Remove(trimmedModId))
-            {
-                Save();
-            }
-
-            return;
+            throw new ArgumentException("The configuration path is invalid.", nameof(path));
         }
 
-        if (_modConfigPaths.TryGetValue(trimmedModId, out List<string>? existing)
-            && ArePathListsEqual(existing, normalizedPaths))
-        {
-            return;
-        }
-
-        _modConfigPaths[trimmedModId] = normalizedPaths;
+        _modConfigPaths[modId.Trim()] = normalized;
         Save();
     }
 
-    public void RemoveModConfigPaths(string? modId)
+    public void RemoveModConfigPath(string? modId)
     {
         if (string.IsNullOrWhiteSpace(modId))
         {
@@ -168,11 +148,9 @@ public sealed class UserConfigurationService
         }
     }
 
-    public IReadOnlyList<KeyValuePair<string, IReadOnlyList<string>>> GetModConfigPathsSnapshot()
+    public IReadOnlyList<KeyValuePair<string, string>> GetModConfigPathsSnapshot()
     {
-        return _modConfigPaths
-            .Select(pair => new KeyValuePair<string, IReadOnlyList<string>>(pair.Key, pair.Value.ToArray()))
-            .ToList();
+        return _modConfigPaths.ToList();
     }
 
     public void SetCompactViewMode(bool isCompact)
@@ -519,18 +497,7 @@ public sealed class UserConfigurationService
 
         foreach (var pair in _modConfigPaths.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
-            if (pair.Value.Count == 0)
-            {
-                continue;
-            }
-
-            var array = new JsonArray();
-            foreach (string path in pair.Value)
-            {
-                array.Add(path);
-            }
-
-            result[pair.Key] = array;
+            result[pair.Key] = pair.Value;
         }
 
         return result;
@@ -553,89 +520,15 @@ public sealed class UserConfigurationService
                 continue;
             }
 
-            List<string> paths = new();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            if (pair.Value is JsonArray array)
-            {
-                foreach (JsonNode? item in array)
-                {
-                    string? value = item?.GetValue<string?>();
-                    string? normalized = NormalizePath(value);
-                    if (string.IsNullOrWhiteSpace(normalized) || !seen.Add(normalized))
-                    {
-                        continue;
-                    }
-
-                    paths.Add(normalized);
-                }
-            }
-            else
-            {
-                string? value = pair.Value?.GetValue<string?>();
-                string? normalized = NormalizePath(value);
-                if (!string.IsNullOrWhiteSpace(normalized) && seen.Add(normalized))
-                {
-                    paths.Add(normalized);
-                }
-            }
-
-            if (paths.Count > 0)
-            {
-                _modConfigPaths[modId.Trim()] = paths;
-            }
-        }
-    }
-
-    private static List<string> NormalizePaths(IEnumerable<string> paths)
-    {
-        var result = new List<string>();
-        if (paths is null)
-        {
-            return result;
-        }
-
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (string path in paths)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                continue;
-            }
-
+            string? path = pair.Value?.GetValue<string?>();
             string? normalized = NormalizePath(path);
-            if (string.IsNullOrWhiteSpace(normalized) || !seen.Add(normalized))
+            if (string.IsNullOrWhiteSpace(normalized))
             {
                 continue;
             }
 
-            result.Add(normalized);
+            _modConfigPaths[modId.Trim()] = normalized;
         }
-
-        return result;
-    }
-
-    private static bool ArePathListsEqual(IReadOnlyList<string> left, IReadOnlyList<string> right)
-    {
-        if (ReferenceEquals(left, right))
-        {
-            return true;
-        }
-
-        if (left.Count != right.Count)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < left.Count; i++)
-        {
-            if (!string.Equals(left[i], right[i], StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private static string GetPreferredConfigurationDirectory()

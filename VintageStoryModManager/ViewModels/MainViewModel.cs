@@ -34,7 +34,6 @@ public sealed class MainViewModel : ObservableObject
     private readonly ClientSettingsStore _settingsStore;
     private readonly ModDiscoveryService _discoveryService;
     private readonly ModDatabaseService _databaseService;
-    private readonly UserConfigurationService _userConfiguration;
     private readonly int _modDatabaseSearchResultLimit;
     private readonly ObservableCollection<SortOption> _sortOptions;
     private readonly string? _installedGameVersion;
@@ -67,21 +66,15 @@ public sealed class MainViewModel : ObservableObject
     private int _busyOperationCount;
     private bool _isLoadingMods;
 
-    public MainViewModel(
-        string dataDirectory,
-        int modDatabaseSearchResultLimit,
-        int newModsRecentMonths,
-        UserConfigurationService userConfiguration)
+    public MainViewModel(string dataDirectory, int modDatabaseSearchResultLimit, int newModsRecentMonths)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
-        ArgumentNullException.ThrowIfNull(userConfiguration);
 
         DataDirectory = Path.GetFullPath(dataDirectory);
 
         _settingsStore = new ClientSettingsStore(DataDirectory);
         _discoveryService = new ModDiscoveryService(_settingsStore);
         _databaseService = new ModDatabaseService();
-        _userConfiguration = userConfiguration;
         _modDatabaseSearchResultLimit = Math.Clamp(modDatabaseSearchResultLimit, 1, 100);
         _newModsRecentMonths = Math.Clamp(newModsRecentMonths <= 0 ? 1 : newModsRecentMonths, 1, MaxNewModsRecentMonths);
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion();
@@ -491,18 +484,16 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    internal ModListItemViewModel? FindInstalledModById(string? modId)
+    internal ModListItemViewModel? FindInstalledModById(string modId)
     {
         if (string.IsNullOrWhiteSpace(modId))
         {
             return null;
         }
 
-        string trimmed = modId.Trim();
-
         foreach (var mod in _mods)
         {
-            if (string.Equals(mod.ModId, trimmed, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(mod.ModId, modId, StringComparison.OrdinalIgnoreCase))
             {
                 return mod;
             }
@@ -744,14 +735,7 @@ public sealed class MainViewModel : ObservableObject
     {
         bool isActive = !_settingsStore.IsDisabled(entry.ModId, entry.Version);
         string location = GetDisplayPath(entry.SourcePath);
-        var viewModel = new ModListItemViewModel(entry, isActive, location, ApplyActivationChangeAsync, _installedGameVersion, true);
-
-        if (_userConfiguration.TryGetModConfigPaths(entry.ModId, out IReadOnlyList<string>? configPaths))
-        {
-            viewModel.SetConfigFilePaths(configPaths);
-        }
-
-        return viewModel;
+        return new ModListItemViewModel(entry, isActive, location, ApplyActivationChangeAsync, _installedGameVersion, true);
     }
 
     private async Task UpdateModsStateSnapshotAsync()
