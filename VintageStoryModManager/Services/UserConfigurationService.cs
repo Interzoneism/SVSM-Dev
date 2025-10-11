@@ -27,7 +27,7 @@ public sealed class UserConfigurationService
     private string? _selectedAdvancedPresetName;
     private bool _isAdvancedPresetMode;
     private bool _isCompactView;
-    private bool _useModDbDesignView;
+    private bool _useModDbDesignView = true;
     private bool _cacheAllVersionsLocally;
     private bool _disableInternetAccess;
     private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
@@ -464,7 +464,7 @@ public sealed class UserConfigurationService
             DataDirectory = NormalizePath(obj["dataDirectory"]?.GetValue<string?>());
             GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
             _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
-            _useModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? false;
+            _useModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? true;
             _isAdvancedPresetMode = obj["useAdvancedPresets"]?.GetValue<bool?>() ?? false;
             _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? false;
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
@@ -503,7 +503,7 @@ public sealed class UserConfigurationService
             _modConfigPaths.Clear();
             _isAdvancedPresetMode = false;
             _isCompactView = false;
-            _useModDbDesignView = false;
+            _useModDbDesignView = true;
             _cacheAllVersionsLocally = false;
             _disableInternetAccess = false;
             _modsSortMemberPath = null;
