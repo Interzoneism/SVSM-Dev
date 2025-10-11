@@ -27,6 +27,9 @@ public sealed class UserConfigurationService
     private bool _disableInternetAccess;
     private bool _enableDebugLogging;
     private bool _suppressModlistSavePrompt;
+    private bool _includeConfigsWhenSavingPresets;
+    private bool _includeConfigsWhenSavingModlists;
+    private bool? _installIncludedConfigsPreference;
     private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
     private int _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
     private string? _modsSortMemberPath;
@@ -60,6 +63,12 @@ public sealed class UserConfigurationService
     public bool EnableDebugLogging => _enableDebugLogging;
 
     public bool SuppressModlistSavePrompt => _suppressModlistSavePrompt;
+
+    public bool IncludeConfigsWhenSavingPresets => _includeConfigsWhenSavingPresets;
+
+    public bool IncludeConfigsWhenSavingModlists => _includeConfigsWhenSavingModlists;
+
+    public bool? InstallIncludedConfigsPreference => _installIncludedConfigsPreference;
 
     public int ModDatabaseSearchResultLimit => _modDatabaseSearchResultLimit;
 
@@ -137,6 +146,11 @@ public sealed class UserConfigurationService
         {
             Save();
         }
+    }
+
+    public IReadOnlyList<KeyValuePair<string, string>> GetModConfigPathsSnapshot()
+    {
+        return _modConfigPaths.ToList();
     }
 
     public void SetCompactViewMode(bool isCompact)
@@ -281,6 +295,39 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetIncludeConfigsWhenSavingPresets(bool include)
+    {
+        if (_includeConfigsWhenSavingPresets == include)
+        {
+            return;
+        }
+
+        _includeConfigsWhenSavingPresets = include;
+        Save();
+    }
+
+    public void SetIncludeConfigsWhenSavingModlists(bool include)
+    {
+        if (_includeConfigsWhenSavingModlists == include)
+        {
+            return;
+        }
+
+        _includeConfigsWhenSavingModlists = include;
+        Save();
+    }
+
+    public void SetInstallIncludedConfigsPreference(bool? install)
+    {
+        if (_installIncludedConfigsPreference == install)
+        {
+            return;
+        }
+
+        _installIncludedConfigsPreference = install;
+        Save();
+    }
+
     private void Load()
     {
         _modConfigPaths.Clear();
@@ -308,6 +355,9 @@ public sealed class UserConfigurationService
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _enableDebugLogging = obj["enableDebugLogging"]?.GetValue<bool?>() ?? false;
             _suppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
+            _includeConfigsWhenSavingPresets = obj["includeConfigsWhenSavingPresets"]?.GetValue<bool?>() ?? false;
+            _includeConfigsWhenSavingModlists = obj["includeConfigsWhenSavingModlists"]?.GetValue<bool?>() ?? false;
+            _installIncludedConfigsPreference = obj["installIncludedConfigsPreference"]?.GetValue<bool?>();
             _modsSortMemberPath = NormalizeSortMemberPath(obj["modsSortMemberPath"]?.GetValue<string?>());
             _modsSortDirection = ParseSortDirection(obj["modsSortDirection"]?.GetValue<string?>());
             _modDatabaseSearchResultLimit = NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
@@ -330,6 +380,9 @@ public sealed class UserConfigurationService
             _disableInternetAccess = false;
             _enableDebugLogging = false;
             _suppressModlistSavePrompt = false;
+            _includeConfigsWhenSavingPresets = false;
+            _includeConfigsWhenSavingModlists = false;
+            _installIncludedConfigsPreference = null;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
             _selectedPresetName = null;
@@ -357,6 +410,9 @@ public sealed class UserConfigurationService
                 ["disableInternetAccess"] = _disableInternetAccess,
                 ["enableDebugLogging"] = _enableDebugLogging,
                 ["suppressModlistSavePrompt"] = _suppressModlistSavePrompt,
+                ["includeConfigsWhenSavingPresets"] = _includeConfigsWhenSavingPresets,
+                ["includeConfigsWhenSavingModlists"] = _includeConfigsWhenSavingModlists,
+                ["installIncludedConfigsPreference"] = _installIncludedConfigsPreference,
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
                 ["modDatabaseSearchResultLimit"] = _modDatabaseSearchResultLimit,
