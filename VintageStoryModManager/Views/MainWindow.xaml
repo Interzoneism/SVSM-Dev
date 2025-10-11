@@ -10,7 +10,7 @@
         xmlns:converters="clr-namespace:VintageStoryModManager.Converters"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=design:MainWindowDesignData}"
-        Title="Vintage Story Mod Manager"
+        Title="Simple VS Manager"
         Height="600" Width="1140"
         MinWidth="900" MinHeight="520" Background="{DynamicResource GridBackground1}" WindowStartupLocation="CenterScreen">
 

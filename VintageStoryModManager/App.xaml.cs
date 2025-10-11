@@ -54,7 +54,7 @@ public partial class App : System.Windows.Application
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         string message = $"An unexpected error occurred:\n{e.Exception.Message}";
-        WpfMessageBox.Show(message, "Vintage Story Mod Manager", MessageBoxButton.OK, MessageBoxImage.Error);
+        WpfMessageBox.Show(message, "Simple VS Manager", MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true;
     }
 
