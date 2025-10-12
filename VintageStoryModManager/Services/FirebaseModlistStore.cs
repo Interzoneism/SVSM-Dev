@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -81,6 +82,7 @@ namespace SimpleVsManager.Cloud
 
             using var doc = JsonDocument.Parse(modlistJson);
             var node = new ModlistNode { Content = doc.RootElement.Clone() };
+            string? uploader = TryGetUploader(doc.RootElement);
 
             var json = JsonSerializer.Serialize(node, JsonOpts);
             var userUrl = $"{_dbUrl}/users/{_auth.Uid}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
@@ -92,6 +94,11 @@ namespace SimpleVsManager.Cloud
             }
 
             await SaveRegistryEntryAsync(slotKey, json, ct);
+
+            if (!string.IsNullOrWhiteSpace(uploader))
+            {
+                await EnsureUploaderConsistencyAsync(uploader!, ct);
+            }
         }
 
         /// <summary>Load a JSON string from the slot. Returns null if missing.</summary>
@@ -310,6 +317,62 @@ namespace SimpleVsManager.Cloud
             throw new InvalidOperationException($"{opName} failed: {(int)resp.StatusCode} {resp.ReasonPhrase} | {Truncate(body, 400)}");
         }
 
+        private async Task EnsureUploaderConsistencyAsync(string uploader, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(uploader))
+            {
+                return;
+            }
+
+            IReadOnlyList<string> slots = await ListSlotsAsync(ct);
+            foreach (string slot in slots)
+            {
+                await UpdateSlotUploaderAsync(slot, uploader, ct);
+            }
+        }
+
+        private async Task UpdateSlotUploaderAsync(string slotKey, string uploader, CancellationToken ct)
+        {
+            var userUrl = $"{_dbUrl}/users/{_auth.Uid}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
+            using var resp = await _http.GetAsync(userUrl, ct);
+
+            if (resp.StatusCode == HttpStatusCode.NotFound)
+            {
+                return;
+            }
+
+            await EnsureOk(resp, "Fetch modlist for uploader sync");
+
+            var bytes = await resp.Content.ReadAsByteArrayAsync(ct);
+            if (bytes.Length == 0)
+            {
+                return;
+            }
+
+            var node = JsonSerializer.Deserialize<ModlistNode?>(bytes, JsonOpts);
+            if (node is null || node.Value.Content.ValueKind != JsonValueKind.Object)
+            {
+                return;
+            }
+
+            string? existingUploader = TryGetUploader(node.Value.Content);
+            if (string.Equals(existingUploader, uploader, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            string updatedContentJson = ReplaceUploader(node.Value.Content, uploader);
+            string updatedNodeJson = BuildNodeJson(updatedContentJson);
+
+            using (var content = new StringContent(updatedNodeJson, Encoding.UTF8, "application/json"))
+            using (var putResp = await _http.PutAsync(userUrl, content, ct))
+            {
+                await EnsureOk(putResp, "Update modlist uploader");
+            }
+
+            await SaveRegistryEntryAsync(slotKey, updatedNodeJson, ct);
+        }
+
         private async Task SaveRegistryEntryAsync(string slotKey, string nodeJson, CancellationToken ct)
         {
             var url = $"{_dbUrl}/registry/{_auth.Uid}/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
@@ -348,6 +411,61 @@ namespace SimpleVsManager.Cloud
         private static void LogRestFailure(string message)
         {
             StatusLogService.AppendStatus(message, true);
+        }
+
+        private static string? TryGetUploader(JsonElement root)
+        {
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            if (!root.TryGetProperty("uploader", out JsonElement uploaderProperty) || uploaderProperty.ValueKind != JsonValueKind.String)
+            {
+                return null;
+            }
+
+            string? uploader = uploaderProperty.GetString();
+            return string.IsNullOrWhiteSpace(uploader) ? null : uploader.Trim();
+        }
+
+        private static string ReplaceUploader(JsonElement root, string uploader)
+        {
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer))
+            {
+                writer.WriteStartObject();
+                bool hasUploader = false;
+
+                foreach (JsonProperty property in root.EnumerateObject())
+                {
+                    if (property.NameEquals("uploader"))
+                    {
+                        writer.WriteString("uploader", uploader);
+                        hasUploader = true;
+                    }
+                    else
+                    {
+                        property.WriteTo(writer);
+                    }
+                }
+
+                if (!hasUploader)
+                {
+                    writer.WriteString("uploader", uploader);
+                }
+
+                writer.WriteEndObject();
+            }
+
+            return Encoding.UTF8.GetString(buffer.WrittenSpan);
+        }
+
+        private static string BuildNodeJson(string contentJson)
+        {
+            using var doc = JsonDocument.Parse(contentJson);
+            var node = new ModlistNode { Content = doc.RootElement.Clone() };
+            return JsonSerializer.Serialize(node, JsonOpts);
         }
 
         private void LoadAuthStateFromDisk()
