@@ -47,6 +47,15 @@ public static class DataDirectoryLocator
             yield return portable!;
         }
 
+        foreach (string root in EnumerateAdditionalWindowsRoots())
+        {
+            string? candidate = TryCombine(root, DataFolderName);
+            if (!string.IsNullOrWhiteSpace(candidate))
+            {
+                yield return candidate!;
+            }
+        }
+
         string? currentDirectory = TryNormalize(Directory.GetCurrentDirectory());
         if (!string.IsNullOrWhiteSpace(currentDirectory))
         {
@@ -86,6 +95,24 @@ public static class DataDirectoryLocator
         }
 
         return null;
+    }
+
+    private static IEnumerable<string> EnumerateAdditionalWindowsRoots()
+    {
+        foreach (string root in new[]
+                 {
+                     @"C:\\Games",
+                     @"D:\\Games",
+                     @"C:\\Program Files",
+                     @"C:\\Program Files (x86)"
+                 })
+        {
+            string? normalized = TryNormalize(root);
+            if (!string.IsNullOrWhiteSpace(normalized))
+            {
+                yield return normalized!;
+            }
+        }
     }
 
     private static string? TryCombine(string? basePath, string relative)
