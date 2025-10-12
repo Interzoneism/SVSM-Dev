@@ -350,6 +350,9 @@ public sealed class MainViewModel : ObservableObject
         ? "No mods found."
         : $"{ActiveMods} active of {TotalMods} mods";
 
+    public string NoModsFoundMessage =>
+        $"No mods found. If this is unexpected, verify that your VintageStoryData folder is correctly set: {DataDirectory}. You can change it in the File Menu.";
+
     public IRelayCommand ClearSearchCommand { get; }
 
     public IAsyncRelayCommand RefreshCommand { get; }
