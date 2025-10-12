@@ -33,6 +33,7 @@ public sealed class UserConfigurationService
     private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
     private double? _windowWidth;
     private double? _windowHeight;
+    private string? _customShortcutPath;
     private bool _isPersistenceEnabled;
     private bool _hasPendingSave;
 
@@ -67,6 +68,8 @@ public sealed class UserConfigurationService
     public double? WindowWidth => _windowWidth;
 
     public double? WindowHeight => _windowHeight;
+
+    public string? CustomShortcutPath => _customShortcutPath;
 
     public (string? SortMemberPath, ListSortDirection Direction) GetModListSortPreference()
     {
@@ -295,6 +298,34 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetCustomShortcutPath(string path)
+    {
+        string? normalized = NormalizePath(path);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            throw new ArgumentException("The shortcut path is invalid.", nameof(path));
+        }
+
+        if (string.Equals(_customShortcutPath, normalized, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _customShortcutPath = normalized;
+        Save();
+    }
+
+    public void ClearCustomShortcutPath()
+    {
+        if (_customShortcutPath is null)
+        {
+            return;
+        }
+
+        _customShortcutPath = null;
+        Save();
+    }
+
     public void SetDisableInternetAccess(bool disable)
     {
         if (_disableInternetAccess == disable)
@@ -353,6 +384,7 @@ public sealed class UserConfigurationService
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             LoadModConfigPaths(obj["modConfigPaths"]);
             _selectedPresetName = NormalizePresetName(GetOptionalString(obj["selectedPreset"]));
+            _customShortcutPath = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
 
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -373,6 +405,7 @@ public sealed class UserConfigurationService
             _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
             _windowWidth = null;
             _windowHeight = null;
+            _customShortcutPath = null;
         }
     }
 
@@ -412,7 +445,8 @@ public sealed class UserConfigurationService
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
-                ["selectedPreset"] = _selectedPresetName
+                ["selectedPreset"] = _selectedPresetName,
+                ["customShortcutPath"] = _customShortcutPath
             };
 
             var options = new JsonSerializerOptions
