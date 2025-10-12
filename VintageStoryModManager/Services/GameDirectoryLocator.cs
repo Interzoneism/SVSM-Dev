@@ -135,6 +135,12 @@ public static class GameDirectoryLocator
             yield return Path.Combine(programFilesX86, "Vintagestory");
         }
 
+        string? appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        if (!string.IsNullOrWhiteSpace(appData))
+        {
+            yield return Path.Combine(appData, "Vintagestory");
+        }
+
         string? localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         if (!string.IsNullOrWhiteSpace(localAppData))
         {
