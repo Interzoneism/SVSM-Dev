@@ -1034,7 +1034,7 @@
                               IsReadOnly="True"
                               SelectionMode="Single"
                               SelectionUnit="FullRow"
-                              Margin="0,0,0,109"
+                              Margin="0,0,0,130"
                               GridLinesVisibility="None"
                               RowHeaderWidth="0"
                               SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged" Grid.RowSpan="2">
@@ -1104,16 +1104,18 @@
                     <Button x:Name="SaveCloudModlistButton"
                                 Content="Save Modlist to Cloud"
                                 Padding="12,6"
-                                Margin="26,571,981,21"
+                                Margin="22,515,985,77"
                                 MinWidth="165"
                                 Click="SaveCloudModlistButton_OnClick" Grid.RowSpan="2" />
                     <Button x:Name="RefreshCloudModlistsButton"
                                 Content="Refresh"
                                 Padding="12,6"
                                 MinWidth="100"
-                                Click="RefreshCloudModlistsButton_OnClick" Margin="1047,571,25,21" Grid.RowSpan="2" />
-                    <TextBox x:Name="UsernameTextbox" HorizontalAlignment="Left" Margin="98,540,0,0" Grid.Row="1" TextWrapping="Wrap" Text="Username" VerticalAlignment="Top" Width="165"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="26,545,0,0" Grid.Row="1" TextWrapping="Wrap" Text="Username:" VerticalAlignment="Top"/>
+                                Click="RefreshCloudModlistsButton_OnClick" Margin="201,515,871,77" Grid.RowSpan="2" />
+                    <TextBox x:Name="UsernameTextbox" HorizontalAlignment="Left" Margin="83,554,0,0" Grid.Row="1" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="165"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="22,559,0,0" Grid.Row="1" TextWrapping="Wrap" Text="Username:" VerticalAlignment="Top"/>
+                    <TextBlock x:Name="SelectedModlistDescription" HorizontalAlignment="Left" Margin="799,531,0,0" Grid.Row="1" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Height="72" Width="352"/>
+                    <TextBlock x:Name="SelectedModlistTitle" HorizontalAlignment="Left" Margin="799,515,0,0" Grid.Row="1" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontWeight="Bold"/>
                 </Grid>
             </Grid>
             <ListView x:Name="ModDatabaseCardsListView"
