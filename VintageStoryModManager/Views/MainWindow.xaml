@@ -217,6 +217,10 @@
                     <Separator />
                     <MenuItem Header="Save _Modlist" Height="35" Click="SaveModlistMenuItem_OnClick" />
                     <MenuItem Header="Load _Modlist" Height="35" Click="LoadModlistMenuItem_OnClick" />
+                    <Separator />
+                    <MenuItem Header="Save to C_loud" Height="35" Click="SaveModlistToCloudMenuItem_OnClick" />
+                    <MenuItem Header="Load from C_loud" Height="35" Click="LoadModlistFromCloudMenuItem_OnClick" />
+                    <MenuItem Header="_Delete Cloud Slot" Height="35" Click="DeleteCloudModlistMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_View" Height="35">
                     <MenuItem Header="_Compact View"
