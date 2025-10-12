@@ -112,6 +112,11 @@ public static class GameDirectoryLocator
                 yield return Path.Combine(root!, "Vintagestory");
             }
         }
+
+        foreach (string root in EnumerateAdditionalWindowsRoots())
+        {
+            yield return Path.Combine(root, "Vintagestory");
+        }
     }
 
     private static bool IsValidGameDirectory(string? path)
@@ -168,5 +173,23 @@ public static class GameDirectoryLocator
         }
 
         return null;
+    }
+
+    private static IEnumerable<string> EnumerateAdditionalWindowsRoots()
+    {
+        foreach (string root in new[]
+                 {
+                     @"C:\\Games",
+                     @"D:\\Games",
+                     @"C:\\Program Files",
+                     @"C:\\Program Files (x86)"
+                 })
+        {
+            string? normalized = TryNormalize(root);
+            if (!string.IsNullOrWhiteSpace(normalized))
+            {
+                yield return normalized!;
+            }
+        }
     }
 }
