@@ -13,7 +13,7 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public sealed class UserConfigurationService
 {
-    private const string ConfigurationFileName = "SimpleVSManagerConfig.json";
+    private const string ConfigurationFileName = "SimpleVSManagerConfiguration.json";
     private const int DefaultModDatabaseSearchResultLimit = 30;
     private const int DefaultModDatabaseNewModsRecentMonths = 3;
     private const int MaxModDatabaseNewModsRecentMonths = 24;
