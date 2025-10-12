@@ -67,6 +67,7 @@ public partial class MainWindow : Window
     private MainViewModel? _viewModel;
     private string? _dataDirectory;
     private string? _gameDirectory;
+    private string? _customShortcutPath;
     private bool _isInitializing;
     private bool _isApplyingPreset;
 
@@ -983,6 +984,7 @@ public partial class MainWindow : Window
     {
         bool dataResolved = TryResolveDataDirectory();
         bool gameResolved = TryResolveGameDirectory();
+        TryResolveCustomShortcut();
 
         if (dataResolved)
         {
@@ -1081,6 +1083,31 @@ public partial class MainWindow : Window
         }
 
         return true;
+    }
+
+    private void TryResolveCustomShortcut()
+    {
+        string? storedPath = _userConfiguration.CustomShortcutPath;
+        if (string.IsNullOrWhiteSpace(storedPath))
+        {
+            _customShortcutPath = null;
+            return;
+        }
+
+        if (File.Exists(storedPath))
+        {
+            _customShortcutPath = storedPath;
+            return;
+        }
+
+        _customShortcutPath = null;
+        _userConfiguration.ClearCustomShortcutPath();
+
+        WpfMessageBox.Show(
+            "The previously selected Vintage Story shortcut could not be found and has been cleared.",
+            "Simple VS Manager",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 
     private void HandleViewModelInitializationFailure(Exception exception)
@@ -2791,6 +2818,49 @@ public partial class MainWindow : Window
 
     private void LaunchGameButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (!string.IsNullOrWhiteSpace(_customShortcutPath))
+        {
+            if (!File.Exists(_customShortcutPath))
+            {
+                WpfMessageBox.Show(
+                    "The custom Vintage Story shortcut could not be found. Please set it again from File > Set custom Vintage Story shortcut.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                _userConfiguration.ClearCustomShortcutPath();
+                _customShortcutPath = null;
+                return;
+            }
+
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = _customShortcutPath,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show($"Failed to launch Vintage Story using the shortcut:\n{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_dataDirectory) || !Directory.Exists(_dataDirectory))
+        {
+            WpfMessageBox.Show(
+                "The VintagestoryData folder could not be located. Please verify it from File > Set Data Folder before launching the game.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
         string? executable = GameDirectoryLocator.FindExecutable(_gameDirectory);
         if (executable is null)
         {
@@ -2803,12 +2873,16 @@ public partial class MainWindow : Window
 
         try
         {
-            Process.Start(new ProcessStartInfo
+            var startInfo = new ProcessStartInfo
             {
                 FileName = executable,
                 WorkingDirectory = Path.GetDirectoryName(executable)!,
-                UseShellExecute = true
-            });
+                UseShellExecute = false
+            };
+            startInfo.ArgumentList.Add("--dataPath");
+            startInfo.ArgumentList.Add(_dataDirectory);
+
+            Process.Start(startInfo);
         }
         catch (Exception ex)
         {
@@ -2817,6 +2891,95 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    private void SetCustomShortcutMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        string? initialDirectory = null;
+        string? initialFileName = null;
+
+        if (!string.IsNullOrWhiteSpace(_customShortcutPath))
+        {
+            try
+            {
+                initialDirectory = Path.GetDirectoryName(_customShortcutPath);
+                initialFileName = Path.GetFileName(_customShortcutPath);
+            }
+            catch (Exception)
+            {
+                initialDirectory = null;
+                initialFileName = null;
+            }
+        }
+
+        using var dialog = new WinForms.OpenFileDialog
+        {
+            Title = "Select Vintage Story shortcut",
+            Filter = "Shortcut files (*.lnk)|*.lnk|All files (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = false,
+            RestoreDirectory = true
+        };
+
+        if (!string.IsNullOrWhiteSpace(initialDirectory) && Directory.Exists(initialDirectory))
+        {
+            dialog.InitialDirectory = initialDirectory;
+        }
+
+        if (!string.IsNullOrWhiteSpace(initialFileName))
+        {
+            dialog.FileName = initialFileName;
+        }
+
+        WinForms.DialogResult result = dialog.ShowDialog();
+        if (result == WinForms.DialogResult.OK)
+        {
+            string selected = dialog.FileName;
+            if (!File.Exists(selected))
+            {
+                WpfMessageBox.Show(
+                    "The selected shortcut could not be found.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                _userConfiguration.SetCustomShortcutPath(selected);
+                _customShortcutPath = _userConfiguration.CustomShortcutPath;
+            }
+            catch (ArgumentException ex)
+            {
+                WpfMessageBox.Show(
+                    $"The selected shortcut is not valid:\n{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_customShortcutPath))
+        {
+            return;
+        }
+
+        MessageBoxResult clear = WpfMessageBox.Show(
+            "Do you want to clear the custom Vintage Story shortcut?",
+            "Simple VS Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (clear != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        _userConfiguration.ClearCustomShortcutPath();
+        _customShortcutPath = null;
     }
 
     private void OpenModFolderButton_OnClick(object sender, RoutedEventArgs e)

@@ -187,6 +187,7 @@
                 <MenuItem Header="_File" Height="35">
                     <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
+                    <MenuItem Header="Set custom Vintage Story shortcut" Height="35" Click="SetCustomShortcutMenuItem_OnClick" />
                     <MenuItem x:Name="DisableInternetAccessMenuItem"
                               Header="_Disable Internet Access"
                               Height="35"
