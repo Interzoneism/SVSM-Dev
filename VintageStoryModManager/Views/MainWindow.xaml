@@ -277,6 +277,10 @@
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
                                 </DataTrigger>
+                                <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                    <Setter Property="ui:ControlHelper.PlaceholderText" Value="Cloud modlist search coming soon" />
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </TextBox.Style>
@@ -299,11 +303,15 @@
                                 <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                                 <Setter Property="Padding" Value="12,6" />
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SearchModDatabase}" Value="False">
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding SearchModDatabase}" Value="False" />
+                                            <Condition Binding="{Binding IsViewingCloudModlists}" Value="False" />
+                                        </MultiDataTrigger.Conditions>
                                         <Setter Property="Opacity" Value="1" />
                                         <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
                                         <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
-                                    </DataTrigger>
+                                    </MultiDataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Button.Style>
@@ -332,7 +340,7 @@
                         </Button.Style>
                     </Button>
                     <Button Content="Modlists"
-                        Command="{Binding ShowModDatabaseCommand}"
+                        Command="{Binding ShowCloudModlistsCommand}"
                         Width="138"
                         Height="63"
                         FontSize="16" BorderBrush="#FFCAD7EB">
@@ -345,7 +353,7 @@
                                 <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                                 <Setter Property="Padding" Value="12,6" />
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                    <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
                                         <Setter Property="Opacity" Value="1" />
                                         <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
                                         <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
@@ -528,6 +536,9 @@
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="CanUserSortColumns" Value="False" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
                                 </DataTrigger>
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
@@ -990,6 +1001,7 @@
                                     <MultiDataTrigger.Conditions>
                                         <Condition Binding="{Binding TotalMods}" Value="0" />
                                         <Condition Binding="{Binding SearchModDatabase}" Value="False" />
+                                        <Condition Binding="{Binding IsViewingCloudModlists}" Value="False" />
                                     </MultiDataTrigger.Conditions>
                                     <Setter Property="Visibility" Value="Visible" />
                                 </MultiDataTrigger>
@@ -997,6 +1009,119 @@
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
+                <Grid Grid.RowSpan="2" Margin="0,0,-29,0">
+                    <Grid.Style>
+                        <Style TargetType="{x:Type Grid}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Margin="0,0,0,12">
+                        <Button x:Name="SaveCloudModlistButton"
+                                Content="Save Modlist to Cloud"
+                                Padding="12,6"
+                                Margin="0,0,8,0"
+                                Height="32"
+                                MinWidth="165"
+                                Click="SaveCloudModlistButton_OnClick" />
+                        <Button x:Name="RefreshCloudModlistsButton"
+                                Content="Refresh"
+                                Padding="12,6"
+                                Height="32"
+                                MinWidth="100"
+                                Click="RefreshCloudModlistsButton_OnClick" />
+                    </StackPanel>
+
+                    <DataGrid x:Name="CloudModlistsDataGrid"
+                              Grid.Row="1"
+                              ItemsSource="{Binding CloudModlistsView}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              IsReadOnly="True"
+                              SelectionMode="Single"
+                              SelectionUnit="FullRow"
+                              Margin="0,0,0,12"
+                              GridLinesVisibility="None"
+                              RowHeaderWidth="0"
+                              SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged">
+                        <DataGrid.Style>
+                            <Style TargetType="{x:Type DataGrid}">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasCloudModlists}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.Style>
+                        <DataGrid.Resources>
+                            <Style TargetType="{x:Type DataGridColumnHeader}">
+                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="Padding" Value="12,8" />
+                            </Style>
+                            <Style TargetType="{x:Type DataGridRow}">
+                                <Setter Property="Margin" Value="4" />
+                                <Setter Property="Padding" Value="4" />
+                            </Style>
+                        </DataGrid.Resources>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="*" MinWidth="200" />
+                            <DataGridTextColumn Header="Uploader" Binding="{Binding OwnerId}" Width="180" />
+                            <DataGridTextColumn Header="Slot" Binding="{Binding SlotLabel}" Width="120" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <TextBlock Grid.Row="1"
+                               Text="No cloud modlists have been uploaded yet."
+                               FontSize="16"
+                               Foreground="{DynamicResource IMM.ForegroundBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasCloudModlists}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <StackPanel Grid.Row="2"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+                        <Button x:Name="InstallCloudModlistButton"
+                                Content="Install Selected Modlist"
+                                Padding="12,6"
+                                Height="32"
+                                MinWidth="195"
+                                Margin="0,0,0,0"
+                                IsEnabled="False"
+                                Visibility="Collapsed"
+                                Click="InstallCloudModlistButton_OnClick" />
+                    </StackPanel>
+                </Grid>
             </Grid>
             <ListView x:Name="ModDatabaseCardsListView"
                       ItemsSource="{Binding CurrentModsView}"
@@ -1382,18 +1507,22 @@
                 BorderThickness="0"
                 CornerRadius="15,15,15,15" Margin="0,255,40,185" Grid.Row="1" Height="201" HorizontalAlignment="Right" Width="326" Panel.ZIndex="400">
             <Border.Style>
-                <Style TargetType="{x:Type Border}">
-                    <Setter Property="Visibility" Value="Collapsed" />
-                    <Setter Property="IsHitTestVisible" Value="False" />
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding HasSelectedMods}" Value="True">
-                            <Setter Property="Visibility" Value="Visible" />
-                            <Setter Property="IsHitTestVisible" Value="True" />
-                        </DataTrigger>
-                        <MultiDataTrigger>
-                            <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
+                    <Style TargetType="{x:Type Border}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Setter Property="IsHitTestVisible" Value="False" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasSelectedMods}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Setter Property="IsHitTestVisible" Value="True" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Setter Property="IsHitTestVisible" Value="False" />
+                            </DataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                    <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
                             </MultiDataTrigger.Conditions>
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Setter Property="IsHitTestVisible" Value="False" />
