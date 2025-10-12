@@ -43,6 +43,11 @@ namespace SimpleVsManager.Cloud
         /// </summary>
         public static IReadOnlyList<string> SlotKeys => KnownSlots;
 
+        /// <summary>
+        /// Gets the identifier assigned to the currently authenticated Firebase user.
+        /// </summary>
+        public string? CurrentUserId => _auth.Uid;
+
         // -------------------------
         // Public API
         // -------------------------

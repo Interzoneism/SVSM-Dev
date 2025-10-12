@@ -7,12 +7,13 @@ namespace VintageStoryModManager.Models;
 /// </summary>
 public sealed class CloudModlistSlot
 {
-    public CloudModlistSlot(string slotKey, bool isOccupied, string displayName, string? name, string? cachedContent)
+    public CloudModlistSlot(string slotKey, bool isOccupied, string displayName, string? name, string? version, string? cachedContent)
     {
         SlotKey = slotKey ?? throw new ArgumentNullException(nameof(slotKey));
         IsOccupied = isOccupied;
         DisplayName = displayName ?? throw new ArgumentNullException(nameof(displayName));
         Name = name;
+        Version = version;
         CachedContent = cachedContent;
     }
 
@@ -23,6 +24,8 @@ public sealed class CloudModlistSlot
     public string DisplayName { get; }
 
     public string? Name { get; }
+
+    public string? Version { get; }
 
     public string? CachedContent { get; }
 

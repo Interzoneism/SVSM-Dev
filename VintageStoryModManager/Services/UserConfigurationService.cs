@@ -34,6 +34,7 @@ public sealed class UserConfigurationService
     private double? _windowWidth;
     private double? _windowHeight;
     private string? _customShortcutPath;
+    private string? _cloudUploaderName;
     private bool _isPersistenceEnabled;
     private bool _hasPendingSave;
 
@@ -70,6 +71,8 @@ public sealed class UserConfigurationService
     public double? WindowHeight => _windowHeight;
 
     public string? CustomShortcutPath => _customShortcutPath;
+
+    public string? CloudUploaderName => _cloudUploaderName;
 
     public (string? SortMemberPath, ListSortDirection Direction) GetModListSortPreference()
     {
@@ -348,6 +351,19 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetCloudUploaderName(string? name)
+    {
+        string? normalized = NormalizeUploaderName(name);
+
+        if (string.Equals(_cloudUploaderName, normalized, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _cloudUploaderName = normalized;
+        Save();
+    }
+
     private void Load()
     {
         _modConfigPaths.Clear();
@@ -385,6 +401,7 @@ public sealed class UserConfigurationService
             LoadModConfigPaths(obj["modConfigPaths"]);
             _selectedPresetName = NormalizePresetName(GetOptionalString(obj["selectedPreset"]));
             _customShortcutPath = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
+            _cloudUploaderName = NormalizeUploaderName(GetOptionalString(obj["cloudUploaderName"]));
 
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -406,6 +423,7 @@ public sealed class UserConfigurationService
             _windowWidth = null;
             _windowHeight = null;
             _customShortcutPath = null;
+            _cloudUploaderName = null;
         }
     }
 
@@ -446,7 +464,8 @@ public sealed class UserConfigurationService
                 ["windowHeight"] = _windowHeight,
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
                 ["selectedPreset"] = _selectedPresetName,
-                ["customShortcutPath"] = _customShortcutPath
+                ["customShortcutPath"] = _customShortcutPath,
+                ["cloudUploaderName"] = _cloudUploaderName
             };
 
             var options = new JsonSerializerOptions
@@ -663,6 +682,11 @@ public sealed class UserConfigurationService
     }
 
     private static string? NormalizePresetName(string? name)
+    {
+        return string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+    }
+
+    private static string? NormalizeUploaderName(string? name)
     {
         return string.IsNullOrWhiteSpace(name) ? null : name.Trim();
     }

@@ -1062,9 +1062,31 @@
                             </Style>
                         </DataGrid.Resources>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="300" MinWidth="200" />
-                            <DataGridTextColumn Header="Uploader" Binding="{Binding OwnerId}" Width="250" />
-                            <DataGridTextColumn Header="Slot" Binding="{Binding SlotLabel}" Width="120" />
+                            <DataGridTextColumn Header="Name"
+                                                Binding="{Binding DisplayName}"
+                                                Width="260"
+                                                MinWidth="200" />
+                            <DataGridTextColumn Header="Uploader"
+                                                Binding="{Binding Uploader}"
+                                                Width="220"
+                                                MinWidth="180" />
+                            <DataGridTextColumn Header="Version" Width="120">
+                                <DataGridTextColumn.Binding>
+                                    <Binding Path="Version" TargetNullValue="—" FallbackValue="—" />
+                                </DataGridTextColumn.Binding>
+                            </DataGridTextColumn>
+                            <DataGridTemplateColumn Header="Mods" Width="*" MinWidth="180">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ComboBox ItemsSource="{Binding Mods}"
+                                                  Text="{Binding ModsSummary}"
+                                                  IsEditable="True"
+                                                  IsReadOnly="True"
+                                                  SelectedIndex="-1"
+                                                  MaxDropDownHeight="240" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
 

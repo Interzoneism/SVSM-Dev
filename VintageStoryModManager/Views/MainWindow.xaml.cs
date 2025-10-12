@@ -107,6 +107,7 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _userConfiguration = new UserConfigurationService();
+        UsernameTextbox.Text = _userConfiguration.CloudUploaderName ?? string.Empty;
         ApplyStoredWindowDimensions();
         CacheAllVersionsMenuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
         DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
@@ -149,6 +150,7 @@ public partial class MainWindow : Window
     private void MainWindow_OnClosing(object? sender, CancelEventArgs e)
     {
         SaveWindowDimensions();
+        SaveUploaderName();
     }
 
     private void DisableInternetAccessMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -200,6 +202,17 @@ public partial class MainWindow : Window
             : RestoreBounds;
 
         _userConfiguration.SetWindowDimensions(bounds.Width, bounds.Height);
+    }
+
+    private void SaveUploaderName()
+    {
+        if (_userConfiguration is null)
+        {
+            return;
+        }
+
+        string? uploader = UsernameTextbox?.Text;
+        _userConfiguration.SetCloudUploaderName(uploader);
     }
 
     private void CacheAllVersionsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -3537,17 +3550,21 @@ public partial class MainWindow : Window
         return true;
     }
 
-    private bool TryBuildCurrentModlistJson(out string modlistName, out string json)
+    private bool TryBuildCurrentModlistJson(string modlistName, string? description, string? version, string uploader, out string json)
     {
-        modlistName = BuildCloudModlistName();
         json = string.Empty;
 
-        if (_viewModel is null)
+        string? trimmedName = string.IsNullOrWhiteSpace(modlistName) ? null : modlistName.Trim();
+        if (string.IsNullOrEmpty(trimmedName) || _viewModel is null)
         {
             return false;
         }
 
-        var serializable = BuildSerializablePreset(modlistName, includeModVersions: true, exclusive: true);
+        var serializable = BuildSerializablePreset(trimmedName, includeModVersions: true, exclusive: true);
+        serializable.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        serializable.Version = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
+        serializable.Uploader = string.IsNullOrWhiteSpace(uploader) ? null : uploader.Trim();
+
         var options = new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -3564,6 +3581,41 @@ public partial class MainWindow : Window
         return $"Modlist {DateTime.Now:yyyy-MM-dd HH:mm}";
     }
 
+    private string DetermineUploaderName(FirebaseModlistStore store)
+    {
+        string? current = UsernameTextbox?.Text;
+        if (!string.IsNullOrWhiteSpace(current))
+        {
+            string trimmed = current.Trim();
+            if (!string.Equals(trimmed, current, StringComparison.Ordinal))
+            {
+                UsernameTextbox!.Text = trimmed;
+            }
+
+            _userConfiguration.SetCloudUploaderName(trimmed);
+            return trimmed;
+        }
+
+        string? userId = store?.CurrentUserId;
+        string suffix = "0000";
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            string trimmedId = userId.Trim();
+            suffix = trimmedId.Length <= 4
+                ? trimmedId
+                : trimmedId.Substring(trimmedId.Length - 4, 4);
+        }
+
+        string fallback = $"Anonymous{suffix}";
+        if (UsernameTextbox is not null)
+        {
+            UsernameTextbox.Text = fallback;
+        }
+
+        _userConfiguration.SetCloudUploaderName(fallback);
+        return fallback;
+    }
+
     private void SaveModlistMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         TrySaveModlist();
@@ -3573,22 +3625,57 @@ public partial class MainWindow : Window
     {
         return ExecuteCloudOperationAsync(async store =>
         {
-            if (!TryBuildCurrentModlistJson(out string modlistName, out string json))
+            string suggestedName = BuildCloudModlistName();
+            var detailsDialog = new CloudModlistDetailsDialog(this, suggestedName);
+            bool? dialogResult = detailsDialog.ShowDialog();
+            if (dialogResult != true)
+            {
+                return;
+            }
+
+            string uploader = DetermineUploaderName(store);
+            string modlistName = detailsDialog.ModlistName;
+            string? description = detailsDialog.ModlistDescription;
+            string? version = detailsDialog.ModlistVersion;
+
+            if (!TryBuildCurrentModlistJson(modlistName, description, version, uploader, out string json))
             {
                 return;
             }
 
             var slots = await GetCloudModlistSlotsAsync(store, includeEmptySlots: true, captureContent: false);
-            string? firstFreeSlot = slots.FirstOrDefault(slot => !slot.IsOccupied)?.SlotKey;
-            string? slotKey = PromptForCloudSaveSlot(slots, firstFreeSlot);
+            CloudModlistSlot? freeSlot = slots.FirstOrDefault(slot => !slot.IsOccupied);
+            CloudModlistSlot? replacementSlot = null;
+            string? slotKey = freeSlot?.SlotKey;
+
             if (slotKey is null)
             {
-                return;
+                replacementSlot = PromptForCloudSaveReplacement(slots);
+                if (replacementSlot is null)
+                {
+                    return;
+                }
+
+                slotKey = replacementSlot.SlotKey;
             }
 
             await store.SaveAsync(slotKey, json);
-            string slotLabel = FormatCloudSlotLabel(slotKey);
-            _viewModel?.ReportStatus($"Saved cloud modlist \"{modlistName}\" to {slotLabel}.");
+
+            if (replacementSlot is not null)
+            {
+                string replacedName = replacementSlot.Name ?? "existing modlist";
+                string? replacedVersion = replacementSlot.Version;
+                if (!string.IsNullOrWhiteSpace(replacedVersion))
+                {
+                    replacedName = $"{replacedName} (v{replacedVersion})";
+                }
+
+                _viewModel?.ReportStatus($"Replaced cloud modlist \"{replacedName}\" with \"{modlistName}\".");
+            }
+            else
+            {
+                _viewModel?.ReportStatus($"Saved cloud modlist \"{modlistName}\" to the cloud.");
+            }
         }, "save the modlist to the cloud");
     }
 
@@ -4160,39 +4247,25 @@ public partial class MainWindow : Window
         }
     }
 
-    private string? PromptForCloudSaveSlot(IReadOnlyList<CloudModlistSlot> slots, string? defaultSlotKey)
+    private CloudModlistSlot? PromptForCloudSaveReplacement(IReadOnlyList<CloudModlistSlot> slots)
     {
-        if (!string.IsNullOrWhiteSpace(defaultSlotKey))
+        if (slots is null)
         {
-            string slotLabel = FormatCloudSlotLabel(defaultSlotKey);
-            MessageBoxResult result = WpfMessageBox.Show(this,
-                $"Save the current modlist to {slotLabel}? Choose Yes to confirm or No to select another slot.",
-                "Save Modlist to Cloud",
-                MessageBoxButton.YesNoCancel,
-                MessageBoxImage.Question);
-            if (result == MessageBoxResult.Yes)
-            {
-                return defaultSlotKey;
-            }
-
-            if (result == MessageBoxResult.Cancel)
-            {
-                return null;
-            }
+            return null;
         }
 
-        string prompt = string.IsNullOrWhiteSpace(defaultSlotKey)
-            ? "All cloud slots are currently used. Select a slot to overwrite."
-            : "Choose the cloud slot to use for saving your modlist.";
+        var occupiedSlots = slots.Where(slot => slot.IsOccupied).ToList();
+        if (occupiedSlots.Count == 0)
+        {
+            return null;
+        }
 
-        var dialog = new CloudSlotSelectionDialog(this, slots, "Select Cloud Slot", prompt, defaultSlotKey);
+        var dialog = new CloudSlotSelectionDialog(this,
+            occupiedSlots,
+            "Replace Cloud Modlist",
+            "Select a cloud modlist to replace.");
         bool? dialogResult = dialog.ShowDialog();
-        if (dialogResult == true && dialog.SelectedSlot is CloudModlistSlot selected)
-        {
-            return selected.SlotKey;
-        }
-
-        return null;
+        return dialogResult == true ? dialog.SelectedSlot : null;
     }
 
     private async Task<List<CloudModlistSlot>> GetCloudModlistSlotsAsync(
@@ -4213,13 +4286,13 @@ public partial class MainWindow : Window
             }
 
             string? json = null;
-            string? name = null;
+            CloudModlistMetadata metadata = CloudModlistMetadata.Empty;
             if (isOccupied)
             {
                 try
                 {
                     json = await store.LoadAsync(slotKey);
-                    name = ExtractModlistName(json);
+                    metadata = ExtractCloudModlistMetadata(json);
                 }
                 catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or TaskCanceledException)
                 {
@@ -4227,9 +4300,9 @@ public partial class MainWindow : Window
                 }
             }
 
-            string display = BuildCloudSlotDisplay(slotKey, name, isOccupied);
+            string display = BuildCloudSlotDisplay(slotKey, metadata, isOccupied);
             string? cachedContent = captureContent ? json : null;
-            result.Add(new CloudModlistSlot(slotKey, isOccupied, display, name, cachedContent));
+            result.Add(new CloudModlistSlot(slotKey, isOccupied, display, metadata.Name, metadata.Version, cachedContent));
         }
 
         return result;
@@ -4296,8 +4369,17 @@ public partial class MainWindow : Window
             }
 
             string slotLabel = FormatCloudSlotLabel(entry.SlotKey);
-            string? name = ExtractModlistName(entry.ContentJson);
-            list.Add(new CloudModlistListEntry(entry.OwnerId, entry.SlotKey, name, slotLabel, entry.ContentJson));
+            CloudModlistMetadata metadata = ExtractCloudModlistMetadata(entry.ContentJson);
+            list.Add(new CloudModlistListEntry(
+                entry.OwnerId,
+                entry.SlotKey,
+                slotLabel,
+                metadata.Name,
+                metadata.Description,
+                metadata.Version,
+                metadata.Uploader,
+                metadata.Mods,
+                entry.ContentJson));
         }
 
         list.Sort((left, right) =>
@@ -4324,6 +4406,16 @@ public partial class MainWindow : Window
     {
         _selectedCloudModlist = entry;
 
+        if (SelectedModlistTitle is not null)
+        {
+            SelectedModlistTitle.Text = entry?.DisplayName ?? string.Empty;
+        }
+
+        if (SelectedModlistDescription is not null)
+        {
+            SelectedModlistDescription.Text = entry?.Description ?? string.Empty;
+        }
+
         if (InstallCloudModlistButton is null)
         {
             return;
@@ -4342,17 +4434,17 @@ public partial class MainWindow : Window
         InstallCloudModlistButton.ToolTip = $"Install \"{entry.DisplayName}\"";
     }
 
-    private static string BuildCloudSlotDisplay(string slotKey, string? name, bool isOccupied)
+    private static string BuildCloudSlotDisplay(string slotKey, CloudModlistMetadata metadata, bool isOccupied)
     {
-        string label = FormatCloudSlotLabel(slotKey);
-        if (isOccupied)
+        if (!isOccupied)
         {
-            return string.IsNullOrWhiteSpace(name)
-                ? $"{label} - Saved modlist"
-                : $"{label} - {name}";
+            return $"{FormatCloudSlotLabel(slotKey)} (Empty)";
         }
 
-        return $"{label} - Empty";
+        string name = metadata.Name ?? "Unnamed Modlist";
+        return string.IsNullOrWhiteSpace(metadata.Version)
+            ? name
+            : $"{name} (v{metadata.Version})";
     }
 
     private static string FormatCloudSlotLabel(string slotKey)
@@ -4367,24 +4459,74 @@ public partial class MainWindow : Window
 
     private static string? ExtractModlistName(string? json)
     {
+        return ExtractCloudModlistMetadata(json).Name;
+    }
+
+    private static CloudModlistMetadata ExtractCloudModlistMetadata(string? json)
+    {
         if (string.IsNullOrWhiteSpace(json))
         {
-            return null;
+            return CloudModlistMetadata.Empty;
         }
 
         try
         {
             using JsonDocument document = JsonDocument.Parse(json);
-            if (document.RootElement.ValueKind == JsonValueKind.Object &&
-                document.RootElement.TryGetProperty("name", out JsonElement nameElement))
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
             {
-                string? value = nameElement.GetString();
-                return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+                return CloudModlistMetadata.Empty;
             }
+
+            JsonElement root = document.RootElement;
+            string? name = TryGetTrimmedProperty(root, "name");
+            string? description = TryGetTrimmedProperty(root, "description");
+            string? version = TryGetTrimmedProperty(root, "version");
+            string? uploader = TryGetTrimmedProperty(root, "uploader");
+
+            var mods = new List<string>();
+            if (root.TryGetProperty("mods", out JsonElement modsElement) && modsElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement modElement in modsElement.EnumerateArray())
+                {
+                    if (modElement.ValueKind != JsonValueKind.Object)
+                    {
+                        continue;
+                    }
+
+                    string? modId = TryGetTrimmedProperty(modElement, "modId");
+                    if (string.IsNullOrWhiteSpace(modId))
+                    {
+                        continue;
+                    }
+
+                    string? modVersion = TryGetTrimmedProperty(modElement, "version");
+                    string display = modId;
+                    if (!string.IsNullOrWhiteSpace(modVersion))
+                    {
+                        display += $" ({modVersion})";
+                    }
+
+                    mods.Add(display);
+                }
+            }
+
+            return new CloudModlistMetadata(name, description, version, uploader, mods);
         }
         catch (JsonException)
         {
-            return null;
+            return CloudModlistMetadata.Empty;
+        }
+    }
+
+    private static string? TryGetTrimmedProperty(JsonElement element, string propertyName)
+    {
+        if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty(propertyName, out JsonElement property))
+        {
+            if (property.ValueKind == JsonValueKind.String)
+            {
+                string? value = property.GetString();
+                return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+            }
         }
 
         return null;
@@ -4445,9 +4587,36 @@ public partial class MainWindow : Window
         return string.IsNullOrWhiteSpace(name) ? fallback : name.Trim();
     }
 
+    private sealed class CloudModlistMetadata
+    {
+        public static readonly CloudModlistMetadata Empty = new(null, null, null, null, Array.Empty<string>());
+
+        public CloudModlistMetadata(string? name, string? description, string? version, string? uploader, IReadOnlyList<string> mods)
+        {
+            Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+            Version = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
+            Uploader = string.IsNullOrWhiteSpace(uploader) ? null : uploader.Trim();
+            Mods = mods ?? Array.Empty<string>();
+        }
+
+        public string? Name { get; }
+
+        public string? Description { get; }
+
+        public string? Version { get; }
+
+        public string? Uploader { get; }
+
+        public IReadOnlyList<string> Mods { get; }
+    }
+
     private sealed class SerializablePreset
     {
         public string? Name { get; set; }
+        public string? Description { get; set; }
+        public string? Version { get; set; }
+        public string? Uploader { get; set; }
         public List<string>? DisabledEntries { get; set; }
         public List<SerializablePresetModState>? Mods { get; set; }
         public bool? IncludeModStatus { get; set; }
