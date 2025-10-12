@@ -102,24 +102,23 @@ public partial class MainWindow : Window
         EnableDebugLoggingMenuItem.IsChecked = _userConfiguration.EnableDebugLogging;
         StatusLogService.IsLoggingEnabled = _userConfiguration.EnableDebugLogging;
 
-        if (!TryInitializePaths())
-        {
-            WpfApplication.Current?.Shutdown();
-            return;
-        }
+        TryInitializePaths();
 
-        try
+        if (!string.IsNullOrWhiteSpace(_dataDirectory))
         {
-            InitializeViewModel();
-        }
-        catch (Exception ex)
-        {
-            WpfMessageBox.Show($"Failed to initialize the mod manager:\n{ex.Message}",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-            WpfApplication.Current?.Shutdown();
-            return;
+            try
+            {
+                InitializeViewModel();
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show($"Failed to initialize the mod manager:\n{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                WpfApplication.Current?.Shutdown();
+                return;
+            }
         }
 
         Loaded += MainWindow_Loaded;
@@ -987,56 +986,93 @@ public partial class MainWindow : Window
 
     private bool TryInitializePaths()
     {
-        if (!TryValidateDataDirectory(_userConfiguration.DataDirectory, out _dataDirectory, out _))
+        bool dataResolved = TryResolveDataDirectory();
+        bool gameResolved = TryResolveGameDirectory();
+
+        if (dataResolved)
         {
-            TryValidateDataDirectory(DataDirectoryLocator.Resolve(), out _dataDirectory, out _);
+            _userConfiguration.SetDataDirectory(_dataDirectory!);
         }
+
+        if (gameResolved)
+        {
+            _userConfiguration.SetGameDirectory(_gameDirectory!);
+        }
+
+        return dataResolved && gameResolved;
+    }
+
+    private bool TryResolveDataDirectory()
+    {
+        if (TryValidateDataDirectory(_userConfiguration.DataDirectory, out _dataDirectory, out _))
+        {
+            return true;
+        }
+
+        string defaultPath = DataDirectoryLocator.Resolve();
+        if (TryValidateDataDirectory(defaultPath, out _dataDirectory, out _))
+        {
+            return true;
+        }
+
+        WpfMessageBox.Show("The Vintage Story data folder could not be located. Please select it to enable mod management.",
+            "Simple VS Manager",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+
+        _dataDirectory = PromptForDirectory(
+            "Select your VintagestoryData folder",
+            _userConfiguration.DataDirectory ?? defaultPath,
+            TryValidateDataDirectory,
+            allowCancel: true);
 
         if (_dataDirectory is null)
         {
-            WpfMessageBox.Show("The Vintage Story data folder could not be located. Please select it to continue.",
+            WpfMessageBox.Show(
+                "Mods cannot be managed until a VintagestoryData folder is selected. You can set it later from File > Set Data Folder.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
-
-            _dataDirectory = PromptForDirectory(
-                "Select your VintagestoryData folder",
-                _userConfiguration.DataDirectory ?? DataDirectoryLocator.Resolve(),
-                TryValidateDataDirectory,
-                allowCancel: false);
-
-            if (_dataDirectory is null)
-            {
-                return false;
-            }
+            return false;
         }
 
-        if (!TryValidateGameDirectory(_userConfiguration.GameDirectory, out _gameDirectory, out _))
+        return true;
+    }
+
+    private bool TryResolveGameDirectory()
+    {
+        if (TryValidateGameDirectory(_userConfiguration.GameDirectory, out _gameDirectory, out _))
         {
-            TryValidateGameDirectory(GameDirectoryLocator.Resolve(), out _gameDirectory, out _);
+            return true;
         }
+
+        string? defaultPath = GameDirectoryLocator.Resolve();
+        if (defaultPath != null && TryValidateGameDirectory(defaultPath, out _gameDirectory, out _))
+        {
+            return true;
+        }
+
+        WpfMessageBox.Show("The Vintage Story installation folder could not be located. Please select it to enable game-related features.",
+            "Simple VS Manager",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+
+        _gameDirectory = PromptForDirectory(
+            "Select your Vintage Story installation folder",
+            _userConfiguration.GameDirectory ?? defaultPath,
+            TryValidateGameDirectory,
+            allowCancel: true);
 
         if (_gameDirectory is null)
         {
-            WpfMessageBox.Show("The Vintage Story installation folder could not be located. Please select it to continue.",
+            WpfMessageBox.Show(
+                "Game-related features will be unavailable until a Vintage Story installation folder is selected. You can set it later from File > Set Game Folder.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
-
-            _gameDirectory = PromptForDirectory(
-                "Select your Vintage Story installation folder",
-                _userConfiguration.GameDirectory ?? GameDirectoryLocator.Resolve(),
-                TryValidateGameDirectory,
-                allowCancel: false);
-
-            if (_gameDirectory is null)
-            {
-                return false;
-            }
+            return false;
         }
 
-        _userConfiguration.SetDataDirectory(_dataDirectory);
-        _userConfiguration.SetGameDirectory(_gameDirectory);
         return true;
     }
 
