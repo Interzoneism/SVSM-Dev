@@ -1079,7 +1079,7 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <ComboBox ItemsSource="{Binding Mods}"
-                                                  Text="{Binding ModsSummary}"
+                                                  Text="{Binding ModsSummary, Mode=OneWay}"
                                                   IsEditable="True"
                                                   IsReadOnly="True"
                                                   SelectedIndex="-1"
