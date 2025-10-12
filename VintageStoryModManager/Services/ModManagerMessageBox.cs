@@ -36,12 +36,13 @@ public static class ModManagerMessageBox
         MessageDialogExtraButton? extraButton)
     {
         Window? resolvedOwner = owner ?? GetActiveWindow();
+        bool hasVisibleOwner = resolvedOwner?.IsVisible == true;
 
         var dialog = new MessageDialogWindow
         {
-            Owner = resolvedOwner,
-            WindowStartupLocation = resolvedOwner is null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
-            Topmost = resolvedOwner is null
+            Owner = hasVisibleOwner ? resolvedOwner : null,
+            WindowStartupLocation = hasVisibleOwner ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen,
+            Topmost = resolvedOwner is null || !hasVisibleOwner
         };
 
         dialog.Initialize(messageBoxText, caption, button, icon, extraButton);
