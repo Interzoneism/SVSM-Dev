@@ -322,23 +322,23 @@ public sealed class UserConfigurationService
                 return;
             }
 
-            DataDirectory = NormalizePath(obj["dataDirectory"]?.GetValue<string?>());
-            GameDirectory = NormalizePath(obj["gameDirectory"]?.GetValue<string?>());
+            DataDirectory = NormalizePath(GetOptionalString(obj["dataDirectory"]));
+            GameDirectory = NormalizePath(GetOptionalString(obj["gameDirectory"]));
             _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
             _useModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? true;
             _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? false;
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _enableDebugLogging = obj["enableDebugLogging"]?.GetValue<bool?>() ?? false;
             _suppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
-            _modsSortMemberPath = NormalizeSortMemberPath(obj["modsSortMemberPath"]?.GetValue<string?>());
-            _modsSortDirection = ParseSortDirection(obj["modsSortDirection"]?.GetValue<string?>());
+            _modsSortMemberPath = NormalizeSortMemberPath(GetOptionalString(obj["modsSortMemberPath"]));
+            _modsSortDirection = ParseSortDirection(GetOptionalString(obj["modsSortDirection"]));
             _modDatabaseSearchResultLimit = NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
             _modDatabaseNewModsRecentMonths = NormalizeModDatabaseNewModsRecentMonths(
                 obj["modDatabaseNewModsRecentMonths"]?.GetValue<int?>());
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             LoadModConfigPaths(obj["modConfigPaths"]);
-            _selectedPresetName = NormalizePresetName(obj["selectedPreset"]?.GetValue<string?>());
+            _selectedPresetName = NormalizePresetName(GetOptionalString(obj["selectedPreset"]));
 
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -486,7 +486,7 @@ public sealed class UserConfigurationService
                 continue;
             }
 
-            string? path = pair.Value?.GetValue<string?>();
+            string? path = GetOptionalString(pair.Value);
             string? normalized = NormalizePath(path);
             if (string.IsNullOrWhiteSpace(normalized))
             {
@@ -542,6 +542,27 @@ public sealed class UserConfigurationService
         }
 
         return null;
+    }
+
+    private static string? GetOptionalString(JsonNode? node)
+    {
+        if (node is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return node.GetValue<string?>();
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
     }
 
     private static string? NormalizePath(string? path)
