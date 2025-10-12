@@ -1012,7 +1012,7 @@
                 <Grid Grid.RowSpan="2" Margin="0,0,-29,0">
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -1120,7 +1120,7 @@
                                 MinWidth="195"
                                 Margin="0,0,0,0"
                                 IsEnabled="False"
-                                Visibility="Collapsed"
+                                Visibility="Visible"
                                 Click="InstallCloudModlistButton_OnClick" />
                     </StackPanel>
                     <Button x:Name="SaveCloudModlistButton"
