@@ -1053,8 +1053,8 @@ public partial class MainWindow : Window
             _userConfiguration.ClearGameDirectory();
         }
 
-        string? defaultPath = GameDirectoryLocator.Resolve();
-        if (defaultPath != null && TryValidateGameDirectory(defaultPath, out _gameDirectory, out _))
+        string defaultPath = GameDirectoryLocator.Resolve();
+        if (!string.IsNullOrWhiteSpace(defaultPath) && TryValidateGameDirectory(defaultPath, out _gameDirectory, out _))
         {
             return true;
         }
@@ -1066,7 +1066,7 @@ public partial class MainWindow : Window
 
         _gameDirectory = PromptForDirectory(
             "Select your Vintage Story installation folder",
-            _userConfiguration.GameDirectory ?? defaultPath,
+            _userConfiguration.GameDirectory ?? (string.IsNullOrWhiteSpace(defaultPath) ? null : defaultPath),
             TryValidateGameDirectory,
             allowCancel: true);
 

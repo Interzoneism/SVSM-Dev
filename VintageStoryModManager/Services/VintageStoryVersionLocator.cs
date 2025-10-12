@@ -23,12 +23,6 @@ public static class VintageStoryVersionLocator
 
     public static string? GetInstalledVersion()
     {
-        string? fromEnvironment = VersionStringUtility.Normalize(Environment.GetEnvironmentVariable("VINTAGE_STORY_VERSION"));
-        if (!string.IsNullOrWhiteSpace(fromEnvironment))
-        {
-            return fromEnvironment;
-        }
-
         foreach (string candidate in EnumerateCandidates())
         {
             string? version = TryGetVersionFromFile(candidate);
@@ -55,16 +49,6 @@ public static class VintageStoryVersionLocator
     private static IEnumerable<string> EnumerateRoots()
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        string? explicitFolder = Environment.GetEnvironmentVariable("VINTAGE_STORY");
-        if (!string.IsNullOrWhiteSpace(explicitFolder))
-        {
-            string fullPath = Path.GetFullPath(explicitFolder);
-            if (seen.Add(fullPath))
-            {
-                yield return fullPath;
-            }
-        }
 
         string baseDirectory = Path.GetFullPath(AppContext.BaseDirectory);
         if (seen.Add(baseDirectory))

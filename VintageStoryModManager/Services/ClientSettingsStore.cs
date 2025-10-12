@@ -412,24 +412,6 @@ public sealed class ClientSettingsStore
             Directory.GetCurrentDirectory()
         };
 
-        string? envPath = Environment.GetEnvironmentVariable("VINTAGE_STORY");
-        if (!string.IsNullOrWhiteSpace(envPath) && Directory.Exists(envPath))
-        {
-            bases.Add(Path.GetFullPath(envPath));
-        }
-
-        string? vsFolder = Environment.GetEnvironmentVariable("VSFOLDER");
-        if (!string.IsNullOrWhiteSpace(vsFolder) && Directory.Exists(vsFolder))
-        {
-            bases.Add(Path.GetFullPath(vsFolder));
-        }
-
-        string? binaryHint = Environment.GetEnvironmentVariable("VINTAGE_STORY_BIN");
-        if (!string.IsNullOrWhiteSpace(binaryHint) && Directory.Exists(binaryHint))
-        {
-            bases.Add(Path.GetFullPath(binaryHint));
-        }
-
         return bases.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 

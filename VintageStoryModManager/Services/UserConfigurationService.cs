@@ -517,10 +517,10 @@ public sealed class UserConfigurationService
             return Path.Combine(appData!, "Simple VS Manager");
         }
 
-        string? home = Environment.GetEnvironmentVariable("HOME");
-        if (!string.IsNullOrWhiteSpace(home))
+        string? userProfile = GetFolder(Environment.SpecialFolder.UserProfile);
+        if (!string.IsNullOrWhiteSpace(userProfile))
         {
-            return Path.Combine(home!, ".simple-vs-manager");
+            return Path.Combine(userProfile!, ".simple-vs-manager");
         }
 
         return Path.Combine(AppContext.BaseDirectory, "Simple VS Manager");

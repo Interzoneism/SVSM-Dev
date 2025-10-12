@@ -19,8 +19,8 @@ public static class GameDirectoryLocator
     /// <summary>
     /// Attempts to resolve the installation directory of Vintage Story.
     /// </summary>
-    /// <returns>The absolute path to the game directory or <c>null</c> if it cannot be located.</returns>
-    public static string? Resolve()
+    /// <returns>The absolute path to the game directory or <see cref="string.Empty"/> if it cannot be located.</returns>
+    public static string Resolve()
     {
         foreach (string candidate in EnumerateCandidates())
         {
@@ -30,7 +30,7 @@ public static class GameDirectoryLocator
             }
         }
 
-        return null;
+        return string.Empty;
     }
 
     /// <summary>
@@ -67,37 +67,6 @@ public static class GameDirectoryLocator
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        static string? TryNormalize(string? path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return null;
-            }
-
-            try
-            {
-                return Path.GetFullPath(path);
-            }
-            catch (Exception) when (path != null)
-            {
-                return null;
-            }
-        }
-
-        string? fromEnvironment = TryNormalize(Environment.GetEnvironmentVariable("VINTAGE_STORY"));
-        if (fromEnvironment != null)
-        {
-            if (File.Exists(fromEnvironment))
-            {
-                fromEnvironment = Path.GetDirectoryName(fromEnvironment);
-            }
-
-            if (fromEnvironment != null && seen.Add(fromEnvironment))
-            {
-                yield return fromEnvironment;
-            }
-        }
-
         string? baseDirectory = TryNormalize(AppContext.BaseDirectory);
         if (baseDirectory != null && seen.Add(baseDirectory))
         {
@@ -109,6 +78,12 @@ public static class GameDirectoryLocator
         if (normalizedVsFolder != null && Directory.Exists(normalizedVsFolder) && seen.Add(normalizedVsFolder))
         {
             yield return normalizedVsFolder;
+        }
+
+        string? currentDirectory = TryNormalize(Directory.GetCurrentDirectory());
+        if (currentDirectory != null && seen.Add(currentDirectory))
+        {
+            yield return currentDirectory;
         }
 
         foreach (string defaultPath in EnumerateDefaultInstallPaths())
@@ -123,28 +98,19 @@ public static class GameDirectoryLocator
 
     private static IEnumerable<string> EnumerateDefaultInstallPaths()
     {
-        string? programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-        if (!string.IsNullOrWhiteSpace(programFiles))
+        foreach (Environment.SpecialFolder folder in new[]
+                 {
+                     Environment.SpecialFolder.ProgramFiles,
+                     Environment.SpecialFolder.ProgramFilesX86,
+                     Environment.SpecialFolder.ApplicationData,
+                     Environment.SpecialFolder.LocalApplicationData
+                 })
         {
-            yield return Path.Combine(programFiles, "Vintagestory");
-        }
-
-        string? programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
-        if (!string.IsNullOrWhiteSpace(programFilesX86))
-        {
-            yield return Path.Combine(programFilesX86, "Vintagestory");
-        }
-
-        string? appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        if (!string.IsNullOrWhiteSpace(appData))
-        {
-            yield return Path.Combine(appData, "Vintagestory");
-        }
-
-        string? localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        if (!string.IsNullOrWhiteSpace(localAppData))
-        {
-            yield return Path.Combine(localAppData, "Programs", "VintageStory");
+            string? root = TryGetFolder(folder);
+            if (!string.IsNullOrWhiteSpace(root))
+            {
+                yield return Path.Combine(root!, "Vintagestory");
+            }
         }
     }
 
@@ -174,5 +140,33 @@ public static class GameDirectoryLocator
         {
             return null;
         }
+    }
+
+    private static string? TryNormalize(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        return NormalizePath(path);
+    }
+
+    private static string? TryGetFolder(Environment.SpecialFolder folder)
+    {
+        try
+        {
+            string? path = Environment.GetFolderPath(folder, Environment.SpecialFolderOption.DoNotVerify);
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                return path;
+            }
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return null;
+        }
+
+        return null;
     }
 }
