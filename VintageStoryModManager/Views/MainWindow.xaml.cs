@@ -6,9 +6,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,6 +26,7 @@ using ModernWpf.Controls;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 
+using SimpleVsManager.Cloud;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
@@ -45,6 +48,9 @@ public partial class MainWindow : Window
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";
     private const string PresetDirectoryName = "Presets";
     private const string ModListDirectoryName = "Modlists";
+    private const string FirebaseApiKey = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
+    private const string FirebaseDatabaseUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
+    private const string CloudStorageDirectoryName = "Cloud";
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
 
@@ -89,6 +95,8 @@ public partial class MainWindow : Window
     private string? _cachedSortMemberPath;
     private ListSortDirection? _cachedSortDirection;
     private SortOption? _cachedSortOption;
+    private readonly SemaphoreSlim _cloudStoreLock = new(1, 1);
+    private FirebaseModlistStore? _cloudModlistStore;
 
 
     public MainWindow()
@@ -3370,25 +3378,7 @@ public partial class MainWindow : Window
             filePath = Path.Combine(directory, entryName + ".json");
         }
 
-        IReadOnlyList<string> disabledEntries = _viewModel.GetCurrentDisabledEntries();
-        IReadOnlyList<ModPresetModState> states = _viewModel.GetCurrentModStates();
-
-        var serializable = new SerializablePreset
-        {
-            Name = entryName,
-            DisabledEntries = disabledEntries.ToList(),
-            IncludeModStatus = true,
-            IncludeModVersions = includeModVersions ? true : null,
-            Exclusive = exclusive ? true : null,
-            Mods = states.Select(state => new SerializablePresetModState
-            {
-                ModId = state.ModId,
-                Version = includeModVersions && !string.IsNullOrWhiteSpace(state.Version)
-                    ? state.Version!.Trim()
-                    : null,
-                IsActive = state.IsActive
-            }).ToList()
-        };
+        var serializable = BuildSerializablePreset(entryName, includeModVersions, exclusive);
 
         try
         {
@@ -3413,6 +3403,34 @@ public partial class MainWindow : Window
                 MessageBoxImage.Error);
             return false;
         }
+    }
+
+    private SerializablePreset BuildSerializablePreset(string entryName, bool includeModVersions, bool exclusive)
+    {
+        if (_viewModel is null)
+        {
+            throw new InvalidOperationException("View model is not initialized.");
+        }
+
+        IReadOnlyList<string> disabledEntries = _viewModel.GetCurrentDisabledEntries();
+        IReadOnlyList<ModPresetModState> states = _viewModel.GetCurrentModStates();
+
+        return new SerializablePreset
+        {
+            Name = entryName,
+            DisabledEntries = disabledEntries.ToList(),
+            IncludeModStatus = true,
+            IncludeModVersions = includeModVersions ? true : null,
+            Exclusive = exclusive ? true : null,
+            Mods = states.Select(state => new SerializablePresetModState
+            {
+                ModId = state.ModId,
+                Version = includeModVersions && !string.IsNullOrWhiteSpace(state.Version)
+                    ? state.Version!.Trim()
+                    : null,
+                IsActive = state.IsActive
+            }).ToList()
+        };
     }
 
     private void SavePresetMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -3451,9 +3469,207 @@ public partial class MainWindow : Window
             exclusive: true);
     }
 
+    private bool EnsureModlistBackupBeforeLoad()
+    {
+        MessageBoxResult prompt;
+        if (_userConfiguration.SuppressModlistSavePrompt)
+        {
+            prompt = MessageBoxResult.No;
+        }
+        else
+        {
+            var suppressButton = new MessageDialogExtraButton(
+                "No, don't ask again",
+                MessageBoxResult.No,
+                onClick: () => _userConfiguration.SetSuppressModlistSavePrompt(true));
+
+            prompt = WpfMessageBox.Show(
+                "Would you like to backup your current mods as a Modlist before loading the selected Modlist? Your current mods will be deleted! ",
+                "Simple VS Manager",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question,
+                suppressButton);
+        }
+
+        if (prompt == MessageBoxResult.Cancel)
+        {
+            return false;
+        }
+
+        if (prompt == MessageBoxResult.Yes)
+        {
+            return TrySaveModlist();
+        }
+
+        return true;
+    }
+
+    private bool TryBuildCurrentModlistJson(out string modlistName, out string json)
+    {
+        modlistName = BuildCloudModlistName();
+        json = string.Empty;
+
+        if (_viewModel is null)
+        {
+            return false;
+        }
+
+        var serializable = BuildSerializablePreset(modlistName, includeModVersions: true, exclusive: true);
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
+        json = JsonSerializer.Serialize(serializable, options);
+        return true;
+    }
+
+    private static string BuildCloudModlistName()
+    {
+        return $"Modlist {DateTime.Now:yyyy-MM-dd HH:mm}";
+    }
+
     private void SaveModlistMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         TrySaveModlist();
+    }
+
+    private async void SaveModlistToCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        await ExecuteCloudOperationAsync(async store =>
+        {
+            if (!TryBuildCurrentModlistJson(out string modlistName, out string json))
+            {
+                return;
+            }
+
+            var slots = await GetCloudModlistSlotsAsync(store, includeEmptySlots: true, captureContent: false);
+            string? firstFreeSlot = slots.FirstOrDefault(slot => !slot.IsOccupied)?.SlotKey;
+            string? slotKey = PromptForCloudSaveSlot(slots, firstFreeSlot);
+            if (slotKey is null)
+            {
+                return;
+            }
+
+            await store.SaveAsync(slotKey, json);
+            string slotLabel = FormatCloudSlotLabel(slotKey);
+            _viewModel?.ReportStatus($"Saved cloud modlist \"{modlistName}\" to {slotLabel}.");
+        }, "save the modlist to the cloud");
+    }
+
+    private async void LoadModlistFromCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        await ExecuteCloudOperationAsync(async store =>
+        {
+            var slots = await GetCloudModlistSlotsAsync(store, includeEmptySlots: false, captureContent: true);
+            if (slots.Count == 0)
+            {
+                WpfMessageBox.Show("No cloud modlists are available.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new CloudSlotSelectionDialog(this,
+                slots,
+                "Load Cloud Modlist",
+                "Select a cloud modlist to load.");
+            bool? dialogResult = dialog.ShowDialog();
+            if (dialogResult != true || dialog.SelectedSlot is not CloudModlistSlot selectedSlot)
+            {
+                return;
+            }
+
+            if (!EnsureModlistBackupBeforeLoad())
+            {
+                return;
+            }
+
+            string? json = selectedSlot.CachedContent;
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                json = await store.LoadAsync(selectedSlot.SlotKey);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    WpfMessageBox.Show("The selected cloud modlist is empty.",
+                        "Simple VS Manager",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+            }
+
+            string? sourceName = selectedSlot.Name ?? FormatCloudSlotLabel(selectedSlot.SlotKey);
+            if (!TryLoadPresetFromJson(json,
+                    "Modlist",
+                    ModListLoadOptions,
+                    out ModPreset? preset,
+                    out string? errorMessage,
+                    sourceName))
+            {
+                string message = string.IsNullOrWhiteSpace(errorMessage)
+                    ? "The selected cloud modlist is not valid."
+                    : errorMessage!;
+                WpfMessageBox.Show($"Failed to load the modlist:\n{message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            ModPreset loadedModlist = preset!;
+            await ApplyPresetAsync(loadedModlist);
+            string slotLabel = FormatCloudSlotLabel(selectedSlot.SlotKey);
+            _viewModel?.ReportStatus($"Loaded cloud modlist \"{loadedModlist.Name}\" from {slotLabel}.");
+        }, "load the modlist from the cloud");
+    }
+
+    private async void DeleteCloudModlistMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        await ExecuteCloudOperationAsync(async store =>
+        {
+            var slots = await GetCloudModlistSlotsAsync(store, includeEmptySlots: false, captureContent: false);
+            if (slots.Count == 0)
+            {
+                WpfMessageBox.Show("No cloud modlists are available to delete.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new CloudSlotSelectionDialog(this,
+                slots,
+                "Delete Cloud Modlist",
+                "Select the cloud modlist you want to delete.");
+            bool? dialogResult = dialog.ShowDialog();
+            if (dialogResult != true || dialog.SelectedSlot is not CloudModlistSlot selectedSlot)
+            {
+                return;
+            }
+
+            string slotLabel = FormatCloudSlotLabel(selectedSlot.SlotKey);
+            string displayName = string.IsNullOrWhiteSpace(selectedSlot.Name)
+                ? slotLabel
+                : $"{slotLabel} (\"{selectedSlot.Name}\")";
+
+            MessageBoxResult confirmation = WpfMessageBox.Show(
+                $"Are you sure you want to delete {displayName}? This action cannot be undone.",
+                "Simple VS Manager",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirmation != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            await store.DeleteAsync(selectedSlot.SlotKey);
+            _viewModel?.ReportStatus($"Deleted cloud modlist from {slotLabel}.");
+        }, "delete the cloud modlist");
     }
 
     private async void LoadPresetMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -3548,37 +3764,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        MessageBoxResult prompt;
-        if (_userConfiguration.SuppressModlistSavePrompt)
-        {
-            prompt = MessageBoxResult.No;
-        }
-        else
-        {
-            var suppressButton = new MessageDialogExtraButton(
-                "No, don't ask again",
-                MessageBoxResult.No,
-                onClick: () => _userConfiguration.SetSuppressModlistSavePrompt(true));
-
-            prompt = WpfMessageBox.Show(
-                "Would you like to backup your current mods as a Modlist before loading the selected Modlist? Your current mods will be deleted! ",
-                "Simple VS Manager",
-                MessageBoxButton.YesNoCancel,
-                MessageBoxImage.Question,
-                suppressButton);
-        }
-
-        if (prompt == MessageBoxResult.Cancel)
+        if (!EnsureModlistBackupBeforeLoad())
         {
             return;
-        }
-
-        if (prompt == MessageBoxResult.Yes)
-        {
-            if (!TrySaveModlist())
-            {
-                return;
-            }
         }
 
         if (!TryLoadPresetFromFile(dialog.FileName, "Modlist", ModListLoadOptions, out ModPreset? preset, out string? errorMessage))
@@ -3624,63 +3812,340 @@ public partial class MainWindow : Window
                 return false;
             }
 
-            string name = !string.IsNullOrWhiteSpace(data.Name)
-                ? data.Name!.Trim()
-                : GetSnapshotNameFromFilePath(filePath, fallbackName);
-
-            var disabledEntries = new List<string>();
-            var seenDisabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (data.DisabledEntries != null)
-            {
-                foreach (string entry in data.DisabledEntries)
-                {
-                    if (string.IsNullOrWhiteSpace(entry))
-                    {
-                        continue;
-                    }
-
-                    string trimmed = entry.Trim();
-                    if (seenDisabled.Add(trimmed))
-                    {
-                        disabledEntries.Add(trimmed);
-                    }
-                }
-            }
-
-            bool presetIndicatesStatus = data.IncludeModStatus
-                ?? (data.Mods?.Any(entry => entry?.IsActive is not null) ?? false);
-            bool presetIndicatesVersions = data.IncludeModVersions
-                ?? (data.Mods?.Any(entry => !string.IsNullOrWhiteSpace(entry?.Version)) ?? false);
-            bool includeStatus = options.ApplyModStatus && presetIndicatesStatus;
-            bool includeVersions = options.ApplyModVersions && presetIndicatesVersions;
-            bool exclusive = options.ForceExclusive;
-
-            var modStates = new List<ModPresetModState>();
-            if (data.Mods != null)
-            {
-                foreach (var mod in data.Mods)
-                {
-                    if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
-                    {
-                        continue;
-                    }
-
-                    string modId = mod.ModId.Trim();
-                    string? version = string.IsNullOrWhiteSpace(mod.Version)
-                        ? null
-                        : mod.Version!.Trim();
-                    modStates.Add(new ModPresetModState(modId, version, mod.IsActive));
-                }
-            }
-
-            preset = new ModPreset(name, disabledEntries, modStates, includeStatus, includeVersions, exclusive);
-            return true;
+            string snapshotName = GetSnapshotNameFromFilePath(filePath, fallbackName);
+            return TryBuildPresetFromSerializable(data, fallbackName, options, out preset, out errorMessage, snapshotName);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
             errorMessage = ex.Message;
             return false;
         }
+    }
+
+    private bool TryLoadPresetFromJson(
+        string json,
+        string fallbackName,
+        PresetLoadOptions options,
+        out ModPreset? preset,
+        out string? errorMessage,
+        string? sourceName = null)
+    {
+        preset = null;
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            errorMessage = "The selected file was empty.";
+            return false;
+        }
+
+        try
+        {
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            SerializablePreset? data = JsonSerializer.Deserialize<SerializablePreset>(json, jsonOptions);
+            if (data is null)
+            {
+                errorMessage = "The selected file was empty.";
+                return false;
+            }
+
+            return TryBuildPresetFromSerializable(data, fallbackName, options, out preset, out errorMessage, sourceName);
+        }
+        catch (JsonException ex)
+        {
+            errorMessage = ex.Message;
+            return false;
+        }
+    }
+
+    private bool TryBuildPresetFromSerializable(
+        SerializablePreset data,
+        string fallbackName,
+        PresetLoadOptions options,
+        out ModPreset? preset,
+        out string? errorMessage,
+        string? fallbackNameFromSource = null)
+    {
+        preset = null;
+        errorMessage = null;
+
+        string name = !string.IsNullOrWhiteSpace(data.Name)
+            ? data.Name!.Trim()
+            : (!string.IsNullOrWhiteSpace(fallbackNameFromSource)
+                ? fallbackNameFromSource!.Trim()
+                : fallbackName);
+
+        var disabledEntries = new List<string>();
+        var seenDisabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (data.DisabledEntries != null)
+        {
+            foreach (string entry in data.DisabledEntries)
+            {
+                if (string.IsNullOrWhiteSpace(entry))
+                {
+                    continue;
+                }
+
+                string trimmed = entry.Trim();
+                if (seenDisabled.Add(trimmed))
+                {
+                    disabledEntries.Add(trimmed);
+                }
+            }
+        }
+
+        bool presetIndicatesStatus = data.IncludeModStatus
+            ?? (data.Mods?.Any(entry => entry?.IsActive is not null) ?? false);
+        bool presetIndicatesVersions = data.IncludeModVersions
+            ?? (data.Mods?.Any(entry => !string.IsNullOrWhiteSpace(entry?.Version)) ?? false);
+        bool includeStatus = options.ApplyModStatus && presetIndicatesStatus;
+        bool includeVersions = options.ApplyModVersions && presetIndicatesVersions;
+        bool exclusive = options.ForceExclusive;
+
+        var modStates = new List<ModPresetModState>();
+        if (data.Mods != null)
+        {
+            foreach (var mod in data.Mods)
+            {
+                if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
+                {
+                    continue;
+                }
+
+                string modId = mod.ModId.Trim();
+                string? version = string.IsNullOrWhiteSpace(mod.Version)
+                    ? null
+                    : mod.Version!.Trim();
+                modStates.Add(new ModPresetModState(modId, version, mod.IsActive));
+            }
+        }
+
+        preset = new ModPreset(name, disabledEntries, modStates, includeStatus, includeVersions, exclusive);
+        return true;
+    }
+
+    private async Task ExecuteCloudOperationAsync(Func<FirebaseModlistStore, Task> operation, string actionDescription)
+    {
+        try
+        {
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
+        }
+        catch (InternetAccessDisabledException ex)
+        {
+            WpfMessageBox.Show(ex.Message,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        FirebaseModlistStore store;
+        try
+        {
+            store = await EnsureCloudStoreInitializedAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusLogService.AppendStatus($"Failed to initialize cloud storage: {ex}", true);
+            WpfMessageBox.Show($"Failed to initialize cloud storage:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        try
+        {
+            await operation(store);
+        }
+        catch (InternetAccessDisabledException ex)
+        {
+            WpfMessageBox.Show(ex.Message,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            StatusLogService.AppendStatus($"Network error while attempting to {actionDescription}: {ex.Message}", true);
+            WpfMessageBox.Show($"Failed to {actionDescription}:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusLogService.AppendStatus($"Cloud operation failed while attempting to {actionDescription}: {ex.Message}", true);
+            WpfMessageBox.Show($"Failed to {actionDescription}:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            StatusLogService.AppendStatus($"Unexpected error while attempting to {actionDescription}: {ex}", true);
+            WpfMessageBox.Show($"An unexpected error occurred while attempting to {actionDescription}:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private async Task<FirebaseModlistStore> EnsureCloudStoreInitializedAsync()
+    {
+        if (_cloudModlistStore is { } existingStore)
+        {
+            await existingStore.EnsureSignedInAsync();
+            return existingStore;
+        }
+
+        await _cloudStoreLock.WaitAsync();
+        try
+        {
+            if (_cloudModlistStore is { } cached)
+            {
+                await cached.EnsureSignedInAsync();
+                return cached;
+            }
+
+            string configurationDirectory = _userConfiguration.GetConfigurationDirectory();
+            string storageDirectory = Path.Combine(configurationDirectory, CloudStorageDirectoryName);
+            var store = new FirebaseModlistStore(FirebaseApiKey, FirebaseDatabaseUrl, storageDirectory);
+            await store.EnsureSignedInAsync();
+            _cloudModlistStore = store;
+            return store;
+        }
+        finally
+        {
+            _cloudStoreLock.Release();
+        }
+    }
+
+    private string? PromptForCloudSaveSlot(IReadOnlyList<CloudModlistSlot> slots, string? defaultSlotKey)
+    {
+        if (!string.IsNullOrWhiteSpace(defaultSlotKey))
+        {
+            string slotLabel = FormatCloudSlotLabel(defaultSlotKey);
+            MessageBoxResult result = WpfMessageBox.Show(this,
+                $"Save the current modlist to {slotLabel}? Choose Yes to confirm or No to select another slot.",
+                "Save Modlist to Cloud",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                return defaultSlotKey;
+            }
+
+            if (result == MessageBoxResult.Cancel)
+            {
+                return null;
+            }
+        }
+
+        string prompt = string.IsNullOrWhiteSpace(defaultSlotKey)
+            ? "All cloud slots are currently used. Select a slot to overwrite."
+            : "Choose the cloud slot to use for saving your modlist.";
+
+        var dialog = new CloudSlotSelectionDialog(this, slots, "Select Cloud Slot", prompt, defaultSlotKey);
+        bool? dialogResult = dialog.ShowDialog();
+        if (dialogResult == true && dialog.SelectedSlot is CloudModlistSlot selected)
+        {
+            return selected.SlotKey;
+        }
+
+        return null;
+    }
+
+    private async Task<List<CloudModlistSlot>> GetCloudModlistSlotsAsync(
+        FirebaseModlistStore store,
+        bool includeEmptySlots,
+        bool captureContent)
+    {
+        IReadOnlyList<string> existing = await store.ListSlotsAsync();
+        var existingSet = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
+        var result = new List<CloudModlistSlot>(FirebaseModlistStore.SlotKeys.Count);
+
+        foreach (string slotKey in FirebaseModlistStore.SlotKeys)
+        {
+            bool isOccupied = existingSet.Contains(slotKey);
+            if (!includeEmptySlots && !isOccupied)
+            {
+                continue;
+            }
+
+            string? json = null;
+            string? name = null;
+            if (isOccupied)
+            {
+                try
+                {
+                    json = await store.LoadAsync(slotKey);
+                    name = ExtractModlistName(json);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or TaskCanceledException)
+                {
+                    StatusLogService.AppendStatus($"Failed to retrieve cloud modlist for {slotKey}: {ex.Message}", true);
+                }
+            }
+
+            string display = BuildCloudSlotDisplay(slotKey, name, isOccupied);
+            string? cachedContent = captureContent ? json : null;
+            result.Add(new CloudModlistSlot(slotKey, isOccupied, display, name, cachedContent));
+        }
+
+        return result;
+    }
+
+    private static string BuildCloudSlotDisplay(string slotKey, string? name, bool isOccupied)
+    {
+        string label = FormatCloudSlotLabel(slotKey);
+        if (isOccupied)
+        {
+            return string.IsNullOrWhiteSpace(name)
+                ? $"{label} - Saved modlist"
+                : $"{label} - {name}";
+        }
+
+        return $"{label} - Empty";
+    }
+
+    private static string FormatCloudSlotLabel(string slotKey)
+    {
+        if (slotKey.Length > 4 && slotKey.StartsWith("slot", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Slot {slotKey.Substring(4)}";
+        }
+
+        return slotKey;
+    }
+
+    private static string? ExtractModlistName(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(json);
+            if (document.RootElement.ValueKind == JsonValueKind.Object &&
+                document.RootElement.TryGetProperty("name", out JsonElement nameElement))
+            {
+                string? value = nameElement.GetString();
+                return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+            }
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        return null;
     }
 
     private string EnsurePresetDirectory()
