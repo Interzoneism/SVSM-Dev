@@ -3635,6 +3635,23 @@ public partial class MainWindow : Window
             }
 
             string uploader = DetermineUploaderName(store);
+
+            if (!await IsCloudUploaderNameAvailableAsync(store, uploader))
+            {
+                WpfMessageBox.Show($"The username \"{uploader}\" is already in use by another cloud modlist. Please choose a different username before saving.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                if (UsernameTextbox is not null)
+                {
+                    UsernameTextbox.Focus();
+                    UsernameTextbox.SelectAll();
+                }
+
+                return;
+            }
+
             string modlistName = detailsDialog.ModlistName;
             string? description = detailsDialog.ModlistDescription;
             string? version = detailsDialog.ModlistVersion;
@@ -3700,6 +3717,36 @@ public partial class MainWindow : Window
         {
             await RefreshCloudModlistsAsync(force: true);
         }
+    }
+
+    private async Task<bool> IsCloudUploaderNameAvailableAsync(FirebaseModlistStore store, string uploader)
+    {
+        if (string.IsNullOrWhiteSpace(uploader))
+        {
+            return true;
+        }
+
+        string trimmedUploader = uploader.Trim();
+        string? currentUserId = store.CurrentUserId;
+        IReadOnlyList<CloudModlistRegistryEntry> registryEntries = await store.GetRegistryEntriesAsync();
+
+        foreach (CloudModlistRegistryEntry entry in registryEntries)
+        {
+            if (!string.IsNullOrEmpty(currentUserId) &&
+                string.Equals(entry.OwnerId, currentUserId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            CloudModlistMetadata metadata = ExtractCloudModlistMetadata(entry.ContentJson);
+            if (metadata.Uploader is not null &&
+                string.Equals(metadata.Uploader, trimmedUploader, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private async void RefreshCloudModlistsButton_OnClick(object sender, RoutedEventArgs e)
