@@ -97,6 +97,9 @@ public partial class MainWindow : Window
     private SortOption? _cachedSortOption;
     private readonly SemaphoreSlim _cloudStoreLock = new(1, 1);
     private FirebaseModlistStore? _cloudModlistStore;
+    private bool _cloudModlistsLoaded;
+    private bool _isCloudModlistRefreshInProgress;
+    private CloudModlistListEntry? _selectedCloudModlist;
 
 
     public MainWindow()
@@ -240,6 +243,8 @@ public partial class MainWindow : Window
         };
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         DataContext = _viewModel;
+        _cloudModlistsLoaded = false;
+        _selectedCloudModlist = null;
         ApplyCompactViewState(_viewModel.IsCompactView);
         UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
         AttachToModsView(_viewModel.CurrentModsView);
@@ -300,6 +305,19 @@ public partial class MainWindow : Window
                         UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
                         _modsScrollViewer = null;
                         _modDatabaseCardsScrollViewer = null;
+                    }
+                });
+            }
+        }
+        else if (e.PropertyName == nameof(MainViewModel.IsViewingCloudModlists))
+        {
+            if (_viewModel != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (_viewModel != null)
+                    {
+                        HandleCloudModlistsVisibilityChanged(_viewModel.IsViewingCloudModlists);
                     }
                 });
             }
@@ -377,6 +395,21 @@ public partial class MainWindow : Window
 
         ApplyCompactViewState(_viewModel?.IsCompactView ?? false);
         UpdateSearchSortingBehavior(isSearchingModDatabase);
+    }
+
+    private void HandleCloudModlistsVisibilityChanged(bool isVisible)
+    {
+        if (isVisible)
+        {
+            _ = RefreshCloudModlistsAsync(force: !_cloudModlistsLoaded);
+            return;
+        }
+
+        SetCloudModlistSelection(null);
+        if (CloudModlistsDataGrid != null)
+        {
+            CloudModlistsDataGrid.SelectedItem = null;
+        }
     }
 
     private void UpdateSearchSortingBehavior(bool isSearchingModDatabase)
@@ -3536,9 +3569,9 @@ public partial class MainWindow : Window
         TrySaveModlist();
     }
 
-    private async void SaveModlistToCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
+    private Task SaveModlistToCloudAsync()
     {
-        await ExecuteCloudOperationAsync(async store =>
+        return ExecuteCloudOperationAsync(async store =>
         {
             if (!TryBuildCurrentModlistJson(out string modlistName, out string json))
             {
@@ -3557,6 +3590,99 @@ public partial class MainWindow : Window
             string slotLabel = FormatCloudSlotLabel(slotKey);
             _viewModel?.ReportStatus($"Saved cloud modlist \"{modlistName}\" to {slotLabel}.");
         }, "save the modlist to the cloud");
+    }
+
+    private async void SaveModlistToCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        await SaveModlistToCloudAsync();
+        if (_viewModel?.IsViewingCloudModlists == true)
+        {
+            await RefreshCloudModlistsAsync(force: true);
+        }
+        else
+        {
+            _cloudModlistsLoaded = false;
+        }
+    }
+
+    private async void SaveCloudModlistButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        await SaveModlistToCloudAsync();
+        if (_viewModel?.IsViewingCloudModlists == true)
+        {
+            await RefreshCloudModlistsAsync(force: true);
+        }
+    }
+
+    private async void RefreshCloudModlistsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        await RefreshCloudModlistsAsync(force: true);
+    }
+
+    private void CloudModlistsDataGrid_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CloudModlistsDataGrid?.SelectedItem is CloudModlistListEntry entry)
+        {
+            SetCloudModlistSelection(entry);
+        }
+        else
+        {
+            SetCloudModlistSelection(null);
+        }
+    }
+
+    private async void InstallCloudModlistButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel is null || _selectedCloudModlist is not CloudModlistListEntry entry)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(entry.ContentJson))
+        {
+            WpfMessageBox.Show("The selected cloud modlist has no content.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!EnsureModlistBackupBeforeLoad())
+        {
+            return;
+        }
+
+        string fallbackName = entry.Name ?? "Modlist";
+        string? sourceName = entry.DisplayName;
+
+        if (!TryLoadPresetFromJson(entry.ContentJson,
+                fallbackName,
+                ModListLoadOptions,
+                out ModPreset? preset,
+                out string? errorMessage,
+                sourceName))
+        {
+            string message = string.IsNullOrWhiteSpace(errorMessage)
+                ? "Failed to load the selected cloud modlist."
+                : errorMessage!;
+            WpfMessageBox.Show(message,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        if (preset is null)
+        {
+            return;
+        }
+
+        bool applied = await _viewModel.ApplyPresetAsync(preset);
+        if (applied)
+        {
+            string slotLabel = FormatCloudSlotLabel(entry.SlotKey);
+            _viewModel.ReportStatus($"Loaded cloud modlist \"{preset.Name}\" from {slotLabel} (by {entry.OwnerId}).");
+        }
     }
 
     private async void LoadModlistFromCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -3670,6 +3796,15 @@ public partial class MainWindow : Window
             await store.DeleteAsync(selectedSlot.SlotKey);
             _viewModel?.ReportStatus($"Deleted cloud modlist from {slotLabel}.");
         }, "delete the cloud modlist");
+
+        if (_viewModel?.IsViewingCloudModlists == true)
+        {
+            await RefreshCloudModlistsAsync(force: true);
+        }
+        else
+        {
+            _cloudModlistsLoaded = false;
+        }
     }
 
     private async void LoadPresetMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -4098,6 +4233,113 @@ public partial class MainWindow : Window
         }
 
         return result;
+    }
+
+    private async Task RefreshCloudModlistsAsync(bool force)
+    {
+        if (_isCloudModlistRefreshInProgress)
+        {
+            return;
+        }
+
+        if (!force && _cloudModlistsLoaded)
+        {
+            return;
+        }
+
+        _isCloudModlistRefreshInProgress = true;
+
+        try
+        {
+            await ExecuteCloudOperationAsync(async store =>
+            {
+                IReadOnlyList<CloudModlistRegistryEntry> registryEntries = await store.GetRegistryEntriesAsync();
+                IReadOnlyList<CloudModlistListEntry> listEntries = BuildCloudModlistEntries(registryEntries);
+
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    _viewModel?.ReplaceCloudModlists(listEntries);
+                    _cloudModlistsLoaded = true;
+                    SetCloudModlistSelection(null);
+                    if (CloudModlistsDataGrid != null)
+                    {
+                        CloudModlistsDataGrid.SelectedItem = null;
+                    }
+                }, DispatcherPriority.Background);
+            }, "load cloud modlists");
+        }
+        finally
+        {
+            _isCloudModlistRefreshInProgress = false;
+        }
+    }
+
+    private IReadOnlyList<CloudModlistListEntry> BuildCloudModlistEntries(IEnumerable<CloudModlistRegistryEntry> registryEntries)
+    {
+        var list = new List<CloudModlistListEntry>();
+        if (registryEntries is null)
+        {
+            return list;
+        }
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in registryEntries)
+        {
+            if (entry is null)
+            {
+                continue;
+            }
+
+            if (!seen.Add(entry.RegistryKey))
+            {
+                continue;
+            }
+
+            string slotLabel = FormatCloudSlotLabel(entry.SlotKey);
+            string? name = ExtractModlistName(entry.ContentJson);
+            list.Add(new CloudModlistListEntry(entry.OwnerId, entry.SlotKey, name, slotLabel, entry.ContentJson));
+        }
+
+        list.Sort((left, right) =>
+        {
+            int compare = string.Compare(left.DisplayName, right.DisplayName, StringComparison.OrdinalIgnoreCase);
+            if (compare != 0)
+            {
+                return compare;
+            }
+
+            compare = string.Compare(left.OwnerId, right.OwnerId, StringComparison.OrdinalIgnoreCase);
+            if (compare != 0)
+            {
+                return compare;
+            }
+
+            return string.Compare(left.SlotKey, right.SlotKey, StringComparison.OrdinalIgnoreCase);
+        });
+
+        return list;
+    }
+
+    private void SetCloudModlistSelection(CloudModlistListEntry? entry)
+    {
+        _selectedCloudModlist = entry;
+
+        if (InstallCloudModlistButton is null)
+        {
+            return;
+        }
+
+        if (entry is null)
+        {
+            InstallCloudModlistButton.Visibility = Visibility.Collapsed;
+            InstallCloudModlistButton.IsEnabled = false;
+            InstallCloudModlistButton.ToolTip = null;
+            return;
+        }
+
+        InstallCloudModlistButton.Visibility = Visibility.Visible;
+        InstallCloudModlistButton.IsEnabled = true;
+        InstallCloudModlistButton.ToolTip = $"Install \"{entry.DisplayName}\"";
     }
 
     private static string BuildCloudSlotDisplay(string slotKey, string? name, bool isOccupied)

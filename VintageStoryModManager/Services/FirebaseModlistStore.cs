@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 
 namespace SimpleVsManager.Cloud
@@ -77,11 +78,15 @@ namespace SimpleVsManager.Cloud
             var node = new ModlistNode { Content = doc.RootElement.Clone() };
 
             var json = JsonSerializer.Serialize(node, JsonOpts);
-            var url = $"{_dbUrl}/users/{_auth.Uid}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
+            var userUrl = $"{_dbUrl}/users/{_auth.Uid}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
 
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-            using var resp = await _http.PutAsync(url, content, ct);
-            await EnsureOk(resp, "Save");
+            using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+            using (var resp = await _http.PutAsync(userUrl, content, ct))
+            {
+                await EnsureOk(resp, "Save");
+            }
+
+            await SaveRegistryEntryAsync(slotKey, json, ct);
         }
 
         /// <summary>Load a JSON string from the slot. Returns null if missing.</summary>
@@ -136,11 +141,73 @@ namespace SimpleVsManager.Cloud
             ValidateSlotKey(slotKey);
             await EnsureSignedInAsync(ct);
 
-            var url = $"{_dbUrl}/users/{_auth.Uid}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
-            using var resp = await _http.DeleteAsync(url, ct);
+            var userUrl = $"{_dbUrl}/users/{_auth.Uid}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
+            using var resp = await _http.DeleteAsync(userUrl, ct);
             // 200/204/404 are all "fine" for our UX.
-            if (resp.IsSuccessStatusCode || resp.StatusCode == HttpStatusCode.NotFound) return;
-            await EnsureOk(resp, "Delete");
+            if (!resp.IsSuccessStatusCode && resp.StatusCode != HttpStatusCode.NotFound)
+            {
+                await EnsureOk(resp, "Delete");
+            }
+
+            await DeleteRegistryEntryAsync(slotKey, ct);
+        }
+
+        public async Task<IReadOnlyList<CloudModlistRegistryEntry>> GetRegistryEntriesAsync(CancellationToken ct = default)
+        {
+            await EnsureSignedInAsync(ct);
+
+            string url = $"{_dbUrl}/registry.json?auth={_auth.IdToken}";
+            using var resp = await _http.GetAsync(url, ct);
+
+            if (resp.StatusCode == HttpStatusCode.NotFound)
+            {
+                return Array.Empty<CloudModlistRegistryEntry>();
+            }
+
+            await EnsureOk(resp, "Fetch registry");
+
+            await using var stream = await resp.Content.ReadAsStreamAsync(ct);
+            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return Array.Empty<CloudModlistRegistryEntry>();
+            }
+
+            var results = new List<CloudModlistRegistryEntry>();
+
+            foreach (JsonProperty userProperty in doc.RootElement.EnumerateObject())
+            {
+                string ownerId = userProperty.Name;
+                if (string.IsNullOrWhiteSpace(ownerId) || userProperty.Value.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                foreach (JsonProperty slotProperty in userProperty.Value.EnumerateObject())
+                {
+                    string slotKey = slotProperty.Name;
+                    if (!IsKnownSlot(slotKey) || slotProperty.Value.ValueKind != JsonValueKind.Object)
+                    {
+                        continue;
+                    }
+
+                    if (!slotProperty.Value.TryGetProperty("content", out JsonElement contentElement))
+                    {
+                        continue;
+                    }
+
+                    if (contentElement.ValueKind == JsonValueKind.Null || contentElement.ValueKind == JsonValueKind.Undefined)
+                    {
+                        continue;
+                    }
+
+                    string json = contentElement.GetRawText();
+                    results.Add(new CloudModlistRegistryEntry(ownerId, slotKey, json));
+                }
+            }
+
+            return results;
         }
 
         /// <summary>Return the first available slot key (slot1..slot5), or null if full.</summary>
@@ -236,6 +303,41 @@ namespace SimpleVsManager.Cloud
             var body = await resp.Content.ReadAsStringAsync();
             LogRestFailure($"{opName} failed: {(int)resp.StatusCode} {resp.ReasonPhrase} | {Truncate(body, 400)}");
             throw new InvalidOperationException($"{opName} failed: {(int)resp.StatusCode} {resp.ReasonPhrase} | {Truncate(body, 400)}");
+        }
+
+        private async Task SaveRegistryEntryAsync(string slotKey, string nodeJson, CancellationToken ct)
+        {
+            var url = $"{_dbUrl}/registry/{_auth.Uid}/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
+
+            using var content = new StringContent(nodeJson, Encoding.UTF8, "application/json");
+            using var resp = await _http.PutAsync(url, content, ct);
+            await EnsureOk(resp, "Save registry entry");
+        }
+
+        private async Task DeleteRegistryEntryAsync(string slotKey, CancellationToken ct)
+        {
+            var url = $"{_dbUrl}/registry/{_auth.Uid}/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
+            using var resp = await _http.DeleteAsync(url, ct);
+
+            if (resp.IsSuccessStatusCode || resp.StatusCode == HttpStatusCode.NotFound)
+            {
+                return;
+            }
+
+            await EnsureOk(resp, "Delete registry entry");
+        }
+
+        private static bool IsKnownSlot(string slotKey)
+        {
+            foreach (string known in KnownSlots)
+            {
+                if (string.Equals(known, slotKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void LogRestFailure(string message)

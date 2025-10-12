@@ -27,10 +27,18 @@ public sealed class MainViewModel : ObservableObject
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
     private const int MaxNewModsRecentMonths = 24;
 
+    private enum ViewSection
+    {
+        InstalledMods,
+        ModDatabase,
+        CloudModlists
+    }
+
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
     private readonly Dictionary<string, ModEntry> _modEntriesBySourcePath = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ModListItemViewModel> _modViewModelsBySourcePath = new(StringComparer.OrdinalIgnoreCase);
     private readonly ObservableCollection<ModListItemViewModel> _searchResults = new();
+    private readonly ObservableCollection<CloudModlistListEntry> _cloudModlists = new();
     private readonly ClientSettingsStore _settingsStore;
     private readonly ModDiscoveryService _discoveryService;
     private readonly ModDatabaseService _databaseService;
@@ -56,11 +64,12 @@ public sealed class MainViewModel : ObservableObject
     private bool _hasMultipleSelectedMods;
     private string _searchText = string.Empty;
     private string[] _searchTokens = Array.Empty<string>();
-    private bool _searchModDatabase;
+    private ViewSection _viewSection = ViewSection.InstalledMods;
     private CancellationTokenSource? _modDatabaseSearchCts;
     private readonly RelayCommand _clearSearchCommand;
     private readonly RelayCommand _showInstalledModsCommand;
     private readonly RelayCommand _showModDatabaseCommand;
+    private readonly RelayCommand _showCloudModlistsCommand;
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
     private readonly object _busyStateLock = new();
     private int _busyOperationCount;
@@ -83,6 +92,7 @@ public sealed class MainViewModel : ObservableObject
         ModsView = CollectionViewSource.GetDefaultView(_mods);
         ModsView.Filter = FilterMod;
         SearchResultsView = CollectionViewSource.GetDefaultView(_searchResults);
+        CloudModlistsView = CollectionViewSource.GetDefaultView(_cloudModlists);
         _sortOptions = new ObservableCollection<SortOption>(CreateSortOptions());
         SortOptions = new ReadOnlyObservableCollection<SortOption>(_sortOptions);
         SelectedSortOption = SortOptions.FirstOrDefault();
@@ -91,10 +101,12 @@ public sealed class MainViewModel : ObservableObject
         _clearSearchCommand = new RelayCommand(() => SearchText = string.Empty, () => HasSearchText);
         ClearSearchCommand = _clearSearchCommand;
 
-        _showInstalledModsCommand = new RelayCommand(() => SearchModDatabase = false);
-        _showModDatabaseCommand = new RelayCommand(() => SearchModDatabase = true);
+        _showInstalledModsCommand = new RelayCommand(() => SetViewSection(ViewSection.InstalledMods));
+        _showModDatabaseCommand = new RelayCommand(() => SetViewSection(ViewSection.ModDatabase));
+        _showCloudModlistsCommand = new RelayCommand(() => SetViewSection(ViewSection.CloudModlists));
         ShowInstalledModsCommand = _showInstalledModsCommand;
         ShowModDatabaseCommand = _showModDatabaseCommand;
+        ShowCloudModlistsCommand = _showCloudModlistsCommand;
 
         RefreshCommand = new AsyncRelayCommand(LoadModsAsync);
         SetStatus("Ready.", false);
@@ -108,7 +120,14 @@ public sealed class MainViewModel : ObservableObject
 
     public ICollectionView SearchResultsView { get; }
 
-    public ICollectionView CurrentModsView => SearchModDatabase ? SearchResultsView : ModsView;
+    public ICollectionView CloudModlistsView { get; }
+
+    public ICollectionView CurrentModsView => _viewSection switch
+    {
+        ViewSection.ModDatabase => SearchResultsView,
+        ViewSection.CloudModlists => CloudModlistsView,
+        _ => ModsView
+    };
 
     public ReadOnlyObservableCollection<SortOption> SortOptions { get; }
 
@@ -196,31 +215,16 @@ public sealed class MainViewModel : ObservableObject
 
     public bool SearchModDatabase
     {
-        get => _searchModDatabase;
+        get => _viewSection == ViewSection.ModDatabase;
         set
         {
-            if (SetProperty(ref _searchModDatabase, value))
+            if (value)
             {
-                _modDatabaseSearchCts?.Cancel();
-
-                if (value)
-                {
-                    ClearSearchResults();
-                    SelectedMod = null;
-
-                    TriggerModDatabaseSearch();
-                }
-                else
-                {
-                    ClearSearchResults();
-                    SelectedSortOption?.Apply(ModsView);
-                    ModsView.Refresh();
-                    SetStatus("Showing installed mods.", false);
-                }
-
-                OnPropertyChanged(nameof(CurrentModsView));
-                OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
-                OnPropertyChanged(nameof(DownloadsColumnHeader));
+                SetViewSection(ViewSection.ModDatabase);
+            }
+            else if (_viewSection == ViewSection.ModDatabase)
+            {
+                SetViewSection(ViewSection.InstalledMods);
             }
         }
     }
@@ -228,6 +232,14 @@ public sealed class MainViewModel : ObservableObject
     public IRelayCommand ShowInstalledModsCommand { get; }
 
     public IRelayCommand ShowModDatabaseCommand { get; }
+
+    public IRelayCommand ShowCloudModlistsCommand { get; }
+
+    public bool IsViewingCloudModlists => _viewSection == ViewSection.CloudModlists;
+
+    public bool IsViewingInstalledMods => _viewSection == ViewSection.InstalledMods;
+
+    public bool HasCloudModlists => _cloudModlists.Count > 0;
 
     public bool IsTotalDownloadsMode
     {
@@ -274,6 +286,46 @@ public sealed class MainViewModel : ObservableObject
     public string DownloadsColumnHeader => IsShowingRecentDownloadMetric
         ? "Downloads (30 days)"
         : "Downloads";
+
+    private void SetViewSection(ViewSection section)
+    {
+        if (_viewSection == section)
+        {
+            return;
+        }
+
+        _modDatabaseSearchCts?.Cancel();
+
+        _viewSection = section;
+
+        switch (section)
+        {
+            case ViewSection.ModDatabase:
+                ClearSearchResults();
+                SelectedMod = null;
+                TriggerModDatabaseSearch();
+                break;
+            case ViewSection.InstalledMods:
+                ClearSearchResults();
+                SelectedMod = null;
+                SelectedSortOption?.Apply(ModsView);
+                ModsView.Refresh();
+                SetStatus("Showing installed mods.", false);
+                break;
+            case ViewSection.CloudModlists:
+                ClearSearchResults();
+                SelectedMod = null;
+                SetStatus("Showing cloud modlists.", false);
+                break;
+        }
+
+        OnPropertyChanged(nameof(SearchModDatabase));
+        OnPropertyChanged(nameof(IsViewingCloudModlists));
+        OnPropertyChanged(nameof(IsViewingInstalledMods));
+        OnPropertyChanged(nameof(CurrentModsView));
+        OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
+        OnPropertyChanged(nameof(DownloadsColumnHeader));
+    }
 
     private void SetAutoLoadMode(ModDatabaseAutoLoadMode mode)
     {
@@ -358,6 +410,25 @@ public sealed class MainViewModel : ObservableObject
     public IAsyncRelayCommand RefreshCommand { get; }
 
     public Task InitializeAsync() => LoadModsAsync();
+
+    public void ReplaceCloudModlists(IEnumerable<CloudModlistListEntry>? entries)
+    {
+        _cloudModlists.Clear();
+
+        if (entries is not null)
+        {
+            foreach (var entry in entries)
+            {
+                if (entry is not null)
+                {
+                    _cloudModlists.Add(entry);
+                }
+            }
+        }
+
+        CloudModlistsView.Refresh();
+        OnPropertyChanged(nameof(HasCloudModlists));
+    }
 
     public IReadOnlyList<string> GetCurrentDisabledEntries()
     {
