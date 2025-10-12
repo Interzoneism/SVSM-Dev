@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace VintageStoryModManager.Models;
 
@@ -7,12 +9,25 @@ namespace VintageStoryModManager.Models;
 /// </summary>
 public sealed class CloudModlistListEntry
 {
-    public CloudModlistListEntry(string ownerId, string slotKey, string? name, string slotLabel, string contentJson)
+    public CloudModlistListEntry(
+        string ownerId,
+        string slotKey,
+        string slotLabel,
+        string? name,
+        string? description,
+        string? version,
+        string? uploader,
+        IReadOnlyList<string> mods,
+        string contentJson)
     {
         OwnerId = ownerId ?? throw new ArgumentNullException(nameof(ownerId));
         SlotKey = slotKey ?? throw new ArgumentNullException(nameof(slotKey));
-        Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
         SlotLabel = slotLabel ?? throw new ArgumentNullException(nameof(slotLabel));
+        Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+        Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        Version = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
+        Uploader = string.IsNullOrWhiteSpace(uploader) ? OwnerId : uploader.Trim();
+        Mods = mods?.ToList() ?? throw new ArgumentNullException(nameof(mods));
         ContentJson = contentJson ?? throw new ArgumentNullException(nameof(contentJson));
     }
 
@@ -20,11 +35,25 @@ public sealed class CloudModlistListEntry
 
     public string SlotKey { get; }
 
+    public string SlotLabel { get; }
+
     public string? Name { get; }
 
-    public string SlotLabel { get; }
+    public string? Description { get; }
+
+    public string? Version { get; }
+
+    public string Uploader { get; }
+
+    public IReadOnlyList<string> Mods { get; }
 
     public string ContentJson { get; }
 
-    public string DisplayName => Name ?? $"{OwnerId} ({SlotLabel})";
+    public string DisplayName => Name ?? "Unnamed Modlist";
+
+    public string ModsSummary => Mods.Count == 0
+        ? "No mods"
+        : Mods.Count == 1
+            ? "1 mod"
+            : $"{Mods.Count} mods";
 }
