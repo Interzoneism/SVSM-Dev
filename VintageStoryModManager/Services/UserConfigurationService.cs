@@ -253,9 +253,31 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void ClearDataDirectory()
+    {
+        if (DataDirectory is null)
+        {
+            return;
+        }
+
+        DataDirectory = null;
+        Save();
+    }
+
     public void SetGameDirectory(string path)
     {
         GameDirectory = NormalizePath(path);
+        Save();
+    }
+
+    public void ClearGameDirectory()
+    {
+        if (GameDirectory is null)
+        {
+            return;
+        }
+
+        GameDirectory = null;
         Save();
     }
 

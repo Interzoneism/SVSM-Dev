@@ -112,12 +112,7 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                WpfMessageBox.Show($"Failed to initialize the mod manager:\n{ex.Message}",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                WpfApplication.Current?.Shutdown();
-                return;
+                HandleViewModelInitializationFailure(ex);
             }
         }
 
@@ -1004,9 +999,15 @@ public partial class MainWindow : Window
 
     private bool TryResolveDataDirectory()
     {
-        if (TryValidateDataDirectory(_userConfiguration.DataDirectory, out _dataDirectory, out _))
+        string? storedPath = _userConfiguration.DataDirectory;
+        if (TryValidateDataDirectory(storedPath, out _dataDirectory, out _))
         {
             return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(storedPath))
+        {
+            _userConfiguration.ClearDataDirectory();
         }
 
         string defaultPath = DataDirectoryLocator.Resolve();
@@ -1041,9 +1042,15 @@ public partial class MainWindow : Window
 
     private bool TryResolveGameDirectory()
     {
-        if (TryValidateGameDirectory(_userConfiguration.GameDirectory, out _gameDirectory, out _))
+        string? storedPath = _userConfiguration.GameDirectory;
+        if (TryValidateGameDirectory(storedPath, out _gameDirectory, out _))
         {
             return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(storedPath))
+        {
+            _userConfiguration.ClearGameDirectory();
         }
 
         string? defaultPath = GameDirectoryLocator.Resolve();
@@ -1074,6 +1081,27 @@ public partial class MainWindow : Window
         }
 
         return true;
+    }
+
+    private void HandleViewModelInitializationFailure(Exception exception)
+    {
+        _viewModel = null;
+        DataContext = null;
+
+        if (_dataDirectory != null)
+        {
+            _userConfiguration.ClearDataDirectory();
+        }
+
+        _dataDirectory = null;
+
+        string message = $"Failed to initialize the mod manager:\n{exception.Message}\n\n" +
+            "You can set the Vintage Story folders from the File menu once the application has loaded.";
+
+        WpfMessageBox.Show(message,
+            "Simple VS Manager",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
     }
 
     private async Task ReloadViewModelAsync()
