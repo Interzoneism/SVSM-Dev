@@ -284,7 +284,7 @@
 
                 <StackPanel Grid.Column="0"
                             Orientation="Horizontal"
-                            VerticalAlignment="Top" Height="64" Margin="5,12,0,0" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="292">
+                            VerticalAlignment="Top" Height="64" Margin="5,12,0,0" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="416">
                     <Button Content="Installed Mods"
                             Command="{Binding ShowInstalledModsCommand}"
                             Width="138"
@@ -313,6 +313,29 @@
                             Width="138"
                             Height="63"
                             FontSize="16" BorderBrush="#FFCAD7EB">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="VerticalContentAlignment" Value="Top" />
+                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                                <Setter Property="Opacity" Value="0.3" />
+                                <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
+                                <Setter Property="Padding" Value="12,6" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                        <Setter Property="Opacity" Value="1" />
+                                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="Modlists"
+                        Command="{Binding ShowModDatabaseCommand}"
+                        Width="138"
+                        Height="63"
+                        FontSize="16" BorderBrush="#FFCAD7EB">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="VerticalContentAlignment" Value="Top" />
