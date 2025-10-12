@@ -125,6 +125,8 @@ public partial class MainWindow : Window
     {
         Loaded -= MainWindow_Loaded;
 
+        _userConfiguration.EnablePersistence();
+
         if (_viewModel != null)
         {
             await InitializeViewModelAsync(_viewModel);

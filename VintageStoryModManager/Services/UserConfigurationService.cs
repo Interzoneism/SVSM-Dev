@@ -34,16 +34,15 @@ public sealed class UserConfigurationService
     private double? _windowWidth;
     private double? _windowHeight;
     private string? _customShortcutPath;
+    private bool _isPersistenceEnabled;
+    private bool _hasPendingSave;
 
     public UserConfigurationService()
     {
         _configurationPath = DetermineConfigurationPath();
         Load();
 
-        if (!File.Exists(_configurationPath))
-        {
-            Save();
-        }
+        _hasPendingSave = !File.Exists(_configurationPath);
     }
 
     public string? DataDirectory { get; private set; }
@@ -83,6 +82,21 @@ public sealed class UserConfigurationService
             ?? AppContext.BaseDirectory;
         Directory.CreateDirectory(directory);
         return directory;
+    }
+
+    public void EnablePersistence()
+    {
+        if (_isPersistenceEnabled)
+        {
+            return;
+        }
+
+        _isPersistenceEnabled = true;
+
+        if (_hasPendingSave)
+        {
+            PersistConfiguration();
+        }
     }
 
     public string? GetLastSelectedPresetName() => _selectedPresetName;
@@ -397,6 +411,18 @@ public sealed class UserConfigurationService
 
     private void Save()
     {
+        _hasPendingSave = true;
+
+        if (!_isPersistenceEnabled)
+        {
+            return;
+        }
+
+        PersistConfiguration();
+    }
+
+    private void PersistConfiguration()
+    {
         try
         {
             string directory = Path.GetDirectoryName(_configurationPath)!;
@@ -429,6 +455,7 @@ public sealed class UserConfigurationService
             };
 
             File.WriteAllText(_configurationPath, obj.ToJsonString(options));
+            _hasPendingSave = false;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -487,7 +514,6 @@ public sealed class UserConfigurationService
     private static string DetermineConfigurationPath()
     {
         string preferredDirectory = GetPreferredConfigurationDirectory();
-        Directory.CreateDirectory(preferredDirectory);
         return Path.Combine(preferredDirectory, ConfigurationFileName);
     }
 
