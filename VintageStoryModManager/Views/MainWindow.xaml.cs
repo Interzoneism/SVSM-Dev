@@ -48,6 +48,7 @@ public partial class MainWindow : Window
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";
     private const string PresetDirectoryName = "Presets";
     private const string ModListDirectoryName = "Modlists";
+    private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
     private const string FirebaseApiKey = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
     private const string FirebaseDatabaseUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
     private const string CloudStorageDirectoryName = "Cloud";
@@ -3734,23 +3735,53 @@ public partial class MainWindow : Window
             return;
         }
 
+        string cacheDirectory;
+        try
+        {
+            cacheDirectory = EnsureCloudModListCacheDirectory();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            WpfMessageBox.Show($"Failed to prepare the cloud modlist cache:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        string cacheFileName = BuildSuggestedFileName(entry.Name ?? entry.DisplayName, "Cloud Modlist");
+        string cacheFilePath = GetUniqueFilePath(cacheDirectory, cacheFileName, ".json");
+
+        try
+        {
+            await File.WriteAllTextAsync(cacheFilePath, entry.ContentJson);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            WpfMessageBox.Show($"Failed to cache the selected modlist:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        _viewModel.ShowInstalledModsCommand.Execute(null);
+
         if (!EnsureModlistBackupBeforeLoad())
         {
             return;
         }
 
-        string fallbackName = entry.Name ?? "Modlist";
-        string? sourceName = entry.DisplayName;
+        string fallbackName = entry.Name ?? entry.DisplayName ?? "Modlist";
 
-        if (!TryLoadPresetFromJson(entry.ContentJson,
+        if (!TryLoadPresetFromFile(cacheFilePath,
                 fallbackName,
                 ModListLoadOptions,
                 out ModPreset? preset,
-                out string? errorMessage,
-                sourceName))
+                out string? errorMessage))
         {
             string message = string.IsNullOrWhiteSpace(errorMessage)
-                ? "Failed to load the selected cloud modlist."
+                ? "Failed to load the downloaded cloud modlist."
                 : errorMessage!;
             WpfMessageBox.Show(message,
                 "Simple VS Manager",
@@ -3764,12 +3795,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        bool applied = await _viewModel.ApplyPresetAsync(preset);
-        if (applied)
-        {
-            string slotLabel = FormatCloudSlotLabel(entry.SlotKey);
-            _viewModel.ReportStatus($"Loaded cloud modlist \"{preset.Name}\" from {slotLabel} (by {entry.OwnerId}).");
-        }
+        await ApplyPresetAsync(preset);
+        _viewModel.ReportStatus($"Installed cloud modlist \"{preset.Name}\".");
     }
 
     private async void LoadModlistFromCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -4548,6 +4575,14 @@ public partial class MainWindow : Window
         return modListDirectory;
     }
 
+    private string EnsureCloudModListCacheDirectory()
+    {
+        string baseDirectory = _userConfiguration.GetConfigurationDirectory();
+        string cacheDirectory = Path.Combine(baseDirectory, CloudModListCacheDirectoryName);
+        Directory.CreateDirectory(cacheDirectory);
+        return cacheDirectory;
+    }
+
     private static bool IsPathWithinDirectory(string directory, string candidatePath)
     {
         try
@@ -4579,6 +4614,23 @@ public partial class MainWindow : Window
 
         string sanitized = builder.ToString().Trim();
         return string.IsNullOrWhiteSpace(sanitized) ? fallback : sanitized;
+    }
+
+    private static string GetUniqueFilePath(string directory, string baseFileName, string extension)
+    {
+        string safeBaseName = string.IsNullOrWhiteSpace(baseFileName) ? "Modlist" : baseFileName;
+        string fileName = safeBaseName + extension;
+        string path = Path.Combine(directory, fileName);
+        int counter = 1;
+
+        while (File.Exists(path))
+        {
+            fileName = $"{safeBaseName} ({counter}){extension}";
+            path = Path.Combine(directory, fileName);
+            counter++;
+        }
+
+        return path;
     }
 
     private static string GetSnapshotNameFromFilePath(string filePath, string fallback)
