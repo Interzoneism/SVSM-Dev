@@ -29,8 +29,8 @@
         <Color x:Key="IMM.TagBorderColor">#FFB3C7FF</Color>
         <SolidColorBrush x:Key="IMM.TagBackgroundBrush" Color="{StaticResource IMM.TagBackgroundColor}" />
         <SolidColorBrush x:Key="IMM.TagBorderBrush" Color="{StaticResource IMM.TagBorderColor}" />
-        <sys:Double x:Key="IMM.TagRowMaxHeight">65</sys:Double>
-        <sys:Double x:Key="IMM.TagRowCompactMaxHeight">38</sys:Double>
+        <sys:Double x:Key="IMM.TagRowMaxHeight">70</sys:Double>
+        <sys:Double x:Key="IMM.TagRowCompactMaxHeight">35</sys:Double>
         <Style x:Key="IMM.TagBadgeBorderStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource IMM.TagBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource IMM.TagBorderBrush}" />
@@ -43,7 +43,7 @@
             <views:OverlappingTagPanel />
         </ItemsPanelTemplate>
         <ItemsPanelTemplate x:Key="IMM.TagFilterItemsPanelTemplate">
-            <UniformGrid Columns="4" HorizontalAlignment="Stretch" />
+            <UniformGrid Columns="4" HorizontalAlignment="Left" />
         </ItemsPanelTemplate>
         <DataTemplate x:Key="IMM.TagBadgeTemplate">
             <Border Style="{StaticResource IMM.TagBadgeBorderStyle}">
@@ -363,11 +363,7 @@
                 <MenuItem Header="_File" Height="35">
                     <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
-                    <MenuItem Header="Set custom Vintage Story shortcut" Height="35" Click="SetCustomShortcutMenuItem_OnClick" />
-                    <MenuItem x:Name="RestoreBackupMenuItem"
-                              Header="Restore backup point"
-                              Height="35"
-                              SubmenuOpened="RestoreBackupMenuItem_OnSubmenuOpened" />
+                    <MenuItem Header="Set Custom Vintage Story Shortcut" Height="35" Click="SetCustomShortcutMenuItem_OnClick" />
                     <MenuItem x:Name="DisableInternetAccessMenuItem"
                               Header="_Disable Internet Access"
                               Height="35"
@@ -1058,7 +1054,7 @@
                         </DataGridTextColumn>
                         <DataGridTemplateColumn x:Name="TagsColumn"
                                                 Header="Tags"
-                                                Width="210"
+                                                Width="280"
                                                 MinWidth="180"
                                                 IsReadOnly="True"
                                                 CanUserSort="False">
@@ -1158,7 +1154,7 @@
                                 </Style>
                             </DataGridTemplateColumn.CellStyle>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn x:Name="StatusColumn" Header="Status" Width="100" IsReadOnly="True" SortMemberPath="StatusSortOrder">
+                        <DataGridTemplateColumn x:Name="StatusColumn" Header="Status" Width="80" IsReadOnly="True" SortMemberPath="StatusSortOrder">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid HorizontalAlignment="Center"
@@ -1171,28 +1167,24 @@
                                                 <Grid x:Name="ErrorIcon"
                                                   Visibility="Collapsed">
                                                     <Ellipse Fill="#FFD13438"
-                                                         Width="24"
-                                                         Height="24" />
+                                                         Width="28"
+                                                         Height="28" />
                                                     <Line X1="7" Y1="7" X2="17" Y2="17" Stroke="White" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                                                     <Line X1="17" Y1="7" X2="7" Y2="17" Stroke="White" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                                                 </Grid>
                                                 <Canvas x:Name="WarningIcon"
-                                                   Width="24"
-                                                   Height="24"
-                                                   Visibility="Collapsed">
-                                                    <Polygon Points="12,2 22,20 2,20"
-                                                         Fill="#FFE17E00" />
-                                                    <Rectangle Width="3"
-                                                           Height="8"
-                                                           Fill="White"
-                                                           Canvas.Left="10.5"
-                                                           Canvas.Top="8" />
-                                                    <Ellipse Width="3"
-                                                         Height="3"
-                                                         Fill="White"
-                                                         Canvas.Left="10.5"
-                                                         Canvas.Top="17" />
+                                                Width="24" Height="24" Visibility="Collapsed">
+                                                    <Polygon Points="12,2 22,20 2,20" Fill="#FFE17E00" />
+                                                    <Label Content="!"
+                                                   Width="24" Height="24"
+                                                   Canvas.Left="0" Canvas.Top="0"
+                                                   FontSize="12" FontWeight="Bold" Foreground="White"
+                                                   HorizontalContentAlignment="Center"
+                                                   VerticalContentAlignment="Center"
+                                                   Padding="0,2,0,0" />
+                                                    <!-- 2px down = triangle centroid -->
                                                 </Canvas>
+
                                             </Grid>
                                         </Viewbox>
                                     </Grid>
@@ -1874,7 +1866,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <Border HorizontalAlignment="Left" Height="50" VerticalAlignment="Bottom" Width="357" Background="{DynamicResource CardGradient}" CornerRadius="3,3,3,3">
+            <Border HorizontalAlignment="Left" Height="50" VerticalAlignment="Center" Width="347" Background="{DynamicResource CardGradient}" CornerRadius="3,3,3,3">
                 <Border.Effect>
                     <DropShadowEffect Opacity="0.1" Direction="240" ShadowDepth="3" BlurRadius="4"/>
                 </Border.Effect>
@@ -1885,7 +1877,7 @@
                         Text="{Binding StatusMessage}"
                         TextWrapping="Wrap"
                         HorizontalAlignment="Center"
-                        VerticalAlignment="Center" FontSize="14" Foreground="Black" FontWeight="Bold">
+                        VerticalAlignment="Center" FontSize="14" Foreground="Black" FontWeight="Bold" Padding="2,2,2,2">
                         <TextBlock.Style>
                             <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
