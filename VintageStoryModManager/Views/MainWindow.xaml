@@ -639,6 +639,9 @@
                   CanUserDeleteRows="False"
                   IsReadOnly="False"
                   EnableRowVirtualization="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  ScrollViewer.CanContentScroll="True"
                   GridLinesVisibility="None"
                   SelectionUnit="FullRow"
                   SelectionMode="Single"
@@ -1596,7 +1599,10 @@
                       PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      ScrollViewer.CanContentScroll="False" Grid.RowSpan="2" BorderBrush="#FFCAD7EB" FontSize="16">
+                      ScrollViewer.CanContentScroll="True"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling"
+                      Grid.RowSpan="2" BorderBrush="#FFCAD7EB" FontSize="16">
                 <ListView.Style>
                     <Style TargetType="{x:Type ListView}">
                         <Setter Property="Visibility" Value="Collapsed" />
@@ -1627,16 +1633,16 @@
                         <Setter Property="Background" Value="Transparent" />
                         <Setter Property="BorderThickness" Value="0" />
                         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="{x:Type ListViewItem}">
-                                    <ContentPresenter />
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                        <EventSetter Event="UIElement.PreviewMouseLeftButtonDown" Handler="ModDatabaseCard_OnPreviewMouseLeftButtonDown" />
-                    </Style>
-                </ListView.ItemContainerStyle>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                        <ContentPresenter />
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <EventSetter Event="UIElement.PreviewMouseLeftButtonDown" Handler="ModDatabaseCard_OnPreviewMouseLeftButtonDown" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="{x:Type viewModels:ModListItemViewModel}">
                         <Border Width="480"

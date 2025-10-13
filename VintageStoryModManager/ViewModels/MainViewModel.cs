@@ -27,6 +27,7 @@ public sealed class MainViewModel : ObservableObject
 {
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
+    private const int MaxConcurrentDatabaseRefreshes = 4;
     private const int MaxNewModsRecentMonths = 24;
 
     private enum ViewSection
@@ -1908,7 +1909,7 @@ public sealed class MainViewModel : ObservableObject
         return false;
     }
 
-    private static Task InvokeOnDispatcherAsync(Action action, CancellationToken cancellationToken)
+    private static Task InvokeOnDispatcherAsync(Action action, CancellationToken cancellationToken, DispatcherPriority priority = DispatcherPriority.Normal)
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -1923,14 +1924,14 @@ public sealed class MainViewModel : ObservableObject
                 return Task.CompletedTask;
             }
 
-            return dispatcher.InvokeAsync(action, DispatcherPriority.Normal, cancellationToken).Task;
+            return dispatcher.InvokeAsync(action, priority, cancellationToken).Task;
         }
 
         action();
         return Task.CompletedTask;
     }
 
-    private static Task<T> InvokeOnDispatcherAsync<T>(Func<T> function, CancellationToken cancellationToken)
+    private static Task<T> InvokeOnDispatcherAsync<T>(Func<T> function, CancellationToken cancellationToken, DispatcherPriority priority = DispatcherPriority.Normal)
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -1944,7 +1945,7 @@ public sealed class MainViewModel : ObservableObject
                 return Task.FromResult(function());
             }
 
-            return dispatcher.InvokeAsync(function, DispatcherPriority.Normal, cancellationToken).Task;
+            return dispatcher.InvokeAsync(function, priority, cancellationToken).Task;
         }
 
         return Task.FromResult(function());
@@ -2355,37 +2356,60 @@ public sealed class MainViewModel : ObservableObject
                     return;
                 }
 
-                foreach (ModEntry entry in pending)
-                {
-                    ModDatabaseInfo? info;
-                    try
-                    {
-                        info = await _databaseService
-                            .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion)
-                            .ConfigureAwait(false);
-                    }
-                    catch (Exception)
-                    {
-                        continue;
-                    }
+                using var limiter = new SemaphoreSlim(MaxConcurrentDatabaseRefreshes, MaxConcurrentDatabaseRefreshes);
+                var refreshTasks = pending
+                    .Select(entry => RefreshDatabaseInfoAsync(entry, limiter))
+                    .ToArray();
 
-                    if (info is null)
-                    {
-                        if (InternetAccessManager.IsInternetAccessDisabled)
-                        {
-                            await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
-                        }
-                        continue;
-                    }
-
-                    await ApplyDatabaseInfoAsync(entry, info).ConfigureAwait(false);
-                }
+                await Task.WhenAll(refreshTasks).ConfigureAwait(false);
             }
             catch (Exception)
             {
                 // Swallow unexpected exceptions from the refresh loop.
             }
         });
+    }
+
+    private async Task RefreshDatabaseInfoAsync(ModEntry entry, SemaphoreSlim limiter)
+    {
+        await limiter.WaitAsync().ConfigureAwait(false);
+
+        try
+        {
+            if (InternetAccessManager.IsInternetAccessDisabled)
+            {
+                await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                return;
+            }
+
+            ModDatabaseInfo? info;
+            try
+            {
+                info = await _databaseService
+                    .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            if (info is null)
+            {
+                if (InternetAccessManager.IsInternetAccessDisabled)
+                {
+                    await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                }
+
+                return;
+            }
+
+            await ApplyDatabaseInfoAsync(entry, info).ConfigureAwait(false);
+        }
+        finally
+        {
+            limiter.Release();
+        }
     }
 
     private async Task PopulateOfflineDatabaseInfoAsync(IEnumerable<ModEntry> entries)
@@ -2412,7 +2436,7 @@ public sealed class MainViewModel : ObservableObject
         await ApplyDatabaseInfoAsync(entry, offlineInfo).ConfigureAwait(false);
     }
 
-    private async Task ApplyDatabaseInfoAsync(ModEntry entry, ModDatabaseInfo info)
+    private async Task ApplyDatabaseInfoAsync(ModEntry entry, ModDatabaseInfo info, bool loadLogoImmediately = true)
     {
         if (info is null)
         {
@@ -2434,11 +2458,16 @@ public sealed class MainViewModel : ObservableObject
 
                         if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
                         {
-                            viewModel.UpdateDatabaseInfo(info);
+                            viewModel.UpdateDatabaseInfo(info, loadLogoImmediately);
                         }
                     },
-                    CancellationToken.None)
+                    CancellationToken.None,
+                    DispatcherPriority.Background)
                 .ConfigureAwait(false);
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignore cancellations when the dispatcher shuts down.
         }
         catch (Exception)
         {
