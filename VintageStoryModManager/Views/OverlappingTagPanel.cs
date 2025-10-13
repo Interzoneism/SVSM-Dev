@@ -138,6 +138,11 @@ public class OverlappingTagPanel : WpfPanel
         }
 
         double spacingUpper = MaxSpacing;
+        if (count > 1)
+        {
+            double spacingFalloff = MaxSpacing / Math.Sqrt(count);
+            spacingUpper = Math.Max(0d, Math.Min(MaxSpacing, spacingFalloff));
+        }
         double spacingLower = 0d;
 
         if (!double.IsInfinity(widthConstraint) && count > 1)
