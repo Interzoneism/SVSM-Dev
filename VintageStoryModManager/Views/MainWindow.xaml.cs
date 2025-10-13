@@ -2581,6 +2581,16 @@ public partial class MainWindow : Window
             .Where(mod => mod.CanUpdate)
             .ToList();
 
+        Dictionary<ModListItemViewModel, ModReleaseInfo>? overrides = null;
+        foreach (ModListItemViewModel mod in mods)
+        {
+            if (mod.SelectedVersionOption is { Release: { } selectedRelease, IsInstalled: false })
+            {
+                overrides ??= new Dictionary<ModListItemViewModel, ModReleaseInfo>();
+                overrides[mod] = selectedRelease;
+            }
+        }
+
         if (mods.Count == 0)
         {
             WpfMessageBox.Show("All mods are already up to date.",
@@ -2590,7 +2600,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        await UpdateModsAsync(mods, isBulk: true);
+        await UpdateModsAsync(mods, isBulk: true, overrides);
     }
 
     private async void DeleteCachedModsMenuItem_OnClick(object sender, RoutedEventArgs e)
