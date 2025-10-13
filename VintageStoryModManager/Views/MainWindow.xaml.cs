@@ -54,6 +54,7 @@ public partial class MainWindow : Window
     private const string FirebaseApiKey = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
     private const string FirebaseDatabaseUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
     private const string CloudStorageDirectoryName = "Cloud";
+    private const int AutomaticConfigMaxWordDistance = 2;
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
 
@@ -976,6 +977,7 @@ public partial class MainWindow : Window
 
         if (initialized)
         {
+            await AutoAssignMissingModConfigPathsAsync(viewModel);
             StartModsWatcher();
         }
     }
@@ -995,6 +997,352 @@ public partial class MainWindow : Window
         };
         _modsWatcherTimer.Tick += ModsWatcherTimerOnTick;
         _modsWatcherTimer.Start();
+    }
+
+    private async Task AutoAssignMissingModConfigPathsAsync(MainViewModel viewModel)
+    {
+        if (string.IsNullOrWhiteSpace(_dataDirectory))
+        {
+            return;
+        }
+
+        try
+        {
+            string configDirectory = Path.Combine(_dataDirectory, "ModConfig");
+            if (!Directory.Exists(configDirectory))
+            {
+                return;
+            }
+
+            var installedMods = viewModel.GetInstalledModsSnapshot();
+            if (installedMods.Count == 0)
+            {
+                return;
+            }
+
+            var missingMods = installedMods
+                .Where(mod => !string.IsNullOrWhiteSpace(mod.ModId)
+                    && (!_userConfiguration.TryGetModConfigPath(mod.ModId, out string? path) || string.IsNullOrWhiteSpace(path)))
+                .Select(mod => (mod.ModId, mod.DisplayName))
+                .ToList();
+
+            if (missingMods.Count == 0)
+            {
+                return;
+            }
+
+            string[] configFiles = Directory.GetFiles(configDirectory, "*.json", SearchOption.TopDirectoryOnly);
+            if (configFiles.Length == 0)
+            {
+                return;
+            }
+
+            List<(string ModId, string ConfigPath)> matches = await Task.Run(() => FindConfigMatches(missingMods, configFiles));
+            if (matches.Count == 0)
+            {
+                return;
+            }
+
+            bool assignedAny = false;
+            foreach ((string ModId, string ConfigPath) match in matches)
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(match.ConfigPath) || !File.Exists(match.ConfigPath))
+                    {
+                        continue;
+                    }
+                }
+                catch (IOException)
+                {
+                    continue;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    continue;
+                }
+
+                _userConfiguration.SetModConfigPath(match.ModId, match.ConfigPath);
+                assignedAny = true;
+            }
+
+            if (assignedAny)
+            {
+                UpdateSelectedModEditConfigButton(viewModel.SelectedMod);
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusLogService.AppendStatus($"Failed to automatically locate mod configuration files: {ex.Message}", true);
+        }
+    }
+
+    private static List<(string ModId, string ConfigPath)> FindConfigMatches(
+        IReadOnlyList<(string ModId, string DisplayName)> mods,
+        IReadOnlyList<string> configPaths)
+    {
+        var results = new List<(string ModId, string ConfigPath)>();
+        if (mods.Count == 0 || configPaths.Count == 0)
+        {
+            return results;
+        }
+
+        var candidates = configPaths
+            .Select(path => (Path: path, Tokens: BuildSearchTokens(Path.GetFileNameWithoutExtension(path) ?? string.Empty)))
+            .Where(candidate => candidate.Tokens.Count > 0)
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            return results;
+        }
+
+        foreach ((string ModId, string DisplayName) mod in mods)
+        {
+            var words = BuildSearchTokens(mod.DisplayName);
+            if (words.Count == 0)
+            {
+                continue;
+            }
+
+            string? bestPath = null;
+            int bestScore = int.MaxValue;
+            int bestCandidateIndex = -1;
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                var candidate = candidates[i];
+                if (!TryCalculateMatchScore(words, candidate.Tokens, out int score))
+                {
+                    continue;
+                }
+
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    bestPath = candidate.Path;
+                    bestCandidateIndex = i;
+
+                    if (score == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (bestPath is not null && bestCandidateIndex >= 0)
+            {
+                results.Add((mod.ModId, bestPath));
+                candidates.RemoveAt(bestCandidateIndex);
+
+                if (candidates.Count == 0)
+                {
+                    break;
+                }
+            }
+        }
+
+        return results;
+    }
+
+    private static bool TryCalculateMatchScore(
+        IReadOnlyList<string> words,
+        IReadOnlyList<string> candidateTokens,
+        out int score)
+    {
+        score = 0;
+        if (words.Count == 0 || candidateTokens.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (string word in words)
+        {
+            int bestDistance = int.MaxValue;
+            foreach (string token in candidateTokens)
+            {
+                int distance = CalculateBestDistance(token, word, AutomaticConfigMaxWordDistance);
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    if (bestDistance == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (bestDistance > AutomaticConfigMaxWordDistance)
+            {
+                score = int.MaxValue;
+                return false;
+            }
+
+            score += bestDistance;
+        }
+
+        return true;
+    }
+
+    private static int CalculateBestDistance(string token, string word, int maxDistance)
+    {
+        if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(word))
+        {
+            return int.MaxValue;
+        }
+
+        ReadOnlySpan<char> tokenSpan = token.AsSpan();
+        ReadOnlySpan<char> wordSpan = word.AsSpan();
+
+        int minLength = Math.Max(1, wordSpan.Length - maxDistance);
+        int maxLength = wordSpan.Length + maxDistance;
+        int best = int.MaxValue;
+
+        for (int start = 0; start < tokenSpan.Length; start++)
+        {
+            int remaining = tokenSpan.Length - start;
+            if (remaining < minLength)
+            {
+                break;
+            }
+
+            int localMax = Math.Min(remaining, maxLength);
+            for (int length = minLength; length <= localMax; length++)
+            {
+                int distance = CalculateLevenshteinDistance(wordSpan, tokenSpan.Slice(start, length), maxDistance);
+                if (distance < best)
+                {
+                    best = distance;
+                    if (best == 0)
+                    {
+                        return 0;
+                    }
+                }
+            }
+        }
+
+        return best;
+    }
+
+    private static int CalculateLevenshteinDistance(ReadOnlySpan<char> source, ReadOnlySpan<char> target, int maxDistance)
+    {
+        if (Math.Abs(source.Length - target.Length) > maxDistance)
+        {
+            return maxDistance + 1;
+        }
+
+        int targetLength = target.Length;
+        Span<int> previous = stackalloc int[targetLength + 1];
+        Span<int> current = stackalloc int[targetLength + 1];
+
+        for (int j = 0; j <= targetLength; j++)
+        {
+            previous[j] = j;
+        }
+
+        for (int i = 1; i <= source.Length; i++)
+        {
+            current[0] = i;
+            int minInRow = current[0];
+            char sourceChar = source[i - 1];
+
+            for (int j = 1; j <= targetLength; j++)
+            {
+                int cost = sourceChar == target[j - 1] ? 0 : 1;
+                int deletion = previous[j] + 1;
+                int insertion = current[j - 1] + 1;
+                int substitution = previous[j - 1] + cost;
+                int value = Math.Min(Math.Min(deletion, insertion), substitution);
+                current[j] = value;
+
+                if (value < minInRow)
+                {
+                    minInRow = value;
+                }
+            }
+
+            if (minInRow > maxDistance)
+            {
+                return maxDistance + 1;
+            }
+
+            Span<int> temp = previous;
+            previous = current;
+            current = temp;
+        }
+
+        return previous[targetLength];
+    }
+
+    private static List<string> BuildSearchTokens(string value)
+    {
+        List<string> tokens = ExtractWords(value);
+        if (tokens.Count == 0 && !string.IsNullOrWhiteSpace(value))
+        {
+            tokens.Add(value.ToLowerInvariant());
+        }
+
+        return tokens;
+    }
+
+    private static List<string> ExtractWords(string value)
+    {
+        var results = new List<string>();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return results;
+        }
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var builder = new StringBuilder();
+        bool hasPrevious = false;
+        char previousChar = '\0';
+
+        void FlushBuilder()
+        {
+            if (builder.Length == 0)
+            {
+                return;
+            }
+
+            string word = builder.ToString();
+            if (seen.Add(word))
+            {
+                results.Add(word);
+            }
+
+            builder.Clear();
+        }
+
+        for (int i = 0; i < value.Length; i++)
+        {
+            char current = value[i];
+            if (char.IsLetterOrDigit(current))
+            {
+                if (builder.Length > 0
+                    && char.IsUpper(current)
+                    && hasPrevious
+                    && char.IsLetter(previousChar)
+                    && !char.IsUpper(previousChar))
+                {
+                    FlushBuilder();
+                }
+
+                builder.Append(char.ToLowerInvariant(current));
+                hasPrevious = true;
+                previousChar = current;
+            }
+            else
+            {
+                FlushBuilder();
+                hasPrevious = false;
+                previousChar = '\0';
+            }
+        }
+
+        FlushBuilder();
+
+        return results;
     }
 
     private void StopModsWatcher()
