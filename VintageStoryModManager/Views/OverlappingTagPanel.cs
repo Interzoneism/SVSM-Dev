@@ -1,8 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using WpfPanel = System.Windows.Controls.Panel;
 using Size = System.Windows.Size;
-using Point = System.Windows.Point;
 using Rect = System.Windows.Rect;
 
 namespace VintageStoryModManager.Views;
@@ -13,6 +13,8 @@ public class OverlappingTagPanel : WpfPanel
     {
         ClipToBounds = true;
     }
+
+    private readonly List<Rect> _arrangeRects = new();
 
     public static readonly DependencyProperty MaxSpacingProperty = DependencyProperty.Register(
         nameof(MaxSpacing),
@@ -28,30 +30,29 @@ public class OverlappingTagPanel : WpfPanel
 
     protected override Size MeasureOverride(Size availableSize)
     {
-        double totalWidth = 0d;
-        double maxHeight = 0d;
-
-        foreach (UIElement child in InternalChildren)
+        int childCount = InternalChildren.Count;
+        if (childCount == 0)
         {
+            return new Size(0d, 0d);
+        }
+
+        double[] widths = new double[childCount];
+        double[] heights = new double[childCount];
+
+        for (int i = 0; i < childCount; i++)
+        {
+            UIElement child = InternalChildren[i];
             if (child is null)
             {
                 continue;
             }
 
             child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            totalWidth += child.DesiredSize.Width;
-            if (child.DesiredSize.Height > maxHeight)
-            {
-                maxHeight = child.DesiredSize.Height;
-            }
+            widths[i] = child.DesiredSize.Width;
+            heights[i] = child.DesiredSize.Height;
         }
 
-        int gapCount = Math.Max(InternalChildren.Count - 1, 0);
-        double desiredWidth = totalWidth + (MaxSpacing * gapCount);
-        double constrainedWidth = double.IsInfinity(availableSize.Width) ? desiredWidth : Math.Min(desiredWidth, availableSize.Width);
-        double constrainedHeight = double.IsInfinity(availableSize.Height) ? maxHeight : Math.Min(maxHeight, availableSize.Height);
-
-        return new Size(constrainedWidth, constrainedHeight);
+        return ComputeDesiredSize(availableSize, widths, heights);
     }
 
     protected override Size ArrangeOverride(Size finalSize)
@@ -63,8 +64,7 @@ public class OverlappingTagPanel : WpfPanel
         }
 
         double[] widths = new double[childCount];
-        double totalWidth = 0d;
-        double maxHeight = 0d;
+        double[] heights = new double[childCount];
 
         for (int i = 0; i < childCount; i++)
         {
@@ -75,26 +75,11 @@ public class OverlappingTagPanel : WpfPanel
             }
 
             widths[i] = child.DesiredSize.Width;
-            totalWidth += widths[i];
-            if (child.DesiredSize.Height > maxHeight)
-            {
-                maxHeight = child.DesiredSize.Height;
-            }
+            heights[i] = child.DesiredSize.Height;
         }
 
-        double availableWidth = double.IsInfinity(finalSize.Width)
-            ? totalWidth + (MaxSpacing * Math.Max(childCount - 1, 0))
-            : finalSize.Width;
+        Size arrangedSize = ArrangeChildren(finalSize, widths, heights);
 
-        double spacing = childCount > 1 ? (availableWidth - totalWidth) / (childCount - 1) : 0d;
-        if (double.IsNaN(spacing) || double.IsInfinity(spacing))
-        {
-            spacing = 0d;
-        }
-
-        spacing = Math.Min(MaxSpacing, spacing);
-
-        double x = 0d;
         for (int i = 0; i < childCount; i++)
         {
             UIElement child = InternalChildren[i];
@@ -103,20 +88,177 @@ public class OverlappingTagPanel : WpfPanel
                 continue;
             }
 
-            double childWidth = widths[i];
-            double childHeight = child.DesiredSize.Height;
-            double y = Math.Max(0d, (finalSize.Height - childHeight) / 2d);
+            Rect rect = i < _arrangeRects.Count
+                ? _arrangeRects[i]
+                : new Rect(new Size(widths[i], heights[i]));
 
-            child.Arrange(new Rect(new Point(x, y), new Size(childWidth, childHeight)));
+            child.Arrange(rect);
             WpfPanel.SetZIndex(child, childCount - i);
+        }
 
-            if (i < childCount - 1)
+        return arrangedSize;
+    }
+
+    private Size ComputeDesiredSize(Size availableSize, IReadOnlyList<double> widths, IReadOnlyList<double> heights)
+    {
+        double widthConstraint = double.IsInfinity(availableSize.Width) ? double.PositiveInfinity : Math.Max(0d, availableSize.Width);
+        double heightConstraint = double.IsInfinity(availableSize.Height) ? double.PositiveInfinity : Math.Max(0d, availableSize.Height);
+
+        DetermineSpacing(widthConstraint, heightConstraint, widths, heights, null, out double measuredWidth, out double measuredHeight);
+
+        return new Size(measuredWidth, measuredHeight);
+    }
+
+    private Size ArrangeChildren(Size finalSize, IReadOnlyList<double> widths, IReadOnlyList<double> heights)
+    {
+        double widthConstraint = double.IsInfinity(finalSize.Width) ? double.PositiveInfinity : Math.Max(0d, finalSize.Width);
+        double heightConstraint = double.IsInfinity(finalSize.Height) ? double.PositiveInfinity : Math.Max(0d, finalSize.Height);
+
+        DetermineSpacing(widthConstraint, heightConstraint, widths, heights, _arrangeRects, out double measuredWidth, out double measuredHeight);
+
+        return new Size(measuredWidth, measuredHeight);
+    }
+
+    private double DetermineSpacing(
+        double widthConstraint,
+        double heightConstraint,
+        IReadOnlyList<double> widths,
+        IReadOnlyList<double> heights,
+        List<Rect>? rects,
+        out double measuredWidth,
+        out double measuredHeight)
+    {
+        int count = widths.Count;
+        if (count == 0)
+        {
+            measuredWidth = 0d;
+            measuredHeight = 0d;
+            rects?.Clear();
+            return 0d;
+        }
+
+        double spacingUpper = MaxSpacing;
+        double spacingLower = spacingUpper;
+
+        if (!double.IsInfinity(widthConstraint) && count > 1)
+        {
+            double totalWidth = 0d;
+            for (int i = 0; i < count; i++)
             {
-                double nextX = x + childWidth + spacing;
-                x = Math.Max(x, nextX);
+                totalWidth += widths[i];
+            }
+
+            double candidate = (widthConstraint - totalWidth) / (count - 1);
+            spacingLower = Math.Min(spacingLower, candidate);
+        }
+
+        if (spacingLower > spacingUpper)
+        {
+            spacingLower = spacingUpper;
+        }
+
+        double bestSpacing = spacingUpper;
+        double heightAtUpper = ComputeLayout(widthConstraint, spacingUpper, widths, heights, null, out double widthAtUpper);
+        double bestHeight = heightAtUpper;
+        double bestWidth = widthAtUpper;
+
+        if (!double.IsInfinity(heightConstraint) && heightAtUpper > heightConstraint && count > 1)
+        {
+            double heightAtLower = ComputeLayout(widthConstraint, spacingLower, widths, heights, null, out double widthAtLower);
+
+            if (heightAtLower > heightConstraint)
+            {
+                bestSpacing = spacingLower;
+                bestHeight = heightAtLower;
+                bestWidth = widthAtLower;
+            }
+            else
+            {
+                double lo = spacingLower;
+                double hi = spacingUpper;
+
+                for (int iteration = 0; iteration < 48; iteration++)
+                {
+                    double mid = (lo + hi) * 0.5d;
+                    double heightAtMid = ComputeLayout(widthConstraint, mid, widths, heights, null, out double widthAtMid);
+
+                    if (heightAtMid <= heightConstraint)
+                    {
+                        bestSpacing = mid;
+                        bestHeight = heightAtMid;
+                        bestWidth = widthAtMid;
+                        hi = mid;
+                    }
+                    else
+                    {
+                        lo = mid;
+                    }
+                }
             }
         }
 
-        return finalSize;
+        if (rects is not null)
+        {
+            rects.Clear();
+            ComputeLayout(widthConstraint, bestSpacing, widths, heights, rects, out _);
+        }
+
+        measuredWidth = bestWidth;
+        measuredHeight = bestHeight;
+        return bestSpacing;
+    }
+
+    private double ComputeLayout(
+        double widthConstraint,
+        double spacing,
+        IReadOnlyList<double> widths,
+        IReadOnlyList<double> heights,
+        List<Rect>? rects,
+        out double measuredWidth)
+    {
+        rects?.Clear();
+
+        int count = widths.Count;
+        double x = 0d;
+        double y = 0d;
+        double rowHeight = 0d;
+        double maxWidth = 0d;
+
+        const double epsilon = 0.1d;
+
+        for (int i = 0; i < count; i++)
+        {
+            double childWidth = widths[i];
+            double childHeight = heights[i];
+
+            if (!double.IsInfinity(widthConstraint) && x > 0d && x + childWidth > widthConstraint + epsilon)
+            {
+                y += rowHeight;
+                rowHeight = 0d;
+                x = 0d;
+            }
+
+            double childX = x;
+            if (childX < 0d)
+            {
+                childX = 0d;
+            }
+
+            Rect rect = new Rect(childX, y, childWidth, childHeight);
+            rects?.Add(rect);
+
+            rowHeight = Math.Max(rowHeight, childHeight);
+            maxWidth = Math.Max(maxWidth, rect.Right);
+
+            x = childX + childWidth + spacing;
+            if (x < 0d)
+            {
+                x = 0d;
+            }
+        }
+
+        double totalHeight = y + rowHeight;
+        measuredWidth = double.IsInfinity(widthConstraint) ? maxWidth : Math.Min(maxWidth, widthConstraint);
+        return totalHeight;
     }
 }
