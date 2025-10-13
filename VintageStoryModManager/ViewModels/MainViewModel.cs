@@ -79,7 +79,8 @@ public sealed class MainViewModel : ObservableObject
         string dataDirectory,
         int modDatabaseSearchResultLimit,
         int newModsRecentMonths,
-        ModDatabaseAutoLoadMode initialModDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads)
+        ModDatabaseAutoLoadMode initialModDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads,
+        string? gameDirectory = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
 
@@ -91,7 +92,7 @@ public sealed class MainViewModel : ObservableObject
         _modDatabaseSearchResultLimit = Math.Clamp(modDatabaseSearchResultLimit, 1, 100);
         _newModsRecentMonths = Math.Clamp(newModsRecentMonths <= 0 ? 1 : newModsRecentMonths, 1, MaxNewModsRecentMonths);
         _modDatabaseAutoLoadMode = NormalizeModDatabaseAutoLoadMode(initialModDatabaseAutoLoadMode);
-        _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion();
+        _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion(gameDirectory);
         _modsWatcher = new ModDirectoryWatcher(_discoveryService);
 
         ModsView = CollectionViewSource.GetDefaultView(_mods);

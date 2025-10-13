@@ -251,7 +251,8 @@ public partial class MainWindow : Window
             _dataDirectory,
             _userConfiguration.ModDatabaseSearchResultLimit,
             _userConfiguration.ModDatabaseNewModsRecentMonths,
-            _userConfiguration.ModDatabaseAutoLoadMode)
+            _userConfiguration.ModDatabaseAutoLoadMode,
+            _gameDirectory)
         {
             IsCompactView = _userConfiguration.IsCompactView,
             UseModDbDesignView = _userConfiguration.UseModDbDesignView
@@ -1212,7 +1213,8 @@ public partial class MainWindow : Window
                 _dataDirectory,
                 _userConfiguration.ModDatabaseSearchResultLimit,
                 _userConfiguration.ModDatabaseNewModsRecentMonths,
-                _userConfiguration.ModDatabaseAutoLoadMode);
+                _userConfiguration.ModDatabaseAutoLoadMode,
+                _gameDirectory);
             _viewModel = viewModel;
             DataContext = viewModel;
             AttachToModsView(viewModel.CurrentModsView);

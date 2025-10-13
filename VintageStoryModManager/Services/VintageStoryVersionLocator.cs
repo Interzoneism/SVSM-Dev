@@ -21,9 +21,9 @@ public static class VintageStoryVersionLocator
         "VintagestoryAPI.dll"
     };
 
-    public static string? GetInstalledVersion()
+    public static string? GetInstalledVersion(string? configuredGameDirectory = null)
     {
-        foreach (string candidate in EnumerateCandidates())
+        foreach (string candidate in EnumerateCandidates(configuredGameDirectory))
         {
             string? version = TryGetVersionFromFile(candidate);
             if (!string.IsNullOrWhiteSpace(version))
@@ -35,20 +35,47 @@ public static class VintageStoryVersionLocator
         return null;
     }
 
-    private static IEnumerable<string> EnumerateCandidates()
+    private static IEnumerable<string> EnumerateCandidates(string? configuredGameDirectory)
     {
-        foreach (string root in EnumerateRoots())
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string root in EnumerateRoots(configuredGameDirectory))
         {
+            if (File.Exists(root))
+            {
+                if (seen.Add(root))
+                {
+                    yield return root;
+                }
+
+                continue;
+            }
+
             foreach (string relative in CandidateRelativePaths)
             {
-                yield return Path.Combine(root, relative);
+                string candidate = Path.Combine(root, relative);
+                if (seen.Add(candidate))
+                {
+                    yield return candidate;
+                }
             }
         }
     }
 
-    private static IEnumerable<string> EnumerateRoots()
+    private static IEnumerable<string> EnumerateRoots(string? configuredGameDirectory)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (TryNormalize(configuredGameDirectory) is { } configured && seen.Add(configured))
+        {
+            yield return configured;
+        }
+
+        string? environmentPath = Environment.GetEnvironmentVariable("VINTAGE_STORY");
+        if (TryNormalize(environmentPath) is { } fromEnvironment && seen.Add(fromEnvironment))
+        {
+            yield return fromEnvironment;
+        }
 
         string baseDirectory = Path.GetFullPath(AppContext.BaseDirectory);
         if (seen.Add(baseDirectory))
@@ -57,9 +84,34 @@ public static class VintageStoryVersionLocator
         }
 
         string vsFolder = Path.Combine(baseDirectory, "VSFOLDER");
-        if (Directory.Exists(vsFolder) && seen.Add(vsFolder))
+        if (TryNormalize(vsFolder) is { } normalizedVsFolder
+            && Directory.Exists(normalizedVsFolder)
+            && seen.Add(normalizedVsFolder))
         {
-            yield return vsFolder;
+            yield return normalizedVsFolder;
+        }
+
+        string? currentDirectory = TryNormalize(Directory.GetCurrentDirectory());
+        if (currentDirectory is not null && seen.Add(currentDirectory))
+        {
+            yield return currentDirectory;
+        }
+    }
+
+    private static string? TryNormalize(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            return Path.GetFullPath(path);
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 
