@@ -478,7 +478,7 @@
                             VerticalAlignment="Top" Height="30" Margin="143,15,162,0" Width="600" Grid.ColumnSpan="2">
                     <StackPanel.Style>
                         <Style TargetType="{x:Type StackPanel}">
-                            <Setter Property="Visibility" Value="Visible" />
+                            <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
@@ -513,7 +513,7 @@
                     VerticalAlignment="Top" Height="30" Margin="143,-3,162,0" Width="600" Grid.ColumnSpan="2">
                     <StackPanel.Style>
                         <Style TargetType="{x:Type StackPanel}">
-                            <Setter Property="Visibility" Value="Visible" />
+                            <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
