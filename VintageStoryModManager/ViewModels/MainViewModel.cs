@@ -87,6 +87,8 @@ public sealed class MainViewModel : ObservableObject
     private bool _suppressInstalledTagFilterSelectionChanges;
     private bool _suppressModDatabaseTagFilterSelectionChanges;
     private IReadOnlyList<string> _modDatabaseAvailableTags = Array.Empty<string>();
+    private bool _isInstalledTagRefreshPending;
+    private bool _isModDatabaseTagRefreshPending;
 
     public MainViewModel(
         string dataDirectory,
@@ -1125,7 +1127,7 @@ public sealed class MainViewModel : ObservableObject
                 break;
         }
 
-        ResetInstalledTagFilters(EnumerateModTags(_mods));
+        ScheduleInstalledTagFilterRefresh();
     }
 
     private void OnSearchResultsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -1164,7 +1166,7 @@ public sealed class MainViewModel : ObservableObject
                 break;
         }
 
-        UpdateModDatabaseAvailableTagsFromViewModels();
+        ScheduleModDatabaseTagRefresh();
     }
 
     private static IEnumerable<ModListItemViewModel> EnumerateModItems(IList? items)
@@ -1268,7 +1270,7 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        ResetInstalledTagFilters(EnumerateModTags(_mods));
+        ScheduleInstalledTagFilterRefresh();
     }
 
     private void OnSearchResultPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -1278,7 +1280,69 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        UpdateModDatabaseAvailableTagsFromViewModels();
+        ScheduleModDatabaseTagRefresh();
+    }
+
+    private void ScheduleInstalledTagFilterRefresh()
+    {
+        if (_isInstalledTagRefreshPending)
+        {
+            return;
+        }
+
+        _isInstalledTagRefreshPending = true;
+
+        void Execute()
+        {
+            try
+            {
+                ResetInstalledTagFilters(EnumerateModTags(_mods));
+            }
+            finally
+            {
+                _isInstalledTagRefreshPending = false;
+            }
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher)
+        {
+            dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(Execute));
+        }
+        else
+        {
+            Execute();
+        }
+    }
+
+    private void ScheduleModDatabaseTagRefresh()
+    {
+        if (_isModDatabaseTagRefreshPending)
+        {
+            return;
+        }
+
+        _isModDatabaseTagRefreshPending = true;
+
+        void Execute()
+        {
+            try
+            {
+                UpdateModDatabaseAvailableTagsFromViewModels();
+            }
+            finally
+            {
+                _isModDatabaseTagRefreshPending = false;
+            }
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher)
+        {
+            dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(Execute));
+        }
+        else
+        {
+            Execute();
+        }
     }
 
     private void ResetInstalledTagFilters(IEnumerable<string> tags)
