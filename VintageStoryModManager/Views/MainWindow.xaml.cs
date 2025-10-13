@@ -36,6 +36,7 @@ using WpfApplication = System.Windows.Application;
 using WpfButton = System.Windows.Controls.Button;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 using WpfToolTip = System.Windows.Controls.ToolTip;
+using CloudModConfigOption = VintageStoryModManager.Views.Dialogs.CloudModlistDetailsDialog.CloudModConfigOption;
 
 namespace VintageStoryModManager.Views;
 
@@ -1818,6 +1819,7 @@ public partial class MainWindow : Window
                 else
                 {
                     _userConfiguration.RemoveModConfigPath(mod.ModId);
+                    UpdateSelectedModEditConfigButton(mod);
                 }
             }
 
@@ -1830,6 +1832,7 @@ public partial class MainWindow : Window
                 }
 
                 _userConfiguration.SetModConfigPath(mod.ModId, configPath);
+                UpdateSelectedModEditConfigButton(mod);
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
@@ -1857,6 +1860,7 @@ public partial class MainWindow : Window
                     try
                     {
                         _userConfiguration.SetModConfigPath(mod.ModId, editorViewModel.FilePath);
+                        UpdateSelectedModEditConfigButton(mod);
                     }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
                     {
@@ -1877,6 +1881,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             _userConfiguration.RemoveModConfigPath(mod.ModId);
+            UpdateSelectedModEditConfigButton(mod);
         }
     }
 
@@ -3667,7 +3672,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private SerializablePreset BuildSerializablePreset(string entryName, bool includeModVersions, bool exclusive)
+    private SerializablePreset BuildSerializablePreset(
+        string entryName,
+        bool includeModVersions,
+        bool exclusive,
+        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations = null)
     {
         if (_viewModel is null)
         {
@@ -3676,20 +3685,52 @@ public partial class MainWindow : Window
 
         IReadOnlyList<ModPresetModState> states = _viewModel.GetCurrentModStates();
 
+        var mods = new List<SerializablePresetModState>(states.Count);
+        foreach (ModPresetModState state in states)
+        {
+            if (state is null)
+            {
+                continue;
+            }
+
+            string? trimmedId = string.IsNullOrWhiteSpace(state.ModId) ? state.ModId : state.ModId.Trim();
+            var serializableState = new SerializablePresetModState
+            {
+                ModId = trimmedId,
+                Version = includeModVersions && !string.IsNullOrWhiteSpace(state.Version)
+                    ? state.Version!.Trim()
+                    : null,
+                IsActive = state.IsActive
+            };
+
+            if (!string.IsNullOrWhiteSpace(trimmedId))
+            {
+                string normalizedId = trimmedId!;
+
+                if (includedConfigurations != null
+                    && includedConfigurations.TryGetValue(normalizedId, out ModConfigurationSnapshot? snapshot)
+                    && snapshot is not null)
+                {
+                    serializableState.ConfigurationFileName = snapshot.FileName;
+                    serializableState.ConfigurationContent = snapshot.Content;
+                }
+                else if (!string.IsNullOrWhiteSpace(state.ConfigurationContent))
+                {
+                    serializableState.ConfigurationFileName = GetSafeConfigFileName(state.ConfigurationFileName, normalizedId);
+                    serializableState.ConfigurationContent = state.ConfigurationContent;
+                }
+            }
+
+            mods.Add(serializableState);
+        }
+
         return new SerializablePreset
         {
             Name = entryName,
             IncludeModStatus = true,
             IncludeModVersions = includeModVersions ? true : null,
             Exclusive = exclusive ? true : null,
-            Mods = states.Select(state => new SerializablePresetModState
-            {
-                ModId = state.ModId,
-                Version = includeModVersions && !string.IsNullOrWhiteSpace(state.Version)
-                    ? state.Version!.Trim()
-                    : null,
-                IsActive = state.IsActive
-            }).ToList()
+            Mods = mods
         };
     }
 
@@ -3810,7 +3851,13 @@ public partial class MainWindow : Window
         return true;
     }
 
-    private bool TryBuildCurrentModlistJson(string modlistName, string? description, string? version, string uploader, out string json)
+    private bool TryBuildCurrentModlistJson(
+        string modlistName,
+        string? description,
+        string? version,
+        string uploader,
+        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations,
+        out string json)
     {
         json = string.Empty;
 
@@ -3820,7 +3867,7 @@ public partial class MainWindow : Window
             return false;
         }
 
-        var serializable = BuildSerializablePreset(trimmedName, includeModVersions: true, exclusive: true);
+        var serializable = BuildSerializablePreset(trimmedName, includeModVersions: true, exclusive: true, includedConfigurations);
         serializable.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         serializable.Version = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
         serializable.Uploader = string.IsNullOrWhiteSpace(uploader) ? null : uploader.Trim();
@@ -3973,7 +4020,8 @@ public partial class MainWindow : Window
         return ExecuteCloudOperationAsync(async store =>
         {
             string suggestedName = BuildCloudModlistName();
-            var detailsDialog = new CloudModlistDetailsDialog(this, suggestedName);
+            List<CloudModConfigOption> configOptions = BuildCloudModConfigOptions();
+            var detailsDialog = new CloudModlistDetailsDialog(this, suggestedName, configOptions);
             bool? dialogResult = detailsDialog.ShowDialog();
             if (dialogResult != true)
             {
@@ -4002,7 +4050,43 @@ public partial class MainWindow : Window
             string? description = detailsDialog.ModlistDescription;
             string? version = detailsDialog.ModlistVersion;
 
-            if (!TryBuildCurrentModlistJson(modlistName, description, version, uploader, out string json))
+            Dictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
+            IReadOnlyList<CloudModConfigOption> selectedConfigOptions = detailsDialog.GetSelectedConfigOptions();
+            if (selectedConfigOptions.Count > 0)
+            {
+                includedConfigurations = new Dictionary<string, ModConfigurationSnapshot>(StringComparer.OrdinalIgnoreCase);
+                var readErrors = new List<string>();
+
+                foreach (CloudModConfigOption option in selectedConfigOptions)
+                {
+                    try
+                    {
+                        string content = File.ReadAllText(option.ConfigPath);
+                        string fileName = GetSafeConfigFileName(Path.GetFileName(option.ConfigPath), option.ModId);
+                        includedConfigurations[option.ModId] = new ModConfigurationSnapshot(fileName, content);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or PathTooLongException)
+                    {
+                        readErrors.Add($"{option.DisplayName}: {ex.Message}");
+                    }
+                }
+
+                if (readErrors.Count > 0)
+                {
+                    WpfMessageBox.Show(
+                        "Some configuration files could not be included:\n" + string.Join("\n", readErrors),
+                        "Simple VS Manager",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+
+                if (includedConfigurations.Count == 0)
+                {
+                    includedConfigurations = null;
+                }
+            }
+
+            if (!TryBuildCurrentModlistJson(modlistName, description, version, uploader, includedConfigurations, out string json))
             {
                 return;
             }
@@ -4041,6 +4125,93 @@ public partial class MainWindow : Window
                 _viewModel?.ReportStatus($"Saved cloud modlist \"{modlistName}\" to the cloud.");
             }
         }, "save the modlist to the cloud");
+    }
+
+    private List<CloudModConfigOption> BuildCloudModConfigOptions()
+    {
+        var options = new List<CloudModConfigOption>();
+
+        if (_viewModel is null)
+        {
+            return options;
+        }
+
+        IReadOnlyList<ModListItemViewModel> mods = _viewModel.GetInstalledModsSnapshot();
+        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (ModListItemViewModel mod in mods)
+        {
+            if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
+            {
+                continue;
+            }
+
+            string normalizedId = mod.ModId.Trim();
+            if (!seenIds.Add(normalizedId))
+            {
+                continue;
+            }
+
+            if (_userConfiguration.TryGetModConfigPath(normalizedId, out string? path)
+                && !string.IsNullOrWhiteSpace(path)
+                && File.Exists(path))
+            {
+                options.Add(new CloudModConfigOption(normalizedId, mod.DisplayName, path, isSelected: true));
+            }
+        }
+
+        options.Sort((left, right) => string.Compare(left.DisplayName, right.DisplayName, StringComparison.OrdinalIgnoreCase));
+        return options;
+    }
+
+    private static string GetSafeConfigFileName(string? candidate, string? modId)
+    {
+        string sanitizedModId = SanitizeForFileName(string.IsNullOrWhiteSpace(modId) ? "modconfig" : modId!.Trim());
+        if (string.IsNullOrWhiteSpace(sanitizedModId))
+        {
+            sanitizedModId = "modconfig";
+        }
+
+        string? trimmedCandidate = string.IsNullOrWhiteSpace(candidate) ? null : candidate.Trim();
+        string fileName = string.IsNullOrWhiteSpace(trimmedCandidate)
+            ? sanitizedModId + ".json"
+            : Path.GetFileName(trimmedCandidate);
+
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            fileName = sanitizedModId + ".json";
+        }
+
+        string sanitizedFileName = SanitizeForFileName(fileName);
+        if (string.IsNullOrWhiteSpace(sanitizedFileName))
+        {
+            sanitizedFileName = sanitizedModId + ".json";
+        }
+
+        if (!sanitizedFileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+        {
+            sanitizedFileName += ".json";
+        }
+
+        return sanitizedFileName;
+    }
+
+    private static string SanitizeForFileName(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return string.Empty;
+        }
+
+        char[] invalidChars = Path.GetInvalidFileNameChars();
+        var builder = new StringBuilder(value.Length);
+
+        foreach (char ch in value)
+        {
+            builder.Append(Array.IndexOf(invalidChars, ch) >= 0 ? '_' : ch);
+        }
+
+        return builder.ToString();
     }
 
     private async void SaveModlistToCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -4604,7 +4775,14 @@ public partial class MainWindow : Window
                 string? version = string.IsNullOrWhiteSpace(mod.Version)
                     ? null
                     : mod.Version!.Trim();
-                modStates.Add(new ModPresetModState(modId, version, mod.IsActive));
+                string? configurationFileName = string.IsNullOrWhiteSpace(mod.ConfigurationFileName)
+                    ? null
+                    : mod.ConfigurationFileName!.Trim();
+                string? configurationContent = string.IsNullOrWhiteSpace(mod.ConfigurationContent)
+                    ? null
+                    : mod.ConfigurationContent;
+
+                modStates.Add(new ModPresetModState(modId, version, mod.IsActive, configurationFileName, configurationContent));
             }
         }
 
@@ -5308,6 +5486,8 @@ public partial class MainWindow : Window
         public IReadOnlyList<string> Mods { get; }
     }
 
+    private sealed record ModConfigurationSnapshot(string FileName, string Content);
+
     private sealed class SerializablePreset
     {
         public string? Name { get; set; }
@@ -5326,6 +5506,8 @@ public partial class MainWindow : Window
         public string? ModId { get; set; }
         public string? Version { get; set; }
         public bool? IsActive { get; set; }
+        public string? ConfigurationFileName { get; set; }
+        public string? ConfigurationContent { get; set; }
     }
 
     private async Task ApplyPresetAsync(ModPreset preset)
@@ -5354,10 +5536,168 @@ public partial class MainWindow : Window
                 _viewModel.SelectedSortOption?.Apply(_viewModel.ModsView);
                 _viewModel.ModsView.Refresh();
             }
+
+            await ImportPresetConfigsAsync(preset).ConfigureAwait(true);
         }
         finally
         {
             _isApplyingPreset = false;
+        }
+    }
+
+    private async Task ImportPresetConfigsAsync(ModPreset preset)
+    {
+        if (preset.ModStates.Count == 0)
+        {
+            return;
+        }
+
+        var configs = new List<(string ModId, string? FileName, string Content)>();
+        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (ModPresetModState state in preset.ModStates)
+        {
+            if (state is null
+                || string.IsNullOrWhiteSpace(state.ModId)
+                || string.IsNullOrWhiteSpace(state.ConfigurationContent))
+            {
+                continue;
+            }
+
+            string trimmedId = state.ModId.Trim();
+            if (!seenIds.Add(trimmedId))
+            {
+                continue;
+            }
+
+            configs.Add((trimmedId, state.ConfigurationFileName, state.ConfigurationContent!));
+        }
+
+        if (configs.Count == 0)
+        {
+            return;
+        }
+
+        var modDisplayNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var promptNames = new List<string>(configs.Count);
+        foreach (var config in configs)
+        {
+            string displayName = config.ModId;
+            if (_viewModel?.TryGetInstalledModDisplayName(config.ModId, out string? resolvedName) == true
+                && !string.IsNullOrWhiteSpace(resolvedName))
+            {
+                displayName = resolvedName.Trim();
+            }
+
+            if (!modDisplayNames.ContainsKey(config.ModId))
+            {
+                modDisplayNames.Add(config.ModId, displayName);
+            }
+
+            promptNames.Add(displayName);
+        }
+
+        promptNames = promptNames
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        string summary = promptNames.Count == 0
+            ? ""
+            : string.Join("\n", promptNames.Select(name => $"• {name}"));
+
+        string message = "This modlist includes configuration files for the following mods:";
+        if (!string.IsNullOrEmpty(summary))
+        {
+            message += $"\n\n{summary}";
+        }
+
+        message += "\n\nImporting these configurations will overwrite your existing settings for these mods if they are already installed. Do you want to import them?";
+
+        MessageBoxResult prompt = WpfMessageBox.Show(
+            this,
+            message,
+            "Import Mod Configurations",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (prompt != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_dataDirectory))
+        {
+            WpfMessageBox.Show(
+                "The Vintage Story data directory is not set, so the configuration files could not be imported.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        string configDirectory = Path.Combine(_dataDirectory, "ModConfig");
+        try
+        {
+            Directory.CreateDirectory(configDirectory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            WpfMessageBox.Show(
+                $"Failed to prepare the configuration directory:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        var usedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var errors = new List<string>();
+        int importedCount = 0;
+
+        foreach (var config in configs)
+        {
+            string fileName = GetSafeConfigFileName(config.FileName, config.ModId);
+            string uniqueFileName = fileName;
+            int counter = 1;
+
+            while (!usedFileNames.Add(uniqueFileName))
+            {
+                string baseName = Path.GetFileNameWithoutExtension(fileName);
+                string extension = Path.GetExtension(fileName);
+                uniqueFileName = $"{baseName}_{counter++}{extension}";
+            }
+
+            string targetPath = Path.Combine(configDirectory, uniqueFileName);
+            try
+            {
+                await File.WriteAllTextAsync(targetPath, config.Content).ConfigureAwait(true);
+                _userConfiguration.SetModConfigPath(config.ModId, targetPath);
+                importedCount++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                string displayName = modDisplayNames.TryGetValue(config.ModId, out string? name) && !string.IsNullOrWhiteSpace(name)
+                    ? name
+                    : config.ModId;
+                errors.Add($"{displayName}: {ex.Message}");
+            }
+        }
+
+        if (importedCount > 0)
+        {
+            _viewModel?.ReportStatus($"Imported configuration files for {importedCount} mod(s).");
+            UpdateSelectedModButtons();
+        }
+
+        if (errors.Count > 0)
+        {
+            WpfMessageBox.Show(
+                "Some configuration files could not be imported:\n" + string.Join("\n", errors),
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
     }
 
@@ -6252,7 +6592,7 @@ public partial class MainWindow : Window
             UpdateSelectedModInstallButton(null);
             UpdateSelectedModButton(SelectedModDatabasePageButton, null, requireModDatabaseLink: true);
             UpdateSelectedModButton(SelectedModUpdateButton, null, requireModDatabaseLink: false, requireUpdate: true);
-            UpdateSelectedModButton(SelectedModEditConfigButton, null, requireModDatabaseLink: false);
+            UpdateSelectedModEditConfigButton(null);
             UpdateSelectedModFixButton(null);
 
             if (SelectedModDeleteButton is not null)
@@ -6267,7 +6607,7 @@ public partial class MainWindow : Window
         {
             UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, requireModDatabaseLink: true);
             UpdateSelectedModButton(SelectedModUpdateButton, null, requireModDatabaseLink: false, requireUpdate: true);
-            UpdateSelectedModButton(SelectedModEditConfigButton, null, requireModDatabaseLink: false);
+            UpdateSelectedModEditConfigButton(null);
             UpdateSelectedModButton(SelectedModDeleteButton, null, requireModDatabaseLink: false);
             UpdateSelectedModInstallButton(singleSelection);
             UpdateSelectedModFixButton(null);
@@ -6277,7 +6617,7 @@ public partial class MainWindow : Window
             UpdateSelectedModInstallButton(null);
             UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, requireModDatabaseLink: true);
             UpdateSelectedModButton(SelectedModUpdateButton, singleSelection, requireModDatabaseLink: false, requireUpdate: true);
-            UpdateSelectedModButton(SelectedModEditConfigButton, singleSelection, requireModDatabaseLink: false);
+            UpdateSelectedModEditConfigButton(singleSelection);
             UpdateSelectedModButton(SelectedModDeleteButton, singleSelection, requireModDatabaseLink: false);
             UpdateSelectedModFixButton(singleSelection);
         }
@@ -6345,6 +6685,32 @@ public partial class MainWindow : Window
         button.DataContext = mod;
         button.Visibility = Visibility.Visible;
         button.IsEnabled = true;
+    }
+
+    private void UpdateSelectedModEditConfigButton(ModListItemViewModel? mod)
+    {
+        if (SelectedModEditConfigButton is null)
+        {
+            return;
+        }
+
+        UpdateSelectedModButton(SelectedModEditConfigButton, mod, requireModDatabaseLink: false);
+
+        if (SelectedModEditConfigButton.DataContext is not ModListItemViewModel context)
+        {
+            SelectedModEditConfigButton.ToolTip = null;
+            SelectedModEditConfigButton.Content = "Edit Config";
+            return;
+        }
+
+        bool hasConfigPath = !string.IsNullOrWhiteSpace(context.ModId)
+            && _userConfiguration.TryGetModConfigPath(context.ModId, out string? path)
+            && !string.IsNullOrWhiteSpace(path);
+
+        SelectedModEditConfigButton.Content = hasConfigPath ? "Edit Config" : "Set Config...";
+        SelectedModEditConfigButton.ToolTip = hasConfigPath
+            ? $"Edit Config for {context.DisplayName}"
+            : $"Set Config for {context.DisplayName}";
     }
 
     private bool ShouldIgnoreRowSelection(DependencyObject? source)
