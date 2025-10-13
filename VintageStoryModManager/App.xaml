@@ -92,6 +92,7 @@
             <BooleanToVisibilityConverter x:Key="IMM.BooleanToVisibilityConverter" />
             <converters:ScaledThicknessConverter x:Key="IMM.ScaledThicknessConverter" />
             <converters:ScaledDoubleConverter x:Key="IMM.ScaledDoubleConverter" />
+            <converters:DoubleOffsetConverter x:Key="IMM.DoubleOffsetConverter" />
 
             <Style x:Key="IMM.ClearTextButtonStyle" TargetType="Button">
                 <Setter Property="Width" Value="24" />
