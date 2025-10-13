@@ -1015,7 +1015,7 @@
                             <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Setter Property="Visibility" Value="Visible" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -1037,7 +1037,7 @@
                               Margin="0,0,0,166"
                               GridLinesVisibility="None"
                               RowHeaderWidth="0"
-                              SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged" Grid.RowSpan="2" Background="{DynamicResource GridBackground1}">
+                              SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged" Grid.RowSpan="2" Background="{DynamicResource GridBackground1}" Height="470">
                         <DataGrid.Style>
                             <Style TargetType="{x:Type DataGrid}">
                                 <Setter Property="Visibility" Value="Visible" />
@@ -1112,42 +1112,42 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Border Height="NaN" Margin="10,463,10,10" Grid.Row="1" Width="NaN" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Collapsed">
+                    <Border Margin="0,0,0,10" Grid.Row="1" Width="588" Background="{DynamicResource CardGradient2}" Padding="5" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Center" Height="151" VerticalAlignment="Bottom">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2"/>
                         </Border.Effect>
 
-                        <Grid>
+                        <Grid Height="151" VerticalAlignment="Center" HorizontalAlignment="Left" Width="1152">
                             <Button x:Name="InstallCloudModlistButton"
                                 Content="Install Selected Modlist"
                                 Padding="12,6"
                                 MinWidth="195"
                                 IsEnabled="False"
                                 Visibility="Visible"
-                                Click="InstallCloudModlistButton_OnClick" Margin="790,109,167,10" Height="32" Width="170" />
+                                Click="InstallCloudModlistButton_OnClick" Margin="224,109,0,0" Height="32" Width="170" HorizontalAlignment="Left" VerticalAlignment="Top" />
                             <Button x:Name="SaveCloudModlistButton"
                                 Content="Save Modlist (Cloud)"
                                 Padding="12,6"
-                                Margin="10,109,972,10"
+                                Margin="10,109,0,0"
                                 MinWidth="165"
-                                Click="SaveCloudModlistButton_OnClick" Height="32" Width="170" />
+                                Click="SaveCloudModlistButton_OnClick" Height="32" Width="170" VerticalAlignment="Top" HorizontalAlignment="Left" />
                             <Button x:Name="SaveCloudModlistButton1"
                                 Content="Modify Modlists (Cloud)"
                                 Padding="12,6"
-                                Margin="10,66,972,53"
+                                Margin="10,66,0,0"
                                 MinWidth="165"
-                                Click="SaveCloudModlistButton_OnClick" Height="32" Width="170" />
+                                Click="SaveCloudModlistButton_OnClick" Height="32" Width="170" VerticalAlignment="Top" HorizontalAlignment="Left" />
                             <Button x:Name="RefreshCloudModlistsButton"
                                 Content="Refresh"
                                 Padding="12,6"
                                 MinWidth="100"
-                                Click="RefreshCloudModlistsButton_OnClick" Margin="1042,109,10,10" Height="32" Width="100" />
+                                Click="RefreshCloudModlistsButton_OnClick" Margin="476,109,0,0" Height="32" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" />
                             <TextBox x:Name="UsernameTextbox" HorizontalAlignment="Left" Margin="10,28,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="170"/>
                             <TextBlock HorizontalAlignment="Left" Margin="10,10,0,0" TextWrapping="Wrap" Text="Username:" VerticalAlignment="Top"/>
-                            <Border HorizontalAlignment="Left" Height="88" Margin="790,10,0,0" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource CardGradient3}">
+                            <Border HorizontalAlignment="Left" Height="88" Margin="224,10,0,0" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource CardGradient3}">
                                 <Grid>
                                     <TextBlock x:Name="SelectedModlistDescription" HorizontalAlignment="Left" Margin="0,16,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Height="72" Width="352"/>
-                                    <TextBlock x:Name="SelectedModlistTitle" HorizontalAlignment="Center" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontWeight="Bold"/>
+                                    <TextBlock x:Name="SelectedModlistTitle" HorizontalAlignment="Left" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontWeight="Bold"/>
                                 </Grid>
                             </Border>
                         </Grid>
