@@ -2667,6 +2667,11 @@ public partial class MainWindow : Window
         await UpdateModsAsync(mods, isBulk: true, overrides);
     }
 
+    private async void ModsMenuItem_OnSubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        await RefreshDeleteCachedModsMenuHeaderAsync();
+    }
+
     private async void DeleteCachedModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         MessageBoxResult result = WpfMessageBox.Show(
@@ -3192,6 +3197,17 @@ public partial class MainWindow : Window
     private async void RestoreBackupMenuItem_OnBackupClick(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menuItem || menuItem.Tag is not string filePath)
+        {
+            return;
+        }
+
+        MessageBoxResult confirmation = WpfMessageBox.Show(
+            "Are you sure you want to load this backup Modlist? Your current mods will be deleted and replaced with the mods in this backup.",
+            "Simple VS Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirmation != MessageBoxResult.Yes)
         {
             return;
         }
