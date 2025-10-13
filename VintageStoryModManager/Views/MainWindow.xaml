@@ -393,12 +393,8 @@
                     <MenuItem Header="_Save Preset..." Height="35" Click="SavePresetMenuItem_OnClick" />
                     <MenuItem Header="_Load Preset..." Height="35" Click="LoadPresetMenuItem_OnClick" />
                     <Separator />
-                    <MenuItem Header="Save _Modlist" Height="35" Click="SaveModlistMenuItem_OnClick" />
-                    <MenuItem Header="Load _Modlist" Height="35" Click="LoadModlistMenuItem_OnClick" />
-                    <Separator />
-                    <MenuItem Header="Save to C_loud" Height="35" Click="SaveModlistToCloudMenuItem_OnClick" />
-                    <MenuItem Header="Load from C_loud" Height="35" Click="LoadModlistFromCloudMenuItem_OnClick" />
-                    <MenuItem Header="_Delete Cloud Slot" Height="35" Click="DeleteCloudModlistMenuItem_OnClick" />
+                    <MenuItem Header="Save Local _Modlist..." Height="35" Click="SaveModlistMenuItem_OnClick" />
+                    <MenuItem Header="Load Local _Modlist..." Height="35" Click="LoadModlistMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_View" Height="35">
                     <MenuItem Header="_Compact View"
@@ -1230,7 +1226,7 @@
                 <Grid Grid.RowSpan="2" Margin="0,0,-29,0">
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -1243,6 +1239,27 @@
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
+
+                    <Border x:Name="localmodlist" Margin="800,0,0,10" Grid.Row="1" Width="362" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Left" Height="151" VerticalAlignment="Bottom">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2"/>
+                        </Border.Effect>
+
+                        <Grid Height="151" VerticalAlignment="Center" HorizontalAlignment="Left" Width="1152">
+                            <Button x:Name="SaveLocalModlistButton1"
+                                Content="Save Modlist (Local)"
+                                Padding="12,6"
+                                Margin="10,109,0,0"
+                                MinWidth="165"
+                                Click="SaveModlistMenuItem_OnClick" Height="32" Width="170" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                            <Button x:Name="LoadLocalModlistsButton1"
+                                Content="Load Modlist (Local)"
+                                Padding="12,6"
+                                Margin="10,66,0,0"
+                                MinWidth="165"
+                                Click="LoadModlistMenuItem_OnClick" Height="32" Width="170" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                        </Grid>
+                    </Border>
 
                     <DataGrid x:Name="CloudModlistsDataGrid"
                               ItemsSource="{Binding CloudModlistsView}"
@@ -1508,7 +1525,7 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Border Margin="0,0,0,10" Grid.Row="1" Width="614" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Center" Height="151" VerticalAlignment="Bottom">
+                    <Border Margin="10,0,0,10" Grid.Row="1" Width="614" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Left" Height="151" VerticalAlignment="Bottom">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2"/>
                         </Border.Effect>
