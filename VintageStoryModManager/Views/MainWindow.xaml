@@ -1521,12 +1521,12 @@
                                 Margin="10,109,0,0"
                                 MinWidth="165"
                                 Click="SaveCloudModlistButton_OnClick" Height="32" Width="170" VerticalAlignment="Top" HorizontalAlignment="Left" />
-                            <Button x:Name="SaveCloudModlistButton1"
+                            <Button x:Name="ModifyCloudModlistsButton"
                                 Content="Modify Modlists (Cloud)"
                                 Padding="12,6"
                                 Margin="10,66,0,0"
                                 MinWidth="165"
-                                Click="SaveCloudModlistButton_OnClick" Height="32" Width="170" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                                Click="ModifyCloudModlistsButton_OnClick" Height="32" Width="170" VerticalAlignment="Top" HorizontalAlignment="Left" />
                             <Button x:Name="RefreshCloudModlistsButton"
                                 Content="Refresh"
                                 Padding="12,6"
