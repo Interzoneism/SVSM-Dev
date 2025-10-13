@@ -380,7 +380,7 @@
                     <Separator />
                     <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
                 </MenuItem>
-                <MenuItem Header="_Mods" Height="35">
+                <MenuItem Header="_Mods" Height="35" SubmenuOpened="ModsMenuItem_OnSubmenuOpened">
                     <MenuItem Header="_Refresh Mods" Height="35" Click="RefreshModsMenuItem_OnClick" />
                     <MenuItem Header="_Update All Mods" Height="35" Click="UpdateAllModsMenuItem_OnClick" />
                     <MenuItem x:Name="CacheAllVersionsMenuItem"
