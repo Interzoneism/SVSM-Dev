@@ -41,6 +41,9 @@
         <ItemsPanelTemplate x:Key="IMM.TagItemsPanelTemplate">
             <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" />
         </ItemsPanelTemplate>
+        <ItemsPanelTemplate x:Key="IMM.TagFilterItemsPanelTemplate">
+            <UniformGrid Columns="4" HorizontalAlignment="Stretch" />
+        </ItemsPanelTemplate>
         <DataTemplate x:Key="IMM.TagBadgeTemplate">
             <Border Style="{StaticResource IMM.TagBadgeBorderStyle}">
                 <TextBlock Text="{Binding}" FontSize="12" Foreground="{StaticResource IMM.ForegroundBrush}" />
@@ -52,15 +55,54 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0,0,6,6" />
-            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Opacity" Value="1" />
             <Setter Property="Focusable" Value="False" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
             <Style.Triggers>
                 <Trigger Property="IsChecked" Value="False">
                     <Setter Property="Opacity" Value="0.5" />
                 </Trigger>
             </Style.Triggers>
+        </Style>
+        <Style x:Key="IMM.TagHeaderToggleButtonStyle" TargetType="{x:Type ToggleButton}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="IMM.DataGridCellBaseStyle" TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent" />
@@ -1009,16 +1051,10 @@
                                                 CanUserSort="False">
                             <DataGridTemplateColumn.HeaderTemplate>
                                 <DataTemplate>
-                                    <Grid>
+                                    <Grid Background="Transparent">
                                         <ToggleButton x:Name="TagsHeaderToggle"
                                                       Content="{Binding}"
-                                                      Background="Transparent"
-                                                      BorderThickness="0"
-                                                      HorizontalAlignment="Stretch"
-                                                      HorizontalContentAlignment="Left"
-                                                      VerticalAlignment="Center"
-                                                      Padding="0"
-                                                      Focusable="False" />
+                                                      Style="{StaticResource IMM.TagHeaderToggleButtonStyle}" />
                                         <Popup PlacementTarget="{Binding ElementName=TagsHeaderToggle}"
                                                Placement="Bottom"
                                                IsOpen="{Binding IsChecked, ElementName=TagsHeaderToggle, Mode=TwoWay}"
@@ -1030,7 +1066,7 @@
                                                     BorderThickness="1"
                                                     CornerRadius="6"
                                                     Padding="8"
-                                                    MinWidth="220">
+                                                    MinWidth="440">
                                                 <ScrollViewer MaxHeight="260"
                                                               HorizontalScrollBarVisibility="Disabled"
                                                               VerticalScrollBarVisibility="Auto">
@@ -1049,7 +1085,7 @@
                                                             </Style>
                                                         </ItemsControl.Style>
                                                         <ItemsControl.ItemsPanel>
-                                                            <StaticResource ResourceKey="IMM.TagItemsPanelTemplate" />
+                                                            <StaticResource ResourceKey="IMM.TagFilterItemsPanelTemplate" />
                                                         </ItemsControl.ItemsPanel>
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate DataType="{x:Type viewModels:TagFilterOptionViewModel}">
