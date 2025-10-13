@@ -75,7 +75,11 @@ public sealed class MainViewModel : ObservableObject
     private int _busyOperationCount;
     private bool _isLoadingMods;
 
-    public MainViewModel(string dataDirectory, int modDatabaseSearchResultLimit, int newModsRecentMonths)
+    public MainViewModel(
+        string dataDirectory,
+        int modDatabaseSearchResultLimit,
+        int newModsRecentMonths,
+        ModDatabaseAutoLoadMode initialModDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
 
@@ -86,6 +90,7 @@ public sealed class MainViewModel : ObservableObject
         _databaseService = new ModDatabaseService();
         _modDatabaseSearchResultLimit = Math.Clamp(modDatabaseSearchResultLimit, 1, 100);
         _newModsRecentMonths = Math.Clamp(newModsRecentMonths <= 0 ? 1 : newModsRecentMonths, 1, MaxNewModsRecentMonths);
+        _modDatabaseAutoLoadMode = NormalizeModDatabaseAutoLoadMode(initialModDatabaseAutoLoadMode);
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion();
         _modsWatcher = new ModDirectoryWatcher(_discoveryService);
 
@@ -277,6 +282,8 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    public ModDatabaseAutoLoadMode ModDatabaseAutoLoadMode => _modDatabaseAutoLoadMode;
+
     public string DownloadsNewModsRecentMonthsLabel =>
         $"Created {BuildRecentMonthsPhrase()}";
 
@@ -335,6 +342,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         _modDatabaseAutoLoadMode = mode;
+        OnPropertyChanged(nameof(ModDatabaseAutoLoadMode));
         OnPropertyChanged(nameof(IsTotalDownloadsMode));
         OnPropertyChanged(nameof(IsDownloadsLastThirtyDaysMode));
         OnPropertyChanged(nameof(IsDownloadsNewModsRecentMonthsMode));
@@ -345,6 +353,13 @@ public sealed class MainViewModel : ObservableObject
         {
             TriggerModDatabaseSearch();
         }
+    }
+
+    private static ModDatabaseAutoLoadMode NormalizeModDatabaseAutoLoadMode(ModDatabaseAutoLoadMode mode)
+    {
+        return Enum.IsDefined(typeof(ModDatabaseAutoLoadMode), mode)
+            ? mode
+            : ModDatabaseAutoLoadMode.TotalDownloads;
     }
 
     public string SearchText

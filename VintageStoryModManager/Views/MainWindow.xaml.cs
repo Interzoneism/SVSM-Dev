@@ -250,7 +250,8 @@ public partial class MainWindow : Window
         _viewModel = new MainViewModel(
             _dataDirectory,
             _userConfiguration.ModDatabaseSearchResultLimit,
-            _userConfiguration.ModDatabaseNewModsRecentMonths)
+            _userConfiguration.ModDatabaseNewModsRecentMonths,
+            _userConfiguration.ModDatabaseAutoLoadMode)
         {
             IsCompactView = _userConfiguration.IsCompactView,
             UseModDbDesignView = _userConfiguration.UseModDbDesignView
@@ -321,6 +322,13 @@ public partial class MainWindow : Window
                         _modDatabaseCardsScrollViewer = null;
                     }
                 });
+            }
+        }
+        else if (e.PropertyName == nameof(MainViewModel.ModDatabaseAutoLoadMode))
+        {
+            if (_viewModel != null)
+            {
+                _userConfiguration.SetModDatabaseAutoLoadMode(_viewModel.ModDatabaseAutoLoadMode);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.IsViewingCloudModlists))
@@ -1203,7 +1211,8 @@ public partial class MainWindow : Window
             var viewModel = new MainViewModel(
                 _dataDirectory,
                 _userConfiguration.ModDatabaseSearchResultLimit,
-                _userConfiguration.ModDatabaseNewModsRecentMonths);
+                _userConfiguration.ModDatabaseNewModsRecentMonths,
+                _userConfiguration.ModDatabaseAutoLoadMode);
             _viewModel = viewModel;
             DataContext = viewModel;
             AttachToModsView(viewModel.CurrentModsView);

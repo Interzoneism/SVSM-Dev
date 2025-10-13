@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using VintageStoryModManager.ViewModels;
 
 namespace VintageStoryModManager.Services;
 
@@ -23,6 +24,7 @@ public sealed class UserConfigurationService
     private string? _selectedPresetName;
     private bool _isCompactView;
     private bool _useModDbDesignView = true;
+    private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
     private bool _cacheAllVersionsLocally;
     private bool _disableInternetAccess;
     private bool _enableDebugLogging;
@@ -65,6 +67,8 @@ public sealed class UserConfigurationService
     public int ModDatabaseSearchResultLimit => _modDatabaseSearchResultLimit;
 
     public int ModDatabaseNewModsRecentMonths => _modDatabaseNewModsRecentMonths;
+
+    public ModDatabaseAutoLoadMode ModDatabaseAutoLoadMode => _modDatabaseAutoLoadMode;
 
     public double? WindowWidth => _windowWidth;
 
@@ -224,6 +228,17 @@ public sealed class UserConfigurationService
         }
 
         _modDatabaseNewModsRecentMonths = normalized;
+        Save();
+    }
+
+    public void SetModDatabaseAutoLoadMode(ModDatabaseAutoLoadMode mode)
+    {
+        if (_modDatabaseAutoLoadMode == mode)
+        {
+            return;
+        }
+
+        _modDatabaseAutoLoadMode = mode;
         Save();
     }
 
@@ -396,6 +411,7 @@ public sealed class UserConfigurationService
             _modDatabaseSearchResultLimit = NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
             _modDatabaseNewModsRecentMonths = NormalizeModDatabaseNewModsRecentMonths(
                 obj["modDatabaseNewModsRecentMonths"]?.GetValue<int?>());
+            _modDatabaseAutoLoadMode = ParseModDatabaseAutoLoadMode(GetOptionalString(obj["modDatabaseAutoLoadMode"]));
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             LoadModConfigPaths(obj["modConfigPaths"]);
@@ -420,6 +436,7 @@ public sealed class UserConfigurationService
             _selectedPresetName = null;
             _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
             _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
+            _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
             _windowWidth = null;
             _windowHeight = null;
             _customShortcutPath = null;
@@ -460,6 +477,7 @@ public sealed class UserConfigurationService
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
                 ["modDatabaseSearchResultLimit"] = _modDatabaseSearchResultLimit,
                 ["modDatabaseNewModsRecentMonths"] = _modDatabaseNewModsRecentMonths,
+                ["modDatabaseAutoLoadMode"] = _modDatabaseAutoLoadMode.ToString(),
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
@@ -512,6 +530,16 @@ public sealed class UserConfigurationService
         }
 
         return Math.Clamp(normalized, 1, MaxModDatabaseNewModsRecentMonths);
+    }
+
+    private static ModDatabaseAutoLoadMode ParseModDatabaseAutoLoadMode(string? value)
+    {
+        if (Enum.TryParse(value, ignoreCase: true, out ModDatabaseAutoLoadMode mode))
+        {
+            return mode;
+        }
+
+        return ModDatabaseAutoLoadMode.TotalDownloads;
     }
 
     private static double? NormalizeWindowDimension(double? dimension)
