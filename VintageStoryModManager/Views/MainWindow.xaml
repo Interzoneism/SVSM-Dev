@@ -52,7 +52,11 @@
             <Setter Property="Padding" Value="8,6" />
         </Style>
         <Style x:Key="IMM.PrimaryDataGridColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
-            <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="{StaticResource IMM.SurfaceAltColor}" />
+                </Setter.Value>
+            </Setter>
             <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
             <Setter Property="BorderThickness" Value="1,0,0,1" />
             <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
