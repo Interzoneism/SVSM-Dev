@@ -1015,7 +1015,7 @@
                             <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Setter Property="Visibility" Value="Collapsed" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -1055,11 +1055,13 @@
                                 <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
                                 <Setter Property="FontWeight" Value="SemiBold" />
                                 <Setter Property="Padding" Value="12,8" />
+                                <Setter Property="BorderThickness" Value="1,0,0,1" />
                             </Style>
                             <Style TargetType="{x:Type DataGridRow}">
                                 <Setter Property="Margin" Value="2" />
                                 <Setter Property="Padding" Value="4" />
                                 <Setter Property="Height" Value="32" />
+                                <Setter Property="Background" Value="{StaticResource CardGradient3}" />
                             </Style>
                         </DataGrid.Resources>
                         <DataGrid.Columns>
@@ -1076,7 +1078,7 @@
                                     <Binding Path="Version" TargetNullValue="—" FallbackValue="—" />
                                 </DataGridTextColumn.Binding>
                             </DataGridTextColumn>
-                            <DataGridTemplateColumn Header="Mods" Width="*" MinWidth="180">
+                            <DataGridTemplateColumn Header="Mods" Width="200" MinWidth="180">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <ComboBox ItemsSource="{Binding Mods}"
@@ -1110,7 +1112,11 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Border Height="NaN" Margin="10,463,10,10" Grid.Row="1" Width="NaN" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10">
+                    <Border Height="NaN" Margin="10,463,10,10" Grid.Row="1" Width="NaN" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Collapsed">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2"/>
+                        </Border.Effect>
+
                         <Grid>
                             <Button x:Name="InstallCloudModlistButton"
                                 Content="Install Selected Modlist"
