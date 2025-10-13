@@ -1109,7 +1109,7 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Border Height="NaN" Margin="35,474,62,25" Grid.Row="1" Width="NaN">
+                    <Border Height="NaN" Margin="10,463,10,10" Grid.Row="1" Width="NaN" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10">
                         <Grid>
                             <Button x:Name="InstallCloudModlistButton"
                                 Content="Install Selected Modlist"
