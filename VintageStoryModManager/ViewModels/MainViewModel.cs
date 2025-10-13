@@ -515,14 +515,43 @@ public sealed class MainViewModel : ObservableObject
                         continue;
                     }
 
-                    string? version = preset.IncludesModVersions
-                        ? (string.IsNullOrWhiteSpace(state.Version) ? installedVersion : state.Version!.Trim())
-                        : null;
+                    string? recordedVersion = string.IsNullOrWhiteSpace(state.Version)
+                        ? null
+                        : state.Version!.Trim();
 
-                    if (!_settingsStore.TrySetActive(normalizedId, version, desiredState, out string? error))
+                    if (desiredState)
                     {
-                        localError = error;
-                        return false;
+                        var versionsToActivate = new HashSet<string?>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            null
+                        };
+
+                        if (!string.IsNullOrWhiteSpace(installedVersion))
+                        {
+                            versionsToActivate.Add(installedVersion);
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(recordedVersion))
+                        {
+                            versionsToActivate.Add(recordedVersion);
+                        }
+
+                        foreach (string? versionKey in versionsToActivate)
+                        {
+                            if (!_settingsStore.TrySetActive(normalizedId, versionKey, true, out string? error))
+                            {
+                                localError = error;
+                                return false;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (!_settingsStore.TrySetActive(normalizedId, null, false, out string? error))
+                        {
+                            localError = error;
+                            return false;
+                        }
                     }
                 }
 
