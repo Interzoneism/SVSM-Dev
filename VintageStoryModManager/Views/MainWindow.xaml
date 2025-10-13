@@ -2020,12 +2020,48 @@
                 </Button>
                 <Button x:Name="SelectedModFixButton"
                         Padding="12,6"
-                        Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                        BorderBrush="{DynamicResource IMM.BorderBrush}"
+                        Background="{DynamicResource ButtonError}"
+                        BorderBrush="{DynamicResource IMM.BodyForegroundBrush}"
                         Visibility="Collapsed"
                         IsEnabled="False"
                         Click="FixModButton_OnClick"
                         ToolTip="Resolve dependency issues" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,115,0,0" Grid.Column="1">
+                    <Button.Style>
+                        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                            <Setter Property="Background" Value="{DynamicResource ButtonError}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource IMM.BodyForegroundBrush}" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Root"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                                Padding="{TemplateBinding Padding}"
+                                                SnapsToDevicePixels="True">
+                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                              RecognizesAccessKey="True" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter TargetName="Root" Property="Opacity" Value="0.6" />
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource ButtonError}" />
+                                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource IMM.BodyForegroundBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource ButtonError}" />
+                                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource IMM.BodyForegroundBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
                         <TextBlock Text="Fix" VerticalAlignment="Center" />
