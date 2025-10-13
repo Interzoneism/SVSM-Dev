@@ -123,6 +123,7 @@ public partial class MainWindow : Window
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         EnableDebugLoggingMenuItem.IsChecked = _userConfiguration.EnableDebugLogging;
         StatusLogService.IsLoggingEnabled = _userConfiguration.EnableDebugLogging;
+        UpdateModlistAutoLoadMenu(_userConfiguration.ModlistAutoLoadBehavior);
 
         TryInitializePaths();
 
@@ -174,6 +175,52 @@ public partial class MainWindow : Window
         _userConfiguration.SetDisableInternetAccess(isDisabled);
 
         _viewModel?.OnInternetAccessStateChanged();
+    }
+
+    private void AlwaysClearModlistsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        HandleModlistAutoLoadMenuClick(
+            sender,
+            ModlistAutoLoadBehavior.Replace,
+            ModlistAutoLoadBehavior.Prompt);
+    }
+
+    private void AlwaysAddModlistsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        HandleModlistAutoLoadMenuClick(
+            sender,
+            ModlistAutoLoadBehavior.Add,
+            ModlistAutoLoadBehavior.Prompt);
+    }
+
+    private void HandleModlistAutoLoadMenuClick(object sender, ModlistAutoLoadBehavior enabledBehavior, ModlistAutoLoadBehavior disabledBehavior)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return;
+        }
+
+        ModlistAutoLoadBehavior newBehavior = menuItem.IsChecked ? enabledBehavior : disabledBehavior;
+        SetModlistAutoLoadBehavior(newBehavior);
+    }
+
+    private void SetModlistAutoLoadBehavior(ModlistAutoLoadBehavior behavior)
+    {
+        UpdateModlistAutoLoadMenu(behavior);
+        _userConfiguration.SetModlistAutoLoadBehavior(behavior);
+    }
+
+    private void UpdateModlistAutoLoadMenu(ModlistAutoLoadBehavior behavior)
+    {
+        if (AlwaysClearModlistsMenuItem is not null)
+        {
+            AlwaysClearModlistsMenuItem.IsChecked = behavior == ModlistAutoLoadBehavior.Replace;
+        }
+
+        if (AlwaysAddModlistsMenuItem is not null)
+        {
+            AlwaysAddModlistsMenuItem.IsChecked = behavior == ModlistAutoLoadBehavior.Add;
+        }
     }
 
     private void ApplyStoredWindowDimensions()
@@ -3670,15 +3717,31 @@ public partial class MainWindow : Window
 
     private ModlistLoadMode? PromptModlistLoadMode()
     {
+        ModlistAutoLoadBehavior behavior = _userConfiguration.ModlistAutoLoadBehavior;
+        switch (behavior)
+        {
+            case ModlistAutoLoadBehavior.Replace:
+                return ModlistLoadMode.Replace;
+            case ModlistAutoLoadBehavior.Add:
+                return ModlistLoadMode.Add;
+        }
+
+        var buttonOverrides = new MessageDialogButtonContentOverrides
+        {
+            Yes = "Only Modlist mods",
+            No = "Add Modlist mods"
+        };
+
         MessageBoxResult result = WpfMessageBox.Show(
             this,
             "How would you like to load the modlist?" +
-            "\n\nYes: Delete your current mods and install only the mods from the modlist." +
-            "\nNo: Keep your current mods and add any missing mods from the modlist." +
+            "\n\nOnly Modlist mods: Delete your current mods and install only the mods from the modlist." +
+            "\nAdd Modlist mods: Keep your current mods and add any missing mods from the modlist." +
             "\nCancel: Do nothing.",
             "Load Modlist",
             MessageBoxButton.YesNoCancel,
-            MessageBoxImage.Question);
+            MessageBoxImage.Question,
+            buttonContentOverrides: buttonOverrides);
 
         return result switch
         {

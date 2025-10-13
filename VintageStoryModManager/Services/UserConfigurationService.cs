@@ -29,6 +29,7 @@ public sealed class UserConfigurationService
     private bool _disableInternetAccess;
     private bool _enableDebugLogging;
     private bool _suppressModlistSavePrompt;
+    private ModlistAutoLoadBehavior _modlistAutoLoadBehavior = ModlistAutoLoadBehavior.Prompt;
     private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
     private int _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
     private string? _modsSortMemberPath;
@@ -63,6 +64,8 @@ public sealed class UserConfigurationService
     public bool EnableDebugLogging => _enableDebugLogging;
 
     public bool SuppressModlistSavePrompt => _suppressModlistSavePrompt;
+
+    public ModlistAutoLoadBehavior ModlistAutoLoadBehavior => _modlistAutoLoadBehavior;
 
     public int ModDatabaseSearchResultLimit => _modDatabaseSearchResultLimit;
 
@@ -193,6 +196,17 @@ public sealed class UserConfigurationService
         }
 
         _enableDebugLogging = enableDebugLogging;
+        Save();
+    }
+
+    public void SetModlistAutoLoadBehavior(ModlistAutoLoadBehavior behavior)
+    {
+        if (_modlistAutoLoadBehavior == behavior)
+        {
+            return;
+        }
+
+        _modlistAutoLoadBehavior = behavior;
         Save();
     }
 
@@ -406,6 +420,7 @@ public sealed class UserConfigurationService
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _enableDebugLogging = obj["enableDebugLogging"]?.GetValue<bool?>() ?? false;
             _suppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
+            _modlistAutoLoadBehavior = ParseModlistAutoLoadBehavior(GetOptionalString(obj["modlistAutoLoadBehavior"]));
             _modsSortMemberPath = NormalizeSortMemberPath(GetOptionalString(obj["modsSortMemberPath"]));
             _modsSortDirection = ParseSortDirection(GetOptionalString(obj["modsSortDirection"]));
             _modDatabaseSearchResultLimit = NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
@@ -431,6 +446,7 @@ public sealed class UserConfigurationService
             _disableInternetAccess = false;
             _enableDebugLogging = false;
             _suppressModlistSavePrompt = false;
+            _modlistAutoLoadBehavior = ModlistAutoLoadBehavior.Prompt;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
             _selectedPresetName = null;
@@ -473,6 +489,7 @@ public sealed class UserConfigurationService
                 ["disableInternetAccess"] = _disableInternetAccess,
                 ["enableDebugLogging"] = _enableDebugLogging,
                 ["suppressModlistSavePrompt"] = _suppressModlistSavePrompt,
+                ["modlistAutoLoadBehavior"] = _modlistAutoLoadBehavior.ToString(),
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
                 ["modDatabaseSearchResultLimit"] = _modDatabaseSearchResultLimit,
@@ -530,6 +547,16 @@ public sealed class UserConfigurationService
         }
 
         return Math.Clamp(normalized, 1, MaxModDatabaseNewModsRecentMonths);
+    }
+
+    private static ModlistAutoLoadBehavior ParseModlistAutoLoadBehavior(string? value)
+    {
+        if (Enum.TryParse(value, ignoreCase: true, out ModlistAutoLoadBehavior behavior))
+        {
+            return behavior;
+        }
+
+        return ModlistAutoLoadBehavior.Prompt;
     }
 
     private static ModDatabaseAutoLoadMode ParseModDatabaseAutoLoadMode(string? value)
