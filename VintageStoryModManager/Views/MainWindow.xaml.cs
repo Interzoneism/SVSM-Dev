@@ -1271,34 +1271,7 @@ public partial class MainWindow : Window
         ReadOnlySpan<char> tokenSpan = token.AsSpan();
         ReadOnlySpan<char> wordSpan = word.AsSpan();
 
-        int minLength = Math.Max(1, wordSpan.Length - maxDistance);
-        int maxLength = wordSpan.Length + maxDistance;
-        int best = int.MaxValue;
-
-        for (int start = 0; start < tokenSpan.Length; start++)
-        {
-            int remaining = tokenSpan.Length - start;
-            if (remaining < minLength)
-            {
-                break;
-            }
-
-            int localMax = Math.Min(remaining, maxLength);
-            for (int length = minLength; length <= localMax; length++)
-            {
-                int distance = CalculateLevenshteinDistance(wordSpan, tokenSpan.Slice(start, length), maxDistance);
-                if (distance < best)
-                {
-                    best = distance;
-                    if (best == 0)
-                    {
-                        return 0;
-                    }
-                }
-            }
-        }
-
-        return best;
+        return CalculateLevenshteinDistance(wordSpan, tokenSpan, maxDistance);
     }
 
     private static int CalculateLevenshteinDistance(ReadOnlySpan<char> source, ReadOnlySpan<char> target, int maxDistance)
