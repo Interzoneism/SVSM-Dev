@@ -29,6 +29,7 @@ public sealed class MainViewModel : ObservableObject
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
     private const int MaxConcurrentDatabaseRefreshes = 4;
     private const int MaxNewModsRecentMonths = 24;
+    private const int InstalledModsIncrementalBatchSize = 32;
 
     private enum ViewSection
     {
@@ -848,12 +849,7 @@ public sealed class MainViewModel : ObservableObject
 
             if (requiresFullReload)
             {
-                var entries = await Task.Run(_discoveryService.LoadMods);
-                var entryList = entries.ToList();
-                _discoveryService.ApplyLoadStatuses(entryList);
-                ApplyFullReload(entryList, previousSelection);
-                QueueDatabaseInfoRefresh(entryList);
-                SetStatus($"Loaded {TotalMods} mods.", false);
+                await PerformFullReloadAsync(previousSelection).ConfigureAwait(true);
             }
             else
             {
@@ -881,7 +877,7 @@ public sealed class MainViewModel : ObservableObject
                 }
 
                 var allEntries = new List<ModEntry>(_modEntriesBySourcePath.Values);
-                _discoveryService.ApplyLoadStatuses(allEntries);
+                await Task.Run(() => _discoveryService.ApplyLoadStatuses(allEntries)).ConfigureAwait(true);
 
                 ApplyPartialUpdates(reloadResults, previousSelection);
 
@@ -905,6 +901,81 @@ public sealed class MainViewModel : ObservableObject
         {
             _isLoadingMods = false;
         }
+    }
+
+    private async Task PerformFullReloadAsync(string? previousSelection)
+    {
+        var entries = new List<ModEntry>();
+
+        await InvokeOnDispatcherAsync(() =>
+        {
+            _modEntriesBySourcePath.Clear();
+            _modViewModelsBySourcePath.Clear();
+            _mods.Clear();
+            SelectedMod = null;
+            TotalMods = 0;
+        }, CancellationToken.None).ConfigureAwait(true);
+
+        await foreach (var batch in _discoveryService.LoadModsIncrementallyAsync(InstalledModsIncrementalBatchSize))
+        {
+            if (batch.Count == 0)
+            {
+                continue;
+            }
+
+            entries.AddRange(batch);
+
+            await InvokeOnDispatcherAsync(() =>
+            {
+                foreach (var entry in batch)
+                {
+                    _modEntriesBySourcePath[entry.SourcePath] = entry;
+                    var viewModel = CreateModViewModel(entry);
+                    _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
+                    _mods.Add(viewModel);
+                }
+
+                TotalMods = _mods.Count;
+            }, CancellationToken.None).ConfigureAwait(true);
+
+            await Task.Yield();
+        }
+
+        if (entries.Count > 0)
+        {
+            await Task.Run(() => _discoveryService.ApplyLoadStatuses(entries)).ConfigureAwait(true);
+        }
+
+        await InvokeOnDispatcherAsync(() =>
+        {
+            foreach (var entry in entries)
+            {
+                if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
+                {
+                    viewModel.UpdateLoadError(entry.LoadError);
+                    viewModel.UpdateDependencyIssues(entry.DependencyHasErrors, entry.MissingDependencies);
+                }
+            }
+
+            TotalMods = _mods.Count;
+
+            if (!string.IsNullOrWhiteSpace(previousSelection)
+                && _modViewModelsBySourcePath.TryGetValue(previousSelection, out var selected))
+            {
+                SelectedMod = selected;
+            }
+            else
+            {
+                SelectedMod = null;
+            }
+
+            if (entries.Count > 0)
+            {
+                QueueDatabaseInfoRefresh(entries);
+            }
+
+            SetStatus($"Loaded {TotalMods} mods.", false);
+        }, CancellationToken.None).ConfigureAwait(true);
     }
 
     public async Task<bool> CheckForModStateChangesAsync()
@@ -2179,33 +2250,6 @@ public sealed class MainViewModel : ObservableObject
         }
 
         return results;
-    }
-
-    private void ApplyFullReload(IReadOnlyList<ModEntry> entries, string? previousSelection)
-    {
-        _modEntriesBySourcePath.Clear();
-        _modViewModelsBySourcePath.Clear();
-        _mods.Clear();
-
-        foreach (var entry in entries)
-        {
-            _modEntriesBySourcePath[entry.SourcePath] = entry;
-            var viewModel = CreateModViewModel(entry);
-            _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
-            _mods.Add(viewModel);
-        }
-
-        TotalMods = _mods.Count;
-
-        if (!string.IsNullOrWhiteSpace(previousSelection)
-            && _modViewModelsBySourcePath.TryGetValue(previousSelection, out var selected))
-        {
-            SelectedMod = selected;
-        }
-        else
-        {
-            SelectedMod = null;
-        }
     }
 
     private void ApplyPartialUpdates(IReadOnlyDictionary<string, ModEntry?> changes, string? previousSelection)
