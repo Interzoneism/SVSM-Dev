@@ -267,30 +267,6 @@ public sealed class UserConfigurationService
         Save();
     }
 
-    public void SetModDatabaseSearchResultLimit(int limit)
-    {
-        int normalized = NormalizeModDatabaseSearchResultLimit(limit);
-        if (_modDatabaseSearchResultLimit == normalized)
-        {
-            return;
-        }
-
-        _modDatabaseSearchResultLimit = normalized;
-        Save();
-    }
-
-    public void SetModDatabaseNewModsRecentMonths(int months)
-    {
-        int normalized = NormalizeModDatabaseNewModsRecentMonths(months);
-        if (_modDatabaseNewModsRecentMonths == normalized)
-        {
-            return;
-        }
-
-        _modDatabaseNewModsRecentMonths = normalized;
-        Save();
-    }
-
     public void SetModDatabaseAutoLoadMode(ModDatabaseAutoLoadMode mode)
     {
         if (_modDatabaseAutoLoadMode == mode)
