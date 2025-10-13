@@ -972,6 +972,7 @@ public sealed class ModDatabaseService
             if (!TryCalculateSearchScore(
                     name,
                     primaryId,
+                    author,
                     summary,
                     alternateIds,
                     tags,
@@ -1016,6 +1017,7 @@ public sealed class ModDatabaseService
     private static bool TryCalculateSearchScore(
         string name,
         string primaryId,
+        string? author,
         string? summary,
         IReadOnlyList<string> alternateIds,
         IReadOnlyList<string> tags,
@@ -1036,6 +1038,9 @@ public sealed class ModDatabaseService
 
         int matchedTokenCount = 0;
         string summaryText = summary ?? string.Empty;
+        IReadOnlyList<string> authorTokens = string.IsNullOrWhiteSpace(author)
+            ? Array.Empty<string>()
+            : CreateSearchTokens(author);
 
         foreach (string token in tokens)
         {
@@ -1086,6 +1091,23 @@ public sealed class ModDatabaseService
                 else if (alternateIds.Any(id => id.Contains(currentToken, StringComparison.OrdinalIgnoreCase)))
                 {
                     score += 4;
+                    tokenMatched = true;
+                }
+            }
+
+            if (authorTokens.Count > 0)
+            {
+                bool authorExactMatch = authorTokens.Any(authorToken =>
+                    string.Equals(authorToken, currentToken, StringComparison.OrdinalIgnoreCase));
+                if (authorExactMatch)
+                {
+                    score += 4;
+                    tokenMatched = true;
+                }
+                else if (authorTokens.Any(authorToken =>
+                             authorToken.Contains(currentToken, StringComparison.OrdinalIgnoreCase)))
+                {
+                    score += 2.5;
                     tokenMatched = true;
                 }
             }
