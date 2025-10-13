@@ -49,6 +49,7 @@ public partial class MainWindow : Window
     private const string PresetDirectoryName = "Presets";
     private const string ModListDirectoryName = "Modlists";
     private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
+    private const string BackupDirectoryName = "Backups";
     private const string FirebaseApiKey = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
     private const string FirebaseDatabaseUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
     private const string CloudStorageDirectoryName = "Cloud";
@@ -102,6 +103,7 @@ public partial class MainWindow : Window
     private string? _cachedSortMemberPath;
     private ListSortDirection? _cachedSortDirection;
     private SortOption? _cachedSortOption;
+    private readonly SemaphoreSlim _backupSemaphore = new(1, 1);
     private readonly SemaphoreSlim _cloudStoreLock = new(1, 1);
     private FirebaseModlistStore? _cloudModlistStore;
     private bool _cloudModlistsLoaded;
@@ -1896,6 +1898,8 @@ public partial class MainWindow : Window
             return;
         }
 
+        await CreateAutomaticBackupAsync().ConfigureAwait(true);
+
         bool removed = TryDeleteModAtPath(mod, modPath);
 
         if (_viewModel?.RefreshCommand != null)
@@ -1983,6 +1987,8 @@ public partial class MainWindow : Window
         {
             return;
         }
+
+        await CreateAutomaticBackupAsync().ConfigureAwait(true);
 
         int removedCount = 0;
         foreach ((ModListItemViewModel mod, string path) in deletable)
@@ -2274,6 +2280,8 @@ public partial class MainWindow : Window
 
             return;
         }
+
+        await CreateAutomaticBackupAsync().ConfigureAwait(true);
 
         _isModUpdateInProgress = true;
         UpdateSelectedModButtons();
@@ -2608,6 +2616,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        await CreateAutomaticBackupAsync().ConfigureAwait(true);
         await UpdateModsAsync(mods, isBulk: true, overrides);
     }
 
@@ -3064,6 +3073,122 @@ public partial class MainWindow : Window
 
         _userConfiguration.ClearCustomShortcutPath();
         _customShortcutPath = null;
+    }
+
+    private void RestoreBackupMenuItem_OnSubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return;
+        }
+
+        menuItem.Items.Clear();
+
+        string directory;
+        try
+        {
+            directory = EnsureBackupDirectory();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Trace.TraceWarning("Failed to access backup directory: {0}", ex.Message);
+            menuItem.Items.Add(new MenuItem
+            {
+                Header = "Backups unavailable",
+                IsEnabled = false
+            });
+            return;
+        }
+
+        string[] files;
+        try
+        {
+            files = Directory.GetFiles(directory, "*.json");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Trace.TraceWarning("Failed to enumerate backups: {0}", ex.Message);
+            menuItem.Items.Add(new MenuItem
+            {
+                Header = "Backups unavailable",
+                IsEnabled = false
+            });
+            return;
+        }
+
+        if (files.Length == 0)
+        {
+            menuItem.Items.Add(new MenuItem
+            {
+                Header = "No backups available",
+                IsEnabled = false
+            });
+            return;
+        }
+
+        Array.Sort(files, (left, right) =>
+            File.GetLastWriteTimeUtc(right).CompareTo(File.GetLastWriteTimeUtc(left)));
+
+        foreach (string file in files)
+        {
+            string displayName = Path.GetFileNameWithoutExtension(file);
+            var item = new MenuItem
+            {
+                Header = displayName,
+                Tag = file
+            };
+            item.Click += RestoreBackupMenuItem_OnBackupClick;
+            menuItem.Items.Add(item);
+        }
+    }
+
+    private async void RestoreBackupMenuItem_OnBackupClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string filePath)
+        {
+            return;
+        }
+
+        await RestoreBackupAsync(filePath).ConfigureAwait(true);
+    }
+
+    private async Task RestoreBackupAsync(string backupPath)
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        if (!File.Exists(backupPath))
+        {
+            WpfMessageBox.Show(
+                "The selected backup could not be found.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!TryLoadPresetFromFile(backupPath,
+                "Backup",
+                ModListLoadOptions,
+                out ModPreset? preset,
+                out string? errorMessage))
+        {
+            string message = string.IsNullOrWhiteSpace(errorMessage)
+                ? "The selected backup is not valid."
+                : errorMessage!;
+            WpfMessageBox.Show(
+                $"Failed to restore the backup:\n{message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        ModPreset loadedPreset = preset!;
+        await ApplyPresetAsync(loadedPreset).ConfigureAwait(true);
+        _viewModel.ReportStatus($"Restored backup \"{loadedPreset.Name}\".");
     }
 
     private void OpenModFolderButton_OnClick(object sender, RoutedEventArgs e)
@@ -3634,6 +3759,93 @@ public partial class MainWindow : Window
         return true;
     }
 
+    private async Task CreateAutomaticBackupAsync()
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        await _backupSemaphore.WaitAsync().ConfigureAwait(true);
+        try
+        {
+            string directory;
+            try
+            {
+                directory = EnsureBackupDirectory();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Trace.TraceWarning("Failed to prepare backup directory: {0}", ex.Message);
+                return;
+            }
+
+            DateTime timestamp = DateTime.Now;
+            string displayName = $"Backup {timestamp:yyyy-MM-dd HH:mm:ss}";
+            string fileName = SanitizeFileName($"Backup_{timestamp:yyyy-MM-dd_HH-mm-ss}", "Backup");
+            string filePath = Path.Combine(directory, $"{fileName}.json");
+
+            SerializablePreset serializable = BuildSerializablePreset(displayName, includeModVersions: true, exclusive: true);
+
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
+            string json = JsonSerializer.Serialize(serializable, options);
+
+            try
+            {
+                await File.WriteAllTextAsync(filePath, json).ConfigureAwait(true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Trace.TraceWarning("Failed to write backup {0}: {1}", filePath, ex.Message);
+                return;
+            }
+
+            PruneAutomaticBackups(directory);
+        }
+        finally
+        {
+            _backupSemaphore.Release();
+        }
+    }
+
+    private static void PruneAutomaticBackups(string directory)
+    {
+        try
+        {
+            string[] files = Directory.GetFiles(directory, "*.json");
+            if (files.Length <= 10)
+            {
+                return;
+            }
+
+            Array.Sort(files, (left, right) =>
+                File.GetLastWriteTimeUtc(right).CompareTo(File.GetLastWriteTimeUtc(left)));
+
+            for (int index = 10; index < files.Length; index++)
+            {
+                string candidate = files[index];
+                try
+                {
+                    File.Delete(candidate);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Trace.TraceWarning("Failed to delete backup {0}: {1}", candidate, ex.Message);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Trace.TraceWarning("Failed to prune backups in {0}: {1}", directory, ex.Message);
+        }
+    }
+
     private static string BuildCloudModlistName()
     {
         return $"Modlist {DateTime.Now:yyyy-MM-dd HH:mm}";
@@ -3914,6 +4126,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        await CreateAutomaticBackupAsync().ConfigureAwait(true);
         await ApplyPresetAsync(preset);
         string status = mode == ModlistLoadMode.Replace
             ? $"Installed cloud modlist \"{preset.Name}\"."
@@ -3990,6 +4203,7 @@ public partial class MainWindow : Window
             }
 
             ModPreset loadedModlist = preset!;
+            await CreateAutomaticBackupAsync().ConfigureAwait(true);
             await ApplyPresetAsync(loadedModlist);
             string slotLabel = FormatCloudSlotLabel(selectedSlot.SlotKey);
             string status = mode == ModlistLoadMode.Replace
@@ -4171,6 +4385,7 @@ public partial class MainWindow : Window
         }
 
         ModPreset loadedModlist = preset!;
+        await CreateAutomaticBackupAsync().ConfigureAwait(true);
         await ApplyPresetAsync(loadedModlist);
         string status = mode == ModlistLoadMode.Replace
             ? $"Loaded modlist \"{loadedModlist.Name}\"."
@@ -4910,6 +5125,14 @@ public partial class MainWindow : Window
         string presetDirectory = Path.Combine(baseDirectory, PresetDirectoryName);
         Directory.CreateDirectory(presetDirectory);
         return presetDirectory;
+    }
+
+    private string EnsureBackupDirectory()
+    {
+        string baseDirectory = _userConfiguration.GetConfigurationDirectory();
+        string backupDirectory = Path.Combine(baseDirectory, BackupDirectoryName);
+        Directory.CreateDirectory(backupDirectory);
+        return backupDirectory;
     }
 
     private string EnsureModListDirectory()
