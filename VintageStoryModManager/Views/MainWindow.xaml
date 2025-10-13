@@ -110,6 +110,14 @@
             <Setter Property="BorderThickness" Value="0,0,0,0" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Foreground"
+                    Value="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}, Path=Foreground}" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Foreground"
+                            Value="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}, Path=Foreground}" />
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <Style x:Key="IMM.PrimaryDataGridColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
             <Setter Property="Background">
@@ -1295,6 +1303,8 @@
                                 <Setter Property="BorderBrush" Value="{StaticResource IMM.RowBorderBrush}" />
                                 <Setter Property="BorderThickness" Value="0" />
                                 <Setter Property="Margin" Value="10,2,10,2" />
+                                <Setter Property="Foreground"
+                                        Value="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}, Path=Foreground}" />
                                 <Setter Property="Padding">
                                     <Setter.Value>
                                         <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
@@ -1371,6 +1381,12 @@
                                         </ControlTemplate>
                                     </Setter.Value>
                                 </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Foreground"
+                                                Value="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}, Path=Foreground}" />
+                                    </Trigger>
+                                </Style.Triggers>
                             </Style>
                         </DataGrid.RowStyle>
                         <DataGrid.Style>
