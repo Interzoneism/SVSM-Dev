@@ -1057,8 +1057,9 @@
                                 <Setter Property="Padding" Value="12,8" />
                             </Style>
                             <Style TargetType="{x:Type DataGridRow}">
-                                <Setter Property="Margin" Value="4" />
+                                <Setter Property="Margin" Value="2" />
                                 <Setter Property="Padding" Value="4" />
+                                <Setter Property="Height" Value="32" />
                             </Style>
                         </DataGrid.Resources>
                         <DataGrid.Columns>
@@ -1117,22 +1118,32 @@
                                 MinWidth="195"
                                 IsEnabled="False"
                                 Visibility="Visible"
-                                Click="InstallCloudModlistButton_OnClick" Margin="723,93,157,0" Height="32" Width="170" />
+                                Click="InstallCloudModlistButton_OnClick" Margin="790,109,167,10" Height="32" Width="170" />
                             <Button x:Name="SaveCloudModlistButton"
-                                Content="Save Modlist to Cloud"
+                                Content="Save Modlist (Cloud)"
                                 Padding="12,6"
-                                Margin="0,36,905,57"
+                                Margin="10,109,972,10"
+                                MinWidth="165"
+                                Click="SaveCloudModlistButton_OnClick" Height="32" Width="170" />
+                            <Button x:Name="SaveCloudModlistButton1"
+                                Content="Modify Modlists (Cloud)"
+                                Padding="12,6"
+                                Margin="10,66,972,53"
                                 MinWidth="165"
                                 Click="SaveCloudModlistButton_OnClick" Height="32" Width="170" />
                             <Button x:Name="RefreshCloudModlistsButton"
                                 Content="Refresh"
                                 Padding="12,6"
                                 MinWidth="100"
-                                Click="RefreshCloudModlistsButton_OnClick" Margin="939,93,36,0" Height="32" Width="100" />
-                            <TextBox x:Name="UsernameTextbox" HorizontalAlignment="Left" Margin="69,80,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="166"/>
-                            <TextBlock HorizontalAlignment="Left" Margin="9,85,0,0" TextWrapping="Wrap" Text="Username:" VerticalAlignment="Top"/>
-                            <TextBlock x:Name="SelectedModlistDescription" HorizontalAlignment="Left" Margin="723,16,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Height="72" Width="352" Background="{DynamicResource CardGradient2}"/>
-                            <TextBlock x:Name="SelectedModlistTitle" HorizontalAlignment="Left" Margin="723,0,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontWeight="Bold"/>
+                                Click="RefreshCloudModlistsButton_OnClick" Margin="1042,109,10,10" Height="32" Width="100" />
+                            <TextBox x:Name="UsernameTextbox" HorizontalAlignment="Left" Margin="10,28,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="170"/>
+                            <TextBlock HorizontalAlignment="Left" Margin="10,10,0,0" TextWrapping="Wrap" Text="Username:" VerticalAlignment="Top"/>
+                            <Border HorizontalAlignment="Left" Height="88" Margin="790,10,0,0" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource CardGradient3}">
+                                <Grid>
+                                    <TextBlock x:Name="SelectedModlistDescription" HorizontalAlignment="Left" Margin="0,16,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Height="72" Width="352"/>
+                                    <TextBlock x:Name="SelectedModlistTitle" HorizontalAlignment="Center" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontWeight="Bold"/>
+                                </Grid>
+                            </Border>
                         </Grid>
                     </Border>
                 </Grid>
