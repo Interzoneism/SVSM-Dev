@@ -999,9 +999,63 @@ public partial class MainWindow : Window
         _modsWatcherTimer.Start();
     }
 
-    private async Task AutoAssignMissingModConfigPathsAsync(MainViewModel viewModel)
+    private Task AutoAssignMissingModConfigPathsAsync(MainViewModel viewModel)
     {
-        if (string.IsNullOrWhiteSpace(_dataDirectory))
+        return AutoAssignMissingModConfigPathsAsync(viewModel, (IReadOnlyCollection<string>?)null);
+    }
+
+    private async Task AutoAssignMissingModConfigPathsAsync(MainViewModel viewModel, IReadOnlyCollection<string>? modIds)
+    {
+        if (viewModel is null)
+        {
+            return;
+        }
+
+        IReadOnlyList<ModListItemViewModel> candidateMods;
+        if (modIds is null)
+        {
+            candidateMods = viewModel.GetInstalledModsSnapshot();
+        }
+        else
+        {
+            var normalizedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var mods = new List<ModListItemViewModel>();
+            foreach (string id in modIds)
+            {
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    continue;
+                }
+
+                string trimmedId = id.Trim();
+                if (!normalizedIds.Add(trimmedId))
+                {
+                    continue;
+                }
+
+                ModListItemViewModel? installedMod = viewModel.FindInstalledModById(trimmedId);
+                if (installedMod != null)
+                {
+                    mods.Add(installedMod);
+                }
+            }
+
+            if (mods.Count == 0)
+            {
+                return;
+            }
+
+            candidateMods = mods;
+        }
+
+        await AutoAssignMissingModConfigPathsAsync(viewModel, candidateMods).ConfigureAwait(true);
+    }
+
+    private async Task AutoAssignMissingModConfigPathsAsync(
+        MainViewModel viewModel,
+        IReadOnlyList<ModListItemViewModel> candidateMods)
+    {
+        if (string.IsNullOrWhiteSpace(_dataDirectory) || candidateMods.Count == 0)
         {
             return;
         }
@@ -1014,17 +1068,35 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var installedMods = viewModel.GetInstalledModsSnapshot();
-            if (installedMods.Count == 0)
+            var missingMods = new List<(string ModId, string DisplayName)>();
+            var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (ModListItemViewModel mod in candidateMods)
             {
-                return;
-            }
+                if (mod is null)
+                {
+                    continue;
+                }
 
-            var missingMods = installedMods
-                .Where(mod => !string.IsNullOrWhiteSpace(mod.ModId)
-                    && (!_userConfiguration.TryGetModConfigPath(mod.ModId, out string? path) || string.IsNullOrWhiteSpace(path)))
-                .Select(mod => (mod.ModId, mod.DisplayName))
-                .ToList();
+                string? modId = mod.ModId;
+                if (string.IsNullOrWhiteSpace(modId))
+                {
+                    continue;
+                }
+
+                string trimmedId = modId.Trim();
+                if (!seenIds.Add(trimmedId))
+                {
+                    continue;
+                }
+
+                if (_userConfiguration.TryGetModConfigPath(trimmedId, out string? path)
+                    && !string.IsNullOrWhiteSpace(path))
+                {
+                    continue;
+                }
+
+                missingMods.Add((trimmedId, mod.DisplayName));
+            }
 
             if (missingMods.Count == 0)
             {
@@ -1037,7 +1109,8 @@ public partial class MainWindow : Window
                 return;
             }
 
-            List<(string ModId, string ConfigPath)> matches = await Task.Run(() => FindConfigMatches(missingMods, configFiles));
+            List<(string ModId, string ConfigPath)> matches =
+                await Task.Run(() => FindConfigMatches(missingMods, configFiles)).ConfigureAwait(true);
             if (matches.Count == 0)
             {
                 return;
@@ -1394,7 +1467,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task RefreshModsAsync()
+    private async Task RefreshModsAsync(IReadOnlyCollection<string>? autoAssignModIds = null)
     {
         if (_viewModel?.RefreshCommand == null)
         {
@@ -1437,6 +1510,11 @@ public partial class MainWindow : Window
         if (selectedSourcePaths is { Count: > 0 })
         {
             RestoreSelectionFromSourcePaths(selectedSourcePaths, anchorSourcePath);
+        }
+
+        if (_viewModel is { } viewModel)
+        {
+            await AutoAssignMissingModConfigPathsAsync(viewModel, autoAssignModIds).ConfigureAwait(true);
         }
 
         if (scrollViewer != null && targetOffset.HasValue)
@@ -2497,6 +2575,7 @@ public partial class MainWindow : Window
         bool requiresRefresh = false;
         bool hasRefreshedAllMods = false;
         var processedDependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        List<string>? installedDependencyIds = null;
 
         try
         {
@@ -2536,6 +2615,11 @@ public partial class MainWindow : Window
                     {
                         anySuccess = true;
                         requiresRefresh = true;
+                        if (!string.IsNullOrWhiteSpace(dependency.ModId))
+                        {
+                            installedDependencyIds ??= new List<string>();
+                            installedDependencyIds.Add(dependency.ModId.Trim());
+                        }
                         _viewModel.ReportStatus(result.Message);
                     }
 
@@ -2564,7 +2648,7 @@ public partial class MainWindow : Window
             try
             {
                 hasRefreshedAllMods = true;
-                await RefreshModsAsync();
+                await RefreshModsAsync(installedDependencyIds);
             }
             catch (Exception ex)
             {
@@ -2598,7 +2682,7 @@ public partial class MainWindow : Window
             try
             {
                 hasRefreshedAllMods = true;
-                await RefreshModsAsync();
+                await RefreshModsAsync(installedDependencyIds);
             }
             catch (Exception ex)
             {
@@ -2720,7 +2804,12 @@ public partial class MainWindow : Window
             string versionText = string.IsNullOrWhiteSpace(release.Version) ? string.Empty : $" {release.Version}";
             _viewModel?.ReportStatus($"Installed {mod.DisplayName}{versionText}.");
 
-            await RefreshModsAsync().ConfigureAwait(true);
+            string? installedModId = string.IsNullOrWhiteSpace(mod.ModId) ? null : mod.ModId.Trim();
+            IReadOnlyCollection<string>? autoAssignTargets = installedModId is null
+                ? null
+                : new[] { installedModId };
+
+            await RefreshModsAsync(autoAssignTargets).ConfigureAwait(true);
 
             if (mod.IsSelected)
             {
@@ -6226,6 +6315,7 @@ public partial class MainWindow : Window
         }
 
         bool installedAnyMods = false;
+        List<string>? installedModIds = null;
         if (installCandidates.Count > 0)
         {
             foreach (var candidate in installCandidates)
@@ -6234,6 +6324,11 @@ public partial class MainWindow : Window
                 if (installResult.Success)
                 {
                     installedAnyMods = true;
+                    if (!string.IsNullOrWhiteSpace(candidate.ModId))
+                    {
+                        installedModIds ??= new List<string>();
+                        installedModIds.Add(candidate.ModId!.Trim());
+                    }
                     continue;
                 }
 
@@ -6270,7 +6365,7 @@ public partial class MainWindow : Window
 
             if (installedAnyMods)
             {
-                await RefreshModsAsync().ConfigureAwait(true);
+                await RefreshModsAsync(installedModIds).ConfigureAwait(true);
             }
         }
 
