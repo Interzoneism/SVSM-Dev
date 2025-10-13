@@ -26,7 +26,7 @@
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="20" />
-            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="320" />
         </Grid.ColumnDefinitions>
 
         <TextBlock Text="Name:" Grid.Row="0" Grid.Column="0" Margin="0,0,12,12" VerticalAlignment="Center" />
@@ -55,21 +55,21 @@
                  VerticalScrollBarVisibility="Auto" />
 
         <Grid Grid.Row="0" Grid.Column="3" Grid.RowSpan="4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Column="0" Text="Include Configurations" FontWeight="SemiBold" Margin="0,0,0,8" />
+            <TextBlock Grid.Row="0"
+                       Text="Include Configurations"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,4" />
             <CheckBox x:Name="SelectAllCheckBox"
-                      Grid.Column="1"
-                      Margin="12,0,0,8"
-                      HorizontalAlignment="Right"
+                      Grid.Row="1"
+                      Margin="0,0,0,8"
+                      HorizontalAlignment="Left"
                       VerticalAlignment="Center"
                       IsThreeState="True"
                       Click="SelectAllCheckBox_OnClick"
@@ -87,7 +87,7 @@
                 </CheckBox.Content>
             </CheckBox>
 
-            <Border Grid.Row="1"
+            <Border Grid.Row="2"
                     BorderThickness="1"
                     BorderBrush="{DynamicResource IMM.BorderBrush}"
                     Padding="6">
@@ -124,7 +124,7 @@
                 </ListBox>
             </Border>
 
-            <TextBlock Grid.Row="2"
+            <TextBlock Grid.Row="3"
                        Text="No mods with saved configuration paths were found."
                        TextWrapping="Wrap"
                        Foreground="{DynamicResource IMM.SubtleForegroundBrush}"
