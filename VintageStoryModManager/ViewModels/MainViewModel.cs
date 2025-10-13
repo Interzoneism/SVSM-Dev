@@ -278,7 +278,7 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public string DownloadsNewModsRecentMonthsLabel =>
-        $"Top downloads (created {BuildRecentMonthsPhrase()})";
+        $"Created {BuildRecentMonthsPhrase()}";
 
     public bool IsShowingRecentDownloadMetric => SearchModDatabase && !HasSearchText
         && _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays;
@@ -1226,7 +1226,7 @@ public sealed class MainViewModel : ObservableObject
     {
         return _newModsRecentMonths == 1
             ? "last month"
-            : $"last {_newModsRecentMonths} months";
+            : $"in the last {_newModsRecentMonths} months";
     }
 
     private Task UpdateSearchResultsAsync(IReadOnlyList<ModListItemViewModel> items, CancellationToken cancellationToken)

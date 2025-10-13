@@ -346,15 +346,15 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <Rectangle HorizontalAlignment="Left" Height="574" VerticalAlignment="Top" Width="1172" Fill="{DynamicResource GridBackground1}" Grid.RowSpan="2" Margin="0,32,0,0"/>
             <Grid Grid.Row="0" Margin="0,-15,-27,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" MinWidth="290" />
-                    <ColumnDefinition />
+                    <ColumnDefinition Width="34*" />
+                    <ColumnDefinition Width="147*"/>
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBox Grid.Column="1"
+                <TextBox Grid.Column="2"
                          Margin="0,10,24,33"
                          MinWidth="200"
                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
@@ -455,10 +455,10 @@
 
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
-                            VerticalAlignment="Top" Height="30" Margin="0,16,201,0">
+                            VerticalAlignment="Top" Height="30" Margin="143,15,162,0" Width="600" Grid.ColumnSpan="2">
                     <StackPanel.Style>
                         <Style TargetType="{x:Type StackPanel}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
@@ -477,16 +477,42 @@
                             </Style.Triggers>
                         </Style>
                     </StackPanel.Style>
-                    <RadioButton Content="Top downloads"
+                    <RadioButton Content="All time"
                                  GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}"
+                                 IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" Width="85" MinWidth="85"
                                  />
-                    <RadioButton Content="Top downloads last 30 days"
+                    <RadioButton Content="Last 30 days"
                                  GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" Margin="10,0,0,0" />
+                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" Margin="0,0,0,0" Width="115" MinWidth="115" />
                     <RadioButton Content="{Binding DownloadsNewModsRecentMonthsLabel}"
                                  GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsDownloadsNewModsRecentMonthsMode, Mode=TwoWay}" Margin="10,0,0,0" />
+                                 IsChecked="{Binding IsDownloadsNewModsRecentMonthsMode, Mode=TwoWay}" Margin="0,0,0,0" Width="309" />
+                </StackPanel>
+                <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Top" Height="30" Margin="143,-3,162,0" Width="600" Grid.ColumnSpan="2">
+                    <StackPanel.Style>
+                        <Style TargetType="{x:Type StackPanel}">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                        <Condition Binding="{Binding SearchText}" Value="" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                        <Condition Binding="{Binding SearchText}" Value="{x:Null}" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <Label Content="Sort by most downloads..." Width="273"/>
                 </StackPanel>
             </Grid>
             <Grid Margin="0,32,25,0" Grid.RowSpan="2">
