@@ -6,6 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         xmlns:viewModels="clr-namespace:VintageStoryModManager.ViewModels"
+        xmlns:views="clr-namespace:VintageStoryModManager.Views"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:converters="clr-namespace:VintageStoryModManager.Converters"
         mc:Ignorable="d"
@@ -39,7 +40,7 @@
             <Setter Property="Margin" Value="0,0,0,0" />
         </Style>
         <ItemsPanelTemplate x:Key="IMM.TagItemsPanelTemplate">
-            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" />
+            <views:OverlappingTagPanel />
         </ItemsPanelTemplate>
         <ItemsPanelTemplate x:Key="IMM.TagFilterItemsPanelTemplate">
             <UniformGrid Columns="4" HorizontalAlignment="Stretch" />
@@ -1104,21 +1105,21 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid>
-                                        <Viewbox x:Name="TagsViewbox"
-                                                 Stretch="Uniform"
-                                                 StretchDirection="DownOnly"
-                                                 HorizontalAlignment="Stretch"
-                                                 VerticalAlignment="Center"
-                                                 MaxHeight="{StaticResource IMM.TagRowMaxHeight}">
+                                        <Border x:Name="TagsContainer"
+                                                HorizontalAlignment="Stretch"
+                                                VerticalAlignment="Center"
+                                                MaxHeight="{StaticResource IMM.TagRowMaxHeight}"
+                                                ClipToBounds="True">
                                             <ItemsControl x:Name="TagsItemsControl"
                                                           Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}}"
+                                                          HorizontalAlignment="Left"
                                                           ItemsSource="{Binding DatabaseTags}"
                                                           ItemTemplate="{StaticResource IMM.TagBadgeTemplate}">
                                                 <ItemsControl.ItemsPanel>
                                                     <StaticResource ResourceKey="IMM.TagItemsPanelTemplate" />
                                                 </ItemsControl.ItemsPanel>
                                             </ItemsControl>
-                                        </Viewbox>
+                                        </Border>
                                         <TextBlock x:Name="NoTagsText"
                                                    Text="—"
                                                    HorizontalAlignment="Center"
@@ -1127,11 +1128,11 @@
                                     </Grid>
                                     <DataTemplate.Triggers>
                                         <DataTrigger Binding="{Binding DatabaseTags.Count}" Value="0">
-                                            <Setter TargetName="TagsViewbox" Property="Visibility" Value="Collapsed" />
+                                            <Setter TargetName="TagsContainer" Property="Visibility" Value="Collapsed" />
                                             <Setter TargetName="NoTagsText" Property="Visibility" Value="Visible" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
-                                            <Setter TargetName="TagsViewbox" Property="MaxHeight" Value="{StaticResource IMM.TagRowCompactMaxHeight}" />
+                                            <Setter TargetName="TagsContainer" Property="MaxHeight" Value="{StaticResource IMM.TagRowCompactMaxHeight}" />
                                         </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
