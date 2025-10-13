@@ -936,7 +936,7 @@ public sealed class MainViewModel : ObservableObject
             {
                 ModDatabaseAutoLoadMode.DownloadsLastThirtyDays => "Loading top mods from the last 30 days...",
                 ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
-                    $"Loading most downloaded new mods from the {BuildRecentMonthsPhrase()}...",
+                    $"Loading most downloaded newly created mods {BuildRecentMonthsPhrase()}...",
                 _ => "Loading most downloaded mods..."
             };
         }
@@ -1193,7 +1193,7 @@ public sealed class MainViewModel : ObservableObject
             ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
                 $"Showing {resultCount} of the most downloaded mods from the last 30 days.",
             ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
-                $"Showing {resultCount} of the most downloaded new mods from the {BuildRecentMonthsPhrase()}.",
+                $"Showing {resultCount} of the most downloaded newly created mods {BuildRecentMonthsPhrase()}.",
             _ => $"Showing {resultCount} of the most downloaded mods."
         };
     }
@@ -1229,7 +1229,7 @@ public sealed class MainViewModel : ObservableObject
                 ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
                     "load the most downloaded mods from the last 30 days",
                 ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
-                    $"load the most downloaded new mods from the {BuildRecentMonthsPhrase()}",
+                    $"load the most downloaded new mods {BuildRecentMonthsPhrase()}",
                 _ => "load the most downloaded mods from the mod database"
             };
         }
