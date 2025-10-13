@@ -15,13 +15,15 @@ namespace VintageStoryModManager.Services;
 public sealed class UserConfigurationService
 {
     private const string ConfigurationFileName = "SimpleVSManagerConfiguration.json";
-    private const string ModConfigPathsFileName = "SimpleVSManagerModConfigPaths";
+    private const string ModConfigPathsFileName = "SimpleVSManagerModConfigPaths.json";
+    private const string LegacyModConfigPathsFileName = "SimpleVSManagerModConfigPaths";
     private const int DefaultModDatabaseSearchResultLimit = 30;
     private const int DefaultModDatabaseNewModsRecentMonths = 3;
     private const int MaxModDatabaseNewModsRecentMonths = 24;
 
     private readonly string _configurationPath;
     private readonly string _modConfigPathsPath;
+    private readonly string _legacyModConfigPathsPath;
     private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ModConfigPathEntry> _storedModConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private string? _selectedPresetName;
@@ -48,7 +50,8 @@ public sealed class UserConfigurationService
     public UserConfigurationService()
     {
         _configurationPath = DetermineConfigurationPath();
-        _modConfigPathsPath = DetermineModConfigPathsPath();
+        _modConfigPathsPath = DetermineModConfigPathsPath(ModConfigPathsFileName);
+        _legacyModConfigPathsPath = DetermineModConfigPathsPath(LegacyModConfigPathsFileName);
         Load();
 
         _hasPendingSave = !File.Exists(_configurationPath);
@@ -615,10 +618,10 @@ public sealed class UserConfigurationService
         return Path.Combine(preferredDirectory, ConfigurationFileName);
     }
 
-    private static string DetermineModConfigPathsPath()
+    private static string DetermineModConfigPathsPath(string fileName)
     {
         string preferredDirectory = GetPreferredConfigurationDirectory();
-        return Path.Combine(preferredDirectory, ModConfigPathsFileName);
+        return Path.Combine(preferredDirectory, fileName);
     }
 
     private JsonObject BuildModConfigPathsJson()
@@ -667,42 +670,67 @@ public sealed class UserConfigurationService
 
         try
         {
-            if (!File.Exists(_modConfigPathsPath))
+            string? pathToLoad = null;
+            bool loadedFromLegacy = false;
+
+            if (File.Exists(_modConfigPathsPath))
+            {
+                pathToLoad = _modConfigPathsPath;
+            }
+            else if (File.Exists(_legacyModConfigPathsPath))
+            {
+                pathToLoad = _legacyModConfigPathsPath;
+                loadedFromLegacy = true;
+            }
+
+            if (pathToLoad is null)
             {
                 return;
             }
 
-            using FileStream stream = File.OpenRead(_modConfigPathsPath);
-            JsonNode? node = JsonNode.Parse(stream);
-            if (node is not JsonObject obj)
+            using (FileStream stream = File.OpenRead(pathToLoad))
             {
-                return;
+                JsonNode? node = JsonNode.Parse(stream);
+                if (node is not JsonObject obj)
+                {
+                    return;
+                }
+
+                foreach (var pair in obj)
+                {
+                    string modId = pair.Key;
+                    if (string.IsNullOrWhiteSpace(modId) || pair.Value is not JsonObject entryObj)
+                    {
+                        continue;
+                    }
+
+                    string? directoryPath = NormalizePath(GetOptionalString(entryObj["directoryPath"]));
+                    string? fileName = GetOptionalString(entryObj["fileName"])?.Trim();
+
+                    if (string.IsNullOrWhiteSpace(directoryPath) || string.IsNullOrWhiteSpace(fileName))
+                    {
+                        continue;
+                    }
+
+                    var entry = new ModConfigPathEntry(directoryPath, fileName);
+                    string key = modId.Trim();
+                    _storedModConfigPaths[key] = entry;
+
+                    string? combinedPath = BuildFullConfigPath(entry);
+                    if (!string.IsNullOrWhiteSpace(combinedPath))
+                    {
+                        _modConfigPaths[key] = combinedPath;
+                    }
+                }
             }
 
-            foreach (var pair in obj)
+            if (loadedFromLegacy)
             {
-                string modId = pair.Key;
-                if (string.IsNullOrWhiteSpace(modId) || pair.Value is not JsonObject entryObj)
+                _hasPendingModConfigPathSave = true;
+
+                if (_isPersistenceEnabled)
                 {
-                    continue;
-                }
-
-                string? directoryPath = NormalizePath(GetOptionalString(entryObj["directoryPath"]));
-                string? fileName = GetOptionalString(entryObj["fileName"])?.Trim();
-
-                if (string.IsNullOrWhiteSpace(directoryPath) || string.IsNullOrWhiteSpace(fileName))
-                {
-                    continue;
-                }
-
-                var entry = new ModConfigPathEntry(directoryPath, fileName);
-                string key = modId.Trim();
-                _storedModConfigPaths[key] = entry;
-
-                string? combinedPath = BuildFullConfigPath(entry);
-                if (!string.IsNullOrWhiteSpace(combinedPath))
-                {
-                    _modConfigPaths[key] = combinedPath;
+                    PersistModConfigPathHistory();
                 }
             }
         }
@@ -785,6 +813,19 @@ public sealed class UserConfigurationService
             };
 
             File.WriteAllText(_modConfigPathsPath, root.ToJsonString(options));
+
+            if (!string.Equals(_modConfigPathsPath, _legacyModConfigPathsPath, StringComparison.OrdinalIgnoreCase)
+                && File.Exists(_legacyModConfigPathsPath))
+            {
+                try
+                {
+                    File.Delete(_legacyModConfigPathsPath);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+                {
+                    // If the legacy file cannot be deleted, ignore the failure.
+                }
+            }
             _hasPendingModConfigPathSave = false;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
