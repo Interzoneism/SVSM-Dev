@@ -3206,21 +3206,21 @@ public partial class MainWindow : Window
             return;
         }
 
-        MessageBoxResult confirmation = WpfMessageBox.Show(
-            "Are you sure you want to load this backup Modlist? Your current mods will be deleted and replaced with the mods in this backup.",
-            "Simple VS Manager",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+        var confirmationDialog = new RestoreBackupDialog
+        {
+            Owner = this
+        };
 
-        if (confirmation != MessageBoxResult.Yes)
+        bool? confirmation = confirmationDialog.ShowDialog();
+        if (confirmation != true)
         {
             return;
         }
 
-        await RestoreBackupAsync(filePath).ConfigureAwait(true);
+        await RestoreBackupAsync(filePath, confirmationDialog.RestoreConfigurations).ConfigureAwait(true);
     }
 
-    private async Task RestoreBackupAsync(string backupPath)
+    private async Task RestoreBackupAsync(string backupPath, bool restoreConfigurations)
     {
         if (_viewModel is null)
         {
@@ -3255,7 +3255,7 @@ public partial class MainWindow : Window
         }
 
         ModPreset loadedPreset = preset!;
-        await ApplyPresetAsync(loadedPreset).ConfigureAwait(true);
+        await ApplyPresetAsync(loadedPreset, restoreConfigurations).ConfigureAwait(true);
         _viewModel.ReportStatus($"Restored backup \"{loadedPreset.Name}\".");
     }
 
@@ -3910,7 +3910,14 @@ public partial class MainWindow : Window
             string fileName = SanitizeFileName(displayName, "Backup");
             string filePath = Path.Combine(directory, $"{fileName}.json");
 
-            SerializablePreset serializable = BuildSerializablePreset(displayName, includeModVersions: true, exclusive: true);
+            IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations =
+                CaptureConfigurationsForBackup();
+
+            SerializablePreset serializable = BuildSerializablePreset(
+                displayName,
+                includeModVersions: true,
+                exclusive: true,
+                includedConfigurations);
 
             var options = new JsonSerializerOptions
             {
@@ -3937,6 +3944,65 @@ public partial class MainWindow : Window
         {
             _backupSemaphore.Release();
         }
+    }
+
+    private IReadOnlyDictionary<string, ModConfigurationSnapshot>? CaptureConfigurationsForBackup()
+    {
+        if (_viewModel is null)
+        {
+            return null;
+        }
+
+        IReadOnlyList<ModListItemViewModel> mods = _viewModel.GetInstalledModsSnapshot();
+        if (mods.Count == 0)
+        {
+            return null;
+        }
+
+        var includedConfigurations = new Dictionary<string, ModConfigurationSnapshot>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (ModListItemViewModel mod in mods)
+        {
+            if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
+            {
+                continue;
+            }
+
+            string normalizedId = mod.ModId.Trim();
+            if (includedConfigurations.ContainsKey(normalizedId))
+            {
+                continue;
+            }
+
+            if (!_userConfiguration.TryGetModConfigPath(normalizedId, out string? path)
+                || string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            string normalizedPath = path.Trim();
+            if (!File.Exists(normalizedPath))
+            {
+                continue;
+            }
+
+            try
+            {
+                string content = File.ReadAllText(normalizedPath);
+                string fileName = GetSafeConfigFileName(Path.GetFileName(normalizedPath), normalizedId);
+                includedConfigurations[normalizedId] = new ModConfigurationSnapshot(fileName, content);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                Trace.TraceWarning(
+                    "Failed to include configuration file {0} for mod {1} in backup: {2}",
+                    normalizedPath,
+                    normalizedId,
+                    ex.Message);
+            }
+        }
+
+        return includedConfigurations.Count > 0 ? includedConfigurations : null;
     }
 
     private static void PruneAutomaticBackups(string directory)
@@ -5549,7 +5615,7 @@ public partial class MainWindow : Window
         public string? ConfigurationContent { get; set; }
     }
 
-    private async Task ApplyPresetAsync(ModPreset preset)
+    private async Task ApplyPresetAsync(ModPreset preset, bool importConfigurations = true)
     {
         if (_viewModel is null || _isApplyingPreset)
         {
@@ -5576,7 +5642,10 @@ public partial class MainWindow : Window
                 _viewModel.ModsView.Refresh();
             }
 
-            await ImportPresetConfigsAsync(preset).ConfigureAwait(true);
+            if (importConfigurations)
+            {
+                await ImportPresetConfigsAsync(preset).ConfigureAwait(true);
+            }
         }
         finally
         {
