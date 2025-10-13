@@ -1112,7 +1112,7 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Border Margin="0,0,0,10" Grid.Row="1" Width="588" Background="{DynamicResource CardGradient2}" Padding="5" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Center" Height="151" VerticalAlignment="Bottom">
+                    <Border Margin="0,463,0,0" Grid.Row="1" Width="614" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Center" Height="151" VerticalAlignment="Top">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2"/>
                         </Border.Effect>
@@ -1144,7 +1144,7 @@
                                 Click="RefreshCloudModlistsButton_OnClick" Margin="476,109,0,0" Height="32" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" />
                             <TextBox x:Name="UsernameTextbox" HorizontalAlignment="Left" Margin="10,28,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="170"/>
                             <TextBlock HorizontalAlignment="Left" Margin="10,10,0,0" TextWrapping="Wrap" Text="Username:" VerticalAlignment="Top"/>
-                            <Border HorizontalAlignment="Left" Height="88" Margin="224,10,0,0" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource CardGradient3}">
+                            <Border HorizontalAlignment="Left" Height="88" Margin="224,10,0,0"  Padding="10" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource CardGradient3}">
                                 <Grid>
                                     <TextBlock x:Name="SelectedModlistDescription" HorizontalAlignment="Left" Margin="0,16,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Height="72" Width="352"/>
                                     <TextBlock x:Name="SelectedModlistTitle" HorizontalAlignment="Left" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontWeight="Bold"/>
