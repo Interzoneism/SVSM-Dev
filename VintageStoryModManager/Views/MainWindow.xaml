@@ -34,10 +34,10 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="8,2" />
-            <Setter Property="Margin" Value="0,0,6,6" />
+            <Setter Property="Margin" Value="0,0,6,0" />
         </Style>
         <ItemsPanelTemplate x:Key="IMM.TagItemsPanelTemplate">
-            <WrapPanel VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" />
         </ItemsPanelTemplate>
         <DataTemplate x:Key="IMM.TagBadgeTemplate">
             <Border Style="{StaticResource IMM.TagBadgeBorderStyle}">
@@ -677,10 +677,14 @@
                                             <DataTrigger Binding="{Binding HasActivationError}" Value="True">
                                                 <Setter TargetName="RowBorder" Property="Background" Value="#7FFF0000" />
                                             </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsActive}" Value="False" />
+                                                    <Condition Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
+                                                </MultiDataTrigger.Conditions>
                                                 <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource CardDisabledGradient}" />
                                                 <Setter TargetName="RowBorder" Property="Opacity" Value="0.5" />
-                                            </DataTrigger>
+                                            </MultiDataTrigger>
                                             <Trigger Property="DetailsVisibility" Value="Visible">
                                                 <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
                                             </Trigger>
@@ -979,34 +983,30 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid>
-                                        <ItemsControl ItemsSource="{Binding DatabaseTags}" ItemTemplate="{StaticResource IMM.TagBadgeTemplate}">
-                                            <ItemsControl.ItemsPanel>
-                                                <StaticResource ResourceKey="IMM.TagItemsPanelTemplate" />
-                                            </ItemsControl.ItemsPanel>
-                                            <ItemsControl.Style>
-                                                <Style TargetType="{x:Type ItemsControl}">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding DatabaseTags.Count}" Value="0">
-                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </ItemsControl.Style>
-                                        </ItemsControl>
-                                        <TextBlock Text="—" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <TextBlock.Style>
-                                                <Style TargetType="{x:Type TextBlock}">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding DatabaseTags.Count}" Value="0">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
+                                        <Viewbox x:Name="TagsViewbox"
+                                                 Stretch="Uniform"
+                                                 StretchDirection="DownOnly"
+                                                 HorizontalAlignment="Stretch"
+                                                 VerticalAlignment="Center">
+                                            <ItemsControl ItemsSource="{Binding DatabaseTags}"
+                                                          ItemTemplate="{StaticResource IMM.TagBadgeTemplate}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <StaticResource ResourceKey="IMM.TagItemsPanelTemplate" />
+                                                </ItemsControl.ItemsPanel>
+                                            </ItemsControl>
+                                        </Viewbox>
+                                        <TextBlock x:Name="NoTagsText"
+                                                   Text="—"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="Collapsed" />
                                     </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding DatabaseTags.Count}" Value="0">
+                                            <Setter TargetName="TagsViewbox" Property="Visibility" Value="Collapsed" />
+                                            <Setter TargetName="NoTagsText" Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                             <DataGridTemplateColumn.CellStyle>
