@@ -677,10 +677,14 @@
                                             <DataTrigger Binding="{Binding HasActivationError}" Value="True">
                                                 <Setter TargetName="RowBorder" Property="Background" Value="#7FFF0000" />
                                             </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsActive}" Value="False" />
+                                                    <Condition Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
+                                                </MultiDataTrigger.Conditions>
                                                 <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource CardDisabledGradient}" />
                                                 <Setter TargetName="RowBorder" Property="Opacity" Value="0.5" />
-                                            </DataTrigger>
+                                            </MultiDataTrigger>
                                             <Trigger Property="DetailsVisibility" Value="Visible">
                                                 <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
                                             </Trigger>
