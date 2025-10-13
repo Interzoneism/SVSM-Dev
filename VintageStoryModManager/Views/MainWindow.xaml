@@ -28,7 +28,7 @@
         <Color x:Key="IMM.TagBorderColor">#FFB3C7FF</Color>
         <SolidColorBrush x:Key="IMM.TagBackgroundBrush" Color="{StaticResource IMM.TagBackgroundColor}" />
         <SolidColorBrush x:Key="IMM.TagBorderBrush" Color="{StaticResource IMM.TagBorderColor}" />
-        <sys:Double x:Key="IMM.TagRowMaxHeight">48</sys:Double>
+        <sys:Double x:Key="IMM.TagRowMaxHeight">80</sys:Double>
         <sys:Double x:Key="IMM.TagRowCompactMaxHeight">38</sys:Double>
         <Style x:Key="IMM.TagBadgeBorderStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource IMM.TagBackgroundBrush}" />
@@ -36,7 +36,7 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="8,2" />
-            <Setter Property="Margin" Value="0,0,6,2" />
+            <Setter Property="Margin" Value="0,0,0,0" />
         </Style>
         <ItemsPanelTemplate x:Key="IMM.TagItemsPanelTemplate">
             <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" />
@@ -985,7 +985,7 @@
                                 </Style>
                             </DataGridTextColumn.CellStyle>
                         </DataGridTextColumn>
-                        <DataGridTemplateColumn x:Name="TagsColumn" Header="Tags" SortMemberPath="DatabaseTagsDisplay" Width="210" MinWidth="180" IsReadOnly="True">
+                        <DataGridTemplateColumn x:Name="TagsColumn" Header="Tags" SortMemberPath="DatabaseTagsDisplay" Width="230" MinWidth="180" IsReadOnly="True">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid>
@@ -1144,7 +1144,7 @@
                               GridLinesVisibility="None"
                               RowHeaderWidth="0"
                               BorderThickness="2,1,2,1"
-                              RowBackground="White"
+                              RowBackground="{StaticResource CardGradient2}"
                               HorizontalGridLinesBrush="Transparent"
                               VerticalGridLinesBrush="Transparent"
                               HeadersVisibility="Column"
@@ -1209,7 +1209,7 @@
                                                             CornerRadius="8"
                                                             IsHitTestVisible="False" />
                                                     <Border x:Name="HoverOverlay"
-                                                            Background="{StaticResource IMM.SuccessBrush}"
+                                                            Background="{StaticResource IMM.BorderHoverBrush}"
                                                             Opacity="0"
                                                             CornerRadius="8"
                                                             IsHitTestVisible="False" />
@@ -1245,8 +1245,8 @@
                                                 <Trigger Property="IsSelected" Value="True">
                                                     <Setter TargetName="SelectionOverlay" Property="Opacity" Value="0.25" />
                                                     <Setter TargetName="HoverOverlay" Property="Opacity" Value="0" />
-                                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
-                                                    <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
+                                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource IMM.RowBorderBrush}" />
+                                                    <Setter TargetName="RowBorder" Property="BorderThickness" Value="0" />
                                                 </Trigger>
                                                 <Trigger Property="IsSelected" Value="False">
                                                     <Setter TargetName="SelectionOverlay" Property="Opacity" Value="0" />
@@ -1284,6 +1284,8 @@
                                 <DataGridTextColumn.CellStyle>
                                     <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                         <Setter Property="VerticalContentAlignment" Value="Center" />
+                                        <Setter Property="Margin" Value="10,0,0,0" />
+                                        <Setter Property="FontWeight" Value="Bold" />
                                     </Style>
                                 </DataGridTextColumn.CellStyle>
                             </DataGridTextColumn>
