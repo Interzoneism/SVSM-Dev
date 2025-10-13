@@ -395,6 +395,19 @@
                     <Separator />
                     <MenuItem Header="Save Local _Modlist..." Height="35" Click="SaveModlistMenuItem_OnClick" />
                     <MenuItem Header="Load Local _Modlist..." Height="35" Click="LoadModlistMenuItem_OnClick" />
+                    <Separator />
+                    <MenuItem x:Name="AlwaysClearModlistsMenuItem"
+                              Header="Always clear mods before loading Modlist"
+                              Height="35"
+                              IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
+                              Click="AlwaysClearModlistsMenuItem_OnClick" />
+                    <MenuItem x:Name="AlwaysAddModlistsMenuItem"
+                              Header="Always add to current mods when loading Modlist"
+                              Height="35"
+                              IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
+                              Click="AlwaysAddModlistsMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_View" Height="35">
                     <MenuItem Header="_Compact View"
