@@ -15,12 +15,15 @@ namespace VintageStoryModManager.Services;
 public sealed class UserConfigurationService
 {
     private const string ConfigurationFileName = "SimpleVSManagerConfiguration.json";
+    private const string ModConfigPathsFileName = "SimpleVSManagerModConfigPaths";
     private const int DefaultModDatabaseSearchResultLimit = 30;
     private const int DefaultModDatabaseNewModsRecentMonths = 3;
     private const int MaxModDatabaseNewModsRecentMonths = 24;
 
     private readonly string _configurationPath;
+    private readonly string _modConfigPathsPath;
     private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ModConfigPathEntry> _storedModConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private string? _selectedPresetName;
     private bool _isCompactView;
     private bool _useModDbDesignView = true;
@@ -40,13 +43,16 @@ public sealed class UserConfigurationService
     private string? _cloudUploaderName;
     private bool _isPersistenceEnabled;
     private bool _hasPendingSave;
+    private bool _hasPendingModConfigPathSave;
 
     public UserConfigurationService()
     {
         _configurationPath = DetermineConfigurationPath();
+        _modConfigPathsPath = DetermineModConfigPathsPath();
         Load();
 
         _hasPendingSave = !File.Exists(_configurationPath);
+        _hasPendingModConfigPathSave = false;
     }
 
     public string? DataDirectory { get; private set; }
@@ -107,6 +113,11 @@ public sealed class UserConfigurationService
         {
             PersistConfiguration();
         }
+
+        if (_hasPendingModConfigPathSave)
+        {
+            PersistModConfigPathHistory();
+        }
     }
 
     public string? GetLastSelectedPresetName() => _selectedPresetName;
@@ -133,7 +144,26 @@ public sealed class UserConfigurationService
             return false;
         }
 
-        return _modConfigPaths.TryGetValue(modId.Trim(), out path);
+        string key = modId.Trim();
+        if (_modConfigPaths.TryGetValue(key, out path))
+        {
+            return true;
+        }
+
+        if (_storedModConfigPaths.TryGetValue(key, out ModConfigPathEntry? entry) && entry is not null)
+        {
+            string? combined = BuildFullConfigPath(entry);
+            if (!string.IsNullOrWhiteSpace(combined))
+            {
+                string combinedPath = combined!;
+                _modConfigPaths[key] = combinedPath;
+                path = combinedPath;
+                return true;
+            }
+        }
+
+        path = null;
+        return false;
     }
 
     public void SetModConfigPath(string modId, string path)
@@ -149,20 +179,36 @@ public sealed class UserConfigurationService
             throw new ArgumentException("The configuration path is invalid.", nameof(path));
         }
 
-        _modConfigPaths[modId.Trim()] = normalized;
+        string key = modId.Trim();
+        _modConfigPaths[key] = normalized;
+        UpdatePersistentModConfigPath(key, normalized);
         Save();
     }
 
-    public void RemoveModConfigPath(string? modId)
+    public void RemoveModConfigPath(string? modId, bool preserveHistory = false)
     {
         if (string.IsNullOrWhiteSpace(modId))
         {
             return;
         }
 
-        if (_modConfigPaths.Remove(modId.Trim()))
+        string key = modId.Trim();
+        bool removed = _modConfigPaths.Remove(key);
+        bool historyChanged = false;
+
+        if (!preserveHistory)
+        {
+            historyChanged = _storedModConfigPaths.Remove(key);
+        }
+
+        if (removed)
         {
             Save();
+        }
+
+        if (historyChanged)
+        {
+            SaveModConfigPathHistory();
         }
     }
 
@@ -458,6 +504,8 @@ public sealed class UserConfigurationService
             _customShortcutPath = null;
             _cloudUploaderName = null;
         }
+
+        LoadPersistentModConfigPaths();
     }
 
     private void Save()
@@ -591,6 +639,12 @@ public sealed class UserConfigurationService
         return Path.Combine(preferredDirectory, ConfigurationFileName);
     }
 
+    private static string DetermineModConfigPathsPath()
+    {
+        string preferredDirectory = GetPreferredConfigurationDirectory();
+        return Path.Combine(preferredDirectory, ModConfigPathsFileName);
+    }
+
     private JsonObject BuildModConfigPathsJson()
     {
         var result = new JsonObject();
@@ -629,6 +683,197 @@ public sealed class UserConfigurationService
 
             _modConfigPaths[modId.Trim()] = normalized;
         }
+    }
+
+    private void LoadPersistentModConfigPaths()
+    {
+        _storedModConfigPaths.Clear();
+
+        try
+        {
+            if (!File.Exists(_modConfigPathsPath))
+            {
+                return;
+            }
+
+            using FileStream stream = File.OpenRead(_modConfigPathsPath);
+            JsonNode? node = JsonNode.Parse(stream);
+            if (node is not JsonObject obj)
+            {
+                return;
+            }
+
+            foreach (var pair in obj)
+            {
+                string modId = pair.Key;
+                if (string.IsNullOrWhiteSpace(modId) || pair.Value is not JsonObject entryObj)
+                {
+                    continue;
+                }
+
+                string? directoryPath = NormalizePath(GetOptionalString(entryObj["directoryPath"]));
+                string? fileName = GetOptionalString(entryObj["fileName"])?.Trim();
+
+                if (string.IsNullOrWhiteSpace(directoryPath) || string.IsNullOrWhiteSpace(fileName))
+                {
+                    continue;
+                }
+
+                var entry = new ModConfigPathEntry(directoryPath, fileName);
+                string key = modId.Trim();
+                _storedModConfigPaths[key] = entry;
+
+                string? combinedPath = BuildFullConfigPath(entry);
+                if (!string.IsNullOrWhiteSpace(combinedPath))
+                {
+                    _modConfigPaths[key] = combinedPath;
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException)
+        {
+            _storedModConfigPaths.Clear();
+        }
+    }
+
+    private void UpdatePersistentModConfigPath(string modId, string normalizedPath)
+    {
+        if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(normalizedPath))
+        {
+            return;
+        }
+
+        string? directoryPath = ExtractDirectoryPath(normalizedPath);
+        string? fileName = ExtractFileName(normalizedPath);
+
+        if (string.IsNullOrWhiteSpace(directoryPath) || string.IsNullOrWhiteSpace(fileName))
+        {
+            if (_storedModConfigPaths.Remove(modId))
+            {
+                SaveModConfigPathHistory();
+            }
+
+            return;
+        }
+
+        string directory = directoryPath!;
+        string file = fileName!;
+        var entry = new ModConfigPathEntry(directory, file);
+
+        if (_storedModConfigPaths.TryGetValue(modId, out ModConfigPathEntry? existing)
+            && existing is not null
+            && string.Equals(existing.DirectoryPath, entry.DirectoryPath, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(existing.FileName, entry.FileName, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _storedModConfigPaths[modId] = entry;
+        SaveModConfigPathHistory();
+    }
+
+    private void SaveModConfigPathHistory()
+    {
+        _hasPendingModConfigPathSave = true;
+
+        if (!_isPersistenceEnabled)
+        {
+            return;
+        }
+
+        PersistModConfigPathHistory();
+    }
+
+    private void PersistModConfigPathHistory()
+    {
+        try
+        {
+            string directory = Path.GetDirectoryName(_modConfigPathsPath)!;
+            Directory.CreateDirectory(directory);
+
+            var root = new JsonObject();
+
+            foreach (var pair in _storedModConfigPaths.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                var entry = pair.Value;
+                root[pair.Key] = new JsonObject
+                {
+                    ["directoryPath"] = entry.DirectoryPath,
+                    ["fileName"] = entry.FileName
+                };
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+
+            File.WriteAllText(_modConfigPathsPath, root.ToJsonString(options));
+            _hasPendingModConfigPathSave = false;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            // Persisting the configuration is a best-effort attempt. Ignore failures silently.
+        }
+    }
+
+    private static string? BuildFullConfigPath(ModConfigPathEntry entry)
+    {
+        if (entry is null || string.IsNullOrWhiteSpace(entry.DirectoryPath) || string.IsNullOrWhiteSpace(entry.FileName))
+        {
+            return null;
+        }
+
+        string combined = Path.Combine(entry.DirectoryPath, entry.FileName);
+        return NormalizePath(combined) ?? combined;
+    }
+
+    private static string? ExtractDirectoryPath(string normalizedPath)
+    {
+        string? directory = Path.GetDirectoryName(normalizedPath);
+
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            directory = Path.GetPathRoot(normalizedPath);
+        }
+
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            return null;
+        }
+
+        return NormalizePath(directory);
+    }
+
+    private static string? ExtractFileName(string normalizedPath)
+    {
+        string trimmed = normalizedPath.Trim();
+        string fileName = Path.GetFileName(trimmed);
+
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            fileName = Path.GetFileName(trimmed.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        }
+
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return null;
+        }
+
+        return fileName;
+    }
+
+    private sealed class ModConfigPathEntry
+    {
+        public ModConfigPathEntry(string directoryPath, string fileName)
+        {
+            DirectoryPath = directoryPath;
+            FileName = fileName;
+        }
+
+        public string DirectoryPath { get; }
+
+        public string FileName { get; }
     }
 
     private static string GetPreferredConfigurationDirectory()
