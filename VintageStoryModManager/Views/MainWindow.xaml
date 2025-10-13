@@ -1253,12 +1253,33 @@
                             <DataGridTemplateColumn Header="Mods" Width="200" MinWidth="180" IsReadOnly="True">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <ComboBox ItemsSource="{Binding Mods}"
-                                                  Text="{Binding ModsSummary, Mode=OneWay}"
-                                                  IsEditable="True"
-                                                  IsReadOnly="True"
-                                                  SelectedIndex="-1"
-                                                  MaxDropDownHeight="240" />
+                                        <Grid>
+                                            <ComboBox x:Name="ModsComboBox"
+                                                      ItemsSource="{Binding Mods}"
+                                                      IsEditable="True"
+                                                      IsReadOnly="True"
+                                                      SelectedIndex="-1"
+                                                      MaxDropDownHeight="240" />
+                                            <TextBlock Text="{Binding ModsSummary, Mode=OneWay}"
+                                                       Foreground="{DynamicResource IMM.ForegroundBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       IsHitTestVisible="False">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="{x:Type TextBlock}">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                        <Setter Property="Margin" Value="8,0,24,0" />
+                                                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                                        <Setter Property="TextAlignment" Value="Center" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsDropDownOpen, ElementName=ModsComboBox}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                                 <DataGridTemplateColumn.CellStyle>
