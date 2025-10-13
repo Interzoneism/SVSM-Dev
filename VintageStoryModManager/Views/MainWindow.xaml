@@ -2021,7 +2021,6 @@
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="EditConfigButton_OnClick"
-                ToolTip="{Binding DisplayName, StringFormat=Edit Config for \{0\}}"
                 VerticalContentAlignment="Stretch"
                 Content="Edit Config" Height="30" Width="92" HorizontalContentAlignment="Stretch" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0" Grid.Column="1" />
                 <Button x:Name="SelectedModDeleteButton"

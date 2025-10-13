@@ -473,8 +473,39 @@ public sealed class MainViewModel : ObservableObject
     public IReadOnlyList<ModPresetModState> GetCurrentModStates()
     {
         return _mods
-            .Select(mod => new ModPresetModState(mod.ModId, mod.Version, mod.IsActive))
+            .Select(mod => new ModPresetModState(mod.ModId, mod.Version, mod.IsActive, null, null))
             .ToList();
+    }
+
+    public IReadOnlyList<ModListItemViewModel> GetInstalledModsSnapshot()
+    {
+        return _mods.ToList();
+    }
+
+    public bool TryGetInstalledModDisplayName(string? modId, out string? displayName)
+    {
+        displayName = null;
+
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            return false;
+        }
+
+        foreach (ModListItemViewModel mod in _mods)
+        {
+            if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
+            {
+                continue;
+            }
+
+            if (string.Equals(mod.ModId, modId, StringComparison.OrdinalIgnoreCase))
+            {
+                displayName = mod.DisplayName;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public async Task<bool> ApplyPresetAsync(ModPreset preset)

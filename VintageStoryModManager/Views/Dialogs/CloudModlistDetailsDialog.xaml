@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Cloud Modlist Details"
         SizeToContent="WidthAndHeight"
-        MinWidth="420"
+        MinWidth="720"
         MinHeight="320"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
@@ -11,6 +11,9 @@
         ShowInTaskbar="False"
         Loaded="Window_OnLoaded"
         Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Window.Resources>
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -22,6 +25,8 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="20" />
+            <ColumnDefinition Width="260" />
         </Grid.ColumnDefinitions>
 
         <TextBlock Text="Name:" Grid.Row="0" Grid.Column="0" Margin="0,0,12,12" VerticalAlignment="Center" />
@@ -49,9 +54,54 @@
                  MaxLength="190"
                  VerticalScrollBarVisibility="Auto" />
 
+        <Grid Grid.Row="0" Grid.Column="3" Grid.RowSpan="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="Include Configurations" FontWeight="SemiBold" Margin="0,0,0,8" />
+
+            <Border Grid.Row="1"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource IMM.BorderBrush}"
+                    Padding="6">
+                <ListBox ItemsSource="{Binding ConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                         Visibility="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      Content="{Binding DisplayName}"
+                                      ToolTip="{Binding ConfigPath}"
+                                      Margin="0,0,0,6" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+
+            <TextBlock Grid.Row="2"
+                       Text="No mods with saved configuration paths were found."
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource IMM.SubtleForegroundBrush}"
+                       Margin="0,8,0,0">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+
         <StackPanel Grid.Row="4"
                     Grid.Column="0"
-                    Grid.ColumnSpan="2"
+                    Grid.ColumnSpan="4"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="0,18,0,0">
