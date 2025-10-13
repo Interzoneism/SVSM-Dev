@@ -24,6 +24,26 @@
         <sys:Double x:Key="IMM.CompactRowHeightOffset">-12</sys:Double>
         <sys:Double x:Key="IMM.ModDbCardScale">0.75</sys:Double>
         <converters:DownloadMetricDisplayConverter x:Key="IMM.DownloadMetricDisplayConverter" />
+        <Color x:Key="IMM.TagBackgroundColor">#FFE5EDFF</Color>
+        <Color x:Key="IMM.TagBorderColor">#FFB3C7FF</Color>
+        <SolidColorBrush x:Key="IMM.TagBackgroundBrush" Color="{StaticResource IMM.TagBackgroundColor}" />
+        <SolidColorBrush x:Key="IMM.TagBorderBrush" Color="{StaticResource IMM.TagBorderColor}" />
+        <Style x:Key="IMM.TagBadgeBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource IMM.TagBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource IMM.TagBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="Margin" Value="0,0,6,6" />
+        </Style>
+        <ItemsPanelTemplate x:Key="IMM.TagItemsPanelTemplate">
+            <WrapPanel VerticalAlignment="Center" />
+        </ItemsPanelTemplate>
+        <DataTemplate x:Key="IMM.TagBadgeTemplate">
+            <Border Style="{StaticResource IMM.TagBadgeBorderStyle}">
+                <TextBlock Text="{Binding}" FontSize="12" Foreground="{StaticResource IMM.ForegroundBrush}" />
+            </Border>
+        </DataTemplate>
         <Style x:Key="IMM.DataGridCellBaseStyle" TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -929,6 +949,47 @@
                                 </Style>
                             </DataGridTextColumn.CellStyle>
                         </DataGridTextColumn>
+                        <DataGridTemplateColumn x:Name="TagsColumn" Header="Tags" SortMemberPath="DatabaseTagsDisplay" Width="210" MinWidth="180" IsReadOnly="True">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <ItemsControl ItemsSource="{Binding DatabaseTags}" ItemTemplate="{StaticResource IMM.TagBadgeTemplate}">
+                                            <ItemsControl.ItemsPanel>
+                                                <StaticResource ResourceKey="IMM.TagItemsPanelTemplate" />
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.Style>
+                                                <Style TargetType="{x:Type ItemsControl}">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DatabaseTags.Count}" Value="0">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ItemsControl.Style>
+                                        </ItemsControl>
+                                        <TextBlock Text="—" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DatabaseTags.Count}" Value="0">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellStyle>
+                                <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTemplateColumn.CellStyle>
+                        </DataGridTemplateColumn>
                         <DataGridTemplateColumn x:Name="StatusColumn" Header="Status" Width="100" IsReadOnly="True" SortMemberPath="StatusSortOrder">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
