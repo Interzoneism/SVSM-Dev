@@ -2667,6 +2667,11 @@ public partial class MainWindow : Window
         await UpdateModsAsync(mods, isBulk: true, overrides);
     }
 
+    private async void ModsMenuItem_OnSubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        await RefreshDeleteCachedModsMenuHeaderAsync();
+    }
+
     private async void DeleteCachedModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         MessageBoxResult result = WpfMessageBox.Show(
