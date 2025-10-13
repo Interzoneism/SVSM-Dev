@@ -28,7 +28,7 @@
         <Color x:Key="IMM.TagBorderColor">#FFB3C7FF</Color>
         <SolidColorBrush x:Key="IMM.TagBackgroundBrush" Color="{StaticResource IMM.TagBackgroundColor}" />
         <SolidColorBrush x:Key="IMM.TagBorderBrush" Color="{StaticResource IMM.TagBorderColor}" />
-        <sys:Double x:Key="IMM.TagRowMaxHeight">80</sys:Double>
+        <sys:Double x:Key="IMM.TagRowMaxHeight">65</sys:Double>
         <sys:Double x:Key="IMM.TagRowCompactMaxHeight">38</sys:Double>
         <Style x:Key="IMM.TagBadgeBorderStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource IMM.TagBackgroundBrush}" />
