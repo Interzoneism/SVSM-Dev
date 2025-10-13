@@ -1969,20 +1969,52 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ModsDataGrid_OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    private async void ModsDataGrid_OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        if (e.Key != Key.A || !Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+        if (await TryHandleModListKeyDownAsync(e))
         {
-            return;
+            e.Handled = true;
         }
+    }
 
+    private async void MainWindow_OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (await TryHandleModListKeyDownAsync(e))
+        {
+            e.Handled = true;
+        }
+    }
+
+    private async Task<bool> TryHandleModListKeyDownAsync(System.Windows.Input.KeyEventArgs e)
+    {
         if (_viewModel?.SearchModDatabase == true)
         {
-            return;
+            return false;
         }
 
-        SelectAllModsInCurrentView();
-        e.Handled = true;
+        if (e.Key == Key.A && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+        {
+            if (ModsDataGrid?.IsVisible == true)
+            {
+                SelectAllModsInCurrentView();
+                return true;
+            }
+
+            return false;
+        }
+
+        if (e.Key == Key.Delete)
+        {
+            ModifierKeys modifiers = Keyboard.Modifiers;
+            if ((modifiers & (ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Windows)) == ModifierKeys.None &&
+                _selectedMods.Count > 0)
+            {
+                await DeleteSelectedModsAsync();
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void ModsDataGrid_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -2323,31 +2355,37 @@ public partial class MainWindow : Window
             return;
         }
 
-        IReadOnlyList<ModListItemViewModel> modsToDelete;
-
         if (button.DataContext is ModListItemViewModel mod)
         {
-            modsToDelete = new[] { mod };
+            e.Handled = true;
+            await DeleteSingleModAsync(mod);
+            return;
         }
-        else if (_selectedMods.Count > 0)
-        {
-            modsToDelete = _selectedMods.ToList();
-        }
-        else
+
+        if (_selectedMods.Count == 0)
         {
             return;
         }
 
         e.Handled = true;
+        await DeleteSelectedModsAsync();
+    }
 
-        if (modsToDelete.Count == 1)
+    private async Task DeleteSelectedModsAsync()
+    {
+        if (_selectedMods.Count == 0)
         {
-            await DeleteSingleModAsync(modsToDelete[0]);
+            return;
         }
-        else
+
+        if (_selectedMods.Count == 1)
         {
-            await DeleteMultipleModsAsync(modsToDelete);
+            await DeleteSingleModAsync(_selectedMods[0]);
+            return;
         }
+
+        List<ModListItemViewModel> modsToDelete = _selectedMods.ToList();
+        await DeleteMultipleModsAsync(modsToDelete);
     }
 
     private async Task DeleteSingleModAsync(ModListItemViewModel mod)

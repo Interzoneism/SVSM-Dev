@@ -14,7 +14,8 @@
         d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
         Title="Simple VS Manager"
         Height="696" Width="1196"
-        MinWidth="1200" MinHeight="775" Background="{DynamicResource GridBackground1}" WindowStartupLocation="CenterScreen">
+        MinWidth="1200" MinHeight="775" Background="{DynamicResource GridBackground1}" WindowStartupLocation="CenterScreen"
+        PreviewKeyDown="MainWindow_OnPreviewKeyDown">
 
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenTrueConverter" />
