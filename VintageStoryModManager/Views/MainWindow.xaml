@@ -1052,9 +1052,11 @@
                                                 CanUserSort="False">
                             <DataGridTemplateColumn.HeaderTemplate>
                                 <DataTemplate>
-                                    <Grid Background="Transparent">
+                                    <Grid Background="Transparent"
+                                          Width="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridColumnHeader}}, Path=ActualWidth}">
                                         <ToggleButton x:Name="TagsHeaderToggle"
                                                       Content="{Binding}"
+                                                      HorizontalAlignment="Stretch"
                                                       Style="{StaticResource IMM.TagHeaderToggleButtonStyle}" />
                                         <Popup PlacementTarget="{Binding ElementName=TagsHeaderToggle}"
                                                Placement="Bottom"
