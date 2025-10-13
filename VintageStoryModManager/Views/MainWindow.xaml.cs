@@ -1203,7 +1203,11 @@ public partial class MainWindow : Window
                 }
             }
 
-            if (bestPath is not null && bestCandidateIndex >= 0)
+            // Require at least one word to score better than the maximum allowed distance to avoid
+            // weak matches that only satisfy the fallback threshold.
+            if (bestPath is not null
+                && bestCandidateIndex >= 0
+                && bestScore < words.Count * AutomaticConfigMaxWordDistance)
             {
                 results.Add((mod.ModId, bestPath));
                 candidates.RemoveAt(bestCandidateIndex);
