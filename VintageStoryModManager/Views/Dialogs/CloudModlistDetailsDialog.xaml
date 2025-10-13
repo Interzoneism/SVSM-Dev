@@ -46,6 +46,7 @@
                  MinHeight="120"
                  TextWrapping="Wrap"
                  AcceptsReturn="True"
+                 MaxLength="190"
                  VerticalScrollBarVisibility="Auto" />
 
         <StackPanel Grid.Row="4"

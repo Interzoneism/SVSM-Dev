@@ -31,6 +31,89 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Padding" Value="8,6" />
         </Style>
+        <Style x:Key="IMM.PrimaryDataGridColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1,0,0,1" />
+            <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type DataGridColumnHeader}">
+                        <Border x:Name="HeaderBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                <Path x:Name="SortArrow"
+                                      Grid.Column="1"
+                                      Width="6"
+                                      Height="6"
+                                      Margin="6,0,0,0"
+                                      Fill="{TemplateBinding Foreground}"
+                                      Stretch="Uniform"
+                                      Visibility="Collapsed"
+                                      VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="HeaderBorder"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                            Duration="0:0:0.15">
+                                                <ColorAnimation.EasingFunction>
+                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                </ColorAnimation.EasingFunction>
+                                            </ColorAnimation>
+
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="HeaderBorder"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="{StaticResource IMM.SurfaceAltColor}"
+                                                            Duration="0:0:0.15">
+                                                <ColorAnimation.EasingFunction>
+                                                    <QuadraticEase EasingMode="EaseOut" />
+                                                </ColorAnimation.EasingFunction>
+                                            </ColorAnimation>
+
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="SortDirection" Value="Ascending">
+                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="SortArrow" Property="Data" Value="M 0 3 L 3 0 6 3 Z" />
+                            </Trigger>
+                            <Trigger Property="SortDirection" Value="Descending">
+                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="SortArrow" Property="Data" Value="M 0 0 L 3 3 6 0 Z" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="IMM.ModDatabaseAutoLoadToggleStyle" TargetType="{x:Type RadioButton}">
             <Setter Property="Visibility" Value="Collapsed" />
             <Setter Property="Margin" Value="0,0,0,0" />
@@ -445,89 +528,7 @@
                         <Style TargetType="{x:Type TextBlock}">
                             <Setter Property="TextWrapping" Value="Wrap" />
                         </Style>
-                        <Style TargetType="{x:Type DataGridColumnHeader}">
-                            <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
-                            <Setter Property="BorderThickness" Value="1,0,0,1" />
-                            <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
-                            <Setter Property="Margin" Value="0,0,0,6" />
-                            <Setter Property="Padding" Value="12,10" />
-                            <Setter Property="FontWeight" Value="SemiBold" />
-                            <Setter Property="HorizontalContentAlignment" Value="Left" />
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="{x:Type DataGridColumnHeader}">
-                                        <Border x:Name="HeaderBorder"
-                                        Background="{TemplateBinding Background}"
-                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                        BorderThickness="{TemplateBinding BorderThickness}"
-                                        Padding="{TemplateBinding Padding}"
-                                        SnapsToDevicePixels="True">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <ContentPresenter Grid.Column="0"
-                                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-                                                <Path x:Name="SortArrow"
-                                              Grid.Column="1"
-                                              Width="6"
-                                              Height="6"
-                                              Margin="6,0,0,0"
-                                              Fill="{TemplateBinding Foreground}"
-                                              Stretch="Uniform"
-                                              Visibility="Collapsed"
-                                              VerticalAlignment="Center" />
-                                            </Grid>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Trigger.EnterActions>
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetName="HeaderBorder"
-                                                                    Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                    To="{StaticResource IMM.ButtonHoverColor}"
-                                                                    Duration="0:0:0.15">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </Trigger.EnterActions>
-                                                <Trigger.ExitActions>
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetName="HeaderBorder"
-                                                                    Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                    To="{StaticResource IMM.SurfaceAltColor}"
-                                                                    Duration="0:0:0.15">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </Trigger.ExitActions>
-                                            </Trigger>
-                                            <Trigger Property="SortDirection" Value="Ascending">
-                                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
-                                                <Setter TargetName="SortArrow" Property="Data" Value="M 0 3 L 3 0 6 3 Z" />
-                                            </Trigger>
-                                            <Trigger Property="SortDirection" Value="Descending">
-                                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
-                                                <Setter TargetName="SortArrow" Property="Data" Value="M 0 0 L 3 3 6 0 Z" />
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
+                        <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
                     </DataGrid.Resources>
                     <DataGrid.Background>
                         <SolidColorBrush Color="{DynamicResource IMM.SurfaceColor}"/>
@@ -1046,20 +1047,13 @@
                               RowHeaderWidth="0"
                               SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged" Grid.RowSpan="2" Background="{DynamicResource GridBackground1}" Height="470">
                         <DataGrid.Resources>
-                            <Style TargetType="{x:Type DataGridColumnHeader}">
+                            <Style TargetType="{x:Type ScrollBar}">
                                 <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
-                                <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
-                                <Setter Property="FontWeight" Value="SemiBold" />
-                                <Setter Property="Padding" Value="12,8" />
-                                <Setter Property="BorderThickness" Value="1,0,0,1" />
                             </Style>
-                            <Style TargetType="{x:Type DataGridRow}">
-                                <Setter Property="Margin" Value="2" />
-                                <Setter Property="Padding" Value="4" />
-                                <Setter Property="Height" Value="32" />
-                                <Setter Property="Background" Value="{StaticResource CardGradient3}" />
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="TextWrapping" Value="Wrap" />
                             </Style>
+                            <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
                         </DataGrid.Resources>
                         <DataGrid.Style>
                             <Style TargetType="{x:Type DataGrid}">
