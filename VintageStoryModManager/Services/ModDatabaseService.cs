@@ -817,8 +817,7 @@ public sealed class ModDatabaseService
         {
             foreach (string tag in releaseTags)
             {
-                string? normalizedTag = VersionStringUtility.Normalize(tag);
-                if (normalizedTag != null && string.Equals(normalizedTag, normalizedGameVersion, StringComparison.OrdinalIgnoreCase))
+                if (VersionStringUtility.MatchesVersionOrPrefix(tag, normalizedGameVersion))
                 {
                     isCompatible = true;
                     break;
