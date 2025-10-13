@@ -5,9 +5,11 @@ using System.IO;
 using System.Globalization;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using VintageStoryModManager.Models;
 
@@ -18,6 +20,7 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public sealed class ModDiscoveryService
 {
+    private const int DiscoveryBatchSize = 16;
     private static readonly JsonDocumentOptions DocumentOptions = new()
     {
         AllowTrailingCommas = true,
@@ -49,49 +52,13 @@ public sealed class ModDiscoveryService
 
     public IReadOnlyList<ModEntry> LoadMods()
     {
-        var seenSources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var orderedEntries = new List<(int Order, FileSystemInfo Entry)>();
-        int order = 0;
-
-        foreach (string searchPath in BuildSearchPaths())
-        {
-            if (!Directory.Exists(searchPath))
-            {
-                continue;
-            }
-
-            if (IsDefaultGameModsDirectory(searchPath))
-            {
-                continue;
-            }
-
-            IEnumerable<FileSystemInfo> entries;
-            try
-            {
-                entries = new DirectoryInfo(searchPath).EnumerateFileSystemInfos();
-            }
-            catch (Exception)
-            {
-                continue;
-            }
-
-            foreach (FileSystemInfo entry in entries)
-            {
-                if (!seenSources.Add(entry.FullName))
-                {
-                    continue;
-                }
-
-                orderedEntries.Add((order++, entry));
-            }
-        }
+        List<(int Order, FileSystemInfo Entry)> orderedEntries = CollectModSources();
 
         if (orderedEntries.Count == 0)
         {
             return Array.Empty<ModEntry>();
         }
 
-        const int BatchSize = 16;
         int maxDegree = Math.Clamp(Environment.ProcessorCount, 1, 8);
         var collected = new ConcurrentBag<(int Order, ModEntry Entry)>();
         var options = new ParallelOptions
@@ -99,7 +66,7 @@ public sealed class ModDiscoveryService
             MaxDegreeOfParallelism = maxDegree
         };
 
-        Parallel.ForEach(orderedEntries.Chunk(BatchSize), options, batch =>
+        Parallel.ForEach(orderedEntries.Chunk(DiscoveryBatchSize), options, batch =>
         {
             foreach (var (batchOrder, fileSystemInfo) in batch)
             {
@@ -118,20 +85,92 @@ public sealed class ModDiscoveryService
 
         ApplyLoadStatuses(results);
         return results;
+    }
 
-        ModEntry? ProcessEntry(FileSystemInfo entry)
+    public async IAsyncEnumerable<IReadOnlyList<ModEntry>> LoadModsIncrementallyAsync(
+        int batchSize,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (batchSize <= 0)
         {
-            switch (entry)
+            batchSize = DiscoveryBatchSize;
+        }
+
+        List<(int Order, FileSystemInfo Entry)> orderedEntries = CollectModSources();
+        if (orderedEntries.Count == 0)
+        {
+            yield break;
+        }
+
+        using var results = new BlockingCollection<(int Order, ModEntry? Entry)>();
+        int maxDegree = Math.Clamp(Environment.ProcessorCount, 1, 8);
+        var options = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = maxDegree,
+            CancellationToken = cancellationToken
+        };
+
+        Task producer = Task.Run(() =>
+        {
+            try
             {
-                case DirectoryInfo directory:
-                    return TryLoadFromDirectory(directory);
-                case FileInfo file when string.Equals(file.Extension, ".zip", StringComparison.OrdinalIgnoreCase):
-                    return TryLoadFromZip(file);
-                case FileInfo file when string.Equals(file.Extension, ".cs", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(file.Extension, ".dll", StringComparison.OrdinalIgnoreCase):
-                    return CreateUnsupportedCodeModEntry(file);
-                default:
-                    return null;
+                Parallel.ForEach(orderedEntries.Chunk(DiscoveryBatchSize), options, batch =>
+                {
+                    foreach (var (order, source) in batch)
+                    {
+                        options.CancellationToken.ThrowIfCancellationRequested();
+                        ModEntry? entry = ProcessEntry(source);
+                        results.Add((order, entry), options.CancellationToken);
+                    }
+                });
+            }
+            finally
+            {
+                results.CompleteAdding();
+            }
+        }, cancellationToken);
+
+        var pending = new SortedDictionary<int, ModEntry?>();
+        int nextOrder = 0;
+        var batchBuffer = new List<ModEntry>(batchSize);
+
+        try
+        {
+            foreach (var (order, entry) in results.GetConsumingEnumerable(cancellationToken))
+            {
+                pending[order] = entry;
+
+                while (pending.TryGetValue(nextOrder, out ModEntry? next))
+                {
+                    pending.Remove(nextOrder);
+                    if (next != null)
+                    {
+                        batchBuffer.Add(next);
+                        if (batchBuffer.Count >= batchSize)
+                        {
+                            yield return batchBuffer.ToArray();
+                            batchBuffer.Clear();
+                        }
+                    }
+
+                    nextOrder++;
+                }
+            }
+
+            if (batchBuffer.Count > 0)
+            {
+                yield return batchBuffer.ToArray();
+            }
+        }
+        finally
+        {
+            try
+            {
+                await producer.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
             }
         }
     }
@@ -181,6 +220,64 @@ public sealed class ModDiscoveryService
         }
 
         return null;
+    }
+
+    private List<(int Order, FileSystemInfo Entry)> CollectModSources()
+    {
+        var seenSources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var orderedEntries = new List<(int Order, FileSystemInfo Entry)>();
+        int order = 0;
+
+        foreach (string searchPath in BuildSearchPaths())
+        {
+            if (!Directory.Exists(searchPath))
+            {
+                continue;
+            }
+
+            if (IsDefaultGameModsDirectory(searchPath))
+            {
+                continue;
+            }
+
+            IEnumerable<FileSystemInfo> entries;
+            try
+            {
+                entries = new DirectoryInfo(searchPath).EnumerateFileSystemInfos();
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            foreach (FileSystemInfo entry in entries)
+            {
+                if (!seenSources.Add(entry.FullName))
+                {
+                    continue;
+                }
+
+                orderedEntries.Add((order++, entry));
+            }
+        }
+
+        return orderedEntries;
+    }
+
+    private ModEntry? ProcessEntry(FileSystemInfo entry)
+    {
+        switch (entry)
+        {
+            case DirectoryInfo directory:
+                return TryLoadFromDirectory(directory);
+            case FileInfo file when string.Equals(file.Extension, ".zip", StringComparison.OrdinalIgnoreCase):
+                return TryLoadFromZip(file);
+            case FileInfo file when string.Equals(file.Extension, ".cs", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(file.Extension, ".dll", StringComparison.OrdinalIgnoreCase):
+                return CreateUnsupportedCodeModEntry(file);
+            default:
+                return null;
+        }
     }
 
     public void ApplyLoadStatuses(IList<ModEntry> mods)
