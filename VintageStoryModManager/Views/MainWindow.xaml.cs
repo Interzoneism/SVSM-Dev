@@ -3669,13 +3669,11 @@ public partial class MainWindow : Window
             throw new InvalidOperationException("View model is not initialized.");
         }
 
-        IReadOnlyList<string> disabledEntries = _viewModel.GetCurrentDisabledEntries();
         IReadOnlyList<ModPresetModState> states = _viewModel.GetCurrentModStates();
 
         return new SerializablePreset
         {
             Name = entryName,
-            DisabledEntries = disabledEntries.ToList(),
             IncludeModStatus = true,
             IncludeModVersions = includeModVersions ? true : null,
             Exclusive = exclusive ? true : null,
