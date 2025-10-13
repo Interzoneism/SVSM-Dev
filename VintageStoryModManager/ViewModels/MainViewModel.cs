@@ -1693,17 +1693,20 @@ public sealed class MainViewModel : ObservableObject
 
     private IDisposable BeginBusyScope()
     {
+        bool isBusy;
         lock (_busyStateLock)
         {
             _busyOperationCount++;
-            UpdateIsBusy();
+            isBusy = _busyOperationCount > 0;
         }
 
+        UpdateIsBusy(isBusy);
         return new BusyScope(this);
     }
 
     private void EndBusyScope()
     {
+        bool isBusy;
         lock (_busyStateLock)
         {
             if (_busyOperationCount > 0)
@@ -1711,14 +1714,14 @@ public sealed class MainViewModel : ObservableObject
                 _busyOperationCount--;
             }
 
-            UpdateIsBusy();
+            isBusy = _busyOperationCount > 0;
         }
+
+        UpdateIsBusy(isBusy);
     }
 
-    private void UpdateIsBusy()
+    private void UpdateIsBusy(bool isBusy)
     {
-        bool isBusy = _busyOperationCount > 0;
-
         if (System.Windows.Application.Current?.Dispatcher is Dispatcher dispatcher)
         {
             if (dispatcher.CheckAccess())
@@ -1727,7 +1730,7 @@ public sealed class MainViewModel : ObservableObject
             }
             else
             {
-                dispatcher.Invoke(() => IsBusy = isBusy);
+                dispatcher.BeginInvoke(new Action(() => IsBusy = isBusy));
             }
         }
         else
