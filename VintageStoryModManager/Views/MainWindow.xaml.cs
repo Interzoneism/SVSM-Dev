@@ -3907,7 +3907,7 @@ public partial class MainWindow : Window
             DateTime timestamp = DateTime.Now;
             string formattedTimestamp = timestamp.ToString("dd MMM yyyy '•' HH.mm", CultureInfo.InvariantCulture);
             string displayName = $"Backup - {formattedTimestamp}";
-            string fileName = SanitizeFileName(displayName, "Backup");
+            string fileName = SanitizeFileName($"{displayName} {timestamp:HH.mm.ss}", "Backup");
             string filePath = Path.Combine(directory, $"{fileName}.json");
 
             SerializablePreset serializable = BuildSerializablePreset(displayName, includeModVersions: true, exclusive: true);
