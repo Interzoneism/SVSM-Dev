@@ -28,16 +28,18 @@
         <Color x:Key="IMM.TagBorderColor">#FFB3C7FF</Color>
         <SolidColorBrush x:Key="IMM.TagBackgroundBrush" Color="{StaticResource IMM.TagBackgroundColor}" />
         <SolidColorBrush x:Key="IMM.TagBorderBrush" Color="{StaticResource IMM.TagBorderColor}" />
+        <sys:Double x:Key="IMM.TagRowMaxHeight">48</sys:Double>
+        <sys:Double x:Key="IMM.TagRowCompactMaxHeight">38</sys:Double>
         <Style x:Key="IMM.TagBadgeBorderStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource IMM.TagBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource IMM.TagBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="8,2" />
-            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Margin" Value="0,0,6,2" />
         </Style>
         <ItemsPanelTemplate x:Key="IMM.TagItemsPanelTemplate">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" />
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" />
         </ItemsPanelTemplate>
         <DataTemplate x:Key="IMM.TagBadgeTemplate">
             <Border Style="{StaticResource IMM.TagBadgeBorderStyle}">
@@ -987,8 +989,11 @@
                                                  Stretch="Uniform"
                                                  StretchDirection="DownOnly"
                                                  HorizontalAlignment="Stretch"
-                                                 VerticalAlignment="Center">
-                                            <ItemsControl ItemsSource="{Binding DatabaseTags}"
+                                                 VerticalAlignment="Center"
+                                                 MaxHeight="{StaticResource IMM.TagRowMaxHeight}">
+                                            <ItemsControl x:Name="TagsItemsControl"
+                                                          Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}}"
+                                                          ItemsSource="{Binding DatabaseTags}"
                                                           ItemTemplate="{StaticResource IMM.TagBadgeTemplate}">
                                                 <ItemsControl.ItemsPanel>
                                                     <StaticResource ResourceKey="IMM.TagItemsPanelTemplate" />
@@ -1005,6 +1010,9 @@
                                         <DataTrigger Binding="{Binding DatabaseTags.Count}" Value="0">
                                             <Setter TargetName="TagsViewbox" Property="Visibility" Value="Collapsed" />
                                             <Setter TargetName="NoTagsText" Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
+                                            <Setter TargetName="TagsViewbox" Property="MaxHeight" Value="{StaticResource IMM.TagRowCompactMaxHeight}" />
                                         </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
