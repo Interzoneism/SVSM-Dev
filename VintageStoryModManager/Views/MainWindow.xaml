@@ -1160,31 +1160,22 @@
                                     <Grid HorizontalAlignment="Center"
                                       VerticalAlignment="Center">
                                         <Viewbox x:Name="StatusIconViewbox"
-                                             Width="30"
-                                             Height="30">
-                                            <Grid Width="24"
-                                              Height="24">
-                                                <Grid x:Name="ErrorIcon"
-                                                  Visibility="Collapsed">
-                                                    <Ellipse Fill="#FFD13438"
-                                                         Width="28"
-                                                         Height="28" />
-                                                    <Line X1="7" Y1="7" X2="17" Y2="17" Stroke="White" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
-                                                    <Line X1="17" Y1="7" X2="7" Y2="17" Stroke="White" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
-                                                </Grid>
-                                                <Canvas x:Name="WarningIcon"
-                                                Width="24" Height="24" Visibility="Collapsed">
-                                                    <Polygon Points="12,2 22,20 2,20" Fill="#FFE17E00" />
-                                                    <Label Content="!"
-                                                   Width="24" Height="24"
-                                                   Canvas.Left="0" Canvas.Top="0"
-                                                   FontSize="12" FontWeight="Bold" Foreground="White"
-                                                   HorizontalContentAlignment="Center"
-                                                   VerticalContentAlignment="Center"
-                                                   Padding="0,2,0,0" />
-                                                    <!-- 2px down = triangle centroid -->
-                                                </Canvas>
-
+                                             Width="32"
+                                             Height="32">
+                                            <Grid Width="32"
+                                              Height="32">
+                                                <Image x:Name="ErrorIcon"
+                                                   Width="32"
+                                                   Height="32"
+                                                   Stretch="Uniform"
+                                                   Source="/error.png"
+                                                   Visibility="Collapsed" />
+                                                <Image x:Name="WarningIcon"
+                                                   Width="32"
+                                                   Height="32"
+                                                   Stretch="Uniform"
+                                                   Source="/warning.png"
+                                                   Visibility="Collapsed" />
                                             </Grid>
                                         </Viewbox>
                                     </Grid>
@@ -1192,6 +1183,10 @@
                                         <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
                                             <Setter TargetName="StatusIconViewbox" Property="Width" Value="22.5" />
                                             <Setter TargetName="StatusIconViewbox" Property="Height" Value="22.5" />
+                                            <Setter TargetName="ErrorIcon" Property="Width" Value="22.5" />
+                                            <Setter TargetName="ErrorIcon" Property="Height" Value="22.5" />
+                                            <Setter TargetName="WarningIcon" Property="Width" Value="22.5" />
+                                            <Setter TargetName="WarningIcon" Property="Height" Value="22.5" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding StatusText}" Value="Error">
                                             <Setter TargetName="ErrorIcon" Property="Visibility" Value="Visible" />
