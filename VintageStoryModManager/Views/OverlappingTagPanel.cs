@@ -138,7 +138,7 @@ public class OverlappingTagPanel : WpfPanel
         }
 
         double spacingUpper = MaxSpacing;
-        double spacingLower = spacingUpper;
+        double spacingLower = 0d;
 
         if (!double.IsInfinity(widthConstraint) && count > 1)
         {
@@ -149,13 +149,10 @@ public class OverlappingTagPanel : WpfPanel
             }
 
             double candidate = (widthConstraint - totalWidth) / (count - 1);
-            spacingLower = Math.Min(spacingLower, candidate);
+            spacingLower = Math.Max(0d, Math.Min(spacingUpper, candidate));
         }
 
-        if (spacingLower > spacingUpper)
-        {
-            spacingLower = spacingUpper;
-        }
+        spacingLower = Math.Min(spacingLower, spacingUpper);
 
         double bestSpacing = spacingUpper;
         double heightAtUpper = ComputeLayout(widthConstraint, spacingUpper, widths, heights, null, out double widthAtUpper);
