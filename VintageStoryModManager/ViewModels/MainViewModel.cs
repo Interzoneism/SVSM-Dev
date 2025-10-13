@@ -371,6 +371,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (SearchModDatabase && !HasSearchText)
         {
+            ClearSearchResults();
             TriggerModDatabaseSearch();
         }
     }
@@ -388,21 +389,31 @@ public sealed class MainViewModel : ObservableObject
         set
         {
             string newValue = value ?? string.Empty;
-            if (SetProperty(ref _searchText, newValue))
+            if (!SetProperty(ref _searchText, newValue))
             {
-                _searchTokens = CreateSearchTokens(newValue);
-                OnPropertyChanged(nameof(HasSearchText));
-                OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
-                OnPropertyChanged(nameof(DownloadsColumnHeader));
-                _clearSearchCommand.NotifyCanExecuteChanged();
-                if (SearchModDatabase)
+                return;
+            }
+
+            bool hadSearchTokens = _searchTokens.Length > 0;
+            _searchTokens = CreateSearchTokens(newValue);
+            bool hasSearchTokens = _searchTokens.Length > 0;
+
+            OnPropertyChanged(nameof(HasSearchText));
+            OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
+            OnPropertyChanged(nameof(DownloadsColumnHeader));
+            _clearSearchCommand.NotifyCanExecuteChanged();
+            if (SearchModDatabase)
+            {
+                if (!hasSearchTokens && hadSearchTokens)
                 {
-                    TriggerModDatabaseSearch();
+                    ClearSearchResults();
                 }
-                else
-                {
-                    ModsView.Refresh();
-                }
+
+                TriggerModDatabaseSearch();
+            }
+            else
+            {
+                ModsView.Refresh();
             }
         }
     }
