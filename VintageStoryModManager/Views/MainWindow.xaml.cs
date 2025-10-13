@@ -3740,6 +3740,14 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void ModifyCloudModlistsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        await ExecuteCloudOperationAsync(async store =>
+        {
+            await ShowCloudModlistManagementDialogAsync(store);
+        }, "manage your cloud modlists");
+    }
+
     private async Task<bool> IsCloudUploaderNameAvailableAsync(FirebaseModlistStore store, string uploader)
     {
         if (string.IsNullOrWhiteSpace(uploader))
@@ -4361,6 +4369,208 @@ public partial class MainWindow : Window
             "Select a cloud modlist to replace.");
         bool? dialogResult = dialog.ShowDialog();
         return dialogResult == true ? dialog.SelectedSlot : null;
+    }
+
+    private async Task ShowCloudModlistManagementDialogAsync(FirebaseModlistStore store)
+    {
+        IReadOnlyList<CloudModlistManagementEntry> entries = await BuildCloudModlistManagementEntriesAsync(store);
+        if (entries.Count == 0)
+        {
+            WpfMessageBox.Show(
+                "You do not have any cloud modlists saved.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new CloudModlistManagementDialog(
+            this,
+            entries,
+            () => BuildCloudModlistManagementEntriesAsync(store),
+            (entry, newName) => RenameCloudModlistAsync(store, entry, newName),
+            entry => DeleteCloudModlistAsync(store, entry));
+
+        dialog.ShowDialog();
+    }
+
+    private async Task<IReadOnlyList<CloudModlistManagementEntry>> BuildCloudModlistManagementEntriesAsync(
+        FirebaseModlistStore store)
+    {
+        var slots = await GetCloudModlistSlotsAsync(store, includeEmptySlots: false, captureContent: true);
+        var list = new List<CloudModlistManagementEntry>(slots.Count);
+
+        foreach (CloudModlistSlot slot in slots)
+        {
+            string slotLabel = FormatCloudSlotLabel(slot.SlotKey);
+            list.Add(new CloudModlistManagementEntry(
+                slot.SlotKey,
+                slotLabel,
+                slot.Name,
+                slot.Version,
+                slot.DisplayName,
+                slot.CachedContent));
+        }
+
+        return list;
+    }
+
+    private async Task<bool> RenameCloudModlistAsync(
+        FirebaseModlistStore store,
+        CloudModlistManagementEntry entry,
+        string newName)
+    {
+        if (string.IsNullOrWhiteSpace(newName))
+        {
+            return false;
+        }
+
+        string trimmedName = newName.Trim();
+        string? json = entry.CachedContent;
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            try
+            {
+                json = await store.LoadAsync(entry.SlotKey);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                StatusLogService.AppendStatus($"Failed to load cloud modlist for rename: {ex.Message}", true);
+                WpfMessageBox.Show($"Failed to load the cloud modlist before renaming:\n{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return false;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            WpfMessageBox.Show(
+                "The selected cloud modlist could not be loaded.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return false;
+        }
+
+        string updatedJson;
+        try
+        {
+            updatedJson = ReplaceCloudModlistName(json, trimmedName);
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException)
+        {
+            StatusLogService.AppendStatus($"Failed to update cloud modlist name: {ex.Message}", true);
+            WpfMessageBox.Show($"The cloud modlist data is invalid and could not be renamed:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return false;
+        }
+
+        try
+        {
+            await store.SaveAsync(entry.SlotKey, updatedJson);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            StatusLogService.AppendStatus($"Failed to rename cloud modlist: {ex.Message}", true);
+            WpfMessageBox.Show($"Failed to rename the cloud modlist:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return false;
+        }
+
+        string slotLabel = FormatCloudSlotLabel(entry.SlotKey);
+        _viewModel?.ReportStatus($"Renamed cloud modlist in {slotLabel} to \"{trimmedName}\".");
+
+        await UpdateCloudModlistsAfterChangeAsync();
+        return true;
+    }
+
+    private async Task<bool> DeleteCloudModlistAsync(FirebaseModlistStore store, CloudModlistManagementEntry entry)
+    {
+        try
+        {
+            await store.DeleteAsync(entry.SlotKey);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            StatusLogService.AppendStatus($"Failed to delete cloud modlist: {ex.Message}", true);
+            WpfMessageBox.Show($"Failed to delete the cloud modlist:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return false;
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusLogService.AppendStatus($"Invalid request while deleting cloud modlist: {ex.Message}", true);
+            WpfMessageBox.Show($"Failed to delete the cloud modlist:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return false;
+        }
+
+        string slotLabel = FormatCloudSlotLabel(entry.SlotKey);
+        _viewModel?.ReportStatus($"Deleted cloud modlist from {slotLabel}.");
+
+        await UpdateCloudModlistsAfterChangeAsync();
+        return true;
+    }
+
+    private async Task UpdateCloudModlistsAfterChangeAsync()
+    {
+        if (_viewModel?.IsViewingCloudModlists == true)
+        {
+            await RefreshCloudModlistsAsync(force: true);
+        }
+        else
+        {
+            _cloudModlistsLoaded = false;
+        }
+    }
+
+    private static string ReplaceCloudModlistName(string json, string newName)
+    {
+        using JsonDocument document = JsonDocument.Parse(json);
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException("The cloud modlist content is not a valid object.");
+        }
+
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            writer.WriteStartObject();
+            bool nameWritten = false;
+
+            foreach (JsonProperty property in document.RootElement.EnumerateObject())
+            {
+                if (property.NameEquals("name"))
+                {
+                    writer.WriteString("name", newName);
+                    nameWritten = true;
+                }
+                else
+                {
+                    property.WriteTo(writer);
+                }
+            }
+
+            if (!nameWritten)
+            {
+                writer.WriteString("name", newName);
+            }
+
+            writer.WriteEndObject();
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
     }
 
     private async Task<List<CloudModlistSlot>> GetCloudModlistSlotsAsync(
