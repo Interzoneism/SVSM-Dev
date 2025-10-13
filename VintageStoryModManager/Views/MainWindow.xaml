@@ -249,6 +249,11 @@
                               Click="ManagerModDbPageMenuItem_OnClick" />
                 </MenuItem>
             </Menu>
+            <ui:ProgressRing
+                        HorizontalAlignment="Right"
+                        IsActive="{Binding IsBusy}"
+                        Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
+                        Foreground="{StaticResource IMM.AccentBrush}" Margin="0,8,19,3" VerticalAlignment="Stretch" Grid.Column="1" Width="25" Height="25" />
 
 
         </Grid>
@@ -405,6 +410,8 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
+
+                <Rectangle HorizontalAlignment="Left" Height="606" Grid.Row="1" VerticalAlignment="Center" Width="1172" Fill="{DynamicResource GridBackground1}"/>
 
                 <DataGrid x:Name="ModsDataGrid"
                           Grid.Row="1"
@@ -1012,7 +1019,7 @@
                 <Grid Grid.RowSpan="2" Margin="0,0,-29,0">
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Visible" />
+                            <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -1038,16 +1045,6 @@
                               GridLinesVisibility="None"
                               RowHeaderWidth="0"
                               SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged" Grid.RowSpan="2" Background="{DynamicResource GridBackground1}" Height="470">
-                        <DataGrid.Style>
-                            <Style TargetType="{x:Type DataGrid}">
-                                <Setter Property="Visibility" Value="Visible" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasCloudModlists}" Value="False">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </DataGrid.Style>
                         <DataGrid.Resources>
                             <Style TargetType="{x:Type DataGridColumnHeader}">
                                 <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
@@ -1064,6 +1061,16 @@
                                 <Setter Property="Background" Value="{StaticResource CardGradient3}" />
                             </Style>
                         </DataGrid.Resources>
+                        <DataGrid.Style>
+                            <Style TargetType="{x:Type DataGrid}">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasCloudModlists}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.Style>
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Name"
                                                 Binding="{Binding DisplayName}"
@@ -1073,11 +1080,7 @@
                                                 Binding="{Binding Uploader}"
                                                 Width="220"
                                                 MinWidth="180" />
-                            <DataGridTextColumn Header="Version" Width="120">
-                                <DataGridTextColumn.Binding>
-                                    <Binding Path="Version" TargetNullValue="—" FallbackValue="—" />
-                                </DataGridTextColumn.Binding>
-                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="Version" Width="120" Binding="{Binding Version, FallbackValue=—, TargetNullValue=—}"/>
                             <DataGridTemplateColumn Header="Mods" Width="200" MinWidth="180">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -1112,7 +1115,7 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Border Margin="0,463,0,0" Grid.Row="1" Width="614" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Center" Height="151" VerticalAlignment="Top">
+                    <Border Margin="0,0,0,10" Grid.Row="1" Width="614" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Center" Height="151" VerticalAlignment="Bottom">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2"/>
                         </Border.Effect>
@@ -1462,35 +1465,36 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <ui:ProgressRing
-                              Height="32"
-                              HorizontalAlignment="Left"
-                              IsActive="{Binding IsBusy}"
-                              Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
-                              Foreground="{StaticResource IMM.AccentBrush}" Width="32" VerticalAlignment="Bottom" />
+            <Border HorizontalAlignment="Left" Height="50" VerticalAlignment="Bottom" Width="357" Background="{DynamicResource CardGradient}" CornerRadius="3,3,3,3">
+                <Border.Effect>
+                    <DropShadowEffect Opacity="0.15" Direction="240"/>
+                </Border.Effect>
+                <Grid>
 
 
-            <TextBlock Grid.Column="0"
-                           Text="{Binding StatusMessage}"
-                           TextWrapping="Wrap"
-                           HorizontalAlignment="Left"
-                           VerticalAlignment="Center"
-                           Margin="37,0,0,0" FontSize="14" Foreground="Black" FontWeight="Bold">
-                <TextBlock.Style>
-                    <Style TargetType="{x:Type TextBlock}">
-                        <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                    <TextBlock Grid.Column="0"
+                        Text="{Binding StatusMessage}"
+                        TextWrapping="Wrap"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" FontSize="14" Foreground="Black" FontWeight="Bold">
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
                                 <Setter Property="Visibility" Value="Visible" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                <Setter Property="Foreground" Value="#FFD13438" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
+                                        <Setter Property="Foreground" Value="#FFD13438" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                </Grid>
+            </Border>
 
             <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
