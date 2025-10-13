@@ -1872,7 +1872,7 @@
 
             <Border HorizontalAlignment="Left" Height="50" VerticalAlignment="Bottom" Width="357" Background="{DynamicResource CardGradient}" CornerRadius="3,3,3,3">
                 <Border.Effect>
-                    <DropShadowEffect Opacity="0.15" Direction="240"/>
+                    <DropShadowEffect Opacity="0.1" Direction="240" ShadowDepth="3" BlurRadius="4"/>
                 </Border.Effect>
                 <Grid>
 
@@ -1903,8 +1903,8 @@
 
             <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center">
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Top" Margin="0,18,0,0">
                 <Button Content="Update All"
                             Margin="0,0,8,0"
                             Width="146"
