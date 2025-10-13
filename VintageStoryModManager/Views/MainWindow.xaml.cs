@@ -55,6 +55,12 @@ public partial class MainWindow : Window
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
 
+    private enum ModlistLoadMode
+    {
+        Replace,
+        Add
+    }
+
     private static readonly PresetLoadOptions StandardPresetLoadOptions = new(true, false, false);
     private static readonly PresetLoadOptions ModListLoadOptions = new(true, true, true);
 
@@ -3537,6 +3543,36 @@ public partial class MainWindow : Window
             exclusive: true);
     }
 
+    private ModlistLoadMode? PromptModlistLoadMode()
+    {
+        MessageBoxResult result = WpfMessageBox.Show(
+            this,
+            "How would you like to load the modlist?" +
+            "\n\nYes: Delete your current mods and install only the mods from the modlist." +
+            "\nNo: Keep your current mods and add any missing mods from the modlist." +
+            "\nCancel: Do nothing.",
+            "Load Modlist",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
+
+        return result switch
+        {
+            MessageBoxResult.Yes => ModlistLoadMode.Replace,
+            MessageBoxResult.No => ModlistLoadMode.Add,
+            _ => null
+        };
+    }
+
+    private PresetLoadOptions GetModlistLoadOptions(ModlistLoadMode mode)
+    {
+        if (mode == ModlistLoadMode.Replace)
+        {
+            return ModListLoadOptions;
+        }
+
+        return new PresetLoadOptions(ModListLoadOptions.ApplyModStatus, ModListLoadOptions.ApplyModVersions, false);
+    }
+
     private bool EnsureModlistBackupBeforeLoad()
     {
         MessageBoxResult prompt;
@@ -3835,16 +3871,23 @@ public partial class MainWindow : Window
 
         _viewModel.ShowInstalledModsCommand.Execute(null);
 
-        if (!EnsureModlistBackupBeforeLoad())
+        ModlistLoadMode? loadMode = PromptModlistLoadMode();
+        if (loadMode is not ModlistLoadMode mode)
         {
             return;
         }
 
+        if (mode == ModlistLoadMode.Replace && !EnsureModlistBackupBeforeLoad())
+        {
+            return;
+        }
+
+        PresetLoadOptions loadOptions = GetModlistLoadOptions(mode);
         string fallbackName = entry.Name ?? entry.DisplayName ?? "Modlist";
 
         if (!TryLoadPresetFromFile(cacheFilePath,
                 fallbackName,
-                ModListLoadOptions,
+                loadOptions,
                 out ModPreset? preset,
                 out string? errorMessage))
         {
@@ -3864,7 +3907,10 @@ public partial class MainWindow : Window
         }
 
         await ApplyPresetAsync(preset);
-        _viewModel.ReportStatus($"Installed cloud modlist \"{preset.Name}\".");
+        string status = mode == ModlistLoadMode.Replace
+            ? $"Installed cloud modlist \"{preset.Name}\"."
+            : $"Added mods from cloud modlist \"{preset.Name}\".";
+        _viewModel.ReportStatus(status);
     }
 
     private async void LoadModlistFromCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -3891,11 +3937,18 @@ public partial class MainWindow : Window
                 return;
             }
 
-            if (!EnsureModlistBackupBeforeLoad())
+            ModlistLoadMode? loadMode = PromptModlistLoadMode();
+            if (loadMode is not ModlistLoadMode mode)
             {
                 return;
             }
 
+            if (mode == ModlistLoadMode.Replace && !EnsureModlistBackupBeforeLoad())
+            {
+                return;
+            }
+
+            PresetLoadOptions loadOptions = GetModlistLoadOptions(mode);
             string? json = selectedSlot.CachedContent;
             if (string.IsNullOrWhiteSpace(json))
             {
@@ -3913,7 +3966,7 @@ public partial class MainWindow : Window
             string? sourceName = selectedSlot.Name ?? FormatCloudSlotLabel(selectedSlot.SlotKey);
             if (!TryLoadPresetFromJson(json,
                     "Modlist",
-                    ModListLoadOptions,
+                    loadOptions,
                     out ModPreset? preset,
                     out string? errorMessage,
                     sourceName))
@@ -3931,7 +3984,10 @@ public partial class MainWindow : Window
             ModPreset loadedModlist = preset!;
             await ApplyPresetAsync(loadedModlist);
             string slotLabel = FormatCloudSlotLabel(selectedSlot.SlotKey);
-            _viewModel?.ReportStatus($"Loaded cloud modlist \"{loadedModlist.Name}\" from {slotLabel}.");
+            string status = mode == ModlistLoadMode.Replace
+                ? $"Loaded cloud modlist \"{loadedModlist.Name}\" from {slotLabel}."
+                : $"Added mods from cloud modlist \"{loadedModlist.Name}\" from {slotLabel}.";
+            _viewModel?.ReportStatus(status);
         }, "load the modlist from the cloud");
     }
 
@@ -4081,12 +4137,20 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!EnsureModlistBackupBeforeLoad())
+        ModlistLoadMode? loadMode = PromptModlistLoadMode();
+        if (loadMode is not ModlistLoadMode mode)
         {
             return;
         }
 
-        if (!TryLoadPresetFromFile(dialog.FileName, "Modlist", ModListLoadOptions, out ModPreset? preset, out string? errorMessage))
+        if (mode == ModlistLoadMode.Replace && !EnsureModlistBackupBeforeLoad())
+        {
+            return;
+        }
+
+        PresetLoadOptions loadOptions = GetModlistLoadOptions(mode);
+
+        if (!TryLoadPresetFromFile(dialog.FileName, "Modlist", loadOptions, out ModPreset? preset, out string? errorMessage))
         {
             string message = string.IsNullOrWhiteSpace(errorMessage)
                 ? "The selected file is not a valid modlist."
@@ -4100,7 +4164,10 @@ public partial class MainWindow : Window
 
         ModPreset loadedModlist = preset!;
         await ApplyPresetAsync(loadedModlist);
-        _viewModel?.ReportStatus($"Loaded modlist \"{loadedModlist.Name}\".");
+        string status = mode == ModlistLoadMode.Replace
+            ? $"Loaded modlist \"{loadedModlist.Name}\"."
+            : $"Added mods from modlist \"{loadedModlist.Name}\".";
+        _viewModel?.ReportStatus(status);
     }
 
     private bool TryLoadPresetFromFile(string filePath, string fallbackName, PresetLoadOptions options, out ModPreset? preset, out string? errorMessage)
