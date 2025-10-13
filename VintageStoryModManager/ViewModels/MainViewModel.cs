@@ -484,6 +484,22 @@ public sealed class MainViewModel : ObservableObject
         bool success;
         if (preset.IncludesModStatus && preset.ModStates.Count > 0)
         {
+            var installedMods = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            foreach (var mod in _mods)
+            {
+                if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
+                {
+                    continue;
+                }
+
+                string normalizedId = mod.ModId.Trim();
+                if (!installedMods.ContainsKey(normalizedId))
+                {
+                    string? version = string.IsNullOrWhiteSpace(mod.Version) ? null : mod.Version!.Trim();
+                    installedMods.Add(normalizedId, version);
+                }
+            }
+
             success = await Task.Run(() =>
             {
                 foreach (var state in preset.ModStates)
@@ -494,8 +510,13 @@ public sealed class MainViewModel : ObservableObject
                     }
 
                     string normalizedId = state.ModId.Trim();
+                    if (!installedMods.TryGetValue(normalizedId, out string? installedVersion))
+                    {
+                        continue;
+                    }
+
                     string? version = preset.IncludesModVersions
-                        ? (string.IsNullOrWhiteSpace(state.Version) ? null : state.Version!.Trim())
+                        ? (string.IsNullOrWhiteSpace(state.Version) ? installedVersion : state.Version!.Trim())
                         : null;
 
                     if (!_settingsStore.TrySetActive(normalizedId, version, desiredState, out string? error))
