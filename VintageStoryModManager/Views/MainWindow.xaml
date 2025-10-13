@@ -346,6 +346,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
+            <Rectangle HorizontalAlignment="Left" Height="574" VerticalAlignment="Top" Width="1172" Fill="{DynamicResource GridBackground1}" Grid.RowSpan="2" Margin="0,32,0,0"/>
             <Grid Grid.Row="0" Margin="0,-15,-27,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" MinWidth="290" />
@@ -376,7 +377,7 @@
 
                 <StackPanel Grid.Column="0"
                             Orientation="Horizontal"
-                            VerticalAlignment="Top" Height="64" Margin="5,12,0,0" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="416">
+                            VerticalAlignment="Top" Height="40" Margin="5,12,0,0" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="416">
                     <Button Content="Installed Mods"
                             Command="{Binding ShowInstalledModsCommand}"
                             Width="138"
@@ -493,8 +494,6 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-
-                <Rectangle HorizontalAlignment="Left" Height="606" Grid.Row="1" VerticalAlignment="Center" Width="1172" Fill="{DynamicResource GridBackground1}"/>
 
                 <DataGrid x:Name="ModsDataGrid"
                           Grid.Row="1"
