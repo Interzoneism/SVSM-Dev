@@ -10,6 +10,9 @@ namespace VintageStoryModManager.Views.Dialogs;
 
 public partial class CloudModlistDetailsDialog : Window
 {
+    private bool _isUpdatingConfigOptionSelection;
+    private bool _isUpdatingSelectAllCheckBox;
+
     public CloudModlistDetailsDialog(Window owner, string? suggestedName, IEnumerable<CloudModConfigOption>? configOptions)
     {
         ConfigOptions = new ObservableCollection<CloudModConfigOption>(
@@ -18,6 +21,13 @@ public partial class CloudModlistDetailsDialog : Window
                 .OrderBy(option => option.DisplayName, StringComparer.OrdinalIgnoreCase));
 
         InitializeComponent();
+
+        foreach (var option in ConfigOptions)
+        {
+            option.PropertyChanged += ConfigOption_OnPropertyChanged;
+        }
+
+        UpdateSelectAllState();
 
         Owner = owner;
         NameTextBox.Text = string.IsNullOrWhiteSpace(suggestedName)
@@ -70,6 +80,73 @@ public partial class CloudModlistDetailsDialog : Window
     {
         NameTextBox.Focus();
         NameTextBox.SelectAll();
+        UpdateSelectAllState();
+    }
+
+    private void SelectAllCheckBox_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_isUpdatingSelectAllCheckBox)
+        {
+            return;
+        }
+
+        _isUpdatingConfigOptionSelection = true;
+
+        var shouldSelectAll = SelectAllCheckBox.IsChecked == true;
+
+        foreach (var option in ConfigOptions)
+        {
+            option.IsSelected = shouldSelectAll;
+        }
+
+        _isUpdatingConfigOptionSelection = false;
+
+        UpdateSelectAllState();
+    }
+
+    private void ConfigOption_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (!string.Equals(e.PropertyName, nameof(CloudModConfigOption.IsSelected), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (_isUpdatingConfigOptionSelection)
+        {
+            return;
+        }
+
+        UpdateSelectAllState();
+    }
+
+    private void UpdateSelectAllState()
+    {
+        if (SelectAllCheckBox is null)
+        {
+            return;
+        }
+
+        if (!HasConfigOptions)
+        {
+            _isUpdatingSelectAllCheckBox = true;
+            SelectAllCheckBox.IsChecked = false;
+            _isUpdatingSelectAllCheckBox = false;
+            return;
+        }
+
+        var selectedCount = ConfigOptions.Count(option => option.IsSelected);
+        var totalCount = ConfigOptions.Count;
+
+        _isUpdatingSelectAllCheckBox = true;
+
+        SelectAllCheckBox.IsChecked = selectedCount switch
+        {
+            0 => false,
+            _ when selectedCount == totalCount => true,
+            _ => null,
+        };
+
+        _isUpdatingSelectAllCheckBox = false;
     }
 
     public sealed class CloudModConfigOption : INotifyPropertyChanged

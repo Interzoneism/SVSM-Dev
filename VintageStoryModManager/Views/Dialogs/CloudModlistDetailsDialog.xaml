@@ -55,13 +55,37 @@
                  VerticalScrollBarVisibility="Auto" />
 
         <Grid Grid.Row="0" Grid.Column="3" Grid.RowSpan="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Include Configurations" FontWeight="SemiBold" Margin="0,0,0,8" />
+            <TextBlock Grid.Column="0" Text="Include Configurations" FontWeight="SemiBold" Margin="0,0,0,8" />
+            <CheckBox x:Name="SelectAllCheckBox"
+                      Grid.Column="1"
+                      Margin="12,0,0,8"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Center"
+                      IsThreeState="True"
+                      Click="SelectAllCheckBox_OnClick"
+                      ToolTip="Select all or deselect all configuration options"
+                      Visibility="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <CheckBox.LayoutTransform>
+                    <ScaleTransform ScaleX="1.2" ScaleY="1.2" />
+                </CheckBox.LayoutTransform>
+                <CheckBox.Content>
+                    <TextBlock Text="Select all">
+                        <TextBlock.LayoutTransform>
+                            <ScaleTransform ScaleX="0.8333" ScaleY="0.8333" />
+                        </TextBlock.LayoutTransform>
+                    </TextBlock>
+                </CheckBox.Content>
+            </CheckBox>
 
             <Border Grid.Row="1"
                     BorderThickness="1"
@@ -73,24 +97,28 @@
                          ScrollViewer.VerticalScrollBarVisibility="Auto">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
-                            <Setter Property="Height">
-                                <Setter.Value>
-                                    <Binding Path="FontSize"
-                                             RelativeSource="{RelativeSource Self}"
-                                             Converter="{StaticResource IMM.DoubleOffsetConverter}"
-                                             ConverterParameter="2" />
-                                </Setter.Value>
-                            </Setter>
+                            <Setter Property="MinHeight" Value="32" />
+                            <Setter Property="Padding" Value="6,4" />
                             <Setter Property="VerticalContentAlignment" Value="Center" />
                         </Style>
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      Content="{Binding DisplayName}"
                                       ToolTip="{Binding ConfigPath}"
                                       Margin="0"
-                                      VerticalAlignment="Center" />
+                                      VerticalAlignment="Center">
+                                <CheckBox.LayoutTransform>
+                                    <ScaleTransform ScaleX="1.2" ScaleY="1.2" />
+                                </CheckBox.LayoutTransform>
+                                <CheckBox.Content>
+                                    <TextBlock Text="{Binding DisplayName}">
+                                        <TextBlock.LayoutTransform>
+                                            <ScaleTransform ScaleX="0.8333" ScaleY="0.8333" />
+                                        </TextBlock.LayoutTransform>
+                                    </TextBlock>
+                                </CheckBox.Content>
+                            </CheckBox>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
