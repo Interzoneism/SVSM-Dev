@@ -12,12 +12,12 @@ public partial class CloudModlistDetailsDialog : Window
 {
     public CloudModlistDetailsDialog(Window owner, string? suggestedName, IEnumerable<CloudModConfigOption>? configOptions)
     {
-        InitializeComponent();
-
         ConfigOptions = new ObservableCollection<CloudModConfigOption>(
             (configOptions ?? Enumerable.Empty<CloudModConfigOption>())
                 .Where(option => option is not null)
                 .OrderBy(option => option.DisplayName, StringComparer.OrdinalIgnoreCase));
+
+        InitializeComponent();
 
         Owner = owner;
         NameTextBox.Text = string.IsNullOrWhiteSpace(suggestedName)
