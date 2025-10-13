@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
@@ -74,6 +76,15 @@ public sealed class MainViewModel : ObservableObject
     private readonly object _busyStateLock = new();
     private int _busyOperationCount;
     private bool _isLoadingMods;
+    private readonly ObservableCollection<TagFilterOptionViewModel> _installedTagFilters = new();
+    private readonly ObservableCollection<TagFilterOptionViewModel> _modDatabaseTagFilters = new();
+    private readonly HashSet<ModListItemViewModel> _installedModSubscriptions = new();
+    private readonly HashSet<ModListItemViewModel> _searchResultSubscriptions = new();
+    private readonly List<string> _selectedInstalledTags = new();
+    private readonly List<string> _selectedModDatabaseTags = new();
+    private bool _suppressInstalledTagFilterSelectionChanges;
+    private bool _suppressModDatabaseTagFilterSelectionChanges;
+    private IReadOnlyList<string> _modDatabaseAvailableTags = Array.Empty<string>();
 
     public MainViewModel(
         string dataDirectory,
@@ -99,6 +110,10 @@ public sealed class MainViewModel : ObservableObject
         ModsView.Filter = FilterMod;
         SearchResultsView = CollectionViewSource.GetDefaultView(_searchResults);
         CloudModlistsView = CollectionViewSource.GetDefaultView(_cloudModlists);
+        InstalledTagFilters = new ReadOnlyObservableCollection<TagFilterOptionViewModel>(_installedTagFilters);
+        ModDatabaseTagFilters = new ReadOnlyObservableCollection<TagFilterOptionViewModel>(_modDatabaseTagFilters);
+        _mods.CollectionChanged += OnModsCollectionChanged;
+        _searchResults.CollectionChanged += OnSearchResultsCollectionChanged;
         _sortOptions = new ObservableCollection<SortOption>(CreateSortOptions());
         SortOptions = new ReadOnlyObservableCollection<SortOption>(_sortOptions);
         SelectedSortOption = SortOptions.FirstOrDefault();
@@ -127,6 +142,10 @@ public sealed class MainViewModel : ObservableObject
     public ICollectionView SearchResultsView { get; }
 
     public ICollectionView CloudModlistsView { get; }
+
+    public ReadOnlyObservableCollection<TagFilterOptionViewModel> InstalledTagFilters { get; }
+
+    public ReadOnlyObservableCollection<TagFilterOptionViewModel> ModDatabaseTagFilters { get; }
 
     public ICollectionView CurrentModsView => _viewSection switch
     {
@@ -906,6 +925,456 @@ public sealed class MainViewModel : ObservableObject
         SelectedMod = null;
     }
 
+    private void OnModsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        switch (e.Action)
+        {
+            case NotifyCollectionChangedAction.Add:
+                foreach (ModListItemViewModel mod in EnumerateModItems(e.NewItems))
+                {
+                    AttachInstalledMod(mod);
+                }
+                break;
+            case NotifyCollectionChangedAction.Remove:
+                foreach (ModListItemViewModel mod in EnumerateModItems(e.OldItems))
+                {
+                    DetachInstalledMod(mod);
+                }
+                break;
+            case NotifyCollectionChangedAction.Replace:
+                foreach (ModListItemViewModel mod in EnumerateModItems(e.OldItems))
+                {
+                    DetachInstalledMod(mod);
+                }
+
+                foreach (ModListItemViewModel mod in EnumerateModItems(e.NewItems))
+                {
+                    AttachInstalledMod(mod);
+                }
+                break;
+            case NotifyCollectionChangedAction.Reset:
+                DetachAllInstalledMods();
+                foreach (ModListItemViewModel mod in _mods)
+                {
+                    AttachInstalledMod(mod);
+                }
+                break;
+        }
+
+        ResetInstalledTagFilters(EnumerateModTags(_mods));
+    }
+
+    private void OnSearchResultsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        switch (e.Action)
+        {
+            case NotifyCollectionChangedAction.Add:
+                foreach (ModListItemViewModel mod in EnumerateModItems(e.NewItems))
+                {
+                    AttachSearchResult(mod);
+                }
+                break;
+            case NotifyCollectionChangedAction.Remove:
+                foreach (ModListItemViewModel mod in EnumerateModItems(e.OldItems))
+                {
+                    DetachSearchResult(mod);
+                }
+                break;
+            case NotifyCollectionChangedAction.Replace:
+                foreach (ModListItemViewModel mod in EnumerateModItems(e.OldItems))
+                {
+                    DetachSearchResult(mod);
+                }
+
+                foreach (ModListItemViewModel mod in EnumerateModItems(e.NewItems))
+                {
+                    AttachSearchResult(mod);
+                }
+                break;
+            case NotifyCollectionChangedAction.Reset:
+                DetachAllSearchResults();
+                foreach (ModListItemViewModel mod in _searchResults)
+                {
+                    AttachSearchResult(mod);
+                }
+                break;
+        }
+
+        UpdateModDatabaseAvailableTagsFromViewModels();
+    }
+
+    private static IEnumerable<ModListItemViewModel> EnumerateModItems(IList? items)
+    {
+        if (items is null)
+        {
+            yield break;
+        }
+
+        foreach (object item in items)
+        {
+            if (item is ModListItemViewModel mod)
+            {
+                yield return mod;
+            }
+        }
+    }
+
+    private static IEnumerable<string> EnumerateModTags(IEnumerable<ModListItemViewModel> mods)
+    {
+        foreach (ModListItemViewModel mod in mods)
+        {
+            if (mod.DatabaseTags is not { Count: > 0 } tags)
+            {
+                continue;
+            }
+
+            foreach (string tag in tags)
+            {
+                yield return tag;
+            }
+        }
+    }
+
+    private void AttachInstalledMod(ModListItemViewModel mod)
+    {
+        if (_installedModSubscriptions.Add(mod))
+        {
+            mod.PropertyChanged += OnInstalledModPropertyChanged;
+        }
+    }
+
+    private void DetachInstalledMod(ModListItemViewModel mod)
+    {
+        if (_installedModSubscriptions.Remove(mod))
+        {
+            mod.PropertyChanged -= OnInstalledModPropertyChanged;
+        }
+    }
+
+    private void DetachAllInstalledMods()
+    {
+        if (_installedModSubscriptions.Count == 0)
+        {
+            return;
+        }
+
+        foreach (ModListItemViewModel mod in _installedModSubscriptions)
+        {
+            mod.PropertyChanged -= OnInstalledModPropertyChanged;
+        }
+
+        _installedModSubscriptions.Clear();
+    }
+
+    private void AttachSearchResult(ModListItemViewModel mod)
+    {
+        if (_searchResultSubscriptions.Add(mod))
+        {
+            mod.PropertyChanged += OnSearchResultPropertyChanged;
+        }
+    }
+
+    private void DetachSearchResult(ModListItemViewModel mod)
+    {
+        if (_searchResultSubscriptions.Remove(mod))
+        {
+            mod.PropertyChanged -= OnSearchResultPropertyChanged;
+        }
+    }
+
+    private void DetachAllSearchResults()
+    {
+        if (_searchResultSubscriptions.Count == 0)
+        {
+            return;
+        }
+
+        foreach (ModListItemViewModel mod in _searchResultSubscriptions)
+        {
+            mod.PropertyChanged -= OnSearchResultPropertyChanged;
+        }
+
+        _searchResultSubscriptions.Clear();
+    }
+
+    private void OnInstalledModPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (!string.Equals(e.PropertyName, nameof(ModListItemViewModel.DatabaseTags), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        ResetInstalledTagFilters(EnumerateModTags(_mods));
+    }
+
+    private void OnSearchResultPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (!string.Equals(e.PropertyName, nameof(ModListItemViewModel.DatabaseTags), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        UpdateModDatabaseAvailableTagsFromViewModels();
+    }
+
+    private void ResetInstalledTagFilters(IEnumerable<string> tags)
+    {
+        List<string> normalized = NormalizeAndSortTags(tags.Concat(_selectedInstalledTags));
+
+        _suppressInstalledTagFilterSelectionChanges = true;
+        try
+        {
+            foreach (TagFilterOptionViewModel filter in _installedTagFilters)
+            {
+                filter.PropertyChanged -= OnInstalledTagFilterPropertyChanged;
+            }
+
+            _installedTagFilters.Clear();
+
+            var selected = new HashSet<string>(_selectedInstalledTags, StringComparer.OrdinalIgnoreCase);
+            foreach (string tag in normalized)
+            {
+                bool isSelected = selected.Contains(tag);
+                var option = new TagFilterOptionViewModel(tag, isSelected);
+                option.PropertyChanged += OnInstalledTagFilterPropertyChanged;
+                _installedTagFilters.Add(option);
+            }
+        }
+        finally
+        {
+            _suppressInstalledTagFilterSelectionChanges = false;
+        }
+
+        SyncSelectedTags(_installedTagFilters, _selectedInstalledTags);
+        ModsView.Refresh();
+    }
+
+    private void ResetModDatabaseTagFilters(IEnumerable<string> tags)
+    {
+        List<string> normalized = NormalizeAndSortTags(tags.Concat(_selectedModDatabaseTags));
+
+        _suppressModDatabaseTagFilterSelectionChanges = true;
+        try
+        {
+            foreach (TagFilterOptionViewModel filter in _modDatabaseTagFilters)
+            {
+                filter.PropertyChanged -= OnModDatabaseTagFilterPropertyChanged;
+            }
+
+            _modDatabaseTagFilters.Clear();
+
+            var selected = new HashSet<string>(_selectedModDatabaseTags, StringComparer.OrdinalIgnoreCase);
+            foreach (string tag in normalized)
+            {
+                bool isSelected = selected.Contains(tag);
+                var option = new TagFilterOptionViewModel(tag, isSelected);
+                option.PropertyChanged += OnModDatabaseTagFilterPropertyChanged;
+                _modDatabaseTagFilters.Add(option);
+            }
+        }
+        finally
+        {
+            _suppressModDatabaseTagFilterSelectionChanges = false;
+        }
+
+        SyncSelectedTags(_modDatabaseTagFilters, _selectedModDatabaseTags);
+    }
+
+    private void ApplyModDatabaseAvailableTags(IEnumerable<string> tags)
+    {
+        List<string> normalized = NormalizeAndSortTags(tags.Concat(_selectedModDatabaseTags));
+        if (TagListsEqual(_modDatabaseAvailableTags, normalized))
+        {
+            return;
+        }
+
+        _modDatabaseAvailableTags = normalized;
+        ResetModDatabaseTagFilters(_modDatabaseAvailableTags);
+    }
+
+    private void UpdateModDatabaseAvailableTagsFromViewModels()
+    {
+        ApplyModDatabaseAvailableTags(_modDatabaseAvailableTags.Concat(EnumerateModTags(_searchResults)));
+    }
+
+    private void OnInstalledTagFilterPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_suppressInstalledTagFilterSelectionChanges)
+        {
+            return;
+        }
+
+        if (!string.Equals(e.PropertyName, nameof(TagFilterOptionViewModel.IsSelected), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (SyncSelectedTags(_installedTagFilters, _selectedInstalledTags))
+        {
+            ModsView.Refresh();
+        }
+    }
+
+    private void OnModDatabaseTagFilterPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_suppressModDatabaseTagFilterSelectionChanges)
+        {
+            return;
+        }
+
+        if (!string.Equals(e.PropertyName, nameof(TagFilterOptionViewModel.IsSelected), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (SyncSelectedTags(_modDatabaseTagFilters, _selectedModDatabaseTags))
+        {
+            TriggerModDatabaseSearch();
+        }
+    }
+
+    private static bool SyncSelectedTags(IEnumerable<TagFilterOptionViewModel> filters, List<string> target)
+    {
+        List<string> newSelection = filters
+            .Where(filter => filter.IsSelected)
+            .Select(filter => filter.Name)
+            .ToList();
+
+        if (TagListsEqual(target, newSelection))
+        {
+            return false;
+        }
+
+        target.Clear();
+        target.AddRange(newSelection);
+        return true;
+    }
+
+    private static List<string> NormalizeAndSortTags(IEnumerable<string> tags)
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string tag in tags)
+        {
+            if (string.IsNullOrWhiteSpace(tag))
+            {
+                continue;
+            }
+
+            string trimmed = tag.Trim();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            if (!map.ContainsKey(trimmed))
+            {
+                map[trimmed] = trimmed;
+            }
+        }
+
+        var list = map.Values.ToList();
+        list.Sort(StringComparer.OrdinalIgnoreCase);
+        return list;
+    }
+
+    private static bool TagListsEqual(IReadOnlyList<string> left, IReadOnlyList<string> right)
+    {
+        if (ReferenceEquals(left, right))
+        {
+            return true;
+        }
+
+        if (left.Count != right.Count)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < left.Count; i++)
+        {
+            if (!string.Equals(left[i], right[i], StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private IReadOnlyList<string> GetSelectedModDatabaseTagsSnapshot()
+    {
+        if (_selectedModDatabaseTags.Count == 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        return _selectedModDatabaseTags.ToArray();
+    }
+
+    private static IReadOnlyList<string> CollectModDatabaseTags(IEnumerable<ModDatabaseSearchResult> results)
+    {
+        if (results is null)
+        {
+            return Array.Empty<string>();
+        }
+
+        return NormalizeAndSortTags(results.SelectMany(GetTagsForResult));
+    }
+
+    private static IEnumerable<string> GetTagsForResult(ModDatabaseSearchResult result)
+    {
+        if (result.DetailedInfo?.Tags is { Count: > 0 } detailed)
+        {
+            return detailed;
+        }
+
+        return result.Tags ?? Array.Empty<string>();
+    }
+
+    private static bool ContainsAllTags(IEnumerable<string>? sourceTags, IReadOnlyList<string> requiredTags)
+    {
+        if (requiredTags.Count == 0)
+        {
+            return true;
+        }
+
+        if (sourceTags is null)
+        {
+            return false;
+        }
+
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string tag in sourceTags)
+        {
+            if (string.IsNullOrWhiteSpace(tag))
+            {
+                continue;
+            }
+
+            string trimmed = tag.Trim();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            set.Add(trimmed);
+        }
+
+        if (set.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (string required in requiredTags)
+        {
+            if (!set.Contains(required))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private void TriggerModDatabaseSearch()
     {
         if (!SearchModDatabase)
@@ -943,10 +1412,15 @@ public sealed class MainViewModel : ObservableObject
         }
         SetStatus(statusMessage, false);
 
-        _ = RunModDatabaseSearchAsync(SearchText, hasSearchTokens, cts);
+        IReadOnlyList<string> requiredTags = GetSelectedModDatabaseTagsSnapshot();
+        _ = RunModDatabaseSearchAsync(SearchText, hasSearchTokens, requiredTags, cts);
     }
 
-    private async Task RunModDatabaseSearchAsync(string query, bool hasSearchTokens, CancellationTokenSource cts)
+    private async Task RunModDatabaseSearchAsync(
+        string query,
+        bool hasSearchTokens,
+        IReadOnlyList<string> requiredTags,
+        CancellationTokenSource cts)
     {
         using var busyScope = BeginBusyScope();
         CancellationToken cancellationToken = cts.Token;
@@ -997,7 +1471,17 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
-            if (results.Count == 0)
+            IReadOnlyList<string> availableTags = CollectModDatabaseTags(results);
+            await InvokeOnDispatcherAsync(() => ApplyModDatabaseAvailableTags(availableTags), cancellationToken)
+                .ConfigureAwait(false);
+
+            IReadOnlyList<ModDatabaseSearchResult> filteredResults = requiredTags.Count > 0
+                ? results
+                    .Where(result => ContainsAllTags(GetTagsForResult(result), requiredTags))
+                    .ToList()
+                : results;
+
+            if (filteredResults.Count == 0)
             {
                 await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
                 await InvokeOnDispatcherAsync(
@@ -1009,7 +1493,7 @@ public sealed class MainViewModel : ObservableObject
 
             HashSet<string> installedModIds = await GetInstalledModIdsAsync(cancellationToken).ConfigureAwait(false);
 
-            var entries = results
+            var entries = filteredResults
                 .Select(result => new
                 {
                     Entry = CreateSearchResultEntry(result),
@@ -1442,6 +1926,11 @@ public sealed class MainViewModel : ObservableObject
     private bool FilterMod(object? item)
     {
         if (item is not ModListItemViewModel mod)
+        {
+            return false;
+        }
+
+        if (_selectedInstalledTags.Count > 0 && !ContainsAllTags(mod.DatabaseTags, _selectedInstalledTags))
         {
             return false;
         }

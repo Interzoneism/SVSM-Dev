@@ -46,6 +46,22 @@
                 <TextBlock Text="{Binding}" FontSize="12" Foreground="{StaticResource IMM.ForegroundBrush}" />
             </Border>
         </DataTemplate>
+        <Style x:Key="IMM.TagFilterToggleButtonStyle" TargetType="{x:Type ToggleButton}">
+            <Setter Property="ContentTemplate" Value="{StaticResource IMM.TagBadgeTemplate}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,6,6" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Focusable" Value="False" />
+            <Style.Triggers>
+                <Trigger Property="IsChecked" Value="False">
+                    <Setter Property="Opacity" Value="0.5" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <Style x:Key="IMM.DataGridCellBaseStyle" TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -985,7 +1001,70 @@
                                 </Style>
                             </DataGridTextColumn.CellStyle>
                         </DataGridTextColumn>
-                        <DataGridTemplateColumn x:Name="TagsColumn" Header="Tags" SortMemberPath="DatabaseTagsDisplay" Width="210" MinWidth="180" IsReadOnly="True">
+                        <DataGridTemplateColumn x:Name="TagsColumn"
+                                                Header="Tags"
+                                                Width="210"
+                                                MinWidth="180"
+                                                IsReadOnly="True"
+                                                CanUserSort="False">
+                            <DataGridTemplateColumn.HeaderTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <ToggleButton x:Name="TagsHeaderToggle"
+                                                      Content="{Binding}"
+                                                      Background="Transparent"
+                                                      BorderThickness="0"
+                                                      HorizontalAlignment="Stretch"
+                                                      HorizontalContentAlignment="Left"
+                                                      VerticalAlignment="Center"
+                                                      Padding="0"
+                                                      Focusable="False" />
+                                        <Popup PlacementTarget="{Binding ElementName=TagsHeaderToggle}"
+                                               Placement="Bottom"
+                                               IsOpen="{Binding IsChecked, ElementName=TagsHeaderToggle, Mode=TwoWay}"
+                                               StaysOpen="False"
+                                               AllowsTransparency="True"
+                                               Focusable="False">
+                                            <Border Background="{DynamicResource IMM.SurfaceBrush}"
+                                                    BorderBrush="{StaticResource IMM.BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="8"
+                                                    MinWidth="220">
+                                                <ScrollViewer MaxHeight="260"
+                                                              HorizontalScrollBarVisibility="Disabled"
+                                                              VerticalScrollBarVisibility="Auto">
+                                                    <ItemsControl>
+                                                        <ItemsControl.Style>
+                                                            <Style TargetType="{x:Type ItemsControl}">
+                                                                <Setter Property="ItemsSource"
+                                                                        Value="{Binding DataContext.InstalledTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                                                 Value="True">
+                                                                        <Setter Property="ItemsSource"
+                                                                                Value="{Binding DataContext.ModDatabaseTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </ItemsControl.Style>
+                                                        <ItemsControl.ItemsPanel>
+                                                            <StaticResource ResourceKey="IMM.TagItemsPanelTemplate" />
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate DataType="{x:Type viewModels:TagFilterOptionViewModel}">
+                                                                <ToggleButton Style="{StaticResource IMM.TagFilterToggleButtonStyle}"
+                                                                              Content="{Binding Name}"
+                                                                              IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </ScrollViewer>
+                                            </Border>
+                                        </Popup>
+                                    </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.HeaderTemplate>
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid>
