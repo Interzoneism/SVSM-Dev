@@ -2106,7 +2106,7 @@ public partial class MainWindow : Window
             return false;
         }
 
-        _userConfiguration.RemoveModConfigPath(mod.ModId);
+        _userConfiguration.RemoveModConfigPath(mod.ModId, preserveHistory: true);
         return true;
     }
 
@@ -6070,7 +6070,7 @@ public partial class MainWindow : Window
                 continue;
             }
 
-            _userConfiguration.RemoveModConfigPath(mod.ModId);
+            _userConfiguration.RemoveModConfigPath(mod.ModId, preserveHistory: true);
         }
 
         if (removedCount > 0)
