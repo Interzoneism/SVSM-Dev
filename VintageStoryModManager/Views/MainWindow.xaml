@@ -2055,7 +2055,6 @@
                             </Setter>
                         </Style>
                     </Button.Style>
-                        ToolTip="Resolve dependency issues" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,115,0,0" Grid.Column="1" Background="{DynamicResource ButtonError}">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
                         <TextBlock Text="Fix" VerticalAlignment="Center" />
