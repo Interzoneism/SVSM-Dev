@@ -3196,6 +3196,17 @@ public partial class MainWindow : Window
             return;
         }
 
+        MessageBoxResult confirmation = WpfMessageBox.Show(
+            "Are you sure you want to load this backup Modlist? Your current mods will be deleted and replaced with the mods in this backup.",
+            "Simple VS Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirmation != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
         await RestoreBackupAsync(filePath).ConfigureAwait(true);
     }
 

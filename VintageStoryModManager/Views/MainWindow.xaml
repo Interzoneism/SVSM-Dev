@@ -366,6 +366,11 @@
                     <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
                     <MenuItem Header="Set Custom Vintage Story Shortcut" Height="35" Click="SetCustomShortcutMenuItem_OnClick" />
+                    <MenuItem Header="Restore backup point"
+                              Height="35"
+                              SubmenuOpened="RestoreBackupMenuItem_OnSubmenuOpened">
+                        <MenuItem Header="Loading..." IsEnabled="False" />
+                    </MenuItem>
                     <MenuItem x:Name="DisableInternetAccessMenuItem"
                               Header="_Disable Internet Access"
                               Height="35"
