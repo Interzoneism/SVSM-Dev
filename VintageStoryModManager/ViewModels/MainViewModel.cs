@@ -79,6 +79,11 @@ public sealed class MainViewModel : ObservableObject
     private readonly object _busyStateLock = new();
     private int _busyOperationCount;
     private bool _isLoadingMods;
+    private int _pendingModDetailsRefreshCount;
+    private readonly object _modDetailsBusyScopeLock = new();
+    private IDisposable? _modDetailsBusyScope;
+    private bool _isModDetailsStatusActive;
+    private bool _hasShownModDetailsLoadingStatus;
     private readonly ObservableCollection<TagFilterOptionViewModel> _installedTagFilters = new();
     private readonly ObservableCollection<TagFilterOptionViewModel> _modDatabaseTagFilters = new();
     private readonly HashSet<ModListItemViewModel> _installedModSubscriptions = new();
@@ -1004,7 +1009,7 @@ public sealed class MainViewModel : ObservableObject
                 QueueDatabaseInfoRefresh(entries);
             }
 
-            SetStatus($"Loaded {TotalMods} mods.", false);
+            UpdateLoadedModsStatus();
         }, CancellationToken.None).ConfigureAwait(true);
     }
 
@@ -2068,6 +2073,95 @@ public sealed class MainViewModel : ObservableObject
         };
     }
 
+    private void UpdateLoadedModsStatus()
+    {
+        if (IsModDetailsRefreshPending())
+        {
+            if (!_isModDetailsStatusActive)
+            {
+                SetStatus(BuildModDetailsLoadingStatusMessage(), false, isModDetailsStatus: true);
+            }
+        }
+        else
+        {
+            SetStatus(BuildModDetailsReadyStatusMessage(), false);
+        }
+    }
+
+    private bool IsModDetailsRefreshPending()
+    {
+        return Interlocked.CompareExchange(ref _pendingModDetailsRefreshCount, 0, 0) > 0;
+    }
+
+    private void OnModDetailsRefreshEnqueued(int count)
+    {
+        if (count <= 0)
+        {
+            return;
+        }
+
+        int newCount = Interlocked.Add(ref _pendingModDetailsRefreshCount, count);
+        if (newCount <= 0)
+        {
+            Interlocked.Exchange(ref _pendingModDetailsRefreshCount, 0);
+            return;
+        }
+
+        EnsureModDetailsBusyScope();
+
+        if (newCount == count || !_isModDetailsStatusActive)
+        {
+            SetStatus(BuildModDetailsLoadingStatusMessage(), false, isModDetailsStatus: true);
+        }
+    }
+
+    private void OnModDetailsRefreshCompleted()
+    {
+        int newCount = Interlocked.Decrement(ref _pendingModDetailsRefreshCount);
+        if (newCount <= 0)
+        {
+            Interlocked.Exchange(ref _pendingModDetailsRefreshCount, 0);
+            ReleaseModDetailsBusyScope();
+
+            if (_isModDetailsStatusActive)
+            {
+                SetStatus(BuildModDetailsReadyStatusMessage(), false);
+            }
+        }
+    }
+
+    private void EnsureModDetailsBusyScope()
+    {
+        lock (_modDetailsBusyScopeLock)
+        {
+            _modDetailsBusyScope ??= BeginBusyScope();
+        }
+    }
+
+    private void ReleaseModDetailsBusyScope()
+    {
+        lock (_modDetailsBusyScopeLock)
+        {
+            _modDetailsBusyScope?.Dispose();
+            _modDetailsBusyScope = null;
+        }
+    }
+
+    private string BuildModDetailsLoadingStatusMessage()
+    {
+        return $"Loaded {TotalMods} mods. Loading mod details...";
+    }
+
+    private string BuildModDetailsReadyStatusMessage()
+    {
+        if (_hasShownModDetailsLoadingStatus)
+        {
+            return $"Loaded {TotalMods} mods. Mod details up to date.";
+        }
+
+        return $"Loaded {TotalMods} mods.";
+    }
+
     private string BuildNoModDatabaseResultsMessage(bool hasSearchTokens)
     {
         if (hasSearchTokens)
@@ -2450,11 +2544,13 @@ public sealed class MainViewModel : ObservableObject
             || string.Equals(propertyName, nameof(ModListItemViewModel.ActiveSortOrder), StringComparison.OrdinalIgnoreCase);
     }
 
-    private void SetStatus(string message, bool isError)
+    private void SetStatus(string message, bool isError, bool isModDetailsStatus = false)
     {
         StatusLogService.AppendStatus(message, isError);
         StatusMessage = message;
         IsErrorStatus = isError;
+        _isModDetailsStatusActive = isModDetailsStatus;
+        _hasShownModDetailsLoadingStatus = isModDetailsStatus;
     }
 
     private Dictionary<string, ModEntry?> LoadChangedModEntries(IReadOnlyCollection<string> paths)
@@ -2608,6 +2704,8 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
+        OnModDetailsRefreshEnqueued(pending.Length);
+
         _ = Task.Run(async () =>
         {
             try
@@ -2683,6 +2781,7 @@ public sealed class MainViewModel : ObservableObject
         finally
         {
             limiter.Release();
+            OnModDetailsRefreshCompleted();
         }
     }
 
@@ -2690,7 +2789,21 @@ public sealed class MainViewModel : ObservableObject
     {
         foreach (ModEntry entry in entries)
         {
-            await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+            try
+            {
+                if (entry is not null)
+                {
+                    await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                }
+            }
+            catch (Exception)
+            {
+                // Swallow unexpected exceptions for resilience.
+            }
+            finally
+            {
+                OnModDetailsRefreshCompleted();
+            }
         }
     }
 
