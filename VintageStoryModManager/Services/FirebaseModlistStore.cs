@@ -466,6 +466,16 @@ namespace SimpleVsManager.Cloud
                 return;
             }
 
+            if (resp.StatusCode == HttpStatusCode.Unauthorized || resp.StatusCode == HttpStatusCode.Forbidden)
+            {
+                bool created = await TryCreateUserBindingWithoutReadAccessAsync(bindingUrl, ct);
+                if (created)
+                {
+                    _hasEnsuredUserBinding = true;
+                    return;
+                }
+            }
+
             await EnsureOk(resp, "Fetch uid binding");
 
             string payload = await resp.Content.ReadAsStringAsync(ct);
@@ -505,6 +515,32 @@ namespace SimpleVsManager.Cloud
             using var content = new StringContent(payload, Encoding.UTF8, "application/json");
             using var resp = await _http.PutAsync(bindingUrl, content, ct);
             await EnsureOk(resp, "Save uid binding");
+        }
+
+        private async Task<bool> TryCreateUserBindingWithoutReadAccessAsync(string bindingUrl, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(_auth.Uid))
+            {
+                throw new InvalidOperationException("Firebase authentication identifier is unavailable.");
+            }
+
+            string payload = JsonSerializer.Serialize(_auth.Uid, JsonOpts);
+
+            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+            using var resp = await _http.PutAsync(bindingUrl, content, ct);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            if (resp.StatusCode == HttpStatusCode.Unauthorized || resp.StatusCode == HttpStatusCode.Forbidden)
+            {
+                return false;
+            }
+
+            await EnsureOk(resp, "Save uid binding");
+            return true;
         }
 
         private async Task EnsureUploaderConsistencyAsync(string uploader, CancellationToken ct)
