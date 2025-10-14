@@ -495,7 +495,7 @@
                           IsChecked="{Binding ExcludeInstalledModDatabaseResults, Mode=TwoWay}">
                     <CheckBox.Style>
                         <Style TargetType="{x:Type CheckBox}">
-                            <Setter Property="Visibility" Value="Visible" />
+                            <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
