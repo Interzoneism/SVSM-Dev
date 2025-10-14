@@ -665,7 +665,8 @@ public sealed class ModDiscoveryService
         try
         {
             using ZipArchive archive = ZipFile.OpenRead(archiveFile.FullName);
-            ZipArchiveEntry? infoEntry = FindEntry(archive, "modinfo.json");
+            ZipArchiveLookup lookup = BuildArchiveLookup(archive);
+            ZipArchiveEntry? infoEntry = FindEntry(lookup, "modinfo.json");
             if (infoEntry == null)
             {
                 return CreateErrorEntry(Path.GetFileNameWithoutExtension(archiveFile.Name), archiveFile.FullName, ModSourceKind.ZipArchive, "Missing modinfo.json");
@@ -675,7 +676,7 @@ public sealed class ModDiscoveryService
             using JsonDocument document = JsonDocument.Parse(infoStream, DocumentOptions);
             var info = ParseModInfo(document.RootElement, Path.GetFileNameWithoutExtension(archiveFile.Name));
 
-            byte[]? iconBytes = LoadIconFromArchive(archive, info.IconPath, out string? iconDescription);
+            byte[]? iconBytes = LoadIconFromArchive(lookup, info.IconPath, out string? iconDescription);
             if (iconBytes == null)
             {
                 iconBytes = LoadDefaultIcon(out iconDescription);
@@ -688,7 +689,30 @@ public sealed class ModDiscoveryService
         }
     }
 
-    private static ZipArchiveEntry? FindEntry(ZipArchive archive, string entryName)
+    private static ZipArchiveLookup BuildArchiveLookup(ZipArchive archive)
+    {
+        var byPath = new Dictionary<string, ZipArchiveEntry?>(StringComparer.OrdinalIgnoreCase);
+        var byFileName = new Dictionary<string, ZipArchiveEntry?>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (ZipArchiveEntry entry in archive.Entries)
+        {
+            string normalizedPath = NormalizeZipEntryPath(entry.FullName);
+            if (!byPath.ContainsKey(normalizedPath))
+            {
+                byPath[normalizedPath] = entry;
+            }
+
+            string fileName = NormalizeZipEntryPath(Path.GetFileName(entry.FullName));
+            if (!string.IsNullOrEmpty(fileName) && !byFileName.ContainsKey(fileName))
+            {
+                byFileName[fileName] = entry;
+            }
+        }
+
+        return new ZipArchiveLookup(byPath, byFileName);
+    }
+
+    private static ZipArchiveEntry? FindEntry(ZipArchiveLookup lookup, string entryName)
     {
         if (string.IsNullOrWhiteSpace(entryName))
         {
@@ -696,18 +720,18 @@ public sealed class ModDiscoveryService
         }
 
         string normalizedTarget = NormalizeZipEntryPath(entryName);
-
-        foreach (var entry in archive.Entries)
+        if (lookup.TryGetEntry(normalizedTarget, out ZipArchiveEntry? exact))
         {
-            string normalizedEntry = NormalizeZipEntryPath(entry.FullName);
-            if (string.Equals(normalizedEntry, normalizedTarget, StringComparison.OrdinalIgnoreCase))
-            {
-                return entry;
-            }
+            return exact;
         }
 
         string normalizedFileName = NormalizeZipEntryPath(Path.GetFileName(entryName));
-        return archive.Entries.FirstOrDefault(e => string.Equals(NormalizeZipEntryPath(Path.GetFileName(e.FullName)), normalizedFileName, StringComparison.OrdinalIgnoreCase));
+        if (lookup.TryGetEntryByFileName(normalizedFileName, out ZipArchiveEntry? byName))
+        {
+            return byName;
+        }
+
+        return null;
     }
 
     private ModEntry CreateUnsupportedCodeModEntry(FileInfo file)
@@ -892,15 +916,15 @@ public sealed class ModDiscoveryService
         return null;
     }
 
-    private static byte[]? LoadIconFromArchive(ZipArchive archive, string? iconPath, out string? description)
+    private static byte[]? LoadIconFromArchive(ZipArchiveLookup lookup, string? iconPath, out string? description)
     {
         ZipArchiveEntry? entry = null;
         if (!string.IsNullOrWhiteSpace(iconPath))
         {
-            entry = FindEntry(archive, iconPath);
+            entry = FindEntry(lookup, iconPath);
         }
 
-        entry ??= FindEntry(archive, "modicon.png");
+        entry ??= FindEntry(lookup, "modicon.png");
         if (entry == null)
         {
             description = null;
@@ -912,6 +936,42 @@ public sealed class ModDiscoveryService
         iconStream.CopyTo(buffer);
         description = entry.FullName;
         return buffer.ToArray();
+    }
+
+    private sealed class ZipArchiveLookup
+    {
+        private readonly Dictionary<string, ZipArchiveEntry?> _byPath;
+        private readonly Dictionary<string, ZipArchiveEntry?> _byFileName;
+
+        public ZipArchiveLookup(Dictionary<string, ZipArchiveEntry?> byPath, Dictionary<string, ZipArchiveEntry?> byFileName)
+        {
+            _byPath = byPath;
+            _byFileName = byFileName;
+        }
+
+        public bool TryGetEntry(string normalizedPath, out ZipArchiveEntry? entry)
+        {
+            if (_byPath.TryGetValue(normalizedPath, out ZipArchiveEntry? value) && value != null)
+            {
+                entry = value;
+                return true;
+            }
+
+            entry = null;
+            return false;
+        }
+
+        public bool TryGetEntryByFileName(string normalizedFileName, out ZipArchiveEntry? entry)
+        {
+            if (_byFileName.TryGetValue(normalizedFileName, out ZipArchiveEntry? value) && value != null)
+            {
+                entry = value;
+                return true;
+            }
+
+            entry = null;
+            return false;
+        }
     }
 
     private byte[]? LoadDefaultIcon(out string? description)
