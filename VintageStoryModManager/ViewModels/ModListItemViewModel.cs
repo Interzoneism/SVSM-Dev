@@ -1,14 +1,11 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -29,29 +26,6 @@ namespace VintageStoryModManager.ViewModels;
 public sealed class ModListItemViewModel : ObservableObject
 {
     private static readonly HttpClient HttpClient = new();
-    private const long MaxReleaseDownloadBytesForIcon = 8 * 1024 * 1024;
-    private const long MaxIconBytesFromArchive = 2 * 1024 * 1024;
-    private static readonly HashSet<string> IconFileExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".png",
-        ".jpg",
-        ".jpeg",
-        ".gif",
-        ".bmp"
-    };
-    private static readonly string[] IconFallbackCandidates =
-    {
-        "modicon.png",
-        "modicon.jpg",
-        "modicon.jpeg",
-        "modicon.gif",
-        "modicon.bmp",
-        "logo.png",
-        "logo.jpg",
-        "logo.jpeg",
-        "logo.gif",
-        "logo.bmp"
-    };
 
     private readonly Func<ModListItemViewModel, bool, Task<ActivationResult>> _activationHandler;
     private readonly IReadOnlyList<ModDependencyInfo> _dependencies;
@@ -780,7 +754,6 @@ public sealed class ModListItemViewModel : ObservableObject
             if (!response.IsSuccessStatusCode)
             {
                 LogDebug($"Async database logo load failed for '{uri}'. HTTP status {(int)response.StatusCode} ({response.StatusCode}).");
-                await TryLoadLogoFromLatestReleaseAsync(cancellationToken).ConfigureAwait(false);
                 return;
             }
 
@@ -788,7 +761,6 @@ public sealed class ModListItemViewModel : ObservableObject
             if (payload.Length == 0)
             {
                 LogDebug($"Async database logo load returned no data for '{uri}'.");
-                await TryLoadLogoFromLatestReleaseAsync(cancellationToken).ConfigureAwait(false);
                 return;
             }
 
@@ -797,14 +769,24 @@ public sealed class ModListItemViewModel : ObservableObject
             ImageSource? image = CreateBitmapFromBytes(payload, uri);
             if (image is null)
             {
-                await TryLoadLogoFromLatestReleaseAsync(cancellationToken).ConfigureAwait(false);
                 return;
             }
 
-            if (await TrySetModDatabaseLogoAsync(image, cancellationToken).ConfigureAwait(false))
-            {
-                LogDebug($"Async database logo load complete. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
-            }
+            await InvokeOnDispatcherAsync(
+                    () =>
+                    {
+                        if (_modDatabaseLogo is not null)
+                        {
+                            return;
+                        }
+
+                        _modDatabaseLogo = image;
+                        OnPropertyChanged(nameof(ModDatabasePreviewImage));
+                        OnPropertyChanged(nameof(HasModDatabasePreviewImage));
+                        LogDebug($"Async database logo load complete. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
+                    },
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -813,294 +795,6 @@ public sealed class ModListItemViewModel : ObservableObject
         catch (Exception ex)
         {
             LogDebug($"Async database logo load failed with error: {ex.Message}.");
-            await TryLoadLogoFromLatestReleaseAsync(cancellationToken).ConfigureAwait(false);
-        }
-    }
-
-    private async Task TryLoadLogoFromLatestReleaseAsync(CancellationToken cancellationToken)
-    {
-        if (_modDatabaseLogo is not null)
-        {
-            return;
-        }
-
-        ImageSource? fallback = await TryLoadModIconFromLatestReleaseAsync(cancellationToken).ConfigureAwait(false);
-        if (fallback is null)
-        {
-            return;
-        }
-
-        if (await TrySetModDatabaseLogoAsync(fallback, cancellationToken).ConfigureAwait(false))
-        {
-            LogDebug($"Fallback mod icon load complete. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
-        }
-    }
-
-    private async Task<bool> TrySetModDatabaseLogoAsync(ImageSource image, CancellationToken cancellationToken)
-    {
-        bool updated = false;
-        await InvokeOnDispatcherAsync(
-                () =>
-                {
-                    if (_modDatabaseLogo is not null)
-                    {
-                        return;
-                    }
-
-                    _modDatabaseLogo = image;
-                    OnPropertyChanged(nameof(ModDatabasePreviewImage));
-                    OnPropertyChanged(nameof(HasModDatabasePreviewImage));
-                    updated = true;
-                },
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        return updated;
-    }
-
-    private async Task<ImageSource?> TryLoadModIconFromLatestReleaseAsync(CancellationToken cancellationToken)
-    {
-        ModReleaseInfo? release = GetPreferredReleaseForIcon();
-        if (release?.DownloadUri is not Uri downloadUri)
-        {
-            return null;
-        }
-
-        if (!IsSupportedScheme(downloadUri))
-        {
-            LogDebug($"Fallback mod icon skipped. Unsupported download URI '{downloadUri}'.");
-            return null;
-        }
-
-        try
-        {
-            InternetAccessManager.ThrowIfInternetAccessDisabled();
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, downloadUri);
-            using HttpResponseMessage response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                LogDebug($"Fallback mod icon download failed for '{downloadUri}'. HTTP status {(int)response.StatusCode} ({response.StatusCode}).");
-                return null;
-            }
-
-            long? contentLength = response.Content.Headers.ContentLength;
-            if (contentLength.HasValue && contentLength.Value > MaxReleaseDownloadBytesForIcon)
-            {
-                LogDebug($"Fallback mod icon download skipped for '{downloadUri}'. Archive size {contentLength.Value} byte(s) exceeds limit of {MaxReleaseDownloadBytesForIcon} byte(s).");
-                return null;
-            }
-
-            await using Stream responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            using var archiveBuffer = new MemoryStream(contentLength.HasValue ? (int)Math.Min(contentLength.Value, int.MaxValue) : 0);
-            if (!await TryCopyToStreamAsync(responseStream, archiveBuffer, MaxReleaseDownloadBytesForIcon, cancellationToken).ConfigureAwait(false))
-            {
-                LogDebug($"Fallback mod icon download aborted for '{downloadUri}'. Archive stream exceeded {MaxReleaseDownloadBytesForIcon} byte(s).");
-                return null;
-            }
-
-            archiveBuffer.Position = 0;
-            using var archive = new ZipArchive(archiveBuffer, ZipArchiveMode.Read, leaveOpen: true);
-
-            ZipArchiveEntry? iconEntry = TryFindIconEntry(archive);
-            if (iconEntry is null)
-            {
-                LogDebug($"Fallback mod icon extraction failed for '{downloadUri}'. No icon entry located in archive.");
-                return null;
-            }
-
-            await using Stream iconStream = iconEntry.Open();
-            using var iconBuffer = new MemoryStream();
-            if (!await TryCopyToStreamAsync(iconStream, iconBuffer, MaxIconBytesFromArchive, cancellationToken).ConfigureAwait(false))
-            {
-                LogDebug($"Fallback mod icon extraction aborted for '{downloadUri}'. Icon stream exceeded {MaxIconBytesFromArchive} byte(s).");
-                return null;
-            }
-
-            ImageSource? image = CreateBitmapFromBytes(iconBuffer.ToArray(), downloadUri);
-            if (image is null)
-            {
-                LogDebug($"Fallback mod icon extraction failed to create bitmap for '{downloadUri}'.");
-            }
-
-            return image;
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Fallback mod icon extraction failed with error: {ex.Message}.");
-            return null;
-        }
-    }
-
-    private ModReleaseInfo? GetPreferredReleaseForIcon()
-    {
-        return _latestRelease
-            ?? _latestCompatibleRelease
-            ?? _releases.FirstOrDefault();
-    }
-
-    private static ZipArchiveEntry? TryFindIconEntry(ZipArchive archive)
-    {
-        string? iconPath = null;
-
-        ZipArchiveEntry? modInfoEntry = FindZipEntry(archive, "modinfo.json");
-        if (modInfoEntry != null)
-        {
-            try
-            {
-                using Stream modInfoStream = modInfoEntry.Open();
-                using JsonDocument document = JsonDocument.Parse(modInfoStream);
-                iconPath = ExtractIconPathFromModInfo(document.RootElement);
-            }
-            catch (Exception)
-            {
-                // Ignore parsing failures and continue with fallbacks.
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(iconPath))
-        {
-            ZipArchiveEntry? entry = FindZipEntry(archive, iconPath);
-            if (entry != null)
-            {
-                return entry;
-            }
-        }
-
-        foreach (string candidate in IconFallbackCandidates)
-        {
-            ZipArchiveEntry? entry = FindZipEntry(archive, candidate);
-            if (entry != null)
-            {
-                return entry;
-            }
-        }
-
-        foreach (ZipArchiveEntry entry in archive.Entries)
-        {
-            string fileName = Path.GetFileName(entry.FullName);
-            if (string.IsNullOrWhiteSpace(fileName))
-            {
-                continue;
-            }
-
-            string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-            if (!string.Equals(nameWithoutExtension, "modicon", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(nameWithoutExtension, "logo", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            string extension = Path.GetExtension(fileName);
-            if (!IconFileExtensions.Contains(extension))
-            {
-                continue;
-            }
-
-            return entry;
-        }
-
-        return null;
-    }
-
-    private static ZipArchiveEntry? FindZipEntry(ZipArchive archive, string? entryPath)
-    {
-        if (string.IsNullOrWhiteSpace(entryPath))
-        {
-            return null;
-        }
-
-        string normalizedTarget = NormalizeZipEntryPath(entryPath);
-
-        foreach (ZipArchiveEntry entry in archive.Entries)
-        {
-            string normalizedEntry = NormalizeZipEntryPath(entry.FullName);
-            if (string.Equals(normalizedEntry, normalizedTarget, StringComparison.OrdinalIgnoreCase))
-            {
-                return entry;
-            }
-        }
-
-        string normalizedFileName = NormalizeZipEntryPath(Path.GetFileName(entryPath));
-        return archive.Entries.FirstOrDefault(e => string.Equals(NormalizeZipEntryPath(Path.GetFileName(e.FullName)), normalizedFileName, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static string NormalizeZipEntryPath(string path)
-    {
-        string normalized = path.Trim().Replace('\\', '/');
-
-        while (normalized.StartsWith("./", StringComparison.Ordinal))
-        {
-            normalized = normalized[2..];
-        }
-
-        if (normalized.Length > 0 && normalized[0] == '/')
-        {
-            normalized = normalized[1..];
-        }
-
-        return normalized;
-    }
-
-    private static string? ExtractIconPathFromModInfo(JsonElement root)
-    {
-        if (root.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
-        if (root.TryGetProperty("iconpath", out JsonElement iconPath) && iconPath.ValueKind == JsonValueKind.String)
-        {
-            string? value = iconPath.GetString();
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                return value;
-            }
-        }
-
-        if (root.TryGetProperty("iconPath", out JsonElement iconPathAlt) && iconPathAlt.ValueKind == JsonValueKind.String)
-        {
-            string? value = iconPathAlt.GetString();
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                return value;
-            }
-        }
-
-        return null;
-    }
-
-    private static async Task<bool> TryCopyToStreamAsync(Stream source, MemoryStream destination, long maxBytes, CancellationToken cancellationToken)
-    {
-        byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
-        try
-        {
-            long total = 0;
-            while (true)
-            {
-                int read = await source.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false);
-                if (read == 0)
-                {
-                    destination.Position = 0;
-                    return true;
-                }
-
-                total += read;
-                if (total > maxBytes)
-                {
-                    return false;
-                }
-
-                destination.Write(buffer, 0, read);
-            }
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 
