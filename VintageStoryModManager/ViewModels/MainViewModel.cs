@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -2998,6 +2999,70 @@ public sealed class MainViewModel : ObservableObject
 
     private ModReleaseInfo? TryCreateCachedRelease(string archivePath, string expectedModId)
     {
+        DateTime lastWriteTimeUtc = DateTime.MinValue;
+        long length = 0L;
+
+        try
+        {
+            var fileInfo = new FileInfo(archivePath);
+            if (fileInfo.Exists)
+            {
+                lastWriteTimeUtc = fileInfo.LastWriteTimeUtc;
+                length = fileInfo.Length;
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore filesystem probing failures; the cache simply will not be used.
+        }
+
+        if (ModManifestCacheService.TryGetManifest(archivePath, lastWriteTimeUtc, length, out string cachedManifest, out _, out _))
+        {
+            try
+            {
+                using JsonDocument document = JsonDocument.Parse(cachedManifest);
+                JsonElement root = document.RootElement;
+
+                string? modId = GetString(root, "modid") ?? GetString(root, "modID");
+                if (!IsModIdMatch(expectedModId, modId))
+                {
+                    ModManifestCacheService.Invalidate(archivePath);
+                }
+                else
+                {
+                    string? version = GetString(root, "version") ?? TryResolveVersionFromMap(root);
+                    if (string.IsNullOrWhiteSpace(version))
+                    {
+                        return null;
+                    }
+
+                    IReadOnlyList<ModDependencyInfo> dependencies = ParseDependencies(root);
+                    IReadOnlyList<string> requiredGameVersions = ExtractRequiredGameVersions(dependencies);
+
+                    if (!TryCreateFileUri(archivePath, ModSourceKind.ZipArchive, out Uri? downloadUri))
+                    {
+                        return null;
+                    }
+
+                    DateTime? createdUtc = TryGetLastWriteTimeUtc(archivePath, ModSourceKind.ZipArchive);
+                    return new ModReleaseInfo
+                    {
+                        Version = version!,
+                        NormalizedVersion = VersionStringUtility.Normalize(version),
+                        DownloadUri = downloadUri!,
+                        FileName = Path.GetFileName(archivePath),
+                        GameVersionTags = requiredGameVersions,
+                        IsCompatibleWithInstalledGame = DetermineInstalledGameCompatibility(dependencies),
+                        CreatedUtc = createdUtc
+                    };
+                }
+            }
+            catch (Exception)
+            {
+                ModManifestCacheService.Invalidate(archivePath);
+            }
+        }
+
         try
         {
             using ZipArchive archive = ZipFile.OpenRead(archivePath);
@@ -3007,14 +3072,18 @@ public sealed class MainViewModel : ObservableObject
                 return null;
             }
 
-            using Stream infoStream = infoEntry.Open();
-            using JsonDocument document = JsonDocument.Parse(infoStream);
+            string manifestContent;
+            using (Stream infoStream = infoEntry.Open())
+            using (var reader = new StreamReader(infoStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
+            {
+                manifestContent = reader.ReadToEnd();
+            }
+
+            using JsonDocument document = JsonDocument.Parse(manifestContent);
             JsonElement root = document.RootElement;
 
             string? modId = GetString(root, "modid") ?? GetString(root, "modID");
-            if (!string.IsNullOrWhiteSpace(expectedModId)
-                && !string.IsNullOrWhiteSpace(modId)
-                && !string.Equals(modId, expectedModId, StringComparison.OrdinalIgnoreCase))
+            if (!IsModIdMatch(expectedModId, modId))
             {
                 return null;
             }
@@ -3035,6 +3104,12 @@ public sealed class MainViewModel : ObservableObject
 
             DateTime? createdUtc = TryGetLastWriteTimeUtc(archivePath, ModSourceKind.ZipArchive);
 
+            string cacheModId = !string.IsNullOrWhiteSpace(modId)
+                ? modId
+                : (!string.IsNullOrWhiteSpace(expectedModId) ? expectedModId : Path.GetFileNameWithoutExtension(archivePath));
+
+            ModManifestCacheService.StoreManifest(archivePath, lastWriteTimeUtc, length, cacheModId, version, manifestContent, null, null);
+
             return new ModReleaseInfo
             {
                 Version = version!,
@@ -3050,6 +3125,16 @@ public sealed class MainViewModel : ObservableObject
         {
             return null;
         }
+    }
+
+    private static bool IsModIdMatch(string expectedModId, string? actualModId)
+    {
+        if (string.IsNullOrWhiteSpace(expectedModId) || string.IsNullOrWhiteSpace(actualModId))
+        {
+            return true;
+        }
+
+        return string.Equals(actualModId, expectedModId, StringComparison.OrdinalIgnoreCase);
     }
 
     private static ZipArchiveEntry? FindArchiveEntry(ZipArchive archive, string entryName)
