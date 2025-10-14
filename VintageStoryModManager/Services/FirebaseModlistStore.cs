@@ -21,20 +21,29 @@ namespace SimpleVsManager.Cloud
     /// </summary>
     public sealed class FirebaseModlistStore
     {
+        public const string AuthStateFileName = "firebase_auth.json";
+
         private static readonly HttpClient _http = new HttpClient();
 
         private readonly string _apiKey;   // e.g., "AIzaSy..."
         private readonly string _dbUrl;    // e.g., "https://<project>.firebaseio.com"
         private readonly string _persistPath;
+        private readonly string? _modConfigBackupPath;
 
+        private bool _shouldPromptForBackup;
         private AuthState _auth = new();
 
-        public FirebaseModlistStore(string apiKey, string dbUrl, string appDataDir)
+        public FirebaseModlistStore(string apiKey, string dbUrl, string appDataDir, string? modConfigDirectory = null)
         {
             _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
             _dbUrl = (dbUrl ?? throw new ArgumentNullException(nameof(dbUrl))).TrimEnd('/');
             Directory.CreateDirectory(appDataDir);
-            _persistPath = Path.Combine(appDataDir, "firebase_auth.json");
+            _persistPath = Path.Combine(appDataDir, AuthStateFileName);
+
+            if (!string.IsNullOrWhiteSpace(modConfigDirectory))
+            {
+                _modConfigBackupPath = Path.Combine(modConfigDirectory!, "SimpleVSManager.json");
+            }
 
             LoadAuthStateFromDisk();
         }
@@ -48,6 +57,64 @@ namespace SimpleVsManager.Cloud
         /// Gets the identifier assigned to the currently authenticated Firebase user.
         /// </summary>
         public string? CurrentUserId => _auth.Uid;
+
+        /// <summary>
+        /// Gets the on-disk location of the primary authentication state file.
+        /// </summary>
+        public string AuthFilePath => _persistPath;
+
+        /// <summary>
+        /// Returns <c>true</c> if the caller should prompt the user to back up the
+        /// authentication state, and resets the flag.
+        /// </summary>
+        public bool TryConsumeBackupPromptFlag()
+        {
+            if (!_shouldPromptForBackup)
+            {
+                return false;
+            }
+
+            _shouldPromptForBackup = false;
+            return true;
+        }
+
+        /// <summary>
+        /// Replaces the current authentication state with the contents of the
+        /// specified file.
+        /// </summary>
+        /// <param name="filePath">Path to a JSON file produced by Simple VS Manager.</param>
+        /// <param name="errorMessage">Set when the import fails.</param>
+        public bool TryImportAuthState(string filePath, out string? errorMessage)
+        {
+            errorMessage = null;
+
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                errorMessage = "The selected file path is invalid.";
+                return false;
+            }
+
+            try
+            {
+                string json = File.ReadAllText(filePath, Encoding.UTF8);
+                AuthState? state = JsonSerializer.Deserialize<AuthState>(json, JsonOpts);
+                if (state is null || string.IsNullOrWhiteSpace(state.Uid) || string.IsNullOrWhiteSpace(state.RefreshToken))
+                {
+                    errorMessage = "The selected file does not contain valid authentication data.";
+                    return false;
+                }
+
+                _auth = state;
+                SaveAuthStateToDisk();
+                _shouldPromptForBackup = false;
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or JsonException)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+        }
 
         // -------------------------
         // Public API
@@ -470,24 +537,104 @@ namespace SimpleVsManager.Cloud
 
         private void LoadAuthStateFromDisk()
         {
-            try
+            if (TryLoadAuthState(_persistPath))
             {
-                if (!File.Exists(_persistPath)) return;
-                var json = File.ReadAllText(_persistPath, Encoding.UTF8);
-                var state = JsonSerializer.Deserialize<AuthState>(json, JsonOpts);
-                if (state != null) _auth = state;
+                return;
             }
-            catch { /* ignore */ }
+
+            if (_modConfigBackupPath is not null && TryLoadAuthState(_modConfigBackupPath))
+            {
+                // Recreate the primary auth file when recovering from the backup.
+                SaveAuthStateToDisk();
+            }
         }
 
         private void SaveAuthStateToDisk()
         {
+            bool hadAuthFile = AuthFileExists();
+
+            string? json;
             try
             {
-                var json = JsonSerializer.Serialize(_auth, JsonOptsIndented);
+                json = JsonSerializer.Serialize(_auth, JsonOptsIndented);
+            }
+            catch
+            {
+                return;
+            }
+
+            try
+            {
+                string? directory = Path.GetDirectoryName(_persistPath);
+                if (!string.IsNullOrWhiteSpace(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
                 File.WriteAllText(_persistPath, json, Encoding.UTF8);
             }
-            catch { /* ignore */ }
+            catch
+            {
+                // Ignore serialization errors to avoid surfacing to the caller.
+            }
+
+            if (_modConfigBackupPath is not null)
+            {
+                try
+                {
+                    string? backupDirectory = Path.GetDirectoryName(_modConfigBackupPath);
+                    if (!string.IsNullOrWhiteSpace(backupDirectory))
+                    {
+                        Directory.CreateDirectory(backupDirectory);
+                    }
+
+                    File.WriteAllText(_modConfigBackupPath, json, Encoding.UTF8);
+                }
+                catch
+                {
+                    // Ignore backup failures; the primary file is still authoritative.
+                }
+            }
+
+            if (!hadAuthFile && !string.IsNullOrWhiteSpace(_auth.Uid) && AuthFileExists())
+            {
+                _shouldPromptForBackup = true;
+            }
+        }
+
+        private bool TryLoadAuthState(string path)
+        {
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    return false;
+                }
+
+                string json = File.ReadAllText(path, Encoding.UTF8);
+                AuthState? state = JsonSerializer.Deserialize<AuthState>(json, JsonOpts);
+                if (state is null)
+                {
+                    return false;
+                }
+
+                _auth = state;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool AuthFileExists()
+        {
+            if (File.Exists(_persistPath))
+            {
+                return true;
+            }
+
+            return _modConfigBackupPath is not null && File.Exists(_modConfigBackupPath);
         }
 
         private static void ValidateSlotKey(string slotKey)
