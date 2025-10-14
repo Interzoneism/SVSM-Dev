@@ -489,7 +489,7 @@
                           IsChecked="{Binding IncludeInstalledModDatabaseResults, Mode=TwoWay}" HorizontalAlignment="Right" Width="252">
                     <CheckBox.Style>
                         <Style TargetType="{x:Type CheckBox}">
-                            <Setter Property="Visibility" Value="Visible" />
+                            <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -1276,7 +1276,7 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <Border x:Name="localmodlist" Margin="969,0,0,10" Grid.Row="1" Width="193" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Left" Height="151" VerticalAlignment="Bottom">
+                    <Border x:Name="localmodlist" Margin="629,0,0,10" Grid.Row="1" Width="193" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Left" Height="151" VerticalAlignment="Bottom">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2"/>
                         </Border.Effect>
@@ -1285,13 +1285,13 @@
                             <Button x:Name="SaveLocalModlistButton1"
                                 Content="Save Modlist (Local)"
                                 Padding="12,6"
-                                Margin="10,55,0,0"
+                                Margin="10,109,0,0"
                                 MinWidth="165"
                                 Click="SaveModlistMenuItem_OnClick" Height="32" Width="170" VerticalAlignment="Top" HorizontalAlignment="Left" />
                             <Button x:Name="LoadLocalModlistsButton1"
                                 Content="Load Modlist (Local)"
                                 Padding="12,6"
-                                Margin="10,10,0,0"
+                                Margin="10,66,0,0"
                                 MinWidth="165"
                                 Click="LoadModlistMenuItem_OnClick" Height="32" Width="170" VerticalAlignment="Top" HorizontalAlignment="Left" />
                         </Grid>
