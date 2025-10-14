@@ -488,14 +488,14 @@
                     </TextBox.Style>
                 </TextBox>
 
-                <CheckBox Grid.Column="3"
+                <CheckBox Grid.Column="2"
                           Content="Include installed mods"
-                          Margin="0,12,0,0"
+                          Margin="483,-10,0,0"
                           VerticalAlignment="Top"
                           IsChecked="{Binding ExcludeInstalledModDatabaseResults, Mode=TwoWay}">
                     <CheckBox.Style>
                         <Style TargetType="{x:Type CheckBox}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -1653,16 +1653,16 @@
                         <Setter Property="Background" Value="Transparent" />
                         <Setter Property="BorderThickness" Value="0" />
                         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="{x:Type ListViewItem}">
-                                        <ContentPresenter />
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                            <EventSetter Event="UIElement.PreviewMouseLeftButtonDown" Handler="ModDatabaseCard_OnPreviewMouseLeftButtonDown" />
-                        </Style>
-                    </ListView.ItemContainerStyle>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                    <ContentPresenter />
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <EventSetter Event="UIElement.PreviewMouseLeftButtonDown" Handler="ModDatabaseCard_OnPreviewMouseLeftButtonDown" />
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="{x:Type viewModels:ModListItemViewModel}">
                         <Border Width="480"
