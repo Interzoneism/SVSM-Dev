@@ -4772,7 +4772,7 @@ public partial class MainWindow : Window
                 && !string.IsNullOrWhiteSpace(path)
                 && File.Exists(path))
             {
-                options.Add(new CloudModConfigOption(normalizedId, mod.DisplayName, path, isSelected: true));
+                options.Add(new CloudModConfigOption(normalizedId, mod.DisplayName, path, isSelected: false));
             }
         }
 

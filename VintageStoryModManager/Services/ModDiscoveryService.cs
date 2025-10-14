@@ -6,11 +6,13 @@ using System.Globalization;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Resources;
 using VintageStoryModManager.Models;
 
 namespace VintageStoryModManager.Services;
@@ -688,15 +690,24 @@ public sealed class ModDiscoveryService
 
     private static ZipArchiveEntry? FindEntry(ZipArchive archive, string entryName)
     {
+        if (string.IsNullOrWhiteSpace(entryName))
+        {
+            return null;
+        }
+
+        string normalizedTarget = NormalizeZipEntryPath(entryName);
+
         foreach (var entry in archive.Entries)
         {
-            if (string.Equals(entry.FullName, entryName, StringComparison.OrdinalIgnoreCase))
+            string normalizedEntry = NormalizeZipEntryPath(entry.FullName);
+            if (string.Equals(normalizedEntry, normalizedTarget, StringComparison.OrdinalIgnoreCase))
             {
                 return entry;
             }
         }
 
-        return archive.Entries.FirstOrDefault(e => string.Equals(Path.GetFileName(e.FullName), entryName, StringComparison.OrdinalIgnoreCase));
+        string normalizedFileName = NormalizeZipEntryPath(Path.GetFileName(entryName));
+        return archive.Entries.FirstOrDefault(e => string.Equals(NormalizeZipEntryPath(Path.GetFileName(e.FullName)), normalizedFileName, StringComparison.OrdinalIgnoreCase));
     }
 
     private ModEntry CreateUnsupportedCodeModEntry(FileInfo file)
@@ -909,30 +920,36 @@ public sealed class ModDiscoveryService
         {
             if (!_defaultIconResolved)
             {
-                foreach (string candidate in EnumerateDefaultIconCandidates())
-                {
-                    try
-                    {
-                        if (!File.Exists(candidate))
-                        {
-                            continue;
-                        }
+                _defaultIconBytes = TryLoadBundledDefaultIcon(out _defaultIconDescription)
+                    ?? TryLoadBundledIconFromBaseDirectory(out _defaultIconDescription);
 
-                        _defaultIconBytes = File.ReadAllBytes(candidate);
-                        _defaultIconDescription = candidate;
-                        break;
-                    }
-                    catch (IOException)
+                if (_defaultIconBytes == null)
+                {
+                    foreach (string candidate in EnumerateDefaultIconCandidates())
                     {
-                        // Ignore IO failures and continue with other candidates.
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        // Ignore permission issues and continue with other candidates.
-                    }
-                    catch (NotSupportedException)
-                    {
-                        // Ignore invalid path formats and continue with other candidates.
+                        try
+                        {
+                            if (!File.Exists(candidate))
+                            {
+                                continue;
+                            }
+
+                            _defaultIconBytes = File.ReadAllBytes(candidate);
+                            _defaultIconDescription = candidate;
+                            break;
+                        }
+                        catch (IOException)
+                        {
+                            // Ignore IO failures and continue with other candidates.
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            // Ignore permission issues and continue with other candidates.
+                        }
+                        catch (NotSupportedException)
+                        {
+                            // Ignore invalid path formats and continue with other candidates.
+                        }
                     }
                 }
 
@@ -942,6 +959,67 @@ public sealed class ModDiscoveryService
             description = _defaultIconDescription;
             return _defaultIconBytes;
         }
+    }
+
+    private static byte[]? TryLoadBundledDefaultIcon(out string? description)
+    {
+        const string resourcePath = "Resources/mod-default.png";
+        try
+        {
+            var resourceUri = new Uri(resourcePath, UriKind.Relative);
+            StreamResourceInfo? resource = System.Windows.Application.GetResourceStream(resourceUri);
+            if (resource?.Stream != null)
+            {
+                using Stream stream = resource.Stream;
+                using var memory = new MemoryStream();
+                stream.CopyTo(memory);
+                description = resourcePath;
+                return memory.ToArray();
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (NotSupportedException)
+        {
+        }
+        catch (SecurityException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        catch (UriFormatException)
+        {
+        }
+
+        description = null;
+        return null;
+    }
+
+    private static byte[]? TryLoadBundledIconFromBaseDirectory(out string? description)
+    {
+        string candidate = Path.Combine(AppContext.BaseDirectory, "mod-default.png");
+        try
+        {
+            if (File.Exists(candidate))
+            {
+                description = candidate;
+                return File.ReadAllBytes(candidate);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+        catch (NotSupportedException)
+        {
+        }
+
+        description = null;
+        return null;
     }
 
     private IEnumerable<string> EnumerateDefaultIconCandidates()
@@ -1024,6 +1102,23 @@ public sealed class ModDiscoveryService
         }
 
         return null;
+    }
+
+    private static string NormalizeZipEntryPath(string path)
+    {
+        string normalized = path.Trim().Replace('\\', '/');
+
+        while (normalized.StartsWith("./", StringComparison.Ordinal))
+        {
+            normalized = normalized[2..];
+        }
+
+        if (normalized.Length > 0 && normalized[0] == '/')
+        {
+            normalized = normalized[1..];
+        }
+
+        return normalized;
     }
 
     private static string ToModId(string? name)
