@@ -13,7 +13,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
         Title="Simple VS Manager"
-        Height="696" Width="1196"
+        Height="783" Width="1218"
         MinWidth="1200" MinHeight="775" Background="{DynamicResource GridBackground1}" WindowStartupLocation="CenterScreen"
         PreviewKeyDown="MainWindow_OnPreviewKeyDown">
 
@@ -445,11 +445,6 @@
                               Click="ImportModlistAuthMenuItem_OnClick" />
                 </MenuItem>
             </Menu>
-            <ui:ProgressRing
-                        HorizontalAlignment="Right"
-                        IsActive="{Binding IsBusy}"
-                        Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
-                        Foreground="{StaticResource IMM.AccentBrush}" Margin="0,8,19,3" VerticalAlignment="Stretch" Grid.Column="1" Width="25" Height="25" />
 
 
         </Grid>
@@ -490,12 +485,11 @@
 
                 <CheckBox Grid.Column="2"
                           Content="Include installed mods"
-                          Margin="483,-10,0,0"
-                          VerticalAlignment="Top"
-                          IsChecked="{Binding IncludeInstalledModDatabaseResults, Mode=TwoWay}">
+                          Margin="0,-10,0,71"
+                          IsChecked="{Binding IncludeInstalledModDatabaseResults, Mode=TwoWay}" HorizontalAlignment="Right" Width="252">
                     <CheckBox.Style>
                         <Style TargetType="{x:Type CheckBox}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -1931,7 +1925,7 @@
                         Text="{Binding StatusMessage}"
                         TextWrapping="Wrap"
                         HorizontalAlignment="Center"
-                        VerticalAlignment="Center" FontSize="14" Foreground="Black" FontWeight="Bold" Padding="2,2,2,2">
+                        VerticalAlignment="Center" FontSize="14" Foreground="Black" FontWeight="Bold" Padding="4,2,4,2">
                         <TextBlock.Style>
                             <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="Foreground" Value="{ui:ThemeResource SystemControlForegroundBaseMediumBrush}" />
@@ -1991,6 +1985,11 @@
                             Height="32"
                             FontWeight="Bold" />
             </StackPanel>
+            <ui:ProgressRing
+                        HorizontalAlignment="Left"
+                        IsActive="{Binding IsBusy}"
+                        Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
+                        Foreground="{StaticResource IMM.AccentBrush}" Margin="388,0,0,0" VerticalAlignment="Stretch" Width="40" Height="40" />
         </Grid>
         <Border Background="{DynamicResource CardGradient3}" x:Name="MODINFO_border"
                 BorderBrush="{DynamicResource VS.DialogBorderBrush}"
