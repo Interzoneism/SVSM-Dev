@@ -5521,7 +5521,7 @@ public partial class MainWindow : Window
     private void PromptForFirebaseAuthBackup(FirebaseModlistStore store)
     {
         MessageBoxResult result = WpfMessageBox.Show(
-            "This is your first time saving a cloud modlist. Please store a backup copy of firebase_auth.json outside of the Simple VS Manager folder so you can restore access if the file is lost. Would you like to choose a backup location now?",
+            "This is your first time saving a cloud modlist. You have been given a unique identity so only you can replace or delete your modlists, please consider saving this identiy as a firebase_auth.json file somewhere safe in case you need to import it.",
             "Simple VS Manager",
             MessageBoxButton.YesNo,
             MessageBoxImage.Information);
