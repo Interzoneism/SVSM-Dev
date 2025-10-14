@@ -90,13 +90,15 @@ public sealed class MainViewModel : ObservableObject
     private IReadOnlyList<string> _modDatabaseAvailableTags = Array.Empty<string>();
     private bool _isInstalledTagRefreshPending;
     private bool _isModDatabaseTagRefreshPending;
+    private bool _excludeInstalledModDatabaseResults;
 
     public MainViewModel(
         string dataDirectory,
         int modDatabaseSearchResultLimit,
         int newModsRecentMonths,
         ModDatabaseAutoLoadMode initialModDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads,
-        string? gameDirectory = null)
+        string? gameDirectory = null,
+        bool excludeInstalledModDatabaseResults = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
 
@@ -123,6 +125,8 @@ public sealed class MainViewModel : ObservableObject
         SortOptions = new ReadOnlyObservableCollection<SortOption>(_sortOptions);
         SelectedSortOption = SortOptions.FirstOrDefault();
         SelectedSortOption?.Apply(ModsView);
+
+        _excludeInstalledModDatabaseResults = excludeInstalledModDatabaseResults;
 
         _clearSearchCommand = new RelayCommand(() => SearchText = string.Empty, () => HasSearchText);
         ClearSearchCommand = _clearSearchCommand;
@@ -189,6 +193,18 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _useModDbDesignView;
         set => SetProperty(ref _useModDbDesignView, value);
+    }
+
+    public bool ExcludeInstalledModDatabaseResults
+    {
+        get => _excludeInstalledModDatabaseResults;
+        set
+        {
+            if (SetProperty(ref _excludeInstalledModDatabaseResults, value) && _viewSection == ViewSection.ModDatabase)
+            {
+                TriggerModDatabaseSearch();
+            }
+        }
     }
 
     public bool IsModInfoExpanded
@@ -1710,55 +1726,102 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
-            IReadOnlyList<ModDatabaseSearchResult> results;
-            if (hasSearchTokens)
+            bool excludeInstalled = ExcludeInstalledModDatabaseResults;
+            HashSet<string> installedModIds = await GetInstalledModIdsAsync(cancellationToken).ConfigureAwait(false);
+            int desiredResultCount = _modDatabaseSearchResultLimit;
+            int queryLimit = desiredResultCount;
+            List<ModDatabaseSearchResult> finalResults = new();
+
+            while (true)
             {
-                results = await _databaseService.SearchModsAsync(query, _modDatabaseSearchResultLimit, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            else
-            {
-                results = _modDatabaseAutoLoadMode switch
+                IReadOnlyList<ModDatabaseSearchResult> results;
+                if (hasSearchTokens)
                 {
-                    ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
-                        await _databaseService
-                            .GetMostDownloadedModsLastThirtyDaysAsync(_modDatabaseSearchResultLimit, cancellationToken)
-                            .ConfigureAwait(false),
-                    ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
-                        await _databaseService
-                            .GetMostDownloadedNewModsAsync(
-                                _newModsRecentMonths,
-                                _modDatabaseSearchResultLimit,
-                                cancellationToken)
-                            .ConfigureAwait(false),
-                    _ => await _databaseService
-                        .GetMostDownloadedModsAsync(_modDatabaseSearchResultLimit, cancellationToken)
-                        .ConfigureAwait(false)
-                };
+                    results = await _databaseService.SearchModsAsync(query, queryLimit, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    results = _modDatabaseAutoLoadMode switch
+                    {
+                        ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
+                            await _databaseService
+                                .GetMostDownloadedModsLastThirtyDaysAsync(queryLimit, cancellationToken)
+                                .ConfigureAwait(false),
+                        ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
+                            await _databaseService
+                                .GetMostDownloadedNewModsAsync(
+                                    _newModsRecentMonths,
+                                    queryLimit,
+                                    cancellationToken)
+                                .ConfigureAwait(false),
+                        _ => await _databaseService
+                            .GetMostDownloadedModsAsync(queryLimit, cancellationToken)
+                            .ConfigureAwait(false)
+                    };
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                IReadOnlyList<string> availableTags = CollectModDatabaseTags(results);
+                List<string> combinedTags = await Task.Run(
+                        () => NormalizeAndSortTags(availableTags.Concat(requiredTags)))
+                    .ConfigureAwait(false);
+                await InvokeOnDispatcherAsync(
+                        () => ApplyNormalizedModDatabaseAvailableTags(combinedTags),
+                        cancellationToken,
+                        DispatcherPriority.ContextIdle)
+                    .ConfigureAwait(false);
+
+                IReadOnlyList<ModDatabaseSearchResult> filteredResults = requiredTags.Count > 0
+                    ? results
+                        .Where(result => ContainsAllTags(GetTagsForResult(result), requiredTags))
+                        .ToList()
+                    : results.ToList();
+
+                if (filteredResults.Count == 0)
+                {
+                    await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken)
+                        .ConfigureAwait(false);
+                    await InvokeOnDispatcherAsync(
+                            () => SetStatus(BuildNoModDatabaseResultsMessage(hasSearchTokens), false),
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                    return;
+                }
+
+                IEnumerable<ModDatabaseSearchResult> candidateResults = filteredResults;
+                if (excludeInstalled)
+                {
+                    candidateResults = candidateResults
+                        .Where(result => !IsResultInstalled(result, installedModIds));
+                }
+
+                finalResults = candidateResults
+                    .Take(desiredResultCount)
+                    .ToList();
+
+                bool canRequestMore = queryLimit < 100 && results.Count >= queryLimit;
+                if (!excludeInstalled
+                    || finalResults.Count >= desiredResultCount
+                    || !canRequestMore)
+                {
+                    break;
+                }
+
+                int nextLimit = Math.Min(100, queryLimit + desiredResultCount);
+                if (nextLimit <= queryLimit)
+                {
+                    break;
+                }
+
+                queryLimit = nextLimit;
             }
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-
-            IReadOnlyList<string> availableTags = CollectModDatabaseTags(results);
-            List<string> combinedTags = await Task.Run(
-                    () => NormalizeAndSortTags(availableTags.Concat(requiredTags)))
-                .ConfigureAwait(false);
-            await InvokeOnDispatcherAsync(
-                    () => ApplyNormalizedModDatabaseAvailableTags(combinedTags),
-                    cancellationToken,
-                    DispatcherPriority.ContextIdle)
-                .ConfigureAwait(false);
-
-            IReadOnlyList<ModDatabaseSearchResult> filteredResults = requiredTags.Count > 0
-                ? results
-                    .Where(result => ContainsAllTags(GetTagsForResult(result), requiredTags))
-                    .ToList()
-                : results;
-
-            if (filteredResults.Count == 0)
+            if (finalResults.Count == 0)
             {
                 await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
                 await InvokeOnDispatcherAsync(
@@ -1768,9 +1831,7 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
-            HashSet<string> installedModIds = await GetInstalledModIdsAsync(cancellationToken).ConfigureAwait(false);
-
-            var entries = filteredResults
+            var entries = finalResults
                 .Select(result => new
                 {
                     Entry = CreateSearchResultEntry(result),

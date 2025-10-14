@@ -30,6 +30,7 @@ public sealed class UserConfigurationService
     private bool _isCompactView;
     private bool _useModDbDesignView = true;
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
+    private bool _excludeInstalledModDatabaseResults;
     private bool _cacheAllVersionsLocally;
     private bool _disableInternetAccess;
     private bool _enableDebugLogging;
@@ -67,6 +68,8 @@ public sealed class UserConfigurationService
     public bool UseModDbDesignView => _useModDbDesignView;
 
     public bool CacheAllVersionsLocally => _cacheAllVersionsLocally;
+
+    public bool ExcludeInstalledModDatabaseResults => _excludeInstalledModDatabaseResults;
 
     public bool DisableInternetAccess => _disableInternetAccess;
 
@@ -418,6 +421,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetExcludeInstalledModDatabaseResults(bool exclude)
+    {
+        if (_excludeInstalledModDatabaseResults == exclude)
+        {
+            return;
+        }
+
+        _excludeInstalledModDatabaseResults = exclude;
+        Save();
+    }
+
     private void Load()
     {
         _modConfigPaths.Clear();
@@ -452,6 +466,7 @@ public sealed class UserConfigurationService
             _modDatabaseNewModsRecentMonths = NormalizeModDatabaseNewModsRecentMonths(
                 obj["modDatabaseNewModsRecentMonths"]?.GetValue<int?>());
             _modDatabaseAutoLoadMode = ParseModDatabaseAutoLoadMode(GetOptionalString(obj["modDatabaseAutoLoadMode"]));
+            _excludeInstalledModDatabaseResults = obj["excludeInstalledModDatabaseResults"]?.GetValue<bool?>() ?? false;
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             LoadModConfigPaths(obj["modConfigPaths"]);
@@ -478,6 +493,7 @@ public sealed class UserConfigurationService
             _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
             _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
             _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
+            _excludeInstalledModDatabaseResults = false;
             _windowWidth = null;
             _windowHeight = null;
             _customShortcutPath = null;
@@ -522,6 +538,7 @@ public sealed class UserConfigurationService
                 ["modDatabaseSearchResultLimit"] = _modDatabaseSearchResultLimit,
                 ["modDatabaseNewModsRecentMonths"] = _modDatabaseNewModsRecentMonths,
                 ["modDatabaseAutoLoadMode"] = _modDatabaseAutoLoadMode.ToString(),
+                ["excludeInstalledModDatabaseResults"] = _excludeInstalledModDatabaseResults,
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
