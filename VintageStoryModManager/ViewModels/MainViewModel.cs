@@ -200,11 +200,22 @@ public sealed class MainViewModel : ObservableObject
         get => _excludeInstalledModDatabaseResults;
         set
         {
-            if (SetProperty(ref _excludeInstalledModDatabaseResults, value) && _viewSection == ViewSection.ModDatabase)
+            if (SetProperty(ref _excludeInstalledModDatabaseResults, value))
             {
-                TriggerModDatabaseSearch();
+                OnPropertyChanged(nameof(IncludeInstalledModDatabaseResults));
+
+                if (_viewSection == ViewSection.ModDatabase)
+                {
+                    TriggerModDatabaseSearch();
+                }
             }
         }
+    }
+
+    public bool IncludeInstalledModDatabaseResults
+    {
+        get => !ExcludeInstalledModDatabaseResults;
+        set => ExcludeInstalledModDatabaseResults = !value;
     }
 
     public bool IsModInfoExpanded
