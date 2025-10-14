@@ -34,6 +34,8 @@ namespace SimpleVsManager.Cloud
         private AuthState _auth = new();
         private string? _externalUserId;
         private bool _hasEnsuredUserBinding;
+        private bool _useAuthUidForStorage;
+        private bool _hasLoggedBindingFallback;
 
         public FirebaseModlistStore(string apiKey, string dbUrl, string appDataDir, string? modConfigDirectory = null)
         {
@@ -416,7 +418,7 @@ namespace SimpleVsManager.Cloud
 
         private string? GetEffectiveUserId()
         {
-            if (!string.IsNullOrWhiteSpace(_externalUserId))
+            if (!_useAuthUidForStorage && !string.IsNullOrWhiteSpace(_externalUserId))
             {
                 return _externalUserId;
             }
@@ -461,7 +463,13 @@ namespace SimpleVsManager.Cloud
             using var resp = await _http.GetAsync(bindingUrl, ct);
             if (resp.StatusCode == HttpStatusCode.NotFound)
             {
-                await PutUserBindingAsync(bindingUrl, ct);
+                bool created = await TryPutUserBindingAsync(bindingUrl, ct);
+                if (!created)
+                {
+                    UseAuthUidForStorageFallback(playerUid);
+                    _hasEnsuredUserBinding = true;
+                    return;
+                }
                 _hasEnsuredUserBinding = true;
                 return;
             }
@@ -474,6 +482,10 @@ namespace SimpleVsManager.Cloud
                     _hasEnsuredUserBinding = true;
                     return;
                 }
+
+                UseAuthUidForStorageFallback(playerUid);
+                _hasEnsuredUserBinding = true;
+                return;
             }
 
             await EnsureOk(resp, "Fetch uid binding");
@@ -501,23 +513,24 @@ namespace SimpleVsManager.Cloud
 
             if (string.IsNullOrWhiteSpace(existing))
             {
-                await PutUserBindingAsync(bindingUrl, ct);
+                bool created = await TryPutUserBindingAsync(bindingUrl, ct);
+                if (!created)
+                {
+                    UseAuthUidForStorageFallback(playerUid);
+                    _hasEnsuredUserBinding = true;
+                    return;
+                }
             }
 
             _hasEnsuredUserBinding = true;
         }
 
-        private async Task PutUserBindingAsync(string bindingUrl, CancellationToken ct)
+        private async Task<bool> TryCreateUserBindingWithoutReadAccessAsync(string bindingUrl, CancellationToken ct)
         {
-            string authUid = _auth.Uid ?? throw new InvalidOperationException("Firebase authentication identifier is unavailable.");
-            string payload = JsonSerializer.Serialize(authUid, JsonOpts);
-
-            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-            using var resp = await _http.PutAsync(bindingUrl, content, ct);
-            await EnsureOk(resp, "Save uid binding");
+            return await TryPutUserBindingAsync(bindingUrl, ct);
         }
 
-        private async Task<bool> TryCreateUserBindingWithoutReadAccessAsync(string bindingUrl, CancellationToken ct)
+        private async Task<bool> TryPutUserBindingAsync(string bindingUrl, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(_auth.Uid))
             {
@@ -541,6 +554,22 @@ namespace SimpleVsManager.Cloud
 
             await EnsureOk(resp, "Save uid binding");
             return true;
+        }
+
+        private void UseAuthUidForStorageFallback(string playerUid)
+        {
+            _useAuthUidForStorage = true;
+
+            if (_hasLoggedBindingFallback)
+            {
+                return;
+            }
+
+            StatusLogService.AppendStatus(
+                $"Firebase security rules do not allow binding modlists to the Vintage Story player UID ({playerUid}). Cloud modlists will be stored under the Firebase anonymous identity instead.",
+                false);
+
+            _hasLoggedBindingFallback = true;
         }
 
         private async Task EnsureUploaderConsistencyAsync(string uploader, CancellationToken ct)
