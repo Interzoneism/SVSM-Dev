@@ -445,6 +445,11 @@
                               Click="ImportModlistAuthMenuItem_OnClick" />
                 </MenuItem>
             </Menu>
+            <ui:ProgressRing
+                        HorizontalAlignment="Right"
+                        IsActive="{Binding IsBusy}"
+                        Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
+                        Foreground="{StaticResource IMM.AccentBrush}" Margin="0,8,19,3" VerticalAlignment="Stretch" Grid.Column="1" Width="25" Height="25" />
 
 
         </Grid>
@@ -1915,11 +1920,6 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <ui:ProgressRing
-                        IsActive="{Binding IsBusy}"
-                        Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
-                        Foreground="{StaticResource IMM.AccentBrush}" Width="32" Height="32"HorizontalAlignment="Left"Margin="354,18,0,0"VerticalAlignment="Top"Alignment="Left" Margin="376,0,0,0" VerticalAlignment="Top" />
-
             <Border HorizontalAlignment="Left" Height="50" VerticalAlignment="Center" Width="347" Background="{DynamicResource CardGradient}" CornerRadius="3,3,3,3">
                 <Border.Effect>
                     <DropShadowEffect Opacity="0.1" Direction="240" ShadowDepth="3" BlurRadius="4"/>
@@ -1956,28 +1956,28 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Top" Margin="0,18,0,0">
                 <Button Content="Update All"
-                            Margin="0,0,4,0"
+                            Margin="0,0,8,0"
                             Width="146"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="UpdateAllModsMenuItem_OnClick"
                             Height="32" />
                 <Button Content="Open Logs Folder"
-                            Margin="0,0,4,0"
+                            Margin="0,0,8,0"
                             Width="146"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="OpenLogsFolderButton_OnClick"
                             Height="32" />
                 <Button Content="Open Config Folder"
-                            Margin="0,0,4,0"
+                            Margin="0,0,8,0"
                             Width="146"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="OpenConfigFolderButton_OnClick"
                             Height="32" />
                 <Button Content="Open Mods Folder"
-                            Margin="0,0,4,0"
+                            Margin="0,0,8,0"
                             Width="159"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
