@@ -20,7 +20,7 @@
     <AssemblyTitle>Simple VS Manager</AssemblyTitle>       <!-- Also good to set -->
 
     <!-- File name on disk (the .exe base name) -->
-    <AssemblyName>SimpleVSManager</AssemblyName>
+    <AssemblyName>VintageStoryModManager</AssemblyName>
 
     <!-- Versions -->
     <Version>1.1.0</Version>                               <!-- Product version -->
