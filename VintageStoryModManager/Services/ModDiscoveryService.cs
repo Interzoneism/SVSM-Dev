@@ -662,6 +662,41 @@ public sealed class ModDiscoveryService
 
     private ModEntry? TryLoadFromZip(FileInfo archiveFile)
     {
+        DateTime lastWriteTimeUtc = DateTime.MinValue;
+        long length = 0L;
+
+        try
+        {
+            lastWriteTimeUtc = archiveFile.LastWriteTimeUtc;
+            length = archiveFile.Length;
+        }
+        catch (Exception)
+        {
+            // Ignore failures when probing file metadata; the cache lookup will simply miss.
+        }
+
+        if (ModManifestCacheService.TryGetManifest(archiveFile.FullName, lastWriteTimeUtc, length, out string manifestJson, out byte[]? cachedIconBytes, out string? cachedIconDescription))
+        {
+            try
+            {
+                using JsonDocument cachedDocument = JsonDocument.Parse(manifestJson, DocumentOptions);
+                var cachedInfo = ParseModInfo(cachedDocument.RootElement, Path.GetFileNameWithoutExtension(archiveFile.Name));
+
+                byte[]? iconBytes = cachedIconBytes;
+                string? iconDescription = cachedIconDescription;
+                if (iconBytes == null)
+                {
+                    iconBytes = LoadDefaultIcon(out iconDescription);
+                }
+
+                return CreateEntry(cachedInfo, archiveFile.FullName, ModSourceKind.ZipArchive, iconBytes, iconDescription);
+            }
+            catch (Exception)
+            {
+                ModManifestCacheService.Invalidate(archiveFile.FullName);
+            }
+        }
+
         try
         {
             using ZipArchive archive = ZipFile.OpenRead(archiveFile.FullName);
@@ -672,15 +707,34 @@ public sealed class ModDiscoveryService
                 return CreateErrorEntry(Path.GetFileNameWithoutExtension(archiveFile.Name), archiveFile.FullName, ModSourceKind.ZipArchive, "Missing modinfo.json");
             }
 
-            using var infoStream = infoEntry.Open();
-            using JsonDocument document = JsonDocument.Parse(infoStream, DocumentOptions);
+            string manifestContent;
+            using (Stream infoStream = infoEntry.Open())
+            using (var reader = new StreamReader(infoStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
+            {
+                manifestContent = reader.ReadToEnd();
+            }
+
+            using JsonDocument document = JsonDocument.Parse(manifestContent, DocumentOptions);
             var info = ParseModInfo(document.RootElement, Path.GetFileNameWithoutExtension(archiveFile.Name));
 
-            byte[]? iconBytes = LoadIconFromArchive(lookup, info.IconPath, out string? iconDescription);
+            byte[]? archiveIconBytes = LoadIconFromArchive(lookup, info.IconPath, out string? archiveIconDescription);
+            byte[]? iconBytes = archiveIconBytes;
+            string? iconDescription = archiveIconDescription;
             if (iconBytes == null)
             {
                 iconBytes = LoadDefaultIcon(out iconDescription);
             }
+
+            ModManifestCacheService.StoreManifest(
+                archiveFile.FullName,
+                lastWriteTimeUtc,
+                length,
+                info.ModId,
+                info.Version,
+                manifestContent,
+                archiveIconBytes,
+                archiveIconDescription);
+
             return CreateEntry(info, archiveFile.FullName, ModSourceKind.ZipArchive, iconBytes, iconDescription);
         }
         catch (Exception ex)
