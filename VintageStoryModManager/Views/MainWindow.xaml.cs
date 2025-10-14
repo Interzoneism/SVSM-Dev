@@ -309,7 +309,8 @@ public partial class MainWindow : Window
             _userConfiguration.ModDatabaseSearchResultLimit,
             _userConfiguration.ModDatabaseNewModsRecentMonths,
             _userConfiguration.ModDatabaseAutoLoadMode,
-            _gameDirectory)
+            gameDirectory: _gameDirectory,
+            excludeInstalledModDatabaseResults: _userConfiguration.ExcludeInstalledModDatabaseResults)
         {
             IsCompactView = _userConfiguration.IsCompactView,
             UseModDbDesignView = _userConfiguration.UseModDbDesignView
@@ -365,6 +366,14 @@ public partial class MainWindow : Window
                     _modsScrollViewer = null;
                     _modDatabaseCardsScrollViewer = null;
                 });
+            }
+        }
+        else if (e.PropertyName == nameof(MainViewModel.ExcludeInstalledModDatabaseResults))
+        {
+            if (_viewModel != null)
+            {
+                _userConfiguration.SetExcludeInstalledModDatabaseResults(
+                    _viewModel.ExcludeInstalledModDatabaseResults);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.SearchModDatabase))
@@ -1673,7 +1682,8 @@ public partial class MainWindow : Window
                 _userConfiguration.ModDatabaseSearchResultLimit,
                 _userConfiguration.ModDatabaseNewModsRecentMonths,
                 _userConfiguration.ModDatabaseAutoLoadMode,
-                _gameDirectory);
+                gameDirectory: _gameDirectory,
+                excludeInstalledModDatabaseResults: _userConfiguration.ExcludeInstalledModDatabaseResults);
             _viewModel = viewModel;
             DataContext = viewModel;
             AttachToModsView(viewModel.CurrentModsView);
