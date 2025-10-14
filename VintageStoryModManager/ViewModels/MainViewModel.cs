@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -1292,11 +1293,25 @@ public sealed class MainViewModel : ObservableObject
 
         _isInstalledTagRefreshPending = true;
 
-        void Execute()
+        async void ExecuteAsync()
         {
             try
             {
-                ResetInstalledTagFilters(EnumerateModTags(_mods));
+                List<string> tagSnapshot = EnumerateModTags(_mods).ToList();
+                List<string> selectedSnapshot = _selectedInstalledTags.ToList();
+                List<string> normalized = await Task.Run(
+                        () => NormalizeAndSortTags(tagSnapshot.Concat(selectedSnapshot)))
+                    .ConfigureAwait(false);
+
+                await InvokeOnDispatcherAsync(
+                        () => ApplyInstalledTagFilters(normalized),
+                        CancellationToken.None,
+                        DispatcherPriority.ContextIdle)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to refresh installed mod tags: {ex}");
             }
             finally
             {
@@ -1306,11 +1321,11 @@ public sealed class MainViewModel : ObservableObject
 
         if (System.Windows.Application.Current?.Dispatcher is { } dispatcher)
         {
-            dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(Execute));
+            dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(ExecuteAsync));
         }
         else
         {
-            Execute();
+            ExecuteAsync();
         }
     }
 
@@ -1323,11 +1338,26 @@ public sealed class MainViewModel : ObservableObject
 
         _isModDatabaseTagRefreshPending = true;
 
-        void Execute()
+        async void ExecuteAsync()
         {
             try
             {
-                UpdateModDatabaseAvailableTagsFromViewModels();
+                IReadOnlyList<string> existing = _modDatabaseAvailableTags;
+                List<string> tagSnapshot = EnumerateModTags(_searchResults).ToList();
+                List<string> selectedSnapshot = _selectedModDatabaseTags.ToList();
+                List<string> normalized = await Task.Run(
+                        () => NormalizeAndSortTags(existing.Concat(tagSnapshot).Concat(selectedSnapshot)))
+                    .ConfigureAwait(false);
+
+                await InvokeOnDispatcherAsync(
+                        () => ApplyNormalizedModDatabaseAvailableTags(normalized),
+                        CancellationToken.None,
+                        DispatcherPriority.ContextIdle)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to refresh mod database tags: {ex}");
             }
             finally
             {
@@ -1337,18 +1367,22 @@ public sealed class MainViewModel : ObservableObject
 
         if (System.Windows.Application.Current?.Dispatcher is { } dispatcher)
         {
-            dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(Execute));
+            dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(ExecuteAsync));
         }
         else
         {
-            Execute();
+            ExecuteAsync();
         }
     }
 
     private void ResetInstalledTagFilters(IEnumerable<string> tags)
     {
         List<string> normalized = NormalizeAndSortTags(tags.Concat(_selectedInstalledTags));
+        ApplyInstalledTagFilters(normalized);
+    }
 
+    private void ApplyInstalledTagFilters(IReadOnlyList<string> normalized)
+    {
         _suppressInstalledTagFilterSelectionChanges = true;
         try
         {
@@ -1380,7 +1414,11 @@ public sealed class MainViewModel : ObservableObject
     private void ResetModDatabaseTagFilters(IEnumerable<string> tags)
     {
         List<string> normalized = NormalizeAndSortTags(tags.Concat(_selectedModDatabaseTags));
+        ApplyModDatabaseTagFilters(normalized);
+    }
 
+    private void ApplyModDatabaseTagFilters(IReadOnlyList<string> normalized)
+    {
         _suppressModDatabaseTagFilterSelectionChanges = true;
         try
         {
@@ -1411,13 +1449,18 @@ public sealed class MainViewModel : ObservableObject
     private void ApplyModDatabaseAvailableTags(IEnumerable<string> tags)
     {
         List<string> normalized = NormalizeAndSortTags(tags.Concat(_selectedModDatabaseTags));
+        ApplyNormalizedModDatabaseAvailableTags(normalized);
+    }
+
+    private void ApplyNormalizedModDatabaseAvailableTags(IReadOnlyList<string> normalized)
+    {
         if (TagListsEqual(_modDatabaseAvailableTags, normalized))
         {
             return;
         }
 
         _modDatabaseAvailableTags = normalized;
-        ResetModDatabaseTagFilters(_modDatabaseAvailableTags);
+        ApplyModDatabaseTagFilters(_modDatabaseAvailableTags);
     }
 
     private void UpdateModDatabaseAvailableTagsFromViewModels()
@@ -1700,7 +1743,13 @@ public sealed class MainViewModel : ObservableObject
             }
 
             IReadOnlyList<string> availableTags = CollectModDatabaseTags(results);
-            await InvokeOnDispatcherAsync(() => ApplyModDatabaseAvailableTags(availableTags), cancellationToken)
+            List<string> combinedTags = await Task.Run(
+                    () => NormalizeAndSortTags(availableTags.Concat(requiredTags)))
+                .ConfigureAwait(false);
+            await InvokeOnDispatcherAsync(
+                    () => ApplyNormalizedModDatabaseAvailableTags(combinedTags),
+                    cancellationToken,
+                    DispatcherPriority.ContextIdle)
                 .ConfigureAwait(false);
 
             IReadOnlyList<ModDatabaseSearchResult> filteredResults = requiredTags.Count > 0
@@ -2570,7 +2619,7 @@ public sealed class MainViewModel : ObservableObject
                         }
                     },
                     CancellationToken.None,
-                    DispatcherPriority.Background)
+                    DispatcherPriority.ContextIdle)
                 .ConfigureAwait(false);
         }
         catch (TaskCanceledException)
