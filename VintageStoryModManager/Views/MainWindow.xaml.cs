@@ -118,7 +118,6 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _userConfiguration = new UserConfigurationService();
-        UsernameTextbox.Text = _userConfiguration.CloudUploaderName ?? string.Empty;
         ApplyStoredWindowDimensions();
         CacheAllVersionsMenuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
         DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
@@ -262,6 +261,38 @@ public partial class MainWindow : Window
         _userConfiguration.SetWindowDimensions(bounds.Width, bounds.Height);
     }
 
+    private void SetUsernameDisplay(string? name)
+    {
+        string? sanitized = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+
+        if (UsernameTextbox is not null)
+        {
+            UsernameTextbox.Text = sanitized ?? string.Empty;
+        }
+
+        _userConfiguration.SetCloudUploaderName(sanitized);
+    }
+
+    private void ApplyPlayerIdentityToUiAndCloudStore()
+    {
+        SetUsernameDisplay(_viewModel?.PlayerName);
+
+        if (_cloudModlistStore is not null)
+        {
+            ApplyPlayerIdentityToCloudStore(_cloudModlistStore);
+        }
+    }
+
+    private void ApplyPlayerIdentityToCloudStore(FirebaseModlistStore? store)
+    {
+        if (store is null)
+        {
+            return;
+        }
+
+        store.SetExternalUserId(_viewModel?.PlayerUid);
+    }
+
     private void SaveUploaderName()
     {
         if (_userConfiguration is null)
@@ -270,7 +301,7 @@ public partial class MainWindow : Window
         }
 
         string? uploader = UsernameTextbox?.Text;
-        _userConfiguration.SetCloudUploaderName(uploader);
+        SetUsernameDisplay(uploader);
     }
 
     private void CacheAllVersionsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -317,6 +348,7 @@ public partial class MainWindow : Window
         };
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         DataContext = _viewModel;
+        ApplyPlayerIdentityToUiAndCloudStore();
         _cloudModlistsLoaded = false;
         _selectedCloudModlist = null;
         ApplyCompactViewState(_viewModel.IsCompactView);
@@ -1686,6 +1718,7 @@ public partial class MainWindow : Window
                 excludeInstalledModDatabaseResults: _userConfiguration.ExcludeInstalledModDatabaseResults);
             _viewModel = viewModel;
             DataContext = viewModel;
+            ApplyPlayerIdentityToUiAndCloudStore();
             AttachToModsView(viewModel.CurrentModsView);
             await InitializeViewModelAsync(viewModel);
         }
@@ -4560,36 +4593,31 @@ public partial class MainWindow : Window
 
     private string DetermineUploaderName(FirebaseModlistStore store)
     {
-        string? current = UsernameTextbox?.Text;
-        if (!string.IsNullOrWhiteSpace(current))
+        string? playerName = _viewModel?.PlayerName;
+        if (!string.IsNullOrWhiteSpace(playerName))
         {
-            string trimmed = current.Trim();
-            if (!string.Equals(trimmed, current, StringComparison.Ordinal))
-            {
-                UsernameTextbox!.Text = trimmed;
-            }
-
-            _userConfiguration.SetCloudUploaderName(trimmed);
+            string trimmed = playerName.Trim();
+            SetUsernameDisplay(trimmed);
             return trimmed;
         }
 
-        string? userId = store?.CurrentUserId;
-        string suffix = "0000";
-        if (!string.IsNullOrWhiteSpace(userId))
+        string? suffixSource = _viewModel?.PlayerUid;
+        if (string.IsNullOrWhiteSpace(suffixSource))
         {
-            string trimmedId = userId.Trim();
+            suffixSource = store?.CurrentUserId;
+        }
+
+        string suffix = "0000";
+        if (!string.IsNullOrWhiteSpace(suffixSource))
+        {
+            string trimmedId = suffixSource.Trim();
             suffix = trimmedId.Length <= 4
                 ? trimmedId
                 : trimmedId.Substring(trimmedId.Length - 4, 4);
         }
 
         string fallback = $"Anonymous{suffix}";
-        if (UsernameTextbox is not null)
-        {
-            UsernameTextbox.Text = fallback;
-        }
-
-        _userConfiguration.SetCloudUploaderName(fallback);
+        SetUsernameDisplay(fallback);
         return fallback;
     }
 
@@ -4615,17 +4643,10 @@ public partial class MainWindow : Window
 
             if (!await IsCloudUploaderNameAvailableAsync(store, uploader))
             {
-                WpfMessageBox.Show($"The username \"{uploader}\" is already in use by another cloud modlist. Please choose a different username before saving.",
+                WpfMessageBox.Show($"The username \"{uploader}\" is already in use by another cloud modlist. Change your Vintage Story player name to use a different username before saving.",
                     "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
-
-                if (UsernameTextbox is not null)
-                {
-                    UsernameTextbox.Focus();
-                    UsernameTextbox.SelectAll();
-                }
-
                 return;
             }
 
@@ -5487,6 +5508,7 @@ public partial class MainWindow : Window
     {
         if (_cloudModlistStore is { } existingStore)
         {
+            ApplyPlayerIdentityToCloudStore(existingStore);
             if (ensureSignedIn)
             {
                 await existingStore.EnsureSignedInAsync();
@@ -5499,6 +5521,7 @@ public partial class MainWindow : Window
         {
             if (_cloudModlistStore is { } cached)
             {
+                ApplyPlayerIdentityToCloudStore(cached);
                 if (ensureSignedIn)
                 {
                     await cached.EnsureSignedInAsync();
@@ -5515,6 +5538,7 @@ public partial class MainWindow : Window
             }
 
             var store = new FirebaseModlistStore(FirebaseApiKey, FirebaseDatabaseUrl, storageDirectory, modConfigDirectory);
+            ApplyPlayerIdentityToCloudStore(store);
             if (ensureSignedIn)
             {
                 await store.EnsureSignedInAsync();

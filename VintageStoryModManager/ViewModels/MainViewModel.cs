@@ -152,6 +152,10 @@ public sealed class MainViewModel : ObservableObject
 
     public string DataDirectory { get; }
 
+    public string? PlayerUid => _settingsStore.PlayerUid;
+
+    public string? PlayerName => _settingsStore.PlayerName;
+
     public ICollectionView ModsView { get; }
 
     public ICollectionView SearchResultsView { get; }

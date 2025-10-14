@@ -1591,7 +1591,16 @@
                                 Padding="12,6"
                                 MinWidth="100"
                                 Click="RefreshCloudModlistsButton_OnClick" Margin="476,109,0,0" Height="32" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                            <TextBox x:Name="UsernameTextbox" HorizontalAlignment="Left" Margin="10,28,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="170"/>
+                            <TextBox x:Name="UsernameTextbox"
+                                     HorizontalAlignment="Left"
+                                     Margin="10,28,0,0"
+                                     TextWrapping="Wrap"
+                                     Text=""
+                                     VerticalAlignment="Top"
+                                     Width="170"
+                                     IsReadOnly="True"
+                                     IsTabStop="False"
+                                     ToolTip="Change your player name in Vintage Story to update this username."/>
                             <TextBlock HorizontalAlignment="Left" Margin="10,10,0,0" TextWrapping="Wrap" Text="Username:" VerticalAlignment="Top"/>
                             <Border HorizontalAlignment="Left" Height="88" Margin="224,10,0,0"  Padding="10" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource CardGradient3}">
                                 <Grid>
