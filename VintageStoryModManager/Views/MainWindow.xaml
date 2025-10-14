@@ -1920,7 +1920,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <Border HorizontalAlignment="Left" Height="50" VerticalAlignment="Center" Width="347" Background="{DynamicResource CardGradient}" CornerRadius="3,3,3,3">
+            <Border HorizontalAlignment="Left" Height="50" VerticalAlignment="Center" Width="376" Background="{DynamicResource CardGradient}" CornerRadius="3,3,3,3">
                 <Border.Effect>
                     <DropShadowEffect Opacity="0.1" Direction="240" ShadowDepth="3" BlurRadius="4"/>
                 </Border.Effect>
@@ -1956,35 +1956,35 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Top" Margin="0,18,0,0">
                 <Button Content="Update All"
-                            Margin="0,0,8,0"
-                            Width="146"
+                            Margin="0,0,4,0"
+                            Width="125"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="UpdateAllModsMenuItem_OnClick"
-                            Height="32" />
+                            Height="32" Padding="6,6,6,6" />
                 <Button Content="Open Logs Folder"
-                            Margin="0,0,8,0"
-                            Width="146"
+                            Margin="0,0,4,0"
+                            Width="125"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="OpenLogsFolderButton_OnClick"
-                            Height="32" />
+                            Height="32" Padding="6,6,6,6" />
                 <Button Content="Open Config Folder"
-                            Margin="0,0,8,0"
-                            Width="146"
+                            Margin="0,0,4,0"
+                            Width="125"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="OpenConfigFolderButton_OnClick"
-                            Height="32" />
+                            Height="32" Padding="6,6,6,6" />
                 <Button Content="Open Mods Folder"
-                            Margin="0,0,8,0"
-                            Width="159"
+                            Margin="0,0,4,0"
+                            Width="125"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="OpenModFolderButton_OnClick"
-                            Height="32" />
+                            Height="32" Padding="6,6,6,6" />
                 <Button Content="Launch Vintage Story"
-                            Width="159"
+                            Width="150"
                             Background="{DynamicResource IMM.ButtonBackgroundBrush}"
                             BorderBrush="{DynamicResource IMM.BorderBrush}"
                             Click="LaunchGameButton_OnClick"
