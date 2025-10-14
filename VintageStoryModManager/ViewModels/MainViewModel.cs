@@ -1860,6 +1860,39 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                ModEntry entry = entries[i].Entry;
+                ModDatabaseInfo? cachedInfo = await _databaseService
+                    .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (cachedInfo is null)
+                {
+                    continue;
+                }
+
+                entry.UpdateDatabaseInfo(cachedInfo);
+
+                ModDatabaseInfo capturedInfo = cachedInfo;
+                ModListItemViewModel viewModel = viewModels[i];
+
+                await InvokeOnDispatcherAsync(
+                        () => viewModel.UpdateDatabaseInfo(capturedInfo, loadLogoImmediately: false),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             await InvokeOnDispatcherAsync(
                     () => SetStatus("Loading mod details...", false),
                     cancellationToken)
@@ -2594,7 +2627,19 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
-            if (InternetAccessManager.IsInternetAccessDisabled)
+            ModDatabaseInfo? cachedInfo = await _databaseService
+                .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion)
+                .ConfigureAwait(false);
+
+            if (cachedInfo != null)
+            {
+                await ApplyDatabaseInfoAsync(entry, cachedInfo, loadLogoImmediately: false).ConfigureAwait(false);
+                if (InternetAccessManager.IsInternetAccessDisabled)
+                {
+                    return;
+                }
+            }
+            else if (InternetAccessManager.IsInternetAccessDisabled)
             {
                 await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
                 return;

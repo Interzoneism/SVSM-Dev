@@ -28,6 +28,7 @@ public sealed class ModDatabaseService
     private const int MaxNewModsMonths = 24;
 
     private static readonly HttpClient HttpClient = new();
+    private static readonly ModDatabaseCacheService CacheService = new();
 
     private static readonly Regex HtmlBreakRegex = new(
         @"<\s*br\s*/?\s*>",
@@ -64,12 +65,9 @@ public sealed class ModDatabaseService
             throw new ArgumentNullException(nameof(mods));
         }
 
-        if (InternetAccessManager.IsInternetAccessDisabled)
-        {
-            return;
-        }
-
         string? normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
+
+        bool internetDisabled = InternetAccessManager.IsInternetAccessDisabled;
 
         using var semaphore = new SemaphoreSlim(MaxConcurrentMetadataRequests);
         var tasks = new List<Task>();
@@ -95,10 +93,29 @@ public sealed class ModDatabaseService
 
         async Task ProcessModAsync(ModEntry modEntry)
         {
+            ModDatabaseInfo? cached = await CacheService
+                .TryLoadAsync(modEntry.ModId, normalizedGameVersion, modEntry.Version, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cached != null)
+            {
+                modEntry.DatabaseInfo = cached;
+            }
+
+            if (internetDisabled)
+            {
+                return;
+            }
+
             await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                ModDatabaseInfo? info = await TryLoadDatabaseInfoInternalAsync(modEntry.ModId, modEntry.Version, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
+                ModDatabaseInfo? info = await TryLoadDatabaseInfoInternalAsync(
+                        modEntry.ModId,
+                        modEntry.Version,
+                        normalizedGameVersion,
+                        cancellationToken)
+                    .ConfigureAwait(false);
                 if (info != null)
                 {
                     modEntry.DatabaseInfo = info;
@@ -119,7 +136,44 @@ public sealed class ModDatabaseService
         }
 
         string? normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
-        return TryLoadDatabaseInfoInternalAsync(modId, modVersion, normalizedGameVersion, cancellationToken);
+        return TryLoadDatabaseInfoAsyncCore(modId, modVersion, normalizedGameVersion, cancellationToken);
+    }
+
+    public Task<ModDatabaseInfo?> TryLoadCachedDatabaseInfoAsync(
+        string modId,
+        string? modVersion,
+        string? installedGameVersion,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            return Task.FromResult<ModDatabaseInfo?>(null);
+        }
+
+        string? normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
+        return CacheService.TryLoadAsync(modId, normalizedGameVersion, modVersion, cancellationToken);
+    }
+
+    private async Task<ModDatabaseInfo?> TryLoadDatabaseInfoAsyncCore(
+        string modId,
+        string? modVersion,
+        string? normalizedGameVersion,
+        CancellationToken cancellationToken)
+    {
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            return await CacheService.TryLoadAsync(modId, normalizedGameVersion, modVersion, cancellationToken).ConfigureAwait(false);
+        }
+
+        ModDatabaseInfo? info = await TryLoadDatabaseInfoInternalAsync(modId, modVersion, normalizedGameVersion, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (info != null)
+        {
+            return info;
+        }
+
+        return await CacheService.TryLoadAsync(modId, normalizedGameVersion, modVersion, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> SearchModsAsync(string query, int maxResults, CancellationToken cancellationToken = default)
@@ -560,7 +614,7 @@ public sealed class ModDatabaseService
             IReadOnlyList<string> requiredVersions = FindRequiredGameVersions(modElement, modVersion);
             int? recentDownloads = CalculateDownloadsLastThirtyDays(releases);
 
-            return new ModDatabaseInfo
+            var info = new ModDatabaseInfo
             {
                 Tags = tags,
                 AssetId = assetId,
@@ -580,6 +634,10 @@ public sealed class ModDatabaseService
                 LatestCompatibleRelease = latestCompatibleRelease,
                 Releases = releases
             };
+
+            await CacheService.StoreAsync(modId, normalizedGameVersion, info, cancellationToken).ConfigureAwait(false);
+
+            return info;
         }
         catch (OperationCanceledException)
         {
