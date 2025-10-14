@@ -690,15 +690,24 @@ public sealed class ModDiscoveryService
 
     private static ZipArchiveEntry? FindEntry(ZipArchive archive, string entryName)
     {
+        if (string.IsNullOrWhiteSpace(entryName))
+        {
+            return null;
+        }
+
+        string normalizedTarget = NormalizeZipEntryPath(entryName);
+
         foreach (var entry in archive.Entries)
         {
-            if (string.Equals(entry.FullName, entryName, StringComparison.OrdinalIgnoreCase))
+            string normalizedEntry = NormalizeZipEntryPath(entry.FullName);
+            if (string.Equals(normalizedEntry, normalizedTarget, StringComparison.OrdinalIgnoreCase))
             {
                 return entry;
             }
         }
 
-        return archive.Entries.FirstOrDefault(e => string.Equals(Path.GetFileName(e.FullName), entryName, StringComparison.OrdinalIgnoreCase));
+        string normalizedFileName = NormalizeZipEntryPath(Path.GetFileName(entryName));
+        return archive.Entries.FirstOrDefault(e => string.Equals(NormalizeZipEntryPath(Path.GetFileName(e.FullName)), normalizedFileName, StringComparison.OrdinalIgnoreCase));
     }
 
     private ModEntry CreateUnsupportedCodeModEntry(FileInfo file)
@@ -1093,6 +1102,23 @@ public sealed class ModDiscoveryService
         }
 
         return null;
+    }
+
+    private static string NormalizeZipEntryPath(string path)
+    {
+        string normalized = path.Trim().Replace('\\', '/');
+
+        while (normalized.StartsWith("./", StringComparison.Ordinal))
+        {
+            normalized = normalized[2..];
+        }
+
+        if (normalized.Length > 0 && normalized[0] == '/')
+        {
+            normalized = normalized[1..];
+        }
+
+        return normalized;
     }
 
     private static string ToModId(string? name)
