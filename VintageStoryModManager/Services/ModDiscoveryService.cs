@@ -6,13 +6,11 @@ using System.Globalization;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Resources;
 using VintageStoryModManager.Models;
 
 namespace VintageStoryModManager.Services;
@@ -920,36 +918,30 @@ public sealed class ModDiscoveryService
         {
             if (!_defaultIconResolved)
             {
-                _defaultIconBytes = TryLoadBundledDefaultIcon(out _defaultIconDescription)
-                    ?? TryLoadBundledIconFromBaseDirectory(out _defaultIconDescription);
-
-                if (_defaultIconBytes == null)
+                foreach (string candidate in EnumerateDefaultIconCandidates())
                 {
-                    foreach (string candidate in EnumerateDefaultIconCandidates())
+                    try
                     {
-                        try
+                        if (!File.Exists(candidate))
                         {
-                            if (!File.Exists(candidate))
-                            {
-                                continue;
-                            }
+                            continue;
+                        }
 
-                            _defaultIconBytes = File.ReadAllBytes(candidate);
-                            _defaultIconDescription = candidate;
-                            break;
-                        }
-                        catch (IOException)
-                        {
-                            // Ignore IO failures and continue with other candidates.
-                        }
-                        catch (UnauthorizedAccessException)
-                        {
-                            // Ignore permission issues and continue with other candidates.
-                        }
-                        catch (NotSupportedException)
-                        {
-                            // Ignore invalid path formats and continue with other candidates.
-                        }
+                        _defaultIconBytes = File.ReadAllBytes(candidate);
+                        _defaultIconDescription = candidate;
+                        break;
+                    }
+                    catch (IOException)
+                    {
+                        // Ignore IO failures and continue with other candidates.
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // Ignore permission issues and continue with other candidates.
+                    }
+                    catch (NotSupportedException)
+                    {
+                        // Ignore invalid path formats and continue with other candidates.
                     }
                 }
 
@@ -959,67 +951,6 @@ public sealed class ModDiscoveryService
             description = _defaultIconDescription;
             return _defaultIconBytes;
         }
-    }
-
-    private static byte[]? TryLoadBundledDefaultIcon(out string? description)
-    {
-        const string resourcePath = "Resources/mod-default.png";
-        try
-        {
-            var resourceUri = new Uri(resourcePath, UriKind.Relative);
-            StreamResourceInfo? resource = System.Windows.Application.GetResourceStream(resourceUri);
-            if (resource?.Stream != null)
-            {
-                using Stream stream = resource.Stream;
-                using var memory = new MemoryStream();
-                stream.CopyTo(memory);
-                description = resourcePath;
-                return memory.ToArray();
-            }
-        }
-        catch (IOException)
-        {
-        }
-        catch (NotSupportedException)
-        {
-        }
-        catch (SecurityException)
-        {
-        }
-        catch (InvalidOperationException)
-        {
-        }
-        catch (UriFormatException)
-        {
-        }
-
-        description = null;
-        return null;
-    }
-
-    private static byte[]? TryLoadBundledIconFromBaseDirectory(out string? description)
-    {
-        string candidate = Path.Combine(AppContext.BaseDirectory, "mod-default.png");
-        try
-        {
-            if (File.Exists(candidate))
-            {
-                description = candidate;
-                return File.ReadAllBytes(candidate);
-            }
-        }
-        catch (IOException)
-        {
-        }
-        catch (UnauthorizedAccessException)
-        {
-        }
-        catch (NotSupportedException)
-        {
-        }
-
-        description = null;
-        return null;
     }
 
     private IEnumerable<string> EnumerateDefaultIconCandidates()
