@@ -32,6 +32,8 @@ namespace SimpleVsManager.Cloud
 
         private bool _shouldPromptForBackup;
         private AuthState _auth = new();
+        private string? _externalUserId;
+        private bool _hasEnsuredUserBinding;
 
         public FirebaseModlistStore(string apiKey, string dbUrl, string appDataDir, string? modConfigDirectory = null)
         {
@@ -54,9 +56,25 @@ namespace SimpleVsManager.Cloud
         public static IReadOnlyList<string> SlotKeys => KnownSlots;
 
         /// <summary>
-        /// Gets the identifier assigned to the currently authenticated Firebase user.
+        /// Gets the identifier used for Firebase storage operations (player UID when available).
         /// </summary>
-        public string? CurrentUserId => _auth.Uid;
+        public string? CurrentUserId => GetEffectiveUserId();
+
+        /// <summary>
+        /// Sets an external identifier that should be used for Firebase storage (e.g., Vintage Story player UID).
+        /// </summary>
+        public void SetExternalUserId(string? userId)
+        {
+            string? normalized = string.IsNullOrWhiteSpace(userId) ? null : userId.Trim();
+
+            if (string.Equals(_externalUserId, normalized, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _externalUserId = normalized;
+            _hasEnsuredUserBinding = false;
+        }
 
         /// <summary>
         /// Gets the on-disk location of the primary authentication state file.
@@ -105,6 +123,7 @@ namespace SimpleVsManager.Cloud
                 }
 
                 _auth = state;
+                _hasEnsuredUserBinding = false;
                 SaveAuthStateToDisk();
                 _shouldPromptForBackup = false;
                 return true;
@@ -127,6 +146,7 @@ namespace SimpleVsManager.Cloud
                 _auth.IdTokenExpiryUtc.HasValue &&
                 DateTimeOffset.UtcNow < _auth.IdTokenExpiryUtc.Value.AddSeconds(-60))
             {
+                await EnsureUserBindingAsync(ct);
                 return; // still valid
             }
 
@@ -134,11 +154,16 @@ namespace SimpleVsManager.Cloud
             if (!string.IsNullOrWhiteSpace(_auth.RefreshToken))
             {
                 var ok = await TryRefreshAsync(ct);
-                if (ok) return;
+                if (ok)
+                {
+                    await EnsureUserBindingAsync(ct);
+                    return;
+                }
                 // Fall through to sign-up if refresh fails
             }
 
             await SignUpAnonymousAsync(ct);
+            await EnsureUserBindingAsync(ct);
         }
 
         /// <summary>Save or replace the JSON in the given slot (e.g., "slot1").</summary>
@@ -152,7 +177,8 @@ namespace SimpleVsManager.Cloud
             string? uploader = TryGetUploader(doc.RootElement);
 
             var json = JsonSerializer.Serialize(node, JsonOpts);
-            var userUrl = $"{_dbUrl}/users/{_auth.Uid}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
+            string userPathId = GetEscapedUserId();
+            var userUrl = $"{_dbUrl}/users/{userPathId}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
 
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             using (var resp = await _http.PutAsync(userUrl, content, ct))
@@ -174,7 +200,8 @@ namespace SimpleVsManager.Cloud
             ValidateSlotKey(slotKey);
             await EnsureSignedInAsync(ct);
 
-            var url = $"{_dbUrl}/users/{_auth.Uid}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
+            string userPathId = GetEscapedUserId();
+            var url = $"{_dbUrl}/users/{userPathId}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
             using var resp = await _http.GetAsync(url, ct);
 
             if (resp.StatusCode == HttpStatusCode.NotFound) return null;
@@ -195,7 +222,8 @@ namespace SimpleVsManager.Cloud
         {
             await EnsureSignedInAsync(ct);
 
-            var url = $"{_dbUrl}/users/{_auth.Uid}/lists.json?shallow=true&auth={_auth.IdToken}";
+            string userPathId = GetEscapedUserId();
+            var url = $"{_dbUrl}/users/{userPathId}/lists.json?shallow=true&auth={_auth.IdToken}";
             using var resp = await _http.GetAsync(url, ct);
 
             if (resp.StatusCode == HttpStatusCode.NotFound) return Array.Empty<string>();
@@ -220,7 +248,8 @@ namespace SimpleVsManager.Cloud
             ValidateSlotKey(slotKey);
             await EnsureSignedInAsync(ct);
 
-            var userUrl = $"{_dbUrl}/users/{_auth.Uid}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
+            string userPathId = GetEscapedUserId();
+            var userUrl = $"{_dbUrl}/users/{userPathId}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
             using var resp = await _http.DeleteAsync(userUrl, ct);
             // 200/204/404 are all "fine" for our UX.
             if (!resp.IsSuccessStatusCode && resp.StatusCode != HttpStatusCode.NotFound)
@@ -329,6 +358,7 @@ namespace SimpleVsManager.Cloud
                 IdTokenExpiryUtc = DateTimeOffset.UtcNow.AddSeconds(expires > 60 ? expires : 3600)
             };
 
+            _hasEnsuredUserBinding = false;
             SaveAuthStateToDisk();
         }
 
@@ -384,6 +414,99 @@ namespace SimpleVsManager.Cloud
             throw new InvalidOperationException($"{opName} failed: {(int)resp.StatusCode} {resp.ReasonPhrase} | {Truncate(body, 400)}");
         }
 
+        private string? GetEffectiveUserId()
+        {
+            if (!string.IsNullOrWhiteSpace(_externalUserId))
+            {
+                return _externalUserId;
+            }
+
+            return string.IsNullOrWhiteSpace(_auth.Uid) ? null : _auth.Uid.Trim();
+        }
+
+        private string GetRequiredUserId()
+        {
+            string? userId = GetEffectiveUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new InvalidOperationException("The Firebase user identifier is not available.");
+            }
+
+            return userId;
+        }
+
+        private string GetEscapedUserId() => Uri.EscapeDataString(GetRequiredUserId());
+
+        private async Task EnsureUserBindingAsync(CancellationToken ct)
+        {
+            if (_hasEnsuredUserBinding)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_externalUserId))
+            {
+                _hasEnsuredUserBinding = true;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_auth.IdToken) || string.IsNullOrWhiteSpace(_auth.Uid))
+            {
+                throw new InvalidOperationException("Authentication state is not available for Firebase binding.");
+            }
+
+            string playerUid = _externalUserId!;
+            string bindingUrl = $"{_dbUrl}/uidBindings/{Uri.EscapeDataString(playerUid)}.json?auth={_auth.IdToken}";
+
+            using var resp = await _http.GetAsync(bindingUrl, ct);
+            if (resp.StatusCode == HttpStatusCode.NotFound)
+            {
+                await PutUserBindingAsync(bindingUrl, ct);
+                _hasEnsuredUserBinding = true;
+                return;
+            }
+
+            await EnsureOk(resp, "Fetch uid binding");
+
+            string payload = await resp.Content.ReadAsStringAsync(ct);
+            string? existing = null;
+
+            if (!string.IsNullOrWhiteSpace(payload) && !string.Equals(payload, "null", StringComparison.Ordinal))
+            {
+                try
+                {
+                    existing = JsonSerializer.Deserialize<string>(payload, JsonOpts);
+                }
+                catch (JsonException)
+                {
+                    existing = null;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(existing) && !string.Equals(existing, _auth.Uid, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "This Vintage Story identity is already linked to a different cloud identity. Import the original firebase_auth.json file to continue.");
+            }
+
+            if (string.IsNullOrWhiteSpace(existing))
+            {
+                await PutUserBindingAsync(bindingUrl, ct);
+            }
+
+            _hasEnsuredUserBinding = true;
+        }
+
+        private async Task PutUserBindingAsync(string bindingUrl, CancellationToken ct)
+        {
+            string authUid = _auth.Uid ?? throw new InvalidOperationException("Firebase authentication identifier is unavailable.");
+            string payload = JsonSerializer.Serialize(authUid, JsonOpts);
+
+            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+            using var resp = await _http.PutAsync(bindingUrl, content, ct);
+            await EnsureOk(resp, "Save uid binding");
+        }
+
         private async Task EnsureUploaderConsistencyAsync(string uploader, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(uploader))
@@ -400,7 +523,8 @@ namespace SimpleVsManager.Cloud
 
         private async Task UpdateSlotUploaderAsync(string slotKey, string uploader, CancellationToken ct)
         {
-            var userUrl = $"{_dbUrl}/users/{_auth.Uid}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
+            string userPathId = GetEscapedUserId();
+            var userUrl = $"{_dbUrl}/users/{userPathId}/lists/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
             using var resp = await _http.GetAsync(userUrl, ct);
 
             if (resp.StatusCode == HttpStatusCode.NotFound)
@@ -442,7 +566,8 @@ namespace SimpleVsManager.Cloud
 
         private async Task SaveRegistryEntryAsync(string slotKey, string nodeJson, CancellationToken ct)
         {
-            var url = $"{_dbUrl}/registry/{_auth.Uid}/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
+            string userPathId = GetEscapedUserId();
+            var url = $"{_dbUrl}/registry/{userPathId}/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
 
             using var content = new StringContent(nodeJson, Encoding.UTF8, "application/json");
             using var resp = await _http.PutAsync(url, content, ct);
@@ -451,7 +576,8 @@ namespace SimpleVsManager.Cloud
 
         private async Task DeleteRegistryEntryAsync(string slotKey, CancellationToken ct)
         {
-            var url = $"{_dbUrl}/registry/{_auth.Uid}/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
+            string userPathId = GetEscapedUserId();
+            var url = $"{_dbUrl}/registry/{userPathId}/{Uri.EscapeDataString(slotKey)}.json?auth={_auth.IdToken}";
             using var resp = await _http.DeleteAsync(url, ct);
 
             if (resp.IsSuccessStatusCode || resp.StatusCode == HttpStatusCode.NotFound)
