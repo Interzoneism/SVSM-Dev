@@ -22,9 +22,11 @@ namespace SimpleVsManager.Cloud
 
         private readonly string _dbUrl;
         private readonly FirebaseAnonymousAuthenticator _authenticator;
+        private readonly SemaphoreSlim _ownershipClaimLock = new(1, 1);
 
         private string? _playerUid;
         private string? _playerName;
+        private string? _ownershipClaimedForUid;
 
         public FirebaseModlistStore(string dbUrl, FirebaseAnonymousAuthenticator authenticator)
         {
@@ -51,6 +53,11 @@ namespace SimpleVsManager.Cloud
         {
             _playerUid = Normalize(playerUid);
             _playerName = Normalize(playerName);
+
+            if (!string.Equals(_ownershipClaimedForUid, _playerUid, StringComparison.Ordinal))
+            {
+                _ownershipClaimedForUid = null;
+            }
         }
 
         /// <summary>Save or replace the JSON in the given slot (e.g., "slot1").</summary>
@@ -58,6 +65,7 @@ namespace SimpleVsManager.Cloud
         {
             ValidateSlotKey(slotKey);
             var identity = GetIdentityComponents();
+            await EnsureOwnershipAsync(identity, ct).ConfigureAwait(false);
 
             using var document = JsonDocument.Parse(modlistJson);
             if (document.RootElement.ValueKind != JsonValueKind.Object)
@@ -68,17 +76,19 @@ namespace SimpleVsManager.Cloud
             string normalizedContent = ReplaceUploader(document.RootElement, identity);
             string nodeJson = BuildNodeJson(normalizedContent);
 
-            using (HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
-                   {
-                       string userUrl = BuildAuthenticatedUrl(token, null, "users", identity.Uid, slotKey);
-                       var request = new HttpRequestMessage(HttpMethod.Put, userUrl)
-                       {
-                           Content = new StringContent(nodeJson, Encoding.UTF8, "application/json")
-                       };
-                       return HttpClient.SendAsync(request, ct);
-                   }, ct).ConfigureAwait(false))
+            var saveResult = await SendWithAuthRetryAsync(session =>
+                {
+                    string userUrl = BuildAuthenticatedUrl(session.IdToken, null, "users", identity.Uid, slotKey);
+                    var request = new HttpRequestMessage(HttpMethod.Put, userUrl)
+                    {
+                        Content = new StringContent(nodeJson, Encoding.UTF8, "application/json")
+                    };
+                    return HttpClient.SendAsync(request, ct);
+                }, ct).ConfigureAwait(false);
+
+            using (saveResult.Response)
             {
-                await EnsureOk(response, "Save").ConfigureAwait(false);
+                await EnsureOk(saveResult.Response, "Save").ConfigureAwait(false);
             }
 
             await EnsureUploaderConsistencyAsync(identity, ct).ConfigureAwait(false);
@@ -89,12 +99,15 @@ namespace SimpleVsManager.Cloud
         {
             ValidateSlotKey(slotKey);
             var identity = GetIdentityComponents();
+            await EnsureOwnershipAsync(identity, ct).ConfigureAwait(false);
 
-            using HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
+            var sendResult = await SendWithAuthRetryAsync(session =>
                 {
-                    string userUrl = BuildAuthenticatedUrl(token, null, "users", identity.Uid, slotKey);
+                    string userUrl = BuildAuthenticatedUrl(session.IdToken, null, "users", identity.Uid, slotKey);
                     return HttpClient.GetAsync(userUrl, ct);
                 }, ct).ConfigureAwait(false);
+
+            using HttpResponseMessage response = sendResult.Response;
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -130,12 +143,15 @@ namespace SimpleVsManager.Cloud
         {
             ValidateSlotKey(slotKey);
             var identity = GetIdentityComponents();
+            await EnsureOwnershipAsync(identity, ct).ConfigureAwait(false);
 
-            using HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
+            var sendResult = await SendWithAuthRetryAsync(session =>
                 {
-                    string userUrl = BuildAuthenticatedUrl(token, null, "users", identity.Uid, slotKey);
+                    string userUrl = BuildAuthenticatedUrl(session.IdToken, null, "users", identity.Uid, slotKey);
                     return HttpClient.DeleteAsync(userUrl, ct);
                 }, ct).ConfigureAwait(false);
+
+            using HttpResponseMessage response = sendResult.Response;
 
             if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.NotFound)
             {
@@ -145,11 +161,13 @@ namespace SimpleVsManager.Cloud
 
         public async Task<IReadOnlyList<CloudModlistRegistryEntry>> GetRegistryEntriesAsync(CancellationToken ct = default)
         {
-            using HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
+            var sendResult = await SendWithAuthRetryAsync(session =>
                 {
-                    string registryUrl = BuildAuthenticatedUrl(token, null, "registry");
+                    string registryUrl = BuildAuthenticatedUrl(session.IdToken, null, "registry");
                     return HttpClient.GetAsync(registryUrl, ct);
                 }, ct).ConfigureAwait(false);
+
+            using HttpResponseMessage response = sendResult.Response;
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -218,11 +236,15 @@ namespace SimpleVsManager.Cloud
         }
         private async Task<IReadOnlyList<string>> ListSlotsAsync((string Uid, string Name) identity, CancellationToken ct)
         {
-            using HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
+            await EnsureOwnershipAsync(identity, ct).ConfigureAwait(false);
+
+            var sendResult = await SendWithAuthRetryAsync(session =>
                 {
-                    string url = BuildAuthenticatedUrl(token, "shallow=true", "users", identity.Uid);
+                    string url = BuildAuthenticatedUrl(session.IdToken, "shallow=true", "users", identity.Uid);
                     return HttpClient.GetAsync(url, ct);
                 }, ct).ConfigureAwait(false);
+
+            using HttpResponseMessage response = sendResult.Response;
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -271,11 +293,13 @@ namespace SimpleVsManager.Cloud
 
         private async Task UpdateSlotUploaderAsync(string slotKey, (string Uid, string Name) identity, CancellationToken ct)
         {
-            using HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
+            var sendResult = await SendWithAuthRetryAsync(session =>
                 {
-                    string userUrl = BuildAuthenticatedUrl(token, null, "users", identity.Uid, slotKey);
+                    string userUrl = BuildAuthenticatedUrl(session.IdToken, null, "users", identity.Uid, slotKey);
                     return HttpClient.GetAsync(userUrl, ct);
                 }, ct).ConfigureAwait(false);
+
+            using HttpResponseMessage response = sendResult.Response;
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -305,9 +329,9 @@ namespace SimpleVsManager.Cloud
             string updatedContentJson = ReplaceUploader(node.Value.Content, identity);
             string updatedNodeJson = BuildNodeJson(updatedContentJson);
 
-            using HttpResponseMessage putResponse = await SendWithAuthRetryAsync(token =>
+            var putResult = await SendWithAuthRetryAsync(session =>
                 {
-                    string userUrl = BuildAuthenticatedUrl(token, null, "users", identity.Uid, slotKey);
+                    string userUrl = BuildAuthenticatedUrl(session.IdToken, null, "users", identity.Uid, slotKey);
                     var request = new HttpRequestMessage(HttpMethod.Put, userUrl)
                     {
                         Content = new StringContent(updatedNodeJson, Encoding.UTF8, "application/json")
@@ -315,7 +339,10 @@ namespace SimpleVsManager.Cloud
                     return HttpClient.SendAsync(request, ct);
                 }, ct).ConfigureAwait(false);
 
-            await EnsureOk(putResponse, "Update modlist uploader").ConfigureAwait(false);
+            using (putResult.Response)
+            {
+                await EnsureOk(putResult.Response, "Update modlist uploader").ConfigureAwait(false);
+            }
         }
 
         private (string Uid, string Name) GetIdentityComponents()
@@ -393,14 +420,14 @@ namespace SimpleVsManager.Cloud
             return null;
         }
 
-        private async Task<HttpResponseMessage> SendWithAuthRetryAsync(Func<string, Task<HttpResponseMessage>> operation, CancellationToken ct)
+        private async Task<(HttpResponseMessage Response, FirebaseAnonymousAuthenticator.FirebaseAuthSession Session)> SendWithAuthRetryAsync(Func<FirebaseAnonymousAuthenticator.FirebaseAuthSession, Task<HttpResponseMessage>> operation, CancellationToken ct)
         {
             bool hasRetried = false;
 
             while (true)
             {
-                string token = await _authenticator.GetIdTokenAsync(ct).ConfigureAwait(false);
-                HttpResponseMessage response = await operation(token).ConfigureAwait(false);
+                FirebaseAnonymousAuthenticator.FirebaseAuthSession session = await _authenticator.GetSessionAsync(ct).ConfigureAwait(false);
+                HttpResponseMessage response = await operation(session).ConfigureAwait(false);
 
                 if (IsAuthError(response.StatusCode) && !hasRetried)
                 {
@@ -410,7 +437,106 @@ namespace SimpleVsManager.Cloud
                     continue;
                 }
 
-                return response;
+                return (response, session);
+            }
+        }
+
+        private async Task EnsureOwnershipAsync((string Uid, string Name) identity, CancellationToken ct)
+        {
+            if (string.Equals(_ownershipClaimedForUid, identity.Uid, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            await _ownershipClaimLock.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                if (string.Equals(_ownershipClaimedForUid, identity.Uid, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                var readResult = await SendWithAuthRetryAsync(session =>
+                    {
+                        string ownersUrl = BuildAuthenticatedUrl(session.IdToken, null, "owners", identity.Uid);
+                        return HttpClient.GetAsync(ownersUrl, ct);
+                    }, ct).ConfigureAwait(false);
+
+                using (readResult.Response)
+                {
+                    if (readResult.Response.IsSuccessStatusCode)
+                    {
+                        string body = await readResult.Response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                        string? ownerId = ParseOwnerIdentifier(body);
+
+                        if (string.IsNullOrWhiteSpace(ownerId))
+                        {
+                            // Not yet claimed. Fall through to claim request.
+                        }
+                        else if (string.Equals(ownerId, readResult.Session.UserId, StringComparison.Ordinal))
+                        {
+                            _ownershipClaimedForUid = identity.Uid;
+                            return;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("Cloud modlists for this Vintage Story UID are already bound to another Firebase anonymous account.");
+                        }
+                    }
+                    else if (!IsAuthError(readResult.Response.StatusCode) && readResult.Response.StatusCode != HttpStatusCode.NotFound)
+                    {
+                        await EnsureOk(readResult.Response, "Check ownership").ConfigureAwait(false);
+                    }
+                }
+
+                var claimResult = await SendWithAuthRetryAsync(session =>
+                    {
+                        string ownersUrl = BuildAuthenticatedUrl(session.IdToken, null, "owners", identity.Uid);
+                        string payload = JsonSerializer.Serialize(session.UserId);
+                        var request = new HttpRequestMessage(HttpMethod.Put, ownersUrl)
+                        {
+                            Content = new StringContent(payload, Encoding.UTF8, "application/json")
+                        };
+                        return HttpClient.SendAsync(request, ct);
+                    }, ct).ConfigureAwait(false);
+
+                using (claimResult.Response)
+                {
+                    if (claimResult.Response.IsSuccessStatusCode)
+                    {
+                        _ownershipClaimedForUid = identity.Uid;
+                        return;
+                    }
+
+                    if (IsAuthError(claimResult.Response.StatusCode))
+                    {
+                        throw new InvalidOperationException("Cloud modlists for this Vintage Story UID are already bound to another Firebase anonymous account.");
+                    }
+
+                    await EnsureOk(claimResult.Response, "Claim ownership").ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                _ownershipClaimLock.Release();
+            }
+        }
+
+        private static string? ParseOwnerIdentifier(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json) || string.Equals(json.Trim(), "null", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            try
+            {
+                string? owner = JsonSerializer.Deserialize<string>(json, JsonOpts);
+                return string.IsNullOrWhiteSpace(owner) ? null : owner.Trim();
+            }
+            catch (JsonException)
+            {
+                return null;
             }
         }
 

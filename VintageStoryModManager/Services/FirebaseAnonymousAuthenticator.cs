@@ -46,33 +46,44 @@ public sealed class FirebaseAnonymousAuthenticator
     /// </summary>
     public async Task<string> GetIdTokenAsync(CancellationToken ct)
     {
+        FirebaseAuthSession session = await GetSessionAsync(ct).ConfigureAwait(false);
+        return session.IdToken;
+    }
+
+    public async Task<FirebaseAuthSession> GetSessionAsync(CancellationToken ct)
+    {
         await _stateLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             _cachedState ??= LoadStateFromDisk();
 
+            if (_cachedState is { } cachedWithoutUser && string.IsNullOrWhiteSpace(cachedWithoutUser.UserId))
+            {
+                _cachedState = null;
+            }
+
             if (_cachedState is { } existing && !existing.IsExpired)
             {
-                return existing.IdToken;
+                return new FirebaseAuthSession(existing.IdToken, existing.UserId);
             }
 
             FirebaseAuthState? refreshed = null;
             if (_cachedState is { } stateWithRefresh && !string.IsNullOrWhiteSpace(stateWithRefresh.RefreshToken))
             {
-                refreshed = await TryRefreshAsync(stateWithRefresh.RefreshToken, ct).ConfigureAwait(false);
+                refreshed = await TryRefreshAsync(stateWithRefresh, ct).ConfigureAwait(false);
             }
 
             if (refreshed is not null)
             {
                 _cachedState = refreshed;
                 SaveStateToDisk(refreshed);
-                return refreshed.IdToken;
+                return new FirebaseAuthSession(refreshed.IdToken, refreshed.UserId);
             }
 
             FirebaseAuthState newState = await SignInAsync(ct).ConfigureAwait(false);
             _cachedState = newState;
             SaveStateToDisk(newState);
-            return newState.IdToken;
+            return new FirebaseAuthSession(newState.IdToken, newState.UserId);
         }
         finally
         {
@@ -150,7 +161,8 @@ public sealed class FirebaseAnonymousAuthenticator
             AuthStateModel? model = JsonSerializer.Deserialize<AuthStateModel>(json, JsonOptions);
             if (model is null ||
                 string.IsNullOrWhiteSpace(model.IdToken) ||
-                string.IsNullOrWhiteSpace(model.RefreshToken))
+                string.IsNullOrWhiteSpace(model.RefreshToken) ||
+                string.IsNullOrWhiteSpace(model.UserId))
             {
                 return null;
             }
@@ -159,7 +171,7 @@ public sealed class FirebaseAnonymousAuthenticator
                 ? DateTimeOffset.MinValue
                 : model.ExpirationUtc;
 
-            return new FirebaseAuthState(model.IdToken.Trim(), model.RefreshToken.Trim(), expiration);
+            return new FirebaseAuthState(model.IdToken.Trim(), model.RefreshToken.Trim(), expiration, model.UserId.Trim());
         }
         catch (IOException)
         {
@@ -189,7 +201,8 @@ public sealed class FirebaseAnonymousAuthenticator
             {
                 IdToken = state.IdToken,
                 RefreshToken = state.RefreshToken,
-                ExpirationUtc = state.Expiration
+                ExpirationUtc = state.Expiration,
+                UserId = state.UserId
             };
 
             string json = JsonSerializer.Serialize(model, JsonOptions);
@@ -229,16 +242,21 @@ public sealed class FirebaseAnonymousAuthenticator
         }
 
         DateTimeOffset expiration = DateTimeOffset.UtcNow.AddSeconds(ParseExpirationSeconds(payload.ExpiresIn));
-        return new FirebaseAuthState(payload.IdToken.Trim(), payload.RefreshToken.Trim(), expiration);
+        if (string.IsNullOrWhiteSpace(payload.LocalId))
+        {
+            throw new InvalidOperationException("Firebase anonymous sign-in returned a response without a user identifier.");
+        }
+
+        return new FirebaseAuthState(payload.IdToken.Trim(), payload.RefreshToken.Trim(), expiration, payload.LocalId.Trim());
     }
 
-    private async Task<FirebaseAuthState?> TryRefreshAsync(string refreshToken, CancellationToken ct)
+    private async Task<FirebaseAuthState?> TryRefreshAsync(FirebaseAuthState existingState, CancellationToken ct)
     {
         string requestUri = $"{RefreshEndpoint}?key={Uri.EscapeDataString(_apiKey)}";
         using var content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["grant_type"] = "refresh_token",
-            ["refresh_token"] = refreshToken
+            ["refresh_token"] = existingState.RefreshToken
         });
 
         using HttpResponseMessage response = await HttpClient.PostAsync(requestUri, content, ct).ConfigureAwait(false);
@@ -259,7 +277,16 @@ public sealed class FirebaseAnonymousAuthenticator
         }
 
         DateTimeOffset expiration = DateTimeOffset.UtcNow.AddSeconds(ParseExpirationSeconds(payload.ExpiresIn));
-        return new FirebaseAuthState(payload.IdToken.Trim(), payload.RefreshToken.Trim(), expiration);
+        string userId = !string.IsNullOrWhiteSpace(payload.UserId)
+            ? payload.UserId.Trim()
+            : existingState.UserId;
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return null;
+        }
+
+        return new FirebaseAuthState(payload.IdToken.Trim(), payload.RefreshToken.Trim(), expiration, userId);
     }
 
     private static double ParseExpirationSeconds(string expiresIn)
@@ -295,6 +322,8 @@ public sealed class FirebaseAnonymousAuthenticator
         public string? RefreshToken { get; set; }
 
         public DateTimeOffset ExpirationUtc { get; set; }
+
+        public string? UserId { get; set; }
     }
 
     private sealed class SignInResponse
@@ -307,6 +336,9 @@ public sealed class FirebaseAnonymousAuthenticator
 
         [JsonPropertyName("expiresIn")]
         public string? ExpiresIn { get; set; }
+
+        [JsonPropertyName("localId")]
+        public string? LocalId { get; set; }
     }
 
     private sealed class RefreshResponse
@@ -319,15 +351,19 @@ public sealed class FirebaseAnonymousAuthenticator
 
         [JsonPropertyName("expires_in")]
         public string? ExpiresIn { get; set; }
+
+        [JsonPropertyName("user_id")]
+        public string? UserId { get; set; }
     }
 
     private sealed class FirebaseAuthState
     {
-        public FirebaseAuthState(string idToken, string refreshToken, DateTimeOffset expiration)
+        public FirebaseAuthState(string idToken, string refreshToken, DateTimeOffset expiration, string userId)
         {
             IdToken = idToken;
             RefreshToken = refreshToken;
             Expiration = expiration;
+            UserId = userId;
         }
 
         public string IdToken { get; }
@@ -336,9 +372,24 @@ public sealed class FirebaseAnonymousAuthenticator
 
         public DateTimeOffset Expiration { get; }
 
+        public string UserId { get; }
+
         public bool IsExpired => DateTimeOffset.UtcNow >= Expiration - ExpirationSkew;
 
         public FirebaseAuthState WithExpiration(DateTimeOffset expiration)
-            => new(IdToken, RefreshToken, expiration);
+            => new(IdToken, RefreshToken, expiration, UserId);
+    }
+
+    public readonly struct FirebaseAuthSession
+    {
+        public FirebaseAuthSession(string idToken, string userId)
+        {
+            IdToken = idToken;
+            UserId = userId;
+        }
+
+        public string IdToken { get; }
+
+        public string UserId { get; }
     }
 }
