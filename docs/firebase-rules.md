@@ -1,6 +1,10 @@
 # Firebase Realtime Database Rules
 
-The client now stores player modlists under their Vintage Story `playeruid`. Each Firebase anonymous account is bound to a single `playeruid` via the `/uidBindings` node. Update the Realtime Database rules accordingly:
+Anonymous authentication is now required for every request. The first anonymous account that writes to `/users/{playerUid}` claims that Vintage Story UID; future reads and writes for the same `playerUid` must come from the same anonymous account. Modlist data lives directly under the player node as exactly five slots named `slot1` through `slot5`, each containing an object with a single `content` child that holds the exported modlist JSON. The `content` object may also include helper fields such as `uploaderId` and `uploaderName`.
+
+The registry remains publicly readable at `/registry`, but the client never writes to it. A Cloud Function (or other trusted process) should mirror data from `/users` into `/registry` for discovery if desired.
+
+A representative set of rules is shown below. Adjust paths to match your deployment, but keep the same ownership semantics and slot validation:
 
 ```json
 {
@@ -9,26 +13,34 @@ The client now stores player modlists under their Vintage Story `playeruid`. Eac
     ".write": false,
     "users": {
       "$playerUid": {
-        ".read": "auth != null && root.child('uidBindings').child($playerUid).val() === auth.uid",
-        ".write": "auth != null && root.child('uidBindings').child($playerUid).val() === auth.uid"
-      }
-    },
-    "registry": {
-      "$playerUid": {
-        ".read": "auth != null",
+        ".read": "auth != null && root.child('owners').child($playerUid).val() === auth.uid",
+        ".write": "auth != null && (!root.child('owners').child($playerUid).exists() || root.child('owners').child($playerUid).val() === auth.uid)",
         "$slot": {
-          ".write": "auth != null && root.child('uidBindings').child($playerUid).val() === auth.uid"
+          ".validate": "$slot.matches(/^slot[1-5]$/) && newData.hasChildren(['content'])"
         }
       }
     },
-    "uidBindings": {
+    "owners": {
       "$playerUid": {
-        ".read": "auth != null && root.child('uidBindings').child($playerUid).val() === auth.uid",
-        ".write": "auth != null && (!root.child('uidBindings').child($playerUid).exists() || root.child('uidBindings').child($playerUid).val() === auth.uid)"
+        ".read": "auth != null && data.val() === auth.uid",
+        ".write": "auth != null && (!data.exists() || data.val() === auth.uid)"
       }
+    },
+    "registry": {
+      ".read": true,
+      ".write": false
     }
   }
 }
 ```
 
-These rules ensure that only the Firebase identity originally paired with a Vintage Story `playeruid` can read or modify that player's modlists, while still allowing authenticated users to discover public registry entries.
+These rules enforce one-to-one ownership between Firebase anonymous accounts and Vintage Story player UIDs while guaranteeing that only the owner can mutate their private modlist slots.
+
+## Client configuration
+
+The desktop client now authenticates with Firebase using an anonymous account. Provide the Realtime Database API key through one of the following mechanisms before attempting any cloud operation:
+
+- Set the `SIMPLE_VS_MANAGER_FIREBASE_API_KEY` environment variable.
+- Or create a `firebase-api-key.txt` file inside the `Simple VS Manager` folder in your Documents directory and place the API key on the first line.
+
+When either option is configured, the client persists the Firebase refresh token in the same `Simple VS Manager` folder so the anonymous identity is reused across sessions.

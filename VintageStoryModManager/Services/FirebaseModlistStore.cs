@@ -21,14 +21,18 @@ namespace SimpleVsManager.Cloud
         private static readonly HttpClient HttpClient = new();
 
         private readonly string _dbUrl;
+        private readonly FirebaseAnonymousAuthenticator _authenticator;
 
         private string? _playerUid;
         private string? _playerName;
 
-        public FirebaseModlistStore(string dbUrl)
+        public FirebaseModlistStore(string dbUrl, FirebaseAnonymousAuthenticator authenticator)
         {
             _dbUrl = (dbUrl ?? throw new ArgumentNullException(nameof(dbUrl))).TrimEnd('/');
+            _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
         }
+
+        internal FirebaseAnonymousAuthenticator Authenticator => _authenticator;
 
         /// <summary>
         /// Gets the known slot keys used for storing modlists in Firebase.
@@ -61,18 +65,23 @@ namespace SimpleVsManager.Cloud
                 throw new InvalidOperationException("The modlist JSON must be an object.");
             }
 
-            string normalizedContent = ReplaceUploader(document.RootElement, identity.Name);
+            string normalizedContent = ReplaceUploader(document.RootElement, identity);
             string nodeJson = BuildNodeJson(normalizedContent);
 
-            string userUrl = BuildUserSlotUrl(identity.Uid, slotKey, identity.Query);
-            using (var content = new StringContent(nodeJson, Encoding.UTF8, "application/json"))
-            using (var response = await HttpClient.PutAsync(userUrl, content, ct))
+            using (HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
+                   {
+                       string userUrl = BuildAuthenticatedUrl(token, null, "users", identity.Uid, slotKey);
+                       var request = new HttpRequestMessage(HttpMethod.Put, userUrl)
+                       {
+                           Content = new StringContent(nodeJson, Encoding.UTF8, "application/json")
+                       };
+                       return HttpClient.SendAsync(request, ct);
+                   }, ct).ConfigureAwait(false))
             {
-                await EnsureOk(response, "Save");
+                await EnsureOk(response, "Save").ConfigureAwait(false);
             }
 
-            await SaveRegistryEntryAsync(slotKey, nodeJson, identity, ct);
-            await EnsureUploaderConsistencyAsync(identity.Name, identity, ct);
+            await EnsureUploaderConsistencyAsync(identity, ct).ConfigureAwait(false);
         }
 
         /// <summary>Load a JSON string from the slot. Returns null if missing.</summary>
@@ -81,17 +90,20 @@ namespace SimpleVsManager.Cloud
             ValidateSlotKey(slotKey);
             var identity = GetIdentityComponents();
 
-            string userUrl = BuildUserSlotUrl(identity.Uid, slotKey, identity.Query);
-            using var response = await HttpClient.GetAsync(userUrl, ct);
+            using HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
+                {
+                    string userUrl = BuildAuthenticatedUrl(token, null, "users", identity.Uid, slotKey);
+                    return HttpClient.GetAsync(userUrl, ct);
+                }, ct).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return null;
             }
 
-            await EnsureOk(response, "Load");
+            await EnsureOk(response, "Load").ConfigureAwait(false);
 
-            byte[] bytes = await response.Content.ReadAsByteArrayAsync(ct);
+            byte[] bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
             if (bytes.Length == 0)
             {
                 return null;
@@ -119,35 +131,35 @@ namespace SimpleVsManager.Cloud
             ValidateSlotKey(slotKey);
             var identity = GetIdentityComponents();
 
-            string userUrl = BuildUserSlotUrl(identity.Uid, slotKey, identity.Query);
-            using var response = await HttpClient.DeleteAsync(userUrl, ct);
+            using HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
+                {
+                    string userUrl = BuildAuthenticatedUrl(token, null, "users", identity.Uid, slotKey);
+                    return HttpClient.DeleteAsync(userUrl, ct);
+                }, ct).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.NotFound)
             {
-                await EnsureOk(response, "Delete");
+                await EnsureOk(response, "Delete").ConfigureAwait(false);
             }
-
-            await DeleteRegistryEntryAsync(slotKey, identity, ct);
         }
 
         public async Task<IReadOnlyList<CloudModlistRegistryEntry>> GetRegistryEntriesAsync(CancellationToken ct = default)
         {
-            string? identityQuery = TryBuildIdentityQuery();
-            string registryUrl = string.IsNullOrWhiteSpace(identityQuery)
-                ? $"{_dbUrl}/registry.json"
-                : $"{_dbUrl}/registry.json?{identityQuery}";
-
-            using var response = await HttpClient.GetAsync(registryUrl, ct);
+            using HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
+                {
+                    string registryUrl = BuildAuthenticatedUrl(token, null, "registry");
+                    return HttpClient.GetAsync(registryUrl, ct);
+                }, ct).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return Array.Empty<CloudModlistRegistryEntry>();
             }
 
-            await EnsureOk(response, "Fetch registry");
+            await EnsureOk(response, "Fetch registry").ConfigureAwait(false);
 
-            await using var stream = await response.Content.ReadAsStreamAsync(ct);
-            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+            await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct).ConfigureAwait(false);
 
             if (document.RootElement.ValueKind != JsonValueKind.Object)
             {
@@ -204,19 +216,22 @@ namespace SimpleVsManager.Cloud
 
             return null;
         }
-        private async Task<IReadOnlyList<string>> ListSlotsAsync((string Uid, string Name, string Query) identity, CancellationToken ct)
+        private async Task<IReadOnlyList<string>> ListSlotsAsync((string Uid, string Name) identity, CancellationToken ct)
         {
-            string url = $"{_dbUrl}/users/{Uri.EscapeDataString(identity.Uid)}/lists.json?shallow=true&{identity.Query}";
-            using var response = await HttpClient.GetAsync(url, ct);
+            using HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
+                {
+                    string url = BuildAuthenticatedUrl(token, "shallow=true", "users", identity.Uid);
+                    return HttpClient.GetAsync(url, ct);
+                }, ct).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return Array.Empty<string>();
             }
 
-            await EnsureOk(response, "List");
+            await EnsureOk(response, "List").ConfigureAwait(false);
 
-            string text = await response.Content.ReadAsStringAsync(ct);
+            string text = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(text) || text == "null")
             {
                 return Array.Empty<string>();
@@ -240,33 +255,36 @@ namespace SimpleVsManager.Cloud
             return list;
         }
 
-        private async Task EnsureUploaderConsistencyAsync(string uploader, (string Uid, string Name, string Query) identity, CancellationToken ct)
+        private async Task EnsureUploaderConsistencyAsync((string Uid, string Name) identity, CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(uploader))
+            if (string.IsNullOrWhiteSpace(identity.Name))
             {
                 return;
             }
 
-            IReadOnlyList<string> slots = await ListSlotsAsync(identity, ct);
+            IReadOnlyList<string> slots = await ListSlotsAsync(identity, ct).ConfigureAwait(false);
             foreach (string slot in slots)
             {
-                await UpdateSlotUploaderAsync(slot, uploader, identity, ct);
+                await UpdateSlotUploaderAsync(slot, identity, ct).ConfigureAwait(false);
             }
         }
 
-        private async Task UpdateSlotUploaderAsync(string slotKey, string uploader, (string Uid, string Name, string Query) identity, CancellationToken ct)
+        private async Task UpdateSlotUploaderAsync(string slotKey, (string Uid, string Name) identity, CancellationToken ct)
         {
-            string userUrl = BuildUserSlotUrl(identity.Uid, slotKey, identity.Query);
-            using var response = await HttpClient.GetAsync(userUrl, ct);
+            using HttpResponseMessage response = await SendWithAuthRetryAsync(token =>
+                {
+                    string userUrl = BuildAuthenticatedUrl(token, null, "users", identity.Uid, slotKey);
+                    return HttpClient.GetAsync(userUrl, ct);
+                }, ct).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return;
             }
 
-            await EnsureOk(response, "Fetch modlist for uploader sync");
+            await EnsureOk(response, "Fetch modlist for uploader sync").ConfigureAwait(false);
 
-            byte[] bytes = await response.Content.ReadAsByteArrayAsync(ct);
+            byte[] bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
             if (bytes.Length == 0)
             {
                 return;
@@ -279,45 +297,28 @@ namespace SimpleVsManager.Cloud
             }
 
             string? existingUploader = TryGetUploader(node.Value.Content);
-            if (string.Equals(existingUploader, uploader, StringComparison.Ordinal))
+            if (string.Equals(existingUploader, identity.Name, StringComparison.Ordinal))
             {
                 return;
             }
 
-            string updatedContentJson = ReplaceUploader(node.Value.Content, uploader);
+            string updatedContentJson = ReplaceUploader(node.Value.Content, identity);
             string updatedNodeJson = BuildNodeJson(updatedContentJson);
 
-            using (var content = new StringContent(updatedNodeJson, Encoding.UTF8, "application/json"))
-            using (var putResponse = await HttpClient.PutAsync(userUrl, content, ct))
-            {
-                await EnsureOk(putResponse, "Update modlist uploader");
-            }
+            using HttpResponseMessage putResponse = await SendWithAuthRetryAsync(token =>
+                {
+                    string userUrl = BuildAuthenticatedUrl(token, null, "users", identity.Uid, slotKey);
+                    var request = new HttpRequestMessage(HttpMethod.Put, userUrl)
+                    {
+                        Content = new StringContent(updatedNodeJson, Encoding.UTF8, "application/json")
+                    };
+                    return HttpClient.SendAsync(request, ct);
+                }, ct).ConfigureAwait(false);
 
-            await SaveRegistryEntryAsync(slotKey, updatedNodeJson, identity, ct);
+            await EnsureOk(putResponse, "Update modlist uploader").ConfigureAwait(false);
         }
 
-        private async Task SaveRegistryEntryAsync(string slotKey, string nodeJson, (string Uid, string Name, string Query) identity, CancellationToken ct)
-        {
-            string url = $"{_dbUrl}/registry/{Uri.EscapeDataString(identity.Uid)}/{Uri.EscapeDataString(slotKey)}.json?{identity.Query}";
-            using var content = new StringContent(nodeJson, Encoding.UTF8, "application/json");
-            using var response = await HttpClient.PutAsync(url, content, ct);
-            await EnsureOk(response, "Save registry entry");
-        }
-
-        private async Task DeleteRegistryEntryAsync(string slotKey, (string Uid, string Name, string Query) identity, CancellationToken ct)
-        {
-            string url = $"{_dbUrl}/registry/{Uri.EscapeDataString(identity.Uid)}/{Uri.EscapeDataString(slotKey)}.json?{identity.Query}";
-            using var response = await HttpClient.DeleteAsync(url, ct);
-
-            if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotFound)
-            {
-                return;
-            }
-
-            await EnsureOk(response, "Delete registry entry");
-        }
-
-        private (string Uid, string Name, string Query) GetIdentityComponents()
+        private (string Uid, string Name) GetIdentityComponents()
         {
             string? uid = _playerUid;
             string? name = _playerName;
@@ -335,23 +336,7 @@ namespace SimpleVsManager.Cloud
             uid = uid.Trim();
             name = name.Trim();
 
-            string query = $"playerUid={Uri.EscapeDataString(uid)}&playerName={Uri.EscapeDataString(name)}";
-            return (uid, name, query);
-        }
-
-        private string? TryBuildIdentityQuery()
-        {
-            if (string.IsNullOrWhiteSpace(_playerUid) || string.IsNullOrWhiteSpace(_playerName))
-            {
-                return null;
-            }
-
-            return $"playerUid={Uri.EscapeDataString(_playerUid.Trim())}&playerName={Uri.EscapeDataString(_playerName.Trim())}";
-        }
-
-        private string BuildUserSlotUrl(string uid, string slotKey, string query)
-        {
-            return $"{_dbUrl}/users/{Uri.EscapeDataString(uid)}/lists/{Uri.EscapeDataString(slotKey)}.json?{query}";
+            return (uid, name);
         }
 
         private static async Task EnsureOk(HttpResponseMessage response, string operation)
@@ -363,12 +348,12 @@ namespace SimpleVsManager.Cloud
 
             if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
             {
-                string message = $"{operation} failed: access was denied by the Firebase security rules. Ensure the database allows requests authenticated with playerUid/playerName query parameters.";
+                string message = $"{operation} failed: access was denied by the Firebase security rules. Ensure anonymous authentication is enabled and that the configured Firebase API key has access to the database.";
                 LogRestFailure(message);
                 throw new InvalidOperationException(message);
             }
 
-            string body = await response.Content.ReadAsStringAsync();
+            string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             LogRestFailure($"{operation} failed: {(int)response.StatusCode} {response.ReasonPhrase} | {Truncate(body, 400)}");
             throw new InvalidOperationException($"{operation} failed: {(int)response.StatusCode} {response.ReasonPhrase} | {Truncate(body, 400)}");
         }
@@ -390,29 +375,102 @@ namespace SimpleVsManager.Cloud
                 return null;
             }
 
-            if (!root.TryGetProperty("uploader", out JsonElement uploaderProperty) || uploaderProperty.ValueKind != JsonValueKind.String)
+            if (root.TryGetProperty("uploader", out JsonElement uploaderProperty) && uploaderProperty.ValueKind == JsonValueKind.String)
             {
-                return null;
+                string? uploader = uploaderProperty.GetString();
+                if (!string.IsNullOrWhiteSpace(uploader))
+                {
+                    return uploader.Trim();
+                }
             }
 
-            string? uploader = uploaderProperty.GetString();
-            return string.IsNullOrWhiteSpace(uploader) ? null : uploader.Trim();
+            if (root.TryGetProperty("uploaderName", out JsonElement uploaderNameProperty) && uploaderNameProperty.ValueKind == JsonValueKind.String)
+            {
+                string? uploaderName = uploaderNameProperty.GetString();
+                return string.IsNullOrWhiteSpace(uploaderName) ? null : uploaderName.Trim();
+            }
+
+            return null;
         }
 
-        private static string ReplaceUploader(JsonElement root, string uploader)
+        private async Task<HttpResponseMessage> SendWithAuthRetryAsync(Func<string, Task<HttpResponseMessage>> operation, CancellationToken ct)
+        {
+            bool hasRetried = false;
+
+            while (true)
+            {
+                string token = await _authenticator.GetIdTokenAsync(ct).ConfigureAwait(false);
+                HttpResponseMessage response = await operation(token).ConfigureAwait(false);
+
+                if (IsAuthError(response.StatusCode) && !hasRetried)
+                {
+                    hasRetried = true;
+                    response.Dispose();
+                    await _authenticator.MarkTokenAsExpiredAsync(ct).ConfigureAwait(false);
+                    continue;
+                }
+
+                return response;
+            }
+        }
+
+        private string BuildAuthenticatedUrl(string authToken, string? query, params string[] segments)
+        {
+            var builder = new StringBuilder(_dbUrl.Length + 64);
+            builder.Append(_dbUrl);
+            builder.Append('/');
+
+            for (int i = 0; i < segments.Length; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append('/');
+                }
+
+                builder.Append(Uri.EscapeDataString(segments[i]));
+            }
+
+            builder.Append(".json?auth=");
+            builder.Append(Uri.EscapeDataString(authToken));
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                builder.Append('&');
+                builder.Append(query);
+            }
+
+            return builder.ToString();
+        }
+
+        private static bool IsAuthError(HttpStatusCode statusCode)
+            => statusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden;
+
+        private static string ReplaceUploader(JsonElement root, (string Uid, string Name) identity)
         {
             var buffer = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(buffer))
             {
                 writer.WriteStartObject();
                 bool hasUploader = false;
+                bool hasUploaderName = false;
+                bool hasUploaderId = false;
 
                 foreach (JsonProperty property in root.EnumerateObject())
                 {
                     if (property.NameEquals("uploader"))
                     {
-                        writer.WriteString("uploader", uploader);
+                        writer.WriteString("uploader", identity.Name);
                         hasUploader = true;
+                    }
+                    else if (property.NameEquals("uploaderName"))
+                    {
+                        writer.WriteString("uploaderName", identity.Name);
+                        hasUploaderName = true;
+                    }
+                    else if (property.NameEquals("uploaderId"))
+                    {
+                        writer.WriteString("uploaderId", identity.Uid);
+                        hasUploaderId = true;
                     }
                     else
                     {
@@ -422,7 +480,17 @@ namespace SimpleVsManager.Cloud
 
                 if (!hasUploader)
                 {
-                    writer.WriteString("uploader", uploader);
+                    writer.WriteString("uploader", identity.Name);
+                }
+
+                if (!hasUploaderName)
+                {
+                    writer.WriteString("uploaderName", identity.Name);
+                }
+
+                if (!hasUploaderId)
+                {
+                    writer.WriteString("uploaderId", identity.Uid);
                 }
 
                 writer.WriteEndObject();

@@ -52,6 +52,8 @@ public partial class MainWindow : Window
     private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
     private const string BackupDirectoryName = "Backups";
     private const string FirebaseDatabaseUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
+    private const string FirebaseApiKeyEnvironmentVariable = "SIMPLE_VS_MANAGER_FIREBASE_API_KEY";
+    private const string FirebaseApiKeyFileName = "firebase-api-key.txt";
     private const int AutomaticConfigMaxWordDistance = 2;
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
@@ -105,6 +107,7 @@ public partial class MainWindow : Window
     private SortOption? _cachedSortOption;
     private readonly SemaphoreSlim _backupSemaphore = new(1, 1);
     private readonly SemaphoreSlim _cloudStoreLock = new(1, 1);
+    private FirebaseAnonymousAuthenticator? _firebaseAuthenticator;
     private FirebaseModlistStore? _cloudModlistStore;
     private bool _cloudModlistsLoaded;
     private bool _isCloudModlistRefreshInProgress;
@@ -5445,7 +5448,16 @@ public partial class MainWindow : Window
 
     private async Task<FirebaseModlistStore> EnsureCloudStoreInitializedAsync()
     {
-        if (_cloudModlistStore is { } existingStore)
+        string? apiKey = TryGetFirebaseApiKey();
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            throw new InvalidOperationException(
+                $"Cloud modlists require a Firebase API key. Set the {FirebaseApiKeyEnvironmentVariable} environment variable or place the key in {FirebaseApiKeyFileName} inside the Simple VS Manager folder.");
+        }
+
+        FirebaseAnonymousAuthenticator authenticator = GetOrCreateFirebaseAuthenticator(apiKey);
+
+        if (_cloudModlistStore is { } existingStore && ReferenceEquals(existingStore.Authenticator, authenticator))
         {
             ApplyPlayerIdentityToCloudStore(existingStore);
             return existingStore;
@@ -5454,13 +5466,13 @@ public partial class MainWindow : Window
         await _cloudStoreLock.WaitAsync();
         try
         {
-            if (_cloudModlistStore is { } cached)
+            if (_cloudModlistStore is { } cached && ReferenceEquals(cached.Authenticator, authenticator))
             {
                 ApplyPlayerIdentityToCloudStore(cached);
                 return cached;
             }
 
-            var store = new FirebaseModlistStore(FirebaseDatabaseUrl);
+            var store = new FirebaseModlistStore(FirebaseDatabaseUrl, authenticator);
             ApplyPlayerIdentityToCloudStore(store);
             _cloudModlistStore = store;
             return store;
@@ -5469,6 +5481,52 @@ public partial class MainWindow : Window
         {
             _cloudStoreLock.Release();
         }
+    }
+
+    private FirebaseAnonymousAuthenticator GetOrCreateFirebaseAuthenticator(string apiKey)
+    {
+        if (_firebaseAuthenticator is { } existing && string.Equals(existing.ApiKey, apiKey, StringComparison.Ordinal))
+        {
+            return existing;
+        }
+
+        var authenticator = new FirebaseAnonymousAuthenticator(apiKey);
+        _firebaseAuthenticator = authenticator;
+        return authenticator;
+    }
+
+    private string? TryGetFirebaseApiKey()
+    {
+        string? envKey = Environment.GetEnvironmentVariable(FirebaseApiKeyEnvironmentVariable);
+        if (!string.IsNullOrWhiteSpace(envKey))
+        {
+            return envKey.Trim();
+        }
+
+        string? managerDirectory = ModCacheLocator.GetManagerDataDirectory();
+        if (!string.IsNullOrWhiteSpace(managerDirectory))
+        {
+            string filePath = Path.Combine(managerDirectory, FirebaseApiKeyFileName);
+            if (File.Exists(filePath))
+            {
+                try
+                {
+                    string key = File.ReadAllText(filePath);
+                    if (!string.IsNullOrWhiteSpace(key))
+                    {
+                        return key.Trim();
+                    }
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+
+        return null;
     }
 
     private CloudModlistSlot? PromptForCloudSaveReplacement(IReadOnlyList<CloudModlistSlot> slots)
@@ -5907,7 +5965,8 @@ public partial class MainWindow : Window
             string? name = TryGetTrimmedProperty(root, "name");
             string? description = TryGetTrimmedProperty(root, "description");
             string? version = TryGetTrimmedProperty(root, "version");
-            string? uploader = TryGetTrimmedProperty(root, "uploader");
+            string? uploader = TryGetTrimmedProperty(root, "uploader")
+                ?? TryGetTrimmedProperty(root, "uploaderName");
 
             var mods = new List<string>();
             if (root.TryGetProperty("mods", out JsonElement modsElement) && modsElement.ValueKind == JsonValueKind.Array)
