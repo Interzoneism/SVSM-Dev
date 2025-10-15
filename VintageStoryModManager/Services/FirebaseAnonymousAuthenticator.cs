@@ -28,6 +28,12 @@ public sealed class FirebaseAnonymousAuthenticator
 
     private FirebaseAuthState? _cachedState;
 
+    // Add this near the top of the class with the other fields:
+    private const string DefaultApiKey = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
+
+    // Keep your existing ctor unchanged, and add this parameterless overload:
+    public FirebaseAnonymousAuthenticator() : this(DefaultApiKey) { }
+
     public FirebaseAnonymousAuthenticator(string apiKey)
     {
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -38,6 +44,7 @@ public sealed class FirebaseAnonymousAuthenticator
         _apiKey = apiKey.Trim();
         _stateFilePath = DetermineStateFilePath();
     }
+
 
     public string ApiKey => _apiKey;
 
