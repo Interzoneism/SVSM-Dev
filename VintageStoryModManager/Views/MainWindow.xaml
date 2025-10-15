@@ -1502,7 +1502,7 @@
                                     <DataTemplate>
                                         <Grid>
                                             <ComboBox x:Name="ModsComboBox"
-                                                      ItemsSource="{Binding Mods}"
+                                                      ItemsSource="{Binding Mods, Mode=OneWay}"
                                                       IsEditable="True"
                                                       IsReadOnly="True"
                                                       SelectedIndex="-1"
