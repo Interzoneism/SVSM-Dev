@@ -549,7 +549,7 @@
                             </Style>
                         </Button.Style>
                     </Button>
-                    <Button Content="Modlists"
+                    <Button Content="Modlists (Beta)"
                         Command="{Binding ShowCloudModlistsCommand}"
                         Width="138"
                         Height="63"

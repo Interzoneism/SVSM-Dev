@@ -69,30 +69,36 @@ namespace SimpleVsManager.Cloud
 
             using var document = JsonDocument.Parse(modlistJson);
             if (document.RootElement.ValueKind != JsonValueKind.Object)
-            {
                 throw new InvalidOperationException("The modlist JSON must be an object.");
-            }
 
+            // Ensure uploaderId/uploaderName/uploader are set
             string normalizedContent = ReplaceUploader(document.RootElement, identity);
-            string nodeJson = BuildNodeJson(normalizedContent);
+            string nodeJson = BuildNodeJson(normalizedContent); // produces: { "content": { ... } }
 
+            // Atomic multi-location update: write to /users and /registry in one PATCH
             var saveResult = await SendWithAuthRetryAsync(session =>
+            {
+                string rootUrl = BuildAuthenticatedUrl(session.IdToken, null /* root */);
+                string patchJson =
+                    $"{{\"/users/{identity.Uid}/{slotKey}\":{nodeJson}," +
+                      $"\"/registry/{identity.Uid}/{slotKey}\":{nodeJson}}}";
+
+                var req = new HttpRequestMessage(new HttpMethod("PATCH"), rootUrl)
                 {
-                    string userUrl = BuildAuthenticatedUrl(session.IdToken, null, "users", identity.Uid, slotKey);
-                    var request = new HttpRequestMessage(HttpMethod.Put, userUrl)
-                    {
-                        Content = new StringContent(nodeJson, Encoding.UTF8, "application/json")
-                    };
-                    return HttpClient.SendAsync(request, ct);
-                }, ct).ConfigureAwait(false);
+                    Content = new StringContent(patchJson, Encoding.UTF8, "application/json")
+                };
+                return HttpClient.SendAsync(req, ct);
+            }, ct).ConfigureAwait(false);
 
             using (saveResult.Response)
             {
-                await EnsureOk(saveResult.Response, "Save").ConfigureAwait(false);
+                await EnsureOk(saveResult.Response, "Save (user + registry)").ConfigureAwait(false);
             }
 
+            // Keeps legacy uploads consistent if they’re missing proper uploader fields
             await EnsureUploaderConsistencyAsync(identity, ct).ConfigureAwait(false);
         }
+
 
         /// <summary>Load a JSON string from the slot. Returns null if missing.</summary>
         public async Task<string?> LoadAsync(string slotKey, CancellationToken ct = default)
@@ -131,12 +137,13 @@ namespace SimpleVsManager.Cloud
             return node.Value.Content.GetRawText();
         }
 
-        /// <summary>Return all present slot keys (subset of slot1..slot5).</summary>
         public async Task<IReadOnlyList<string>> ListSlotsAsync(CancellationToken ct = default)
         {
             var identity = GetIdentityComponents();
+            await EnsureOwnershipAsync(identity, ct).ConfigureAwait(false); // NEW
             return await ListSlotsAsync(identity, ct);
         }
+
 
         /// <summary>Delete a slot if present (idempotent).</summary>
         public async Task DeleteAsync(string slotKey, CancellationToken ct = default)
@@ -145,19 +152,28 @@ namespace SimpleVsManager.Cloud
             var identity = GetIdentityComponents();
             await EnsureOwnershipAsync(identity, ct).ConfigureAwait(false);
 
-            var sendResult = await SendWithAuthRetryAsync(session =>
-                {
-                    string userUrl = BuildAuthenticatedUrl(session.IdToken, null, "users", identity.Uid, slotKey);
-                    return HttpClient.DeleteAsync(userUrl, ct);
-                }, ct).ConfigureAwait(false);
-
-            using HttpResponseMessage response = sendResult.Response;
-
-            if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.NotFound)
+            // Atomic multi-delete: set both paths to null in one PATCH
+            var result = await SendWithAuthRetryAsync(session =>
             {
-                await EnsureOk(response, "Delete").ConfigureAwait(false);
+                string rootUrl = BuildAuthenticatedUrl(session.IdToken, null /* root */);
+                string patchJson =
+                    $"{{\"/users/{identity.Uid}/{slotKey}\":null," +
+                      $"\"/registry/{identity.Uid}/{slotKey}\":null}}";
+
+                var req = new HttpRequestMessage(new HttpMethod("PATCH"), rootUrl)
+                {
+                    Content = new StringContent(patchJson, Encoding.UTF8, "application/json")
+                };
+                return HttpClient.SendAsync(req, ct);
+            }, ct).ConfigureAwait(false);
+
+            using (result.Response)
+            {
+                if (!result.Response.IsSuccessStatusCode && result.Response.StatusCode != HttpStatusCode.NotFound)
+                    await EnsureOk(result.Response, "Delete (user + registry)").ConfigureAwait(false);
             }
         }
+
 
         public async Task<IReadOnlyList<CloudModlistRegistryEntry>> GetRegistryEntriesAsync(CancellationToken ct = default)
         {
