@@ -1,0 +1,344 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
+using VintageStoryModManager.Services;
+
+namespace SimpleVsManager.Cloud;
+
+/// <summary>
+/// Handles Firebase anonymous authentication and persists refresh tokens for reuse.
+/// </summary>
+public sealed class FirebaseAnonymousAuthenticator
+{
+    private const string SignInEndpoint = "https://identitytoolkit.googleapis.com/v1/accounts:signUp";
+    private const string RefreshEndpoint = "https://securetoken.googleapis.com/v1/token";
+    private const string StateFileName = "firebase-auth.json";
+    private static readonly HttpClient HttpClient = new();
+    private static readonly TimeSpan ExpirationSkew = TimeSpan.FromMinutes(2);
+
+    private readonly string _apiKey;
+    private readonly string _stateFilePath;
+    private readonly SemaphoreSlim _stateLock = new(1, 1);
+
+    private FirebaseAuthState? _cachedState;
+
+    public FirebaseAnonymousAuthenticator(string apiKey)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            throw new ArgumentException("A Firebase API key is required.", nameof(apiKey));
+        }
+
+        _apiKey = apiKey.Trim();
+        _stateFilePath = DetermineStateFilePath();
+    }
+
+    public string ApiKey => _apiKey;
+
+    /// <summary>
+    /// Retrieves a valid ID token, refreshing or signing in anonymously as required.
+    /// </summary>
+    public async Task<string> GetIdTokenAsync(CancellationToken ct)
+    {
+        await _stateLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            _cachedState ??= LoadStateFromDisk();
+
+            if (_cachedState is { } existing && !existing.IsExpired)
+            {
+                return existing.IdToken;
+            }
+
+            FirebaseAuthState? refreshed = null;
+            if (_cachedState is { } stateWithRefresh && !string.IsNullOrWhiteSpace(stateWithRefresh.RefreshToken))
+            {
+                refreshed = await TryRefreshAsync(stateWithRefresh.RefreshToken, ct).ConfigureAwait(false);
+            }
+
+            if (refreshed is not null)
+            {
+                _cachedState = refreshed;
+                SaveStateToDisk(refreshed);
+                return refreshed.IdToken;
+            }
+
+            FirebaseAuthState newState = await SignInAsync(ct).ConfigureAwait(false);
+            _cachedState = newState;
+            SaveStateToDisk(newState);
+            return newState.IdToken;
+        }
+        finally
+        {
+            _stateLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Marks the current token as expired so the next call will refresh it.
+    /// </summary>
+    public async Task MarkTokenAsExpiredAsync(CancellationToken ct)
+    {
+        await _stateLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            FirebaseAuthState? state = _cachedState ?? LoadStateFromDisk();
+            if (state is null)
+            {
+                return;
+            }
+
+            FirebaseAuthState expired = state.WithExpiration(DateTimeOffset.UtcNow - TimeSpan.FromMinutes(5));
+            _cachedState = expired;
+            SaveStateToDisk(expired);
+        }
+        finally
+        {
+            _stateLock.Release();
+        }
+    }
+
+    private static string DetermineStateFilePath()
+    {
+        string? baseDirectory = ModCacheLocator.GetManagerDataDirectory();
+        if (string.IsNullOrWhiteSpace(baseDirectory))
+        {
+            baseDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            if (string.IsNullOrWhiteSpace(baseDirectory))
+            {
+                baseDirectory = Environment.CurrentDirectory;
+            }
+
+            baseDirectory = Path.Combine(baseDirectory!, "Simple VS Manager");
+        }
+
+        try
+        {
+            Directory.CreateDirectory(baseDirectory!);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+
+        return Path.Combine(baseDirectory!, StateFileName);
+    }
+
+    private FirebaseAuthState? LoadStateFromDisk()
+    {
+        try
+        {
+            if (!File.Exists(_stateFilePath))
+            {
+                return null;
+            }
+
+            string json = File.ReadAllText(_stateFilePath);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return null;
+            }
+
+            AuthStateModel? model = JsonSerializer.Deserialize<AuthStateModel>(json, JsonOptions);
+            if (model is null ||
+                string.IsNullOrWhiteSpace(model.IdToken) ||
+                string.IsNullOrWhiteSpace(model.RefreshToken))
+            {
+                return null;
+            }
+
+            DateTimeOffset expiration = model.ExpirationUtc == default
+                ? DateTimeOffset.MinValue
+                : model.ExpirationUtc;
+
+            return new FirebaseAuthState(model.IdToken.Trim(), model.RefreshToken.Trim(), expiration);
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private void SaveStateToDisk(FirebaseAuthState state)
+    {
+        try
+        {
+            string? directory = Path.GetDirectoryName(_stateFilePath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            var model = new AuthStateModel
+            {
+                IdToken = state.IdToken,
+                RefreshToken = state.RefreshToken,
+                ExpirationUtc = state.Expiration
+            };
+
+            string json = JsonSerializer.Serialize(model, JsonOptions);
+            File.WriteAllText(_stateFilePath, json);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private async Task<FirebaseAuthState> SignInAsync(CancellationToken ct)
+    {
+        string requestUri = $"{SignInEndpoint}?key={Uri.EscapeDataString(_apiKey)}";
+        using var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
+        {
+            Content = new StringContent("{\"returnSecureToken\":true}", Encoding.UTF8, "application/json")
+        };
+
+        using HttpResponseMessage response = await HttpClient.SendAsync(request, ct).ConfigureAwait(false);
+        string json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"Firebase anonymous sign-in failed: {(int)response.StatusCode} {response.ReasonPhrase} | {Truncate(json, 200)}");
+        }
+
+        SignInResponse? payload = JsonSerializer.Deserialize<SignInResponse>(json, JsonOptions);
+        if (payload is null ||
+            string.IsNullOrWhiteSpace(payload.IdToken) ||
+            string.IsNullOrWhiteSpace(payload.RefreshToken) ||
+            string.IsNullOrWhiteSpace(payload.ExpiresIn))
+        {
+            throw new InvalidOperationException("Firebase anonymous sign-in returned an unexpected response.");
+        }
+
+        DateTimeOffset expiration = DateTimeOffset.UtcNow.AddSeconds(ParseExpirationSeconds(payload.ExpiresIn));
+        return new FirebaseAuthState(payload.IdToken.Trim(), payload.RefreshToken.Trim(), expiration);
+    }
+
+    private async Task<FirebaseAuthState?> TryRefreshAsync(string refreshToken, CancellationToken ct)
+    {
+        string requestUri = $"{RefreshEndpoint}?key={Uri.EscapeDataString(_apiKey)}";
+        using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = refreshToken
+        });
+
+        using HttpResponseMessage response = await HttpClient.PostAsync(requestUri, content, ct).ConfigureAwait(false);
+        string json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        RefreshResponse? payload = JsonSerializer.Deserialize<RefreshResponse>(json, JsonOptions);
+        if (payload is null ||
+            string.IsNullOrWhiteSpace(payload.IdToken) ||
+            string.IsNullOrWhiteSpace(payload.RefreshToken) ||
+            string.IsNullOrWhiteSpace(payload.ExpiresIn))
+        {
+            return null;
+        }
+
+        DateTimeOffset expiration = DateTimeOffset.UtcNow.AddSeconds(ParseExpirationSeconds(payload.ExpiresIn));
+        return new FirebaseAuthState(payload.IdToken.Trim(), payload.RefreshToken.Trim(), expiration);
+    }
+
+    private static double ParseExpirationSeconds(string expiresIn)
+    {
+        if (double.TryParse(expiresIn, out double seconds) && seconds > 0)
+        {
+            return seconds;
+        }
+
+        return 3600; // Default to one hour if parsing fails.
+    }
+
+    private static string Truncate(string value, int length)
+    {
+        if (string.IsNullOrEmpty(value) || value.Length <= length)
+        {
+            return value;
+        }
+
+        return value.Substring(0, length) + "...";
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    private sealed class AuthStateModel
+    {
+        public string? IdToken { get; set; }
+
+        public string? RefreshToken { get; set; }
+
+        public DateTimeOffset ExpirationUtc { get; set; }
+    }
+
+    private sealed class SignInResponse
+    {
+        [JsonPropertyName("idToken")]
+        public string? IdToken { get; set; }
+
+        [JsonPropertyName("refreshToken")]
+        public string? RefreshToken { get; set; }
+
+        [JsonPropertyName("expiresIn")]
+        public string? ExpiresIn { get; set; }
+    }
+
+    private sealed class RefreshResponse
+    {
+        [JsonPropertyName("id_token")]
+        public string? IdToken { get; set; }
+
+        [JsonPropertyName("refresh_token")]
+        public string? RefreshToken { get; set; }
+
+        [JsonPropertyName("expires_in")]
+        public string? ExpiresIn { get; set; }
+    }
+
+    private sealed class FirebaseAuthState
+    {
+        public FirebaseAuthState(string idToken, string refreshToken, DateTimeOffset expiration)
+        {
+            IdToken = idToken;
+            RefreshToken = refreshToken;
+            Expiration = expiration;
+        }
+
+        public string IdToken { get; }
+
+        public string RefreshToken { get; }
+
+        public DateTimeOffset Expiration { get; }
+
+        public bool IsExpired => DateTimeOffset.UtcNow >= Expiration - ExpirationSkew;
+
+        public FirebaseAuthState WithExpiration(DateTimeOffset expiration)
+            => new(IdToken, RefreshToken, expiration);
+    }
+}
