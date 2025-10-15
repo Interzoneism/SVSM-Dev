@@ -1373,6 +1373,15 @@ public partial class MainWindow : Window
             tokens.Add(value.ToLowerInvariant());
         }
 
+        if (tokens.Count > 1)
+        {
+            string combined = string.Concat(tokens);
+            if (!string.IsNullOrEmpty(combined) && !tokens.Contains(combined))
+            {
+                tokens.Add(combined);
+            }
+        }
+
         return tokens;
     }
 
