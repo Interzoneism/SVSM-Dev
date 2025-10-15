@@ -5146,6 +5146,76 @@ public partial class MainWindow : Window
         }
     }
 
+    private void LoadPresetMenuItem_OnSubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return;
+        }
+
+        for (int index = menuItem.Items.Count - 1; index >= 1; index--)
+        {
+            menuItem.Items.RemoveAt(index);
+        }
+
+        string directory;
+        try
+        {
+            directory = EnsurePresetDirectory();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Trace.TraceWarning("Failed to access preset directory: {0}", ex.Message);
+            menuItem.Items.Add(new MenuItem
+            {
+                Header = "Presets unavailable",
+                IsEnabled = false
+            });
+            return;
+        }
+
+        string[] files;
+        try
+        {
+            files = Directory.GetFiles(directory, "*.json");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Trace.TraceWarning("Failed to enumerate presets: {0}", ex.Message);
+            menuItem.Items.Add(new MenuItem
+            {
+                Header = "Presets unavailable",
+                IsEnabled = false
+            });
+            return;
+        }
+
+        if (files.Length == 0)
+        {
+            menuItem.Items.Add(new MenuItem
+            {
+                Header = "No presets available",
+                IsEnabled = false
+            });
+            return;
+        }
+
+        Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+        menuItem.Items.Add(new Separator());
+
+        foreach (string file in files)
+        {
+            string displayName = Path.GetFileNameWithoutExtension(file);
+            var item = new MenuItem
+            {
+                Header = displayName,
+                Tag = file
+            };
+            item.Click += LoadPresetMenuItem_OnPresetClick;
+            menuItem.Items.Add(item);
+        }
+    }
+
     private async void LoadPresetMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (_viewModel is null)
@@ -5183,7 +5253,37 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!TryLoadPresetFromFile(dialog.FileName, "Preset", StandardPresetLoadOptions, out ModPreset? preset, out string? errorMessage))
+        await LoadPresetFromFileAsync(dialog.FileName).ConfigureAwait(true);
+    }
+
+    private async void LoadPresetMenuItem_OnPresetClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string filePath)
+        {
+            return;
+        }
+
+        await LoadPresetFromFileAsync(filePath).ConfigureAwait(true);
+    }
+
+    private async Task LoadPresetFromFileAsync(string filePath)
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        if (!File.Exists(filePath))
+        {
+            WpfMessageBox.Show(
+                "The selected preset could not be found.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!TryLoadPresetFromFile(filePath, "Preset", StandardPresetLoadOptions, out ModPreset? preset, out string? errorMessage))
         {
             string message = string.IsNullOrWhiteSpace(errorMessage)
                 ? "The selected file is not a valid preset."
@@ -5197,7 +5297,7 @@ public partial class MainWindow : Window
 
         ModPreset loadedPreset = preset!;
         _userConfiguration.SetLastSelectedPresetName(loadedPreset.Name);
-        await ApplyPresetAsync(loadedPreset);
+        await ApplyPresetAsync(loadedPreset).ConfigureAwait(true);
         _viewModel?.ReportStatus($"Loaded preset \"{loadedPreset.Name}\".");
     }
 
