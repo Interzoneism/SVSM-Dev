@@ -565,7 +565,7 @@ public partial class MainWindow : Window
             Environment.NewLine + Environment.NewLine +
             "If you lose this file you will not be able to delete or modify your uploaded online modlists." +
             Environment.NewLine + Environment.NewLine +
-            "A backup copy named SimpleVSManager.json will also be placed in your ModConfig folder." +
+            "A backup copy named firebase-auth.json will also be placed in your VintagestoryData/ModData/SimpleVSManager folder." +
             Environment.NewLine + Environment.NewLine +
             "You will not need to sign in or provide any account information. Press OK to never show this again!";
 
@@ -594,12 +594,13 @@ public partial class MainWindow : Window
             return;
         }
 
-        string modConfigDirectory = Path.Combine(dataDirectory, "ModConfig");
-        string backupPath = Path.Combine(modConfigDirectory, "SimpleVSManager.json");
+        string modDataDirectory = Path.Combine(dataDirectory, "ModData");
+        string backupDirectory = Path.Combine(modDataDirectory, "SimpleVSManager");
+        string backupPath = Path.Combine(backupDirectory, "firebase-auth.json");
 
         try
         {
-            Directory.CreateDirectory(modConfigDirectory);
+            Directory.CreateDirectory(backupDirectory);
             File.Copy(stateFilePath, backupPath, overwrite: true);
         }
         catch (IOException ex)
