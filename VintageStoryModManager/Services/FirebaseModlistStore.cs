@@ -36,6 +36,60 @@ namespace SimpleVsManager.Cloud
 
         internal FirebaseAnonymousAuthenticator Authenticator => _authenticator;
 
+        // ---------- New slot node model (adds registryId) ----------
+        private struct SlotNode
+        {
+            [JsonPropertyName("registryId")]
+            public string? RegistryId { get; set; }
+
+            [JsonPropertyName("content")]
+            public JsonElement Content { get; set; }
+        }
+
+        // Build a user-slot JSON object with optional registryId and mandatory content
+        private static string BuildSlotNodeJson(string contentJson, string? registryId)
+        {
+            using var contentDoc = JsonDocument.Parse(contentJson);
+            var node = new SlotNode { RegistryId = registryId, Content = contentDoc.RootElement.Clone() };
+            return JsonSerializer.Serialize(node, JsonOpts);
+        }
+
+        // Read a full slot node (to get registryId + content)
+        private async Task<SlotNode?> TryReadSlotNodeAsync(string uid, string slotKey, CancellationToken ct)
+        {
+            var sendResult = await SendWithAuthRetryAsync(session =>
+            {
+                string url = BuildAuthenticatedUrl(session.IdToken, null, "users", uid, slotKey);
+                return HttpClient.GetAsync(url, ct);
+            }, ct).ConfigureAwait(false);
+
+            using HttpResponseMessage response = sendResult.Response;
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                return null;
+
+            await EnsureOk(response, "Read slot").ConfigureAwait(false);
+
+            string json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(json) || json == "null")
+                return null;
+
+            try
+            {
+                return JsonSerializer.Deserialize<SlotNode?>(json, JsonOpts);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string GenerateEntryId() => Guid.NewGuid().ToString("n");
+
+        // Ensure uploader fields are present and correct
+        // (kept from your code; unchanged signature)
+
+
         /// <summary>
         /// Gets the known slot keys used for storing modlists in Firebase.
         /// </summary>
@@ -71,17 +125,35 @@ namespace SimpleVsManager.Cloud
             if (document.RootElement.ValueKind != JsonValueKind.Object)
                 throw new InvalidOperationException("The modlist JSON must be an object.");
 
-            // Ensure uploaderId/uploaderName/uploader are set
+            // Normalize uploader fields inside the content
             string normalizedContent = ReplaceUploader(document.RootElement, identity);
-            string nodeJson = BuildNodeJson(normalizedContent); // produces: { "content": { ... } }
 
-            // Atomic multi-location update: write to /users and /registry in one PATCH
+            // 1) Read existing slot to see if it already has a registryId
+            SlotNode? existing = await TryReadSlotNodeAsync(identity.Uid, slotKey, ct).ConfigureAwait(false);
+            string registryId = existing.HasValue && !string.IsNullOrWhiteSpace(existing.Value.RegistryId)
+                ? existing.Value.RegistryId!
+                : GenerateEntryId();
+
+            // Build the user slot payload including registryId
+            string userSlotJson = BuildSlotNodeJson(normalizedContent, registryId);
+
+            // 2) Atomic multi-location PATCH:
+            // - write /users/{uid}/{slot} (content + registryId)
+            // - write /registryOwners/{registryId} = auth.uid (safe even if same value)
+            // - write /registry/{registryId} (public content mirror)
             var saveResult = await SendWithAuthRetryAsync(session =>
             {
                 string rootUrl = BuildAuthenticatedUrl(session.IdToken, null /* root */);
+
+                // public registry stores only the content object, not registryId
+                string registryNodeJson = $"{{\"content\":{normalizedContent}}}";
+
                 string patchJson =
-                    $"{{\"/users/{identity.Uid}/{slotKey}\":{nodeJson}," +
-                      $"\"/registry/{identity.Uid}/{slotKey}\":{nodeJson}}}";
+                    $"{{" +
+                        $"\"/users/{identity.Uid}/{slotKey}\":{userSlotJson}," +
+                        $"\"/registryOwners/{registryId}\":\"{session.UserId}\"," +
+                        $"\"/registry/{registryId}\":{registryNodeJson}" +
+                    $"}}";
 
                 var req = new HttpRequestMessage(new HttpMethod("PATCH"), rootUrl)
                 {
@@ -95,9 +167,10 @@ namespace SimpleVsManager.Cloud
                 await EnsureOk(saveResult.Response, "Save (user + registry)").ConfigureAwait(false);
             }
 
-            // Keeps legacy uploads consistent if they’re missing proper uploader fields
+            // Optional: keep legacy uploads consistent if they’re missing proper uploader fields
             await EnsureUploaderConsistencyAsync(identity, ct).ConfigureAwait(false);
         }
+
 
 
         /// <summary>Load a JSON string from the slot. Returns null if missing.</summary>
@@ -152,17 +225,28 @@ namespace SimpleVsManager.Cloud
             var identity = GetIdentityComponents();
             await EnsureOwnershipAsync(identity, ct).ConfigureAwait(false);
 
-            // Atomic multi-delete: set both paths to null in one PATCH
+            // Read the slot to discover its registryId (if any)
+            SlotNode? node = await TryReadSlotNodeAsync(identity.Uid, slotKey, ct).ConfigureAwait(false);
+            string? registryId = node?.RegistryId;
+
             var result = await SendWithAuthRetryAsync(session =>
             {
                 string rootUrl = BuildAuthenticatedUrl(session.IdToken, null /* root */);
-                string patchJson =
-                    $"{{\"/users/{identity.Uid}/{slotKey}\":null," +
-                      $"\"/registry/{identity.Uid}/{slotKey}\":null}}";
+
+                var sb = new StringBuilder();
+                sb.Append('{');
+                sb.Append($"\"/users/{identity.Uid}/{slotKey}\":null");
+
+                if (!string.IsNullOrWhiteSpace(registryId))
+                {
+                    sb.Append($",\"/registry/{registryId}\":null");
+                    sb.Append($",\"/registryOwners/{registryId}\":null");
+                }
+                sb.Append('}');
 
                 var req = new HttpRequestMessage(new HttpMethod("PATCH"), rootUrl)
                 {
-                    Content = new StringContent(patchJson, Encoding.UTF8, "application/json")
+                    Content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json")
                 };
                 return HttpClient.SendAsync(req, ct);
             }, ct).ConfigureAwait(false);
@@ -175,20 +259,19 @@ namespace SimpleVsManager.Cloud
         }
 
 
+
         public async Task<IReadOnlyList<CloudModlistRegistryEntry>> GetRegistryEntriesAsync(CancellationToken ct = default)
         {
             var sendResult = await SendWithAuthRetryAsync(session =>
-                {
-                    string registryUrl = BuildAuthenticatedUrl(session.IdToken, null, "registry");
-                    return HttpClient.GetAsync(registryUrl, ct);
-                }, ct).ConfigureAwait(false);
+            {
+                string registryUrl = BuildAuthenticatedUrl(session.IdToken, null, "registry");
+                return HttpClient.GetAsync(registryUrl, ct);
+            }, ct).ConfigureAwait(false);
 
             using HttpResponseMessage response = sendResult.Response;
 
             if (response.StatusCode == HttpStatusCode.NotFound)
-            {
                 return Array.Empty<CloudModlistRegistryEntry>();
-            }
 
             await EnsureOk(response, "Fetch registry").ConfigureAwait(false);
 
@@ -196,45 +279,32 @@ namespace SimpleVsManager.Cloud
             using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct).ConfigureAwait(false);
 
             if (document.RootElement.ValueKind != JsonValueKind.Object)
-            {
                 return Array.Empty<CloudModlistRegistryEntry>();
-            }
 
             var results = new List<CloudModlistRegistryEntry>();
 
-            foreach (JsonProperty userProperty in document.RootElement.EnumerateObject())
+            // Public registry is now { entryId: { content: {...} }, ... }
+            foreach (JsonProperty entry in document.RootElement.EnumerateObject())
             {
-                string ownerId = userProperty.Name;
-                if (string.IsNullOrWhiteSpace(ownerId) || userProperty.Value.ValueKind != JsonValueKind.Object)
-                {
+                if (entry.Value.ValueKind != JsonValueKind.Object)
                     continue;
-                }
 
-                foreach (JsonProperty slotProperty in userProperty.Value.EnumerateObject())
-                {
-                    string slotKey = slotProperty.Name;
-                    if (!IsKnownSlot(slotKey) || slotProperty.Value.ValueKind != JsonValueKind.Object)
-                    {
-                        continue;
-                    }
+                if (!entry.Value.TryGetProperty("content", out JsonElement contentElement))
+                    continue;
 
-                    if (!slotProperty.Value.TryGetProperty("content", out JsonElement contentElement))
-                    {
-                        continue;
-                    }
+                if (contentElement.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+                    continue;
 
-                    if (contentElement.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-                    {
-                        continue;
-                    }
+                string json = contentElement.GetRawText();
 
-                    string json = contentElement.GetRawText();
-                    results.Add(new CloudModlistRegistryEntry(ownerId, slotKey, json));
-                }
+                // NOTE: we no longer have (ownerId, slotKey) here. If your UI expects those,
+                // you can pass entryId as "ownerId" and use "public" as a placeholder slotKey.
+                results.Add(new CloudModlistRegistryEntry(entry.Name, "public", json));
             }
 
             return results;
         }
+
 
         /// <summary>Return the first available slot key (slot1..slot5), or null if full.</summary>
         public async Task<string?> GetFirstFreeSlotAsync(CancellationToken ct = default)
@@ -309,57 +379,34 @@ namespace SimpleVsManager.Cloud
 
         private async Task UpdateSlotUploaderAsync(string slotKey, (string Uid, string Name) identity, CancellationToken ct)
         {
-            var sendResult = await SendWithAuthRetryAsync(session =>
-                {
-                    string userUrl = BuildAuthenticatedUrl(session.IdToken, null, "users", identity.Uid, slotKey);
-                    return HttpClient.GetAsync(userUrl, ct);
-                }, ct).ConfigureAwait(false);
-
-            using HttpResponseMessage response = sendResult.Response;
-
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
+            // Read existing slot (to keep registryId)
+            SlotNode? existing = await TryReadSlotNodeAsync(identity.Uid, slotKey, ct).ConfigureAwait(false);
+            if (existing is null || existing.Value.Content.ValueKind != JsonValueKind.Object)
                 return;
-            }
 
-            await EnsureOk(response, "Fetch modlist for uploader sync").ConfigureAwait(false);
-
-            byte[] bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
-            if (bytes.Length == 0)
-            {
+            string? currentName = TryGetUploader(existing.Value.Content);
+            if (string.Equals(currentName, identity.Name, StringComparison.Ordinal))
                 return;
-            }
 
-            ModlistNode? node = JsonSerializer.Deserialize<ModlistNode?>(bytes, JsonOpts);
-            if (node is null || node.Value.Content.ValueKind != JsonValueKind.Object)
-            {
-                return;
-            }
-
-            string? existingUploader = TryGetUploader(node.Value.Content);
-            if (string.Equals(existingUploader, identity.Name, StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            string updatedContentJson = ReplaceUploader(node.Value.Content, identity);
-            string updatedNodeJson = BuildNodeJson(updatedContentJson);
+            string updatedContentJson = ReplaceUploader(existing.Value.Content, identity);
+            string updatedNodeJson = BuildSlotNodeJson(updatedContentJson, existing.Value.RegistryId);
 
             var putResult = await SendWithAuthRetryAsync(session =>
+            {
+                string userUrl = BuildAuthenticatedUrl(session.IdToken, null, "users", identity.Uid, slotKey);
+                var request = new HttpRequestMessage(HttpMethod.Put, userUrl)
                 {
-                    string userUrl = BuildAuthenticatedUrl(session.IdToken, null, "users", identity.Uid, slotKey);
-                    var request = new HttpRequestMessage(HttpMethod.Put, userUrl)
-                    {
-                        Content = new StringContent(updatedNodeJson, Encoding.UTF8, "application/json")
-                    };
-                    return HttpClient.SendAsync(request, ct);
-                }, ct).ConfigureAwait(false);
+                    Content = new StringContent(updatedNodeJson, Encoding.UTF8, "application/json")
+                };
+                return HttpClient.SendAsync(request, ct);
+            }, ct).ConfigureAwait(false);
 
             using (putResult.Response)
             {
                 await EnsureOk(putResult.Response, "Update modlist uploader").ConfigureAwait(false);
             }
         }
+
 
         private (string Uid, string Name) GetIdentityComponents()
         {
