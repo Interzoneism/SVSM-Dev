@@ -51,9 +51,7 @@ public partial class MainWindow : Window
     private const string ModListDirectoryName = "Modlists";
     private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
     private const string BackupDirectoryName = "Backups";
-    private const string FirebaseApiKey = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
     private const string FirebaseDatabaseUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
-    private const string CloudStorageDirectoryName = "Cloud";
     private const int AutomaticConfigMaxWordDistance = 2;
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
@@ -290,7 +288,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        store.SetExternalUserId(_viewModel?.PlayerUid);
+        store.SetPlayerIdentity(_viewModel?.PlayerUid, _viewModel?.PlayerName);
     }
 
     private void SaveUploaderName()
@@ -3293,60 +3291,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void ImportModlistAuthMenuItem_OnClick(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Import firebase_auth.json",
-            Filter = "firebase_auth.json|firebase_auth.json|JSON files (*.json)|*.json|All files (*.*)|*.*",
-            CheckFileExists = true,
-            Multiselect = false
-        };
-
-        bool? result = dialog.ShowDialog(this);
-        if (result != true)
-        {
-            return;
-        }
-
-        FirebaseModlistStore store;
-        try
-        {
-            store = await EnsureCloudStoreInitializedAsync(ensureSignedIn: false);
-        }
-        catch (Exception ex)
-        {
-            StatusLogService.AppendStatus($"Failed to prepare cloud storage for auth import: {ex}", true);
-            WpfMessageBox.Show(
-                $"Failed to prepare cloud storage:\n{ex.Message}",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-            return;
-        }
-
-        if (!store.TryImportAuthState(dialog.FileName, out string? errorMessage))
-        {
-            string message = string.IsNullOrWhiteSpace(errorMessage)
-                ? "The selected file could not be imported."
-                : $"Failed to import authentication data:\n{errorMessage}";
-
-            WpfMessageBox.Show(
-                message,
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-            return;
-        }
-
-        _viewModel?.ReportStatus("Imported cloud authentication data.");
-        WpfMessageBox.Show(
-            "The firebase_auth.json file was imported successfully.",
-            "Simple VS Manager",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
-    }
-
     private async Task RefreshDeleteCachedModsMenuHeaderAsync()
     {
         if (DeleteCachedModsMenuItem is null)
@@ -4746,11 +4690,6 @@ public partial class MainWindow : Window
 
             await store.SaveAsync(slotKey, json);
 
-            if (store.TryConsumeBackupPromptFlag())
-            {
-                PromptForFirebaseAuthBackup(store);
-            }
-
             if (replacementSlot is not null)
             {
                 string replacedName = replacementSlot.Name ?? "existing modlist";
@@ -5504,15 +5443,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task<FirebaseModlistStore> EnsureCloudStoreInitializedAsync(bool ensureSignedIn = true)
+    private async Task<FirebaseModlistStore> EnsureCloudStoreInitializedAsync()
     {
         if (_cloudModlistStore is { } existingStore)
         {
             ApplyPlayerIdentityToCloudStore(existingStore);
-            if (ensureSignedIn)
-            {
-                await existingStore.EnsureSignedInAsync();
-            }
             return existingStore;
         }
 
@@ -5522,102 +5457,17 @@ public partial class MainWindow : Window
             if (_cloudModlistStore is { } cached)
             {
                 ApplyPlayerIdentityToCloudStore(cached);
-                if (ensureSignedIn)
-                {
-                    await cached.EnsureSignedInAsync();
-                }
                 return cached;
             }
 
-            string configurationDirectory = _userConfiguration.GetConfigurationDirectory();
-            string storageDirectory = Path.Combine(configurationDirectory, CloudStorageDirectoryName);
-            string? modConfigDirectory = null;
-            if (!string.IsNullOrWhiteSpace(_dataDirectory))
-            {
-                modConfigDirectory = Path.Combine(_dataDirectory, "ModConfig");
-            }
-
-            var store = new FirebaseModlistStore(FirebaseApiKey, FirebaseDatabaseUrl, storageDirectory, modConfigDirectory);
+            var store = new FirebaseModlistStore(FirebaseDatabaseUrl);
             ApplyPlayerIdentityToCloudStore(store);
-            if (ensureSignedIn)
-            {
-                await store.EnsureSignedInAsync();
-            }
             _cloudModlistStore = store;
             return store;
         }
         finally
         {
             _cloudStoreLock.Release();
-        }
-    }
-
-    private void PromptForFirebaseAuthBackup(FirebaseModlistStore store)
-    {
-        MessageBoxResult result = WpfMessageBox.Show(
-            "This is your first time saving a cloud modlist. You have been given a unique identity so only you can replace or delete your modlists, please consider saving this identiy as a firebase_auth.json file somewhere safe in case you need to import it.",
-            "Simple VS Manager",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Information);
-
-        if (result != MessageBoxResult.Yes)
-        {
-            return;
-        }
-
-        string managerDirectory = _userConfiguration.GetConfigurationDirectory();
-        var dialog = new SaveFileDialog
-        {
-            Title = "Save Firebase Auth Backup",
-            Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
-            DefaultExt = ".json",
-            AddExtension = true,
-            OverwritePrompt = true,
-            FileName = FirebaseModlistStore.AuthStateFileName
-        };
-
-        dialog.FileOk += (_, args) =>
-        {
-            if (IsPathWithinDirectory(managerDirectory, dialog.FileName))
-            {
-                WpfMessageBox.Show(
-                    "Please choose a location outside of the Simple VS Manager folder.",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                args.Cancel = true;
-            }
-        };
-
-        bool? backupResult = dialog.ShowDialog(this);
-        if (backupResult != true)
-        {
-            return;
-        }
-
-        try
-        {
-            string sourcePath = store.AuthFilePath;
-            if (!File.Exists(sourcePath))
-            {
-                throw new FileNotFoundException("The authentication file could not be located.", sourcePath);
-            }
-
-            File.Copy(sourcePath, dialog.FileName, overwrite: true);
-
-            WpfMessageBox.Show(
-                "A backup of firebase_auth.json was saved successfully.",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException or PathTooLongException)
-        {
-            WpfMessageBox.Show(
-                $"Failed to save the backup copy:\n{ex.Message}",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
         }
     }
 
