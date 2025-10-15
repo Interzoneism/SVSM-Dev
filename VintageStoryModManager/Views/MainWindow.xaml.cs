@@ -5895,6 +5895,11 @@ public partial class MainWindow : Window
 
     private static string FormatCloudSlotLabel(string slotKey)
     {
+        if (string.Equals(slotKey, "public", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Public Entry";
+        }
+
         if (slotKey.Length > 4 && slotKey.StartsWith("slot", StringComparison.OrdinalIgnoreCase))
         {
             return $"Slot {slotKey.Substring(4)}";

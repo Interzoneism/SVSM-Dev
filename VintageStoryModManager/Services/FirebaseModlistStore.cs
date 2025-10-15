@@ -147,11 +147,12 @@ namespace SimpleVsManager.Cloud
 
                 // public registry stores only the content object, not registryId
                 string registryNodeJson = $"{{\"content\":{normalizedContent}}}";
+                string registryOwnerJson = JsonSerializer.Serialize(session.UserId);
 
                 string patchJson =
                     $"{{" +
                         $"\"/users/{identity.Uid}/{slotKey}\":{userSlotJson}," +
-                        $"\"/registryOwners/{registryId}\":\"{session.UserId}\"," +
+                        $"\"/registryOwners/{registryId}\":{registryOwnerJson}," +
                         $"\"/registry/{registryId}\":{registryNodeJson}" +
                     $"}}";
 
