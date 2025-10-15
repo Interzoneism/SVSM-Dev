@@ -837,8 +837,16 @@ public sealed class MainViewModel : ObservableObject
 
     internal async Task RefreshModsWithErrorsAsync(IReadOnlyCollection<string>? includeSourcePaths = null)
     {
-        if (_mods.Count == 0 || _modEntriesBySourcePath.Count == 0)
+        if (_mods.Count == 0 && _modEntriesBySourcePath.Count == 0)
         {
+            return;
+        }
+
+        _modsWatcher.EnsureWatchers();
+        ModDirectoryChangeSet changeSet = _modsWatcher.ConsumeChanges();
+        if (changeSet.RequiresFullRescan)
+        {
+            await LoadModsAsync().ConfigureAwait(true);
             return;
         }
 
@@ -855,6 +863,14 @@ public sealed class MainViewModel : ObservableObject
             }
         }
 
+        foreach (string path in changeSet.Paths)
+        {
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                candidates.Add(path);
+            }
+        }
+
         foreach (var mod in _mods)
         {
             if (mod is null || string.IsNullOrWhiteSpace(mod.SourcePath))
@@ -862,28 +878,30 @@ public sealed class MainViewModel : ObservableObject
                 continue;
             }
 
-            if (mod.HasLoadError || mod.DependencyHasErrors)
+            if (mod.HasLoadError || mod.DependencyHasErrors || mod.MissingDependencies.Count > 0)
             {
                 candidates.Add(mod.SourcePath);
             }
         }
 
-        var entries = new List<ModEntry>(_modEntriesBySourcePath.Values);
-
-        await Task.Run(() => _discoveryService.ApplyLoadStatuses(entries)).ConfigureAwait(true);
-
-        foreach (var entry in entries)
+        if (_modEntriesBySourcePath.Count > 0)
         {
-            if (entry is null || string.IsNullOrWhiteSpace(entry.SourcePath))
-            {
-                continue;
-            }
+            var allEntries = new List<ModEntry>(_modEntriesBySourcePath.Values);
+            await Task.Run(() => _discoveryService.ApplyLoadStatuses(allEntries)).ConfigureAwait(true);
 
-            if (entry.HasLoadError
-                || entry.DependencyHasErrors
-                || (entry.MissingDependencies?.Count ?? 0) > 0)
+            foreach (var entry in allEntries)
             {
-                candidates.Add(entry.SourcePath);
+                if (entry is null || string.IsNullOrWhiteSpace(entry.SourcePath))
+                {
+                    continue;
+                }
+
+                if (entry.HasLoadError
+                    || entry.DependencyHasErrors
+                    || (entry.MissingDependencies?.Count ?? 0) > 0)
+                {
+                    candidates.Add(entry.SourcePath);
+                }
             }
         }
 
@@ -892,20 +910,47 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        foreach (string path in candidates)
+        string? previousSelection = SelectedMod?.SourcePath;
+
+        Dictionary<string, ModEntry?> reloadResults = await Task
+            .Run(() => LoadChangedModEntries(candidates))
+            .ConfigureAwait(true);
+
+        var refreshedEntries = new List<ModEntry>(reloadResults.Count);
+
+        foreach (var pair in reloadResults)
         {
-            if (string.IsNullOrWhiteSpace(path))
+            string path = pair.Key;
+            ModEntry? entry = pair.Value;
+
+            if (entry == null)
             {
+                _modEntriesBySourcePath.Remove(path);
                 continue;
             }
 
-            if (_modEntriesBySourcePath.TryGetValue(path, out var entry)
-                && _modViewModelsBySourcePath.TryGetValue(path, out var viewModel))
-            {
-                viewModel.UpdateLoadError(entry.LoadError);
-                viewModel.UpdateDependencyIssues(entry.DependencyHasErrors, entry.MissingDependencies);
-            }
+            _modEntriesBySourcePath[path] = entry;
+            refreshedEntries.Add(entry);
         }
+
+        if (_modEntriesBySourcePath.Count > 0)
+        {
+            var updatedEntries = new List<ModEntry>(_modEntriesBySourcePath.Values);
+            await Task.Run(() => _discoveryService.ApplyLoadStatuses(updatedEntries)).ConfigureAwait(true);
+        }
+
+        ApplyPartialUpdates(reloadResults, previousSelection);
+
+        if (refreshedEntries.Count > 0)
+        {
+            QueueDatabaseInfoRefresh(refreshedEntries);
+        }
+
+        TotalMods = _mods.Count;
+        UpdateActiveCount();
+        SelectedSortOption?.Apply(ModsView);
+        ModsView.Refresh();
+        await UpdateModsStateSnapshotAsync().ConfigureAwait(true);
     }
 
     private async Task LoadModsAsync()
