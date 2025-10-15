@@ -51,8 +51,6 @@ public partial class MainWindow : Window
     private const string ModListDirectoryName = "Modlists";
     private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
     private const string BackupDirectoryName = "Backups";
-    private const string FirebaseDatabaseUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app/";
-    private const string FirebaseApiKey = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
     private const int AutomaticConfigMaxWordDistance = 2;
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
@@ -5475,7 +5473,7 @@ public partial class MainWindow : Window
                 return cached;
             }
 
-            var store = new FirebaseModlistStore(FirebaseDatabaseUrl, authenticator);
+            var store = new FirebaseModlistStore(FirebaseConfiguration.DatabaseUrl, authenticator);
             ApplyPlayerIdentityToCloudStore(store);
             _cloudModlistStore = store;
             return store;
@@ -5498,7 +5496,7 @@ public partial class MainWindow : Window
         return authenticator;
     }
 
-    private static string TryGetFirebaseApiKey() => FirebaseApiKey;
+    private static string TryGetFirebaseApiKey() => FirebaseConfiguration.ApiKey;
 
     private CloudModlistSlot? PromptForCloudSaveReplacement(IReadOnlyList<CloudModlistSlot> slots)
     {
