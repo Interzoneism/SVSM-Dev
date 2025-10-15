@@ -441,66 +441,8 @@
                                     <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource IMM.ButtonHoverBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="BackgroundBorder"
-                                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.ButtonHoverColor}"
-                                                                Duration="0:0:0.15">
-                                                    <ColorAnimation.EasingFunction>
-                                                        <QuadraticEase EasingMode="EaseOut" />
-                                                    </ColorAnimation.EasingFunction>
-                                                </ColorAnimation>
-                                                <ColorAnimation Storyboard.TargetName="BackgroundBorder"
-                                                                Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.BorderHoverColor}"
-                                                                Duration="0:0:0.15">
-                                                    <ColorAnimation.EasingFunction>
-                                                        <QuadraticEase EasingMode="EaseOut" />
-                                                    </ColorAnimation.EasingFunction>
-                                                </ColorAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="BackgroundBorder"
-                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                                 To="1.01"
-                                                                 Duration="0:0:0.12" />
-                                                <DoubleAnimation Storyboard.TargetName="BackgroundBorder"
-                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                                 To="1.01"
-                                                                 Duration="0:0:0.12" />
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="BackgroundBorder"
-                                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.ButtonBackgroundColor}"
-                                                                Duration="0:0:0.15">
-                                                    <ColorAnimation.EasingFunction>
-                                                        <QuadraticEase EasingMode="EaseOut" />
-                                                    </ColorAnimation.EasingFunction>
-                                                </ColorAnimation>
-                                                <ColorAnimation Storyboard.TargetName="BackgroundBorder"
-                                                                Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.BorderColor}"
-                                                                Duration="0:0:0.15">
-                                                    <ColorAnimation.EasingFunction>
-                                                        <QuadraticEase EasingMode="EaseOut" />
-                                                    </ColorAnimation.EasingFunction>
-                                                </ColorAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="BackgroundBorder"
-                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                                 To="1"
-                                                                 Duration="0:0:0.12" />
-                                                <DoubleAnimation Storyboard.TargetName="BackgroundBorder"
-                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                                 To="1"
-                                                                 Duration="0:0:0.12" />
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.ExitActions>
+                                    <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource IMM.ButtonHoverBrush}" />
+                                    <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Foreground" Value="#66000000" />
