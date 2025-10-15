@@ -559,13 +559,15 @@ public partial class MainWindow : Window
         };
 
         string message =
-            "When you continue, Simple VS Manager will create a firebase-auth.json file in your Simple VS Manager folder." +
+            "In this tab you can save and load Modlists from an online database (Google Firebase), for free." +
             Environment.NewLine + Environment.NewLine +
-            "If you lose this file you will not be able to delete or modify your online modlists." +
+            "When you continue, Simple VS Manager will create a firebase - auth.json file in your Documents/Simple VS Manager folder." +
+            Environment.NewLine + Environment.NewLine +
+            "If you lose this file you will not be able to delete or modify your uploaded online modlists." +
             Environment.NewLine + Environment.NewLine +
             "A backup copy named SimpleVSManager.json will also be placed in your ModConfig folder." +
             Environment.NewLine + Environment.NewLine +
-            "You will not need to sign in or provide any account information.";
+            "You will not need to sign in or provide any account information. Press OK to never show this again!";
 
         MessageBoxResult result = WpfMessageBox.Show(
             this,
