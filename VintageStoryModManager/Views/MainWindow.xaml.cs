@@ -1373,6 +1373,15 @@ public partial class MainWindow : Window
             tokens.Add(value.ToLowerInvariant());
         }
 
+        if (tokens.Count > 1)
+        {
+            string combined = string.Concat(tokens);
+            if (!string.IsNullOrEmpty(combined) && !tokens.Contains(combined))
+            {
+                tokens.Add(combined);
+            }
+        }
+
         return tokens;
     }
 
@@ -5895,6 +5904,11 @@ public partial class MainWindow : Window
 
     private static string FormatCloudSlotLabel(string slotKey)
     {
+        if (string.Equals(slotKey, "public", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Public Entry";
+        }
+
         if (slotKey.Length > 4 && slotKey.StartsWith("slot", StringComparison.OrdinalIgnoreCase))
         {
             return $"Slot {slotKey.Substring(4)}";
