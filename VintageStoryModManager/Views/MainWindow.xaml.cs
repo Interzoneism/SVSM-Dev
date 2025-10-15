@@ -522,6 +522,12 @@ public partial class MainWindow : Window
     {
         if (isVisible)
         {
+            if (!EnsureCloudModlistsConsent())
+            {
+                _viewModel?.ShowInstalledModsCommand.Execute(null);
+                return;
+            }
+
             _ = RefreshCloudModlistsAsync(force: !_cloudModlistsLoaded);
             return;
         }
@@ -530,6 +536,81 @@ public partial class MainWindow : Window
         if (CloudModlistsDataGrid != null)
         {
             CloudModlistsDataGrid.SelectedItem = null;
+        }
+    }
+
+    private bool EnsureCloudModlistsConsent()
+    {
+        string stateFilePath = FirebaseAnonymousAuthenticator.GetStateFilePath();
+        if (string.IsNullOrWhiteSpace(stateFilePath))
+        {
+            return true;
+        }
+
+        if (File.Exists(stateFilePath))
+        {
+            EnsureFirebaseAuthBackedUpIfAvailable();
+            return true;
+        }
+
+        var buttonOverrides = new MessageDialogButtonContentOverrides
+        {
+            Cancel = "No thanks"
+        };
+
+        string message =
+            "When you continue, Simple VS Manager will create a firebase-auth.json file in your Simple VS Manager folder." +
+            Environment.NewLine + Environment.NewLine +
+            "If you lose this file you will not be able to delete or modify your online modlists." +
+            Environment.NewLine + Environment.NewLine +
+            "A backup copy named SimpleVSManager.json will also be placed in your ModConfig folder." +
+            Environment.NewLine + Environment.NewLine +
+            "You will not need to sign in or provide any account information.";
+
+        MessageBoxResult result = WpfMessageBox.Show(
+            this,
+            message,
+            "Simple VS Manager",
+            MessageBoxButton.OKCancel,
+            MessageBoxImage.Information,
+            buttonContentOverrides: buttonOverrides);
+
+        return result == MessageBoxResult.OK;
+    }
+
+    private void EnsureFirebaseAuthBackedUpIfAvailable()
+    {
+        string stateFilePath = FirebaseAnonymousAuthenticator.GetStateFilePath();
+        if (string.IsNullOrWhiteSpace(stateFilePath) || !File.Exists(stateFilePath))
+        {
+            return;
+        }
+
+        string? dataDirectory = _dataDirectory;
+        if (string.IsNullOrWhiteSpace(dataDirectory))
+        {
+            return;
+        }
+
+        string modConfigDirectory = Path.Combine(dataDirectory, "ModConfig");
+        string backupPath = Path.Combine(modConfigDirectory, "SimpleVSManager.json");
+
+        try
+        {
+            Directory.CreateDirectory(modConfigDirectory);
+            File.Copy(stateFilePath, backupPath, overwrite: true);
+        }
+        catch (IOException ex)
+        {
+            StatusLogService.AppendStatus($"Failed to back up Firebase auth state: {ex.Message}", true);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            StatusLogService.AppendStatus($"Failed to back up Firebase auth state: {ex.Message}", true);
+        }
+        catch (NotSupportedException ex)
+        {
+            StatusLogService.AppendStatus($"Failed to back up Firebase auth state: {ex.Message}", true);
         }
     }
 
@@ -5371,6 +5452,7 @@ public partial class MainWindow : Window
         try
         {
             await operation(store);
+            EnsureFirebaseAuthBackedUpIfAvailable();
         }
         catch (InternetAccessDisabledException ex)
         {
