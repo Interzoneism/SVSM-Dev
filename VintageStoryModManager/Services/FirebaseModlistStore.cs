@@ -167,7 +167,7 @@ namespace SimpleVsManager.Cloud
                 await EnsureOk(saveResult.Response, "Save (user + registry)").ConfigureAwait(false);
             }
 
-            // Optional: keep legacy uploads consistent if they’re missing proper uploader fields
+            // Optional: keep legacy uploads consistent if theyâ€™re missing proper uploader fields
             await EnsureUploaderConsistencyAsync(identity, ct).ConfigureAwait(false);
         }
 
@@ -391,19 +391,34 @@ namespace SimpleVsManager.Cloud
             string updatedContentJson = ReplaceUploader(existing.Value.Content, identity);
             string updatedNodeJson = BuildSlotNodeJson(updatedContentJson, existing.Value.RegistryId);
 
-            var putResult = await SendWithAuthRetryAsync(session =>
+            var updateResult = await SendWithAuthRetryAsync(session =>
             {
-                string userUrl = BuildAuthenticatedUrl(session.IdToken, null, "users", identity.Uid, slotKey);
-                var request = new HttpRequestMessage(HttpMethod.Put, userUrl)
+                string rootUrl = BuildAuthenticatedUrl(session.IdToken, null /* root */);
+
+                var sb = new StringBuilder();
+                sb.Append('{');
+                sb.Append($"\"/users/{identity.Uid}/{slotKey}\":{updatedNodeJson}");
+
+                string? registryId = existing.Value.RegistryId;
+                if (!string.IsNullOrWhiteSpace(registryId))
                 {
-                    Content = new StringContent(updatedNodeJson, Encoding.UTF8, "application/json")
+                    string registryNodeJson = $"{{\"content\":{updatedContentJson}}}";
+                    sb.Append($",\"/registry/{registryId}\":{registryNodeJson}");
+                }
+
+                sb.Append('}');
+
+                var request = new HttpRequestMessage(new HttpMethod("PATCH"), rootUrl)
+                {
+                    Content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json")
                 };
+
                 return HttpClient.SendAsync(request, ct);
             }, ct).ConfigureAwait(false);
 
-            using (putResult.Response)
+            using (updateResult.Response)
             {
-                await EnsureOk(putResult.Response, "Update modlist uploader").ConfigureAwait(false);
+                await EnsureOk(updateResult.Response, "Update modlist uploader").ConfigureAwait(false);
             }
         }
 
