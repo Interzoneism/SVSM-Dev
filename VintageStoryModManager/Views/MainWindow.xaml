@@ -397,7 +397,15 @@
                 </MenuItem>
                 <MenuItem Header="_Presets and Modlists" Height="35">
                     <MenuItem Header="_Save Preset..." Height="35" Click="SavePresetMenuItem_OnClick" />
-                    <MenuItem Header="_Load Preset..." Height="35" Click="LoadPresetMenuItem_OnClick" />
+                    <MenuItem x:Name="LoadPresetMenuItem"
+                              Header="_Load Preset"
+                              Height="35"
+                              SubmenuOpened="LoadPresetMenuItem_OnSubmenuOpened">
+                        <MenuItem x:Name="BrowsePresetMenuItem"
+                                  Header="_Browse..."
+                                  Height="35"
+                                  Click="LoadPresetMenuItem_OnClick" />
+                    </MenuItem>
                     <Separator />
                     <MenuItem Header="Save Local _Modlist..." Height="35" Click="SaveModlistMenuItem_OnClick" />
                     <MenuItem Header="Load Local _Modlist..." Height="35" Click="LoadModlistMenuItem_OnClick" />
