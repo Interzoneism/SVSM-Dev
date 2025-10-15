@@ -4596,15 +4596,6 @@ public partial class MainWindow : Window
 
             string uploader = DetermineUploaderName(store);
 
-            if (!await IsCloudUploaderNameAvailableAsync(store, uploader))
-            {
-                WpfMessageBox.Show($"The username \"{uploader}\" is already in use by another cloud modlist. Change your Vintage Story player name to use a different username before saving.",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
             string modlistName = detailsDialog.ModlistName;
             string? description = detailsDialog.ModlistDescription;
             string? version = detailsDialog.ModlistVersion;
