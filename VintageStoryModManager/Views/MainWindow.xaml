@@ -1267,7 +1267,7 @@
                 <Grid Grid.RowSpan="2" Margin="0,0,-29,0">
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -1280,27 +1280,6 @@
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-
-                    <Border x:Name="localmodlist" Margin="629,0,0,10" Grid.Row="1" Width="193" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Left" Height="151" VerticalAlignment="Bottom">
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2"/>
-                        </Border.Effect>
-
-                        <Grid Height="151" VerticalAlignment="Center" HorizontalAlignment="Left" Width="1152">
-                            <Button x:Name="SaveLocalModlistButton1"
-                                Content="Save Modlist (Local)"
-                                Padding="12,6"
-                                Margin="10,109,0,0"
-                                MinWidth="165"
-                                Click="SaveModlistMenuItem_OnClick" Height="32" Width="170" VerticalAlignment="Top" HorizontalAlignment="Left" />
-                            <Button x:Name="LoadLocalModlistsButton1"
-                                Content="Load Modlist (Local)"
-                                Padding="12,6"
-                                Margin="10,66,0,0"
-                                MinWidth="165"
-                                Click="LoadModlistMenuItem_OnClick" Height="32" Width="170" VerticalAlignment="Top" HorizontalAlignment="Left" />
-                        </Grid>
-                    </Border>
 
                     <DataGrid x:Name="CloudModlistsDataGrid"
                               ItemsSource="{Binding CloudModlistsView}"
