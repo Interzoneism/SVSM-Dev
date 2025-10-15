@@ -122,7 +122,7 @@ public sealed class FirebaseAnonymousAuthenticator
         }
     }
 
-    private static string DetermineStateFilePath()
+    internal static string GetStateFilePath()
     {
         string? baseDirectory = ModCacheLocator.GetManagerDataDirectory();
         if (string.IsNullOrWhiteSpace(baseDirectory))
@@ -136,18 +136,29 @@ public sealed class FirebaseAnonymousAuthenticator
             baseDirectory = Path.Combine(baseDirectory!, "Simple VS Manager");
         }
 
-        try
+        return Path.Combine(baseDirectory!, StateFileName);
+    }
+
+    private static string DetermineStateFilePath()
+    {
+        string stateFilePath = GetStateFilePath();
+        string? directory = Path.GetDirectoryName(stateFilePath);
+
+        if (!string.IsNullOrWhiteSpace(directory))
         {
-            Directory.CreateDirectory(baseDirectory!);
-        }
-        catch (IOException)
-        {
-        }
-        catch (UnauthorizedAccessException)
-        {
+            try
+            {
+                Directory.CreateDirectory(directory);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
 
-        return Path.Combine(baseDirectory!, StateFileName);
+        return stateFilePath;
     }
 
     private FirebaseAuthState? LoadStateFromDisk()
