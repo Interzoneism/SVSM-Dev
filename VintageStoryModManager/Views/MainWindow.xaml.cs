@@ -51,9 +51,8 @@ public partial class MainWindow : Window
     private const string ModListDirectoryName = "Modlists";
     private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
     private const string BackupDirectoryName = "Backups";
-    private const string FirebaseDatabaseUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
-    private const string FirebaseApiKeyEnvironmentVariable = "SIMPLE_VS_MANAGER_FIREBASE_API_KEY";
-    private const string FirebaseApiKeyFileName = "firebase-api-key.txt";
+    private const string FirebaseDatabaseUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app/";
+    private const string FirebaseApiKey = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
     private const int AutomaticConfigMaxWordDistance = 2;
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
@@ -5448,12 +5447,7 @@ public partial class MainWindow : Window
 
     private async Task<FirebaseModlistStore> EnsureCloudStoreInitializedAsync()
     {
-        string? apiKey = TryGetFirebaseApiKey();
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            throw new InvalidOperationException(
-                $"Cloud modlists require a Firebase API key. Set the {FirebaseApiKeyEnvironmentVariable} environment variable or place the key in {FirebaseApiKeyFileName} inside the Simple VS Manager folder.");
-        }
+        string apiKey = TryGetFirebaseApiKey();
 
         FirebaseAnonymousAuthenticator authenticator = GetOrCreateFirebaseAuthenticator(apiKey);
 
@@ -5495,39 +5489,7 @@ public partial class MainWindow : Window
         return authenticator;
     }
 
-    private string? TryGetFirebaseApiKey()
-    {
-        string? envKey = Environment.GetEnvironmentVariable(FirebaseApiKeyEnvironmentVariable);
-        if (!string.IsNullOrWhiteSpace(envKey))
-        {
-            return envKey.Trim();
-        }
-
-        string? managerDirectory = ModCacheLocator.GetManagerDataDirectory();
-        if (!string.IsNullOrWhiteSpace(managerDirectory))
-        {
-            string filePath = Path.Combine(managerDirectory, FirebaseApiKeyFileName);
-            if (File.Exists(filePath))
-            {
-                try
-                {
-                    string key = File.ReadAllText(filePath);
-                    if (!string.IsNullOrWhiteSpace(key))
-                    {
-                        return key.Trim();
-                    }
-                }
-                catch (IOException)
-                {
-                }
-                catch (UnauthorizedAccessException)
-                {
-                }
-            }
-        }
-
-        return null;
-    }
+    private static string TryGetFirebaseApiKey() => FirebaseApiKey;
 
     private CloudModlistSlot? PromptForCloudSaveReplacement(IReadOnlyList<CloudModlistSlot> slots)
     {
