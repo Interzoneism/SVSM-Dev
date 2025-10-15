@@ -2622,8 +2622,6 @@ public partial class MainWindow : Window
 
         e.Handled = true;
 
-        bool modHadLoadError = mod.HasLoadError;
-
         IReadOnlyList<ModDependencyInfo> dependencies = mod.Dependencies;
         if (dependencies.Count == 0)
         {
@@ -2634,15 +2632,21 @@ public partial class MainWindow : Window
             return;
         }
 
+        IReadOnlyCollection<string> errorSourcePathsBeforeFix =
+            _viewModel.GetSourcePathsForModsWithErrors();
+        var modsToRefresh = new HashSet<string>(errorSourcePathsBeforeFix, StringComparer.OrdinalIgnoreCase);
+
+        if (!string.IsNullOrWhiteSpace(mod.SourcePath))
+        {
+            modsToRefresh.Add(mod.SourcePath);
+        }
+
         _isModUpdateInProgress = true;
         UpdateSelectedModButtons();
 
         var failures = new List<string>();
         bool anySuccess = false;
-        bool requiresRefresh = false;
-        bool hasRefreshedAllMods = false;
         var processedDependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        List<string>? installedDependencyIds = null;
 
         try
         {
@@ -2681,12 +2685,6 @@ public partial class MainWindow : Window
                     else
                     {
                         anySuccess = true;
-                        requiresRefresh = true;
-                        if (!string.IsNullOrWhiteSpace(dependency.ModId))
-                        {
-                            installedDependencyIds ??= new List<string>();
-                            installedDependencyIds.Add(dependency.ModId.Trim());
-                        }
                         _viewModel.ReportStatus(result.Message);
                     }
 
@@ -2697,7 +2695,6 @@ public partial class MainWindow : Window
                 {
                     installedDependency.IsActive = true;
                     anySuccess = true;
-                    requiresRefresh = true;
                     _viewModel.ReportStatus($"Activated dependency {installedDependency.DisplayName}.");
                 }
             }
@@ -2708,52 +2705,15 @@ public partial class MainWindow : Window
             UpdateSelectedModButtons();
         }
 
-        bool shouldRefreshErrorMods = !requiresRefresh && modHadLoadError && anySuccess;
-
-        if (requiresRefresh)
+        if (_viewModel is { } viewModel && modsToRefresh.Count > 0)
         {
             try
             {
-                hasRefreshedAllMods = true;
-                await RefreshModsAsync(installedDependencyIds);
-            }
-            catch (Exception ex)
-            {
-                WpfMessageBox.Show($"The mod list could not be refreshed after fixing dependencies:{Environment.NewLine}{ex.Message}",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
-
-            UpdateSelectedModButtons();
-        }
-        else if (shouldRefreshErrorMods && _viewModel is { } viewModel)
-        {
-            try
-            {
-                await viewModel.RefreshModsWithErrorsAsync().ConfigureAwait(true);
+                await viewModel.RefreshModsWithErrorsAsync(modsToRefresh).ConfigureAwait(true);
             }
             catch (Exception ex)
             {
                 WpfMessageBox.Show($"The mods with errors could not be refreshed after fixing dependencies:{Environment.NewLine}{ex.Message}",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
-
-            UpdateSelectedModButtons();
-        }
-
-        if (!hasRefreshedAllMods)
-        {
-            try
-            {
-                hasRefreshedAllMods = true;
-                await RefreshModsAsync(installedDependencyIds);
-            }
-            catch (Exception ex)
-            {
-                WpfMessageBox.Show($"The mod list could not be refreshed after fixing dependencies:{Environment.NewLine}{ex.Message}",
                     "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);

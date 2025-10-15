@@ -804,7 +804,38 @@ public sealed class MainViewModel : ObservableObject
         return new ActivationResult(true, null);
     }
 
-    internal async Task RefreshModsWithErrorsAsync()
+    internal IReadOnlyCollection<string> GetSourcePathsForModsWithErrors()
+    {
+        if (_mods.Count == 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var mod in _mods)
+        {
+            if (mod is null)
+            {
+                continue;
+            }
+
+            string? sourcePath = mod.SourcePath;
+            if (string.IsNullOrWhiteSpace(sourcePath))
+            {
+                continue;
+            }
+
+            if (mod.HasLoadError || mod.DependencyHasErrors || mod.MissingDependencies.Count > 0)
+            {
+                result.Add(sourcePath);
+            }
+        }
+
+        return result.Count == 0 ? Array.Empty<string>() : result.ToArray();
+    }
+
+    internal async Task RefreshModsWithErrorsAsync(IReadOnlyCollection<string>? includeSourcePaths = null)
     {
         if (_mods.Count == 0 || _modEntriesBySourcePath.Count == 0)
         {
@@ -812,6 +843,17 @@ public sealed class MainViewModel : ObservableObject
         }
 
         var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (includeSourcePaths is { Count: > 0 })
+        {
+            foreach (string path in includeSourcePaths)
+            {
+                if (!string.IsNullOrWhiteSpace(path))
+                {
+                    candidates.Add(path);
+                }
+            }
+        }
 
         foreach (var mod in _mods)
         {
