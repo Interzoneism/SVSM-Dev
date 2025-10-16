@@ -2426,7 +2426,11 @@ public partial class MainWindow : Window
     {
         row.ApplyTemplate();
 
-        bool isModSelected = row.DataContext is ModListItemViewModel { IsSelected: true };
+        bool isModSelected = row.DataContext switch
+        {
+            ModListItemViewModel { IsSelected: true } => true,
+            _ => row.IsSelected
+        };
         bool isHovered = GetRowIsHovered(row);
 
         if (row.Template?.FindName("SelectionOverlay", row) is Border selectionOverlay)
