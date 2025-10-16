@@ -102,6 +102,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _excludeInstalledModDatabaseResults;
     private bool _canLoadMoreModDatabaseResults;
     private bool _isLoadMoreModDatabaseButtonVisible;
+    private bool _isLoadMoreModDatabaseScrollThresholdReached;
     private bool _hasRequestedAdditionalModDatabaseResults;
 
     public MainViewModel(
@@ -151,7 +152,7 @@ public sealed class MainViewModel : ObservableObject
             () => !InternetAccessManager.IsInternetAccessDisabled);
         _loadMoreModDatabaseResultsCommand = new RelayCommand(
             LoadMoreModDatabaseResults,
-            () => SearchModDatabase && IsLoadMoreModDatabaseButtonVisible);
+            () => SearchModDatabase && IsLoadMoreModDatabaseButtonVisible && IsLoadMoreModDatabaseScrollThresholdReached);
         ShowInstalledModsCommand = _showInstalledModsCommand;
         ShowModDatabaseCommand = _showModDatabaseCommand;
         ShowCloudModlistsCommand = _showCloudModlistsCommand;
@@ -343,6 +344,23 @@ public sealed class MainViewModel : ObservableObject
         private set
         {
             if (SetProperty(ref _isLoadMoreModDatabaseButtonVisible, value))
+            {
+                if (!value && _isLoadMoreModDatabaseScrollThresholdReached)
+                {
+                    IsLoadMoreModDatabaseScrollThresholdReached = false;
+                }
+
+                NotifyLoadMoreCommandCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool IsLoadMoreModDatabaseScrollThresholdReached
+    {
+        get => _isLoadMoreModDatabaseScrollThresholdReached;
+        set
+        {
+            if (SetProperty(ref _isLoadMoreModDatabaseScrollThresholdReached, value))
             {
                 NotifyLoadMoreCommandCanExecuteChanged();
             }

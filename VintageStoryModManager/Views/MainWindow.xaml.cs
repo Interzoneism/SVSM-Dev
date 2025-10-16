@@ -46,6 +46,7 @@ public partial class MainWindow : Window
 {
     private const double ModListScrollMultiplier = 0.5;
     private const double ModDbDesignScrollMultiplier = 20.0;
+    private const double LoadMoreScrollThreshold = 0.9;
     private const double HoverOverlayOpacity = 0.1;
     private const double SelectionOverlayOpacity = 0.25;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";
@@ -68,6 +69,7 @@ public partial class MainWindow : Window
 
     private static readonly PresetLoadOptions StandardPresetLoadOptions = new(true, false, false);
     private static readonly PresetLoadOptions ModListLoadOptions = new(true, true, true);
+    private readonly record struct ManagerDeletionResult(List<string> DeletedPaths, List<string> FailedPaths);
 
     private static readonly DependencyProperty BoundModProperty =
         DependencyProperty.RegisterAttached(
@@ -421,6 +423,8 @@ public partial class MainWindow : Window
                     _modsScrollViewer = null;
                     _modDatabaseCardsScrollViewer = null;
                 });
+
+                Dispatcher.InvokeAsync(UpdateLoadMoreScrollThresholdState, DispatcherPriority.Background);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.ExcludeInstalledModDatabaseResults))
@@ -444,6 +448,8 @@ public partial class MainWindow : Window
                         _modDatabaseCardsScrollViewer = null;
                     }
                 });
+
+                Dispatcher.InvokeAsync(UpdateLoadMoreScrollThresholdState, DispatcherPriority.Background);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.ModDatabaseAutoLoadMode))
@@ -465,6 +471,10 @@ public partial class MainWindow : Window
                     }
                 });
             }
+        }
+        else if (e.PropertyName == nameof(MainViewModel.IsLoadMoreModDatabaseButtonVisible))
+        {
+            Dispatcher.Invoke(UpdateLoadMoreScrollThresholdState);
         }
         else if (e.PropertyName == nameof(MainViewModel.CurrentModsView))
         {
@@ -2252,6 +2262,39 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ModDatabaseCardsListView_OnScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        UpdateLoadMoreScrollThresholdState(e.VerticalOffset, e.ViewportHeight, e.ExtentHeight);
+    }
+
+    private void UpdateLoadMoreScrollThresholdState()
+    {
+        if (_viewModel?.SearchModDatabase != true || !_viewModel.UseModDbDesignView)
+        {
+            return;
+        }
+
+        ScrollViewer? scrollViewer = GetModsScrollViewer();
+        if (scrollViewer == null)
+        {
+            return;
+        }
+
+        UpdateLoadMoreScrollThresholdState(scrollViewer.VerticalOffset, scrollViewer.ViewportHeight, scrollViewer.ExtentHeight);
+    }
+
+    private void UpdateLoadMoreScrollThresholdState(double verticalOffset, double viewportHeight, double extentHeight)
+    {
+        if (_viewModel?.SearchModDatabase != true || !_viewModel.UseModDbDesignView)
+        {
+            return;
+        }
+
+        double scrollableHeight = extentHeight - viewportHeight;
+        bool isNearBottom = scrollableHeight <= 0 || verticalOffset / scrollableHeight >= LoadMoreScrollThreshold;
+        _viewModel.IsLoadMoreModDatabaseScrollThresholdReached = isNearBottom;
+    }
+
     private void ModsDataGridRow_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (ShouldIgnoreRowSelection(e.OriginalSource as DependencyObject))
@@ -3456,6 +3499,83 @@ public partial class MainWindow : Window
             "delete all cloud modlists and Firebase authorization");
     }
 
+    private async void DeleteAllManagerFilesMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        const string confirmationMessage =
+            "This will permanently delete every file Simple VS Manager created, including its Documents folder, any ModData backups, AppData entries, cached mods, presets, and Firebase authentication tokens.\n\n" +
+            "This action cannot be undone. Continue?";
+
+        MessageBoxResult confirmation = WpfMessageBox.Show(
+            this,
+            confirmationMessage,
+            "Simple VS Manager",
+            MessageBoxButton.OKCancel,
+            MessageBoxImage.Warning);
+
+        if (confirmation != MessageBoxResult.OK)
+        {
+            return;
+        }
+
+        string? dataDirectory = _dataDirectory;
+        ManagerDeletionResult deletionResult = await Task.Run(() => DeleteAllManagerFiles(dataDirectory)).ConfigureAwait(true);
+
+        if (deletionResult.DeletedPaths.Count == 0 && deletionResult.FailedPaths.Count == 0)
+        {
+            WpfMessageBox.Show(
+                this,
+                "No Simple VS Manager files were found.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var builder = new StringBuilder();
+
+        if (deletionResult.DeletedPaths.Count > 0)
+        {
+            builder.AppendLine("Deleted the following locations:");
+            foreach (string path in deletionResult.DeletedPaths)
+            {
+                builder.AppendLine($"• {path}");
+            }
+        }
+
+        if (deletionResult.FailedPaths.Count == 0)
+        {
+            string message = builder.Length > 0
+                ? builder.ToString()
+                : "Finished deleting Simple VS Manager files.";
+
+            WpfMessageBox.Show(
+                this,
+                message,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (builder.Length > 0)
+        {
+            builder.AppendLine();
+        }
+
+        builder.AppendLine("The following locations could not be removed. Please delete them manually:");
+        foreach (string path in deletionResult.FailedPaths)
+        {
+            builder.AppendLine($"• {path}");
+        }
+
+        WpfMessageBox.Show(
+            this,
+            builder.ToString(),
+            "Simple VS Manager",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+    }
+
     private async Task RefreshDeleteCachedModsMenuHeaderAsync()
     {
         if (DeleteCachedModsMenuItem is null)
@@ -3553,6 +3673,149 @@ public partial class MainWindow : Window
     private static string? GetCachedModsDirectory() => ModCacheLocator.GetCachedModsDirectory();
 
     private static string? GetManagerDataDirectory() => ModCacheLocator.GetManagerDataDirectory();
+
+    private static ManagerDeletionResult DeleteAllManagerFiles(string? dataDirectory)
+    {
+        var directoryCandidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var fileCandidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        AddCandidateDirectory(directoryCandidates, ModCacheLocator.GetManagerDataDirectory());
+        AddCandidateDirectory(directoryCandidates, TryCombineSpecialFolder(Environment.SpecialFolder.MyDocuments, "Simple VS Manager"));
+        AddCandidateDirectory(directoryCandidates, TryCombineSpecialFolder(Environment.SpecialFolder.Personal, "Simple VS Manager"));
+        AddCandidateDirectory(directoryCandidates, TryCombineSpecialFolder(Environment.SpecialFolder.ApplicationData, "Simple VS Manager"));
+        AddCandidateDirectory(directoryCandidates, TryCombineSpecialFolder(Environment.SpecialFolder.LocalApplicationData, "Simple VS Manager"));
+        AddCandidateDirectory(directoryCandidates, TryCombineSpecialFolder(Environment.SpecialFolder.UserProfile, ".simple-vs-manager"));
+        AddCandidateDirectory(directoryCandidates, Path.Combine(AppContext.BaseDirectory, "Simple VS Manager"));
+        AddCandidateDirectory(directoryCandidates, Path.Combine(Environment.CurrentDirectory, "Simple VS Manager"));
+
+        if (!string.IsNullOrWhiteSpace(dataDirectory))
+        {
+            AddCandidateDirectory(directoryCandidates, Path.Combine(dataDirectory!, "ModData", "SimpleVSManager"));
+        }
+
+        AddCandidateFile(fileCandidates, FirebaseAnonymousAuthenticator.GetStateFilePath());
+        AddCandidateFile(fileCandidates, Path.Combine(AppContext.BaseDirectory, "SimpleVSManagerStatus.log"));
+        AddCandidateFile(fileCandidates, Path.Combine(Environment.CurrentDirectory, "SimpleVSManagerStatus.log"));
+
+        var deletedPaths = new List<string>();
+        var failedPaths = new List<string>();
+
+        foreach (string file in fileCandidates)
+        {
+            try
+            {
+                if (!File.Exists(file))
+                {
+                    continue;
+                }
+
+                File.Delete(file);
+                deletedPaths.Add(file);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or System.Security.SecurityException or PathTooLongException or ArgumentException)
+            {
+                failedPaths.Add($"{file} ({ex.Message})");
+            }
+        }
+
+        foreach (string directory in directoryCandidates.OrderByDescending(path => path.Length))
+        {
+            try
+            {
+                if (!Directory.Exists(directory))
+                {
+                    continue;
+                }
+
+                Directory.Delete(directory, recursive: true);
+                deletedPaths.Add(directory);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or System.Security.SecurityException or PathTooLongException or ArgumentException)
+            {
+                failedPaths.Add($"{directory} ({ex.Message})");
+            }
+        }
+
+        deletedPaths.Sort(StringComparer.OrdinalIgnoreCase);
+        failedPaths.Sort(StringComparer.OrdinalIgnoreCase);
+
+        return new ManagerDeletionResult(deletedPaths, failedPaths);
+    }
+
+    private static void AddCandidateDirectory(ISet<string> directories, string? path)
+    {
+        string? normalized = TryNormalizePath(path);
+        if (normalized is null)
+        {
+            return;
+        }
+
+        directories.Add(normalized);
+    }
+
+    private static void AddCandidateFile(ISet<string> files, string? path)
+    {
+        string? normalized = TryNormalizePath(path);
+        if (normalized is null)
+        {
+            return;
+        }
+
+        files.Add(normalized);
+    }
+
+    private static string? TryCombineSpecialFolder(Environment.SpecialFolder folder, string relativePath)
+    {
+        string? root = TryGetSpecialFolderPath(folder);
+        if (string.IsNullOrWhiteSpace(root))
+        {
+            return null;
+        }
+
+        try
+        {
+            return Path.GetFullPath(Path.Combine(root!, relativePath));
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException or System.Security.SecurityException)
+        {
+            return null;
+        }
+    }
+
+    private static string? TryGetSpecialFolderPath(Environment.SpecialFolder folder)
+    {
+        try
+        {
+            string path = Environment.GetFolderPath(folder, Environment.SpecialFolderOption.DoNotVerify);
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = Environment.GetFolderPath(folder);
+            }
+
+            return string.IsNullOrWhiteSpace(path) ? null : path;
+        }
+        catch (Exception ex) when (ex is PlatformNotSupportedException or InvalidOperationException or System.Security.SecurityException)
+        {
+            return null;
+        }
+    }
+
+    private static string? TryNormalizePath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            return Path.GetFullPath(path);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException or System.Security.SecurityException)
+        {
+            return null;
+        }
+    }
 
     private async void RefreshModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
