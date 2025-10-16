@@ -83,6 +83,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly object _busyStateLock = new();
     private int _busyOperationCount;
     private bool _isLoadingMods;
+    private bool _isLoadingModDetails;
     private int _pendingModDetailsRefreshCount;
     private readonly object _modDetailsBusyScopeLock = new();
     private IDisposable? _modDetailsBusyScope;
@@ -211,6 +212,18 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _isBusy;
         private set => SetProperty(ref _isBusy, value);
+    }
+
+    public bool IsLoadingMods
+    {
+        get => _isLoadingMods;
+        private set => SetProperty(ref _isLoadingMods, value);
+    }
+
+    public bool IsLoadingModDetails
+    {
+        get => _isLoadingModDetails;
+        private set => SetProperty(ref _isLoadingModDetails, value);
     }
 
     public bool IsCompactView
@@ -1063,12 +1076,12 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task LoadModsAsync()
     {
-        if (_isLoadingMods)
+        if (IsLoadingMods)
         {
             return;
         }
 
-        _isLoadingMods = true;
+        IsLoadingMods = true;
         using var busyScope = BeginBusyScope();
         SetStatus("Loading mods...", false);
 
@@ -1134,7 +1147,7 @@ public sealed class MainViewModel : ObservableObject
         }
         finally
         {
-            _isLoadingMods = false;
+            IsLoadingMods = false;
         }
     }
 
@@ -2384,6 +2397,25 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    private void UpdateIsLoadingModDetails(bool isLoading)
+    {
+        if (System.Windows.Application.Current?.Dispatcher is Dispatcher dispatcher)
+        {
+            if (dispatcher.CheckAccess())
+            {
+                IsLoadingModDetails = isLoading;
+            }
+            else
+            {
+                dispatcher.BeginInvoke(new Action(() => IsLoadingModDetails = isLoading));
+            }
+        }
+        else
+        {
+            IsLoadingModDetails = isLoading;
+        }
+    }
+
     private sealed class BusyScope : IDisposable
     {
         private readonly MainViewModel _owner;
@@ -2458,6 +2490,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         EnsureModDetailsBusyScope();
+        UpdateIsLoadingModDetails(true);
 
         if (newCount == count || !_isModDetailsStatusActive)
         {
@@ -2472,6 +2505,7 @@ public sealed class MainViewModel : ObservableObject
         {
             Interlocked.Exchange(ref _pendingModDetailsRefreshCount, 0);
             ReleaseModDetailsBusyScope();
+            UpdateIsLoadingModDetails(false);
 
             if (_isModDetailsStatusActive)
             {

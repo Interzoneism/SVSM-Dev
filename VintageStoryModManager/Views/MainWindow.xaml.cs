@@ -527,6 +527,11 @@ public partial class MainWindow : Window
                 });
             }
         }
+        else if (e.PropertyName == nameof(MainViewModel.IsLoadingMods)
+                 || e.PropertyName == nameof(MainViewModel.IsLoadingModDetails))
+        {
+            Dispatcher.Invoke(RefreshHoverOverlayState);
+        }
         else if (e.PropertyName == nameof(MainViewModel.StatusMessage))
         {
             string? statusMessage = _viewModel?.StatusMessage;
@@ -2437,9 +2442,19 @@ public partial class MainWindow : Window
         {
             hoverOverlay.BeginAnimation(UIElement.OpacityProperty, null);
 
-            bool shouldShowHover = isHovered && !isModSelected;
+            bool shouldShowHover = isHovered && !isModSelected && !AreHoverOverlaysSuppressed(row);
             hoverOverlay.Opacity = shouldShowHover ? HoverOverlayOpacity : 0;
         }
+    }
+
+    private bool AreHoverOverlaysSuppressed()
+    {
+        return _viewModel?.IsLoadingMods == true || _viewModel?.IsLoadingModDetails == true;
+    }
+
+    private static bool AreHoverOverlaysSuppressed(DataGridRow row)
+    {
+        return Window.GetWindow(row) is MainWindow mainWindow && mainWindow.AreHoverOverlaysSuppressed();
     }
 
     private static void ClearRowOverlayAnimations(DataGridRow row)
@@ -2454,6 +2469,29 @@ public partial class MainWindow : Window
         if (row.Template?.FindName("HoverOverlay", row) is Border hoverOverlay)
         {
             hoverOverlay.BeginAnimation(UIElement.OpacityProperty, null);
+        }
+    }
+
+    private void RefreshHoverOverlayState()
+    {
+        RefreshRowHoverOverlays(ModsDataGrid);
+        RefreshRowHoverOverlays(CloudModlistsDataGrid);
+    }
+
+    private static void RefreshRowHoverOverlays(DataGrid? dataGrid)
+    {
+        if (dataGrid == null)
+        {
+            return;
+        }
+
+        ItemContainerGenerator generator = dataGrid.ItemContainerGenerator;
+        foreach (object item in dataGrid.Items)
+        {
+            if (generator.ContainerFromItem(item) is DataGridRow row)
+            {
+                ResetRowOverlays(row);
+            }
         }
     }
 
