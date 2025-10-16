@@ -32,6 +32,7 @@ public sealed class MainViewModel : ObservableObject
     private const int MaxConcurrentDatabaseRefreshes = 4;
     private const int MaxNewModsRecentMonths = 24;
     private const int InstalledModsIncrementalBatchSize = 32;
+    private const int MaxModDatabaseResultLimit = 100;
 
     private enum ViewSection
     {
@@ -49,6 +50,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly ModDiscoveryService _discoveryService;
     private readonly ModDatabaseService _databaseService;
     private readonly int _modDatabaseSearchResultLimit;
+    private int _modDatabaseCurrentResultLimit;
     private readonly ObservableCollection<SortOption> _sortOptions;
     private readonly string? _installedGameVersion;
     private readonly object _modsStateLock = new();
@@ -76,6 +78,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly RelayCommand _showInstalledModsCommand;
     private readonly RelayCommand _showModDatabaseCommand;
     private readonly RelayCommand _showCloudModlistsCommand;
+    private readonly RelayCommand _loadMoreModDatabaseResultsCommand;
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
     private readonly object _busyStateLock = new();
     private int _busyOperationCount;
@@ -97,6 +100,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _isInstalledTagRefreshPending;
     private bool _isModDatabaseTagRefreshPending;
     private bool _excludeInstalledModDatabaseResults;
+    private bool _canLoadMoreModDatabaseResults;
 
     public MainViewModel(
         string dataDirectory,
@@ -113,7 +117,8 @@ public sealed class MainViewModel : ObservableObject
         _settingsStore = new ClientSettingsStore(DataDirectory);
         _discoveryService = new ModDiscoveryService(_settingsStore);
         _databaseService = new ModDatabaseService();
-        _modDatabaseSearchResultLimit = Math.Clamp(modDatabaseSearchResultLimit, 1, 100);
+        _modDatabaseSearchResultLimit = Math.Clamp(modDatabaseSearchResultLimit, 1, MaxModDatabaseResultLimit);
+        _modDatabaseCurrentResultLimit = _modDatabaseSearchResultLimit;
         _newModsRecentMonths = Math.Clamp(newModsRecentMonths <= 0 ? 1 : newModsRecentMonths, 1, MaxNewModsRecentMonths);
         _modDatabaseAutoLoadMode = NormalizeModDatabaseAutoLoadMode(initialModDatabaseAutoLoadMode);
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion(gameDirectory);
@@ -142,9 +147,11 @@ public sealed class MainViewModel : ObservableObject
         _showCloudModlistsCommand = new RelayCommand(
             () => SetViewSection(ViewSection.CloudModlists),
             () => !InternetAccessManager.IsInternetAccessDisabled);
+        _loadMoreModDatabaseResultsCommand = new RelayCommand(LoadMoreModDatabaseResults, () => CanLoadMoreModDatabaseResults);
         ShowInstalledModsCommand = _showInstalledModsCommand;
         ShowModDatabaseCommand = _showModDatabaseCommand;
         ShowCloudModlistsCommand = _showCloudModlistsCommand;
+        LoadMoreModDatabaseResultsCommand = _loadMoreModDatabaseResultsCommand;
 
         RefreshCommand = new AsyncRelayCommand(LoadModsAsync);
         SetStatus("Ready.", false);
@@ -306,11 +313,25 @@ public sealed class MainViewModel : ObservableObject
 
     public IRelayCommand ShowCloudModlistsCommand { get; }
 
+    public IRelayCommand LoadMoreModDatabaseResultsCommand { get; }
+
     public bool IsViewingCloudModlists => _viewSection == ViewSection.CloudModlists;
 
     public bool IsViewingInstalledMods => _viewSection == ViewSection.InstalledMods;
 
     public bool HasCloudModlists => _cloudModlists.Count > 0;
+
+    public bool CanLoadMoreModDatabaseResults
+    {
+        get => _canLoadMoreModDatabaseResults;
+        private set
+        {
+            if (SetProperty(ref _canLoadMoreModDatabaseResults, value))
+            {
+                _loadMoreModDatabaseResultsCommand?.NotifyCanExecuteChanged();
+            }
+        }
+    }
 
     public bool IsTotalDownloadsMode
     {
@@ -376,6 +397,8 @@ public sealed class MainViewModel : ObservableObject
         _modDatabaseSearchCts?.Cancel();
 
         _viewSection = section;
+
+        CanLoadMoreModDatabaseResults = false;
 
         switch (section)
         {
@@ -1224,6 +1247,7 @@ public sealed class MainViewModel : ObservableObject
 
         _searchResults.Clear();
         SelectedMod = null;
+        CanLoadMoreModDatabaseResults = false;
     }
 
     private void OnModsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -1780,12 +1804,19 @@ public sealed class MainViewModel : ObservableObject
         return true;
     }
 
-    private void TriggerModDatabaseSearch()
+    private void TriggerModDatabaseSearch(bool preserveResultLimit = false)
     {
         if (!SearchModDatabase)
         {
             return;
         }
+
+        if (!preserveResultLimit)
+        {
+            ResetModDatabaseResultLimit();
+        }
+
+        CanLoadMoreModDatabaseResults = false;
 
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
@@ -1821,6 +1852,30 @@ public sealed class MainViewModel : ObservableObject
         _ = RunModDatabaseSearchAsync(SearchText, hasSearchTokens, requiredTags, cts);
     }
 
+    private void ResetModDatabaseResultLimit()
+    {
+        _modDatabaseCurrentResultLimit = Math.Clamp(_modDatabaseSearchResultLimit, 1, MaxModDatabaseResultLimit);
+    }
+
+    private void LoadMoreModDatabaseResults()
+    {
+        if (!SearchModDatabase)
+        {
+            return;
+        }
+
+        int increment = Math.Max(_modDatabaseSearchResultLimit, 1);
+        int nextLimit = Math.Min(_modDatabaseCurrentResultLimit + increment, MaxModDatabaseResultLimit);
+        if (nextLimit <= _modDatabaseCurrentResultLimit)
+        {
+            CanLoadMoreModDatabaseResults = false;
+            return;
+        }
+
+        _modDatabaseCurrentResultLimit = nextLimit;
+        TriggerModDatabaseSearch(preserveResultLimit: true);
+    }
+
     private async Task RunModDatabaseSearchAsync(
         string query,
         bool hasSearchTokens,
@@ -1846,9 +1901,10 @@ public sealed class MainViewModel : ObservableObject
 
             bool excludeInstalled = ExcludeInstalledModDatabaseResults;
             HashSet<string> installedModIds = await GetInstalledModIdsAsync(cancellationToken).ConfigureAwait(false);
-            int desiredResultCount = _modDatabaseSearchResultLimit;
+            int desiredResultCount = _modDatabaseCurrentResultLimit;
             int queryLimit = desiredResultCount;
             List<ModDatabaseSearchResult> finalResults = new();
+            bool hasMoreResults = false;
 
             while (true)
             {
@@ -1902,6 +1958,10 @@ public sealed class MainViewModel : ObservableObject
 
                 if (filteredResults.Count == 0)
                 {
+                    await InvokeOnDispatcherAsync(
+                            () => CanLoadMoreModDatabaseResults = false,
+                            cancellationToken)
+                        .ConfigureAwait(false);
                     await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken)
                         .ConfigureAwait(false);
                     await InvokeOnDispatcherAsync(
@@ -1922,15 +1982,17 @@ public sealed class MainViewModel : ObservableObject
                     .Take(desiredResultCount)
                     .ToList();
 
-                bool canRequestMore = queryLimit < 100 && results.Count >= queryLimit;
+                bool hasAdditionalResults = filteredResults.Count > finalResults.Count;
+                bool canRequestMore = queryLimit < MaxModDatabaseResultLimit && results.Count >= queryLimit;
                 if (!excludeInstalled
                     || finalResults.Count >= desiredResultCount
                     || !canRequestMore)
                 {
+                    hasMoreResults = hasAdditionalResults;
                     break;
                 }
 
-                int nextLimit = Math.Min(100, queryLimit + desiredResultCount);
+                int nextLimit = Math.Min(MaxModDatabaseResultLimit, queryLimit + desiredResultCount);
                 if (nextLimit <= queryLimit)
                 {
                     break;
@@ -1941,6 +2003,10 @@ public sealed class MainViewModel : ObservableObject
 
             if (finalResults.Count == 0)
             {
+                await InvokeOnDispatcherAsync(
+                        () => CanLoadMoreModDatabaseResults = false,
+                        cancellationToken)
+                    .ConfigureAwait(false);
                 await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
                 await InvokeOnDispatcherAsync(
                         () => SetStatus(BuildNoModDatabaseResultsMessage(hasSearchTokens), false),
@@ -1972,6 +2038,11 @@ public sealed class MainViewModel : ObservableObject
                 .ToList();
 
             await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
+
+            await InvokeOnDispatcherAsync(
+                    () => CanLoadMoreModDatabaseResults = hasMoreResults && _modDatabaseCurrentResultLimit < MaxModDatabaseResultLimit,
+                    cancellationToken)
+                .ConfigureAwait(false);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -2068,12 +2139,20 @@ public sealed class MainViewModel : ObservableObject
         {
             await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
             await InvokeOnDispatcherAsync(
+                    () => CanLoadMoreModDatabaseResults = false,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            await InvokeOnDispatcherAsync(
                     () => SetStatus(InternetAccessDisabledStatusMessage, false),
                     cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
         {
+            await InvokeOnDispatcherAsync(
+                    () => CanLoadMoreModDatabaseResults = false,
+                    cancellationToken)
+                .ConfigureAwait(false);
             await InvokeOnDispatcherAsync(
                     () => SetStatus(BuildModDatabaseErrorMessage(hasSearchTokens, ex.Message), true),
                     cancellationToken)

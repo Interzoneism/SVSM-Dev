@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,6 +16,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Navigation;
 
 using System.Windows.Threading;
 
@@ -47,6 +49,7 @@ public partial class MainWindow : Window
     private const double HoverOverlayOpacity = 0.1;
     private const double SelectionOverlayOpacity = 0.25;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";
+    private const string ManagerModDatabaseModId = "5545";
     private const string PresetDirectoryName = "Presets";
     private const string ModListDirectoryName = "Modlists";
     private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
@@ -159,6 +162,7 @@ public partial class MainWindow : Window
         }
 
         await RefreshDeleteCachedModsMenuHeaderAsync();
+        await RefreshManagerUpdateLinkAsync();
     }
 
     private void MainWindow_OnClosing(object? sender, CancelEventArgs e)
@@ -545,13 +549,19 @@ public partial class MainWindow : Window
 
     private void InternetAccessManager_OnInternetAccessChanged(object? sender, EventArgs e)
     {
-        if (Dispatcher.CheckAccess())
+        void Update()
         {
             UpdateCloudModlistControlsEnabledState();
+            _ = RefreshManagerUpdateLinkAsync();
+        }
+
+        if (Dispatcher.CheckAccess())
+        {
+            Update();
         }
         else
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, UpdateCloudModlistControlsEnabledState);
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)Update);
         }
     }
 
@@ -627,6 +637,45 @@ public partial class MainWindow : Window
         catch (NotSupportedException ex)
         {
             StatusLogService.AppendStatus($"Failed to back up Firebase auth state: {ex.Message}", true);
+        }
+    }
+
+    private void DeleteFirebaseAuthFiles()
+    {
+        string stateFilePath = FirebaseAnonymousAuthenticator.GetStateFilePath();
+        if (!string.IsNullOrWhiteSpace(stateFilePath))
+        {
+            TryDeleteFirebaseAuthFile(stateFilePath);
+        }
+
+        string? dataDirectory = _dataDirectory;
+        if (string.IsNullOrWhiteSpace(dataDirectory))
+        {
+            return;
+        }
+
+        string backupDirectory = Path.Combine(dataDirectory, "ModData", "SimpleVSManager");
+        string backupPath = Path.Combine(backupDirectory, "firebase-auth.json");
+        TryDeleteFirebaseAuthFile(backupPath);
+    }
+
+    private static void TryDeleteFirebaseAuthFile(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or System.Security.SecurityException)
+        {
+            StatusLogService.AppendStatus($"Failed to delete Firebase auth file {path}: {ex.Message}", true);
         }
     }
 
@@ -3331,6 +3380,17 @@ public partial class MainWindow : Window
 
     private void ManagerModDbPageMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
+        OpenManagerModDatabasePage();
+    }
+
+    private void ManagerUpdateLink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        e.Handled = true;
+        OpenManagerModDatabasePage();
+    }
+
+    private void OpenManagerModDatabasePage()
+    {
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
             WpfMessageBox.Show(
@@ -3357,6 +3417,28 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    private async void DeleteCloudAuthMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        const string confirmationMessage =
+            "This will remove all your online modlists and delete your authorization - good for resetting if something has gone wrong. Visit the Modlists (Beta) tab again to get a fresh firebase-auth";
+
+        MessageBoxResult result = WpfMessageBox.Show(
+            this,
+            confirmationMessage,
+            "Simple VS Manager",
+            MessageBoxButton.OKCancel,
+            MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.OK)
+        {
+            return;
+        }
+
+        await ExecuteCloudOperationAsync(
+            store => DeleteAllCloudModlistsAndAuthorizationAsync(store),
+            "delete all cloud modlists and Firebase authorization");
     }
 
     private async Task RefreshDeleteCachedModsMenuHeaderAsync()
@@ -5822,6 +5904,35 @@ public partial class MainWindow : Window
         return true;
     }
 
+    private async Task DeleteAllCloudModlistsAndAuthorizationAsync(FirebaseModlistStore store)
+    {
+        await store.DeleteAllUserDataAsync();
+        await store.Authenticator.DeleteAccountAsync(CancellationToken.None);
+
+        DeleteFirebaseAuthFiles();
+
+        _cloudModlistStore = null;
+        _firebaseAuthenticator = null;
+        _cloudModlistsLoaded = false;
+
+        SetCloudModlistSelection(null);
+        _viewModel?.ReplaceCloudModlists(null);
+        if (CloudModlistsDataGrid is not null)
+        {
+            CloudModlistsDataGrid.SelectedItem = null;
+        }
+
+        StatusLogService.AppendStatus("Deleted all cloud modlists and Firebase authorization.", false);
+        _viewModel?.ReportStatus("Deleted all cloud modlists and Firebase authorization.");
+
+        WpfMessageBox.Show(
+            this,
+            "Cloud modlists and Firebase authorization have been deleted.",
+            "Simple VS Manager",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
     private async Task UpdateCloudModlistsAfterChangeAsync()
     {
         if (_viewModel?.IsViewingCloudModlists == true)
@@ -6062,6 +6173,66 @@ public partial class MainWindow : Window
         {
             bool hasSelection = _selectedCloudModlist is not null;
             InstallCloudModlistButton.IsEnabled = internetEnabled && hasSelection;
+        }
+    }
+
+    private async Task RefreshManagerUpdateLinkAsync()
+    {
+        if (ManagerUpdateLinkTextBlock is null)
+        {
+            return;
+        }
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            ManagerUpdateLinkTextBlock.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        string? currentVersion = GetManagerInformationalVersion();
+        if (string.IsNullOrWhiteSpace(currentVersion))
+        {
+            ManagerUpdateLinkTextBlock.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        try
+        {
+            ModDatabaseInfo? info = await _modDatabaseService
+                .TryLoadDatabaseInfoAsync(ManagerModDatabaseModId, currentVersion, null)
+                .ConfigureAwait(true);
+
+            bool hasUpdate = info?.LatestVersion is string latestVersion
+                && VersionStringUtility.IsCandidateVersionNewer(latestVersion, currentVersion);
+
+            ManagerUpdateLinkTextBlock.Visibility = hasUpdate ? Visibility.Visible : Visibility.Collapsed;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            ManagerUpdateLinkTextBlock.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private static string? GetManagerInformationalVersion()
+    {
+        try
+        {
+            Assembly? assembly = typeof(MainWindow).Assembly;
+            if (assembly is null)
+            {
+                return null;
+            }
+
+            return assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+                ?? assembly.GetName().Version?.ToString();
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 
