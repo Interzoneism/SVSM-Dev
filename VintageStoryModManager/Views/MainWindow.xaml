@@ -451,6 +451,18 @@
                 </MenuItem>
             </Menu>
 
+            <TextBlock x:Name="ManagerUpdateLinkTextBlock"
+                       Grid.Column="1"
+                       Visibility="Collapsed"
+                       Margin="0,0,12,0"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Right">
+                <Hyperlink NavigateUri="https://mods.vintagestory.at/simplevsmanager"
+                           RequestNavigate="ManagerUpdateLink_OnRequestNavigate">
+                    Update available!
+                </Hyperlink>
+            </TextBlock>
+
 
         </Grid>
         <Grid x:Name="MIDDLE" Grid.Row="1"
