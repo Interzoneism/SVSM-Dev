@@ -49,7 +49,6 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _modDatabaseAssetId;
     private string? _modDatabasePageUrl;
     private Uri? _modDatabasePageUri;
-    private ImageSource? _modDatabasePageFavicon;
     private ICommand? _openModDatabasePageCommand;
     private string? _latestDatabaseVersion;
     private ImageSource? _modDatabaseLogo;
@@ -108,7 +107,6 @@ public sealed class ModListItemViewModel : ObservableObject
         _modDatabasePageUrl = databaseInfo?.ModPageUrl;
         _modDatabasePageUri = TryCreateHttpUri(_modDatabasePageUrl);
         LogDebug($"Initial database page URL '{FormatValue(_modDatabasePageUrl)}' resolved to '{FormatUri(_modDatabasePageUri)}'.");
-        _modDatabasePageFavicon = CreateFaviconImage(_modDatabasePageUri);
         if (_modDatabasePageUri != null)
         {
             Uri commandUri = _modDatabasePageUri;
@@ -136,8 +134,6 @@ public sealed class ModListItemViewModel : ObservableObject
 
         WebsiteUri = TryCreateHttpUri(Website);
         LogDebug($"Website URL '{FormatValue(Website)}' resolved to '{FormatUri(WebsiteUri)}'.");
-        WebsiteFavicon = CreateFaviconImage(WebsiteUri);
-        LogDebug($"Website favicon creation result: {WebsiteFavicon is not null}.");
         OpenWebsiteCommand = WebsiteUri != null ? new RelayCommand(() => LaunchUri(WebsiteUri)) : null;
 
         IReadOnlyList<ModDependencyInfo> dependencies = entry.Dependencies ?? Array.Empty<ModDependencyInfo>();
@@ -399,10 +395,6 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool HasWebsiteLink => WebsiteUri != null;
 
-    public ImageSource? WebsiteFavicon { get; }
-
-    public ImageSource? ModDatabasePageFavicon => _modDatabasePageFavicon;
-
     public ICommand? OpenWebsiteCommand { get; }
 
     public ICommand? OpenModDatabasePageCommand => _openModDatabasePageCommand;
@@ -653,9 +645,6 @@ public sealed class ModListItemViewModel : ObservableObject
             OnPropertyChanged(nameof(HasModDatabasePageLink));
             LogDebug($"Database page URI resolved to '{FormatUri(_modDatabasePageUri)}'.");
         }
-
-        SetProperty(ref _modDatabasePageFavicon, CreateFaviconImage(pageUri), nameof(ModDatabasePageFavicon));
-        LogDebug($"Database page favicon creation result: {_modDatabasePageFavicon is not null}.");
 
         ICommand? pageCommand = null;
         if (pageUri != null)
@@ -1543,39 +1532,6 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             AppendText(builder, release.Version);
             AppendCollection(builder, release.GameVersionTags);
-        }
-    }
-
-    private static ImageSource? CreateFaviconImage(Uri? uri)
-    {
-        if (uri == null)
-        {
-            return null;
-        }
-
-        if (InternetAccessManager.IsInternetAccessDisabled)
-        {
-            return null;
-        }
-
-        try
-        {
-            var builder = new UriBuilder(uri.GetLeftPart(UriPartial.Authority))
-            {
-                Path = "favicon.ico"
-            };
-
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.UriSource = builder.Uri;
-            bitmap.EndInit();
-            TryFreezeImageSource(bitmap, $"Favicon image ({builder.Uri})", null);
-            return bitmap;
-        }
-        catch (Exception)
-        {
-            return null;
         }
     }
 
