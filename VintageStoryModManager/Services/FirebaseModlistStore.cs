@@ -274,6 +274,22 @@ namespace SimpleVsManager.Cloud
 
 
 
+        public async Task DeleteAllUserDataAsync(CancellationToken ct = default)
+        {
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
+            var identity = GetIdentityComponents();
+
+            IReadOnlyList<string> slots = await ListSlotsAsync(identity, ct).ConfigureAwait(false);
+            foreach (string slot in slots)
+            {
+                await DeleteAsync(slot, ct).ConfigureAwait(false);
+            }
+
+            await DeleteOwnershipAsync(identity, ct).ConfigureAwait(false);
+        }
+
+
+
         public async Task<IReadOnlyList<CloudModlistRegistryEntry>> GetRegistryEntriesAsync(CancellationToken ct = default)
         {
             InternetAccessManager.ThrowIfInternetAccessDisabled();
@@ -615,6 +631,28 @@ namespace SimpleVsManager.Cloud
             finally
             {
                 _ownershipClaimLock.Release();
+            }
+        }
+
+        private async Task DeleteOwnershipAsync((string Uid, string Name) identity, CancellationToken ct)
+        {
+            var deleteResult = await SendWithAuthRetryAsync(session =>
+            {
+                string ownersUrl = BuildAuthenticatedUrl(session.IdToken, null, "owners", identity.Uid);
+                return HttpClient.DeleteAsync(ownersUrl, ct);
+            }, ct).ConfigureAwait(false);
+
+            using (deleteResult.Response)
+            {
+                if (!deleteResult.Response.IsSuccessStatusCode && deleteResult.Response.StatusCode != HttpStatusCode.NotFound)
+                {
+                    await EnsureOk(deleteResult.Response, "Delete ownership").ConfigureAwait(false);
+                }
+            }
+
+            if (string.Equals(_ownershipClaimedForUid, identity.Uid, StringComparison.Ordinal))
+            {
+                _ownershipClaimedForUid = null;
             }
         }
 

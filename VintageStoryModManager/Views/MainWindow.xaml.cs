@@ -643,6 +643,45 @@ public partial class MainWindow : Window
         }
     }
 
+    private void DeleteFirebaseAuthFiles()
+    {
+        string stateFilePath = FirebaseAnonymousAuthenticator.GetStateFilePath();
+        if (!string.IsNullOrWhiteSpace(stateFilePath))
+        {
+            TryDeleteFirebaseAuthFile(stateFilePath);
+        }
+
+        string? dataDirectory = _dataDirectory;
+        if (string.IsNullOrWhiteSpace(dataDirectory))
+        {
+            return;
+        }
+
+        string backupDirectory = Path.Combine(dataDirectory, "ModData", "SimpleVSManager");
+        string backupPath = Path.Combine(backupDirectory, "firebase-auth.json");
+        TryDeleteFirebaseAuthFile(backupPath);
+    }
+
+    private static void TryDeleteFirebaseAuthFile(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or System.Security.SecurityException)
+        {
+            StatusLogService.AppendStatus($"Failed to delete Firebase auth file {path}: {ex.Message}", true);
+        }
+    }
+
     private void UpdateSearchSortingBehavior(bool isSearchingModDatabase)
     {
         if (ModsDataGrid == null)
@@ -3383,6 +3422,28 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void DeleteCloudAuthMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        const string confirmationMessage =
+            "This will remove all your online modlists and delete your authorization - good for resetting if something has gone wrong. Visit the Modlists (Beta) tab again to get a fresh firebase-auth";
+
+        MessageBoxResult result = WpfMessageBox.Show(
+            this,
+            confirmationMessage,
+            "Simple VS Manager",
+            MessageBoxButton.OKCancel,
+            MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.OK)
+        {
+            return;
+        }
+
+        await ExecuteCloudOperationAsync(
+            store => DeleteAllCloudModlistsAndAuthorizationAsync(store),
+            "delete all cloud modlists and Firebase authorization");
+    }
+
     private async Task RefreshDeleteCachedModsMenuHeaderAsync()
     {
         if (DeleteCachedModsMenuItem is null)
@@ -5844,6 +5905,35 @@ public partial class MainWindow : Window
 
         await UpdateCloudModlistsAfterChangeAsync();
         return true;
+    }
+
+    private async Task DeleteAllCloudModlistsAndAuthorizationAsync(FirebaseModlistStore store)
+    {
+        await store.DeleteAllUserDataAsync();
+        await store.Authenticator.DeleteAccountAsync(CancellationToken.None);
+
+        DeleteFirebaseAuthFiles();
+
+        _cloudModlistStore = null;
+        _firebaseAuthenticator = null;
+        _cloudModlistsLoaded = false;
+
+        SetCloudModlistSelection(null);
+        _viewModel?.ReplaceCloudModlists(null);
+        if (CloudModlistsDataGrid is not null)
+        {
+            CloudModlistsDataGrid.SelectedItem = null;
+        }
+
+        StatusLogService.AppendStatus("Deleted all cloud modlists and Firebase authorization.", false);
+        _viewModel?.ReportStatus("Deleted all cloud modlists and Firebase authorization.");
+
+        WpfMessageBox.Show(
+            this,
+            "Cloud modlists and Firebase authorization have been deleted.",
+            "Simple VS Manager",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 
     private async Task UpdateCloudModlistsAfterChangeAsync()

@@ -448,6 +448,9 @@
                     <MenuItem Header="Manager _Mod DB Page"
                               Padding="12,6"
                               Click="ManagerModDbPageMenuItem_OnClick" />
+                    <MenuItem Header="Delete cloud modlists and firebase-auth"
+                              Padding="12,6"
+                              Click="DeleteCloudAuthMenuItem_OnClick" />
                 </MenuItem>
             </Menu>
 

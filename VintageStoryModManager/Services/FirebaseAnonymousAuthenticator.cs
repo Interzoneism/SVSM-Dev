@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Security;
 using System.Text;
@@ -19,6 +20,7 @@ public sealed class FirebaseAnonymousAuthenticator
 {
     private const string SignInEndpoint = "https://identitytoolkit.googleapis.com/v1/accounts:signUp";
     private const string RefreshEndpoint = "https://securetoken.googleapis.com/v1/token";
+    private const string DeleteEndpoint = "https://identitytoolkit.googleapis.com/v1/accounts:delete";
     private const string StateFileName = "firebase-auth.json";
     private static readonly HttpClient HttpClient = new();
     private static readonly TimeSpan ExpirationSkew = TimeSpan.FromMinutes(2);
@@ -118,6 +120,44 @@ public sealed class FirebaseAnonymousAuthenticator
             FirebaseAuthState expired = state.WithExpiration(DateTimeOffset.UtcNow - TimeSpan.FromMinutes(5));
             _cachedState = expired;
             SaveStateToDisk(expired);
+        }
+        finally
+        {
+            _stateLock.Release();
+        }
+    }
+
+    public async Task DeleteAccountAsync(CancellationToken ct)
+    {
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
+        await _stateLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            FirebaseAuthState? state = _cachedState ?? LoadStateFromDisk();
+            if (state is null)
+            {
+                _cachedState = null;
+                DeleteStateFile();
+                return;
+            }
+
+            FirebaseAuthState currentState = state;
+            if (currentState.IsExpired)
+            {
+                FirebaseAuthState? refreshed = await TryRefreshAsync(currentState, ct).ConfigureAwait(false);
+                if (refreshed is not null)
+                {
+                    currentState = refreshed;
+                    _cachedState = refreshed;
+                    SaveStateToDisk(refreshed);
+                }
+            }
+
+            await DeleteAccountInternalAsync(currentState.IdToken, ct).ConfigureAwait(false);
+
+            _cachedState = null;
+            DeleteStateFile();
         }
         finally
         {
@@ -355,6 +395,26 @@ public sealed class FirebaseAnonymousAuthenticator
         }
     }
 
+    private void DeleteStateFile()
+    {
+        try
+        {
+            if (File.Exists(_stateFilePath))
+            {
+                File.Delete(_stateFilePath);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+        catch (SecurityException)
+        {
+        }
+    }
+
     private async Task<FirebaseAuthState> SignInAsync(CancellationToken ct)
     {
         InternetAccessManager.ThrowIfInternetAccessDisabled();
@@ -388,6 +448,32 @@ public sealed class FirebaseAnonymousAuthenticator
         }
 
         return new FirebaseAuthState(payload.IdToken.Trim(), payload.RefreshToken.Trim(), expiration, payload.LocalId.Trim());
+    }
+
+    private async Task DeleteAccountInternalAsync(string idToken, CancellationToken ct)
+    {
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+        string requestUri = $"{DeleteEndpoint}?key={Uri.EscapeDataString(_apiKey)}";
+        string payload = JsonSerializer.Serialize(new { idToken });
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
+        {
+            Content = new StringContent(payload, Encoding.UTF8, "application/json")
+        };
+
+        using HttpResponseMessage response = await HttpClient.SendAsync(request, ct).ConfigureAwait(false);
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
+        {
+            return;
+        }
+
+        string body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        throw new InvalidOperationException($"Firebase account deletion failed: {(int)response.StatusCode} {response.ReasonPhrase} | {Truncate(body, 200)}");
     }
 
     private async Task<FirebaseAuthState?> TryRefreshAsync(FirebaseAuthState existingState, CancellationToken ct)
