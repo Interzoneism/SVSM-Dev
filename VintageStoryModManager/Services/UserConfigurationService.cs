@@ -624,7 +624,7 @@ public sealed class UserConfigurationService
             return DefaultModDatabaseSearchResultLimit;
         }
 
-        return Math.Clamp(normalized, 1, 100);
+        return Math.Max(normalized, 1);
     }
 
     private static int NormalizeModDatabaseNewModsRecentMonths(int? value)

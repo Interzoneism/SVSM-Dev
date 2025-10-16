@@ -58,6 +58,22 @@ public sealed class ModDatabaseService
         @"<[^>]+>",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+    private static int CalculateRequestLimit(int maxResults)
+    {
+        long scaledLimit = (long)maxResults * 4L;
+        if (scaledLimit < maxResults)
+        {
+            scaledLimit = maxResults;
+        }
+
+        if (scaledLimit > int.MaxValue)
+        {
+            return int.MaxValue;
+        }
+
+        return (int)scaledLimit;
+    }
+
     public async Task PopulateModDatabaseInfoAsync(IEnumerable<ModEntry> mods, string? installedGameVersion, CancellationToken cancellationToken = default)
     {
         if (mods is null)
@@ -192,7 +208,7 @@ public sealed class ModDatabaseService
 
         InternetAccessManager.ThrowIfInternetAccessDisabled();
 
-        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
+        int requestLimit = CalculateRequestLimit(maxResults);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
             SearchEndpointFormat,
@@ -221,7 +237,7 @@ public sealed class ModDatabaseService
 
         InternetAccessManager.ThrowIfInternetAccessDisabled();
 
-        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
+        int requestLimit = CalculateRequestLimit(maxResults);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
             MostDownloadedEndpointFormat,
@@ -250,7 +266,7 @@ public sealed class ModDatabaseService
 
         InternetAccessManager.ThrowIfInternetAccessDisabled();
 
-        int requestLimit = Math.Clamp(maxResults * 4, maxResults, 100);
+        int requestLimit = CalculateRequestLimit(maxResults);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
             MostDownloadedEndpointFormat,
