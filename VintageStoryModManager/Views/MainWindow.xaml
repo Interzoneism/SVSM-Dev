@@ -435,7 +435,7 @@
                               Style="{StaticResource ToggleMenuItemStyle}"
                               IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}" />
                 </MenuItem>
-                <MenuItem Header="_Help" Height="35">
+                <MenuItem Header="_Help / Advanced" Height="35">
                     <MenuItem x:Name="ManagerVersionMenuItem"
                               Header="Version: --"
                               Padding="12,6"
