@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using VintageStoryModManager.ViewModels;
@@ -17,8 +18,8 @@ public sealed class UserConfigurationService
     private const string ConfigurationFileName = "SimpleVSManagerConfiguration.json";
     private const string ModConfigPathsFileName = "SimpleVSManagerModConfigPaths.json";
     private const string LegacyModConfigPathsFileName = "SimpleVSManagerModConfigPaths";
-    private const string CurrentModManagerVersion = "1.2.0";
-    private const string CurrentConfigurationVersion = "1.2.0";
+    private static readonly string CurrentModManagerVersion = ResolveCurrentVersion();
+    private static readonly string CurrentConfigurationVersion = CurrentModManagerVersion;
     private const int DefaultModDatabaseSearchResultLimit = 30;
     private const int DefaultModDatabaseNewModsRecentMonths = 3;
     private const int MaxModDatabaseNewModsRecentMonths = 24;
@@ -1025,6 +1026,26 @@ public sealed class UserConfigurationService
         {
             return null;
         }
+    }
+
+    private static string ResolveCurrentVersion()
+    {
+        Assembly assembly = typeof(UserConfigurationService).Assembly;
+
+        string? informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrWhiteSpace(informationalVersion))
+        {
+            return informationalVersion!;
+        }
+
+        string? fileVersion = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version;
+        if (!string.IsNullOrWhiteSpace(fileVersion))
+        {
+            return fileVersion!;
+        }
+
+        Version? version = assembly.GetName().Version;
+        return version?.ToString() ?? "0.0.0";
     }
 
     private static string? NormalizeVersion(string? version)
