@@ -127,6 +127,21 @@ public partial class MainWindow : Window
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         EnableDebugLoggingMenuItem.IsChecked = _userConfiguration.EnableDebugLogging;
         StatusLogService.IsLoggingEnabled = _userConfiguration.EnableDebugLogging;
+
+        if (ManagerVersionMenuItem is not null)
+        {
+            string? managerVersion = GetManagerInformationalVersion();
+            if (string.IsNullOrWhiteSpace(managerVersion))
+            {
+                ManagerVersionMenuItem.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                ManagerVersionMenuItem.Header = $"Version: {managerVersion}";
+                ManagerVersionMenuItem.Visibility = Visibility.Visible;
+            }
+        }
+
         UpdateModlistAutoLoadMenu(_userConfiguration.ModlistAutoLoadBehavior);
 
         TryInitializePaths();

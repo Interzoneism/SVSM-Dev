@@ -436,6 +436,11 @@
                               IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}" />
                 </MenuItem>
                 <MenuItem Header="_Help" Height="35">
+                    <MenuItem x:Name="ManagerVersionMenuItem"
+                              Header="Version: --"
+                              Padding="12,6"
+                              IsEnabled="False"
+                              Focusable="False" />
                     <MenuItem x:Name="EnableDebugLoggingMenuItem"
                               Header="Enable debug logging"
                               Height="35"
