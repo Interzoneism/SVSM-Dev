@@ -16,7 +16,8 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 internal sealed class ModDatabaseCacheService
 {
-    private const int CacheSchemaVersion = 1;
+    private const int CacheSchemaVersion = 2;
+    private const int MinimumSupportedCacheSchemaVersion = 1;
     private const string AnyGameVersionToken = "any";
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -49,7 +50,7 @@ internal sealed class ModDatabaseCacheService
                 .ConfigureAwait(false);
 
             if (cached is null
-                || cached.SchemaVersion != CacheSchemaVersion
+                || !IsSupportedSchemaVersion(cached.SchemaVersion)
                 || !IsGameVersionMatch(cached.GameVersion, normalizedGameVersion))
             {
                 return null;
@@ -75,6 +76,7 @@ internal sealed class ModDatabaseCacheService
         string modId,
         string? normalizedGameVersion,
         ModDatabaseInfo info,
+        string? installedModVersion,
         CancellationToken cancellationToken)
     {
         if (info is null)
@@ -106,9 +108,23 @@ internal sealed class ModDatabaseCacheService
         SemaphoreSlim fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
         try
         {
+            Dictionary<string, string[]> tagsByModVersion = await LoadExistingTagsByVersionAsync(cachePath, cancellationToken)
+                .ConfigureAwait(false);
+
+            string? tagsVersionKey = NormalizeModVersion(info.CachedTagsVersion);
+            if (string.IsNullOrWhiteSpace(tagsVersionKey))
+            {
+                tagsVersionKey = NormalizeModVersion(installedModVersion);
+            }
+
+            if (!string.IsNullOrWhiteSpace(tagsVersionKey))
+            {
+                tagsByModVersion[tagsVersionKey] = info.Tags?.ToArray() ?? Array.Empty<string>();
+            }
+
             string tempPath = cachePath + ".tmp";
 
-            CachedModDatabaseInfo cacheModel = CreateCacheModel(modId, normalizedGameVersion, info);
+            CachedModDatabaseInfo cacheModel = CreateCacheModel(modId, normalizedGameVersion, info, tagsByModVersion);
 
             await using (FileStream tempStream = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
@@ -150,10 +166,54 @@ internal sealed class ModDatabaseCacheService
         }
     }
 
+    private async Task<Dictionary<string, string[]>> LoadExistingTagsByVersionAsync(
+        string cachePath,
+        CancellationToken cancellationToken)
+    {
+        if (!File.Exists(cachePath))
+        {
+            return new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        try
+        {
+            await using FileStream stream = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            CachedModDatabaseInfo? cached = await JsonSerializer
+                .DeserializeAsync<CachedModDatabaseInfo>(stream, SerializerOptions, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cached?.TagsByModVersion is { Count: > 0 })
+            {
+                return new Dictionary<string, string[]>(cached.TagsByModVersion, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // Ignore failures when reading the existing cache entry.
+        }
+
+        return new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string? NormalizeModVersion(string? version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return null;
+        }
+
+        return VersionStringUtility.Normalize(version);
+    }
+
     private static CachedModDatabaseInfo CreateCacheModel(
         string modId,
         string? normalizedGameVersion,
-        ModDatabaseInfo info)
+        ModDatabaseInfo info,
+        IReadOnlyDictionary<string, string[]> tagsByModVersion)
     {
         var releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
         var releaseModels = new List<CachedModRelease>(releases.Count);
@@ -187,6 +247,9 @@ internal sealed class ModDatabaseCacheService
                 ? AnyGameVersionToken
                 : normalizedGameVersion!,
             Tags = info.Tags?.ToArray() ?? Array.Empty<string>(),
+            TagsByModVersion = tagsByModVersion.Count == 0
+                ? new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, string[]>(tagsByModVersion, StringComparer.OrdinalIgnoreCase),
             AssetId = info.AssetId,
             ModPageUrl = info.ModPageUrl,
             Downloads = info.Downloads,
@@ -207,6 +270,13 @@ internal sealed class ModDatabaseCacheService
         string? normalizedGameVersion,
         string? installedModVersion)
     {
+        string? normalizedInstalledVersion = NormalizeModVersion(installedModVersion);
+
+        IReadOnlyList<string> tags = GetTagsForInstalledVersion(
+            cached,
+            normalizedInstalledVersion,
+            out string? cachedTagsVersion);
+
         IReadOnlyList<ModReleaseInfo> releases = BuildReleases(cached.Releases, normalizedGameVersion);
 
         ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
@@ -218,7 +288,8 @@ internal sealed class ModDatabaseCacheService
 
         return new ModDatabaseInfo
         {
-            Tags = cached.Tags ?? Array.Empty<string>(),
+            Tags = tags,
+            CachedTagsVersion = cachedTagsVersion,
             AssetId = cached.AssetId,
             ModPageUrl = cached.ModPageUrl,
             LatestCompatibleVersion = latestCompatibleRelease?.Version,
@@ -236,6 +307,40 @@ internal sealed class ModDatabaseCacheService
             LatestCompatibleRelease = latestCompatibleRelease,
             Releases = releases
         };
+    }
+
+    private static IReadOnlyList<string> GetTagsForInstalledVersion(
+        CachedModDatabaseInfo cached,
+        string? normalizedInstalledVersion,
+        out string? cachedTagsVersion)
+    {
+        cachedTagsVersion = null;
+
+        if (!string.IsNullOrWhiteSpace(normalizedInstalledVersion)
+            && cached.TagsByModVersion is { Count: > 0 }
+            && cached.TagsByModVersion.TryGetValue(normalizedInstalledVersion, out string[]? versionTags))
+        {
+            cachedTagsVersion = normalizedInstalledVersion;
+            return versionTags is { Length: > 0 } ? versionTags : Array.Empty<string>();
+        }
+
+        if (cached.Tags is { Length: > 0 })
+        {
+            return cached.Tags;
+        }
+
+        if (cached.TagsByModVersion is { Count: > 0 })
+        {
+            foreach (KeyValuePair<string, string[]> entry in cached.TagsByModVersion)
+            {
+                if (entry.Value is { Length: > 0 })
+                {
+                    return entry.Value;
+                }
+            }
+        }
+
+        return Array.Empty<string>();
     }
 
     private static IReadOnlyList<ModReleaseInfo> BuildReleases(
@@ -348,6 +453,12 @@ internal sealed class ModDatabaseCacheService
         return gate;
     }
 
+    private static bool IsSupportedSchemaVersion(int schemaVersion)
+    {
+        return schemaVersion >= MinimumSupportedCacheSchemaVersion
+            && schemaVersion <= CacheSchemaVersion;
+    }
+
     private static string? GetCacheFilePath(string modId, string? normalizedGameVersion)
     {
         if (string.IsNullOrWhiteSpace(modId))
@@ -389,6 +500,8 @@ internal sealed class ModDatabaseCacheService
         public DateTime CachedUtc { get; init; }
 
         public string[] Tags { get; init; } = Array.Empty<string>();
+
+        public Dictionary<string, string[]> TagsByModVersion { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
         public string? AssetId { get; init; }
 

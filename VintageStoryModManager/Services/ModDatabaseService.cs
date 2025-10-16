@@ -109,13 +109,20 @@ public sealed class ModDatabaseService
 
         async Task ProcessModAsync(ModEntry modEntry)
         {
+            string? installedModVersion = modEntry.Version;
+
             ModDatabaseInfo? cached = await CacheService
-                .TryLoadAsync(modEntry.ModId, normalizedGameVersion, modEntry.Version, cancellationToken)
+                .TryLoadAsync(modEntry.ModId, normalizedGameVersion, installedModVersion, cancellationToken)
                 .ConfigureAwait(false);
 
             if (cached != null)
             {
                 modEntry.DatabaseInfo = cached;
+
+                if (ShouldSkipTagsFetch(cached, installedModVersion))
+                {
+                    return;
+                }
             }
 
             if (internetDisabled)
@@ -128,7 +135,7 @@ public sealed class ModDatabaseService
             {
                 ModDatabaseInfo? info = await TryLoadDatabaseInfoInternalAsync(
                         modEntry.ModId,
-                        modEntry.Version,
+                        installedModVersion,
                         normalizedGameVersion,
                         cancellationToken)
                     .ConfigureAwait(false);
@@ -170,26 +177,49 @@ public sealed class ModDatabaseService
         return CacheService.TryLoadAsync(modId, normalizedGameVersion, modVersion, cancellationToken);
     }
 
+    private static bool ShouldSkipTagsFetch(ModDatabaseInfo? cachedInfo, string? installedModVersion)
+    {
+        if (cachedInfo is null || string.IsNullOrWhiteSpace(installedModVersion))
+        {
+            return false;
+        }
+
+        string? normalizedInstalledVersion = VersionStringUtility.Normalize(installedModVersion);
+        if (string.IsNullOrWhiteSpace(normalizedInstalledVersion))
+        {
+            return false;
+        }
+
+        return string.Equals(
+            cachedInfo.CachedTagsVersion,
+            normalizedInstalledVersion,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
     private async Task<ModDatabaseInfo?> TryLoadDatabaseInfoAsyncCore(
         string modId,
         string? modVersion,
         string? normalizedGameVersion,
         CancellationToken cancellationToken)
     {
+        ModDatabaseInfo? cached = await CacheService
+            .TryLoadAsync(modId, normalizedGameVersion, modVersion, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (ShouldSkipTagsFetch(cached, modVersion))
+        {
+            return cached;
+        }
+
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
-            return await CacheService.TryLoadAsync(modId, normalizedGameVersion, modVersion, cancellationToken).ConfigureAwait(false);
+            return cached;
         }
 
         ModDatabaseInfo? info = await TryLoadDatabaseInfoInternalAsync(modId, modVersion, normalizedGameVersion, cancellationToken)
             .ConfigureAwait(false);
 
-        if (info != null)
-        {
-            return info;
-        }
-
-        return await CacheService.TryLoadAsync(modId, normalizedGameVersion, modVersion, cancellationToken).ConfigureAwait(false);
+        return info ?? cached;
     }
 
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> SearchModsAsync(string query, int maxResults, CancellationToken cancellationToken = default)
@@ -592,6 +622,8 @@ public sealed class ModDatabaseService
 
         try
         {
+            string? normalizedModVersion = VersionStringUtility.Normalize(modVersion);
+
             string requestUri = string.Format(CultureInfo.InvariantCulture, ApiEndpointFormat, Uri.EscapeDataString(modId));
             using HttpRequestMessage request = new(HttpMethod.Get, requestUri);
             using HttpResponseMessage response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
@@ -633,6 +665,7 @@ public sealed class ModDatabaseService
             var info = new ModDatabaseInfo
             {
                 Tags = tags,
+                CachedTagsVersion = normalizedModVersion,
                 AssetId = assetId,
                 ModPageUrl = modPageUrl,
                 LatestCompatibleVersion = latestCompatibleVersion,
@@ -651,7 +684,7 @@ public sealed class ModDatabaseService
                 Releases = releases
             };
 
-            await CacheService.StoreAsync(modId, normalizedGameVersion, info, cancellationToken).ConfigureAwait(false);
+            await CacheService.StoreAsync(modId, normalizedGameVersion, info, modVersion, cancellationToken).ConfigureAwait(false);
 
             return info;
         }
