@@ -594,7 +594,8 @@ public sealed class ModListItemViewModel : ObservableObject
         if (logoUrlChanged)
         {
             _modDatabaseLogoUrl = logoUrl;
-            if (loadLogoImmediately)
+            bool shouldCreateLogo = loadLogoImmediately && Icon is null;
+            if (shouldCreateLogo)
             {
                 _modDatabaseLogo = CreateModDatabaseLogoImage();
                 LogDebug($"Updated database logo. New URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
@@ -607,13 +608,13 @@ public sealed class ModListItemViewModel : ObservableObject
                 }
 
                 _modDatabaseLogo = null;
-                LogDebug($"Deferred database logo update. New URL='{FormatValue(_modDatabaseLogoUrl)}'.");
+                LogDebug($"Deferred database logo update. New URL='{FormatValue(_modDatabaseLogoUrl)}'. Logo creation skipped={!shouldCreateLogo}.");
             }
 
             OnPropertyChanged(nameof(ModDatabasePreviewImage));
             OnPropertyChanged(nameof(HasModDatabasePreviewImage));
         }
-        else if (loadLogoImmediately && _modDatabaseLogo is null && !string.IsNullOrWhiteSpace(_modDatabaseLogoUrl))
+        else if (loadLogoImmediately && Icon is null && _modDatabaseLogo is null && !string.IsNullOrWhiteSpace(_modDatabaseLogoUrl))
         {
             _modDatabaseLogo = CreateModDatabaseLogoImage();
             OnPropertyChanged(nameof(ModDatabasePreviewImage));
