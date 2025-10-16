@@ -3535,6 +3535,7 @@ public partial class MainWindow : Window
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
+            SwitchToInstalledModsTab();
             return;
         }
 
@@ -3561,6 +3562,7 @@ public partial class MainWindow : Window
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
+            SwitchToInstalledModsTab();
             return;
         }
 
@@ -3581,6 +3583,15 @@ public partial class MainWindow : Window
             "Simple VS Manager",
             MessageBoxButton.OK,
             MessageBoxImage.Warning);
+        SwitchToInstalledModsTab();
+    }
+
+    private void SwitchToInstalledModsTab()
+    {
+        if (_viewModel?.ShowInstalledModsCommand?.CanExecute(null) == true)
+        {
+            _viewModel.ShowInstalledModsCommand.Execute(null);
+        }
     }
 
     private async Task RefreshDeleteCachedModsMenuHeaderAsync()
