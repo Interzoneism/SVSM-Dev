@@ -447,10 +447,10 @@
                               IsCheckable="True"
                               Style="{StaticResource ToggleMenuItemStyle}"
                               Click="EnableDebugLoggingMenuItem_OnClick" />
-                    <MenuItem Header="Manager _Data Folder"
+                    <MenuItem Header="Open Documents/Simple VS Manager/ folder"
                               Padding="12,6"
                               Click="ManagerDataFolderMenuItem_OnClick" />
-                    <MenuItem Header="Manager _Mod DB Page"
+                    <MenuItem Header="Open _Mod DB Page for Simple VS Manager"
                               Padding="12,6"
                               Click="ManagerModDbPageMenuItem_OnClick" />
                     <MenuItem Header="Delete cloud modlists and firebase-auth"
