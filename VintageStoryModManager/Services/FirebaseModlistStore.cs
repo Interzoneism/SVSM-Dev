@@ -126,6 +126,7 @@ namespace SimpleVsManager.Cloud
         /// <summary>Save or replace the JSON in the given slot (e.g., "slot1").</summary>
         public async Task SaveAsync(string slotKey, string modlistJson, CancellationToken ct = default)
         {
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
             ValidateSlotKey(slotKey);
             var identity = GetIdentityComponents();
             await EnsureOwnershipAsync(identity, ct).ConfigureAwait(false);
@@ -186,6 +187,7 @@ namespace SimpleVsManager.Cloud
         /// <summary>Load a JSON string from the slot. Returns null if missing.</summary>
         public async Task<string?> LoadAsync(string slotKey, CancellationToken ct = default)
         {
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
             ValidateSlotKey(slotKey);
             var identity = GetIdentityComponents();
             await EnsureOwnershipAsync(identity, ct).ConfigureAwait(false);
@@ -222,6 +224,7 @@ namespace SimpleVsManager.Cloud
 
         public async Task<IReadOnlyList<string>> ListSlotsAsync(CancellationToken ct = default)
         {
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
             var identity = GetIdentityComponents();
             await EnsureOwnershipAsync(identity, ct).ConfigureAwait(false); // NEW
             return await ListSlotsAsync(identity, ct);
@@ -231,6 +234,7 @@ namespace SimpleVsManager.Cloud
         /// <summary>Delete a slot if present (idempotent).</summary>
         public async Task DeleteAsync(string slotKey, CancellationToken ct = default)
         {
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
             ValidateSlotKey(slotKey);
             var identity = GetIdentityComponents();
             await EnsureOwnershipAsync(identity, ct).ConfigureAwait(false);
@@ -272,6 +276,7 @@ namespace SimpleVsManager.Cloud
 
         public async Task<IReadOnlyList<CloudModlistRegistryEntry>> GetRegistryEntriesAsync(CancellationToken ct = default)
         {
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
             var sendResult = await SendWithAuthRetryAsync(session =>
             {
                 string registryUrl = BuildAuthenticatedUrl(session.IdToken, null, "registry");
@@ -319,6 +324,7 @@ namespace SimpleVsManager.Cloud
         /// <summary>Return the first available slot key (slot1..slot5), or null if full.</summary>
         public async Task<string?> GetFirstFreeSlotAsync(CancellationToken ct = default)
         {
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
             IReadOnlyList<string> existing = await ListSlotsAsync(ct);
             foreach (string slot in KnownSlots)
             {
@@ -514,6 +520,7 @@ namespace SimpleVsManager.Cloud
 
             while (true)
             {
+                InternetAccessManager.ThrowIfInternetAccessDisabled();
                 FirebaseAnonymousAuthenticator.FirebaseAuthSession session = await _authenticator.GetSessionAsync(ct).ConfigureAwait(false);
                 HttpResponseMessage response = await operation(session).ConfigureAwait(false);
 
@@ -531,6 +538,7 @@ namespace SimpleVsManager.Cloud
 
         private async Task EnsureOwnershipAsync((string Uid, string Name) identity, CancellationToken ct)
         {
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
             if (string.Equals(_ownershipClaimedForUid, identity.Uid, StringComparison.Ordinal))
             {
                 return;

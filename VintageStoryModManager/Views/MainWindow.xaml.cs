@@ -142,6 +142,9 @@ public partial class MainWindow : Window
 
         Loaded += MainWindow_Loaded;
         Closing += MainWindow_OnClosing;
+        InternetAccessManager.InternetAccessChanged += InternetAccessManager_OnInternetAccessChanged;
+
+        UpdateCloudModlistControlsEnabledState();
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -162,6 +165,7 @@ public partial class MainWindow : Window
     {
         SaveWindowDimensions();
         SaveUploaderName();
+        InternetAccessManager.InternetAccessChanged -= InternetAccessManager_OnInternetAccessChanged;
     }
 
     private void DisableInternetAccessMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -536,6 +540,18 @@ public partial class MainWindow : Window
         if (CloudModlistsDataGrid != null)
         {
             CloudModlistsDataGrid.SelectedItem = null;
+        }
+    }
+
+    private void InternetAccessManager_OnInternetAccessChanged(object? sender, EventArgs e)
+    {
+        if (Dispatcher.CheckAccess())
+        {
+            UpdateCloudModlistControlsEnabledState();
+        }
+        else
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, UpdateCloudModlistControlsEnabledState);
         }
     }
 
@@ -5912,6 +5928,7 @@ public partial class MainWindow : Window
         }
 
         _isCloudModlistRefreshInProgress = true;
+        UpdateCloudModlistControlsEnabledState();
 
         try
         {
@@ -5935,6 +5952,7 @@ public partial class MainWindow : Window
         finally
         {
             _isCloudModlistRefreshInProgress = false;
+            UpdateCloudModlistControlsEnabledState();
         }
     }
 
@@ -6007,22 +6025,47 @@ public partial class MainWindow : Window
             SelectedModlistDescription.Text = entry?.Description ?? string.Empty;
         }
 
-        if (InstallCloudModlistButton is null)
+        if (InstallCloudModlistButton is not null)
         {
-            return;
+            if (entry is null)
+            {
+                InstallCloudModlistButton.Visibility = Visibility.Collapsed;
+                InstallCloudModlistButton.ToolTip = null;
+            }
+            else
+            {
+                InstallCloudModlistButton.Visibility = Visibility.Visible;
+                InstallCloudModlistButton.ToolTip = $"Install \"{entry.DisplayName}\"";
+            }
         }
 
-        if (entry is null)
+        UpdateCloudModlistControlsEnabledState();
+    }
+
+    private void UpdateCloudModlistControlsEnabledState()
+    {
+        bool internetEnabled = !InternetAccessManager.IsInternetAccessDisabled;
+
+        if (SaveCloudModlistButton is not null)
         {
-            InstallCloudModlistButton.Visibility = Visibility.Collapsed;
-            InstallCloudModlistButton.IsEnabled = false;
-            InstallCloudModlistButton.ToolTip = null;
-            return;
+            SaveCloudModlistButton.IsEnabled = internetEnabled;
         }
 
-        InstallCloudModlistButton.Visibility = Visibility.Visible;
-        InstallCloudModlistButton.IsEnabled = true;
-        InstallCloudModlistButton.ToolTip = $"Install \"{entry.DisplayName}\"";
+        if (ModifyCloudModlistsButton is not null)
+        {
+            ModifyCloudModlistsButton.IsEnabled = internetEnabled;
+        }
+
+        if (RefreshCloudModlistsButton is not null)
+        {
+            RefreshCloudModlistsButton.IsEnabled = internetEnabled && !_isCloudModlistRefreshInProgress;
+        }
+
+        if (InstallCloudModlistButton is not null)
+        {
+            bool hasSelection = _selectedCloudModlist is not null;
+            InstallCloudModlistButton.IsEnabled = internetEnabled && hasSelection;
+        }
     }
 
     private static string BuildCloudSlotDisplay(string slotKey, CloudModlistMetadata metadata, bool isOccupied)
