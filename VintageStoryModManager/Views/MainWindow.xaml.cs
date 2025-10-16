@@ -6620,8 +6620,23 @@ public partial class MainWindow : Window
                 return null;
             }
 
-            return assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+            string? informationalVersion = assembly
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                .InformationalVersion
                 ?? assembly.GetName().Version?.ToString();
+
+            if (string.IsNullOrWhiteSpace(informationalVersion))
+            {
+                return null;
+            }
+
+            int buildMetadataSeparatorIndex = informationalVersion.IndexOf('+');
+            if (buildMetadataSeparatorIndex >= 0)
+            {
+                informationalVersion = informationalVersion[..buildMetadataSeparatorIndex];
+            }
+
+            return informationalVersion.Trim();
         }
         catch (Exception)
         {
