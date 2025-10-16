@@ -106,6 +106,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _isLoadMoreModDatabaseScrollThresholdReached;
     private bool _isModDatabaseLoading;
     private bool _hasRequestedAdditionalModDatabaseResults;
+    private bool _hasSelectedTags;
 
     public MainViewModel(
         string dataDirectory,
@@ -237,6 +238,20 @@ public sealed class MainViewModel : ObservableObject
         get => _useModDbDesignView;
         set => SetProperty(ref _useModDbDesignView, value);
     }
+
+    public bool HasSelectedTags
+    {
+        get => _hasSelectedTags;
+        private set
+        {
+            if (SetProperty(ref _hasSelectedTags, value))
+            {
+                OnPropertyChanged(nameof(TagsColumnHeader));
+            }
+        }
+    }
+
+    public string TagsColumnHeader => HasSelectedTags ? "Tags (*)" : "Tags";
 
     public bool ExcludeInstalledModDatabaseResults
     {
@@ -1654,6 +1669,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         SyncSelectedTags(_installedTagFilters, _selectedInstalledTags);
+        UpdateHasSelectedTags();
         ModsView.Refresh();
     }
 
@@ -1690,6 +1706,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         SyncSelectedTags(_modDatabaseTagFilters, _selectedModDatabaseTags);
+        UpdateHasSelectedTags();
     }
 
     private void ApplyModDatabaseAvailableTags(IEnumerable<string> tags)
@@ -1728,6 +1745,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (SyncSelectedTags(_installedTagFilters, _selectedInstalledTags))
         {
+            UpdateHasSelectedTags();
             ModsView.Refresh();
         }
     }
@@ -1746,6 +1764,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (SyncSelectedTags(_modDatabaseTagFilters, _selectedModDatabaseTags))
         {
+            UpdateHasSelectedTags();
             TriggerModDatabaseSearch();
         }
     }
@@ -1765,6 +1784,11 @@ public sealed class MainViewModel : ObservableObject
         target.Clear();
         target.AddRange(newSelection);
         return true;
+    }
+
+    private void UpdateHasSelectedTags()
+    {
+        HasSelectedTags = _selectedInstalledTags.Count > 0 || _selectedModDatabaseTags.Count > 0;
     }
 
     private static List<string> NormalizeAndSortTags(IEnumerable<string> tags)
