@@ -17,6 +17,8 @@ public sealed class UserConfigurationService
     private const string ConfigurationFileName = "SimpleVSManagerConfiguration.json";
     private const string ModConfigPathsFileName = "SimpleVSManagerModConfigPaths.json";
     private const string LegacyModConfigPathsFileName = "SimpleVSManagerModConfigPaths";
+    private const string CurrentModManagerVersion = "1.2.0";
+    private const string CurrentConfigurationVersion = "1.2.0";
     private const int DefaultModDatabaseSearchResultLimit = 30;
     private const int DefaultModDatabaseNewModsRecentMonths = 3;
     private const int MaxModDatabaseNewModsRecentMonths = 24;
@@ -27,6 +29,8 @@ public sealed class UserConfigurationService
     private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ModConfigPathEntry> _storedModConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private string? _selectedPresetName;
+    private string _configurationVersion = CurrentConfigurationVersion;
+    private string _modManagerVersion = CurrentModManagerVersion;
     private bool _isCompactView;
     private bool _useModDbDesignView = true;
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
@@ -55,13 +59,17 @@ public sealed class UserConfigurationService
         _legacyModConfigPathsPath = DetermineModConfigPathsPath(LegacyModConfigPathsFileName);
         Load();
 
-        _hasPendingSave = !File.Exists(_configurationPath);
+        _hasPendingSave |= !File.Exists(_configurationPath);
         _hasPendingModConfigPathSave = false;
     }
 
     public string? DataDirectory { get; private set; }
 
     public string? GameDirectory { get; private set; }
+
+    public string ConfigurationVersion => _configurationVersion;
+
+    public string ModManagerVersion => _modManagerVersion;
 
     public bool IsCompactView => _isCompactView;
 
@@ -451,6 +459,10 @@ public sealed class UserConfigurationService
                 return;
             }
 
+            string? originalConfigurationVersion = NormalizeVersion(GetOptionalString(obj["configurationVersion"]));
+            string? originalModManagerVersion = NormalizeVersion(GetOptionalString(obj["modManagerVersion"]));
+            InitializeVersionMetadata(originalConfigurationVersion, originalModManagerVersion);
+
             DataDirectory = NormalizePath(GetOptionalString(obj["dataDirectory"]));
             GameDirectory = NormalizePath(GetOptionalString(obj["gameDirectory"]));
             _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
@@ -480,6 +492,8 @@ public sealed class UserConfigurationService
             DataDirectory = null;
             GameDirectory = null;
             _modConfigPaths.Clear();
+            _configurationVersion = CurrentConfigurationVersion;
+            _modManagerVersion = CurrentModManagerVersion;
             _isCompactView = false;
             _useModDbDesignView = true;
             _cacheAllVersionsLocally = false;
@@ -524,6 +538,8 @@ public sealed class UserConfigurationService
 
             var obj = new JsonObject
             {
+                ["configurationVersion"] = _configurationVersion,
+                ["modManagerVersion"] = _modManagerVersion,
                 ["dataDirectory"] = DataDirectory,
                 ["gameDirectory"] = GameDirectory,
                 ["isCompactView"] = _isCompactView,
@@ -558,6 +574,39 @@ public sealed class UserConfigurationService
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // Persisting the configuration is a best-effort attempt. Ignore failures silently.
+        }
+    }
+
+    private void InitializeVersionMetadata(string? configurationVersion, string? modManagerVersion)
+    {
+        bool requiresSave = false;
+
+        string resolvedConfigurationVersion = string.IsNullOrWhiteSpace(configurationVersion)
+            ? CurrentConfigurationVersion
+            : configurationVersion!;
+
+        string resolvedModManagerVersion = string.IsNullOrWhiteSpace(modManagerVersion)
+            ? CurrentModManagerVersion
+            : modManagerVersion!;
+
+        if (!string.Equals(resolvedConfigurationVersion, CurrentConfigurationVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            resolvedConfigurationVersion = CurrentConfigurationVersion;
+            requiresSave = true;
+        }
+
+        if (!string.Equals(resolvedModManagerVersion, CurrentModManagerVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            resolvedModManagerVersion = CurrentModManagerVersion;
+            requiresSave = true;
+        }
+
+        _configurationVersion = resolvedConfigurationVersion;
+        _modManagerVersion = resolvedModManagerVersion;
+
+        if (requiresSave)
+        {
+            _hasPendingSave = true;
         }
     }
 
@@ -976,6 +1025,11 @@ public sealed class UserConfigurationService
         {
             return null;
         }
+    }
+
+    private static string? NormalizeVersion(string? version)
+    {
+        return string.IsNullOrWhiteSpace(version) ? null : version.Trim();
     }
 
     private static string? NormalizePath(string? path)
