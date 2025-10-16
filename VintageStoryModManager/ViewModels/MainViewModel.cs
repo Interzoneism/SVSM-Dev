@@ -446,7 +446,16 @@ public sealed class MainViewModel : ObservableObject
 
         _modDatabaseSearchCts?.Cancel();
 
+        bool hadSearchText = !string.IsNullOrEmpty(SearchText);
+        bool modDatabaseSearchTriggeredByClearing = false;
+
         _viewSection = section;
+
+        if (hadSearchText)
+        {
+            SearchText = string.Empty;
+            modDatabaseSearchTriggeredByClearing = section == ViewSection.ModDatabase;
+        }
 
         CanLoadMoreModDatabaseResults = false;
 
@@ -461,7 +470,10 @@ public sealed class MainViewModel : ObservableObject
             case ViewSection.ModDatabase:
                 ClearSearchResults();
                 SelectedMod = null;
-                TriggerModDatabaseSearch();
+                if (!modDatabaseSearchTriggeredByClearing)
+                {
+                    TriggerModDatabaseSearch();
+                }
                 break;
             case ViewSection.InstalledMods:
                 ClearSearchResults();
