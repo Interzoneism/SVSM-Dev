@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Security;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -124,19 +125,27 @@ public sealed class FirebaseAnonymousAuthenticator
 
     internal static string GetStateFilePath()
     {
-        string? baseDirectory = ModCacheLocator.GetManagerDataDirectory();
-        if (string.IsNullOrWhiteSpace(baseDirectory))
-        {
-            baseDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            if (string.IsNullOrWhiteSpace(baseDirectory))
-            {
-                baseDirectory = Environment.CurrentDirectory;
-            }
+        string legacyPath = GetLegacyStateFilePath();
+        string? secureDirectory = TryGetSecureBaseDirectory();
 
-            baseDirectory = Path.Combine(baseDirectory!, "Simple VS Manager");
+        if (string.IsNullOrWhiteSpace(secureDirectory))
+        {
+            return legacyPath;
         }
 
-        return Path.Combine(baseDirectory!, StateFileName);
+        string securePath = Path.Combine(secureDirectory, StateFileName);
+
+        if (string.Equals(securePath, legacyPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return securePath;
+        }
+
+        if (TryMigrateLegacyStateFile(legacyPath, securePath) || File.Exists(securePath))
+        {
+            return securePath;
+        }
+
+        return legacyPath;
     }
 
     private static string DetermineStateFilePath()
@@ -156,9 +165,112 @@ public sealed class FirebaseAnonymousAuthenticator
             catch (UnauthorizedAccessException)
             {
             }
+            catch (NotSupportedException)
+            {
+            }
+            catch (SecurityException)
+            {
+            }
         }
 
         return stateFilePath;
+    }
+
+    private static string? TryGetSecureBaseDirectory()
+    {
+        foreach (Environment.SpecialFolder folder in new[]
+                 {
+                     Environment.SpecialFolder.LocalApplicationData,
+                     Environment.SpecialFolder.ApplicationData
+                 })
+        {
+            string? root = TryGetFolderPath(folder);
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                continue;
+            }
+
+            string candidate = Path.Combine(root!, "Simple VS Manager");
+            if (TryEnsureDirectory(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static string GetLegacyStateFilePath()
+    {
+        string? baseDirectory = ModCacheLocator.GetManagerDataDirectory();
+        if (!string.IsNullOrWhiteSpace(baseDirectory))
+        {
+            return Path.Combine(baseDirectory, StateFileName);
+        }
+
+        string? documents = TryGetFolderPath(Environment.SpecialFolder.MyDocuments)
+            ?? TryGetFolderPath(Environment.SpecialFolder.Personal);
+
+        string root = string.IsNullOrWhiteSpace(documents)
+            ? Environment.CurrentDirectory
+            : documents!;
+
+        return Path.Combine(root, "Simple VS Manager", StateFileName);
+    }
+
+    private static string? TryGetFolderPath(Environment.SpecialFolder folder)
+    {
+        try
+        {
+            string path = Environment.GetFolderPath(folder);
+            return string.IsNullOrWhiteSpace(path) ? null : path;
+        }
+        catch (Exception ex) when (ex is PlatformNotSupportedException or InvalidOperationException or SecurityException)
+        {
+            return null;
+        }
+    }
+
+    private static bool TryEnsureDirectory(string path)
+    {
+        try
+        {
+            Directory.CreateDirectory(path);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or SecurityException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryMigrateLegacyStateFile(string legacyPath, string targetPath)
+    {
+        try
+        {
+            if (!File.Exists(legacyPath))
+            {
+                return true;
+            }
+
+            if (File.Exists(targetPath))
+            {
+                return true;
+            }
+
+            string? directory = Path.GetDirectoryName(targetPath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.Move(legacyPath, targetPath);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or SecurityException)
+        {
+            return false;
+        }
     }
 
     private FirebaseAuthState? LoadStateFromDisk()
@@ -203,6 +315,10 @@ public sealed class FirebaseAnonymousAuthenticator
         {
             return null;
         }
+        catch (SecurityException)
+        {
+            return null;
+        }
     }
 
     private void SaveStateToDisk(FirebaseAuthState state)
@@ -230,6 +346,9 @@ public sealed class FirebaseAnonymousAuthenticator
         {
         }
         catch (UnauthorizedAccessException)
+        {
+        }
+        catch (SecurityException)
         {
         }
     }
