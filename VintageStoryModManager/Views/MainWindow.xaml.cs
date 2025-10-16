@@ -178,12 +178,40 @@ public partial class MainWindow : Window
 
         if (_viewModel != null)
         {
-            await InitializeViewModelAsync(_viewModel);
+            await InitializeViewModelAsync(_viewModel).ConfigureAwait(true);
+            await EnsureInstalledModsCachedAsync(_viewModel).ConfigureAwait(true);
             await CreateAppStartedBackupAsync().ConfigureAwait(true);
         }
 
         await RefreshDeleteCachedModsMenuHeaderAsync();
         await RefreshManagerUpdateLinkAsync();
+    }
+
+    private Task EnsureInstalledModsCachedAsync(MainViewModel viewModel)
+    {
+        if (viewModel is null || !_userConfiguration.CacheAllVersionsLocally)
+        {
+            return Task.CompletedTask;
+        }
+
+        IReadOnlyList<ModListItemViewModel> installedMods = viewModel.GetInstalledModsSnapshot();
+        if (installedMods.Count == 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        return Task.Run(() =>
+        {
+            foreach (ModListItemViewModel mod in installedMods)
+            {
+                if (mod is null || !mod.IsInstalled)
+                {
+                    continue;
+                }
+
+                ModCacheService.EnsureModCached(mod.ModId, mod.Version, mod.SourcePath, mod.SourceKind);
+            }
+        });
     }
 
     private void MainWindow_OnClosing(object? sender, CancelEventArgs e)
