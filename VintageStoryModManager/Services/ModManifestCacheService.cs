@@ -21,12 +21,10 @@ internal static class ModManifestCacheService
         DateTime lastWriteTimeUtc,
         long length,
         out string manifestJson,
-        out byte[]? iconBytes,
-        out string? iconDescription)
+        out byte[]? iconBytes)
     {
         manifestJson = string.Empty;
         iconBytes = null;
-        iconDescription = null;
 
         string? root = GetMetadataRoot();
         if (root is null)
@@ -66,8 +64,6 @@ internal static class ModManifestCacheService
                 {
                     iconBytes = File.ReadAllBytes(entry.IconPath);
                 }
-
-                iconDescription = entry.IconDescription;
                 return true;
             }
             catch (Exception)
@@ -86,8 +82,7 @@ internal static class ModManifestCacheService
         string modId,
         string? version,
         string manifestJson,
-        byte[]? iconBytes,
-        string? iconDescription)
+        byte[]? iconBytes)
     {
         string? root = GetMetadataRoot();
         if (root is null)
@@ -135,12 +130,10 @@ internal static class ModManifestCacheService
                 if (iconPath != null)
                 {
                     entry.IconPath = iconPath;
-                    entry.IconDescription = iconDescription;
                 }
                 else if (!string.IsNullOrWhiteSpace(entry.IconPath) && !File.Exists(entry.IconPath))
                 {
                     entry.IconPath = null;
-                    entry.IconDescription = null;
                 }
 
                 SaveIndexLocked(index);
@@ -210,7 +203,6 @@ internal static class ModManifestCacheService
                     Version = entry.Version,
                     ManifestPath = entry.ManifestPath,
                     IconPath = entry.IconPath,
-                    IconDescription = entry.IconDescription,
                     Length = entry.Length,
                     LastWriteTimeUtcTicks = entry.LastWriteTimeUtcTicks
                 };
@@ -254,7 +246,6 @@ internal static class ModManifestCacheService
                     Version = pair.Value.Version,
                     ManifestPath = pair.Value.ManifestPath,
                     IconPath = pair.Value.IconPath,
-                    IconDescription = pair.Value.IconDescription,
                     Length = pair.Value.Length,
                     LastWriteTimeUtcTicks = pair.Value.LastWriteTimeUtcTicks
                 });
@@ -309,7 +300,6 @@ internal static class ModManifestCacheService
         public string? Version { get; set; }
         public string ManifestPath { get; set; } = string.Empty;
         public string? IconPath { get; set; }
-        public string? IconDescription { get; set; }
         public long Length { get; set; }
         public long LastWriteTimeUtcTicks { get; set; }
     }
@@ -326,7 +316,6 @@ internal static class ModManifestCacheService
         public string? Version { get; set; }
         public string ManifestPath { get; set; } = string.Empty;
         public string? IconPath { get; set; }
-        public string? IconDescription { get; set; }
         public long Length { get; set; }
         public long LastWriteTimeUtcTicks { get; set; }
     }

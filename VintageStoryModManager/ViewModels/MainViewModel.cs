@@ -3365,7 +3365,7 @@ public sealed class MainViewModel : ObservableObject
             // Ignore filesystem probing failures; the cache simply will not be used.
         }
 
-        if (ModManifestCacheService.TryGetManifest(archivePath, lastWriteTimeUtc, length, out string cachedManifest, out _, out _))
+        if (ModManifestCacheService.TryGetManifest(archivePath, lastWriteTimeUtc, length, out string cachedManifest, out _))
         {
             try
             {
@@ -3457,7 +3457,7 @@ public sealed class MainViewModel : ObservableObject
                 ? modId
                 : (!string.IsNullOrWhiteSpace(expectedModId) ? expectedModId : Path.GetFileNameWithoutExtension(archivePath));
 
-            ModManifestCacheService.StoreManifest(archivePath, lastWriteTimeUtc, length, cacheModId, version, manifestContent, null, null);
+            ModManifestCacheService.StoreManifest(archivePath, lastWriteTimeUtc, length, cacheModId, version, manifestContent, null);
 
             return new ModReleaseInfo
             {
