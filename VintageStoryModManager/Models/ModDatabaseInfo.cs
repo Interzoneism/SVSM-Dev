@@ -10,6 +10,8 @@ public sealed class ModDatabaseInfo
 {
     public IReadOnlyList<string> Tags { get; init; } = Array.Empty<string>();
 
+    public string? CachedTagsVersion { get; init; }
+
     public string? AssetId { get; init; }
 
     public string? ModPageUrl { get; init; }
