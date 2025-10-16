@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,6 +16,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Navigation;
 
 using System.Windows.Threading;
 
@@ -47,6 +49,7 @@ public partial class MainWindow : Window
     private const double HoverOverlayOpacity = 0.1;
     private const double SelectionOverlayOpacity = 0.25;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";
+    private const string ManagerModDatabaseModId = "5545";
     private const string PresetDirectoryName = "Presets";
     private const string ModListDirectoryName = "Modlists";
     private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
@@ -159,6 +162,7 @@ public partial class MainWindow : Window
         }
 
         await RefreshDeleteCachedModsMenuHeaderAsync();
+        await RefreshManagerUpdateLinkAsync();
     }
 
     private void MainWindow_OnClosing(object? sender, CancelEventArgs e)
@@ -545,13 +549,19 @@ public partial class MainWindow : Window
 
     private void InternetAccessManager_OnInternetAccessChanged(object? sender, EventArgs e)
     {
-        if (Dispatcher.CheckAccess())
+        void Update()
         {
             UpdateCloudModlistControlsEnabledState();
+            _ = RefreshManagerUpdateLinkAsync();
+        }
+
+        if (Dispatcher.CheckAccess())
+        {
+            Update();
         }
         else
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, UpdateCloudModlistControlsEnabledState);
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)Update);
         }
     }
 
@@ -3334,6 +3344,17 @@ public partial class MainWindow : Window
 
     private void ManagerModDbPageMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
+        OpenManagerModDatabasePage();
+    }
+
+    private void ManagerUpdateLink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        e.Handled = true;
+        OpenManagerModDatabasePage();
+    }
+
+    private void OpenManagerModDatabasePage()
+    {
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
             WpfMessageBox.Show(
@@ -6065,6 +6086,66 @@ public partial class MainWindow : Window
         {
             bool hasSelection = _selectedCloudModlist is not null;
             InstallCloudModlistButton.IsEnabled = internetEnabled && hasSelection;
+        }
+    }
+
+    private async Task RefreshManagerUpdateLinkAsync()
+    {
+        if (ManagerUpdateLinkTextBlock is null)
+        {
+            return;
+        }
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            ManagerUpdateLinkTextBlock.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        string? currentVersion = GetManagerInformationalVersion();
+        if (string.IsNullOrWhiteSpace(currentVersion))
+        {
+            ManagerUpdateLinkTextBlock.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        try
+        {
+            ModDatabaseInfo? info = await _modDatabaseService
+                .TryLoadDatabaseInfoAsync(ManagerModDatabaseModId, currentVersion, null)
+                .ConfigureAwait(true);
+
+            bool hasUpdate = info?.LatestVersion is string latestVersion
+                && VersionStringUtility.IsCandidateVersionNewer(latestVersion, currentVersion);
+
+            ManagerUpdateLinkTextBlock.Visibility = hasUpdate ? Visibility.Visible : Visibility.Collapsed;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            ManagerUpdateLinkTextBlock.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private static string? GetManagerInformationalVersion()
+    {
+        try
+        {
+            Assembly? assembly = typeof(MainWindow).Assembly;
+            if (assembly is null)
+            {
+                return null;
+            }
+
+            return assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+                ?? assembly.GetName().Version?.ToString();
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 
