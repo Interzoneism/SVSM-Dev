@@ -1048,8 +1048,10 @@ public sealed class MainViewModel : ObservableObject
 
         string? previousSelection = SelectedMod?.SourcePath;
 
+        Dictionary<string, ModEntry> existingEntriesSnapshot = new(_modEntriesBySourcePath, StringComparer.OrdinalIgnoreCase);
+
         Dictionary<string, ModEntry?> reloadResults = await Task
-            .Run(() => LoadChangedModEntries(candidates))
+            .Run(() => LoadChangedModEntries(candidates, existingEntriesSnapshot))
             .ConfigureAwait(true);
 
         var refreshedEntries = new List<ModEntry>(reloadResults.Count);
@@ -1116,7 +1118,8 @@ public sealed class MainViewModel : ObservableObject
             }
             else
             {
-                var reloadResults = await Task.Run(() => LoadChangedModEntries(changeSet.Paths));
+                Dictionary<string, ModEntry> existingEntriesSnapshot = new(_modEntriesBySourcePath, StringComparer.OrdinalIgnoreCase);
+                var reloadResults = await Task.Run(() => LoadChangedModEntries(changeSet.Paths, existingEntriesSnapshot));
 
                 foreach (var pair in reloadResults)
                 {
@@ -1169,9 +1172,15 @@ public sealed class MainViewModel : ObservableObject
     private async Task PerformFullReloadAsync(string? previousSelection)
     {
         var entries = new List<ModEntry>();
+        Dictionary<string, ModEntry> previousEntries = new(StringComparer.OrdinalIgnoreCase);
 
         await InvokeOnDispatcherAsync(() =>
         {
+            foreach (var pair in _modEntriesBySourcePath)
+            {
+                previousEntries[pair.Key] = pair.Value;
+            }
+
             _modEntriesBySourcePath.Clear();
             _modViewModelsBySourcePath.Clear();
             _mods.Clear();
@@ -1192,6 +1201,12 @@ public sealed class MainViewModel : ObservableObject
             {
                 foreach (var entry in batch)
                 {
+                    ResetCalculatedModState(entry);
+                    if (previousEntries.TryGetValue(entry.SourcePath, out var previous))
+                    {
+                        CopyTransientModState(previous, entry);
+                    }
+
                     _modEntriesBySourcePath[entry.SourcePath] = entry;
                     var viewModel = CreateModViewModel(entry);
                     _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
@@ -2961,17 +2976,62 @@ public sealed class MainViewModel : ObservableObject
         _hasShownModDetailsLoadingStatus = isModDetailsStatus;
     }
 
-    private Dictionary<string, ModEntry?> LoadChangedModEntries(IReadOnlyCollection<string> paths)
+    private Dictionary<string, ModEntry?> LoadChangedModEntries(
+        IReadOnlyCollection<string> paths,
+        IReadOnlyDictionary<string, ModEntry>? existingEntries)
     {
         var results = new Dictionary<string, ModEntry?>(StringComparer.OrdinalIgnoreCase);
 
         foreach (string path in paths)
         {
             ModEntry? entry = _discoveryService.LoadModFromPath(path);
+            if (entry != null)
+            {
+                ResetCalculatedModState(entry);
+                if (existingEntries != null && existingEntries.TryGetValue(path, out var previous))
+                {
+                    CopyTransientModState(previous, entry);
+                }
+            }
+
             results[path] = entry;
         }
 
         return results;
+    }
+
+    private static void ResetCalculatedModState(ModEntry entry)
+    {
+        entry.LoadError = null;
+        entry.DependencyHasErrors = false;
+        entry.MissingDependencies = Array.Empty<ModDependencyInfo>();
+    }
+
+    private static void CopyTransientModState(ModEntry source, ModEntry target)
+    {
+        if (source is null || target is null)
+        {
+            return;
+        }
+
+        bool sameModId = string.Equals(source.ModId, target.ModId, StringComparison.OrdinalIgnoreCase);
+        bool sameVersion = string.Equals(source.Version, target.Version, StringComparison.OrdinalIgnoreCase)
+            || (string.IsNullOrWhiteSpace(source.Version) && string.IsNullOrWhiteSpace(target.Version));
+
+        if (!sameModId || !sameVersion)
+        {
+            return;
+        }
+
+        if (target.DatabaseInfo is null && source.DatabaseInfo != null)
+        {
+            target.DatabaseInfo = source.DatabaseInfo;
+        }
+
+        if (source.ModDatabaseSearchScore.HasValue)
+        {
+            target.ModDatabaseSearchScore = source.ModDatabaseSearchScore;
+        }
     }
 
     private void ApplyPartialUpdates(IReadOnlyDictionary<string, ModEntry?> changes, string? previousSelection)
@@ -3104,7 +3164,9 @@ public sealed class MainViewModel : ObservableObject
         }
 
         ModEntry[] pending = entries
-            .Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.ModId))
+            .Where(entry => entry != null
+                && !string.IsNullOrWhiteSpace(entry.ModId)
+                && NeedsDatabaseRefresh(entry))
             .ToArray();
 
         if (pending.Length == 0)
@@ -3136,6 +3198,16 @@ public sealed class MainViewModel : ObservableObject
                 // Swallow unexpected exceptions from the refresh loop.
             }
         });
+    }
+
+    private static bool NeedsDatabaseRefresh(ModEntry entry)
+    {
+        if (entry is null)
+        {
+            return false;
+        }
+
+        return entry.DatabaseInfo == null;
     }
 
     private async Task RefreshDatabaseInfoAsync(ModEntry entry, SemaphoreSlim limiter)
