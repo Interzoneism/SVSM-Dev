@@ -1132,7 +1132,7 @@
                                     <Grid Background="Transparent"
                                           Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type DataGridColumnHeader}}}">
                                         <ToggleButton x:Name="TagsHeaderToggle"
-                                                      Content="{Binding}"
+                                                      Content="{Binding DataContext.TagsColumnHeader, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                                       HorizontalAlignment="Stretch"
                                                       Style="{StaticResource IMM.TagHeaderToggleButtonStyle}" />
                                         <Popup PlacementTarget="{Binding ElementName=TagsHeaderToggle}"
