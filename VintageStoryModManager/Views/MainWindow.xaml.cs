@@ -86,6 +86,12 @@ public partial class MainWindow : Window
             typeof(PropertyChangedEventHandler),
             typeof(MainWindow));
 
+    private static readonly DependencyProperty RowIsHoveredProperty =
+        DependencyProperty.RegisterAttached(
+            "RowIsHovered",
+            typeof(bool),
+            typeof(MainWindow));
+
     private readonly UserConfigurationService _userConfiguration;
     private MainViewModel? _viewModel;
     private string? _dataDirectory;
@@ -2368,6 +2374,7 @@ public partial class MainWindow : Window
             row.DataContextChanged -= ModsDataGridRow_OnDataContextChanged;
             row.DataContextChanged += ModsDataGridRow_OnDataContextChanged;
             UpdateRowModSubscription(row, row.DataContext as ModListItemViewModel);
+            SetRowIsHovered(row, row.IsMouseOver);
             ResetRowOverlays(row);
         }
     }
@@ -2388,6 +2395,7 @@ public partial class MainWindow : Window
             row.DataContextChanged -= ModsDataGridRow_OnDataContextChanged;
             UpdateRowModSubscription(row, null);
             ClearRowOverlayAnimations(row);
+            SetRowIsHovered(row, false);
         }
     }
 
@@ -2395,6 +2403,7 @@ public partial class MainWindow : Window
     {
         if (sender is DataGridRow row)
         {
+            SetRowIsHovered(row, true);
             ResetRowOverlays(row);
         }
     }
@@ -2403,6 +2412,7 @@ public partial class MainWindow : Window
     {
         if (sender is DataGridRow row)
         {
+            SetRowIsHovered(row, false);
             ResetRowOverlays(row);
         }
     }
@@ -2412,6 +2422,7 @@ public partial class MainWindow : Window
         row.ApplyTemplate();
 
         bool isModSelected = row.DataContext is ModListItemViewModel { IsSelected: true };
+        bool isHovered = GetRowIsHovered(row);
 
         if (row.Template?.FindName("SelectionOverlay", row) is Border selectionOverlay)
         {
@@ -2426,7 +2437,7 @@ public partial class MainWindow : Window
         {
             hoverOverlay.BeginAnimation(UIElement.OpacityProperty, null);
 
-            bool shouldShowHover = row.IsMouseOver && !isModSelected;
+            bool shouldShowHover = isHovered && !isModSelected;
             hoverOverlay.Opacity = shouldShowHover ? HoverOverlayOpacity : 0;
         }
     }
@@ -2499,6 +2510,16 @@ public partial class MainWindow : Window
     private static PropertyChangedEventHandler? GetBoundModHandler(DataGridRow row)
     {
         return (PropertyChangedEventHandler?)row.GetValue(BoundModHandlerProperty);
+    }
+
+    private static void SetRowIsHovered(DataGridRow row, bool value)
+    {
+        row.SetValue(RowIsHoveredProperty, value);
+    }
+
+    private static bool GetRowIsHovered(DataGridRow row)
+    {
+        return (bool)row.GetValue(RowIsHoveredProperty);
     }
 
     private void ModDatabasePageButton_OnClick(object sender, RoutedEventArgs e)
