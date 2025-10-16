@@ -43,7 +43,6 @@ public sealed class ModDiscoveryService
 
     private readonly ClientSettingsStore _settingsStore;
     private byte[]? _defaultIconBytes;
-    private string? _defaultIconDescription;
     private bool _defaultIconResolved;
     private readonly object _defaultIconLock = new();
 
@@ -646,13 +645,10 @@ public sealed class ModDiscoveryService
         {
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(modInfoPath), DocumentOptions);
             var info = ParseModInfo(document.RootElement, directory.Name);
-            byte[]? iconBytes = LoadIconFromDirectory(directory, info.IconPath, out string? iconDescription);
-            if (iconBytes == null)
-            {
-                iconBytes = LoadDefaultIcon(out iconDescription);
-            }
+            byte[]? iconBytes = LoadIconFromDirectory(directory, info.IconPath);
+            iconBytes ??= LoadDefaultIcon();
 
-            return CreateEntry(info, directory.FullName, ModSourceKind.Folder, iconBytes, iconDescription);
+            return CreateEntry(info, directory.FullName, ModSourceKind.Folder, iconBytes);
         }
         catch (Exception ex)
         {
@@ -675,7 +671,7 @@ public sealed class ModDiscoveryService
             // Ignore failures when probing file metadata; the cache lookup will simply miss.
         }
 
-        if (ModManifestCacheService.TryGetManifest(archiveFile.FullName, lastWriteTimeUtc, length, out string manifestJson, out byte[]? cachedIconBytes, out string? cachedIconDescription))
+        if (ModManifestCacheService.TryGetManifest(archiveFile.FullName, lastWriteTimeUtc, length, out string manifestJson, out byte[]? cachedIconBytes))
         {
             try
             {
@@ -683,13 +679,9 @@ public sealed class ModDiscoveryService
                 var cachedInfo = ParseModInfo(cachedDocument.RootElement, Path.GetFileNameWithoutExtension(archiveFile.Name));
 
                 byte[]? iconBytes = cachedIconBytes;
-                string? iconDescription = cachedIconDescription;
-                if (iconBytes == null)
-                {
-                    iconBytes = LoadDefaultIcon(out iconDescription);
-                }
+                iconBytes ??= LoadDefaultIcon();
 
-                return CreateEntry(cachedInfo, archiveFile.FullName, ModSourceKind.ZipArchive, iconBytes, iconDescription);
+                return CreateEntry(cachedInfo, archiveFile.FullName, ModSourceKind.ZipArchive, iconBytes);
             }
             catch (Exception)
             {
@@ -717,13 +709,9 @@ public sealed class ModDiscoveryService
             using JsonDocument document = JsonDocument.Parse(manifestContent, DocumentOptions);
             var info = ParseModInfo(document.RootElement, Path.GetFileNameWithoutExtension(archiveFile.Name));
 
-            byte[]? archiveIconBytes = LoadIconFromArchive(lookup, info.IconPath, out string? archiveIconDescription);
+            byte[]? archiveIconBytes = LoadIconFromArchive(lookup, info.IconPath);
             byte[]? iconBytes = archiveIconBytes;
-            string? iconDescription = archiveIconDescription;
-            if (iconBytes == null)
-            {
-                iconBytes = LoadDefaultIcon(out iconDescription);
-            }
+            iconBytes ??= LoadDefaultIcon();
 
             ModManifestCacheService.StoreManifest(
                 archiveFile.FullName,
@@ -732,10 +720,9 @@ public sealed class ModDiscoveryService
                 info.ModId,
                 info.Version,
                 manifestContent,
-                archiveIconBytes,
-                archiveIconDescription);
+                archiveIconBytes);
 
-            return CreateEntry(info, archiveFile.FullName, ModSourceKind.ZipArchive, iconBytes, iconDescription);
+            return CreateEntry(info, archiveFile.FullName, ModSourceKind.ZipArchive, iconBytes);
         }
         catch (Exception ex)
         {
@@ -805,7 +792,6 @@ public sealed class ModDiscoveryService
             SourcePath = file.FullName,
             SourceKind = string.Equals(file.Extension, ".cs", StringComparison.OrdinalIgnoreCase) ? ModSourceKind.SourceCode : ModSourceKind.Assembly,
             IconBytes = null,
-            IconDescription = null,
             Error = "Metadata unavailable for code-only mods.",
             LoadError = null,
             Side = null,
@@ -814,7 +800,7 @@ public sealed class ModDiscoveryService
         };
     }
 
-    private ModEntry CreateEntry(RawModInfo info, string sourcePath, ModSourceKind kind, byte[]? iconBytes, string? iconDescription)
+    private ModEntry CreateEntry(RawModInfo info, string sourcePath, ModSourceKind kind, byte[]? iconBytes)
     {
         return new ModEntry
         {
@@ -830,7 +816,6 @@ public sealed class ModDiscoveryService
             SourcePath = sourcePath,
             SourceKind = kind,
             IconBytes = iconBytes,
-            IconDescription = iconDescription,
             Error = null,
             LoadError = null,
             Side = info.Side,
@@ -856,7 +841,6 @@ public sealed class ModDiscoveryService
             SourcePath = sourcePath,
             SourceKind = kind,
             IconBytes = null,
-            IconDescription = null,
             Error = message,
             LoadError = null,
             Side = null,
@@ -948,7 +932,7 @@ public sealed class ModDiscoveryService
         return preferred ?? fallback;
     }
 
-    private static byte[]? LoadIconFromDirectory(DirectoryInfo directory, string? iconPath, out string? description)
+    private static byte[]? LoadIconFromDirectory(DirectoryInfo directory, string? iconPath)
     {
         string? candidate = ResolveSafePath(directory.FullName, iconPath);
         if (candidate == null)
@@ -962,15 +946,13 @@ public sealed class ModDiscoveryService
 
         if (candidate != null && File.Exists(candidate))
         {
-            description = candidate;
             return File.ReadAllBytes(candidate);
         }
 
-        description = null;
         return null;
     }
 
-    private static byte[]? LoadIconFromArchive(ZipArchiveLookup lookup, string? iconPath, out string? description)
+    private static byte[]? LoadIconFromArchive(ZipArchiveLookup lookup, string? iconPath)
     {
         ZipArchiveEntry? entry = null;
         if (!string.IsNullOrWhiteSpace(iconPath))
@@ -981,14 +963,12 @@ public sealed class ModDiscoveryService
         entry ??= FindEntry(lookup, "modicon.png");
         if (entry == null)
         {
-            description = null;
             return null;
         }
 
         using MemoryStream buffer = new MemoryStream();
         using Stream iconStream = entry.Open();
         iconStream.CopyTo(buffer);
-        description = entry.FullName;
         return buffer.ToArray();
     }
 
@@ -1028,14 +1008,14 @@ public sealed class ModDiscoveryService
         }
     }
 
-    private byte[]? LoadDefaultIcon(out string? description)
+    private byte[]? LoadDefaultIcon()
     {
         lock (_defaultIconLock)
         {
             if (!_defaultIconResolved)
             {
-                _defaultIconBytes = TryLoadBundledDefaultIcon(out _defaultIconDescription)
-                    ?? TryLoadBundledIconFromBaseDirectory(out _defaultIconDescription);
+                _defaultIconBytes = TryLoadBundledDefaultIcon()
+                    ?? TryLoadBundledIconFromBaseDirectory();
 
                 if (_defaultIconBytes == null)
                 {
@@ -1049,7 +1029,6 @@ public sealed class ModDiscoveryService
                             }
 
                             _defaultIconBytes = File.ReadAllBytes(candidate);
-                            _defaultIconDescription = candidate;
                             break;
                         }
                         catch (IOException)
@@ -1070,12 +1049,11 @@ public sealed class ModDiscoveryService
                 _defaultIconResolved = true;
             }
 
-            description = _defaultIconDescription;
             return _defaultIconBytes;
         }
     }
 
-    private static byte[]? TryLoadBundledDefaultIcon(out string? description)
+    private static byte[]? TryLoadBundledDefaultIcon()
     {
         const string resourcePath = "Resources/mod-default.png";
         try
@@ -1087,7 +1065,6 @@ public sealed class ModDiscoveryService
                 using Stream stream = resource.Stream;
                 using var memory = new MemoryStream();
                 stream.CopyTo(memory);
-                description = resourcePath;
                 return memory.ToArray();
             }
         }
@@ -1107,18 +1084,16 @@ public sealed class ModDiscoveryService
         {
         }
 
-        description = null;
         return null;
     }
 
-    private static byte[]? TryLoadBundledIconFromBaseDirectory(out string? description)
+    private static byte[]? TryLoadBundledIconFromBaseDirectory()
     {
         string candidate = Path.Combine(AppContext.BaseDirectory, "mod-default.png");
         try
         {
             if (File.Exists(candidate))
             {
-                description = candidate;
                 return File.ReadAllBytes(candidate);
             }
         }
@@ -1132,7 +1107,6 @@ public sealed class ModDiscoveryService
         {
         }
 
-        description = null;
         return null;
     }
 
