@@ -3475,8 +3475,16 @@ public partial class MainWindow : Window
 
     private void GuideMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        string message = BuildGuideMessage();
-        WpfMessageBox.Show(message, "Simple VS Manager", MessageBoxButton.OK, MessageBoxImage.Information);
+        string managerDirectory = _userConfiguration.GetConfigurationDirectory();
+        string configurationFilePath = Path.Combine(managerDirectory, "SimpleVSManagerConfiguration.json");
+        string? cachedModsDirectory = ModCacheLocator.GetCachedModsDirectory();
+
+        var dialog = new GuideDialogWindow(managerDirectory, cachedModsDirectory, configurationFilePath)
+        {
+            Owner = this
+        };
+
+        _ = dialog.ShowDialog();
     }
 
     private void ManagerUpdateLink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
@@ -3513,20 +3521,6 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
-    }
-
-    private static string BuildGuideMessage()
-    {
-        var builder = new StringBuilder();
-        builder.AppendLine("Simple VS Manager quick tips:");
-        builder.AppendLine();
-        builder.AppendLine("• Turn on Mods > Cache all versions locally to keep downloads ready. Most mods are small, so the Documents/Simple VS Manager/Cached Mods folder saves re-download time.");
-        builder.AppendLine("• The manager saves automatic backups before big actions. Restore them from File > Restore backup point whenever you need to roll back.");
-        builder.AppendLine("• Use File > Set Custom Vintage Story Shortcut to launch the game with any command-line arguments stored on that shortcut.");
-        builder.AppendLine("• Switch off View > ModDB Design to get the tag-sorting list view while browsing the Mod DB.");
-        builder.AppendLine("• Want more Mod DB results? Edit \"modDatabaseSearchResultLimit\" (default 30) in Documents/Simple VS Manager/SimpleVSManagerConfiguration.json.");
-        builder.AppendLine("• All manager data lives under Documents/Simple VS Manager — configs, backups, caches, and presets.");
-        return builder.ToString();
     }
 
     private async void DeleteCloudAuthMenuItem_OnClick(object sender, RoutedEventArgs e)
