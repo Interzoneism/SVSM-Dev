@@ -179,6 +179,7 @@ public partial class MainWindow : Window
         if (_viewModel != null)
         {
             await InitializeViewModelAsync(_viewModel);
+            await CreateAppStartedBackupAsync().ConfigureAwait(true);
         }
 
         await RefreshDeleteCachedModsMenuHeaderAsync();
@@ -4125,8 +4126,21 @@ public partial class MainWindow : Window
         Array.Sort(files, (left, right) =>
             File.GetLastWriteTimeUtc(right).CompareTo(File.GetLastWriteTimeUtc(left)));
 
+        bool appStartedAdded = false;
+
         foreach (string file in files)
         {
+            bool isAppStarted = IsAppStartedBackup(file);
+            if (isAppStarted)
+            {
+                if (appStartedAdded)
+                {
+                    continue;
+                }
+
+                appStartedAdded = true;
+            }
+
             string displayName = Path.GetFileNameWithoutExtension(file);
             var item = new MenuItem
             {
@@ -4822,7 +4836,35 @@ public partial class MainWindow : Window
         return true;
     }
 
-    private async Task CreateAutomaticBackupAsync()
+    private Task CreateAutomaticBackupAsync()
+    {
+        DateTime timestamp = DateTime.Now;
+        string formattedTimestamp = timestamp.ToString("dd MMM yyyy '•' HH.mm '•' ss's'", CultureInfo.InvariantCulture);
+        string displayName = $"Backup - {formattedTimestamp}";
+        return CreateBackupAsync(
+            displayName,
+            fallbackFileName: "Backup",
+            pruneAutomaticBackups: true,
+            pruneAppStartedBackups: false);
+    }
+
+    private Task CreateAppStartedBackupAsync()
+    {
+        DateTime timestamp = DateTime.Now;
+        string formattedTimestamp = timestamp.ToString("dd MMM yyyy '•' HH.mm '•' ss's'", CultureInfo.InvariantCulture);
+        string displayName = $"Backup - {formattedTimestamp}_AppStarted";
+        return CreateBackupAsync(
+            displayName,
+            fallbackFileName: "Backup_AppStarted",
+            pruneAutomaticBackups: false,
+            pruneAppStartedBackups: true);
+    }
+
+    private async Task CreateBackupAsync(
+        string displayName,
+        string fallbackFileName,
+        bool pruneAutomaticBackups,
+        bool pruneAppStartedBackups)
     {
         if (_viewModel is null)
         {
@@ -4843,10 +4885,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            DateTime timestamp = DateTime.Now;
-            string formattedTimestamp = timestamp.ToString("dd MMM yyyy '•' HH.mm '•' ss's'", CultureInfo.InvariantCulture);
-            string displayName = $"Backup - {formattedTimestamp}";
-            string fileName = SanitizeFileName(displayName, "Backup");
+            string fileName = SanitizeFileName(displayName, fallbackFileName);
             string filePath = Path.Combine(directory, $"{fileName}.json");
 
             IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations =
@@ -4877,7 +4916,15 @@ public partial class MainWindow : Window
                 return;
             }
 
-            PruneAutomaticBackups(directory);
+            if (pruneAutomaticBackups)
+            {
+                PruneAutomaticBackups(directory);
+            }
+
+            if (pruneAppStartedBackups)
+            {
+                PruneAppStartedBackups(directory);
+            }
         }
         finally
         {
@@ -4944,22 +4991,69 @@ public partial class MainWindow : Window
         return includedConfigurations.Count > 0 ? includedConfigurations : null;
     }
 
+    private static bool IsAppStartedBackup(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        string name = Path.GetFileNameWithoutExtension(path);
+        return name.EndsWith("_AppStarted", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static void PruneAutomaticBackups(string directory)
     {
         try
         {
             string[] files = Directory.GetFiles(directory, "*.json");
-            if (files.Length <= 10)
+            string[] regularBackups = files
+                .Where(file => !IsAppStartedBackup(file))
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .ToArray();
+
+            if (regularBackups.Length <= 10)
             {
                 return;
             }
 
-            Array.Sort(files, (left, right) =>
-                File.GetLastWriteTimeUtc(right).CompareTo(File.GetLastWriteTimeUtc(left)));
-
-            for (int index = 10; index < files.Length; index++)
+            for (int index = 10; index < regularBackups.Length; index++)
             {
-                string candidate = files[index];
+                string candidate = regularBackups[index];
+                try
+                {
+                    File.Delete(candidate);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Trace.TraceWarning("Failed to delete backup {0}: {1}", candidate, ex.Message);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Trace.TraceWarning("Failed to prune backups in {0}: {1}", directory, ex.Message);
+        }
+    }
+
+    private static void PruneAppStartedBackups(string directory)
+    {
+        try
+        {
+            string[] files = Directory.GetFiles(directory, "*.json");
+            string[] appStartedBackups = files
+                .Where(IsAppStartedBackup)
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .ToArray();
+
+            if (appStartedBackups.Length <= 10)
+            {
+                return;
+            }
+
+            for (int index = 10; index < appStartedBackups.Length; index++)
+            {
+                string candidate = appStartedBackups[index];
                 try
                 {
                     File.Delete(candidate);
