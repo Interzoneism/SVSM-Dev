@@ -441,24 +441,26 @@
                               Padding="12,6"
                               IsEnabled="False"
                               Focusable="False" />
-                    <MenuItem x:Name="EnableDebugLoggingMenuItem"
-                              Header="Enable debug logging"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              Click="EnableDebugLoggingMenuItem_OnClick" />
                     <MenuItem Header="Open Documents/Simple VS Manager/ folder"
                               Padding="12,6"
                               Click="ManagerDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Open _Mod DB Page for Simple VS Manager"
                               Padding="12,6"
                               Click="ManagerModDbPageMenuItem_OnClick" />
-                    <MenuItem Header="Delete cloud modlists and firebase-auth"
-                              Padding="12,6"
-                              Click="DeleteCloudAuthMenuItem_OnClick" />
-                    <MenuItem Header="Delete all Simple VS Manager files"
-                              Padding="12,6"
-                              Click="DeleteAllManagerFilesMenuItem_OnClick" />
+                    <MenuItem Header="_Advanced" Height="35">
+                        <MenuItem x:Name="EnableDebugLoggingMenuItem"
+                                  Header="Enable debug logging"
+                                  Height="35"
+                                  IsCheckable="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Click="EnableDebugLoggingMenuItem_OnClick" />
+                        <MenuItem Header="Delete cloud modlists and firebase-auth"
+                                  Padding="12,6"
+                                  Click="DeleteCloudAuthMenuItem_OnClick" />
+                        <MenuItem Header="Delete all Simple VS Manager files"
+                                  Padding="12,6"
+                                  Click="DeleteAllManagerFilesMenuItem_OnClick" />
+                    </MenuItem>
                 </MenuItem>
             </Menu>
 
