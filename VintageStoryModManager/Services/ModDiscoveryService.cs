@@ -45,6 +45,9 @@ public sealed class ModDiscoveryService
     private byte[]? _defaultIconBytes;
     private bool _defaultIconResolved;
     private readonly object _defaultIconLock = new();
+    private readonly object _directoryCacheLock = new();
+    private readonly Dictionary<string, CachedDirectoryEntry> _directoryManifestCache =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public ModDiscoveryService(ClientSettingsStore settingsStore)
     {
@@ -638,20 +641,48 @@ public sealed class ModDiscoveryService
         string modInfoPath = Path.Combine(directory.FullName, "modinfo.json");
         if (!File.Exists(modInfoPath))
         {
+            InvalidateDirectoryCache(directory.FullName);
             return null;
+        }
+
+        DateTime manifestLastWriteUtc;
+        long manifestLength;
+
+        try
+        {
+            var manifestFile = new FileInfo(modInfoPath);
+            manifestLastWriteUtc = manifestFile.LastWriteTimeUtc;
+            manifestLength = manifestFile.Length;
+        }
+        catch (Exception)
+        {
+            manifestLastWriteUtc = DateTime.MinValue;
+            manifestLength = -1L;
+        }
+
+        if (TryGetCachedDirectoryEntry(directory.FullName, manifestLastWriteUtc, manifestLength, out var cached))
+        {
+            byte[]? iconBytes = cached.IconBytes ?? LoadDefaultIcon();
+            return CreateEntry(cached.Info, directory.FullName, ModSourceKind.Folder, iconBytes);
         }
 
         try
         {
-            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(modInfoPath), DocumentOptions);
+            string manifestJson = File.ReadAllText(modInfoPath);
+            using JsonDocument document = JsonDocument.Parse(manifestJson, DocumentOptions);
             var info = ParseModInfo(document.RootElement, directory.Name);
-            byte[]? iconBytes = LoadIconFromDirectory(directory, info.IconPath);
+
+            DirectoryIconCache icon = LoadDirectoryIcon(directory, info.IconPath);
+            byte[]? iconBytes = icon.Bytes;
             iconBytes ??= LoadDefaultIcon();
+
+            CacheDirectoryEntry(directory.FullName, info, manifestLastWriteUtc, manifestLength, icon);
 
             return CreateEntry(info, directory.FullName, ModSourceKind.Folder, iconBytes);
         }
         catch (Exception ex)
         {
+            InvalidateDirectoryCache(directory.FullName);
             return CreateErrorEntry(directory.Name, directory.FullName, ModSourceKind.Folder, ex.Message);
         }
     }
@@ -932,7 +963,7 @@ public sealed class ModDiscoveryService
         return preferred ?? fallback;
     }
 
-    private static byte[]? LoadIconFromDirectory(DirectoryInfo directory, string? iconPath)
+    private DirectoryIconCache LoadDirectoryIcon(DirectoryInfo directory, string? iconPath)
     {
         string? candidate = ResolveSafePath(directory.FullName, iconPath);
         if (candidate == null)
@@ -944,12 +975,164 @@ public sealed class ModDiscoveryService
             }
         }
 
-        if (candidate != null && File.Exists(candidate))
+        if (candidate != null)
         {
-            return File.ReadAllBytes(candidate);
+            try
+            {
+                var fileInfo = new FileInfo(candidate);
+                if (fileInfo.Exists)
+                {
+                    byte[] bytes = File.ReadAllBytes(candidate);
+                    return new DirectoryIconCache
+                    {
+                        Bytes = bytes,
+                        Metadata = new DirectoryIconMetadata
+                        {
+                            IconPath = candidate,
+                            LastWriteTimeUtc = fileInfo.LastWriteTimeUtc,
+                            Length = fileInfo.Length,
+                            WasMissing = false
+                        }
+                    };
+                }
+
+                return new DirectoryIconCache
+                {
+                    Bytes = null,
+                    Metadata = new DirectoryIconMetadata
+                    {
+                        IconPath = candidate,
+                        WasMissing = true
+                    }
+                };
+            }
+            catch (Exception)
+            {
+                return new DirectoryIconCache
+                {
+                    Bytes = null,
+                    Metadata = new DirectoryIconMetadata
+                    {
+                        IconPath = candidate,
+                        WasMissing = true
+                    }
+                };
+            }
         }
 
-        return null;
+        return new DirectoryIconCache
+        {
+            Bytes = null,
+            Metadata = null
+        };
+    }
+
+    private bool TryGetCachedDirectoryEntry(
+        string directoryPath,
+        DateTime manifestLastWriteUtc,
+        long manifestLength,
+        out CachedDirectoryEntry entry)
+    {
+        lock (_directoryCacheLock)
+        {
+            if (_directoryManifestCache.TryGetValue(directoryPath, out CachedDirectoryEntry? cached))
+            {
+                if (cached.ManifestLength == manifestLength
+                    && cached.ManifestLastWriteTimeUtc == manifestLastWriteUtc
+                    && IconMetadataMatches(cached.IconMetadata))
+                {
+                    entry = cached;
+                    return true;
+                }
+
+                _directoryManifestCache.Remove(directoryPath);
+            }
+        }
+
+        entry = null!;
+        return false;
+    }
+
+    private void CacheDirectoryEntry(
+        string directoryPath,
+        RawModInfo info,
+        DateTime manifestLastWriteUtc,
+        long manifestLength,
+        DirectoryIconCache icon)
+    {
+        var cached = new CachedDirectoryEntry
+        {
+            Info = info,
+            ManifestLastWriteTimeUtc = manifestLastWriteUtc,
+            ManifestLength = manifestLength,
+            IconBytes = icon.Bytes,
+            IconMetadata = icon.Metadata
+        };
+
+        lock (_directoryCacheLock)
+        {
+            _directoryManifestCache[directoryPath] = cached;
+        }
+    }
+
+    private void InvalidateDirectoryCache(string directoryPath)
+    {
+        lock (_directoryCacheLock)
+        {
+            _directoryManifestCache.Remove(directoryPath);
+        }
+    }
+
+    private static bool IconMetadataMatches(DirectoryIconMetadata? metadata)
+    {
+        if (metadata == null || string.IsNullOrWhiteSpace(metadata.IconPath))
+        {
+            return true;
+        }
+
+        try
+        {
+            var fileInfo = new FileInfo(metadata.IconPath);
+            if (!fileInfo.Exists)
+            {
+                return metadata.WasMissing;
+            }
+
+            if (metadata.WasMissing)
+            {
+                return false;
+            }
+
+            return fileInfo.LastWriteTimeUtc == metadata.LastWriteTimeUtc
+                && fileInfo.Length == metadata.Length;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private sealed class CachedDirectoryEntry
+    {
+        public required RawModInfo Info { get; init; }
+        public required DateTime ManifestLastWriteTimeUtc { get; init; }
+        public required long ManifestLength { get; init; }
+        public byte[]? IconBytes { get; init; }
+        public DirectoryIconMetadata? IconMetadata { get; init; }
+    }
+
+    private sealed class DirectoryIconCache
+    {
+        public byte[]? Bytes { get; init; }
+        public DirectoryIconMetadata? Metadata { get; init; }
+    }
+
+    private sealed class DirectoryIconMetadata
+    {
+        public string? IconPath { get; init; }
+        public DateTime? LastWriteTimeUtc { get; init; }
+        public long? Length { get; init; }
+        public bool WasMissing { get; init; }
     }
 
     private static byte[]? LoadIconFromArchive(ZipArchiveLookup lookup, string? iconPath)
