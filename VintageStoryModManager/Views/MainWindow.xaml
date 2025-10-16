@@ -1652,7 +1652,7 @@
                     <ItemsPanelTemplate>
                         <WrapPanel Orientation="Horizontal"
                                    HorizontalAlignment="Center"
-                                   Margin="0,20,0,0"
+                                   Margin="0,20,0,72"
                                    ItemWidth="{Binding ConverterParameter=496, Converter={StaticResource IMM.ScaledDoubleConverter}, Source={StaticResource IMM.ModDbCardScale}}" />
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel>
@@ -1928,7 +1928,7 @@
                     Content="Load more pages"
                     Command="{Binding LoadMoreModDatabaseResultsCommand}"
                     HorizontalAlignment="Center"
-                    Margin="0,278,0,-266"
+                    Margin="0,24,0,24"
                     Background="Transparent"
                     BorderBrush="Transparent"
                     BorderThickness="0"
@@ -1952,7 +1952,7 @@
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                    <Condition Binding="{Binding CanLoadMoreModDatabaseResults}" Value="True" />
+                                    <Condition Binding="{Binding IsLoadMoreModDatabaseButtonVisible}" Value="True" />
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible" />
                             </MultiDataTrigger>
