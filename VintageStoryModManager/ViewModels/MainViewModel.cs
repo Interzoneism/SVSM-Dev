@@ -32,7 +32,7 @@ public sealed class MainViewModel : ObservableObject
     private const int MaxConcurrentDatabaseRefreshes = 4;
     private const int MaxNewModsRecentMonths = 24;
     private const int InstalledModsIncrementalBatchSize = 32;
-    private const int MaxModDatabaseResultLimit = 100;
+    private const int MaxModDatabaseResultLimit = int.MaxValue;
 
     private enum ViewSection
     {
@@ -1916,7 +1916,16 @@ public sealed class MainViewModel : ObservableObject
         _hasRequestedAdditionalModDatabaseResults = true;
 
         int increment = Math.Max(_modDatabaseSearchResultLimit, 1);
-        int nextLimit = Math.Min(_modDatabaseCurrentResultLimit + increment, MaxModDatabaseResultLimit);
+        int nextLimit = _modDatabaseCurrentResultLimit;
+        long candidateLimit = (long)_modDatabaseCurrentResultLimit + increment;
+        if (candidateLimit >= MaxModDatabaseResultLimit)
+        {
+            nextLimit = MaxModDatabaseResultLimit;
+        }
+        else
+        {
+            nextLimit = (int)candidateLimit;
+        }
         if (nextLimit <= _modDatabaseCurrentResultLimit)
         {
             CanLoadMoreModDatabaseResults = false;
@@ -2045,7 +2054,7 @@ public sealed class MainViewModel : ObservableObject
                     .ToList();
 
                 bool hasAdditionalResults = filteredResults.Count > finalResults.Count;
-                bool canRequestMore = queryLimit < MaxModDatabaseResultLimit && results.Count >= queryLimit;
+                bool canRequestMore = results.Count >= queryLimit;
                 if (!excludeInstalled
                     || finalResults.Count >= desiredResultCount
                     || !canRequestMore)
@@ -2054,7 +2063,16 @@ public sealed class MainViewModel : ObservableObject
                     break;
                 }
 
-                int nextLimit = Math.Min(MaxModDatabaseResultLimit, queryLimit + desiredResultCount);
+                int nextLimit;
+                long candidateLimit = (long)queryLimit + desiredResultCount;
+                if (candidateLimit >= MaxModDatabaseResultLimit)
+                {
+                    nextLimit = MaxModDatabaseResultLimit;
+                }
+                else
+                {
+                    nextLimit = (int)candidateLimit;
+                }
                 if (nextLimit <= queryLimit)
                 {
                     break;
