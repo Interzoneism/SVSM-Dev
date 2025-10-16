@@ -23,9 +23,9 @@
     <AssemblyName>VintageStoryModManager</AssemblyName>
 
     <!-- Versions -->
-    <Version>1.1.0</Version>                               <!-- Product version -->
-    <FileVersion>1.1.0.0</FileVersion>                     <!-- File version (Details tab) -->
-    <InformationalVersion>1.1.0</InformationalVersion>     <!-- About box/semver -->
+    <Version>1.2.0</Version>                               <!-- Product version -->
+    <FileVersion>1.2.0.0</FileVersion>                     <!-- File version (Details tab) -->
+    <InformationalVersion>1.2.0</InformationalVersion>     <!-- About box/semver -->
   </PropertyGroup>
 
   <ItemGroup>
