@@ -3222,13 +3222,23 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
+        ModDatabaseInfo? cachedInfo = entry.DatabaseInfo;
+        if (cachedInfo is null)
+        {
+            cachedInfo = await _databaseService
+                .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion)
+                .ConfigureAwait(false);
+        }
+
         ModDatabaseInfo? offlineInfo = CreateOfflineDatabaseInfo(entry);
-        if (offlineInfo is null)
+
+        ModDatabaseInfo? mergedInfo = MergeOfflineAndCachedInfo(offlineInfo, cachedInfo);
+        if (mergedInfo is null)
         {
             return;
         }
 
-        await ApplyDatabaseInfoAsync(entry, offlineInfo).ConfigureAwait(false);
+        await ApplyDatabaseInfoAsync(entry, mergedInfo).ConfigureAwait(false);
     }
 
     private async Task ApplyDatabaseInfoAsync(ModEntry entry, ModDatabaseInfo info, bool loadLogoImmediately = true)
@@ -3299,6 +3309,107 @@ public sealed class MainViewModel : ObservableObject
             Releases = releases,
             LastReleasedUtc = lastUpdatedUtc
         };
+    }
+
+    private static ModDatabaseInfo? MergeOfflineAndCachedInfo(ModDatabaseInfo? offlineInfo, ModDatabaseInfo? cachedInfo)
+    {
+        if (offlineInfo is null)
+        {
+            return cachedInfo;
+        }
+
+        if (cachedInfo is null)
+        {
+            return offlineInfo;
+        }
+
+        IReadOnlyList<ModReleaseInfo> mergedReleases = MergeReleases(offlineInfo.Releases, cachedInfo.Releases);
+        ModReleaseInfo? latestRelease = offlineInfo.LatestRelease ?? cachedInfo.LatestRelease;
+        if (latestRelease is null && mergedReleases is { Count: > 0 })
+        {
+            latestRelease = mergedReleases[0];
+        }
+
+        ModReleaseInfo? latestCompatibleRelease = offlineInfo.LatestCompatibleRelease ?? cachedInfo.LatestCompatibleRelease;
+        if (latestCompatibleRelease is null && mergedReleases is { Count: > 0 })
+        {
+            latestCompatibleRelease = mergedReleases.FirstOrDefault(release => release?.IsCompatibleWithInstalledGame == true);
+        }
+
+        IReadOnlyList<string> requiredVersions = offlineInfo.RequiredGameVersions is { Count: > 0 }
+            ? offlineInfo.RequiredGameVersions
+            : cachedInfo.RequiredGameVersions;
+
+        return new ModDatabaseInfo
+        {
+            Tags = cachedInfo.Tags ?? offlineInfo.Tags ?? Array.Empty<string>(),
+            CachedTagsVersion = cachedInfo.CachedTagsVersion ?? offlineInfo.CachedTagsVersion,
+            AssetId = cachedInfo.AssetId ?? offlineInfo.AssetId,
+            ModPageUrl = cachedInfo.ModPageUrl ?? offlineInfo.ModPageUrl,
+            LatestCompatibleVersion = offlineInfo.LatestCompatibleVersion ?? cachedInfo.LatestCompatibleVersion,
+            LatestVersion = offlineInfo.LatestVersion ?? cachedInfo.LatestVersion,
+            RequiredGameVersions = requiredVersions,
+            Downloads = cachedInfo.Downloads ?? offlineInfo.Downloads,
+            Comments = cachedInfo.Comments ?? offlineInfo.Comments,
+            Follows = cachedInfo.Follows ?? offlineInfo.Follows,
+            TrendingPoints = cachedInfo.TrendingPoints ?? offlineInfo.TrendingPoints,
+            LogoUrl = cachedInfo.LogoUrl ?? offlineInfo.LogoUrl,
+            DownloadsLastThirtyDays = cachedInfo.DownloadsLastThirtyDays ?? offlineInfo.DownloadsLastThirtyDays,
+            LastReleasedUtc = offlineInfo.LastReleasedUtc ?? cachedInfo.LastReleasedUtc,
+            CreatedUtc = cachedInfo.CreatedUtc ?? offlineInfo.CreatedUtc,
+            LatestRelease = latestRelease,
+            LatestCompatibleRelease = latestCompatibleRelease ?? latestRelease,
+            Releases = mergedReleases
+        };
+    }
+
+    private static IReadOnlyList<ModReleaseInfo> MergeReleases(
+        IReadOnlyList<ModReleaseInfo>? offlineReleases,
+        IReadOnlyList<ModReleaseInfo>? cachedReleases)
+    {
+        if (offlineReleases is not { Count: > 0 })
+        {
+            return cachedReleases is { Count: > 0 } ? cachedReleases : Array.Empty<ModReleaseInfo>();
+        }
+
+        if (cachedReleases is not { Count: > 0 })
+        {
+            return offlineReleases;
+        }
+
+        var byVersion = new Dictionary<string, ModReleaseInfo>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (ModReleaseInfo release in cachedReleases)
+        {
+            if (release is null || string.IsNullOrWhiteSpace(release.Version))
+            {
+                continue;
+            }
+
+            if (!byVersion.ContainsKey(release.Version))
+            {
+                byVersion[release.Version] = release;
+            }
+        }
+
+        foreach (ModReleaseInfo release in offlineReleases)
+        {
+            if (release is null || string.IsNullOrWhiteSpace(release.Version))
+            {
+                continue;
+            }
+
+            byVersion[release.Version] = release;
+        }
+
+        if (byVersion.Count == 0)
+        {
+            return Array.Empty<ModReleaseInfo>();
+        }
+
+        List<ModReleaseInfo> merged = byVersion.Values.ToList();
+        merged.Sort(CompareOfflineReleases);
+        return merged;
     }
 
     private IReadOnlyList<ModReleaseInfo> CreateOfflineReleases(
