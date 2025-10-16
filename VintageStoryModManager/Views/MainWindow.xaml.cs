@@ -46,7 +46,7 @@ public partial class MainWindow : Window
 {
     private const double ModListScrollMultiplier = 0.5;
     private const double ModDbDesignScrollMultiplier = 20.0;
-    private const double LoadMoreScrollThreshold = 0.9;
+    private const double LoadMoreScrollThreshold = 0.98;
     private const double HoverOverlayOpacity = 0.1;
     private const double SelectionOverlayOpacity = 0.25;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";
