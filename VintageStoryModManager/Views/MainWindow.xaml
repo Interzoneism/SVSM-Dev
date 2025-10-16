@@ -1267,7 +1267,7 @@
                 <Grid Grid.RowSpan="2" Margin="0,0,-29,0">
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Visible" />
+                            <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -1545,7 +1545,7 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Border Margin="10,0,0,10" Grid.Row="1" Width="614" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Left" Height="151" VerticalAlignment="Bottom">
+                    <Border Margin="0,0,0,10" Grid.Row="1" Width="614" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Center" Height="151" VerticalAlignment="Bottom">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2"/>
                         </Border.Effect>
