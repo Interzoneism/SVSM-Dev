@@ -39,6 +39,9 @@ using WpfButton = System.Windows.Controls.Button;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 using WpfToolTip = System.Windows.Controls.ToolTip;
 using CloudModConfigOption = VintageStoryModManager.Views.Dialogs.CloudModlistDetailsDialog.CloudModConfigOption;
+using FileRecycleOption = Microsoft.VisualBasic.FileIO.RecycleOption;
+using FileSystem = Microsoft.VisualBasic.FileIO.FileSystem;
+using FileUIOption = Microsoft.VisualBasic.FileIO.UIOption;
 
 namespace VintageStoryModManager.Views;
 
@@ -3502,8 +3505,8 @@ public partial class MainWindow : Window
     private async void DeleteAllManagerFilesMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         const string confirmationMessage =
-            "This will permanently delete every file Simple VS Manager created, including its Documents folder, any ModData backups, AppData entries, cached mods, presets, and Firebase authentication tokens.\n\n" +
-            "This action cannot be undone. Continue?";
+            "This will move every file Simple VS Manager created to the Recycle Bin, including its Documents folder, any ModData backups, AppData entries, cached mods, presets, and Firebase authentication tokens.\n\n" +
+            "You can restore them from the Recycle Bin if needed. Continue?";
 
         MessageBoxResult confirmation = WpfMessageBox.Show(
             this,
@@ -3535,7 +3538,7 @@ public partial class MainWindow : Window
 
         if (deletionResult.DeletedPaths.Count > 0)
         {
-            builder.AppendLine("Deleted the following locations:");
+            builder.AppendLine("Moved the following locations to the Recycle Bin:");
             foreach (string path in deletionResult.DeletedPaths)
             {
                 builder.AppendLine($"• {path}");
@@ -3546,7 +3549,7 @@ public partial class MainWindow : Window
         {
             string message = builder.Length > 0
                 ? builder.ToString()
-                : "Finished deleting Simple VS Manager files.";
+                : "Finished moving Simple VS Manager files to the Recycle Bin.";
 
             WpfMessageBox.Show(
                 this,
@@ -3562,7 +3565,7 @@ public partial class MainWindow : Window
             builder.AppendLine();
         }
 
-        builder.AppendLine("The following locations could not be removed. Please delete them manually:");
+        builder.AppendLine("The following locations could not be moved to the Recycle Bin. Please remove them manually:");
         foreach (string path in deletionResult.FailedPaths)
         {
             builder.AppendLine($"• {path}");
@@ -3709,7 +3712,7 @@ public partial class MainWindow : Window
                     continue;
                 }
 
-                File.Delete(file);
+                FileSystem.DeleteFile(file, FileUIOption.OnlyErrorDialogs, FileRecycleOption.SendToRecycleBin);
                 deletedPaths.Add(file);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or System.Security.SecurityException or PathTooLongException or ArgumentException)
@@ -3727,7 +3730,7 @@ public partial class MainWindow : Window
                     continue;
                 }
 
-                Directory.Delete(directory, recursive: true);
+                FileSystem.DeleteDirectory(directory, FileUIOption.OnlyErrorDialogs, FileRecycleOption.SendToRecycleBin);
                 deletedPaths.Add(directory);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or System.Security.SecurityException or PathTooLongException or ArgumentException)
