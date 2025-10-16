@@ -1958,6 +1958,7 @@
                                     <Condition Binding="{Binding SearchModDatabase}" Value="True" />
                                     <Condition Binding="{Binding IsLoadMoreModDatabaseButtonVisible}" Value="True" />
                                     <Condition Binding="{Binding IsLoadMoreModDatabaseScrollThresholdReached}" Value="True" />
+                                    <Condition Binding="{Binding IsModDatabaseLoading}" Value="False" />
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible" />
                             </MultiDataTrigger>

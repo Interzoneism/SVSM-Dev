@@ -103,6 +103,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _canLoadMoreModDatabaseResults;
     private bool _isLoadMoreModDatabaseButtonVisible;
     private bool _isLoadMoreModDatabaseScrollThresholdReached;
+    private bool _isModDatabaseLoading;
     private bool _hasRequestedAdditionalModDatabaseResults;
 
     public MainViewModel(
@@ -152,7 +153,10 @@ public sealed class MainViewModel : ObservableObject
             () => !InternetAccessManager.IsInternetAccessDisabled);
         _loadMoreModDatabaseResultsCommand = new RelayCommand(
             LoadMoreModDatabaseResults,
-            () => SearchModDatabase && IsLoadMoreModDatabaseButtonVisible && IsLoadMoreModDatabaseScrollThresholdReached);
+            () => SearchModDatabase
+                && !IsModDatabaseLoading
+                && IsLoadMoreModDatabaseButtonVisible
+                && IsLoadMoreModDatabaseScrollThresholdReached);
         ShowInstalledModsCommand = _showInstalledModsCommand;
         ShowModDatabaseCommand = _showModDatabaseCommand;
         ShowCloudModlistsCommand = _showCloudModlistsCommand;
@@ -361,6 +365,18 @@ public sealed class MainViewModel : ObservableObject
         set
         {
             if (SetProperty(ref _isLoadMoreModDatabaseScrollThresholdReached, value))
+            {
+                NotifyLoadMoreCommandCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool IsModDatabaseLoading
+    {
+        get => _isModDatabaseLoading;
+        private set
+        {
+            if (SetProperty(ref _isModDatabaseLoading, value))
             {
                 NotifyLoadMoreCommandCanExecuteChanged();
             }
@@ -1898,6 +1914,7 @@ public sealed class MainViewModel : ObservableObject
         SetStatus(statusMessage, false);
 
         IReadOnlyList<string> requiredTags = GetSelectedModDatabaseTagsSnapshot();
+        UpdateIsModDatabaseLoading(true);
         _ = RunModDatabaseSearchAsync(SearchText, hasSearchTokens, requiredTags, cts);
     }
 
@@ -2283,7 +2300,27 @@ public sealed class MainViewModel : ObservableObject
             if (ReferenceEquals(_modDatabaseSearchCts, cts))
             {
                 _modDatabaseSearchCts = null;
+                UpdateIsModDatabaseLoading(false);
             }
+        }
+    }
+
+    private void UpdateIsModDatabaseLoading(bool isLoading)
+    {
+        if (System.Windows.Application.Current?.Dispatcher is Dispatcher dispatcher)
+        {
+            if (dispatcher.CheckAccess())
+            {
+                IsModDatabaseLoading = isLoading;
+            }
+            else
+            {
+                dispatcher.BeginInvoke(new Action(() => IsModDatabaseLoading = isLoading));
+            }
+        }
+        else
+        {
+            IsModDatabaseLoading = isLoading;
         }
     }
 
