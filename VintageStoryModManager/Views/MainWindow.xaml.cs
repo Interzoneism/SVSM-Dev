@@ -46,6 +46,7 @@ public partial class MainWindow : Window
 {
     private const double ModListScrollMultiplier = 0.5;
     private const double ModDbDesignScrollMultiplier = 20.0;
+    private const double LoadMoreScrollThreshold = 0.9;
     private const double HoverOverlayOpacity = 0.1;
     private const double SelectionOverlayOpacity = 0.25;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";
@@ -421,6 +422,8 @@ public partial class MainWindow : Window
                     _modsScrollViewer = null;
                     _modDatabaseCardsScrollViewer = null;
                 });
+
+                Dispatcher.InvokeAsync(UpdateLoadMoreScrollThresholdState, DispatcherPriority.Background);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.ExcludeInstalledModDatabaseResults))
@@ -444,6 +447,8 @@ public partial class MainWindow : Window
                         _modDatabaseCardsScrollViewer = null;
                     }
                 });
+
+                Dispatcher.InvokeAsync(UpdateLoadMoreScrollThresholdState, DispatcherPriority.Background);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.ModDatabaseAutoLoadMode))
@@ -465,6 +470,10 @@ public partial class MainWindow : Window
                     }
                 });
             }
+        }
+        else if (e.PropertyName == nameof(MainViewModel.IsLoadMoreModDatabaseButtonVisible))
+        {
+            Dispatcher.Invoke(UpdateLoadMoreScrollThresholdState);
         }
         else if (e.PropertyName == nameof(MainViewModel.CurrentModsView))
         {
@@ -2250,6 +2259,39 @@ public partial class MainWindow : Window
             listView.SelectedIndex = -1;
             listView.UnselectAll();
         }
+    }
+
+    private void ModDatabaseCardsListView_OnScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        UpdateLoadMoreScrollThresholdState(e.VerticalOffset, e.ViewportHeight, e.ExtentHeight);
+    }
+
+    private void UpdateLoadMoreScrollThresholdState()
+    {
+        if (_viewModel?.SearchModDatabase != true || !_viewModel.UseModDbDesignView)
+        {
+            return;
+        }
+
+        ScrollViewer? scrollViewer = GetModsScrollViewer();
+        if (scrollViewer == null)
+        {
+            return;
+        }
+
+        UpdateLoadMoreScrollThresholdState(scrollViewer.VerticalOffset, scrollViewer.ViewportHeight, scrollViewer.ExtentHeight);
+    }
+
+    private void UpdateLoadMoreScrollThresholdState(double verticalOffset, double viewportHeight, double extentHeight)
+    {
+        if (_viewModel?.SearchModDatabase != true || !_viewModel.UseModDbDesignView)
+        {
+            return;
+        }
+
+        double scrollableHeight = extentHeight - viewportHeight;
+        bool isNearBottom = scrollableHeight <= 0 || verticalOffset / scrollableHeight >= LoadMoreScrollThreshold;
+        _viewModel.IsLoadMoreModDatabaseScrollThresholdReached = isNearBottom;
     }
 
     private void ModsDataGridRow_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

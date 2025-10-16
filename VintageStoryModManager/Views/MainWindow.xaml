@@ -1628,6 +1628,7 @@
                       SelectionMode="Single"
                       SelectionChanged="ModDatabaseCardsListView_OnSelectionChanged"
                       PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
+                      ScrollViewer.ScrollChanged="ModDatabaseCardsListView_OnScrollChanged"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
                       ScrollViewer.CanContentScroll="True"
@@ -1953,6 +1954,7 @@
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding SearchModDatabase}" Value="True" />
                                     <Condition Binding="{Binding IsLoadMoreModDatabaseButtonVisible}" Value="True" />
+                                    <Condition Binding="{Binding IsLoadMoreModDatabaseScrollThresholdReached}" Value="True" />
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible" />
                             </MultiDataTrigger>
