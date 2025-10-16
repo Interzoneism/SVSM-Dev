@@ -101,6 +101,8 @@ public sealed class MainViewModel : ObservableObject
     private bool _isModDatabaseTagRefreshPending;
     private bool _excludeInstalledModDatabaseResults;
     private bool _canLoadMoreModDatabaseResults;
+    private bool _isLoadMoreModDatabaseButtonVisible;
+    private bool _hasRequestedAdditionalModDatabaseResults;
 
     public MainViewModel(
         string dataDirectory,
@@ -147,7 +149,9 @@ public sealed class MainViewModel : ObservableObject
         _showCloudModlistsCommand = new RelayCommand(
             () => SetViewSection(ViewSection.CloudModlists),
             () => !InternetAccessManager.IsInternetAccessDisabled);
-        _loadMoreModDatabaseResultsCommand = new RelayCommand(LoadMoreModDatabaseResults, () => CanLoadMoreModDatabaseResults);
+        _loadMoreModDatabaseResultsCommand = new RelayCommand(
+            LoadMoreModDatabaseResults,
+            () => SearchModDatabase && IsLoadMoreModDatabaseButtonVisible);
         ShowInstalledModsCommand = _showInstalledModsCommand;
         ShowModDatabaseCommand = _showModDatabaseCommand;
         ShowCloudModlistsCommand = _showCloudModlistsCommand;
@@ -328,7 +332,19 @@ public sealed class MainViewModel : ObservableObject
         {
             if (SetProperty(ref _canLoadMoreModDatabaseResults, value))
             {
-                _loadMoreModDatabaseResultsCommand?.NotifyCanExecuteChanged();
+                NotifyLoadMoreCommandCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool IsLoadMoreModDatabaseButtonVisible
+    {
+        get => _isLoadMoreModDatabaseButtonVisible;
+        private set
+        {
+            if (SetProperty(ref _isLoadMoreModDatabaseButtonVisible, value))
+            {
+                NotifyLoadMoreCommandCanExecuteChanged();
             }
         }
     }
@@ -400,6 +416,12 @@ public sealed class MainViewModel : ObservableObject
 
         CanLoadMoreModDatabaseResults = false;
 
+        if (section != ViewSection.ModDatabase)
+        {
+            IsLoadMoreModDatabaseButtonVisible = false;
+            _hasRequestedAdditionalModDatabaseResults = false;
+        }
+
         switch (section)
         {
             case ViewSection.ModDatabase:
@@ -427,6 +449,13 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CurrentModsView));
         OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
         OnPropertyChanged(nameof(DownloadsColumnHeader));
+
+        NotifyLoadMoreCommandCanExecuteChanged();
+    }
+
+    private void NotifyLoadMoreCommandCanExecuteChanged()
+    {
+        _loadMoreModDatabaseResultsCommand?.NotifyCanExecuteChanged();
     }
 
     private void SetAutoLoadMode(ModDatabaseAutoLoadMode mode)
@@ -1814,6 +1843,8 @@ public sealed class MainViewModel : ObservableObject
         if (!preserveResultLimit)
         {
             ResetModDatabaseResultLimit();
+            _hasRequestedAdditionalModDatabaseResults = false;
+            IsLoadMoreModDatabaseButtonVisible = true;
         }
 
         CanLoadMoreModDatabaseResults = false;
@@ -1864,11 +1895,15 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
+        _hasRequestedAdditionalModDatabaseResults = true;
+
         int increment = Math.Max(_modDatabaseSearchResultLimit, 1);
         int nextLimit = Math.Min(_modDatabaseCurrentResultLimit + increment, MaxModDatabaseResultLimit);
         if (nextLimit <= _modDatabaseCurrentResultLimit)
         {
             CanLoadMoreModDatabaseResults = false;
+            IsLoadMoreModDatabaseButtonVisible = false;
+            _hasRequestedAdditionalModDatabaseResults = false;
             return;
         }
 
@@ -1959,7 +1994,16 @@ public sealed class MainViewModel : ObservableObject
                 if (filteredResults.Count == 0)
                 {
                     await InvokeOnDispatcherAsync(
-                            () => CanLoadMoreModDatabaseResults = false,
+                            () =>
+                            {
+                                CanLoadMoreModDatabaseResults = false;
+
+                                if (_hasRequestedAdditionalModDatabaseResults)
+                                {
+                                    IsLoadMoreModDatabaseButtonVisible = false;
+                                    _hasRequestedAdditionalModDatabaseResults = false;
+                                }
+                            },
                             cancellationToken)
                         .ConfigureAwait(false);
                     await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken)
@@ -2004,7 +2048,16 @@ public sealed class MainViewModel : ObservableObject
             if (finalResults.Count == 0)
             {
                 await InvokeOnDispatcherAsync(
-                        () => CanLoadMoreModDatabaseResults = false,
+                        () =>
+                        {
+                            CanLoadMoreModDatabaseResults = false;
+
+                            if (_hasRequestedAdditionalModDatabaseResults)
+                            {
+                                IsLoadMoreModDatabaseButtonVisible = false;
+                                _hasRequestedAdditionalModDatabaseResults = false;
+                            }
+                        },
                         cancellationToken)
                     .ConfigureAwait(false);
                 await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
@@ -2040,7 +2093,20 @@ public sealed class MainViewModel : ObservableObject
             await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
 
             await InvokeOnDispatcherAsync(
-                    () => CanLoadMoreModDatabaseResults = hasMoreResults && _modDatabaseCurrentResultLimit < MaxModDatabaseResultLimit,
+                    () =>
+                    {
+                        CanLoadMoreModDatabaseResults = hasMoreResults && _modDatabaseCurrentResultLimit < MaxModDatabaseResultLimit;
+
+                        if (_hasRequestedAdditionalModDatabaseResults)
+                        {
+                            if (!CanLoadMoreModDatabaseResults)
+                            {
+                                IsLoadMoreModDatabaseButtonVisible = false;
+                            }
+
+                            _hasRequestedAdditionalModDatabaseResults = false;
+                        }
+                    },
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -2139,7 +2205,16 @@ public sealed class MainViewModel : ObservableObject
         {
             await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
             await InvokeOnDispatcherAsync(
-                    () => CanLoadMoreModDatabaseResults = false,
+                    () =>
+                    {
+                        CanLoadMoreModDatabaseResults = false;
+
+                        if (_hasRequestedAdditionalModDatabaseResults)
+                        {
+                            IsLoadMoreModDatabaseButtonVisible = false;
+                            _hasRequestedAdditionalModDatabaseResults = false;
+                        }
+                    },
                     cancellationToken)
                 .ConfigureAwait(false);
             await InvokeOnDispatcherAsync(
@@ -2150,7 +2225,16 @@ public sealed class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             await InvokeOnDispatcherAsync(
-                    () => CanLoadMoreModDatabaseResults = false,
+                    () =>
+                    {
+                        CanLoadMoreModDatabaseResults = false;
+
+                        if (_hasRequestedAdditionalModDatabaseResults)
+                        {
+                            IsLoadMoreModDatabaseButtonVisible = false;
+                            _hasRequestedAdditionalModDatabaseResults = false;
+                        }
+                    },
                     cancellationToken)
                 .ConfigureAwait(false);
             await InvokeOnDispatcherAsync(
