@@ -3520,6 +3520,10 @@ public partial class MainWindow : Window
             return;
         }
 
+        await ExecuteCloudOperationAsync(
+            store => DeleteAllCloudModlistsAndAuthorizationAsync(store, showCompletionMessage: false),
+            "delete the Firebase user and cloud data");
+
         string? dataDirectory = _dataDirectory;
         ManagerDeletionResult deletionResult = await Task.Run(() => DeleteAllManagerFiles(dataDirectory)).ConfigureAwait(true);
 
@@ -6185,7 +6189,7 @@ public partial class MainWindow : Window
         return true;
     }
 
-    private async Task DeleteAllCloudModlistsAndAuthorizationAsync(FirebaseModlistStore store)
+    private async Task DeleteAllCloudModlistsAndAuthorizationAsync(FirebaseModlistStore store, bool showCompletionMessage = true)
     {
         await store.DeleteAllUserDataAsync();
         await store.Authenticator.DeleteAccountAsync(CancellationToken.None);
@@ -6206,12 +6210,15 @@ public partial class MainWindow : Window
         StatusLogService.AppendStatus("Deleted all cloud modlists and Firebase authorization.", false);
         _viewModel?.ReportStatus("Deleted all cloud modlists and Firebase authorization.");
 
-        WpfMessageBox.Show(
-            this,
-            "Cloud modlists and Firebase authorization have been deleted.",
-            "Simple VS Manager",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        if (showCompletionMessage)
+        {
+            WpfMessageBox.Show(
+                this,
+                "Cloud modlists and Firebase authorization have been deleted.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
     }
 
     private async Task UpdateCloudModlistsAfterChangeAsync()
