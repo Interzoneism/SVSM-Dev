@@ -139,7 +139,9 @@ public sealed class MainViewModel : ObservableObject
 
         _showInstalledModsCommand = new RelayCommand(() => SetViewSection(ViewSection.InstalledMods));
         _showModDatabaseCommand = new RelayCommand(() => SetViewSection(ViewSection.ModDatabase));
-        _showCloudModlistsCommand = new RelayCommand(() => SetViewSection(ViewSection.CloudModlists));
+        _showCloudModlistsCommand = new RelayCommand(
+            () => SetViewSection(ViewSection.CloudModlists),
+            () => !InternetAccessManager.IsInternetAccessDisabled);
         ShowInstalledModsCommand = _showInstalledModsCommand;
         ShowModDatabaseCommand = _showModDatabaseCommand;
         ShowCloudModlistsCommand = _showCloudModlistsCommand;
@@ -172,6 +174,8 @@ public sealed class MainViewModel : ObservableObject
         ViewSection.CloudModlists => CloudModlistsView,
         _ => ModsView
     };
+
+    public bool CanAccessCloudModlists => !InternetAccessManager.IsInternetAccessDisabled;
 
     public ReadOnlyObservableCollection<SortOption> SortOptions { get; }
 
@@ -360,6 +364,12 @@ public sealed class MainViewModel : ObservableObject
     {
         if (_viewSection == section)
         {
+            return;
+        }
+
+        if (section == ViewSection.CloudModlists && InternetAccessManager.IsInternetAccessDisabled)
+        {
+            SetStatus(InternetAccessDisabledStatusMessage, false);
             return;
         }
 
@@ -3398,6 +3408,15 @@ public sealed class MainViewModel : ObservableObject
         foreach (ModListItemViewModel mod in _searchResults)
         {
             mod.RefreshInternetAccessDependentState();
+        }
+
+        _showCloudModlistsCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanAccessCloudModlists));
+
+        if (InternetAccessManager.IsInternetAccessDisabled && _viewSection == ViewSection.CloudModlists)
+        {
+            SetStatus(InternetAccessDisabledStatusMessage, false);
+            SetViewSection(ViewSection.InstalledMods);
         }
     }
 

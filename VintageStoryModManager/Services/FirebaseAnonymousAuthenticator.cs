@@ -53,12 +53,14 @@ public sealed class FirebaseAnonymousAuthenticator
     /// </summary>
     public async Task<string> GetIdTokenAsync(CancellationToken ct)
     {
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
         FirebaseAuthSession session = await GetSessionAsync(ct).ConfigureAwait(false);
         return session.IdToken;
     }
 
     public async Task<FirebaseAuthSession> GetSessionAsync(CancellationToken ct)
     {
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
         await _stateLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
@@ -236,6 +238,7 @@ public sealed class FirebaseAnonymousAuthenticator
 
     private async Task<FirebaseAuthState> SignInAsync(CancellationToken ct)
     {
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
         string requestUri = $"{SignInEndpoint}?key={Uri.EscapeDataString(_apiKey)}";
         using var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
         {
@@ -270,6 +273,7 @@ public sealed class FirebaseAnonymousAuthenticator
 
     private async Task<FirebaseAuthState?> TryRefreshAsync(FirebaseAuthState existingState, CancellationToken ct)
     {
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
         string requestUri = $"{RefreshEndpoint}?key={Uri.EscapeDataString(_apiKey)}";
         using var content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
