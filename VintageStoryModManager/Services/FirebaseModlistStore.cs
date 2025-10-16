@@ -177,9 +177,6 @@ namespace SimpleVsManager.Cloud
             {
                 await EnsureOk(saveResult.Response, "Save (user + registry)").ConfigureAwait(false);
             }
-
-            // Optional: keep legacy uploads consistent if they’re missing proper uploader fields
-            await EnsureUploaderConsistencyAsync(identity, ct).ConfigureAwait(false);
         }
 
 
@@ -395,66 +392,6 @@ namespace SimpleVsManager.Cloud
             return list;
         }
 
-        private async Task EnsureUploaderConsistencyAsync((string Uid, string Name) identity, CancellationToken ct)
-        {
-            if (string.IsNullOrWhiteSpace(identity.Name))
-            {
-                return;
-            }
-
-            IReadOnlyList<string> slots = await ListSlotsAsync(identity, ct).ConfigureAwait(false);
-            foreach (string slot in slots)
-            {
-                await UpdateSlotUploaderAsync(slot, identity, ct).ConfigureAwait(false);
-            }
-        }
-
-        private async Task UpdateSlotUploaderAsync(string slotKey, (string Uid, string Name) identity, CancellationToken ct)
-        {
-            // Read existing slot (to keep registryId)
-            SlotNode? existing = await TryReadSlotNodeAsync(identity.Uid, slotKey, ct).ConfigureAwait(false);
-            if (existing is null || existing.Value.Content.ValueKind != JsonValueKind.Object)
-                return;
-
-            string? currentName = TryGetUploader(existing.Value.Content);
-            if (string.Equals(currentName, identity.Name, StringComparison.Ordinal))
-                return;
-
-            string updatedContentJson = ReplaceUploader(existing.Value.Content, identity);
-            string updatedNodeJson = BuildSlotNodeJson(updatedContentJson, existing.Value.RegistryId);
-
-            var updateResult = await SendWithAuthRetryAsync(session =>
-            {
-                string rootUrl = BuildAuthenticatedUrl(session.IdToken, null /* root */);
-
-                var sb = new StringBuilder();
-                sb.Append('{');
-                sb.Append($"\"/users/{identity.Uid}/{slotKey}\":{updatedNodeJson}");
-
-                string? registryId = existing.Value.RegistryId;
-                if (!string.IsNullOrWhiteSpace(registryId))
-                {
-                    string registryNodeJson = $"{{\"content\":{updatedContentJson}}}";
-                    sb.Append($",\"/registry/{registryId}\":{registryNodeJson}");
-                }
-
-                sb.Append('}');
-
-                var request = new HttpRequestMessage(new HttpMethod("PATCH"), rootUrl)
-                {
-                    Content = new StringContent(sb.ToString(), Encoding.UTF8, "application/json")
-                };
-
-                return HttpClient.SendAsync(request, ct);
-            }, ct).ConfigureAwait(false);
-
-            using (updateResult.Response)
-            {
-                await EnsureOk(updateResult.Response, "Update modlist uploader").ConfigureAwait(false);
-            }
-        }
-
-
         private (string Uid, string Name) GetIdentityComponents()
         {
             string? uid = _playerUid;
@@ -503,31 +440,6 @@ namespace SimpleVsManager.Cloud
             }
 
             StatusLogService.AppendStatus(message, true);
-        }
-
-        private static string? TryGetUploader(JsonElement root)
-        {
-            if (root.ValueKind != JsonValueKind.Object)
-            {
-                return null;
-            }
-
-            if (root.TryGetProperty("uploader", out JsonElement uploaderProperty) && uploaderProperty.ValueKind == JsonValueKind.String)
-            {
-                string? uploader = uploaderProperty.GetString();
-                if (!string.IsNullOrWhiteSpace(uploader))
-                {
-                    return uploader.Trim();
-                }
-            }
-
-            if (root.TryGetProperty("uploaderName", out JsonElement uploaderNameProperty) && uploaderNameProperty.ValueKind == JsonValueKind.String)
-            {
-                string? uploaderName = uploaderNameProperty.GetString();
-                return string.IsNullOrWhiteSpace(uploaderName) ? null : uploaderName.Trim();
-            }
-
-            return null;
         }
 
         private async Task<(HttpResponseMessage Response, FirebaseAnonymousAuthenticator.FirebaseAuthSession Session)> SendWithAuthRetryAsync(Func<FirebaseAnonymousAuthenticator.FirebaseAuthSession, Task<HttpResponseMessage>> operation, CancellationToken ct)

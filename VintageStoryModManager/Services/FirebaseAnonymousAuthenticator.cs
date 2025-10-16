@@ -167,27 +167,14 @@ public sealed class FirebaseAnonymousAuthenticator
 
     internal static string GetStateFilePath()
     {
-        string legacyPath = GetLegacyStateFilePath();
         string? secureDirectory = TryGetSecureBaseDirectory();
 
-        if (string.IsNullOrWhiteSpace(secureDirectory))
+        if (!string.IsNullOrWhiteSpace(secureDirectory))
         {
-            return legacyPath;
+            return Path.Combine(secureDirectory!, StateFileName);
         }
 
-        string securePath = Path.Combine(secureDirectory, StateFileName);
-
-        if (string.Equals(securePath, legacyPath, StringComparison.OrdinalIgnoreCase))
-        {
-            return securePath;
-        }
-
-        if (TryMigrateLegacyStateFile(legacyPath, securePath) || File.Exists(securePath))
-        {
-            return securePath;
-        }
-
-        return legacyPath;
+        return GetDefaultStateFilePath();
     }
 
     private static string DetermineStateFilePath()
@@ -242,7 +229,7 @@ public sealed class FirebaseAnonymousAuthenticator
         return null;
     }
 
-    private static string GetLegacyStateFilePath()
+    private static string GetDefaultStateFilePath()
     {
         string? baseDirectory = ModCacheLocator.GetManagerDataDirectory();
         if (!string.IsNullOrWhiteSpace(baseDirectory))
@@ -278,35 +265,6 @@ public sealed class FirebaseAnonymousAuthenticator
         try
         {
             Directory.CreateDirectory(path);
-            return true;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or SecurityException)
-        {
-            return false;
-        }
-    }
-
-    private static bool TryMigrateLegacyStateFile(string legacyPath, string targetPath)
-    {
-        try
-        {
-            if (!File.Exists(legacyPath))
-            {
-                return true;
-            }
-
-            if (File.Exists(targetPath))
-            {
-                return true;
-            }
-
-            string? directory = Path.GetDirectoryName(targetPath);
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            File.Move(legacyPath, targetPath);
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or SecurityException)
