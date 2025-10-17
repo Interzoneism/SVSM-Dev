@@ -23,56 +23,43 @@
             <StackPanel>
                 <TextBlock FontSize="20"
                            FontWeight="Bold"
-                           Text="Simple VS Manager quick tips" />
-
-                <TextBlock Margin="0,16,0,0"
-                           TextWrapping="Wrap"
-                           FontSize="15">
-                    <Run Text="• " />
-                    <Bold>Mods &gt; Cache all versions locally</Bold>
-                    <Run Text=" is on by default so downloads stay ready. Most mods are small, so the " />
-                    <Hyperlink x:Name="CachedModsHyperlink"
-                               RequestNavigate="OnHyperlinkRequestNavigate">
-                        <Run Text="Cached Mods folder" />
-                    </Hyperlink>
-                    <Run Text=" saves re-download time." />
-                </TextBlock>
+                           Text="Simple VS Manager info" />
 
                 <TextBlock Margin="0,12,0,0"
                            TextWrapping="Wrap"
                            FontSize="15">
-                    <Run Text="• The manager saves automatic backups before big actions. Restore them from " />
+                    <Run Text="• The manager saves automatic backups before big actions. Restore them from" />
                     <Bold>File &gt; Restore backup point</Bold>
-                    <Run Text=" whenever you need to roll back." />
+                    <Run Text="whenever you need to roll back." />
                 </TextBlock>
 
                 <TextBlock Margin="0,12,0,0"
                            TextWrapping="Wrap"
                            FontSize="15">
-                    <Run Text="• Use " />
+                    <Run Text="• Use" />
                     <Bold>File &gt; Set Custom Vintage Story Shortcut</Bold>
-                    <Run Text=" to launch the game with any command-line arguments stored on that shortcut." />
+                    <Run Text="to launch the game with any command-line arguments stored on that shortcut." />
                 </TextBlock>
 
                 <TextBlock Margin="0,12,0,0"
                            TextWrapping="Wrap"
                            FontSize="15">
-                    <Run Text="• Switch off " />
+                    <Run Text="• Switch off" />
                     <Bold>View &gt; ModDB Design</Bold>
-                    <Run Text=" to get the tag-sorting list view while browsing the Mod DB." />
+                    <Run Text="to get the tag-sorting list view while browsing the Mod DB." />
                 </TextBlock>
 
                 <TextBlock Margin="0,12,0,0"
                            TextWrapping="Wrap"
                            FontSize="15">
-                    <Run Text="• Want more Mod DB results? Edit &quot;" />
+                    <Run Text="• Want more Mod DB results? Edit"/>
                     <Bold>modDatabaseSearchResultLimit</Bold>
-                    <Run Text="&quot; (default 30) in " />
+                    <Run Text="(default 30) in " />
                     <Bold>SimpleVSManagerConfiguration.json</Bold>
-                    <Run Text=" inside the " />
+                    <Run Text="inside the" />
                     <Hyperlink x:Name="ConfigurationFileHyperlink"
                                RequestNavigate="OnHyperlinkRequestNavigate">
-                        <Run Text="Simple VS Manager folder" />
+                        <Run Text="Simple VS Manager folder"/>
                     </Hyperlink>
                     <Run Text="." />
                 </TextBlock>
@@ -80,13 +67,17 @@
                 <TextBlock Margin="0,12,0,0"
                            TextWrapping="Wrap"
                            FontSize="15">
-                    <Run Text="• All manager data lives under the " />
+                    <Run Text="• All manager data lives under the" />
                     <Hyperlink x:Name="ManagerFolderHyperlink"
                                RequestNavigate="OnHyperlinkRequestNavigate">
                         <Run Text="Simple VS Manager folder" />
                     </Hyperlink>
-                    <Run Text=" — configs, backups, caches, and presets." />
+                    <Run Text="- configs, caches, and presets." />
                 </TextBlock>
+                <TextBlock Margin="0,12,0,0"
+                           TextWrapping="Wrap"
+                           FontSize="15"><Run Text="• " /><Run Text=" "/><Bold><Run Text="Mods &gt; Cache all versions locally"/></Bold><Run Text=" "/><Run Text="is on by default so downloads stay ready. Most mods are small, so the " /><Run Text=" "/><Hyperlink x:Name="CachedModsHyperlink"
+                               RequestNavigate="OnHyperlinkRequestNavigate"><Run Text="Cached Mods folder" /></Hyperlink><Run Text=" "/><Run Text=" saves re-download time." /></TextBlock>
             </StackPanel>
         </ScrollViewer>
 
