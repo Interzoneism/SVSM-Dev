@@ -25,7 +25,7 @@ namespace VintageStoryModManager.ViewModels;
 /// <summary>
 /// Main view model that coordinates mod discovery and activation.
 /// </summary>
-public sealed class MainViewModel : ObservableObject
+public sealed class MainViewModel : ObservableObject, IDisposable
 {
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
@@ -107,6 +107,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _isModDatabaseLoading;
     private bool _hasRequestedAdditionalModDatabaseResults;
     private bool _hasSelectedTags;
+    private bool _disposed;
 
     public MainViewModel(
         string dataDirectory,
@@ -3909,6 +3910,39 @@ public sealed class MainViewModel : ObservableObject
             SetStatus(InternetAccessDisabledStatusMessage, false);
             SetViewSection(ViewSection.InstalledMods);
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+
+        InternetAccessManager.InternetAccessChanged -= OnInternetAccessChanged;
+        _mods.CollectionChanged -= OnModsCollectionChanged;
+        _searchResults.CollectionChanged -= OnSearchResultsCollectionChanged;
+
+        DetachAllInstalledMods();
+        DetachAllSearchResults();
+
+        foreach (TagFilterOptionViewModel filter in _installedTagFilters)
+        {
+            filter.PropertyChanged -= OnInstalledTagFilterPropertyChanged;
+        }
+
+        foreach (TagFilterOptionViewModel filter in _modDatabaseTagFilters)
+        {
+            filter.PropertyChanged -= OnModDatabaseTagFilterPropertyChanged;
+        }
+
+        _installedTagFilters.Clear();
+        _modDatabaseTagFilters.Clear();
+
+        _modDetailsBusyScope?.Dispose();
+        _modDetailsBusyScope = null;
     }
 
     private static int CompareOfflineReleases(ModReleaseInfo? left, ModReleaseInfo? right)

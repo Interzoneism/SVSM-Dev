@@ -28,11 +28,9 @@ namespace SimpleVsManager.Cloud
         private string? _playerName;
         private string? _ownershipClaimedForUid;
 
-        // Add this near the top of the class with the other fields:
         private const string DefaultDbUrl =
             "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
 
-        // Keep your existing ctor unchanged, and add this parameterless overload:
         public FirebaseModlistStore()
             : this(DefaultDbUrl, new FirebaseAnonymousAuthenticator()) { }
 
