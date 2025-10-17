@@ -29,6 +29,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 {
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
+    private const string NoCompatibleModDatabaseResultsStatusMessage = "No compatible mods found in the mod database.";
     private const int MaxConcurrentDatabaseRefreshes = 4;
     private const int MaxNewModsRecentMonths = 24;
     private const int InstalledModsIncrementalBatchSize = 32;
@@ -108,6 +109,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _hasRequestedAdditionalModDatabaseResults;
     private bool _hasSelectedTags;
     private bool _disposed;
+    private bool _onlyShowCompatibleModDatabaseResults;
 
     public MainViewModel(
         string dataDirectory,
@@ -115,7 +117,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         int newModsRecentMonths,
         ModDatabaseAutoLoadMode initialModDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads,
         string? gameDirectory = null,
-        bool excludeInstalledModDatabaseResults = false)
+        bool excludeInstalledModDatabaseResults = false,
+        bool onlyShowCompatibleModDatabaseResults = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
 
@@ -145,6 +148,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         SelectedSortOption?.Apply(ModsView);
 
         _excludeInstalledModDatabaseResults = excludeInstalledModDatabaseResults;
+        _onlyShowCompatibleModDatabaseResults = onlyShowCompatibleModDatabaseResults;
 
         _clearSearchCommand = new RelayCommand(() => SearchText = string.Empty, () => HasSearchText);
         ClearSearchCommand = _clearSearchCommand;
@@ -275,6 +279,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         get => !ExcludeInstalledModDatabaseResults;
         set => ExcludeInstalledModDatabaseResults = !value;
+    }
+
+    public bool OnlyShowCompatibleModDatabaseResults
+    {
+        get => _onlyShowCompatibleModDatabaseResults;
+        set
+        {
+            if (SetProperty(ref _onlyShowCompatibleModDatabaseResults, value))
+            {
+                if (_viewSection == ViewSection.ModDatabase)
+                {
+                    TriggerModDatabaseSearch();
+                }
+            }
+        }
     }
 
     public bool IsModInfoExpanded
@@ -2044,6 +2063,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
 
             bool excludeInstalled = ExcludeInstalledModDatabaseResults;
+            bool onlyShowCompatible = OnlyShowCompatibleModDatabaseResults;
             HashSet<string> installedModIds = await GetInstalledModIdsAsync(cancellationToken).ConfigureAwait(false);
             int desiredResultCount = _modDatabaseCurrentResultLimit;
             int queryLimit = desiredResultCount;
@@ -2187,11 +2207,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
 
             var entries = finalResults
-                .Select(result => new
-                {
-                    Entry = CreateSearchResultEntry(result),
-                    IsInstalled = IsResultInstalled(result, installedModIds)
-                })
+                .Select(result => (
+                    Entry: CreateSearchResultEntry(result),
+                    IsInstalled: IsResultInstalled(result, installedModIds)))
                 .ToList();
 
             if (entries.Count == 0)
@@ -2208,7 +2226,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 .Select(item => CreateSearchResultViewModel(item.Entry, item.IsInstalled))
                 .ToList();
 
-            await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
+            if (onlyShowCompatible)
+            {
+                await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
+            }
 
             await InvokeOnDispatcherAsync(
                     () =>
@@ -2296,6 +2321,25 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (cancellationToken.IsCancellationRequested)
             {
                 return;
+            }
+
+            if (onlyShowCompatible)
+            {
+                RemoveIncompatibleModDatabaseResults(entries, viewModels);
+
+                if (viewModels.Count == 0)
+                {
+                    await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
+
+                    await InvokeOnDispatcherAsync(
+                            () => SetStatus(NoCompatibleModDatabaseResultsStatusMessage, false),
+                            cancellationToken)
+                        .ConfigureAwait(false);
+
+                    return;
+                }
+
+                await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
             }
 
             await InvokeOnDispatcherAsync(
@@ -2480,19 +2524,40 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private string BuildModDatabaseResultsMessage(bool hasSearchTokens, int resultCount)
     {
+        string compatibilityQualifier = OnlyShowCompatibleModDatabaseResults ? " compatible" : string.Empty;
+
         if (hasSearchTokens)
         {
-            return $"Found {resultCount} mods in the mod database.";
+            return $"Found {resultCount}{compatibilityQualifier} mods in the mod database.";
         }
 
         return _modDatabaseAutoLoadMode switch
         {
             ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
-                $"Showing {resultCount} of the most downloaded mods from the last 30 days.",
+                $"Showing {resultCount}{compatibilityQualifier} of the most downloaded mods from the last 30 days.",
             ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
-                $"Showing {resultCount} of the most downloaded newly created mods {BuildRecentMonthsPhrase()}.",
-            _ => $"Showing {resultCount} of the most downloaded mods."
+                $"Showing {resultCount}{compatibilityQualifier} of the most downloaded newly created mods {BuildRecentMonthsPhrase()}.",
+            _ => $"Showing {resultCount}{compatibilityQualifier} of the most downloaded mods."
         };
+    }
+
+    private static void RemoveIncompatibleModDatabaseResults(
+        IList<(ModEntry Entry, bool IsInstalled)> entries,
+        IList<ModListItemViewModel> viewModels)
+    {
+        if (entries.Count != viewModels.Count)
+        {
+            return;
+        }
+
+        for (int i = viewModels.Count - 1; i >= 0; i--)
+        {
+            if (!viewModels[i].LatestReleaseIsCompatible)
+            {
+                entries.RemoveAt(i);
+                viewModels.RemoveAt(i);
+            }
+        }
     }
 
     private void UpdateLoadedModsStatus()
@@ -2588,6 +2653,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private string BuildNoModDatabaseResultsMessage(bool hasSearchTokens)
     {
+        if (OnlyShowCompatibleModDatabaseResults)
+        {
+            return NoCompatibleModDatabaseResultsStatusMessage;
+        }
+
         if (hasSearchTokens)
         {
             return "No mods found in the mod database.";

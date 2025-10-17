@@ -34,6 +34,7 @@ public sealed class UserConfigurationService
     private bool _useModDbDesignView = true;
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
     private bool _excludeInstalledModDatabaseResults;
+    private bool _onlyShowCompatibleModDatabaseResults;
     private bool _cacheAllVersionsLocally = true;
     private bool _disableInternetAccess;
     private bool _enableDebugLogging;
@@ -76,6 +77,8 @@ public sealed class UserConfigurationService
     public bool CacheAllVersionsLocally => _cacheAllVersionsLocally;
 
     public bool ExcludeInstalledModDatabaseResults => _excludeInstalledModDatabaseResults;
+
+    public bool OnlyShowCompatibleModDatabaseResults => _onlyShowCompatibleModDatabaseResults;
 
     public bool DisableInternetAccess => _disableInternetAccess;
 
@@ -438,6 +441,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetOnlyShowCompatibleModDatabaseResults(bool onlyCompatible)
+    {
+        if (_onlyShowCompatibleModDatabaseResults == onlyCompatible)
+        {
+            return;
+        }
+
+        _onlyShowCompatibleModDatabaseResults = onlyCompatible;
+        Save();
+    }
+
     private void Load()
     {
         _modConfigPaths.Clear();
@@ -477,6 +491,7 @@ public sealed class UserConfigurationService
                 obj["modDatabaseNewModsRecentMonths"]?.GetValue<int?>());
             _modDatabaseAutoLoadMode = ParseModDatabaseAutoLoadMode(GetOptionalString(obj["modDatabaseAutoLoadMode"]));
             _excludeInstalledModDatabaseResults = obj["excludeInstalledModDatabaseResults"]?.GetValue<bool?>() ?? false;
+            _onlyShowCompatibleModDatabaseResults = obj["onlyShowCompatibleModDatabaseResults"]?.GetValue<bool?>() ?? false;
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             LoadModConfigPaths(obj["modConfigPaths"]);
@@ -506,6 +521,7 @@ public sealed class UserConfigurationService
             _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
             _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
             _excludeInstalledModDatabaseResults = false;
+            _onlyShowCompatibleModDatabaseResults = false;
             _windowWidth = null;
             _windowHeight = null;
             _customShortcutPath = null;
@@ -553,6 +569,7 @@ public sealed class UserConfigurationService
                 ["modDatabaseNewModsRecentMonths"] = _modDatabaseNewModsRecentMonths,
                 ["modDatabaseAutoLoadMode"] = _modDatabaseAutoLoadMode.ToString(),
                 ["excludeInstalledModDatabaseResults"] = _excludeInstalledModDatabaseResults,
+                ["onlyShowCompatibleModDatabaseResults"] = _onlyShowCompatibleModDatabaseResults,
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
