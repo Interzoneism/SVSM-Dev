@@ -22,6 +22,10 @@
             <Color x:Key="IMM.ButtonHoverColor">#FFE7F0FF</Color>
             <Color x:Key="IMM.ButtonPressedColor">#FFD5E3FF</Color>
             <Color x:Key="IMM.ButtonDisabledColor">#FFEEF1F6</Color>
+            <Color x:Key="IMM.ToggleOffColor">#FFC7D1E5</Color>
+            <Color x:Key="IMM.ToggleThumbColor">#FFFFFFFF</Color>
+            <Color x:Key="IMM.ToggleDisabledColor">#FFE2E6F0</Color>
+            <Color x:Key="IMM.ToggleDisabledThumbColor">#FFF4F6FB</Color>
             <Color x:Key="IMM.PlaceholderForegroundColor">#661C2635</Color>
             <Color x:Key="IMM.ForegroundColor">#FF1C2635</Color>
             <Color x:Key="IMM.SuccessColor">#FF79C46E</Color>
@@ -64,6 +68,10 @@
                               Color="{StaticResource IMM.ButtonPressedColor}" />
             <SolidColorBrush x:Key="IMM.ButtonDisabledBrush"
                               Color="{StaticResource IMM.ButtonDisabledColor}" />
+            <SolidColorBrush x:Key="IMM.ToggleOffBrush" Color="{StaticResource IMM.ToggleOffColor}" />
+            <SolidColorBrush x:Key="IMM.ToggleThumbBrush" Color="{StaticResource IMM.ToggleThumbColor}" />
+            <SolidColorBrush x:Key="IMM.ToggleDisabledBrush" Color="{StaticResource IMM.ToggleDisabledColor}" />
+            <SolidColorBrush x:Key="IMM.ToggleDisabledThumbBrush" Color="{StaticResource IMM.ToggleDisabledThumbColor}" />
             <SolidColorBrush x:Key="IMM.PlaceholderForegroundBrush" Color="{StaticResource IMM.PlaceholderForegroundColor}" />
             <SolidColorBrush x:Key="IMM.ForegroundBrush" Color="{StaticResource IMM.ForegroundColor}" />
             <SolidColorBrush x:Key="IMM.BodyForegroundBrush" Color="{StaticResource IMM.ForegroundColor}" />
@@ -93,6 +101,90 @@
             <converters:ScaledThicknessConverter x:Key="IMM.ScaledThicknessConverter" />
             <converters:ScaledDoubleConverter x:Key="IMM.ScaledDoubleConverter" />
             <converters:DoubleOffsetConverter x:Key="IMM.DoubleOffsetConverter" />
+
+            <Style x:Key="IMM.ToggleSwitchBaseStyle" TargetType="{x:Type ui:ToggleSwitch}">
+                <Setter Property="Width" Value="52" />
+                <Setter Property="Height" Value="24" />
+                <Setter Property="Background" Value="{StaticResource IMM.ToggleOffBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource IMM.ToggleOffBrush}" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Padding" Value="12,0,0,0" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ui:ToggleSwitch}">
+                            <Grid x:Name="Root" Background="Transparent" SnapsToDevicePixels="True">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Grid x:Name="SwitchRoot"
+                                      Width="{TemplateBinding Width}"
+                                      Height="{TemplateBinding Height}"
+                                      VerticalAlignment="Center"
+                                      Margin="0">
+                                    <Border x:Name="FocusVisual"
+                                            Margin="-3"
+                                            CornerRadius="16"
+                                            BorderBrush="{StaticResource IMM.AccentBrush}"
+                                            BorderThickness="2"
+                                            Opacity="0.8"
+                                            Visibility="Collapsed" />
+                                    <Border x:Name="Track"
+                                            CornerRadius="12"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}" />
+                                    <Border x:Name="Thumb"
+                                            Width="20"
+                                            Height="20"
+                                            CornerRadius="10"
+                                            Margin="2"
+                                            Background="{StaticResource IMM.ToggleThumbBrush}"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center" />
+                                </Grid>
+
+                                <ContentPresenter x:Name="HeaderContent"
+                                                  Grid.Column="1"
+                                                  Margin="{TemplateBinding Padding}"
+                                                  Content="{TemplateBinding Header}"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  RecognizesAccessKey="True" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsOn" Value="True">
+                                    <Setter TargetName="Track" Property="Background" Value="{StaticResource IMM.AccentBrush}" />
+                                    <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
+                                    <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.5" />
+                                    <Setter TargetName="Track" Property="Background" Value="{StaticResource IMM.ToggleDisabledBrush}" />
+                                    <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource IMM.ToggleDisabledBrush}" />
+                                    <Setter TargetName="Thumb" Property="Background" Value="{StaticResource IMM.ToggleDisabledThumbBrush}" />
+                                    <Setter TargetName="HeaderContent" Property="Opacity" Value="0.6" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                </Trigger>
+                                <Trigger Property="Header" Value="{x:Null}">
+                                    <Setter TargetName="HeaderContent" Property="Visibility" Value="Collapsed" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                    <Setter TargetName="FocusVisual" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="{x:Type ui:ToggleSwitch}" BasedOn="{StaticResource IMM.ToggleSwitchBaseStyle}" />
 
             <Style x:Key="IMM.ClearTextButtonStyle" TargetType="Button">
                 <Setter Property="Width" Value="24" />
