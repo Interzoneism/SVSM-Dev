@@ -68,7 +68,7 @@
                               Color="{StaticResource IMM.ButtonPressedColor}" />
             <SolidColorBrush x:Key="IMM.ButtonDisabledBrush"
                               Color="{StaticResource IMM.ButtonDisabledColor}" />
-            <SolidColorBrush x:Key="IMM.ToggleOffBrush" Color="{StaticResource IMM.ToggleOffColor}" />
+            <SolidColorBrush x:Key="IMM.ToggleOffBrush" Color="{StaticResource IMM.BorderHoverColor}" />
             <SolidColorBrush x:Key="IMM.ToggleThumbBrush" Color="{StaticResource IMM.ToggleThumbColor}" />
             <SolidColorBrush x:Key="IMM.ToggleDisabledBrush" Color="{StaticResource IMM.ToggleDisabledColor}" />
             <SolidColorBrush x:Key="IMM.ToggleDisabledThumbBrush" Color="{StaticResource IMM.ToggleDisabledThumbColor}" />
@@ -130,7 +130,7 @@
                                             Margin="-3"
                                             CornerRadius="16"
                                             BorderBrush="{StaticResource IMM.AccentBrush}"
-                                            BorderThickness="2"
+                                            BorderThickness="0"
                                             Opacity="0.8"
                                             Visibility="Collapsed" />
                                     <Border x:Name="Track"
