@@ -3498,6 +3498,280 @@ public partial class MainWindow : Window
         await UpdateModsAsync(mods, isBulk: true, overrides);
     }
 
+    private async void CheckModsCompatibilityMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            WpfMessageBox.Show(
+                "Enable Internet Access in the File menu to check mod compatibility.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        string? latestVersion;
+        try
+        {
+            latestVersion = await VintageStoryGameVersionService
+                .GetLatestReleaseVersionAsync()
+                .ConfigureAwait(true);
+        }
+        catch (HttpRequestException ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to retrieve the latest Vintage Story version:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to retrieve the latest Vintage Story version:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(latestVersion))
+        {
+            WpfMessageBox.Show(
+                "Could not determine the latest Vintage Story version.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        latestVersion = latestVersion.Trim();
+
+        IReadOnlyList<ModListItemViewModel> mods = _viewModel.GetInstalledModsSnapshot();
+        if (mods.Count == 0)
+        {
+            WpfMessageBox.Show(
+                $"Latest Vintage Story version: {latestVersion}.\n\nNo installed mods were found.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var incompatible = new List<string>();
+        var unknown = new List<string>();
+
+        foreach (ModListItemViewModel mod in mods)
+        {
+            if (mod is null)
+            {
+                continue;
+            }
+
+            CompatibilityEvaluation evaluation = EvaluateCompatibility(mod, latestVersion);
+            if (evaluation.IsCompatible || string.IsNullOrWhiteSpace(evaluation.Message))
+            {
+                continue;
+            }
+
+            if (evaluation.IsUnknown)
+            {
+                unknown.Add(evaluation.Message);
+            }
+            else
+            {
+                incompatible.Add(evaluation.Message);
+            }
+        }
+
+        incompatible.Sort(StringComparer.CurrentCultureIgnoreCase);
+        unknown.Sort(StringComparer.CurrentCultureIgnoreCase);
+
+        var builder = new StringBuilder();
+        builder.Append("Latest Vintage Story version: ");
+        builder.Append(latestVersion);
+        builder.AppendLine(".");
+        builder.AppendLine();
+
+        MessageBoxImage icon;
+
+        if (incompatible.Count == 0)
+        {
+            builder.AppendLine("All installed mods appear to support this version.");
+            icon = MessageBoxImage.Information;
+        }
+        else
+        {
+            icon = MessageBoxImage.Warning;
+            builder.AppendLine("The following mods may be incompatible:");
+            foreach (string message in incompatible)
+            {
+                builder.Append("• ");
+                builder.AppendLine(message);
+            }
+        }
+
+        if (unknown.Count > 0)
+        {
+            builder.AppendLine();
+            builder.AppendLine("Compatibility could not be determined for:");
+            foreach (string message in unknown)
+            {
+                builder.Append("• ");
+                builder.AppendLine(message);
+            }
+        }
+
+        WpfMessageBox.Show(
+            builder.ToString().TrimEnd(),
+            "Simple VS Manager",
+            MessageBoxButton.OK,
+            icon);
+    }
+
+    private static CompatibilityEvaluation EvaluateCompatibility(ModListItemViewModel mod, string targetVersion)
+    {
+        string displayName = string.IsNullOrWhiteSpace(mod.DisplayName)
+            ? (mod.ModId ?? "Unknown mod")
+            : mod.DisplayName;
+        string installedVersion = string.IsNullOrWhiteSpace(mod.Version)
+            ? "Unknown"
+            : mod.Version!;
+
+        ModVersionOptionViewModel? installedOption = mod.VersionOptions
+            .FirstOrDefault(option => option is { IsInstalled: true });
+        ModReleaseInfo? installedRelease = installedOption?.Release;
+
+        List<ModReleaseInfo> releases = mod.VersionOptions
+            .Select(option => option.Release)
+            .Where(release => release != null)
+            .GroupBy(release => release!.Version, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First()!)
+            .ToList();
+
+        ModReleaseInfo? compatibleRelease = releases
+            .FirstOrDefault(release => ReleaseSupportsVersion(release, targetVersion));
+
+        if (installedRelease != null)
+        {
+            if (ReleaseSupportsVersion(installedRelease, targetVersion))
+            {
+                return CompatibilityEvaluation.Compatible;
+            }
+
+            if (compatibleRelease != null
+                && !string.Equals(compatibleRelease.Version, installedRelease.Version, StringComparison.OrdinalIgnoreCase))
+            {
+                string message =
+                    $"{displayName}: Installed version {installedRelease.Version} is not marked as compatible with Vintage Story {targetVersion}. Update to version {compatibleRelease.Version} or later.";
+                return CompatibilityEvaluation.Incompatible(message);
+            }
+
+            if (installedRelease.GameVersionTags is { Count: > 0 })
+            {
+                string message =
+                    $"{displayName}: Installed version {installedVersion} is not marked as compatible with Vintage Story {targetVersion}. No compatible update was found.";
+                return CompatibilityEvaluation.Incompatible(message);
+            }
+        }
+
+        if (compatibleRelease != null)
+        {
+            string message =
+                $"{displayName}: Installed version {installedVersion} is not marked as compatible with Vintage Story {targetVersion}. Update to version {compatibleRelease.Version} or later.";
+            return CompatibilityEvaluation.Incompatible(message);
+        }
+
+        IReadOnlyList<ModDependencyInfo> dependencies = mod.Dependencies ?? Array.Empty<ModDependencyInfo>();
+        bool hasGameDependency = false;
+
+        foreach (ModDependencyInfo dependency in dependencies)
+        {
+            if (dependency is null || !dependency.IsGameOrCoreDependency || string.IsNullOrWhiteSpace(dependency.Version))
+            {
+                continue;
+            }
+
+            hasGameDependency = true;
+            if (!VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, targetVersion))
+            {
+                string message =
+                    $"{displayName}: Requires Vintage Story {dependency.Version} or newer.";
+                return CompatibilityEvaluation.Incompatible(message);
+            }
+        }
+
+        if (hasGameDependency)
+        {
+            return CompatibilityEvaluation.Compatible;
+        }
+
+        string unknownMessage =
+            $"{displayName}: No compatibility metadata is available for Vintage Story {targetVersion}.";
+        return CompatibilityEvaluation.Unknown(unknownMessage);
+    }
+
+    private static bool ReleaseSupportsVersion(ModReleaseInfo release, string targetVersion)
+    {
+        if (release.GameVersionTags is not { Count: > 0 })
+        {
+            return false;
+        }
+
+        foreach (string tag in release.GameVersionTags)
+        {
+            if (string.IsNullOrWhiteSpace(tag))
+            {
+                continue;
+            }
+
+            string trimmed = tag.Trim();
+            if (string.Equals(trimmed, targetVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (VersionStringUtility.MatchesVersionOrPrefix(trimmed, targetVersion))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private readonly struct CompatibilityEvaluation
+    {
+        private CompatibilityEvaluation(bool isCompatible, bool isUnknown, string? message)
+        {
+            IsCompatible = isCompatible;
+            IsUnknown = isUnknown;
+            Message = message;
+        }
+
+        public bool IsCompatible { get; }
+
+        public bool IsUnknown { get; }
+
+        public string? Message { get; }
+
+        public static CompatibilityEvaluation Compatible { get; } = new(true, false, null);
+
+        public static CompatibilityEvaluation Incompatible(string message) => new(false, false, message);
+
+        public static CompatibilityEvaluation Unknown(string message) => new(false, true, message);
+    }
+
     private async void ModsMenuItem_OnSubmenuOpened(object sender, RoutedEventArgs e)
     {
         await RefreshDeleteCachedModsMenuHeaderAsync();

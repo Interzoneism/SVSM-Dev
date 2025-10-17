@@ -384,6 +384,7 @@
                 <MenuItem Header="_Mods" Height="35" SubmenuOpened="ModsMenuItem_OnSubmenuOpened">
                     <MenuItem Header="_Refresh Mods" Height="35" Click="RefreshModsMenuItem_OnClick" />
                     <MenuItem Header="_Update All Mods" Height="35" Click="UpdateAllModsMenuItem_OnClick" />
+                    <MenuItem Header="Check mods compatibility" Height="35" Click="CheckModsCompatibilityMenuItem_OnClick" />
                     <MenuItem x:Name="CacheAllVersionsMenuItem"
                               Header="Cache all versions locally"
                               Height="35"
