@@ -402,7 +402,8 @@ public partial class MainWindow : Window
             _userConfiguration.ModDatabaseNewModsRecentMonths,
             _userConfiguration.ModDatabaseAutoLoadMode,
             gameDirectory: _gameDirectory,
-            excludeInstalledModDatabaseResults: _userConfiguration.ExcludeInstalledModDatabaseResults)
+            excludeInstalledModDatabaseResults: _userConfiguration.ExcludeInstalledModDatabaseResults,
+            onlyShowCompatibleModDatabaseResults: _userConfiguration.OnlyShowCompatibleModDatabaseResults)
         {
             IsCompactView = _userConfiguration.IsCompactView,
             UseModDbDesignView = _userConfiguration.UseModDbDesignView
@@ -469,6 +470,14 @@ public partial class MainWindow : Window
             {
                 _userConfiguration.SetExcludeInstalledModDatabaseResults(
                     _viewModel.ExcludeInstalledModDatabaseResults);
+            }
+        }
+        else if (e.PropertyName == nameof(MainViewModel.OnlyShowCompatibleModDatabaseResults))
+        {
+            if (_viewModel != null)
+            {
+                _userConfiguration.SetOnlyShowCompatibleModDatabaseResults(
+                    _viewModel.OnlyShowCompatibleModDatabaseResults);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.SearchModDatabase))
@@ -1967,7 +1976,8 @@ public partial class MainWindow : Window
                 _userConfiguration.ModDatabaseNewModsRecentMonths,
                 _userConfiguration.ModDatabaseAutoLoadMode,
                 gameDirectory: _gameDirectory,
-                excludeInstalledModDatabaseResults: _userConfiguration.ExcludeInstalledModDatabaseResults);
+                excludeInstalledModDatabaseResults: _userConfiguration.ExcludeInstalledModDatabaseResults,
+                onlyShowCompatibleModDatabaseResults: _userConfiguration.OnlyShowCompatibleModDatabaseResults);
             newViewModel.PropertyChanged += ViewModelOnPropertyChanged;
             _viewModel = newViewModel;
             DataContext = newViewModel;
