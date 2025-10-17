@@ -892,7 +892,7 @@
                                                  OnContent="{x:Null}"
                                                  OffContent="{x:Null}">
                                             <ui:ToggleSwitch.Style>
-                                                <Style TargetType="{x:Type ui:ToggleSwitch}">
+                                                <Style TargetType="{x:Type ui:ToggleSwitch}" BasedOn="{StaticResource IMM.ToggleSwitchBaseStyle}">
                                                     <Setter Property="IsEnabled" Value="{Binding CanToggle}" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
