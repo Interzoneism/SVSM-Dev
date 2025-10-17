@@ -34,7 +34,7 @@ public sealed class UserConfigurationService
     private bool _useModDbDesignView = true;
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
     private bool _excludeInstalledModDatabaseResults;
-    private bool _cacheAllVersionsLocally;
+    private bool _cacheAllVersionsLocally = true;
     private bool _disableInternetAccess;
     private bool _enableDebugLogging;
     private bool _suppressModlistSavePrompt;
@@ -465,7 +465,7 @@ public sealed class UserConfigurationService
             GameDirectory = NormalizePath(GetOptionalString(obj["gameDirectory"]));
             _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
             _useModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? true;
-            _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? false;
+            _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? true;
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _enableDebugLogging = obj["enableDebugLogging"]?.GetValue<bool?>() ?? false;
             _suppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
@@ -494,7 +494,7 @@ public sealed class UserConfigurationService
             _modManagerVersion = CurrentModManagerVersion;
             _isCompactView = false;
             _useModDbDesignView = true;
-            _cacheAllVersionsLocally = false;
+            _cacheAllVersionsLocally = true;
             _disableInternetAccess = false;
             _enableDebugLogging = false;
             _suppressModlistSavePrompt = false;
