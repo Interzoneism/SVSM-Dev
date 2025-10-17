@@ -58,8 +58,6 @@ public partial class MainWindow : Window
     private const string ModListDirectoryName = "Modlists";
     private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
     private const string BackupDirectoryName = "Backups";
-    private const string FirebaseDatabaseUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app/";
-    private const string FirebaseApiKey = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
     private const int AutomaticConfigMaxWordDistance = 2;
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
@@ -120,7 +118,6 @@ public partial class MainWindow : Window
     private SortOption? _cachedSortOption;
     private readonly SemaphoreSlim _backupSemaphore = new(1, 1);
     private readonly SemaphoreSlim _cloudStoreLock = new(1, 1);
-    private FirebaseAnonymousAuthenticator? _firebaseAuthenticator;
     private FirebaseModlistStore? _cloudModlistStore;
     private bool _cloudModlistsLoaded;
     private bool _isCloudModlistRefreshInProgress;
@@ -224,6 +221,7 @@ public partial class MainWindow : Window
     {
         SaveWindowDimensions();
         SaveUploaderName();
+        DisposeCurrentViewModel();
         InternetAccessManager.InternetAccessChanged -= InternetAccessManager_OnInternetAccessChanged;
     }
 
@@ -1237,6 +1235,30 @@ public partial class MainWindow : Window
         }
     }
 
+    private void DisposeCurrentViewModel()
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        MainViewModel? current = _viewModel;
+        _viewModel = null;
+        DataContext = null;
+        DisposeViewModel(current);
+    }
+
+    private void DisposeViewModel(MainViewModel? viewModel)
+    {
+        if (viewModel is null)
+        {
+            return;
+        }
+
+        viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
+        viewModel.Dispose();
+    }
+
     private void StartModsWatcher()
     {
         if (_viewModel is null)
@@ -1901,8 +1923,7 @@ public partial class MainWindow : Window
 
     private void HandleViewModelInitializationFailure(Exception exception)
     {
-        _viewModel = null;
-        DataContext = null;
+        DisposeCurrentViewModel();
 
         if (_dataDirectory != null)
         {
@@ -1930,23 +1951,46 @@ public partial class MainWindow : Window
 
         StopModsWatcher();
 
+        MainViewModel? previousViewModel = _viewModel;
+        if (previousViewModel is not null)
+        {
+            previousViewModel.PropertyChanged -= ViewModelOnPropertyChanged;
+        }
+
+        MainViewModel? newViewModel = null;
+
         try
         {
-            var viewModel = new MainViewModel(
+            newViewModel = new MainViewModel(
                 _dataDirectory,
                 _userConfiguration.ModDatabaseSearchResultLimit,
                 _userConfiguration.ModDatabaseNewModsRecentMonths,
                 _userConfiguration.ModDatabaseAutoLoadMode,
                 gameDirectory: _gameDirectory,
                 excludeInstalledModDatabaseResults: _userConfiguration.ExcludeInstalledModDatabaseResults);
-            _viewModel = viewModel;
-            DataContext = viewModel;
+            newViewModel.PropertyChanged += ViewModelOnPropertyChanged;
+            _viewModel = newViewModel;
+            DataContext = newViewModel;
             ApplyPlayerIdentityToUiAndCloudStore();
-            AttachToModsView(viewModel.CurrentModsView);
-            await InitializeViewModelAsync(viewModel);
+            AttachToModsView(newViewModel.CurrentModsView);
+            await InitializeViewModelAsync(newViewModel);
+
+            DisposeViewModel(previousViewModel);
         }
         catch (Exception ex)
         {
+            DisposeViewModel(newViewModel);
+
+            if (previousViewModel is not null)
+            {
+                _viewModel = previousViewModel;
+                previousViewModel.PropertyChanged += ViewModelOnPropertyChanged;
+                DataContext = previousViewModel;
+                ApplyPlayerIdentityToUiAndCloudStore();
+                AttachToModsView(previousViewModel.CurrentModsView);
+                StartModsWatcher();
+            }
+
             WpfMessageBox.Show($"Failed to reload mods:\n{ex.Message}",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
@@ -6191,11 +6235,7 @@ public partial class MainWindow : Window
 
     private async Task<FirebaseModlistStore> EnsureCloudStoreInitializedAsync()
     {
-        string apiKey = TryGetFirebaseApiKey();
-
-        FirebaseAnonymousAuthenticator authenticator = GetOrCreateFirebaseAuthenticator(apiKey);
-
-        if (_cloudModlistStore is { } existingStore && ReferenceEquals(existingStore.Authenticator, authenticator))
+        if (_cloudModlistStore is { } existingStore)
         {
             ApplyPlayerIdentityToCloudStore(existingStore);
             return existingStore;
@@ -6204,13 +6244,13 @@ public partial class MainWindow : Window
         await _cloudStoreLock.WaitAsync();
         try
         {
-            if (_cloudModlistStore is { } cached && ReferenceEquals(cached.Authenticator, authenticator))
+            if (_cloudModlistStore is { } cached)
             {
                 ApplyPlayerIdentityToCloudStore(cached);
                 return cached;
             }
 
-            var store = new FirebaseModlistStore(FirebaseDatabaseUrl, authenticator);
+            var store = new FirebaseModlistStore();
             ApplyPlayerIdentityToCloudStore(store);
             _cloudModlistStore = store;
             return store;
@@ -6220,20 +6260,6 @@ public partial class MainWindow : Window
             _cloudStoreLock.Release();
         }
     }
-
-    private FirebaseAnonymousAuthenticator GetOrCreateFirebaseAuthenticator(string apiKey)
-    {
-        if (_firebaseAuthenticator is { } existing && string.Equals(existing.ApiKey, apiKey, StringComparison.Ordinal))
-        {
-            return existing;
-        }
-
-        var authenticator = new FirebaseAnonymousAuthenticator(apiKey);
-        _firebaseAuthenticator = authenticator;
-        return authenticator;
-    }
-
-    private static string TryGetFirebaseApiKey() => FirebaseApiKey;
 
     private CloudModlistSlot? PromptForCloudSaveReplacement(IReadOnlyList<CloudModlistSlot> slots)
     {
@@ -6416,7 +6442,6 @@ public partial class MainWindow : Window
         DeleteFirebaseAuthFiles();
 
         _cloudModlistStore = null;
-        _firebaseAuthenticator = null;
         _cloudModlistsLoaded = false;
 
         SetCloudModlistSelection(null);
