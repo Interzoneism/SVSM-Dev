@@ -2426,26 +2426,35 @@ public partial class MainWindow : Window
     {
         row.ApplyTemplate();
 
-        bool isModSelected = row.DataContext switch
+        Border? selectionOverlay = row.Template?.FindName("SelectionOverlay", row) as Border;
+        Border? hoverOverlay = row.Template?.FindName("HoverOverlay", row) as Border;
+
+        if (selectionOverlay == null && hoverOverlay == null)
         {
-            ModListItemViewModel { IsSelected: true } => true,
-            _ => row.IsSelected
-        };
+            return;
+        }
+
+        selectionOverlay?.BeginAnimation(UIElement.OpacityProperty, null);
+        hoverOverlay?.BeginAnimation(UIElement.OpacityProperty, null);
+
+        if (row.DataContext is not ModListItemViewModel mod)
+        {
+            selectionOverlay?.ClearValue(UIElement.OpacityProperty);
+            hoverOverlay?.ClearValue(UIElement.OpacityProperty);
+            return;
+        }
+
+        bool isModSelected = mod.IsSelected || row.IsSelected;
         bool isHovered = GetRowIsHovered(row);
 
-        if (row.Template?.FindName("SelectionOverlay", row) is Border selectionOverlay)
+        if (selectionOverlay != null)
         {
-            selectionOverlay.BeginAnimation(UIElement.OpacityProperty, null);
-
             double targetOpacity = isModSelected ? SelectionOverlayOpacity : 0;
-
             selectionOverlay.Opacity = targetOpacity;
         }
 
-        if (row.Template?.FindName("HoverOverlay", row) is Border hoverOverlay)
+        if (hoverOverlay != null)
         {
-            hoverOverlay.BeginAnimation(UIElement.OpacityProperty, null);
-
             bool shouldShowHover = isHovered && !isModSelected && !AreHoverOverlaysSuppressed(row);
             hoverOverlay.Opacity = shouldShowHover ? HoverOverlayOpacity : 0;
         }
