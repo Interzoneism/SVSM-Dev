@@ -43,4 +43,6 @@ public sealed class ModDatabaseInfo
     public ModReleaseInfo? LatestCompatibleRelease { get; init; }
 
     public IReadOnlyList<ModReleaseInfo> Releases { get; init; } = Array.Empty<ModReleaseInfo>();
+
+    public bool IsOfflineOnly { get; init; }
 }

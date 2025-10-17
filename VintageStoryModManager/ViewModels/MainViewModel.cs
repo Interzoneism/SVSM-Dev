@@ -3207,7 +3207,7 @@ public sealed class MainViewModel : ObservableObject
             return false;
         }
 
-        return entry.DatabaseInfo == null;
+        return entry.DatabaseInfo == null || entry.DatabaseInfo.IsOfflineOnly;
     }
 
     private async Task RefreshDatabaseInfoAsync(ModEntry entry, SemaphoreSlim limiter)
@@ -3379,7 +3379,8 @@ public sealed class MainViewModel : ObservableObject
             LatestRelease = latestRelease,
             LatestCompatibleRelease = latestCompatibleRelease ?? latestRelease,
             Releases = releases,
-            LastReleasedUtc = lastUpdatedUtc
+            LastReleasedUtc = lastUpdatedUtc,
+            IsOfflineOnly = true
         };
     }
 
@@ -3431,7 +3432,8 @@ public sealed class MainViewModel : ObservableObject
             CreatedUtc = cachedInfo.CreatedUtc ?? offlineInfo.CreatedUtc,
             LatestRelease = latestRelease,
             LatestCompatibleRelease = latestCompatibleRelease ?? latestRelease,
-            Releases = mergedReleases
+            Releases = mergedReleases,
+            IsOfflineOnly = offlineInfo.IsOfflineOnly && (cachedInfo?.IsOfflineOnly ?? true)
         };
     }
 
