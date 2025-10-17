@@ -28,9 +28,9 @@
                 <TextBlock Margin="0,16,0,0"
                            TextWrapping="Wrap"
                            FontSize="15">
-                    <Run Text="• Turn on " />
+                    <Run Text="• " />
                     <Bold>Mods &gt; Cache all versions locally</Bold>
-                    <Run Text=" to keep downloads ready. Most mods are small, so the " />
+                    <Run Text=" is on by default to keep downloads ready. Turn it off if you need to save disk space—the " />
                     <Hyperlink x:Name="CachedModsHyperlink"
                                RequestNavigate="OnHyperlinkRequestNavigate">
                         <Run Text="Cached Mods folder" />
