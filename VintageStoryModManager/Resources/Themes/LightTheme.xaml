@@ -6,6 +6,8 @@
     <Color x:Key="IMM.SurfaceColor">#FFF6F8FB</Color>
     <Color x:Key="IMM.SurfaceAltColor">#FFEFF3F9</Color>
     <Color x:Key="IMM.DataGridBackgroundColor">#FFFFFFFF</Color>
+    <Color x:Key="IMM.NewDataGridBackground">#FFFFFFFF</Color>
+    <Color x:Key="IMM.RowsAndCards">#FFFFFFFF</Color>
     <Color x:Key="IMM.MenuBackgroundColor">#FFF6F8FB</Color>
     <Color x:Key="IMM.BorderColor">#FFCAD7EB</Color>
     <Color x:Key="IMM.WindowBorderColor">#FFCAD7EB</Color>
@@ -39,6 +41,8 @@
     <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource IMM.SurfaceColor}" />
     <SolidColorBrush x:Key="IMM.SurfaceAltBrush" Color="{StaticResource IMM.SurfaceAltColor}" />
     <SolidColorBrush x:Key="IMM.DataGridBackgroundBrush" Color="{StaticResource IMM.DataGridBackgroundColor}" />
+    <SolidColorBrush x:Key="IMM.NewDataGridBackgroundBrush" Color="{StaticResource IMM.NewDataGridBackground}" />
+    <SolidColorBrush x:Key="IMM.RowsAndCardsBrush" Color="{StaticResource IMM.RowsAndCards}" />
     <Color x:Key="IMM.InputBackgroundColor">#FFFFFFFF</Color>
     <SolidColorBrush x:Key="IMM.MenuBackgroundBrush" Color="{StaticResource IMM.MenuBackgroundColor}" />
     <SolidColorBrush x:Key="IMM.BorderBrush" options:Freeze="False" Color="{StaticResource IMM.BorderColor}" />
