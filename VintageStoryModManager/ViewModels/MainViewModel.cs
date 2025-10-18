@@ -2067,60 +2067,131 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             HashSet<string> installedModIds = await GetInstalledModIdsAsync(cancellationToken).ConfigureAwait(false);
             int desiredResultCount = _modDatabaseCurrentResultLimit;
             int queryLimit = desiredResultCount;
-            List<ModDatabaseSearchResult> finalResults = new();
-            bool hasMoreResults = false;
 
             while (true)
             {
-                IReadOnlyList<ModDatabaseSearchResult> results;
-                if (hasSearchTokens)
+                List<ModDatabaseSearchResult> finalResults = new();
+                bool hasMoreResults = false;
+                bool canFetchMoreFromServer = false;
+                int filteredResultCount = 0;
+
+                while (true)
                 {
-                    results = await _databaseService.SearchModsAsync(query, queryLimit, cancellationToken)
-                        .ConfigureAwait(false);
-                }
-                else
-                {
-                    results = _modDatabaseAutoLoadMode switch
+                    IReadOnlyList<ModDatabaseSearchResult> results;
+                    if (hasSearchTokens)
                     {
-                        ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
-                            await _databaseService
-                                .GetMostDownloadedModsLastThirtyDaysAsync(queryLimit, cancellationToken)
-                                .ConfigureAwait(false),
-                        ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
-                            await _databaseService
-                                .GetMostDownloadedNewModsAsync(
-                                    _newModsRecentMonths,
-                                    queryLimit,
-                                    cancellationToken)
-                                .ConfigureAwait(false),
-                        _ => await _databaseService
-                            .GetMostDownloadedModsAsync(queryLimit, cancellationToken)
-                            .ConfigureAwait(false)
-                    };
+                        results = await _databaseService.SearchModsAsync(query, queryLimit, cancellationToken)
+                            .ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        results = _modDatabaseAutoLoadMode switch
+                        {
+                            ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
+                                await _databaseService
+                                    .GetMostDownloadedModsLastThirtyDaysAsync(queryLimit, cancellationToken)
+                                    .ConfigureAwait(false),
+                            ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
+                                await _databaseService
+                                    .GetMostDownloadedNewModsAsync(
+                                        _newModsRecentMonths,
+                                        queryLimit,
+                                        cancellationToken)
+                                    .ConfigureAwait(false),
+                            _ => await _databaseService
+                                .GetMostDownloadedModsAsync(queryLimit, cancellationToken)
+                                .ConfigureAwait(false)
+                        };
+                    }
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    IReadOnlyList<string> availableTags = CollectModDatabaseTags(results);
+                    List<string> combinedTags = await Task.Run(
+                            () => NormalizeAndSortTags(availableTags.Concat(requiredTags)))
+                        .ConfigureAwait(false);
+                    await InvokeOnDispatcherAsync(
+                            () => ApplyNormalizedModDatabaseAvailableTags(combinedTags),
+                            cancellationToken,
+                            DispatcherPriority.ContextIdle)
+                        .ConfigureAwait(false);
+
+                    IReadOnlyList<ModDatabaseSearchResult> filteredResults = requiredTags.Count > 0
+                        ? results
+                            .Where(result => ContainsAllTags(GetTagsForResult(result), requiredTags))
+                            .ToList()
+                        : results.ToList();
+
+                    filteredResultCount = filteredResults.Count;
+
+                    if (filteredResults.Count == 0)
+                    {
+                        await InvokeOnDispatcherAsync(
+                                () =>
+                                {
+                                    CanLoadMoreModDatabaseResults = false;
+
+                                    if (_hasRequestedAdditionalModDatabaseResults)
+                                    {
+                                        IsLoadMoreModDatabaseButtonVisible = false;
+                                        _hasRequestedAdditionalModDatabaseResults = false;
+                                    }
+                                },
+                                cancellationToken)
+                            .ConfigureAwait(false);
+                        await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken)
+                            .ConfigureAwait(false);
+                        await InvokeOnDispatcherAsync(
+                                () => SetStatus(BuildNoModDatabaseResultsMessage(hasSearchTokens), false),
+                                cancellationToken)
+                            .ConfigureAwait(false);
+                        return;
+                    }
+
+                    IEnumerable<ModDatabaseSearchResult> candidateResults = filteredResults;
+                    if (excludeInstalled)
+                    {
+                        candidateResults = candidateResults
+                            .Where(result => !IsResultInstalled(result, installedModIds));
+                    }
+
+                    finalResults = candidateResults
+                        .Take(desiredResultCount)
+                        .ToList();
+
+                    bool hasAdditionalResults = filteredResults.Count > finalResults.Count;
+                    bool canRequestMore = results.Count >= queryLimit;
+                    if (!excludeInstalled
+                        || finalResults.Count >= desiredResultCount
+                        || !canRequestMore)
+                    {
+                        hasMoreResults = hasAdditionalResults;
+                        canFetchMoreFromServer = canRequestMore;
+                        break;
+                    }
+
+                    int nextLimit;
+                    long candidateLimit = (long)queryLimit + desiredResultCount;
+                    if (candidateLimit >= MaxModDatabaseResultLimit)
+                    {
+                        nextLimit = MaxModDatabaseResultLimit;
+                    }
+                    else
+                    {
+                        nextLimit = (int)candidateLimit;
+                    }
+                    if (nextLimit <= queryLimit)
+                    {
+                        break;
+                    }
+
+                    queryLimit = nextLimit;
                 }
 
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                IReadOnlyList<string> availableTags = CollectModDatabaseTags(results);
-                List<string> combinedTags = await Task.Run(
-                        () => NormalizeAndSortTags(availableTags.Concat(requiredTags)))
-                    .ConfigureAwait(false);
-                await InvokeOnDispatcherAsync(
-                        () => ApplyNormalizedModDatabaseAvailableTags(combinedTags),
-                        cancellationToken,
-                        DispatcherPriority.ContextIdle)
-                    .ConfigureAwait(false);
-
-                IReadOnlyList<ModDatabaseSearchResult> filteredResults = requiredTags.Count > 0
-                    ? results
-                        .Where(result => ContainsAllTags(GetTagsForResult(result), requiredTags))
-                        .ToList()
-                    : results.ToList();
-
-                if (filteredResults.Count == 0)
+                if (finalResults.Count == 0)
                 {
                     await InvokeOnDispatcherAsync(
                             () =>
@@ -2135,8 +2206,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                             },
                             cancellationToken)
                         .ConfigureAwait(false);
-                    await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken)
-                        .ConfigureAwait(false);
+                    await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
                     await InvokeOnDispatcherAsync(
                             () => SetStatus(BuildNoModDatabaseResultsMessage(hasSearchTokens), false),
                             cancellationToken)
@@ -2144,119 +2214,34 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     return;
                 }
 
-                IEnumerable<ModDatabaseSearchResult> candidateResults = filteredResults;
-                if (excludeInstalled)
-                {
-                    candidateResults = candidateResults
-                        .Where(result => !IsResultInstalled(result, installedModIds));
-                }
-
-                finalResults = candidateResults
-                    .Take(desiredResultCount)
+                var entries = finalResults
+                    .Select(result => (
+                        Entry: CreateSearchResultEntry(result),
+                        IsInstalled: IsResultInstalled(result, installedModIds)))
                     .ToList();
 
-                bool hasAdditionalResults = filteredResults.Count > finalResults.Count;
-                bool canRequestMore = results.Count >= queryLimit;
-                if (!excludeInstalled
-                    || finalResults.Count >= desiredResultCount
-                    || !canRequestMore)
+                if (entries.Count == 0)
                 {
-                    hasMoreResults = hasAdditionalResults;
-                    break;
+                    await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
+                    await InvokeOnDispatcherAsync(
+                            () => SetStatus(BuildNoModDatabaseResultsMessage(hasSearchTokens), false),
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                    return;
                 }
 
-                int nextLimit;
-                long candidateLimit = (long)queryLimit + desiredResultCount;
-                if (candidateLimit >= MaxModDatabaseResultLimit)
+                var viewModels = entries
+                    .Select(item => CreateSearchResultViewModel(item.Entry, item.IsInstalled))
+                    .ToList();
+
+                if (onlyShowCompatible)
                 {
-                    nextLimit = MaxModDatabaseResultLimit;
+                    await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    nextLimit = (int)candidateLimit;
+                    await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
                 }
-                if (nextLimit <= queryLimit)
-                {
-                    break;
-                }
-
-                queryLimit = nextLimit;
-            }
-
-            if (finalResults.Count == 0)
-            {
-                await InvokeOnDispatcherAsync(
-                        () =>
-                        {
-                            CanLoadMoreModDatabaseResults = false;
-
-                            if (_hasRequestedAdditionalModDatabaseResults)
-                            {
-                                IsLoadMoreModDatabaseButtonVisible = false;
-                                _hasRequestedAdditionalModDatabaseResults = false;
-                            }
-                        },
-                        cancellationToken)
-                    .ConfigureAwait(false);
-                await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
-                await InvokeOnDispatcherAsync(
-                        () => SetStatus(BuildNoModDatabaseResultsMessage(hasSearchTokens), false),
-                        cancellationToken)
-                    .ConfigureAwait(false);
-                return;
-            }
-
-            var entries = finalResults
-                .Select(result => (
-                    Entry: CreateSearchResultEntry(result),
-                    IsInstalled: IsResultInstalled(result, installedModIds)))
-                .ToList();
-
-            if (entries.Count == 0)
-            {
-                await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
-                await InvokeOnDispatcherAsync(
-                        () => SetStatus(BuildNoModDatabaseResultsMessage(hasSearchTokens), false),
-                        cancellationToken)
-                    .ConfigureAwait(false);
-                return;
-            }
-
-            var viewModels = entries
-                .Select(item => CreateSearchResultViewModel(item.Entry, item.IsInstalled))
-                .ToList();
-
-            if (onlyShowCompatible)
-            {
-                await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
-            }
-
-            await InvokeOnDispatcherAsync(
-                    () =>
-                    {
-                        CanLoadMoreModDatabaseResults = hasMoreResults && _modDatabaseCurrentResultLimit < MaxModDatabaseResultLimit;
-
-                        if (_hasRequestedAdditionalModDatabaseResults)
-                        {
-                            if (!CanLoadMoreModDatabaseResults)
-                            {
-                                IsLoadMoreModDatabaseButtonVisible = false;
-                            }
-
-                            _hasRequestedAdditionalModDatabaseResults = false;
-                        }
-                    },
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
 
             for (int i = 0; i < entries.Count; i++)
             {
@@ -2323,41 +2308,113 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 return;
             }
 
-            if (onlyShowCompatible)
-            {
-                RemoveIncompatibleModDatabaseResults(entries, viewModels);
-
-                if (viewModels.Count == 0)
+                if (onlyShowCompatible)
                 {
-                    await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken).ConfigureAwait(false);
+                    RemoveIncompatibleModDatabaseResults(entries, viewModels);
 
-                    await InvokeOnDispatcherAsync(
-                            () => SetStatus(NoCompatibleModDatabaseResultsStatusMessage, false),
-                            cancellationToken)
-                        .ConfigureAwait(false);
+                    if (viewModels.Count == 0)
+                    {
+                        await UpdateSearchResultsAsync(Array.Empty<ModListItemViewModel>(), cancellationToken)
+                            .ConfigureAwait(false);
 
+                        await InvokeOnDispatcherAsync(
+                                () => SetStatus(NoCompatibleModDatabaseResultsStatusMessage, false),
+                                cancellationToken)
+                            .ConfigureAwait(false);
+
+                        return;
+                    }
+
+                    if (viewModels.Count > desiredResultCount)
+                    {
+                        int removeCount = viewModels.Count - desiredResultCount;
+                        for (int i = 0; i < removeCount; i++)
+                        {
+                            int index = viewModels.Count - 1;
+                            viewModels.RemoveAt(index);
+                            entries.RemoveAt(index);
+                        }
+
+                        hasMoreResults = true;
+                    }
+
+                    if (viewModels.Count < desiredResultCount)
+                    {
+                        bool canRequestAdditionalResults =
+                            queryLimit < MaxModDatabaseResultLimit
+                            && (canFetchMoreFromServer || hasMoreResults);
+
+                        if (canRequestAdditionalResults)
+                        {
+                            int nextLimit;
+                            long candidateLimit = (long)queryLimit + desiredResultCount;
+                            if (candidateLimit >= MaxModDatabaseResultLimit)
+                            {
+                                nextLimit = MaxModDatabaseResultLimit;
+                            }
+                            else
+                            {
+                                nextLimit = (int)candidateLimit;
+                            }
+
+                            if (nextLimit > queryLimit)
+                            {
+                                queryLimit = nextLimit;
+                                continue;
+                            }
+                        }
+                    }
+
+                    if (viewModels.Count < filteredResultCount)
+                    {
+                        hasMoreResults = true;
+                    }
+
+                    await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
+                }
+
+                await InvokeOnDispatcherAsync(
+                        () =>
+                        {
+                            CanLoadMoreModDatabaseResults = hasMoreResults && _modDatabaseCurrentResultLimit < MaxModDatabaseResultLimit;
+
+                            if (_hasRequestedAdditionalModDatabaseResults)
+                            {
+                                if (!CanLoadMoreModDatabaseResults)
+                                {
+                                    IsLoadMoreModDatabaseButtonVisible = false;
+                                }
+
+                                _hasRequestedAdditionalModDatabaseResults = false;
+                            }
+                        },
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (cancellationToken.IsCancellationRequested)
+                {
                     return;
                 }
 
-                await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
+                await InvokeOnDispatcherAsync(
+                        () => SetStatus("Loading mod images...", false),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+                await LoadModDatabaseLogosAsync(viewModels, cancellationToken).ConfigureAwait(false);
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                await InvokeOnDispatcherAsync(
+                        () => SetStatus(BuildModDatabaseResultsMessage(hasSearchTokens, viewModels.Count), false),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+                break;
             }
-
-            await InvokeOnDispatcherAsync(
-                    () => SetStatus("Loading mod images...", false),
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-            await LoadModDatabaseLogosAsync(viewModels, cancellationToken).ConfigureAwait(false);
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-
-            await InvokeOnDispatcherAsync(
-                    () => SetStatus(BuildModDatabaseResultsMessage(hasSearchTokens, viewModels.Count), false),
-                    cancellationToken)
-                .ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
