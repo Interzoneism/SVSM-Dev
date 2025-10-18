@@ -36,6 +36,16 @@
                   Background="{StaticResource IMM.DataGridBackgroundBrush}"
                   BorderBrush="{StaticResource IMM.BorderBrush}"
                   Foreground="{StaticResource IMM.ForegroundBrush}">
+            <ListView.Resources>
+                <Style TargetType="GridViewColumnHeader">
+                    <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                    <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                </Style>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                </Style>
+            </ListView.Resources>
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Slot" DisplayMemberBinding="{Binding SlotLabel}" Width="100" />

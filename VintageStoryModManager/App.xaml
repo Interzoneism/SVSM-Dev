@@ -543,7 +543,7 @@
 
             <Style TargetType="TextBox">
                 <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
-                <Setter Property="Background" Value="White" />
+                <Setter Property="Background" Value="{DynamicResource IMM.InputBackgroundBrush}" />
                 <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Padding" Value="6,4" />
@@ -587,7 +587,7 @@
                                                                 Duration="0:0:0.12" />
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="White"
+                                                                To="{StaticResource IMM.InputBackgroundColor}"
                                                                 Duration="0:0:0.12" />
                                             </Storyboard>
                                         </BeginStoryboard>

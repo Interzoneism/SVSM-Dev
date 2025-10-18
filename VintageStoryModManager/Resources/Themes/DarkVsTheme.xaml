@@ -2,11 +2,11 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:options="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options">
     <!-- Vintage Story inspired dark theme palette -->
-    <Color x:Key="IMM.AccentColor">#FF388bb1</Color>
-    <Color x:Key="IMM.SurfaceColor">#FF554635</Color>
-    <Color x:Key="IMM.SurfaceAltColor">#FF554635</Color>
-    <Color x:Key="IMM.DataGridBackgroundColor">#FF342a1f</Color>
-    <Color x:Key="IMM.MenuBackgroundColor">#FF554635</Color>
+    <Color x:Key="IMM.AccentColor">#FF388BB1</Color>
+    <Color x:Key="IMM.SurfaceColor">#FF362C21</Color>
+    <Color x:Key="IMM.SurfaceAltColor">#FF362C21</Color>
+    <Color x:Key="IMM.DataGridBackgroundColor">#FF362C21</Color>
+    <Color x:Key="IMM.MenuBackgroundColor">#FF3C3125</Color>
     <Color x:Key="IMM.BorderColor">#FF2D2321</Color>
     <Color x:Key="IMM.WindowBorderColor">#FF2D2321</Color>
     <Color x:Key="IMM.RowBorderColor">#FF2D2321</Color>
