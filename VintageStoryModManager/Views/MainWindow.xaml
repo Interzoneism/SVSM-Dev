@@ -497,60 +497,79 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBox Grid.Column="3"
-                         Margin="0,10,24,33"
-                         MinWidth="200"
-                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         FontSize="14" HorizontalAlignment="Right" Width="227">
-                    <TextBox.Style>
-                        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
-                            <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                    <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
-                                    <Setter Property="IsEnabled" Value="False" />
-                                    <Setter Property="ui:ControlHelper.PlaceholderText" Value="Cloud modlist search coming soon" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBox.Style>
-                </TextBox>
-
                 <StackPanel Grid.Column="3"
                             Orientation="Vertical"
                             HorizontalAlignment="Right"
-                            Margin="0,-10,0,71">
-                    <CheckBox Content="Include installed mods"
-                              Width="252"
-                              IsChecked="{Binding IncludeInstalledModDatabaseResults, Mode=TwoWay}">
-                        <CheckBox.Style>
-                            <Style TargetType="{x:Type CheckBox}">
+                            Margin="0,10,24,33">
+                    <ToggleButton x:Name="SearchOptionsToggleButton"
+                                  Content="Search options"
+                                  HorizontalAlignment="Right"
+                                  Margin="0,0,0,6">
+                        <ToggleButton.Style>
+                            <Style TargetType="{x:Type ToggleButton}">
                                 <Setter Property="Visibility" Value="Collapsed" />
+                                <Setter Property="Width" Value="227" />
+                                <Setter Property="Padding" Value="12,6" />
+                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                         <Setter Property="Visibility" Value="Visible" />
                                     </DataTrigger>
+                                    <DataTrigger Binding="{Binding SearchModDatabase}" Value="False">
+                                        <Setter Property="IsChecked" Value="False" />
+                                    </DataTrigger>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                                    </Trigger>
                                 </Style.Triggers>
                             </Style>
-                        </CheckBox.Style>
-                    </CheckBox>
-                    <CheckBox Content="Only show compatible"
-                              Width="252"
-                              Margin="0,6,0,0"
-                              IsChecked="{Binding OnlyShowCompatibleModDatabaseResults, Mode=TwoWay}">
-                        <CheckBox.Style>
-                            <Style TargetType="{x:Type CheckBox}">
-                                <Setter Property="Visibility" Value="Collapsed" />
+                        </ToggleButton.Style>
+                    </ToggleButton>
+                    <Popup PlacementTarget="{Binding ElementName=SearchOptionsToggleButton}"
+                           Placement="Bottom"
+                           IsOpen="{Binding IsChecked, ElementName=SearchOptionsToggleButton, Mode=TwoWay}"
+                           StaysOpen="False"
+                           AllowsTransparency="True"
+                           Focusable="False">
+                        <Border Background="{DynamicResource IMM.SurfaceBrush}"
+                                BorderBrush="{StaticResource IMM.BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="12"
+                                MinWidth="252">
+                            <StackPanel>
+                                <CheckBox Content="Include installed mods"
+                                          Margin="0,0,0,8"
+                                          IsChecked="{Binding IncludeInstalledModDatabaseResults, Mode=TwoWay}" />
+                                <CheckBox Content="Only show compatible mods"
+                                          IsChecked="{Binding OnlyShowCompatibleModDatabaseResults, Mode=TwoWay}" />
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                    <TextBox MinWidth="200"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="14" HorizontalAlignment="Right" Width="227">
+                        <TextBox.Style>
+                            <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
+                                <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible" />
+                                        <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
+                                        <Setter Property="IsEnabled" Value="False" />
+                                        <Setter Property="ui:ControlHelper.PlaceholderText" Value="Cloud modlist search coming soon" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </CheckBox.Style>
-                    </CheckBox>
+                        </TextBox.Style>
+                    </TextBox>
                 </StackPanel>
 
                 <StackPanel Grid.Column="0"
