@@ -108,6 +108,7 @@ public partial class MainWindow : Window
     private bool _isApplyingMultiToggle;
     private readonly ModDatabaseService _modDatabaseService = new();
     private readonly ModUpdateService _modUpdateService = new();
+    private readonly ModCompatibilityCommentsService _modCompatibilityCommentsService = new();
     private bool _isModUpdateInProgress;
     private bool _isDependencyResolutionRefreshPending;
     private ScrollViewer? _modsScrollViewer;
@@ -3929,6 +3930,25 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ExperimentalCompReviewMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        string? defaultSlug = null;
+        string? latestVersion = _viewModel?.InstalledGameVersion;
+
+        if (_viewModel?.SelectedMod is ModListItemViewModel selectedMod)
+        {
+            defaultSlug = TryExtractModSlug(selectedMod.ModDatabasePageUrl) ?? selectedMod.ModId;
+        }
+
+        var dialog = new ExperimentalCompReviewDialog(
+            this,
+            defaultSlug,
+            string.IsNullOrWhiteSpace(latestVersion) ? null : latestVersion,
+            _modCompatibilityCommentsService);
+
+        dialog.ShowDialog();
+    }
+
     private async void DeleteCloudAuthMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         const string confirmationMessage =
@@ -3949,6 +3969,62 @@ public partial class MainWindow : Window
         await ExecuteCloudOperationAsync(
             store => DeleteAllCloudModlistsAndAuthorizationAsync(store),
             "delete all cloud modlists and Firebase authorization");
+    }
+
+    private static string? TryExtractModSlug(string? modDatabasePageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(modDatabasePageUrl))
+        {
+            return null;
+        }
+
+        if (Uri.TryCreate(modDatabasePageUrl, UriKind.Absolute, out Uri? uri))
+        {
+            string? fromUri = ExtractSlugFromPath(uri.AbsolutePath);
+            if (!string.IsNullOrWhiteSpace(fromUri))
+            {
+                return fromUri;
+            }
+        }
+
+        return ExtractSlugFromPath(modDatabasePageUrl);
+
+        static string? ExtractSlugFromPath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return null;
+            }
+
+            string trimmed = path.Trim();
+
+            int fragmentIndex = trimmed.IndexOf('#');
+            if (fragmentIndex >= 0)
+            {
+                trimmed = trimmed[..fragmentIndex];
+            }
+
+            int queryIndex = trimmed.IndexOf('?');
+            if (queryIndex >= 0)
+            {
+                trimmed = trimmed[..queryIndex];
+            }
+
+            trimmed = trimmed.Trim('/');
+
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                return null;
+            }
+
+            int lastSlash = trimmed.LastIndexOf('/');
+            if (lastSlash >= 0)
+            {
+                trimmed = trimmed[(lastSlash + 1)..];
+            }
+
+            return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
+        }
     }
 
     private async void DeleteAllManagerFilesMenuItem_OnClick(object sender, RoutedEventArgs e)

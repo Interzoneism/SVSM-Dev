@@ -464,6 +464,9 @@
                                   IsCheckable="True"
                                   Style="{StaticResource ToggleMenuItemStyle}"
                                   Click="EnableDebugLoggingMenuItem_OnClick" />
+                        <MenuItem Header="Experimental Comp Review"
+                                  Padding="12,6"
+                                  Click="ExperimentalCompReviewMenuItem_OnClick" />
                         <MenuItem Header="Delete cloud modlists and firebase-auth"
                                   Padding="12,6"
                                   Click="DeleteCloudAuthMenuItem_OnClick" />
