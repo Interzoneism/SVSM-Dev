@@ -214,29 +214,11 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <LinearGradientBrush x:Key="CardGradient" EndPoint="1,0.5" StartPoint="0,0.5">
-            <GradientStop Color="{StaticResource IMM.SurfaceAltColor}" />
-            <GradientStop Color="{StaticResource IMM.SurfaceColor}" Offset="1" />
-        </LinearGradientBrush>
-        <LinearGradientBrush x:Key="CardGradient2" EndPoint="1,0.5" StartPoint="0,0.5">
-            <GradientStop Color="{StaticResource IMM.SurfaceAltColor}" />
-            <GradientStop Color="{StaticResource IMM.BorderHoverColor}" Offset="0.4" />
-            <GradientStop Color="{StaticResource IMM.SurfaceColor}" Offset="1" />
-        </LinearGradientBrush>
-        <LinearGradientBrush x:Key="CardGradient3" EndPoint="1,0.5" StartPoint="0,0.5">
-            <GradientStop Color="{StaticResource IMM.SurfaceAltColor}" />
-            <GradientStop Color="{StaticResource IMM.SurfaceColor}" Offset="1" />
-            <GradientStop Color="{StaticResource IMM.BorderHoverColor}" Offset="0.25" />
-        </LinearGradientBrush>
-        <LinearGradientBrush x:Key="CardDisabledGradient" EndPoint="1,0.5" StartPoint="0,0.5">
-            <GradientStop Color="{StaticResource IMM.ToggleDisabledColor}" />
-            <GradientStop Color="{StaticResource IMM.SurfaceAltColor}" Offset="0.35" />
-            <GradientStop Color="{StaticResource IMM.SurfaceColor}" Offset="1" />
-        </LinearGradientBrush>
-        <LinearGradientBrush x:Key="GridBackground1" EndPoint="1,0.5" StartPoint="0,0.5">
-            <GradientStop Color="{StaticResource IMM.SurfaceColor}" />
-            <GradientStop Color="{StaticResource IMM.SurfaceAltColor}" Offset="1" />
-        </LinearGradientBrush>
+        <SolidColorBrush x:Key="CardGradient" Color="{StaticResource IMM.SurfaceColor}" />
+        <SolidColorBrush x:Key="CardGradient2" Color="{StaticResource IMM.SurfaceColor}" />
+        <SolidColorBrush x:Key="CardGradient3" Color="{StaticResource IMM.SurfaceColor}" />
+        <SolidColorBrush x:Key="CardDisabledGradient" Color="{StaticResource IMM.ToggleDisabledColor}" />
+        <SolidColorBrush x:Key="GridBackground1" Color="{StaticResource IMM.DataGridBackgroundColor}" />
         <!-- Style for toggleable MenuItem that keeps the default look and feel -->
         <Style x:Key="ToggleMenuItemStyle" TargetType="{x:Type MenuItem}">
             <Setter Property="IsCheckable" Value="True" />
