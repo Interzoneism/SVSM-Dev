@@ -511,6 +511,10 @@
                                     <DataTrigger Binding="{Binding SearchModDatabase}" Value="False">
                                         <Setter Property="IsChecked" Value="False" />
                                     </DataTrigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource IMM.ButtonHoverBrush}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                    </Trigger>
                                     <Trigger Property="IsChecked" Value="True">
                                         <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
                                         <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
@@ -1971,7 +1975,7 @@
                                                 Click="InstallModButton_OnClick"
                                                 ToolTip="{Binding InstallButtonToolTip}">
                                             <Button.Style>
-                                                <Style TargetType="{x:Type Button}">
+                                                <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                                     <Setter Property="Visibility" Value="Visible" />
                                                     <Setter Property="HorizontalContentAlignment" Value="Center" />
                                                     <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -1984,7 +1988,8 @@
                                                 </Style>
                                             </Button.Style>
                                             <TextBlock Text="Install"
-                                                       VerticalAlignment="Center" />
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource IMM.ForegroundBrush}" />
                                         </Button>
                                     </Grid>
                                 </Border>
@@ -2181,7 +2186,7 @@
                 IsEnabled="False"
                 Click="DeleteModButton_OnClick" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,80,0,0" Grid.Column="1">
                     <Button.Style>
-                        <Style TargetType="{x:Type Button}">
+                        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                             <Setter Property="ToolTip" Value="{Binding DisplayName, StringFormat=Delete \{0\}}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding DataContext.HasMultipleSelectedMods, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
@@ -2192,7 +2197,7 @@
                     </Button.Style>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
-                        <TextBlock Text="Delete" VerticalAlignment="Center" />
+                        <TextBlock Text="Delete" VerticalAlignment="Center" Foreground="{DynamicResource IMM.ForegroundBrush}" />
                     </StackPanel>
                 </Button>
                 <Button x:Name="SelectedModFixButton"
@@ -2260,19 +2265,20 @@
                 Width="166"
                 Height="30"
                 Padding="12,6"
-                Background="{DynamicResource IMM.ButtonBackgroundBrush}"
+                Background="{DynamicResource IMM.SurfaceAltBrush}"
                 BorderBrush="{DynamicResource IMM.BorderBrush}"
                 BorderThickness="1"
+                Foreground="{DynamicResource IMM.ForegroundBrush}"
                 ui:ControlHelper.CornerRadius="6"
                 ItemsSource="{Binding SelectedMod.VersionOptions}"
                 SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
                 SelectionChanged="SelectedModVersionComboBox_OnSelectionChanged"
                 VerticalAlignment="Top" HorizontalAlignment="Left" Margin="17,155,0,0">
                     <ComboBox.Style>
-                        <Style TargetType="{x:Type ComboBox}">
+                        <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource {x:Type ComboBox}}">
                             <Setter Property="Visibility" Value="Visible" />
                             <Setter Property="IsEnabled" Value="False" />
-                            <Setter Property="Background" Value="{DynamicResource IMM.ButtonBackgroundBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource IMM.SurfaceAltBrush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SelectedMod.HasVersionOptions}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
