@@ -442,6 +442,12 @@
                               Padding="12,6"
                               IsEnabled="False"
                               Focusable="False" />
+                    <MenuItem x:Name="GameVersionMenuItem"
+                              Header="Vintage Story: --"
+                              Padding="12,6"
+                              IsEnabled="False"
+                              Focusable="False"
+                              Visibility="Collapsed" />
                     <MenuItem Header="Open Documents/Simple VS Manager/ folder"
                               Padding="12,6"
                               Click="ManagerDataFolderMenuItem_OnClick" />
