@@ -6,7 +6,7 @@
     <Color x:Key="IMM.SurfaceColor">#FF544535</Color>
     <Color x:Key="IMM.SurfaceAltColor">#FF3D3225</Color>
     <Color x:Key="IMM.DataGridBackgroundColor">#FF3D3225</Color>
-    <Color x:Key="IMM.MenuBackgroundColor">#FF544535</Color>
+    <Color x:Key="IMM.MenuBackgroundColor">#FF3C3125</Color>
     <Color x:Key="IMM.BorderColor">#FF2D2321</Color>
     <Color x:Key="IMM.WindowBorderColor">#FF2D2321</Color>
     <Color x:Key="IMM.RowBorderColor">#FF2D2321</Color>
@@ -39,6 +39,7 @@
     <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource IMM.SurfaceColor}" />
     <SolidColorBrush x:Key="IMM.SurfaceAltBrush" Color="{StaticResource IMM.SurfaceAltColor}" />
     <SolidColorBrush x:Key="IMM.DataGridBackgroundBrush" Color="{StaticResource IMM.DataGridBackgroundColor}" />
+    <Color x:Key="IMM.InputBackgroundColor">#FF342A20</Color>
     <SolidColorBrush x:Key="IMM.MenuBackgroundBrush" Color="{StaticResource IMM.MenuBackgroundColor}" />
     <SolidColorBrush x:Key="IMM.BorderBrush" options:Freeze="False" Color="{StaticResource IMM.BorderColor}" />
     <SolidColorBrush x:Key="IMM.WindowBorderBrush" Color="{StaticResource IMM.WindowBorderColor}" />
@@ -68,8 +69,20 @@
     <SolidColorBrush x:Key="IMM.TagBorderBrush" Color="{StaticResource IMM.TagBorderColor}" />
     <SolidColorBrush x:Key="IMM.DataGridHeaderBrush" Color="{StaticResource IMM.DataGridHeaderColor}" />
     <SolidColorBrush x:Key="IMM.DropdownGlyphBrush" Color="{StaticResource IMM.DropdownGlyphColor}" />
+    <SolidColorBrush x:Key="IMM.InputBackgroundBrush" Color="{StaticResource IMM.InputBackgroundColor}" />
     <SolidColorBrush x:Key="IMM.WindowBackgroundBrush" Color="{StaticResource IMM.SurfaceColor}" />
     <SolidColorBrush x:Key="IMM.AlertOverlayBrush" Color="{StaticResource IMM.SelectionForegroundColor}" Opacity="0.45" />
     <SolidColorBrush x:Key="IMM.SuccessOverlayBrush" Color="{StaticResource IMM.SuccessColor}" Opacity="0.8" />
     <SolidColorBrush x:Key="IMM.SubtleForegroundBrush" Color="{StaticResource IMM.PlaceholderForegroundColor}" />
+
+    <Style TargetType="{x:Type Menu}">
+        <Setter Property="Background" Value="{StaticResource IMM.MenuBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+    </Style>
+
+    <Style TargetType="{x:Type MenuItem}">
+        <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+        <Setter Property="Background" Value="{StaticResource IMM.MenuBackgroundBrush}" />
+    </Style>
 </ResourceDictionary>

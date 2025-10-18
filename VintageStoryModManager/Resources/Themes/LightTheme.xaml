@@ -39,6 +39,7 @@
     <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource IMM.SurfaceColor}" />
     <SolidColorBrush x:Key="IMM.SurfaceAltBrush" Color="{StaticResource IMM.SurfaceAltColor}" />
     <SolidColorBrush x:Key="IMM.DataGridBackgroundBrush" Color="{StaticResource IMM.DataGridBackgroundColor}" />
+    <Color x:Key="IMM.InputBackgroundColor">#FFFFFFFF</Color>
     <SolidColorBrush x:Key="IMM.MenuBackgroundBrush" Color="{StaticResource IMM.MenuBackgroundColor}" />
     <SolidColorBrush x:Key="IMM.BorderBrush" options:Freeze="False" Color="{StaticResource IMM.BorderColor}" />
     <SolidColorBrush x:Key="IMM.WindowBorderBrush" Color="{StaticResource IMM.WindowBorderColor}" />
@@ -68,6 +69,7 @@
     <SolidColorBrush x:Key="IMM.TagBorderBrush" Color="{StaticResource IMM.TagBorderColor}" />
     <SolidColorBrush x:Key="IMM.DataGridHeaderBrush" Color="{StaticResource IMM.DataGridHeaderColor}" />
     <SolidColorBrush x:Key="IMM.DropdownGlyphBrush" Color="{StaticResource IMM.DropdownGlyphColor}" />
+    <SolidColorBrush x:Key="IMM.InputBackgroundBrush" Color="{StaticResource IMM.InputBackgroundColor}" />
     <SolidColorBrush x:Key="IMM.WindowBackgroundBrush" Color="{StaticResource IMM.SurfaceColor}" />
     <SolidColorBrush x:Key="IMM.AlertOverlayBrush" Color="{StaticResource IMM.SelectionForegroundColor}" Opacity="0.4" />
     <SolidColorBrush x:Key="IMM.SuccessOverlayBrush" Color="{StaticResource IMM.SuccessColor}" Opacity="0.7" />

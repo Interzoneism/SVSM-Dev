@@ -1647,8 +1647,16 @@
                                      Width="170"
                                      IsReadOnly="True"
                                      IsTabStop="False"
+                                     Background="{DynamicResource IMM.InputBackgroundBrush}"
+                                     BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                     Foreground="{DynamicResource IMM.ForegroundBrush}"
                                      ToolTip="Change your player name in Vintage Story to update this username."/>
-                            <TextBlock HorizontalAlignment="Left" Margin="10,10,0,0" TextWrapping="Wrap" Text="Username:" VerticalAlignment="Top"/>
+                            <TextBlock HorizontalAlignment="Left"
+                                       Margin="10,10,0,0"
+                                       TextWrapping="Wrap"
+                                       Text="Username:"
+                                       VerticalAlignment="Top"
+                                       Foreground="{DynamicResource IMM.ForegroundBrush}"/>
                             <Border HorizontalAlignment="Left" Height="88" Margin="224,10,0,0"  Padding="10" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource CardGradient3}">
                                 <Grid>
                                     <TextBlock x:Name="SelectedModlistDescription" HorizontalAlignment="Left" Margin="0,16,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Height="72" Width="352"/>
