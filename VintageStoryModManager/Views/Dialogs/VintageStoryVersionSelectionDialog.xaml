@@ -9,8 +9,10 @@
         ResizeMode="NoResize"
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
-        Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
-    <Grid Margin="20">
+        Background="{StaticResource IMM.WindowBackgroundBrush}">
+    <Grid Margin="20"
+          Background="{StaticResource IMM.SurfaceBrush}"
+          TextElement.Foreground="{StaticResource IMM.ForegroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -30,7 +32,10 @@
                  SelectionMode="Single"
                  MouseDoubleClick="VersionsListBox_OnMouseDoubleClick"
                  SelectionChanged="VersionsListBox_OnSelectionChanged"
-                 DisplayMemberPath="Display" />
+                 DisplayMemberPath="Display"
+                 Background="{StaticResource IMM.DataGridBackgroundBrush}"
+                 Foreground="{StaticResource IMM.ForegroundBrush}"
+                 BorderBrush="{StaticResource IMM.BorderBrush}" />
 
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"

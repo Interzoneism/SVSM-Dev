@@ -137,6 +137,11 @@ public partial class MainWindow : Window
         EnableDebugLoggingMenuItem.IsChecked = _userConfiguration.EnableDebugLogging;
         StatusLogService.IsLoggingEnabled = _userConfiguration.EnableDebugLogging;
 
+        if (DarkVsModeMenuItem is not null)
+        {
+            DarkVsModeMenuItem.IsChecked = _userConfiguration.UseDarkVsMode;
+        }
+
         if (ManagerVersionMenuItem is not null)
         {
             string? managerVersion = GetManagerInformationalVersion();
@@ -240,6 +245,38 @@ public partial class MainWindow : Window
         _userConfiguration.SetDisableInternetAccess(isDisabled);
 
         _viewModel?.OnInternetAccessStateChanged();
+    }
+
+    private void DarkVsModeMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return;
+        }
+
+        bool enableDarkMode = menuItem.IsChecked;
+        bool currentValue = _userConfiguration.UseDarkVsMode;
+
+        if (enableDarkMode == currentValue)
+        {
+            return;
+        }
+
+        const string message = "To activate the alternate color scheme, the app will restart.";
+        MessageBoxResult result = WpfMessageBox.Show(
+            message,
+            "Simple VS Manager",
+            MessageBoxButton.OKCancel,
+            MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.OK)
+        {
+            menuItem.IsChecked = currentValue;
+            return;
+        }
+
+        _userConfiguration.SetUseDarkVsMode(enableDarkMode);
+        RestartApplication();
     }
 
     private void AlwaysClearModlistsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -9265,6 +9302,37 @@ public partial class MainWindow : Window
     private void Button_Click(object sender, RoutedEventArgs e)
     {
 
+    }
+
+    private static void RestartApplication()
+    {
+        try
+        {
+            string? executablePath = Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrWhiteSpace(executablePath))
+            {
+                var startInfo = new ProcessStartInfo(executablePath)
+                {
+                    UseShellExecute = false
+                };
+
+                string[] args = Environment.GetCommandLineArgs();
+                for (int i = 1; i < args.Length; i++)
+                {
+                    startInfo.ArgumentList.Add(args[i]);
+                }
+
+                Process.Start(startInfo);
+            }
+        }
+        catch (Exception)
+        {
+            // Restarting is best-effort; ignore failures and continue shutting down.
+        }
+        finally
+        {
+            WpfApplication.Current?.Shutdown();
+        }
     }
 
     protected override void OnClosed(EventArgs e)

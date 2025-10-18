@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
+using VintageStoryModManager.Services;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 
 namespace VintageStoryModManager;
@@ -11,8 +12,11 @@ namespace VintageStoryModManager;
 public partial class App : System.Windows.Application
 {
     private const string SingleInstanceMutexName = "VintageStoryModManager.SingleInstance";
+    private static readonly Uri LightThemeUri = new("Resources/Themes/LightTheme.xaml", UriKind.Relative);
+    private static readonly Uri DarkVsThemeUri = new("Resources/Themes/DarkVsTheme.xaml", UriKind.Relative);
     private Mutex? _instanceMutex;
     private bool _ownsMutex;
+    private ResourceDictionary? _activeTheme;
 
     public App()
     {
@@ -31,6 +35,8 @@ public partial class App : System.Windows.Application
             Current?.Shutdown();
             return;
         }
+
+        ApplyPreferredTheme();
 
         base.OnStartup(e);
     }
@@ -106,6 +112,70 @@ public partial class App : System.Windows.Application
 
             ShowWindow(windowHandle, SwRestore);
             SetForegroundWindow(windowHandle);
+        }
+    }
+
+    private void ApplyPreferredTheme()
+    {
+        bool useDarkVsMode = false;
+
+        try
+        {
+            var configuration = new UserConfigurationService();
+            useDarkVsMode = configuration.UseDarkVsMode;
+        }
+        catch (Exception)
+        {
+            // If the configuration fails to load we silently fall back to the default theme.
+        }
+
+        if (_activeTheme is null && Resources is { MergedDictionaries.Count: > 0 })
+        {
+            foreach (ResourceDictionary dictionary in Resources.MergedDictionaries)
+            {
+                string? source = dictionary.Source?.OriginalString;
+                if (string.IsNullOrEmpty(source))
+                {
+                    continue;
+                }
+
+                if (source.Contains("Resources/Themes/", StringComparison.OrdinalIgnoreCase))
+                {
+                    _activeTheme = dictionary;
+                    break;
+                }
+            }
+        }
+
+        ApplyThemeDictionary(useDarkVsMode ? DarkVsThemeUri : LightThemeUri);
+    }
+
+    private void ApplyThemeDictionary(Uri source)
+    {
+        if (Resources is null)
+        {
+            return;
+        }
+
+        if (_activeTheme != null)
+        {
+            Resources.MergedDictionaries.Remove(_activeTheme);
+            _activeTheme = null;
+        }
+
+        try
+        {
+            var dictionary = new ResourceDictionary { Source = source };
+            Resources.MergedDictionaries.Add(dictionary);
+            _activeTheme = dictionary;
+        }
+        catch (Exception)
+        {
+            // If loading the preferred theme fails, fall back to the light theme.
+            if (!ReferenceEquals(source, LightThemeUri))
+            {
+                ApplyThemeDictionary(LightThemeUri);
+            }
         }
     }
 }

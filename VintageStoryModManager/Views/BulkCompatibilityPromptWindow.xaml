@@ -5,19 +5,22 @@
         WindowStartupLocation="CenterOwner"
         SizeToContent="WidthAndHeight"
         ResizeMode="NoResize"
-        ShowInTaskbar="False">
-    <Grid Margin="20" MinWidth="360">
+        ShowInTaskbar="False"
+        Background="{StaticResource IMM.WindowBackgroundBrush}">
+    <Grid Margin="20" MinWidth="360" Background="{StaticResource IMM.SurfaceBrush}">
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
+                      HorizontalScrollBarVisibility="Disabled"
+                      Background="{StaticResource IMM.SurfaceAltBrush}">
             <TextBlock x:Name="MessageTextBlock"
                        TextWrapping="Wrap"
                        Margin="0"
-                       MaxWidth="440" />
+                       MaxWidth="440"
+                       Foreground="{StaticResource IMM.ForegroundBrush}" />
         </ScrollViewer>
 
         <StackPanel Grid.Row="1" Margin="0,20,0,0">
@@ -39,7 +42,7 @@
                     Margin="0,0,0,8"
                     HorizontalAlignment="Stretch"
                     Visibility="Collapsed" />
-            <Separator Margin="0,4,0,12" />
+            <Separator Margin="0,4,0,12" Background="{StaticResource IMM.BorderBrush}" />
             <Button x:Name="SkipButton"
                     Click="SkipButton_OnClick"
                     Margin="0,0,0,8"

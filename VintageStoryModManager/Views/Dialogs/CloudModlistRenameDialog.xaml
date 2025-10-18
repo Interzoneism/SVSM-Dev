@@ -10,8 +10,10 @@
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
         Loaded="Window_OnLoaded"
-        Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
-    <Grid Margin="20">
+        Background="{StaticResource IMM.WindowBackgroundBrush}">
+    <Grid Margin="20"
+          Background="{StaticResource IMM.SurfaceBrush}"
+          TextElement.Foreground="{StaticResource IMM.ForegroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -27,7 +29,12 @@
                  Grid.Row="1"
                  MinWidth="220"
                  Margin="0,0,0,12"
-                 TextChanged="NameTextBox_OnTextChanged" />
+                 TextChanged="NameTextBox_OnTextChanged"
+                 Background="{StaticResource IMM.SurfaceAltBrush}"
+                 BorderBrush="{StaticResource IMM.ButtonBorderBrush}"
+                 SelectionBrush="{StaticResource IMM.AccentBrush}"
+                 SelectionTextBrush="{StaticResource IMM.SelectionForegroundBrush}"
+                 CaretBrush="{StaticResource IMM.AccentBrush}" />
 
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"

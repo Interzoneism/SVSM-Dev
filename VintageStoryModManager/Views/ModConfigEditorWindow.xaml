@@ -29,7 +29,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border BorderBrush="{StaticResource IMM.BorderBrush}" BorderThickness="1" CornerRadius="10" Background="White" Padding="4">
+        <Border BorderBrush="{StaticResource IMM.BorderBrush}" BorderThickness="1" CornerRadius="10" Background="{StaticResource IMM.SurfaceBrush}" Padding="4">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="5" Opacity="0.16" Color="#33000000" />
             </Border.Effect>
@@ -121,7 +121,7 @@
                             <HierarchicalDataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                              Value="True">
-                                    <Setter TargetName="ObjectHeaderText" Property="Foreground" Value="White" />
+                                    <Setter TargetName="ObjectHeaderText" Property="Foreground" Value="{StaticResource IMM.SelectionForegroundBrush}" />
                                 </DataTrigger>
                             </HierarchicalDataTemplate.Triggers>
                         </HierarchicalDataTemplate>
@@ -224,7 +224,7 @@
                             <HierarchicalDataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                              Value="True">
-                                    <Setter TargetName="ArrayHeaderText" Property="Foreground" Value="White" />
+                                    <Setter TargetName="ArrayHeaderText" Property="Foreground" Value="{StaticResource IMM.SelectionForegroundBrush}" />
                                 </DataTrigger>
                             </HierarchicalDataTemplate.Triggers>
                         </HierarchicalDataTemplate>
@@ -362,7 +362,7 @@
         <DockPanel Grid.Row="1" Margin="0,12,0,0" LastChildFill="False">
             <TextBlock x:Name="FilePathTextBlock"
                        Text="{Binding FilePath}"
-                       Foreground="#FF617191"
+                       Foreground="{StaticResource IMM.PlaceholderForegroundBrush}"
                        VerticalAlignment="Center"
                        Margin="0,0,16,0"
                        TextTrimming="CharacterEllipsis" />

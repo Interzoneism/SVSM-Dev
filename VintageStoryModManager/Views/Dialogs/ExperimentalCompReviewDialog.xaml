@@ -10,8 +10,10 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         WindowStyle="SingleBorderWindow"
-        Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
-    <Grid Margin="24">
+        Background="{StaticResource IMM.WindowBackgroundBrush}">
+    <Grid Margin="24"
+          Background="{StaticResource IMM.SurfaceBrush}"
+          TextElement.Foreground="{StaticResource IMM.ForegroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -48,7 +50,12 @@
                      MinWidth="320"
                      Margin="0,0,0,8"
                      VerticalAlignment="Center"
-                     HorizontalAlignment="Stretch" />
+                     HorizontalAlignment="Stretch"
+                     Background="{StaticResource IMM.SurfaceAltBrush}"
+                     BorderBrush="{StaticResource IMM.ButtonBorderBrush}"
+                     SelectionBrush="{StaticResource IMM.AccentBrush}"
+                     SelectionTextBrush="{StaticResource IMM.SelectionForegroundBrush}"
+                     CaretBrush="{StaticResource IMM.AccentBrush}" />
 
             <TextBlock Grid.Row="1"
                        Grid.Column="0"
@@ -61,17 +68,23 @@
                      Grid.Column="1"
                      MinWidth="200"
                      VerticalAlignment="Center"
-                     HorizontalAlignment="Stretch" />
+                     HorizontalAlignment="Stretch"
+                     Background="{StaticResource IMM.SurfaceAltBrush}"
+                     BorderBrush="{StaticResource IMM.ButtonBorderBrush}"
+                     SelectionBrush="{StaticResource IMM.AccentBrush}"
+                     SelectionTextBrush="{StaticResource IMM.SelectionForegroundBrush}"
+                     CaretBrush="{StaticResource IMM.AccentBrush}" />
         </Grid>
 
         <Border Grid.Row="2"
-                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                BorderBrush="{StaticResource IMM.BorderBrush}"
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="12"
-                Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
+                Background="{StaticResource IMM.SurfaceAltBrush}">
             <ScrollViewer VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Auto">
+                          HorizontalScrollBarVisibility="Auto"
+                          Background="{StaticResource IMM.DataGridBackgroundBrush}">
                 <TextBox x:Name="ResultsTextBox"
                          FontFamily="Consolas"
                          FontSize="13"
@@ -80,7 +93,8 @@
                          TextWrapping="NoWrap"
                          IsReadOnly="True"
                          BorderThickness="0"
-                         Background="Transparent" />
+                         Background="Transparent"
+                         Foreground="{StaticResource IMM.ForegroundBrush}" />
             </ScrollViewer>
         </Border>
 
@@ -93,6 +107,7 @@
             <TextBlock x:Name="StatusTextBlock"
                        Grid.Column="0"
                        VerticalAlignment="Center"
+                       Foreground="{StaticResource IMM.ImportantForegroundBrush}"
                        Text="Ready." />
 
             <StackPanel Grid.Column="1"
