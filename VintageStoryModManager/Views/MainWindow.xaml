@@ -334,7 +334,16 @@
 
             <Menu Grid.Column="0"
                   IsMainMenu="True"
-                  BorderThickness="0" Margin="0,0,0,5" Background="{StaticResource IMM.MenuBackgroundBrush}">
+                  BorderThickness="0"
+                  Margin="0,0,0,5"
+                  Background="{StaticResource IMM.MenuBackgroundBrush}"
+                  Foreground="{StaticResource IMM.ForegroundBrush}">
+                <Menu.Resources>
+                    <Style TargetType="{x:Type MenuItem}">
+                        <Setter Property="Background" Value="{StaticResource IMM.MenuBackgroundBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                    </Style>
+                </Menu.Resources>
 
                 <MenuItem Header="_File" Height="35">
                     <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
