@@ -3515,17 +3515,17 @@ public partial class MainWindow : Window
             return;
         }
 
-        string? latestVersion;
+        IReadOnlyList<string> recentVersions;
         try
         {
-            latestVersion = await VintageStoryGameVersionService
-                .GetLatestReleaseVersionAsync()
+            recentVersions = await VintageStoryGameVersionService
+                .GetRecentReleaseVersionsAsync(10)
                 .ConfigureAwait(true);
         }
         catch (HttpRequestException ex)
         {
             WpfMessageBox.Show(
-                $"Failed to retrieve the latest Vintage Story version:\n{ex.Message}",
+                $"Failed to retrieve Vintage Story versions:\n{ex.Message}",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -3538,30 +3538,43 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             WpfMessageBox.Show(
-                $"Failed to retrieve the latest Vintage Story version:\n{ex.Message}",
+                $"Failed to retrieve Vintage Story versions:\n{ex.Message}",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(latestVersion))
+        if (recentVersions is not { Count: > 0 })
         {
             WpfMessageBox.Show(
-                "Could not determine the latest Vintage Story version.",
+                "Could not determine recent Vintage Story versions.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             return;
         }
 
-        latestVersion = latestVersion.Trim();
+        var versionSelectionDialog = new VintageStoryVersionSelectionDialog(this, recentVersions);
+        bool? selectionResult = versionSelectionDialog.ShowDialog();
+        if (selectionResult != true)
+        {
+            return;
+        }
+
+        string? targetVersion = versionSelectionDialog.SelectedVersion;
+        if (string.IsNullOrWhiteSpace(targetVersion))
+        {
+            return;
+        }
+
+        targetVersion = targetVersion.Trim();
 
         IReadOnlyList<ModListItemViewModel> mods = _viewModel.GetInstalledModsSnapshot();
         if (mods.Count == 0)
         {
             WpfMessageBox.Show(
-                $"Latest Vintage Story version: {latestVersion}.\n\nNo installed mods were found.",
+                $"Vintage Story version: {targetVersion}.\n\nNo installed mods were found.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -3578,72 +3591,38 @@ public partial class MainWindow : Window
                 continue;
             }
 
-            CompatibilityEvaluation evaluation = EvaluateCompatibility(mod, latestVersion);
-            if (evaluation.IsCompatible || string.IsNullOrWhiteSpace(evaluation.Message))
+            string displayName = string.IsNullOrWhiteSpace(mod.DisplayName)
+                ? (mod.ModId ?? "Unknown mod")
+                : mod.DisplayName!;
+
+            CompatibilityEvaluation evaluation = EvaluateCompatibility(mod, targetVersion, displayName);
+            if (evaluation.IsCompatible)
             {
                 continue;
             }
 
             if (evaluation.IsUnknown)
             {
-                unknown.Add(evaluation.Message);
+                unknown.Add(displayName);
             }
             else
             {
-                incompatible.Add(evaluation.Message);
+                incompatible.Add(displayName);
             }
         }
 
         incompatible.Sort(StringComparer.CurrentCultureIgnoreCase);
         unknown.Sort(StringComparer.CurrentCultureIgnoreCase);
 
-        var builder = new StringBuilder();
-        builder.Append("Latest Vintage Story version: ");
-        builder.Append(latestVersion);
-        builder.AppendLine(".");
-        builder.AppendLine();
-
-        MessageBoxImage icon;
-
-        if (incompatible.Count == 0)
-        {
-            builder.AppendLine("All installed mods appear to support this version.");
-            icon = MessageBoxImage.Information;
-        }
-        else
-        {
-            icon = MessageBoxImage.Warning;
-            builder.AppendLine("The following mods may be incompatible:");
-            foreach (string message in incompatible)
-            {
-                builder.Append("• ");
-                builder.AppendLine(message);
-            }
-        }
-
-        if (unknown.Count > 0)
-        {
-            builder.AppendLine();
-            builder.AppendLine("Compatibility could not be determined for:");
-            foreach (string message in unknown)
-            {
-                builder.Append("• ");
-                builder.AppendLine(message);
-            }
-        }
-
-        WpfMessageBox.Show(
-            builder.ToString().TrimEnd(),
-            "Simple VS Manager",
-            MessageBoxButton.OK,
-            icon);
+        var resultsDialog = new CompatibilityResultsDialog(this, targetVersion, incompatible, unknown);
+        _ = resultsDialog.ShowDialog();
     }
 
-    private static CompatibilityEvaluation EvaluateCompatibility(ModListItemViewModel mod, string targetVersion)
+    private static CompatibilityEvaluation EvaluateCompatibility(
+        ModListItemViewModel mod,
+        string targetVersion,
+        string displayName)
     {
-        string displayName = string.IsNullOrWhiteSpace(mod.DisplayName)
-            ? (mod.ModId ?? "Unknown mod")
-            : mod.DisplayName;
         string installedVersion = string.IsNullOrWhiteSpace(mod.Version)
             ? "Unknown"
             : mod.Version!;
