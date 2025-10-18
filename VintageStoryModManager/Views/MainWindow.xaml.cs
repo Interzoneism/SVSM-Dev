@@ -871,7 +871,8 @@ public partial class MainWindow : Window
 
     private void RestoreCachedSortState()
     {
-        if (_viewModel is null)
+        var viewModel = _viewModel;
+        if (viewModel is null)
         {
             return;
         }
@@ -895,9 +896,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_viewModel.SelectedSortOption is { } selectedOption)
+        if (viewModel.SelectedSortOption is { } selectedOption)
         {
-            selectedOption.Apply(_viewModel.ModsView);
+            selectedOption.Apply(viewModel.ModsView);
             UpdateSortPreferenceFromSelectedOption(persistPreference: false);
             return;
         }
@@ -907,7 +908,8 @@ public partial class MainWindow : Window
 
     private void RestoreSortPreference()
     {
-        if (_viewModel is null)
+        var viewModel = _viewModel;
+        if (viewModel is null)
         {
             return;
         }
@@ -3500,7 +3502,8 @@ public partial class MainWindow : Window
 
     private async void CheckModsCompatibilityMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        if (_viewModel is null)
+        var viewModel = _viewModel;
+        if (viewModel is null)
         {
             return;
         }
@@ -3555,7 +3558,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        var versionSelectionDialog = new VintageStoryVersionSelectionDialog(this, recentVersions);
+        var versionSelectionDialog = new VintageStoryVersionSelectionDialog(
+            this,
+            recentVersions,
+            viewModel.InstalledGameVersion);
         bool? selectionResult = versionSelectionDialog.ShowDialog();
         if (selectionResult != true)
         {
@@ -3570,7 +3576,7 @@ public partial class MainWindow : Window
 
         targetVersion = targetVersion.Trim();
 
-        IReadOnlyList<ModListItemViewModel> mods = _viewModel.GetInstalledModsSnapshot();
+        IReadOnlyList<ModListItemViewModel> mods = viewModel.GetInstalledModsSnapshot();
         if (mods.Count == 0)
         {
             WpfMessageBox.Show(

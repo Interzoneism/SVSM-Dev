@@ -29,7 +29,8 @@
                  MaxHeight="260"
                  SelectionMode="Single"
                  MouseDoubleClick="VersionsListBox_OnMouseDoubleClick"
-                 SelectionChanged="VersionsListBox_OnSelectionChanged" />
+                 SelectionChanged="VersionsListBox_OnSelectionChanged"
+                 DisplayMemberPath="Display" />
 
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"
