@@ -154,6 +154,8 @@ public partial class MainWindow : Window
 
         TryInitializePaths();
 
+        UpdateGameVersionMenuItem(VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory));
+
         if (!string.IsNullOrWhiteSpace(_dataDirectory))
         {
             try
@@ -283,6 +285,23 @@ public partial class MainWindow : Window
         {
             AlwaysAddModlistsMenuItem.IsChecked = behavior == ModlistAutoLoadBehavior.Add;
         }
+    }
+
+    private void UpdateGameVersionMenuItem(string? gameVersion)
+    {
+        if (GameVersionMenuItem is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(gameVersion))
+        {
+            GameVersionMenuItem.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        GameVersionMenuItem.Header = $"Vintage Story: {gameVersion}";
+        GameVersionMenuItem.Visibility = Visibility.Visible;
     }
 
     private void ApplyStoredWindowDimensions()
@@ -417,6 +436,7 @@ public partial class MainWindow : Window
         UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
         AttachToModsView(_viewModel.CurrentModsView);
         RestoreSortPreference();
+        UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -1982,6 +2002,7 @@ public partial class MainWindow : Window
                 onlyShowCompatibleModDatabaseResults: _userConfiguration.OnlyShowCompatibleModDatabaseResults);
             newViewModel.PropertyChanged += ViewModelOnPropertyChanged;
             _viewModel = newViewModel;
+            UpdateGameVersionMenuItem(newViewModel.InstalledGameVersion);
             DataContext = newViewModel;
             ApplyPlayerIdentityToUiAndCloudStore();
             AttachToModsView(newViewModel.CurrentModsView);
@@ -4326,6 +4347,7 @@ public partial class MainWindow : Window
 
         _gameDirectory = selected;
         _userConfiguration.SetGameDirectory(selected);
+        UpdateGameVersionMenuItem(VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory));
     }
 
     private void ExitMenuItem_OnClick(object sender, RoutedEventArgs e)
