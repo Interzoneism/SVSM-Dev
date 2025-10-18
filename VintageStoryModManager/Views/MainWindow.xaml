@@ -497,14 +497,13 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="3"
-                            Orientation="Vertical"
-                            HorizontalAlignment="Right"
-                            Margin="0,10,24,33">
+                <Grid Grid.Column="3"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0,-28,24,71" Height="69" Grid.RowSpan="2">
                     <ToggleButton x:Name="SearchOptionsToggleButton"
-                                  Content="Search options"
-                                  HorizontalAlignment="Right"
-                                  Margin="0,0,0,6">
+                        Content="Search options"
+                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="50,5,0,0" Width="150">
                         <ToggleButton.Style>
                             <Style TargetType="{x:Type ToggleButton}">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -532,29 +531,29 @@
                         </ToggleButton.Style>
                     </ToggleButton>
                     <Popup PlacementTarget="{Binding ElementName=SearchOptionsToggleButton}"
-                           Placement="Bottom"
-                           IsOpen="{Binding IsChecked, ElementName=SearchOptionsToggleButton, Mode=TwoWay}"
-                           StaysOpen="False"
-                           AllowsTransparency="True"
-                           Focusable="False">
+                        Placement="Bottom"
+                        IsOpen="{Binding IsChecked, ElementName=SearchOptionsToggleButton, Mode=TwoWay}"
+                        StaysOpen="False"
+                        AllowsTransparency="True"
+                        Focusable="False" Margin="0,36,0,33">
                         <Border Background="{DynamicResource IMM.SurfaceBrush}"
-                                BorderBrush="{StaticResource IMM.BorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="6"
-                                Padding="12"
-                                MinWidth="252">
+                            BorderBrush="{StaticResource IMM.BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            MinWidth="252">
                             <StackPanel>
                                 <CheckBox Content="Include installed mods"
-                                          Margin="0,0,0,8"
-                                          IsChecked="{Binding IncludeInstalledModDatabaseResults, Mode=TwoWay}" />
+                                    Margin="0,0,0,8"
+                                    IsChecked="{Binding IncludeInstalledModDatabaseResults, Mode=TwoWay}" />
                                 <CheckBox Content="Only show compatible mods"
-                                          IsChecked="{Binding OnlyShowCompatibleModDatabaseResults, Mode=TwoWay}" />
+                                    IsChecked="{Binding OnlyShowCompatibleModDatabaseResults, Mode=TwoWay}" />
                             </StackPanel>
                         </Border>
                     </Popup>
                     <TextBox MinWidth="200"
-                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                             FontSize="14" HorizontalAlignment="Right" Width="227">
+                        Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                        FontSize="14" VerticalContentAlignment="Center" VerticalAlignment="Top" Margin="0,36,0,0">
                         <TextBox.Style>
                             <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
                                 <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
@@ -570,7 +569,7 @@
                             </Style>
                         </TextBox.Style>
                     </TextBox>
-                </StackPanel>
+                </Grid>
 
                 <StackPanel Grid.Column="0"
                             Orientation="Horizontal"
