@@ -80,7 +80,7 @@ public sealed class ModCompatibilityCommentsService
         if (!HttpClient.DefaultRequestHeaders.UserAgent.Any())
         {
             HttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("SimpleVSManager", "1.0"));
-            HttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("ExperimentalCompReview"));
+            HttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("ExperimentalCompReview", "1.0"));
         }
     }
 
