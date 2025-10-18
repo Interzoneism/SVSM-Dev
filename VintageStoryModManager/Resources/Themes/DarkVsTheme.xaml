@@ -4,8 +4,8 @@
     <!-- Vintage Story inspired dark theme palette -->
     <Color x:Key="IMM.AccentColor">#FF388BB1</Color>
     <Color x:Key="IMM.SurfaceColor">#FF544535</Color>
-    <Color x:Key="IMM.SurfaceAltColor">#FF3C3124</Color>
-    <Color x:Key="IMM.DataGridBackgroundColor">#FF3C3124</Color>
+    <Color x:Key="IMM.SurfaceAltColor">#FF3D3225</Color>
+    <Color x:Key="IMM.DataGridBackgroundColor">#FF3D3225</Color>
     <Color x:Key="IMM.MenuBackgroundColor">#FF544535</Color>
     <Color x:Key="IMM.BorderColor">#FF2D2321</Color>
     <Color x:Key="IMM.WindowBorderColor">#FF2D2321</Color>
@@ -33,7 +33,7 @@
     <Color x:Key="IMM.TagBackgroundColor">#FF3A3025</Color>
     <Color x:Key="IMM.TagBorderColor">#FF7C756C</Color>
     <Color x:Key="IMM.DataGridHeaderColor">#FF7D6955</Color>
-    <Color x:Key="IMM.DropdownGlyphColor">#FF7D6955</Color>
+    <Color x:Key="IMM.DropdownGlyphColor">#FFE0CFBB</Color>
 
     <SolidColorBrush x:Key="IMM.AccentBrush" Color="{StaticResource IMM.AccentColor}" />
     <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource IMM.SurfaceColor}" />
