@@ -343,6 +343,10 @@
                   Background="{StaticResource DVS.ForegroundBrush}"
                   Foreground="{StaticResource DVS.TextBrush}">
                 <Menu.Resources>
+                    <Color x:Key="IMM.MenuBaseColor">{StaticResource DVS.Foreground}</Color>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.MenuBrushKey}" Color="{StaticResource IMM.MenuBaseColor}" />
+                    <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="{StaticResource IMM.MenuBaseColor}" />
+                    <SolidColorBrush x:Key="{x:Static SystemColors.ControlLightBrushKey}" Color="{StaticResource IMM.MenuBaseColor}" />
                     <Style TargetType="{x:Type MenuItem}">
                         <Setter Property="Background" Value="{StaticResource DVS.ForegroundBrush}" />
                         <Setter Property="Foreground" Value="{StaticResource DVS.TextBrush}" />
@@ -505,18 +509,15 @@
                     Margin="0,-28,24,71" Height="69" Grid.RowSpan="2">
                     <ToggleButton x:Name="SearchOptionsToggleButton"
                         Content="Search options"
-                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="50,5,0,0" Width="150">
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Margin="50,5,0,0"
+                        Width="227">
                         <ToggleButton.Style>
-                            <Style TargetType="{x:Type ToggleButton}">
+                            <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource IMM.ToggleButtonBaseStyle}">
                                 <Setter Property="Visibility" Value="Collapsed" />
-                                <Setter Property="Width" Value="227" />
-                                <Setter Property="Padding" Value="12,6" />
-                                <Setter Property="Background" Value="{StaticResource DVS.ForegroundBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
-                                <Setter Property="Foreground" Value="{StaticResource DVS.TextBrush}" />
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
-                                <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                         <Setter Property="Visibility" Value="Visible" />
@@ -524,14 +525,6 @@
                                     <DataTrigger Binding="{Binding SearchModDatabase}" Value="False">
                                         <Setter Property="IsChecked" Value="False" />
                                     </DataTrigger>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource DVS.ElementBrightBrush}" />
-                                        <Setter Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
-                                    </Trigger>
-                                    <Trigger Property="IsChecked" Value="True">
-                                        <Setter Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
-                                        <Setter Property="Background" Value="{StaticResource DVS.BackgroundBrush}" />
-                                    </Trigger>
                                 </Style.Triggers>
                             </Style>
                         </ToggleButton.Style>
