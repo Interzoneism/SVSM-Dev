@@ -91,6 +91,7 @@
         <Setter Property="Background" Value="{StaticResource IMM.MenuBackgroundBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
         <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="12,6,12,6" />
         <Style.Resources>
             <ControlTemplate x:Key="{x:Static MenuItem.TopLevelHeaderTemplateKey}"
                              TargetType="{x:Type MenuItem}">
@@ -141,6 +142,227 @@
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Foreground" Value="{StaticResource IMM.SubtleForegroundBrush}" />
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+            <ControlTemplate x:Key="{x:Static MenuItem.TopLevelItemTemplateKey}"
+                             TargetType="{x:Type MenuItem}">
+                <Grid SnapsToDevicePixels="True">
+                    <Border x:Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          RecognizesAccessKey="True"
+                                          ContentSource="Header"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Border>
+                </Grid>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsHighlighted" Value="True">
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Foreground" Value="{StaticResource IMM.SubtleForegroundBrush}" />
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+            <ControlTemplate x:Key="{x:Static MenuItem.SubmenuHeaderTemplateKey}"
+                             TargetType="{x:Type MenuItem}">
+                <Grid SnapsToDevicePixels="True">
+                    <Border x:Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <Grid VerticalAlignment="Center"
+                              Grid.IsSharedSizeScope="True">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemCheckColumnGroup" />
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIconColumnGroup" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIGTColumnGroup" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="CheckMark"
+                                       Margin="0,0,8,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontFamily="{TemplateBinding FontFamily}"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       Text="☐"
+                                       Visibility="Collapsed" />
+                            <ContentPresenter x:Name="Icon"
+                                              Grid.Column="1"
+                                              Margin="0,0,8,0"
+                                              VerticalAlignment="Center"
+                                              ContentSource="Icon"
+                                              RecognizesAccessKey="True" />
+                            <ContentPresenter x:Name="HeaderHost"
+                                              Grid.Column="2"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"
+                                              ContentSource="Header"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                            <TextBlock x:Name="InputGestureText"
+                                       Grid.Column="3"
+                                       Margin="24,0,0,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       Text="{TemplateBinding InputGestureText}" />
+                            <Path x:Name="Arrow"
+                                  Grid.Column="4"
+                                  Margin="12,0,0,0"
+                                  VerticalAlignment="Center"
+                                  Fill="{StaticResource IMM.DropdownGlyphBrush}"
+                                  Data="M 0 0 L 4 4 L 0 8 Z"
+                                  Visibility="Collapsed" />
+                        </Grid>
+                    </Border>
+                    <Popup x:Name="PART_Popup"
+                           Placement="Right"
+                           HorizontalOffset="0"
+                           VerticalOffset="-1"
+                           IsOpen="{TemplateBinding IsSubmenuOpen}"
+                           AllowsTransparency="True"
+                           Focusable="False"
+                           PopupAnimation="Fade">
+                        <Border x:Name="SubMenuBorder"
+                                Background="{StaticResource IMM.MenuBackgroundBrush}"
+                                BorderBrush="{StaticResource IMM.BorderBrush}"
+                                BorderThickness="1"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer CanContentScroll="True">
+                                <StackPanel IsItemsHost="True"
+                                            KeyboardNavigation.DirectionalNavigation="Cycle" />
+                            </ScrollViewer>
+                        </Border>
+                    </Popup>
+                </Grid>
+                <ControlTemplate.Triggers>
+                    <Trigger SourceName="Icon" Property="Content" Value="{x:Null}">
+                        <Setter TargetName="Icon" Property="Visibility" Value="Collapsed" />
+                    </Trigger>
+                    <Trigger Property="InputGestureText" Value="">
+                        <Setter TargetName="InputGestureText" Property="Visibility" Value="Collapsed" />
+                    </Trigger>
+                    <Trigger Property="InputGestureText" Value="{x:Null}">
+                        <Setter TargetName="InputGestureText" Property="Visibility" Value="Collapsed" />
+                    </Trigger>
+                    <Trigger Property="IsCheckable" Value="True">
+                        <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                    </Trigger>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter TargetName="CheckMark" Property="Text" Value="🗹" />
+                    </Trigger>
+                    <Trigger Property="IsChecked" Value="False">
+                        <Setter TargetName="CheckMark" Property="Text" Value="☐" />
+                    </Trigger>
+                    <Trigger Property="HasItems" Value="True">
+                        <Setter TargetName="Arrow" Property="Visibility" Value="Visible" />
+                    </Trigger>
+                    <Trigger Property="IsSubmenuOpen" Value="True">
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource IMM.TextBrush}" />
+                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource IMM.TextBrush}" />
+                    </Trigger>
+                    <Trigger Property="IsHighlighted" Value="True">
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource IMM.TextBrush}" />
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Foreground" Value="{StaticResource IMM.SubtleForegroundBrush}" />
+                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource IMM.SubtleForegroundBrush}" />
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+            <ControlTemplate x:Key="{x:Static MenuItem.SubmenuItemTemplateKey}"
+                             TargetType="{x:Type MenuItem}">
+                <Grid SnapsToDevicePixels="True">
+                    <Border x:Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <Grid VerticalAlignment="Center"
+                              Grid.IsSharedSizeScope="True">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemCheckColumnGroup" />
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIconColumnGroup" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIGTColumnGroup" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="CheckMark"
+                                       Margin="0,0,8,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontFamily="{TemplateBinding FontFamily}"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       Text="☐"
+                                       Visibility="Collapsed" />
+                            <ContentPresenter x:Name="Icon"
+                                              Grid.Column="1"
+                                              Margin="0,0,8,0"
+                                              VerticalAlignment="Center"
+                                              ContentSource="Icon"
+                                              RecognizesAccessKey="True" />
+                            <ContentPresenter x:Name="HeaderHost"
+                                              Grid.Column="2"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"
+                                              ContentSource="Header"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                            <TextBlock x:Name="InputGestureText"
+                                       Grid.Column="3"
+                                       Margin="24,0,0,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       Text="{TemplateBinding InputGestureText}" />
+                            <Path x:Name="Arrow"
+                                  Grid.Column="4"
+                                  Margin="12,0,0,0"
+                                  VerticalAlignment="Center"
+                                  Fill="{StaticResource IMM.DropdownGlyphBrush}"
+                                  Data="M 0 0 L 4 4 L 0 8 Z"
+                                  Visibility="Collapsed" />
+                        </Grid>
+                    </Border>
+                </Grid>
+                <ControlTemplate.Triggers>
+                    <Trigger SourceName="Icon" Property="Content" Value="{x:Null}">
+                        <Setter TargetName="Icon" Property="Visibility" Value="Collapsed" />
+                    </Trigger>
+                    <Trigger Property="InputGestureText" Value="">
+                        <Setter TargetName="InputGestureText" Property="Visibility" Value="Collapsed" />
+                    </Trigger>
+                    <Trigger Property="InputGestureText" Value="{x:Null}">
+                        <Setter TargetName="InputGestureText" Property="Visibility" Value="Collapsed" />
+                    </Trigger>
+                    <Trigger Property="IsCheckable" Value="True">
+                        <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                    </Trigger>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter TargetName="CheckMark" Property="Text" Value="🗹" />
+                    </Trigger>
+                    <Trigger Property="IsChecked" Value="False">
+                        <Setter TargetName="CheckMark" Property="Text" Value="☐" />
+                    </Trigger>
+                    <Trigger Property="HasItems" Value="True">
+                        <Setter TargetName="Arrow" Property="Visibility" Value="Visible" />
+                    </Trigger>
+                    <Trigger Property="IsHighlighted" Value="True">
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource IMM.TextBrush}" />
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Foreground" Value="{StaticResource IMM.SubtleForegroundBrush}" />
+                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource IMM.SubtleForegroundBrush}" />
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
