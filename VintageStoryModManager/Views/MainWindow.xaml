@@ -315,7 +315,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <SolidColorBrush x:Key="ButtonError" Color="{StaticResource IMM.SelectionForegroundColor}"/>
+        <SolidColorBrush x:Key="ButtonError" Color="{DynamicResource IMM.ErrorBrush}"/>
     </Window.Resources>
 
     <Grid Background="{DynamicResource GridBackground1}" Margin="0,0,0,8">

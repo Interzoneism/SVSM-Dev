@@ -78,4 +78,5 @@
     <SolidColorBrush x:Key="IMM.AlertOverlayBrush" Color="{StaticResource IMM.SelectionForegroundColor}" Opacity="0.4" />
     <SolidColorBrush x:Key="IMM.SuccessOverlayBrush" Color="{StaticResource IMM.SuccessColor}" Opacity="0.7" />
     <SolidColorBrush x:Key="IMM.SubtleForegroundBrush" Color="{StaticResource IMM.PlaceholderForegroundColor}" />
+    <SolidColorBrush x:Key="IMM.ErrorBrush" Color="#FFE06B6B" />
 </ResourceDictionary>
