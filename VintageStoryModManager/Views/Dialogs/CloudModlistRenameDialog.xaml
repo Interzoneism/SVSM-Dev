@@ -10,10 +10,10 @@
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
         Loaded="Window_OnLoaded"
-        Background="{StaticResource IMM.WindowBackgroundBrush}">
+        Background="{StaticResource DVS.ForegroundBrush}">
     <Grid Margin="20"
-          Background="{StaticResource IMM.SurfaceBrush}"
-          TextElement.Foreground="{StaticResource IMM.ForegroundBrush}">
+          Background="{StaticResource DVS.ForegroundBrush}"
+          TextElement.Foreground="{StaticResource DVS.TextBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -30,11 +30,11 @@
                  MinWidth="220"
                  Margin="0,0,0,12"
                  TextChanged="NameTextBox_OnTextChanged"
-                 Background="{StaticResource IMM.SurfaceAltBrush}"
-                 BorderBrush="{StaticResource IMM.ButtonBorderBrush}"
-                 SelectionBrush="{StaticResource IMM.AccentBrush}"
-                 SelectionTextBrush="{StaticResource IMM.SelectionForegroundBrush}"
-                 CaretBrush="{StaticResource IMM.AccentBrush}" />
+                 Background="{StaticResource DVS.BackgroundBrush}"
+                 BorderBrush="{StaticResource DVS.ElementBrightBrush}"
+                 SelectionBrush="{StaticResource DVS.ElementBrightBrush}"
+                 SelectionTextBrush="{StaticResource DVS.TextImportantBrush}"
+                 CaretBrush="{StaticResource DVS.ElementBrightBrush}" />
 
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"

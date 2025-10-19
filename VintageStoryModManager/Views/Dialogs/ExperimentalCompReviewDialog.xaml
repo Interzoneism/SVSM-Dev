@@ -10,10 +10,10 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         WindowStyle="SingleBorderWindow"
-        Background="{StaticResource IMM.WindowBackgroundBrush}">
+        Background="{StaticResource DVS.ForegroundBrush}">
     <Grid Margin="24"
-          Background="{StaticResource IMM.SurfaceBrush}"
-          TextElement.Foreground="{StaticResource IMM.ForegroundBrush}">
+          Background="{StaticResource DVS.ForegroundBrush}"
+          TextElement.Foreground="{StaticResource DVS.TextBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -51,11 +51,11 @@
                      Margin="0,0,0,8"
                      VerticalAlignment="Center"
                      HorizontalAlignment="Stretch"
-                     Background="{StaticResource IMM.SurfaceAltBrush}"
-                     BorderBrush="{StaticResource IMM.ButtonBorderBrush}"
-                     SelectionBrush="{StaticResource IMM.AccentBrush}"
-                     SelectionTextBrush="{StaticResource IMM.SelectionForegroundBrush}"
-                     CaretBrush="{StaticResource IMM.AccentBrush}" />
+                     Background="{StaticResource DVS.BackgroundBrush}"
+                     BorderBrush="{StaticResource DVS.ElementBrightBrush}"
+                     SelectionBrush="{StaticResource DVS.ElementBrightBrush}"
+                     SelectionTextBrush="{StaticResource DVS.TextImportantBrush}"
+                     CaretBrush="{StaticResource DVS.ElementBrightBrush}" />
 
             <TextBlock Grid.Row="1"
                        Grid.Column="0"
@@ -69,22 +69,22 @@
                      MinWidth="200"
                      VerticalAlignment="Center"
                      HorizontalAlignment="Stretch"
-                     Background="{StaticResource IMM.SurfaceAltBrush}"
-                     BorderBrush="{StaticResource IMM.ButtonBorderBrush}"
-                     SelectionBrush="{StaticResource IMM.AccentBrush}"
-                     SelectionTextBrush="{StaticResource IMM.SelectionForegroundBrush}"
-                     CaretBrush="{StaticResource IMM.AccentBrush}" />
+                     Background="{StaticResource DVS.BackgroundBrush}"
+                     BorderBrush="{StaticResource DVS.ElementBrightBrush}"
+                     SelectionBrush="{StaticResource DVS.ElementBrightBrush}"
+                     SelectionTextBrush="{StaticResource DVS.TextImportantBrush}"
+                     CaretBrush="{StaticResource DVS.ElementBrightBrush}" />
         </Grid>
 
         <Border Grid.Row="2"
-                BorderBrush="{StaticResource IMM.BorderBrush}"
+                BorderBrush="{StaticResource DVS.BackgroundBrush}"
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="12"
-                Background="{StaticResource IMM.SurfaceAltBrush}">
+                Background="{StaticResource DVS.BackgroundBrush}">
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Auto"
-                          Background="{StaticResource IMM.DataGridBackgroundBrush}">
+                          Background="{StaticResource DVS.BackgroundBrush}">
                 <TextBox x:Name="ResultsTextBox"
                          FontFamily="Consolas"
                          FontSize="13"
@@ -94,7 +94,7 @@
                          IsReadOnly="True"
                          BorderThickness="0"
                          Background="Transparent"
-                         Foreground="{StaticResource IMM.ForegroundBrush}" />
+                         Foreground="{StaticResource DVS.TextBrush}" />
             </ScrollViewer>
         </Border>
 
@@ -107,7 +107,7 @@
             <TextBlock x:Name="StatusTextBlock"
                        Grid.Column="0"
                        VerticalAlignment="Center"
-                       Foreground="{StaticResource IMM.ImportantForegroundBrush}"
+                       Foreground="{StaticResource DVS.TextImportantBrush}"
                        Text="Ready." />
 
             <StackPanel Grid.Column="1"
