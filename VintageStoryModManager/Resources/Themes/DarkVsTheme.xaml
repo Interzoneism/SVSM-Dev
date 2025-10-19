@@ -8,6 +8,7 @@
     <Color x:Key="DVS.Foreground">#FF403529</Color>
     <Color x:Key="DVS.Element">#FF53493E</Color>
     <Color x:Key="DVS.ElementBright">#FFE0CFBB</Color>
+    <Color x:Key="DVS.HoverColor">#FFF1D8BF</Color>
     <Color x:Key="DVS.Error">#FF8C3F3F</Color>
 
     <SolidColorBrush x:Key="DVS.TextBrush" Color="{StaticResource DVS.Text}" />
@@ -16,6 +17,7 @@
     <SolidColorBrush x:Key="DVS.ForegroundBrush" Color="{StaticResource DVS.Foreground}" />
     <SolidColorBrush x:Key="DVS.ElementBrush" Color="{StaticResource DVS.Element}" />
     <SolidColorBrush x:Key="DVS.ElementBrightBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="DVS.HoverBrush" Color="{StaticResource DVS.HoverColor}" />
     <SolidColorBrush x:Key="DVS.ErrorBrush" Color="{StaticResource DVS.Error}" />
 
     <!-- Legacy IMM brushes mapped to the simplified palette -->
@@ -29,9 +31,9 @@
     <SolidColorBrush x:Key="IMM.BorderBrush" options:Freeze="False" Color="{StaticResource DVS.Background}" />
     <SolidColorBrush x:Key="IMM.WindowBorderBrush" Color="{StaticResource DVS.Background}" />
     <SolidColorBrush x:Key="IMM.RowBorderBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.BorderHoverBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.BorderHoverBrush" Color="{StaticResource DVS.HoverColor}" />
     <SolidColorBrush x:Key="IMM.ButtonBackgroundBrush" options:Freeze="False" Color="{StaticResource DVS.Element}" />
-    <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource DVS.HoverColor}" />
     <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="{StaticResource DVS.Background}" />
     <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="{StaticResource DVS.Background}" Opacity="0.6" />
     <SolidColorBrush x:Key="IMM.ButtonBorderBrush" Color="{StaticResource DVS.ElementBright}" />
