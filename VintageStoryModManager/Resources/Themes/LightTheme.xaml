@@ -37,14 +37,6 @@
     <Color x:Key="IMM.DataGridHeaderColor">#FFEFF3F9</Color>
     <Color x:Key="IMM.DropdownGlyphColor">#FF1C2635</Color>
 
-    <LinearGradientBrush x:Key="DVS.BorderDepth"
-                         StartPoint="0,0"
-                         EndPoint="1,1"
-                         MappingMode="RelativeToBoundingBox">
-        <GradientStop Color="{StaticResource IMM.ButtonHoverColor}" Offset="0" />
-        <GradientStop Color="{StaticResource IMM.ButtonBorderColor}" Offset="1" />
-    </LinearGradientBrush>
-
     <SolidColorBrush x:Key="IMM.AccentBrush" Color="{StaticResource IMM.AccentColor}" />
     <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource IMM.SurfaceColor}" />
     <SolidColorBrush x:Key="IMM.SurfaceAltBrush" Color="{StaticResource IMM.SurfaceAltColor}" />
@@ -61,6 +53,7 @@
     <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource IMM.ButtonHoverColor}" />
     <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="{StaticResource IMM.ButtonPressedColor}" />
     <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="{StaticResource IMM.ButtonDisabledColor}" />
+    <SolidColorBrush x:Key="IMM.ButtonBorderBrush" Color="{StaticResource IMM.ButtonBorderColor}" />
     <SolidColorBrush x:Key="IMM.ToggleOffBrush" Color="{StaticResource IMM.ToggleOffColor}" />
     <SolidColorBrush x:Key="IMM.ToggleThumbBrush" Color="{StaticResource IMM.ToggleThumbColor}" />
     <SolidColorBrush x:Key="IMM.ToggleDisabledBrush" Color="{StaticResource IMM.ToggleDisabledColor}" />
