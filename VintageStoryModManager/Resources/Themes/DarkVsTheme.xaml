@@ -18,83 +18,47 @@
     <SolidColorBrush x:Key="DVS.ElementBrightBrush" Color="{StaticResource DVS.ElementBright}" />
     <SolidColorBrush x:Key="DVS.ErrorBrush" Color="{StaticResource DVS.Error}" />
 
-    <!-- Legacy IMM color keys mapped to the simplified palette -->
-    <Color x:Key="IMM.AccentColor">{StaticResource DVS.ElementBright}</Color>
-    <Color x:Key="IMM.SurfaceColor">{StaticResource DVS.Foreground}</Color>
-    <Color x:Key="IMM.SurfaceAltColor">{StaticResource DVS.Background}</Color>
-    <Color x:Key="IMM.DataGridBackgroundColor">{StaticResource DVS.Background}</Color>
-    <Color x:Key="IMM.NewDataGridBackground">{StaticResource DVS.Foreground}</Color>
-    <Color x:Key="IMM.RowsAndCards">{StaticResource DVS.Foreground}</Color>
-    <Color x:Key="IMM.MenuBackgroundColor">{StaticResource DVS.Foreground}</Color>
-    <Color x:Key="IMM.BorderColor">{StaticResource DVS.Background}</Color>
-    <Color x:Key="IMM.WindowBorderColor">{StaticResource DVS.Background}</Color>
-    <Color x:Key="IMM.RowBorderColor">{StaticResource DVS.Background}</Color>
-    <Color x:Key="IMM.BorderHoverColor">{StaticResource DVS.ElementBright}</Color>
-    <Color x:Key="IMM.ButtonBackgroundColor">{StaticResource DVS.Element}</Color>
-    <Color x:Key="IMM.ButtonHoverColor">{StaticResource DVS.ElementBright}</Color>
-    <Color x:Key="IMM.ButtonPressedColor">{StaticResource DVS.Background}</Color>
-    <Color x:Key="IMM.ButtonDisabledColor">{StaticResource DVS.Background}</Color>
-    <Color x:Key="IMM.ButtonBorderColor">{StaticResource DVS.ElementBright}</Color>
-    <Color x:Key="IMM.ToggleOffColor">{StaticResource DVS.Background}</Color>
-    <Color x:Key="IMM.ToggleThumbColor">{StaticResource DVS.ElementBright}</Color>
-    <Color x:Key="IMM.ToggleDisabledColor">{StaticResource DVS.Background}</Color>
-    <Color x:Key="IMM.ToggleDisabledThumbColor">{StaticResource DVS.ElementBright}</Color>
-    <Color x:Key="IMM.PlaceholderForegroundColor">{StaticResource DVS.Text}</Color>
-    <Color x:Key="IMM.ForegroundColor">{StaticResource DVS.Text}</Color>
-    <Color x:Key="IMM.ImportantForegroundColor">{StaticResource DVS.TextImportant}</Color>
-    <Color x:Key="IMM.SelectionForegroundColor">{StaticResource DVS.TextImportant}</Color>
-    <Color x:Key="IMM.LinkForegroundColor">{StaticResource DVS.TextImportant}</Color>
-    <Color x:Key="IMM.SuccessColor">{StaticResource DVS.ElementBright}</Color>
-    <Color x:Key="IMM.RowHoverColor">{StaticResource DVS.Element}</Color>
-    <Color x:Key="IMM.RowSelectionColor">{StaticResource DVS.ElementBright}</Color>
-    <Color x:Key="IMM.ScrollBarThumbColor">{StaticResource DVS.Element}</Color>
-    <Color x:Key="IMM.SearchBoxBackgroundColor">{StaticResource DVS.Background}</Color>
-    <Color x:Key="IMM.TagBackgroundColor">{StaticResource DVS.Background}</Color>
-    <Color x:Key="IMM.TagBorderColor">{StaticResource DVS.ElementBright}</Color>
-    <Color x:Key="IMM.DataGridHeaderColor">{StaticResource DVS.Element}</Color>
-    <Color x:Key="IMM.DropdownGlyphColor">{StaticResource DVS.ElementBright}</Color>
-    <Color x:Key="IMM.InputBackgroundColor">{StaticResource DVS.Background}</Color>
-
-    <SolidColorBrush x:Key="IMM.AccentBrush" Color="{StaticResource IMM.AccentColor}" />
-    <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource IMM.SurfaceColor}" />
-    <SolidColorBrush x:Key="IMM.SurfaceAltBrush" Color="{StaticResource IMM.SurfaceAltColor}" />
-    <SolidColorBrush x:Key="IMM.DataGridBackgroundBrush" Color="{StaticResource IMM.DataGridBackgroundColor}" />
-    <SolidColorBrush x:Key="IMM.NewDataGridBackgroundBrush" Color="{StaticResource IMM.NewDataGridBackground}" />
-    <SolidColorBrush x:Key="IMM.RowsAndCardsBrush" Color="{StaticResource IMM.RowsAndCards}" />
-    <SolidColorBrush x:Key="IMM.MenuBackgroundBrush" Color="{StaticResource IMM.MenuBackgroundColor}" />
-    <SolidColorBrush x:Key="IMM.BorderBrush" options:Freeze="False" Color="{StaticResource IMM.BorderColor}" />
-    <SolidColorBrush x:Key="IMM.WindowBorderBrush" Color="{StaticResource IMM.WindowBorderColor}" />
-    <SolidColorBrush x:Key="IMM.RowBorderBrush" Color="{StaticResource IMM.RowBorderColor}" />
-    <SolidColorBrush x:Key="IMM.BorderHoverBrush" Color="{StaticResource IMM.BorderHoverColor}" />
-    <SolidColorBrush x:Key="IMM.ButtonBackgroundBrush" options:Freeze="False" Color="{StaticResource IMM.ButtonBackgroundColor}" />
-    <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource IMM.ButtonHoverColor}" />
-    <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="{StaticResource IMM.ButtonPressedColor}" />
-    <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="{StaticResource IMM.ButtonDisabledColor}" Opacity="0.6" />
-    <SolidColorBrush x:Key="IMM.ButtonBorderBrush" Color="{StaticResource IMM.ButtonBorderColor}" />
-    <SolidColorBrush x:Key="IMM.ToggleOffBrush" Color="{StaticResource IMM.ToggleOffColor}" />
-    <SolidColorBrush x:Key="IMM.ToggleThumbBrush" Color="{StaticResource IMM.ToggleThumbColor}" />
-    <SolidColorBrush x:Key="IMM.ToggleDisabledBrush" Color="{StaticResource IMM.ToggleDisabledColor}" Opacity="0.7" />
-    <SolidColorBrush x:Key="IMM.ToggleDisabledThumbBrush" Color="{StaticResource IMM.ToggleDisabledThumbColor}" Opacity="0.5" />
-    <SolidColorBrush x:Key="IMM.PlaceholderForegroundBrush" Color="{StaticResource IMM.PlaceholderForegroundColor}" Opacity="0.6" />
-    <SolidColorBrush x:Key="IMM.ForegroundBrush" Color="{StaticResource IMM.ForegroundColor}" />
-    <SolidColorBrush x:Key="IMM.BodyForegroundBrush" Color="{StaticResource IMM.ForegroundColor}" />
-    <SolidColorBrush x:Key="IMM.ImportantForegroundBrush" Color="{StaticResource IMM.ImportantForegroundColor}" />
-    <SolidColorBrush x:Key="IMM.SelectionForegroundBrush" Color="{StaticResource IMM.SelectionForegroundColor}" />
-    <SolidColorBrush x:Key="IMM.LinkForegroundBrush" Color="{StaticResource IMM.LinkForegroundColor}" />
-    <SolidColorBrush x:Key="IMM.SuccessBrush" Color="{StaticResource IMM.SuccessColor}" />
-    <SolidColorBrush x:Key="IMM.RowHoverBrush" Color="{StaticResource IMM.RowHoverColor}" Opacity="0.3" />
-    <SolidColorBrush x:Key="IMM.RowSelectionBrush" Color="{StaticResource IMM.RowSelectionColor}" Opacity="0.35" />
-    <SolidColorBrush x:Key="IMM.ScrollBarThumbBrush" Color="{StaticResource IMM.ScrollBarThumbColor}" />
-    <SolidColorBrush x:Key="IMM.SearchBoxBackgroundBrush" Color="{StaticResource IMM.SearchBoxBackgroundColor}" />
-    <SolidColorBrush x:Key="IMM.TagBackgroundBrush" Color="{StaticResource IMM.TagBackgroundColor}" />
-    <SolidColorBrush x:Key="IMM.TagBorderBrush" Color="{StaticResource IMM.TagBorderColor}" />
-    <SolidColorBrush x:Key="IMM.DataGridHeaderBrush" Color="{StaticResource IMM.DataGridHeaderColor}" />
-    <SolidColorBrush x:Key="IMM.DropdownGlyphBrush" Color="{StaticResource IMM.DropdownGlyphColor}" />
-    <SolidColorBrush x:Key="IMM.InputBackgroundBrush" Color="{StaticResource IMM.InputBackgroundColor}" />
-    <SolidColorBrush x:Key="IMM.WindowBackgroundBrush" Color="{StaticResource IMM.SurfaceColor}" />
-    <SolidColorBrush x:Key="IMM.AlertOverlayBrush" Color="{StaticResource IMM.SelectionForegroundColor}" Opacity="0.45" />
-    <SolidColorBrush x:Key="IMM.SuccessOverlayBrush" Color="{StaticResource IMM.SuccessColor}" Opacity="0.6" />
-    <SolidColorBrush x:Key="IMM.SubtleForegroundBrush" Color="{StaticResource IMM.PlaceholderForegroundColor}" Opacity="0.6" />
+    <!-- Legacy IMM brushes mapped to the simplified palette -->
+    <SolidColorBrush x:Key="IMM.AccentBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource DVS.Foreground}" />
+    <SolidColorBrush x:Key="IMM.SurfaceAltBrush" Color="{StaticResource DVS.Background}" />
+    <SolidColorBrush x:Key="IMM.DataGridBackgroundBrush" Color="{StaticResource DVS.Background}" />
+    <SolidColorBrush x:Key="IMM.NewDataGridBackgroundBrush" Color="{StaticResource DVS.Foreground}" />
+    <SolidColorBrush x:Key="IMM.RowsAndCardsBrush" Color="{StaticResource DVS.Foreground}" />
+    <SolidColorBrush x:Key="IMM.MenuBackgroundBrush" Color="{StaticResource DVS.Foreground}" />
+    <SolidColorBrush x:Key="IMM.BorderBrush" options:Freeze="False" Color="{StaticResource DVS.Background}" />
+    <SolidColorBrush x:Key="IMM.WindowBorderBrush" Color="{StaticResource DVS.Background}" />
+    <SolidColorBrush x:Key="IMM.RowBorderBrush" Color="{StaticResource DVS.Background}" />
+    <SolidColorBrush x:Key="IMM.BorderHoverBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.ButtonBackgroundBrush" options:Freeze="False" Color="{StaticResource DVS.Element}" />
+    <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="{StaticResource DVS.Background}" />
+    <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="{StaticResource DVS.Background}" Opacity="0.6" />
+    <SolidColorBrush x:Key="IMM.ButtonBorderBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.ToggleOffBrush" Color="{StaticResource DVS.Background}" />
+    <SolidColorBrush x:Key="IMM.ToggleThumbBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.ToggleDisabledBrush" Color="{StaticResource DVS.Background}" Opacity="0.7" />
+    <SolidColorBrush x:Key="IMM.ToggleDisabledThumbBrush" Color="{StaticResource DVS.ElementBright}" Opacity="0.5" />
+    <SolidColorBrush x:Key="IMM.PlaceholderForegroundBrush" Color="{StaticResource DVS.Text}" Opacity="0.6" />
+    <SolidColorBrush x:Key="IMM.ForegroundBrush" Color="{StaticResource DVS.Text}" />
+    <SolidColorBrush x:Key="IMM.BodyForegroundBrush" Color="{StaticResource DVS.Text}" />
+    <SolidColorBrush x:Key="IMM.ImportantForegroundBrush" Color="{StaticResource DVS.TextImportant}" />
+    <SolidColorBrush x:Key="IMM.SelectionForegroundBrush" Color="{StaticResource DVS.TextImportant}" />
+    <SolidColorBrush x:Key="IMM.LinkForegroundBrush" Color="{StaticResource DVS.TextImportant}" />
+    <SolidColorBrush x:Key="IMM.SuccessBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.RowHoverBrush" Color="{StaticResource DVS.Element}" Opacity="0.3" />
+    <SolidColorBrush x:Key="IMM.RowSelectionBrush" Color="{StaticResource DVS.ElementBright}" Opacity="0.35" />
+    <SolidColorBrush x:Key="IMM.ScrollBarThumbBrush" Color="{StaticResource DVS.Element}" />
+    <SolidColorBrush x:Key="IMM.SearchBoxBackgroundBrush" Color="{StaticResource DVS.Background}" />
+    <SolidColorBrush x:Key="IMM.TagBackgroundBrush" Color="{StaticResource DVS.Background}" />
+    <SolidColorBrush x:Key="IMM.TagBorderBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.DataGridHeaderBrush" Color="{StaticResource DVS.Element}" />
+    <SolidColorBrush x:Key="IMM.DropdownGlyphBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.InputBackgroundBrush" Color="{StaticResource DVS.Background}" />
+    <SolidColorBrush x:Key="IMM.WindowBackgroundBrush" Color="{StaticResource DVS.Foreground}" />
+    <SolidColorBrush x:Key="IMM.AlertOverlayBrush" Color="{StaticResource DVS.TextImportant}" Opacity="0.45" />
+    <SolidColorBrush x:Key="IMM.SuccessOverlayBrush" Color="{StaticResource DVS.ElementBright}" Opacity="0.6" />
+    <SolidColorBrush x:Key="IMM.SubtleForegroundBrush" Color="{StaticResource DVS.Text}" Opacity="0.6" />
     <SolidColorBrush x:Key="IMM.ErrorBrush" Color="{StaticResource DVS.Error}" />
 
     <Style TargetType="{x:Type Menu}">
