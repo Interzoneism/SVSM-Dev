@@ -122,7 +122,7 @@
             <Setter Property="Background" Value="{StaticResource DVS.ElementBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
             <Setter Property="BorderThickness" Value="1,0,0,1" />
-            <Setter Property="Foreground" Value="{StaticResource DVS.TextImportantBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource DVS.TextBrush}" />
             <Setter Property="Margin" Value="0,0,0,6" />
             <Setter Property="Padding" Value="12,10" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -349,7 +349,7 @@
                     </Style>
                 </Menu.Resources>
 
-                <MenuItem Header="_File" Height="35">
+                <MenuItem Header="_File" Height="35" >
                     <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
                     <MenuItem Header="Set Custom Vintage Story Shortcut" Height="35" Click="SetCustomShortcutMenuItem_OnClick" />
@@ -364,7 +364,7 @@
                               IsCheckable="True"
                               Style="{StaticResource ToggleMenuItemStyle}"
                               Click="DisableInternetAccessMenuItem_OnClick" />
-                    <Separator />
+                    <Separator  />
                     <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_Mods" Height="35" SubmenuOpened="ModsMenuItem_OnSubmenuOpened">
@@ -748,7 +748,7 @@
                   PreviewMouseLeftButtonDown="ModsDataGrid_OnPreviewMouseLeftButtonDown"
                   PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                   Sorting="ModsDataGrid_OnSorting"
-                  RowBackground="{DynamicResource DVS.ForegroundBrush}"
+                  RowBackground="{DynamicResource DVS.ElementBrush}"
                   HorizontalGridLinesBrush="Transparent"
                   VerticalGridLinesBrush="Transparent"
                   HeadersVisibility="Column"
@@ -758,6 +758,7 @@
                         <Style TargetType="{x:Type ScrollBar}">
                             <Setter Property="Background" Value="{StaticResource DVS.BackgroundBrush}" />
                             <Setter Property="Foreground" Value="{StaticResource DVS.ElementBrush}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
                         </Style>
                         <Style TargetType="{x:Type TextBlock}">
                             <Setter Property="TextWrapping" Value="Wrap" />
@@ -765,7 +766,7 @@
                         <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
                     </DataGrid.Resources>
                     <DataGrid.Background>
-                        <SolidColorBrush Color="{DynamicResource DVS.Foreground}"/>
+                        <SolidColorBrush Color="{DynamicResource DVS.Background}"/>
                     </DataGrid.Background>
                     <DataGrid.CellStyle>
                         <StaticResource ResourceKey="IMM.DataGridCellBaseStyle"/>
@@ -1378,7 +1379,7 @@
                               FontSize="15"
                               Foreground="{StaticResource DVS.TextBrush}"
                               SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged"
-                              Grid.RowSpan="2">
+                              Grid.RowSpan="2" Background="{DynamicResource DVS.BackgroundBrush}">
                         <DataGrid.Resources>
                             <Style TargetType="{x:Type ScrollBar}">
                                 <Setter Property="Background" Value="{StaticResource DVS.BackgroundBrush}" />
@@ -1392,9 +1393,6 @@
                         <DataGrid.RowBackground>
                             <DynamicResource ResourceKey="DVS.ForegroundBrush"/>
                         </DataGrid.RowBackground>
-                        <DataGrid.Background>
-                            <DynamicResource ResourceKey="DVS.ForegroundBrush"/>
-                        </DataGrid.Background>
                         <DataGrid.CellStyle>
                             <StaticResource ResourceKey="IMM.DataGridCellBaseStyle" />
                         </DataGrid.CellStyle>
@@ -1694,7 +1692,7 @@
             </Grid>
             <ListView x:Name="ModDatabaseCardsListView"
                       ItemsSource="{Binding CurrentModsView}"
-                      Background="{DynamicResource DVS.ForegroundBrush}"
+                      Background="{DynamicResource DVS.BackgroundBrush}"
                       BorderThickness="1,1,1,1"
                       Margin="0,32,0,0"
                       SelectionMode="Single"
