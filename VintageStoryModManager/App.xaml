@@ -13,43 +13,6 @@
                 <ResourceDictionary Source="Resources/Themes/DarkVsTheme.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Vintage Story dialog and text colors extracted from GuiStyle -->
-            <Color x:Key="VS.DialogLightBackgroundColor">#BF403529</Color>
-            <Color x:Key="VS.DialogDefaultBackgroundColor">#CC403529</Color>
-            <Color x:Key="VS.DialogStrongBackgroundColor">#FF403529</Color>
-            <Color x:Key="VS.DialogBorderColor">#4D000000</Color>
-            <Color x:Key="VS.DialogHighlightColor">#E6A88B6C</Color>
-            <Color x:Key="VS.DialogAlternateBackgroundColor">#EDB5AEA6</Color>
-            <Color x:Key="VS.DialogDefaultTextColor">#FFE9DDCE</Color>
-            <Color x:Key="VS.DialogDarkBrownTextColor">#FF5A4530</Color>
-            <Color x:Key="VS.DialogHotbarNumberTextColor">#805A4530</Color>
-            <Color x:Key="VS.DialogButtonTextColor">#FFE0CFBB</Color>
-            <Color x:Key="VS.DialogActiveButtonTextColor">#FFC58948</Color>
-            <Color x:Key="VS.DialogDisabledTextColor">#59FFFFFF</Color>
-            <Color x:Key="VS.DialogSuccessTextColor">#FF80FF80</Color>
-            <Color x:Key="VS.DialogErrorTextColor">#FFFF8080</Color>
-            <Color x:Key="VS.DialogWarningTextColor">#FFF2C983</Color>
-            <Color x:Key="VS.DialogLinkTextColor">#FF8080FF</Color>
-            <Color x:Key="VS.DialogTitleBarColor">#33000000</Color>
-
-            <SolidColorBrush x:Key="VS.DialogLightBackgroundBrush" Color="{StaticResource VS.DialogLightBackgroundColor}" />
-            <SolidColorBrush x:Key="VS.DialogDefaultBackgroundBrush" Color="{StaticResource VS.DialogDefaultBackgroundColor}" />
-            <SolidColorBrush x:Key="VS.DialogStrongBackgroundBrush" Color="{StaticResource VS.DialogStrongBackgroundColor}" />
-            <SolidColorBrush x:Key="VS.DialogBorderBrush" Color="{StaticResource VS.DialogBorderColor}" />
-            <SolidColorBrush x:Key="VS.DialogHighlightBrush" Color="{StaticResource VS.DialogHighlightColor}" />
-            <SolidColorBrush x:Key="VS.DialogAlternateBackgroundBrush" Color="{StaticResource VS.DialogAlternateBackgroundColor}" />
-            <SolidColorBrush x:Key="VS.DialogDefaultTextBrush" Color="{StaticResource VS.DialogDefaultTextColor}" />
-            <SolidColorBrush x:Key="VS.DialogDarkBrownTextBrush" Color="{StaticResource VS.DialogDarkBrownTextColor}" />
-            <SolidColorBrush x:Key="VS.DialogHotbarNumberTextBrush" Color="{StaticResource VS.DialogHotbarNumberTextColor}" />
-            <SolidColorBrush x:Key="VS.DialogButtonTextBrush" Color="{StaticResource VS.DialogButtonTextColor}" />
-            <SolidColorBrush x:Key="VS.DialogActiveButtonTextBrush" Color="{StaticResource VS.DialogActiveButtonTextColor}" />
-            <SolidColorBrush x:Key="VS.DialogDisabledTextBrush" Color="{StaticResource VS.DialogDisabledTextColor}" />
-            <SolidColorBrush x:Key="VS.DialogSuccessTextBrush" Color="{StaticResource VS.DialogSuccessTextColor}" />
-            <SolidColorBrush x:Key="VS.DialogErrorTextBrush" Color="{StaticResource VS.DialogErrorTextColor}" />
-            <SolidColorBrush x:Key="VS.DialogWarningTextBrush" Color="{StaticResource VS.DialogWarningTextColor}" />
-            <SolidColorBrush x:Key="VS.DialogLinkTextBrush" Color="{StaticResource VS.DialogLinkTextColor}" />
-            <SolidColorBrush x:Key="VS.DialogTitleBarBrush" Color="{StaticResource VS.DialogTitleBarColor}" />
-
             <BooleanToVisibilityConverter x:Key="IMM.BooleanToVisibilityConverter" />
             <converters:ScaledThicknessConverter x:Key="IMM.ScaledThicknessConverter" />
             <converters:ScaledDoubleConverter x:Key="IMM.ScaledDoubleConverter" />
@@ -204,7 +167,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.ButtonBackgroundColor}"
+                                                            To="{StaticResource DVS.Element}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -212,7 +175,7 @@
                                             </ColorAnimation>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.BorderColor}"
+                                                            To="{StaticResource DVS.Background}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -236,7 +199,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                            To="{StaticResource DVS.ElementBright}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -244,7 +207,7 @@
                                             </ColorAnimation>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.BorderHoverColor}"
+                                                            To="{StaticResource DVS.ElementBright}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -272,11 +235,11 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.ButtonPressedColor}"
+                                                            To="{StaticResource DVS.Background}"
                                                             Duration="0:0:0.05" />
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.AccentColor}"
+                                                            To="{StaticResource DVS.ElementBright}"
                                                             Duration="0:0:0.05" />
                                             <DoubleAnimation Storyboard.TargetName="Root"
                                                              Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
@@ -292,7 +255,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.ButtonDisabledColor}"
+                                                            To="{StaticResource DVS.Background}"
                                                             Duration="0:0:0.15" />
                                             <DoubleAnimation Storyboard.TargetName="Root"
                                                              Storyboard.TargetProperty="Opacity"
@@ -569,11 +532,11 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.AccentColor}"
+                                                                To="{StaticResource DVS.ElementBright}"
                                                                 Duration="0:0:0.12" />
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.ButtonHoverColor}"
+                                                                To="{StaticResource DVS.ElementBright}"
                                                                 Duration="0:0:0.12" />
                                             </Storyboard>
                                         </BeginStoryboard>
@@ -583,11 +546,11 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.BorderColor}"
+                                                                To="{StaticResource DVS.Background}"
                                                                 Duration="0:0:0.12" />
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="{StaticResource IMM.InputBackgroundColor}"
+                                                                To="{StaticResource DVS.Background}"
                                                                 Duration="0:0:0.12" />
                                             </Storyboard>
                                         </BeginStoryboard>
@@ -626,11 +589,11 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                            To="{StaticResource DVS.ElementBright}"
                                                             Duration="0:0:0.15" />
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.BorderHoverColor}"
+                                                            To="{StaticResource DVS.ElementBright}"
                                                             Duration="0:0:0.15" />
                                             </Storyboard>
                                         </VisualState>
@@ -649,11 +612,11 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.AccentColor}"
+                                                            To="{StaticResource DVS.ElementBright}"
                                                             Duration="0:0:0.15" />
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.AccentColor}"
+                                                            To="{StaticResource DVS.ElementBright}"
                                                             Duration="0:0:0.15" />
                                         </Storyboard>
                                     </VisualState>
@@ -665,7 +628,7 @@
                             
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
-                                    <Setter Property="Foreground" Value="White" />
+                                    <Setter Property="Foreground" Value="{StaticResource IMM.SelectionForegroundBrush}" />
                                     <Setter TargetName="Root"
                                             Property="Background"
                                             Value="{StaticResource IMM.AccentBrush}" />
