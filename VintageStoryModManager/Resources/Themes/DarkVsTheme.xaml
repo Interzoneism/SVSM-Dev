@@ -8,6 +8,7 @@
     <Color x:Key="DVS.Foreground">#FF403529</Color>
     <Color x:Key="DVS.Element">#FF53493E</Color>
     <Color x:Key="DVS.ElementBright">#FFE0CFBB</Color>
+    <Color x:Key="DVS.HoverColor">#FFF1D8BF</Color>
     <Color x:Key="DVS.Error">#FF8C3F3F</Color>
 
     <SolidColorBrush x:Key="DVS.TextBrush" Color="{StaticResource DVS.Text}" />
@@ -16,6 +17,7 @@
     <SolidColorBrush x:Key="DVS.ForegroundBrush" Color="{StaticResource DVS.Foreground}" />
     <SolidColorBrush x:Key="DVS.ElementBrush" Color="{StaticResource DVS.Element}" />
     <SolidColorBrush x:Key="DVS.ElementBrightBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="DVS.HoverBrush" Color="{StaticResource DVS.HoverColor}" />
     <SolidColorBrush x:Key="DVS.ErrorBrush" Color="{StaticResource DVS.Error}" />
 
     <!-- Legacy IMM brushes mapped to the simplified palette -->
@@ -29,9 +31,9 @@
     <SolidColorBrush x:Key="IMM.BorderBrush" options:Freeze="False" Color="{StaticResource DVS.Background}" />
     <SolidColorBrush x:Key="IMM.WindowBorderBrush" Color="{StaticResource DVS.Background}" />
     <SolidColorBrush x:Key="IMM.RowBorderBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.BorderHoverBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.BorderHoverBrush" Color="{StaticResource DVS.HoverColor}" />
     <SolidColorBrush x:Key="IMM.ButtonBackgroundBrush" options:Freeze="False" Color="{StaticResource DVS.Element}" />
-    <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource DVS.ElementBright}" />
+    <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource DVS.HoverColor}" />
     <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="{StaticResource DVS.Background}" />
     <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="{StaticResource DVS.Background}" Opacity="0.6" />
     <SolidColorBrush x:Key="IMM.ButtonBorderBrush" Color="{StaticResource DVS.ElementBright}" />
@@ -70,5 +72,61 @@
     <Style TargetType="{x:Type MenuItem}">
         <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
         <Setter Property="Background" Value="{StaticResource IMM.MenuBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Style.Resources>
+            <ControlTemplate x:Key="{x:Static MenuItem.TopLevelHeaderTemplateKey}"
+                             TargetType="{x:Type MenuItem}">
+                <Grid SnapsToDevicePixels="True">
+                    <Border x:Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <ContentPresenter x:Name="HeaderHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          RecognizesAccessKey="True"
+                                          ContentSource="Header"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Border>
+                    <Popup x:Name="PART_Popup"
+                           Placement="Bottom"
+                           HorizontalOffset="0"
+                           VerticalOffset="0"
+                           IsOpen="{TemplateBinding IsSubmenuOpen}"
+                           AllowsTransparency="True"
+                           Focusable="False"
+                           PopupAnimation="Fade">
+                        <Border x:Name="SubMenuBorder"
+                                Background="{StaticResource IMM.MenuBackgroundBrush}"
+                                BorderBrush="{StaticResource IMM.BorderBrush}"
+                                BorderThickness="1"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer CanContentScroll="True">
+                                <StackPanel IsItemsHost="True"
+                                            KeyboardNavigation.DirectionalNavigation="Cycle" />
+                            </ScrollViewer>
+                        </Border>
+                    </Popup>
+                </Grid>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsSuspendingPopupAnimation" Value="True">
+                        <Setter TargetName="PART_Popup" Property="PopupAnimation" Value="None" />
+                    </Trigger>
+                    <Trigger Property="IsSubmenuOpen" Value="True">
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource IMM.TextBrush}" />
+                    </Trigger>
+                    <Trigger Property="IsHighlighted" Value="True">
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Foreground" Value="{StaticResource IMM.SubtleForegroundBrush}" />
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+        </Style.Resources>
     </Style>
 </ResourceDictionary>

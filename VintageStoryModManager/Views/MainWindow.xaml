@@ -162,7 +162,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="HeaderBorder"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource DVS.ElementBright}"
+                                                            To="{StaticResource DVS.HoverColor}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -824,7 +824,7 @@
                                                 CornerRadius="8"
                                                 IsHitTestVisible="False" />
                                                 <Border x:Name="HoverOverlay"
-                                                Background="{StaticResource DVS.ElementBrightBrush}"
+                                                Background="{StaticResource DVS.HoverBrush}"
                                                 Opacity="0"
                                                 CornerRadius="8"
                                                 IsHitTestVisible="False" />
@@ -872,7 +872,7 @@
                                                     <Condition Property="IsMouseOver" Value="True" />
                                                     <Condition Property="IsSelected" Value="False" />
                                                 </MultiTrigger.Conditions>
-                                                <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
+                                                <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource DVS.HoverBrush}" />
                                             </MultiTrigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -1428,7 +1428,7 @@
                                                             CornerRadius="8"
                                                             IsHitTestVisible="False" />
                                                     <Border x:Name="HoverOverlay"
-                                                            Background="{StaticResource DVS.ElementBrightBrush}"
+                                                            Background="{StaticResource DVS.HoverBrush}"
                                                             Opacity="0"
                                                             CornerRadius="8"
                                                             IsHitTestVisible="False" />
@@ -1456,7 +1456,7 @@
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
                                                     <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.1" />
-                                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
+                                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource DVS.HoverBrush}" />
                                                 </Trigger>
                                                 <Trigger Property="IsMouseOver" Value="False">
                                                     <Setter TargetName="HoverOverlay" Property="Opacity" Value="0" />
@@ -1759,7 +1759,7 @@
                                     <Setter Property="Background" Value="{DynamicResource DVS.ForegroundBrush}" />
                                     <Style.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="BorderBrush" Value="{DynamicResource DVS.ElementBrightBrush}" />
+                                            <Setter Property="BorderBrush" Value="{DynamicResource DVS.HoverBrush}" />
                                         </Trigger>
                                         <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                             <Setter Property="BorderBrush" Value="{DynamicResource DVS.ElementBrightBrush}" />
@@ -1885,7 +1885,7 @@
                                                         </Setter>
                                                         <Style.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter Property="Foreground" Value="{DynamicResource DVS.ElementBrightBrush}" />
+                                                                <Setter Property="Foreground" Value="{DynamicResource DVS.HoverBrush}" />
                                                             </Trigger>
                                                             <Trigger Property="IsEnabled" Value="False">
                                                                 <Setter Property="Foreground" Value="{StaticResource DVS.PlaceholderTextBrush}" />
