@@ -10,7 +10,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ui:ThemeResources />
                 <ui:XamlControlsResources />
-                <ResourceDictionary Source="Resources/Themes/LightTheme.xaml" />
+                <ResourceDictionary Source="Resources/Themes/DarkVsTheme.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Vintage Story dialog and text colors extracted from GuiStyle -->

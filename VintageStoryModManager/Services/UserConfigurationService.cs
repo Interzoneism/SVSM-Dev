@@ -51,7 +51,7 @@ public sealed class UserConfigurationService
     private bool _isPersistenceEnabled;
     private bool _hasPendingSave;
     private bool _hasPendingModConfigPathSave;
-    private bool _useDarkVsMode;
+    private bool _useDarkVsMode = true;
 
     public UserConfigurationService()
     {
@@ -497,7 +497,7 @@ public sealed class UserConfigurationService
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _enableDebugLogging = obj["enableDebugLogging"]?.GetValue<bool?>() ?? false;
             _suppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
-            _useDarkVsMode = obj["useDarkVsMode"]?.GetValue<bool?>() ?? false;
+            _useDarkVsMode = obj["useDarkVsMode"]?.GetValue<bool?>() ?? true;
             _modlistAutoLoadBehavior = ParseModlistAutoLoadBehavior(GetOptionalString(obj["modlistAutoLoadBehavior"]));
             _modsSortMemberPath = NormalizeSortMemberPath(GetOptionalString(obj["modsSortMemberPath"]));
             _modsSortDirection = ParseSortDirection(GetOptionalString(obj["modsSortDirection"]));
@@ -528,7 +528,7 @@ public sealed class UserConfigurationService
             _disableInternetAccess = false;
             _enableDebugLogging = false;
             _suppressModlistSavePrompt = false;
-            _useDarkVsMode = false;
+            _useDarkVsMode = true;
             _modlistAutoLoadBehavior = ModlistAutoLoadBehavior.Prompt;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
