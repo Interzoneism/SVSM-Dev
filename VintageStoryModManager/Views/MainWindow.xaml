@@ -30,8 +30,8 @@
         <sys:Double x:Key="IMM.TagRowMaxHeight">70</sys:Double>
         <sys:Double x:Key="IMM.TagRowCompactMaxHeight">35</sys:Double>
         <Style x:Key="IMM.TagBadgeBorderStyle" TargetType="{x:Type Border}">
-            <Setter Property="Background" Value="{StaticResource IMM.TagBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource IMM.TagBorderBrush}" />
+            <Setter Property="Background" Value="{StaticResource DVS.BackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="8,2" />
@@ -45,7 +45,7 @@
         </ItemsPanelTemplate>
         <DataTemplate x:Key="IMM.TagBadgeTemplate">
             <Border Style="{StaticResource IMM.TagBadgeBorderStyle}">
-                <TextBlock Text="{Binding}" FontSize="12" Foreground="{StaticResource IMM.ForegroundBrush}" />
+                <TextBlock Text="{Binding}" FontSize="12" Foreground="{StaticResource DVS.TextBrush}" />
             </Border>
         </DataTemplate>
         <Style x:Key="IMM.TagFilterToggleButtonStyle" TargetType="{x:Type ToggleButton}">
@@ -119,10 +119,10 @@
             </Style.Triggers>
         </Style>
         <Style x:Key="IMM.PrimaryDataGridColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
-            <Setter Property="Background" Value="{StaticResource IMM.DataGridHeaderBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+            <Setter Property="Background" Value="{StaticResource DVS.ElementBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
             <Setter Property="BorderThickness" Value="1,0,0,1" />
-            <Setter Property="Foreground" Value="{StaticResource IMM.ImportantForegroundBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource DVS.TextImportantBrush}" />
             <Setter Property="Margin" Value="0,0,0,6" />
             <Setter Property="Padding" Value="12,10" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -149,7 +149,7 @@
                                       Width="6"
                                       Height="6"
                                       Margin="6,0,0,0"
-                                      Fill="{StaticResource IMM.DropdownGlyphBrush}"
+                                      Fill="{StaticResource DVS.ElementBrightBrush}"
                                       Stretch="Uniform"
                                       Visibility="Collapsed"
                                       VerticalAlignment="Center" />
@@ -162,7 +162,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="HeaderBorder"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                            To="{StaticResource DVS.ElementBright}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -177,7 +177,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="HeaderBorder"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource IMM.DataGridHeaderColor}"
+                                                            To="{StaticResource DVS.Element}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -214,19 +214,23 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <SolidColorBrush x:Key="CardGradient" Color="{StaticResource IMM.SurfaceColor}" />
-        <SolidColorBrush x:Key="CardGradient2" Color="{StaticResource IMM.SurfaceColor}" />
-        <SolidColorBrush x:Key="CardGradient3" Color="{StaticResource IMM.SurfaceColor}" />
-        <SolidColorBrush x:Key="CardDisabledGradient" Color="{StaticResource IMM.ToggleDisabledColor}" />
-        <SolidColorBrush x:Key="GridBackground1" Color="{StaticResource IMM.DataGridBackgroundColor}" />
+        <SolidColorBrush x:Key="CardGradient" Color="{StaticResource DVS.Foreground}" />
+        <SolidColorBrush x:Key="CardGradient2" Color="{StaticResource DVS.Foreground}" />
+        <SolidColorBrush x:Key="CardGradient3" Color="{StaticResource DVS.Foreground}" />
+        <SolidColorBrush x:Key="CardDisabledGradient" Color="{StaticResource DVS.Background}" />
+        <SolidColorBrush x:Key="GridBackground1" Color="{StaticResource DVS.Foreground}" />
+        <SolidColorBrush x:Key="DVS.PlaceholderTextBrush" Color="{StaticResource DVS.Text}" Opacity="0.6" />
+        <SolidColorBrush x:Key="DVS.RowSelectionBrush" Color="{StaticResource DVS.ElementBright}" Opacity="0.35" />
+        <SolidColorBrush x:Key="DVS.AlertOverlayBrush" Color="{StaticResource DVS.TextImportant}" Opacity="0.45" />
+        <SolidColorBrush x:Key="DVS.SuccessOverlayBrush" Color="{StaticResource DVS.ElementBright}" Opacity="0.6" />
         <!-- Style for toggleable MenuItem that keeps the default look and feel -->
         <Style x:Key="ToggleMenuItemStyle" TargetType="{x:Type MenuItem}">
             <Setter Property="IsCheckable" Value="True" />
-            <Setter Property="Background" Value="{StaticResource IMM.MenuBackgroundBrush}" />
+            <Setter Property="Background" Value="{StaticResource DVS.ForegroundBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="12,0,12,0" />
-            <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource DVS.TextBrush}" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -302,20 +306,20 @@
                             </Trigger>
 
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="templateRoot" Property="Background" Value="{StaticResource IMM.ButtonHoverBrush}" />
-                                <Setter TargetName="templateRoot" Property="BorderBrush" Value="{StaticResource IMM.ButtonBorderBrush}" />
-                                <Setter Property="Foreground" Value="{StaticResource IMM.SelectionForegroundBrush}" />
+                                <Setter TargetName="templateRoot" Property="Background" Value="{StaticResource DVS.ElementBrightBrush}" />
+                                <Setter TargetName="templateRoot" Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource DVS.TextImportantBrush}" />
                             </Trigger>
 
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Foreground" Value="{StaticResource IMM.PlaceholderForegroundBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource DVS.PlaceholderTextBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        <SolidColorBrush x:Key="ButtonError" Color="{DynamicResource IMM.ErrorBrush}"/>
+        <SolidColorBrush x:Key="ButtonError" Color="{StaticResource DVS.Error}" />
     </Window.Resources>
 
     <Grid Background="{DynamicResource GridBackground1}" Margin="0,0,0,8">
@@ -336,12 +340,12 @@
                   IsMainMenu="True"
                   BorderThickness="0"
                   Margin="0,0,0,5"
-                  Background="{StaticResource IMM.MenuBackgroundBrush}"
-                  Foreground="{StaticResource IMM.ForegroundBrush}">
+                  Background="{StaticResource DVS.ForegroundBrush}"
+                  Foreground="{StaticResource DVS.TextBrush}">
                 <Menu.Resources>
                     <Style TargetType="{x:Type MenuItem}">
-                        <Setter Property="Background" Value="{StaticResource IMM.MenuBackgroundBrush}" />
-                        <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                        <Setter Property="Background" Value="{StaticResource DVS.ForegroundBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource DVS.TextBrush}" />
                     </Style>
                 </Menu.Resources>
 
@@ -472,7 +476,7 @@
                        VerticalAlignment="Center"
                        HorizontalAlignment="Left">
                 <Hyperlink NavigateUri="https://mods.vintagestory.at/simplevsmanager"
-                           Foreground="{StaticResource IMM.LinkForegroundBrush}"
+                           Foreground="{StaticResource DVS.TextImportantBrush}"
                            RequestNavigate="ManagerUpdateLink_OnRequestNavigate">
                     Update available!
                 </Hyperlink>
@@ -507,9 +511,9 @@
                                 <Setter Property="Visibility" Value="Collapsed" />
                                 <Setter Property="Width" Value="227" />
                                 <Setter Property="Padding" Value="12,6" />
-                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
-                                <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                                <Setter Property="Background" Value="{StaticResource DVS.ForegroundBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource DVS.TextBrush}" />
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                                 <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
@@ -521,12 +525,12 @@
                                         <Setter Property="IsChecked" Value="False" />
                                     </DataTrigger>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource IMM.ButtonHoverBrush}" />
-                                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                        <Setter Property="Background" Value="{StaticResource DVS.ElementBrightBrush}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
                                     </Trigger>
                                     <Trigger Property="IsChecked" Value="True">
-                                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
-                                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
+                                        <Setter Property="Background" Value="{StaticResource DVS.BackgroundBrush}" />
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>
@@ -538,8 +542,8 @@
                         StaysOpen="False"
                         AllowsTransparency="True"
                         Focusable="False" Margin="0,36,0,33">
-                        <Border Background="{DynamicResource IMM.SurfaceBrush}"
-                            BorderBrush="{StaticResource IMM.BorderBrush}"
+                        <Border Background="{DynamicResource DVS.ForegroundBrush}"
+                            BorderBrush="{StaticResource DVS.BackgroundBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="12"
@@ -584,8 +588,8 @@
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="VerticalContentAlignment" Value="Top" />
-                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                                <Setter Property="Background" Value="{StaticResource DVS.BackgroundBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
                                 <Setter Property="Opacity" Value="0.3" />
                                 <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                                 <Setter Property="Padding" Value="12,6" />
@@ -596,8 +600,8 @@
                                             <Condition Binding="{Binding IsViewingCloudModlists}" Value="False" />
                                         </MultiDataTrigger.Conditions>
                                         <Setter Property="Opacity" Value="1" />
-                                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
-                                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                        <Setter Property="Background" Value="{StaticResource DVS.ForegroundBrush}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
                                     </MultiDataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -608,20 +612,20 @@
                             Width="138"
                             Height="63"
                             FontSize="16"
-                            BorderBrush="{StaticResource IMM.BorderBrush}">
+                            BorderBrush="{StaticResource DVS.BackgroundBrush}">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="VerticalContentAlignment" Value="Top" />
-                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                                <Setter Property="Background" Value="{StaticResource DVS.BackgroundBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
                                 <Setter Property="Opacity" Value="0.3" />
                                 <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                                 <Setter Property="Padding" Value="12,6" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                         <Setter Property="Opacity" Value="1" />
-                                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
-                                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                        <Setter Property="Background" Value="{StaticResource DVS.ForegroundBrush}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -632,20 +636,20 @@
                         Width="138"
                         Height="63"
                         FontSize="16"
-                        BorderBrush="{StaticResource IMM.BorderBrush}">
+                        BorderBrush="{StaticResource DVS.BackgroundBrush}">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="VerticalContentAlignment" Value="Top" />
-                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                                <Setter Property="Background" Value="{StaticResource DVS.BackgroundBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
                                 <Setter Property="Opacity" Value="0.3" />
                                 <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                                 <Setter Property="Padding" Value="12,6" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
                                         <Setter Property="Opacity" Value="1" />
-                                        <Setter Property="Background" Value="{StaticResource IMM.SurfaceBrush}" />
-                                        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                                        <Setter Property="Background" Value="{StaticResource DVS.ForegroundBrush}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -739,12 +743,12 @@
                   RowHeaderWidth="0"
                   BorderThickness="2,1,2,1"
                   IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
-                  SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="{StaticResource IMM.ForegroundBrush}"
+                  SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="{StaticResource DVS.TextBrush}"
                   PreviewKeyDown="ModsDataGrid_OnPreviewKeyDown"
                   PreviewMouseLeftButtonDown="ModsDataGrid_OnPreviewMouseLeftButtonDown"
                   PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                   Sorting="ModsDataGrid_OnSorting"
-                  RowBackground="{DynamicResource IMM.RowsAndCardsBrush}"
+                  RowBackground="{DynamicResource DVS.ForegroundBrush}"
                   HorizontalGridLinesBrush="Transparent"
                   VerticalGridLinesBrush="Transparent"
                   HeadersVisibility="Column"
@@ -752,8 +756,8 @@
                   FontSize="15" Margin="0,0,-29,0">
                     <DataGrid.Resources>
                         <Style TargetType="{x:Type ScrollBar}">
-                            <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
-                            <Setter Property="Foreground" Value="{StaticResource IMM.ScrollBarThumbBrush}" />
+                            <Setter Property="Background" Value="{StaticResource DVS.BackgroundBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource DVS.ElementBrush}" />
                         </Style>
                         <Style TargetType="{x:Type TextBlock}">
                             <Setter Property="TextWrapping" Value="Wrap" />
@@ -761,7 +765,7 @@
                         <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
                     </DataGrid.Resources>
                     <DataGrid.Background>
-                        <SolidColorBrush Color="{DynamicResource IMM.NewDataGridBackground}"/>
+                        <SolidColorBrush Color="{DynamicResource DVS.Foreground}"/>
                     </DataGrid.Background>
                     <DataGrid.CellStyle>
                         <StaticResource ResourceKey="IMM.DataGridCellBaseStyle"/>
@@ -789,7 +793,7 @@
                         </Style>
                     </DataGrid.Style>
                     <DataGrid.BorderBrush>
-                        <SolidColorBrush Color="{DynamicResource VS.DialogTitleBarColor}" />
+                        <SolidColorBrush Color="{DynamicResource DVS.Background}" />
                     </DataGrid.BorderBrush>
                     <DataGrid.RowHeaderStyle>
 
@@ -798,7 +802,7 @@
                     <DataGrid.RowStyle>
                         <Style TargetType="{x:Type DataGridRow}">
                             <Setter Property="Background" Value="Transparent" />
-                            <Setter Property="BorderBrush" Value="{StaticResource IMM.RowBorderBrush}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
                             <Setter Property="BorderThickness" Value="0" />
                             <Setter Property="Margin" Value="10,2,10,2" />
                             <Setter Property="Padding">
@@ -814,23 +818,23 @@
                                 <Setter.Value>
                                     <ControlTemplate TargetType="{x:Type DataGridRow}">
                                         <Border x:Name="RowBorder"
-                                            Background="{DynamicResource IMM.RowsAndCardsBrush}"
+                                            Background="{DynamicResource DVS.ForegroundBrush}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}"
                                         CornerRadius="8"
                                         Margin="4,0,4,4"
                                         SnapsToDevicePixels="True">
                                             <Border.Effect>
-                                                <DropShadowEffect Color="#33000000" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
+                                                <DropShadowEffect Color="{StaticResource DVS.Background}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
                                             </Border.Effect>
                                             <Grid>
                                                 <Border x:Name="SelectionOverlay"
-                                                Background="{StaticResource IMM.AccentBrush}"
+                                                Background="{StaticResource DVS.ElementBrightBrush}"
                                                 Opacity="0"
                                                 CornerRadius="8"
                                                 IsHitTestVisible="False" />
                                                 <Border x:Name="HoverOverlay"
-                                                Background="{StaticResource IMM.SuccessBrush}"
+                                                Background="{StaticResource DVS.ElementBrightBrush}"
                                                 Opacity="0"
                                                 CornerRadius="8"
                                                 IsHitTestVisible="False" />
@@ -857,10 +861,10 @@
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                                                <Setter TargetName="RowBorder" Property="Background" Value="{StaticResource IMM.AlertOverlayBrush}" />
+                                                <Setter TargetName="RowBorder" Property="Background" Value="{StaticResource DVS.AlertOverlayBrush}" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding HasActivationError}" Value="True">
-                                                <Setter TargetName="RowBorder" Property="Background" Value="{StaticResource IMM.AlertOverlayBrush}" />
+                                                <Setter TargetName="RowBorder" Property="Background" Value="{StaticResource DVS.AlertOverlayBrush}" />
                                             </DataTrigger>
                                             <MultiDataTrigger>
                                                 <MultiDataTrigger.Conditions>
@@ -878,7 +882,7 @@
                                                     <Condition Property="IsMouseOver" Value="True" />
                                                     <Condition Property="IsSelected" Value="False" />
                                                 </MultiTrigger.Conditions>
-                                                <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
+                                                <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
                                             </MultiTrigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -901,14 +905,14 @@
                                     </Setter>
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                                    <Setter Property="Background" Value="{StaticResource IMM.AlertOverlayBrush}" />
+                                    <Setter Property="Background" Value="{StaticResource DVS.AlertOverlayBrush}" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding HasActivationError}" Value="True">
-                                    <Setter Property="Background" Value="{StaticResource IMM.AlertOverlayBrush}" />
+                                    <Setter Property="Background" Value="{StaticResource DVS.AlertOverlayBrush}" />
                                 </DataTrigger>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="{StaticResource IMM.RowSelectionBrush}" />
-                                    <Setter Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
+                                    <Setter Property="Background" Value="{StaticResource DVS.RowSelectionBrush}" />
+                                    <Setter Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -1015,7 +1019,7 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="✓"
-                                       Foreground="{StaticResource IMM.SuccessBrush}"
+                                       Foreground="{StaticResource DVS.ElementBrightBrush}"
                                        FontSize="16"
                                        FontWeight="Bold"
                                        HorizontalAlignment="Center"
@@ -1090,8 +1094,8 @@
                                                 <Condition Binding="{Binding ShouldHighlightLatestVersion}" Value="True" />
                                                 <Condition Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
                                             </MultiDataTrigger.Conditions>
-                                            <Setter Property="Background" Value="{StaticResource IMM.SuccessBrush}" />
-                                            <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                                            <Setter Property="Background" Value="{StaticResource DVS.ElementBrightBrush}" />
+                                            <Setter Property="Foreground" Value="{StaticResource DVS.TextBrush}" />
                                         </MultiDataTrigger>
                                         <DataTrigger Binding="{Binding HasNewerReleaseChangelogs}" Value="False">
                                             <Setter Property="ToolTip" Value="{x:Null}" />
@@ -1184,8 +1188,8 @@
                                                StaysOpen="False"
                                                AllowsTransparency="True"
                                                Focusable="False">
-                                            <Border Background="{DynamicResource IMM.SurfaceBrush}"
-                                                    BorderBrush="{StaticResource IMM.BorderBrush}"
+                                            <Border Background="{DynamicResource DVS.ForegroundBrush}"
+                                                    BorderBrush="{StaticResource DVS.BackgroundBrush}"
                                                     BorderThickness="1"
                                                     CornerRadius="6"
                                                     Padding="8"
@@ -1319,7 +1323,7 @@
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            FontSize="16"
-                           Foreground="{DynamicResource IMM.ForegroundBrush}"
+                           Foreground="{DynamicResource DVS.TextBrush}"
                            IsHitTestVisible="False">
                     <TextBlock.Style>
                         <Style TargetType="{x:Type TextBlock}">
@@ -1372,13 +1376,13 @@
                               HeadersVisibility="Column"
                               ui:ControlHelper.CornerRadius="10"
                               FontSize="15"
-                              Foreground="{StaticResource IMM.ForegroundBrush}"
+                              Foreground="{StaticResource DVS.TextBrush}"
                               SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged"
                               Grid.RowSpan="2">
                         <DataGrid.Resources>
                             <Style TargetType="{x:Type ScrollBar}">
-                                <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
-                                <Setter Property="Foreground" Value="{StaticResource IMM.ScrollBarThumbBrush}" />
+                                <Setter Property="Background" Value="{StaticResource DVS.BackgroundBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource DVS.ElementBrush}" />
                             </Style>
                             <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="TextWrapping" Value="Wrap" />
@@ -1386,16 +1390,16 @@
                             <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
                         </DataGrid.Resources>
                         <DataGrid.RowBackground>
-                            <DynamicResource ResourceKey="IMM.RowsAndCardsBrush"/>
+                            <DynamicResource ResourceKey="DVS.ForegroundBrush"/>
                         </DataGrid.RowBackground>
                         <DataGrid.Background>
-                            <DynamicResource ResourceKey="IMM.NewDataGridBackgroundBrush"/>
+                            <DynamicResource ResourceKey="DVS.ForegroundBrush"/>
                         </DataGrid.Background>
                         <DataGrid.CellStyle>
                             <StaticResource ResourceKey="IMM.DataGridCellBaseStyle" />
                         </DataGrid.CellStyle>
                         <DataGrid.BorderBrush>
-                            <SolidColorBrush Color="{DynamicResource VS.DialogTitleBarColor}" />
+                            <SolidColorBrush Color="{DynamicResource DVS.Background}" />
                         </DataGrid.BorderBrush>
                         <DataGrid.RowHeaderStyle>
                             <Style />
@@ -1403,7 +1407,7 @@
                         <DataGrid.RowStyle>
                             <Style TargetType="{x:Type DataGridRow}">
                                 <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="BorderBrush" Value="{StaticResource IMM.RowBorderBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
                                 <Setter Property="BorderThickness" Value="0" />
                                 <Setter Property="Margin" Value="10,2,10,2" />
                                 <Setter Property="Foreground"
@@ -1421,23 +1425,23 @@
                                     <Setter.Value>
                                         <ControlTemplate TargetType="{x:Type DataGridRow}">
                                             <Border x:Name="RowBorder"
-                                                    Background="{DynamicResource IMM.RowsAndCardsBrush}"
+                                                    Background="{DynamicResource DVS.ForegroundBrush}"
                                                     BorderBrush="{TemplateBinding BorderBrush}"
                                                     BorderThickness="{TemplateBinding BorderThickness}"
                                                     CornerRadius="8"
                                                     Margin="4,0,4,4"
                                                     SnapsToDevicePixels="True">
                                                 <Border.Effect>
-                                                    <DropShadowEffect Color="#33000000" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5" />
+                                                    <DropShadowEffect Color="{StaticResource DVS.Background}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5" />
                                                 </Border.Effect>
                                                 <Grid>
                                                     <Border x:Name="SelectionOverlay"
-                                                            Background="{StaticResource IMM.AccentBrush}"
+                                                            Background="{StaticResource DVS.ElementBrightBrush}"
                                                             Opacity="0"
                                                             CornerRadius="8"
                                                             IsHitTestVisible="False" />
                                                     <Border x:Name="HoverOverlay"
-                                                            Background="{StaticResource IMM.BorderHoverBrush}"
+                                                            Background="{StaticResource DVS.ElementBrightBrush}"
                                                             Opacity="0"
                                                             CornerRadius="8"
                                                             IsHitTestVisible="False" />
@@ -1465,7 +1469,7 @@
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
                                                     <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.1" />
-                                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource IMM.AccentBrush}" />
+                                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource DVS.ElementBrightBrush}" />
                                                 </Trigger>
                                                 <Trigger Property="IsMouseOver" Value="False">
                                                     <Setter TargetName="HoverOverlay" Property="Opacity" Value="0" />
@@ -1473,7 +1477,7 @@
                                                 <Trigger Property="IsSelected" Value="True">
                                                     <Setter TargetName="SelectionOverlay" Property="Opacity" Value="0.25" />
                                                     <Setter TargetName="HoverOverlay" Property="Opacity" Value="0" />
-                                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource IMM.RowBorderBrush}" />
+                                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
                                                     <Setter TargetName="RowBorder" Property="BorderThickness" Value="0" />
                                                 </Trigger>
                                                 <Trigger Property="IsSelected" Value="False">
@@ -1570,7 +1574,7 @@
                                                       SelectedIndex="-1"
                                                       MaxDropDownHeight="240" />
                                             <TextBlock Text="{Binding ModsSummary, Mode=OneWay}"
-                                                       Foreground="{DynamicResource IMM.ForegroundBrush}"
+                                                       Foreground="{DynamicResource DVS.TextBrush}"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"
                                                        IsHitTestVisible="False">
@@ -1604,7 +1608,7 @@
                     <TextBlock Grid.Row="1"
                                Text="No cloud modlists have been uploaded yet."
                                FontSize="16"
-                               Foreground="{DynamicResource IMM.ForegroundBrush}"
+                               Foreground="{DynamicResource DVS.TextBrush}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                TextAlignment="Center"
@@ -1660,16 +1664,16 @@
                                      Width="170"
                                      IsReadOnly="True"
                                      IsTabStop="False"
-                                     Background="{DynamicResource IMM.InputBackgroundBrush}"
-                                     BorderBrush="{DynamicResource IMM.BorderBrush}"
-                                     Foreground="{DynamicResource IMM.ForegroundBrush}"
+                                     Background="{DynamicResource DVS.BackgroundBrush}"
+                                     BorderBrush="{DynamicResource DVS.BackgroundBrush}"
+                                     Foreground="{DynamicResource DVS.TextBrush}"
                                      ToolTip="Change your player name in Vintage Story to update this username."/>
                             <TextBlock HorizontalAlignment="Left"
                                        Margin="10,10,0,0"
                                        TextWrapping="Wrap"
                                        Text="Username:"
                                        VerticalAlignment="Top"
-                                       Foreground="{DynamicResource IMM.ForegroundBrush}"/>
+                                       Foreground="{DynamicResource DVS.TextBrush}"/>
                             <Border HorizontalAlignment="Left" Height="88" Margin="224,10,0,0"  Padding="10" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource CardGradient3}">
                                 <Grid>
                                     <TextBlock x:Name="SelectedModlistDescription"
@@ -1680,7 +1684,7 @@
                                                VerticalAlignment="Top"
                                                Height="72"
                                                Width="352"
-                                               Foreground="{DynamicResource IMM.ForegroundBrush}"/>
+                                               Foreground="{DynamicResource DVS.TextBrush}"/>
                                     <TextBlock x:Name="SelectedModlistTitle" HorizontalAlignment="Left" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontWeight="Bold"/>
                                 </Grid>
                             </Border>
@@ -1690,7 +1694,7 @@
             </Grid>
             <ListView x:Name="ModDatabaseCardsListView"
                       ItemsSource="{Binding CurrentModsView}"
-                      Background="{DynamicResource IMM.NewDataGridBackgroundBrush}"
+                      Background="{DynamicResource DVS.ForegroundBrush}"
                       BorderThickness="1,1,1,1"
                       Margin="0,32,0,0"
                       SelectionMode="Single"
@@ -1702,7 +1706,7 @@
                       ScrollViewer.CanContentScroll="True"
                       VirtualizingPanel.IsVirtualizing="True"
                       VirtualizingPanel.VirtualizationMode="Recycling"
-                      Grid.RowSpan="2" BorderBrush="{StaticResource IMM.BorderBrush}" FontSize="16">
+                      Grid.RowSpan="2" BorderBrush="{StaticResource DVS.BackgroundBrush}" FontSize="16">
                 <ListView.Style>
                     <Style TargetType="{x:Type ListView}">
                         <Setter Property="Visibility" Value="Collapsed" />
@@ -1755,7 +1759,7 @@
                                                 ScaleY="{StaticResource IMM.ModDbCardScale}" />
                             </Border.LayoutTransform>
                             <Border.Effect>
-                                <DropShadowEffect Color="#33000000"
+                                <DropShadowEffect Color="{StaticResource DVS.Background}"
                                                   BlurRadius="20"
                                                   Direction="270"
                                                   ShadowDepth="8"
@@ -1763,15 +1767,15 @@
                             </Border.Effect>
                             <Border.Style>
                                 <Style TargetType="{x:Type Border}">
-                                    <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                                    <Setter Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
                                     <Setter Property="BorderThickness" Value="1" />
-                                    <Setter Property="Background" Value="{DynamicResource IMM.RowsAndCardsBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource DVS.ForegroundBrush}" />
                                     <Style.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="BorderBrush" Value="{DynamicResource IMM.AccentBrush}" />
+                                            <Setter Property="BorderBrush" Value="{DynamicResource DVS.ElementBrightBrush}" />
                                         </Trigger>
                                         <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                            <Setter Property="BorderBrush" Value="{DynamicResource IMM.AccentBrush}" />
+                                            <Setter Property="BorderBrush" Value="{DynamicResource DVS.ElementBrightBrush}" />
                                             <Setter Property="BorderThickness" Value="2" />
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -1819,8 +1823,8 @@
                                                    VerticalAlignment="Top"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"
-                                                   Foreground="{StaticResource IMM.ImportantForegroundBrush}"
-                                                   Background="{StaticResource IMM.SuccessOverlayBrush}">
+                                                   Foreground="{StaticResource DVS.TextImportantBrush}"
+                                                   Background="{StaticResource DVS.SuccessOverlayBrush}">
                                             <TextBlock.Style>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -1835,7 +1839,7 @@
                                         <Border HorizontalAlignment="Right"
                                                 VerticalAlignment="Top"
                                                 Margin="0,8,8,0"
-                                                Background="{StaticResource IMM.SuccessOverlayBrush}"
+                                                Background="{StaticResource DVS.SuccessOverlayBrush}"
                                                 CornerRadius="12"
                                                 Padding="6">
                                             <Border.Style>
@@ -1850,14 +1854,14 @@
                                             </Border.Style>
                                             <TextBlock Text="&#xE001;"
                                                        FontFamily="Segoe MDL2 Assets"
-                                                       Foreground="{StaticResource IMM.ImportantForegroundBrush}"
+                                                       Foreground="{StaticResource DVS.TextImportantBrush}"
                                                        FontSize="16" />
                                         </Border>
                                     </Grid>
                                 </Border>
 
                                 <Border Grid.Row="1"
-                                        Background="{StaticResource IMM.SurfaceBrush}"
+                                        Background="{StaticResource DVS.ForegroundBrush}"
                                         Padding="12,10,12,12"
                                         CornerRadius="0,0,12,12">
                                     <Grid>
@@ -1884,7 +1888,7 @@
                                                     IsEnabled="{Binding HasModDatabasePageLink}">
                                                 <Button.Style>
                                                     <Style TargetType="{x:Type Button}">
-                                                        <Setter Property="Foreground" Value="{DynamicResource IMM.ForegroundBrush}" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource DVS.TextBrush}" />
                                                         <Setter Property="Template">
                                                             <Setter.Value>
                                                                 <ControlTemplate TargetType="{x:Type Button}">
@@ -1894,10 +1898,10 @@
                                                         </Setter>
                                                         <Style.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter Property="Foreground" Value="{DynamicResource IMM.AccentBrush}" />
+                                                                <Setter Property="Foreground" Value="{DynamicResource DVS.ElementBrightBrush}" />
                                                             </Trigger>
                                                             <Trigger Property="IsEnabled" Value="False">
-                                                                <Setter Property="Foreground" Value="{StaticResource IMM.PlaceholderForegroundBrush}" />
+                                                                <Setter Property="Foreground" Value="{StaticResource DVS.PlaceholderTextBrush}" />
                                                                 <Setter Property="Cursor" Value="Arrow" />
                                                             </Trigger>
                                                         </Style.Triggers>
@@ -1924,11 +1928,11 @@
                                                        TextWrapping="Wrap"
                                                        TextTrimming="CharacterEllipsis"
                                                        FontSize="20"
-                                                       Foreground="{DynamicResource IMM.ForegroundBrush}"
+                                                       Foreground="{DynamicResource DVS.TextBrush}"
                                                        MaxHeight="60" />
                                             <TextBlock Text="{Binding DatabaseTagsDisplay}"
                                                        FontSize="12"
-                                                       Foreground="{StaticResource IMM.PlaceholderForegroundBrush}"
+                                                       Foreground="{StaticResource DVS.PlaceholderTextBrush}"
                                                        TextTrimming="CharacterEllipsis"
                                                        TextWrapping="NoWrap">
                                                 <TextBlock.Style>
@@ -1955,10 +1959,10 @@
                                                            FontFamily="Segoe MDL2 Assets"
                                                            FontSize="14"
                                                            Margin="0,0,4,0"
-                                                           Foreground="{DynamicResource IMM.ForegroundBrush}" />
+                                                           Foreground="{DynamicResource DVS.TextBrush}" />
                                                 <TextBlock FontSize="20"
                                                            FontWeight="SemiBold"
-                                                           Foreground="{DynamicResource IMM.ForegroundBrush}">
+                                                           Foreground="{DynamicResource DVS.TextBrush}">
                                                     <TextBlock.Text>
                                                         <MultiBinding Converter="{StaticResource IMM.DownloadMetricDisplayConverter}">
                                                             <Binding Path="DataContext.IsShowingRecentDownloadMetric" RelativeSource="{RelativeSource AncestorType={x:Type Window}}" />
@@ -1973,11 +1977,11 @@
                                                            FontFamily="Segoe MDL2 Assets"
                                                            FontSize="14"
                                                            Margin="0,0,4,0"
-                                                           Foreground="{DynamicResource IMM.ForegroundBrush}" />
+                                                           Foreground="{DynamicResource DVS.TextBrush}" />
                                                 <TextBlock Text="{Binding CommentsDisplay}"
                                                            FontSize="20"
                                                            FontWeight="SemiBold"
-                                                           Foreground="{DynamicResource IMM.ForegroundBrush}" />
+                                                           Foreground="{DynamicResource DVS.TextBrush}" />
                                             </StackPanel>
                                         </StackPanel>
                                         <Button Grid.Column="1"
@@ -1987,8 +1991,8 @@
                                                 Height="30"
                                                 HorizontalAlignment="Right"
                                                 Margin="0,12,0,0"
-                                                Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                                                BorderBrush="{DynamicResource IMM.BorderBrush}"
+                                                Background="{DynamicResource DVS.ElementBrush}"
+                                                BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                                                 Click="InstallModButton_OnClick"
                                                 ToolTip="{Binding InstallButtonToolTip}">
                                             <Button.Style>
@@ -2006,7 +2010,7 @@
                                             </Button.Style>
                                             <TextBlock Text="Install"
                                                        VerticalAlignment="Center"
-                                                       Foreground="{DynamicResource IMM.ForegroundBrush}" />
+                                                       Foreground="{DynamicResource DVS.TextBrush}" />
                                         </Button>
                                     </Grid>
                                 </Border>
@@ -2024,7 +2028,7 @@
                     BorderBrush="Transparent"
                     BorderThickness="0"
                     Padding="0"
-                    Foreground="{DynamicResource IMM.AccentBrush}"
+                    Foreground="{DynamicResource DVS.ElementBrightBrush}"
                     Cursor="Hand"
                     FontSize="14"
                     FontWeight="SemiBold" Width="124" Height="25" VerticalAlignment="Bottom">
@@ -2071,17 +2075,17 @@
                         Text="{Binding StatusMessage}"
                         TextWrapping="Wrap"
                         HorizontalAlignment="Center"
-                        VerticalAlignment="Center" FontSize="14" Foreground="{StaticResource IMM.ForegroundBrush}" FontWeight="Bold" Padding="4,2,4,2">
+                        VerticalAlignment="Center" FontSize="14" Foreground="{StaticResource DVS.TextBrush}" FontWeight="Bold" Padding="4,2,4,2">
                         <TextBlock.Style>
                             <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource DVS.TextBrush}" />
                                 <Setter Property="Visibility" Value="Visible" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
                                         <Setter Property="Visibility" Value="Visible" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                        <Setter Property="Foreground" Value="{StaticResource IMM.SelectionForegroundBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource DVS.TextImportantBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -2098,35 +2102,35 @@
                 <Button Content="Update All"
                             Margin="0,0,4,0"
                             Width="125"
-                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                            BorderBrush="{DynamicResource IMM.BorderBrush}"
+                            Background="{DynamicResource DVS.ElementBrush}"
+                            BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                             Click="UpdateAllModsMenuItem_OnClick"
                             Height="32" Padding="6,6,6,6" />
                 <Button Content="Open Logs Folder"
                             Margin="0,0,4,0"
                             Width="125"
-                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                            BorderBrush="{DynamicResource IMM.BorderBrush}"
+                            Background="{DynamicResource DVS.ElementBrush}"
+                            BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                             Click="OpenLogsFolderButton_OnClick"
                             Height="32" Padding="6,6,6,6" />
                 <Button Content="Open Config Folder"
                             Margin="0,0,4,0"
                             Width="125"
-                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                            BorderBrush="{DynamicResource IMM.BorderBrush}"
+                            Background="{DynamicResource DVS.ElementBrush}"
+                            BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                             Click="OpenConfigFolderButton_OnClick"
                             Height="32" Padding="6,6,6,6" />
                 <Button Content="Open Mods Folder"
                             Margin="0,0,4,0"
                             Width="125"
-                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                            BorderBrush="{DynamicResource IMM.BorderBrush}"
+                            Background="{DynamicResource DVS.ElementBrush}"
+                            BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                             Click="OpenModFolderButton_OnClick"
                             Height="32" Padding="6,6,6,6" />
                 <Button Content="Launch Vintage Story"
                             Width="150"
-                            Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                            BorderBrush="{DynamicResource IMM.BorderBrush}"
+                            Background="{DynamicResource DVS.ElementBrush}"
+                            BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                             Click="LaunchGameButton_OnClick"
                             Height="32"
                             FontWeight="Bold" />
@@ -2135,10 +2139,10 @@
                         HorizontalAlignment="Left"
                         IsActive="{Binding IsBusy}"
                         Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
-                        Foreground="{StaticResource IMM.AccentBrush}" Margin="388,0,0,0" VerticalAlignment="Stretch" Width="40" Height="40" />
+                        Foreground="{StaticResource DVS.ElementBrightBrush}" Margin="388,0,0,0" VerticalAlignment="Stretch" Width="40" Height="40" />
         </Grid>
         <Border Background="{DynamicResource CardGradient3}" x:Name="MODINFO_border"
-                BorderBrush="{DynamicResource VS.DialogBorderBrush}"
+                BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                 BorderThickness="0"
                 CornerRadius="15,15,15,15" Margin="0,255,40,185" Grid.Row="1" Height="201" HorizontalAlignment="Right" Width="326" Panel.ZIndex="400">
             <Border.Style>
@@ -2166,7 +2170,7 @@
                 </Style>
             </Border.Style>
             <Border.Effect>
-                <DropShadowEffect Color="#33000000" BlurRadius="20" Direction="270" ShadowDepth="8" Opacity="0.2"/>
+                <DropShadowEffect Color="{StaticResource DVS.Background}" BlurRadius="20" Direction="270" ShadowDepth="8" Opacity="0.2"/>
             </Border.Effect>
             <Grid x:Name="MODINFO_grid" Height="223" Width="324" Background="Transparent">
                 <Grid.ColumnDefinitions>
@@ -2174,12 +2178,12 @@
                     <ColumnDefinition Width="28*" />
                 </Grid.ColumnDefinitions>
                 <Grid.Effect>
-                    <DropShadowEffect BlurRadius="6" Direction="270" ShadowDepth="4" Opacity="0.1" Color="#33000000" />
+                    <DropShadowEffect BlurRadius="6" Direction="270" ShadowDepth="4" Opacity="0.1" Color="{StaticResource DVS.Background}" />
                 </Grid.Effect>
                 <Button x:Name="SelectedModDatabasePageButton"
                 Padding="12,6"
-                Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                BorderBrush="{DynamicResource IMM.BorderBrush}"
+                Background="{DynamicResource DVS.ElementBrush}"
+                BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="ModDatabasePageButton_OnClick"
@@ -2188,8 +2192,8 @@
                 Content="Mod Page" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.Column="1" Margin="0,45,0,0" />
                 <Button x:Name="SelectedModEditConfigButton"
                 Padding="12,6"
-                Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                BorderBrush="{DynamicResource IMM.BorderBrush}"
+                Background="{DynamicResource DVS.ElementBrush}"
+                BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="EditConfigButton_OnClick"
@@ -2197,8 +2201,8 @@
                 Content="Edit Config" Height="30" Width="92" HorizontalContentAlignment="Stretch" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0" Grid.Column="1" />
                 <Button x:Name="SelectedModDeleteButton"
                 Padding="12,6"
-                Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                BorderBrush="{DynamicResource IMM.BorderBrush}"
+                Background="{StaticResource ButtonError}"
+                BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="DeleteModButton_OnClick" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,80,0,0" Grid.Column="1">
@@ -2214,13 +2218,13 @@
                     </Button.Style>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
-                        <TextBlock Text="Delete" VerticalAlignment="Center" Foreground="{DynamicResource IMM.ForegroundBrush}" />
+                        <TextBlock Text="Delete" VerticalAlignment="Center" Foreground="{DynamicResource DVS.TextBrush}" />
                     </StackPanel>
                 </Button>
                 <Button x:Name="SelectedModFixButton"
                         Padding="12,6"
                         Background="{DynamicResource ButtonError}"
-                        BorderBrush="{DynamicResource IMM.BodyForegroundBrush}"
+                        BorderBrush="{DynamicResource DVS.TextBrush}"
                         Visibility="Collapsed"
                         IsEnabled="False"
                         Click="FixModButton_OnClick"
@@ -2228,7 +2232,7 @@
                     <Button.Style>
                         <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                             <Setter Property="Background" Value="{DynamicResource ButtonError}" />
-                            <Setter Property="BorderBrush" Value="{DynamicResource IMM.BodyForegroundBrush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource DVS.TextBrush}" />
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="Button">
@@ -2249,11 +2253,11 @@
                                             </Trigger>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="Root" Property="Background" Value="{DynamicResource ButtonError}" />
-                                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource IMM.BodyForegroundBrush}" />
+                                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource DVS.TextBrush}" />
                                             </Trigger>
                                             <Trigger Property="IsPressed" Value="True">
                                                 <Setter TargetName="Root" Property="Background" Value="{DynamicResource ButtonError}" />
-                                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource IMM.BodyForegroundBrush}" />
+                                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource DVS.TextBrush}" />
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -2268,8 +2272,8 @@
                 </Button>
                 <Button x:Name="SelectedModInstallButton"
                 Padding="12,6"
-                Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                BorderBrush="{DynamicResource IMM.BorderBrush}"
+                Background="{DynamicResource DVS.ElementBrush}"
+                BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="InstallModButton_OnClick"
@@ -2282,10 +2286,10 @@
                 Width="166"
                 Height="30"
                 Padding="12,6"
-                Background="{DynamicResource IMM.SurfaceAltBrush}"
-                BorderBrush="{DynamicResource IMM.BorderBrush}"
+                Background="{DynamicResource DVS.BackgroundBrush}"
+                BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                 BorderThickness="1"
-                Foreground="{DynamicResource IMM.ForegroundBrush}"
+                Foreground="{DynamicResource DVS.TextBrush}"
                 ui:ControlHelper.CornerRadius="6"
                 ItemsSource="{Binding SelectedMod.VersionOptions}"
                 SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
@@ -2295,7 +2299,7 @@
                         <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource {x:Type ComboBox}}">
                             <Setter Property="Visibility" Value="Visible" />
                             <Setter Property="IsEnabled" Value="False" />
-                            <Setter Property="Background" Value="{DynamicResource IMM.SurfaceAltBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource DVS.BackgroundBrush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SelectedMod.HasVersionOptions}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -2330,7 +2334,7 @@
                                     </TextBlock.Style>
                                 </TextBlock>
                                 <TextBlock Text="✓"
-                                Foreground="{StaticResource IMM.SuccessBrush}"
+                                Foreground="{StaticResource DVS.ElementBrightBrush}"
                                 Margin="6,0,0,0">
                                     <TextBlock.Style>
                                         <Style TargetType="{x:Type TextBlock}">
@@ -2349,8 +2353,8 @@
                 </ComboBox>
                 <Button x:Name="SelectedModUpdateButton"
                 Padding="12,6"
-                Background="{DynamicResource IMM.ButtonBackgroundBrush}"
-                BorderBrush="{DynamicResource IMM.BorderBrush}"
+                Background="{DynamicResource DVS.ElementBrush}"
+                BorderBrush="{DynamicResource DVS.BackgroundBrush}"
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="UpdateModButton_OnClick"
@@ -2361,7 +2365,7 @@
                 </Button>
                 <TextBlock
                 FontWeight="SemiBold"
-                Foreground="{StaticResource IMM.ForegroundBrush}"
+                Foreground="{StaticResource DVS.TextBrush}"
                 TextAlignment="Left" VerticalAlignment="Top" HorizontalAlignment="Left" Width="189" Margin="23,15,0,0" Height="25" FontSize="14">
                     <TextBlock.Style>
                         <Style TargetType="{x:Type TextBlock}">
@@ -2376,7 +2380,7 @@
                 </TextBlock>
                 <TextBlock
                 Text="{Binding SelectedMod.DescriptionDisplay}"
-                Foreground="{StaticResource IMM.ForegroundBrush}"
+                Foreground="{StaticResource DVS.TextBrush}"
                 MaxWidth="420"
                 TextWrapping="Wrap"
                 TextTrimming="CharacterEllipsis"
