@@ -199,7 +199,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource DVS.ElementBright}"
+                                                            To="{StaticResource DVS.HoverColor}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -207,7 +207,7 @@
                                             </ColorAnimation>
                                             <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource DVS.ElementBright}"
+                                                            To="{StaticResource DVS.HoverColor}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -589,11 +589,11 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource DVS.ElementBright}"
+                                                            To="{StaticResource DVS.HoverColor}"
                                                             Duration="0:0:0.15" />
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                             Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{StaticResource DVS.ElementBright}"
+                                                            To="{StaticResource DVS.HoverColor}"
                                                             Duration="0:0:0.15" />
                                             </Storyboard>
                                         </VisualState>

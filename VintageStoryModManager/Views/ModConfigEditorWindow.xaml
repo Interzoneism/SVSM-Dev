@@ -55,7 +55,7 @@
                                                     <BeginStoryboard x:Name="ObjectHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            To="{StaticResource DVS.HoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -139,7 +139,7 @@
                                                     <BeginStoryboard x:Name="ArrayHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            To="{StaticResource DVS.HoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -241,7 +241,7 @@
                                                     <BeginStoryboard x:Name="ValueHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource IMM.ButtonHoverColor}"
+                                                                            To="{StaticResource DVS.HoverColor}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
