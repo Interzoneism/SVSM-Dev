@@ -334,7 +334,16 @@
 
             <Menu Grid.Column="0"
                   IsMainMenu="True"
-                  BorderThickness="0" Margin="0,0,0,5" Background="{StaticResource IMM.MenuBackgroundBrush}">
+                  BorderThickness="0"
+                  Margin="0,0,0,5"
+                  Background="{StaticResource IMM.MenuBackgroundBrush}"
+                  Foreground="{StaticResource IMM.ForegroundBrush}">
+                <Menu.Resources>
+                    <Style TargetType="{x:Type MenuItem}">
+                        <Setter Property="Background" Value="{StaticResource IMM.MenuBackgroundBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                    </Style>
+                </Menu.Resources>
 
                 <MenuItem Header="_File" Height="35">
                     <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
@@ -735,7 +744,7 @@
                   PreviewMouseLeftButtonDown="ModsDataGrid_OnPreviewMouseLeftButtonDown"
                   PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                   Sorting="ModsDataGrid_OnSorting"
-                  RowBackground="{StaticResource IMM.DataGridBackgroundBrush}"
+                  RowBackground="{DynamicResource IMM.RowsAndCardsBrush}"
                   HorizontalGridLinesBrush="Transparent"
                   VerticalGridLinesBrush="Transparent"
                   HeadersVisibility="Column"
@@ -752,7 +761,7 @@
                         <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
                     </DataGrid.Resources>
                     <DataGrid.Background>
-                        <SolidColorBrush Color="{DynamicResource IMM.SurfaceColor}"/>
+                        <SolidColorBrush Color="{DynamicResource IMM.NewDataGridBackground}"/>
                     </DataGrid.Background>
                     <DataGrid.CellStyle>
                         <StaticResource ResourceKey="IMM.DataGridCellBaseStyle"/>
@@ -805,7 +814,7 @@
                                 <Setter.Value>
                                     <ControlTemplate TargetType="{x:Type DataGridRow}">
                                         <Border x:Name="RowBorder"
-                                            Background="{DynamicResource CardGradient3}"
+                                            Background="{DynamicResource IMM.RowsAndCardsBrush}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}"
                                         CornerRadius="8"
@@ -1377,10 +1386,10 @@
                             <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
                         </DataGrid.Resources>
                         <DataGrid.RowBackground>
-                            <StaticResource ResourceKey="IMM.DataGridBackgroundBrush"/>
+                            <DynamicResource ResourceKey="IMM.RowsAndCardsBrush"/>
                         </DataGrid.RowBackground>
                         <DataGrid.Background>
-                            <StaticResource ResourceKey="IMM.DataGridBackgroundBrush"/>
+                            <DynamicResource ResourceKey="IMM.NewDataGridBackgroundBrush"/>
                         </DataGrid.Background>
                         <DataGrid.CellStyle>
                             <StaticResource ResourceKey="IMM.DataGridCellBaseStyle" />
@@ -1412,7 +1421,7 @@
                                     <Setter.Value>
                                         <ControlTemplate TargetType="{x:Type DataGridRow}">
                                             <Border x:Name="RowBorder"
-                                                    Background="{DynamicResource CardGradient3}"
+                                                    Background="{DynamicResource IMM.RowsAndCardsBrush}"
                                                     BorderBrush="{TemplateBinding BorderBrush}"
                                                     BorderThickness="{TemplateBinding BorderThickness}"
                                                     CornerRadius="8"
@@ -1681,7 +1690,7 @@
             </Grid>
             <ListView x:Name="ModDatabaseCardsListView"
                       ItemsSource="{Binding CurrentModsView}"
-                      Background="{DynamicResource IMM.SurfaceBrush}"
+                      Background="{DynamicResource IMM.NewDataGridBackgroundBrush}"
                       BorderThickness="1,1,1,1"
                       Margin="0,32,0,0"
                       SelectionMode="Single"
@@ -1756,7 +1765,7 @@
                                 <Style TargetType="{x:Type Border}">
                                     <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
                                     <Setter Property="BorderThickness" Value="1" />
-                                    <Setter Property="Background" Value="{DynamicResource CardGradient3}" />
+                                    <Setter Property="Background" Value="{DynamicResource IMM.RowsAndCardsBrush}" />
                                     <Style.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
                                             <Setter Property="BorderBrush" Value="{DynamicResource IMM.AccentBrush}" />
