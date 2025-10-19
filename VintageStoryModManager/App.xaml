@@ -278,7 +278,7 @@
             <Style x:Key="IMM.SearchTextBoxStyle" TargetType="TextBox">
                 <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
                 <Setter Property="Background" Value="{StaticResource IMM.SearchBoxBackgroundBrush}" />
-                <Setter Property="BorderBrush" Value="{StaticResource DVS.BorderDepth}" />
+                <Setter Property="BorderBrush" Value="{StaticResource IMM.ButtonBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Padding" Value="6,3" />
                 <Setter Property="FontFamily" Value="Segoe UI" />
@@ -368,22 +368,22 @@
             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource IMM.ButtonBaseStyle}">
                 <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
                 <Setter Property="Background" Value="{StaticResource IMM.ButtonBackgroundBrush}" />
-                <Setter Property="BorderBrush" Value="{StaticResource DVS.BorderDepth}" />
+                <Setter Property="BorderBrush" Value="{StaticResource IMM.ButtonBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="ui:ControlHelper.CornerRadius" Value="6" />
                 <Setter Property="Padding" Value="8,4" />
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
                         <Setter Property="Background" Value="{StaticResource IMM.ButtonHoverBrush}" />
-                        <Setter Property="BorderBrush" Value="{StaticResource DVS.BorderDepth}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource IMM.ButtonBorderBrush}" />
                     </Trigger>
                     <Trigger Property="IsPressed" Value="True">
                         <Setter Property="Background" Value="{StaticResource IMM.ButtonPressedBrush}" />
-                        <Setter Property="BorderBrush" Value="{StaticResource DVS.BorderDepth}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource IMM.ButtonBorderBrush}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Background" Value="{StaticResource IMM.ButtonDisabledBrush}" />
-                        <Setter Property="BorderBrush" Value="{StaticResource DVS.BorderDepth}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource IMM.ButtonBorderBrush}" />
                         <Setter Property="Foreground" Value="{StaticResource IMM.PlaceholderForegroundBrush}" />
                     </Trigger>
                 </Style.Triggers>
@@ -496,7 +496,7 @@
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Foreground" Value="{StaticResource IMM.PlaceholderForegroundBrush}" />
                                     <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource IMM.ButtonDisabledBrush}" />
-                                    <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource DVS.BorderDepth}" />
+                                    <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource IMM.ButtonBorderBrush}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>

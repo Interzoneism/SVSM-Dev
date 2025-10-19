@@ -20,14 +20,6 @@
     <SolidColorBrush x:Key="DVS.HoverBrush" Color="{StaticResource DVS.HoverColor}" />
     <SolidColorBrush x:Key="DVS.ErrorBrush" Color="{StaticResource DVS.Error}" />
 
-    <LinearGradientBrush x:Key="DVS.BorderDepth"
-                         StartPoint="0,0"
-                         EndPoint="1,1"
-                         MappingMode="RelativeToBoundingBox">
-        <GradientStop Color="{StaticResource DVS.ElementBright}" Offset="0" />
-        <GradientStop Color="{StaticResource DVS.Element}" Offset="1" />
-    </LinearGradientBrush>
-
     <!-- Legacy IMM brushes mapped to the simplified palette -->
     <SolidColorBrush x:Key="IMM.AccentBrush" Color="{StaticResource DVS.ElementBright}" />
     <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource DVS.Foreground}" />
@@ -44,6 +36,7 @@
     <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource DVS.HoverColor}" />
     <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="{StaticResource DVS.Background}" />
     <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="{StaticResource DVS.Background}" Opacity="0.6" />
+    <SolidColorBrush x:Key="IMM.ButtonBorderBrush" Color="{StaticResource DVS.ElementBright}" />
     <SolidColorBrush x:Key="IMM.ToggleOffBrush" Color="{StaticResource DVS.Background}" />
     <SolidColorBrush x:Key="IMM.ToggleThumbBrush" Color="{StaticResource DVS.ElementBright}" />
     <SolidColorBrush x:Key="IMM.ToggleDisabledBrush" Color="{StaticResource DVS.Background}" Opacity="0.7" />
