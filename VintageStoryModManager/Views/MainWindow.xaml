@@ -343,10 +343,6 @@
                   Background="{StaticResource DVS.ForegroundBrush}"
                   Foreground="{StaticResource DVS.TextBrush}">
                 <Menu.Resources>
-                    <Color x:Key="IMM.MenuBaseColor">{StaticResource DVS.Foreground}</Color>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.MenuBrushKey}" Color="{StaticResource IMM.MenuBaseColor}" />
-                    <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="{StaticResource IMM.MenuBaseColor}" />
-                    <SolidColorBrush x:Key="{x:Static SystemColors.ControlLightBrushKey}" Color="{StaticResource IMM.MenuBaseColor}" />
                     <Style TargetType="{x:Type MenuItem}">
                         <Setter Property="Background" Value="{StaticResource DVS.ForegroundBrush}" />
                         <Setter Property="Foreground" Value="{StaticResource DVS.TextBrush}" />
