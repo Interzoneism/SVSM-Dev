@@ -10,10 +10,10 @@
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
         Topmost="False"
-        Background="{StaticResource IMM.WindowBackgroundBrush}">
+        Background="{StaticResource DVS.ForegroundBrush}">
     <Grid Margin="20"
-          Background="{StaticResource IMM.SurfaceBrush}"
-          TextElement.Foreground="{StaticResource IMM.ForegroundBrush}">
+          Background="{StaticResource DVS.ForegroundBrush}"
+          TextElement.Foreground="{StaticResource DVS.TextBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -34,12 +34,12 @@
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
                       MaxHeight="320"
-                      Background="{StaticResource IMM.SurfaceAltBrush}">
+                      Background="{StaticResource DVS.BackgroundBrush}">
             <TextBlock x:Name="MessageTextBlock"
                        TextWrapping="Wrap"
                        MaxWidth="480"
                        VerticalAlignment="Center"
-                       Foreground="{StaticResource IMM.ForegroundBrush}" />
+                       Foreground="{StaticResource DVS.TextBrush}" />
         </ScrollViewer>
 
         <StackPanel Grid.Row="1"

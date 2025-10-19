@@ -9,10 +9,10 @@
         ResizeMode="CanMinimize"
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
-        Background="{StaticResource IMM.WindowBackgroundBrush}">
+        Background="{StaticResource DVS.ForegroundBrush}">
     <Grid Margin="20"
-          Background="{StaticResource IMM.SurfaceBrush}"
-          TextElement.Foreground="{StaticResource IMM.ForegroundBrush}">
+          Background="{StaticResource DVS.ForegroundBrush}"
+          TextElement.Foreground="{StaticResource DVS.TextBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -33,17 +33,17 @@
                   SelectionMode="Single"
                   SelectionChanged="ModlistsListView_OnSelectionChanged"
                   MouseDoubleClick="ModlistsListView_OnMouseDoubleClick"
-                  Background="{StaticResource IMM.DataGridBackgroundBrush}"
-                  BorderBrush="{StaticResource IMM.BorderBrush}"
-                  Foreground="{StaticResource IMM.ForegroundBrush}">
+                  Background="{StaticResource DVS.BackgroundBrush}"
+                  BorderBrush="{StaticResource DVS.BackgroundBrush}"
+                  Foreground="{StaticResource DVS.TextBrush}">
             <ListView.Resources>
                 <Style TargetType="GridViewColumnHeader">
-                    <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
-                    <Setter Property="Background" Value="{StaticResource IMM.SurfaceAltBrush}" />
-                    <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+                    <Setter Property="Foreground" Value="{StaticResource DVS.TextBrush}" />
+                    <Setter Property="Background" Value="{StaticResource DVS.ElementBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource DVS.BackgroundBrush}" />
                 </Style>
                 <Style TargetType="ListViewItem">
-                    <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
+                    <Setter Property="Foreground" Value="{StaticResource DVS.TextBrush}" />
                 </Style>
             </ListView.Resources>
             <ListView.View>
@@ -68,6 +68,8 @@
                     Content="Delete"
                     MinWidth="88"
                     Margin="0,0,12,0"
+                    Background="{StaticResource DVS.ErrorBrush}"
+                    Foreground="{StaticResource DVS.TextBrush}"
                     Click="DeleteButton_OnClick" />
             <Button Content="Close"
                     MinWidth="88"
