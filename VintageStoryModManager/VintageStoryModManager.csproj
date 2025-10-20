@@ -29,9 +29,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Resource Include="configicon.png" />
-    <Resource Include="webicon.png" />
-    <Resource Include="deleteicon.png" />
     <Resource Include="warning.png" />
     <Resource Include="error.png" />
     <Resource Include="mod-default.png">
