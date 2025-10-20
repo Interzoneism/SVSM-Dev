@@ -10,10 +10,10 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         WindowStyle="SingleBorderWindow"
-        Background="{StaticResource DVS.ForegroundBrush}">
+        Background="{StaticResource Window_Background_Brush}">
     <Grid Margin="24"
-          Background="{StaticResource DVS.ForegroundBrush}"
-          TextElement.Foreground="{StaticResource DVS.TextBrush}">
+          Background="{StaticResource Panel_Primary_Background_Brush}"
+          TextElement.Foreground="{StaticResource Text_Primary_Brush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -51,11 +51,11 @@
                      Margin="0,0,0,8"
                      VerticalAlignment="Center"
                      HorizontalAlignment="Stretch"
-                     Background="{StaticResource DVS.BackgroundBrush}"
-                     BorderBrush="{StaticResource DVS.ElementBrightBrush}"
-                     SelectionBrush="{StaticResource DVS.ElementBrightBrush}"
-                     SelectionTextBrush="{StaticResource DVS.TextImportantBrush}"
-                     CaretBrush="{StaticResource DVS.ElementBrightBrush}" />
+                     Background="{StaticResource Panel_Secondary_Background_Brush}"
+                     BorderBrush="{StaticResource Accent_Primary_Brush}"
+                     SelectionBrush="{StaticResource Accent_Primary_Brush}"
+                     SelectionTextBrush="{StaticResource Text_Emphasis_Brush}"
+                     CaretBrush="{StaticResource Accent_Primary_Brush}" />
 
             <TextBlock Grid.Row="1"
                        Grid.Column="0"
@@ -69,22 +69,22 @@
                      MinWidth="200"
                      VerticalAlignment="Center"
                      HorizontalAlignment="Stretch"
-                     Background="{StaticResource DVS.BackgroundBrush}"
-                     BorderBrush="{StaticResource DVS.ElementBrightBrush}"
-                     SelectionBrush="{StaticResource DVS.ElementBrightBrush}"
-                     SelectionTextBrush="{StaticResource DVS.TextImportantBrush}"
-                     CaretBrush="{StaticResource DVS.ElementBrightBrush}" />
+                     Background="{StaticResource Panel_Secondary_Background_Brush}"
+                     BorderBrush="{StaticResource Accent_Primary_Brush}"
+                     SelectionBrush="{StaticResource Accent_Primary_Brush}"
+                     SelectionTextBrush="{StaticResource Text_Emphasis_Brush}"
+                     CaretBrush="{StaticResource Accent_Primary_Brush}" />
         </Grid>
 
         <Border Grid.Row="2"
-                BorderBrush="{StaticResource DVS.BackgroundBrush}"
+                BorderBrush="{StaticResource Panel_Secondary_Background_Brush}"
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="12"
-                Background="{StaticResource DVS.BackgroundBrush}">
+                Background="{StaticResource Panel_Secondary_Background_Brush}">
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Auto"
-                          Background="{StaticResource DVS.BackgroundBrush}">
+                          Background="{StaticResource Panel_Secondary_Background_Brush}">
                 <TextBox x:Name="ResultsTextBox"
                          FontFamily="Consolas"
                          FontSize="13"
@@ -94,7 +94,7 @@
                          IsReadOnly="True"
                          BorderThickness="0"
                          Background="Transparent"
-                         Foreground="{StaticResource DVS.TextBrush}" />
+                         Foreground="{StaticResource Text_Primary_Brush}" />
             </ScrollViewer>
         </Border>
 
@@ -107,7 +107,7 @@
             <TextBlock x:Name="StatusTextBlock"
                        Grid.Column="0"
                        VerticalAlignment="Center"
-                       Foreground="{StaticResource DVS.TextImportantBrush}"
+                       Foreground="{StaticResource Text_Emphasis_Brush}"
                        Text="Ready." />
 
             <StackPanel Grid.Column="1"

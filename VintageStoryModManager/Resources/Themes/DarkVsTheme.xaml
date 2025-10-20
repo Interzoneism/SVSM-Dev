@@ -1,72 +1,100 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:options="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options">
-    <!-- Simplified Vintage Story inspired dark theme palette -->
-    <Color x:Key="DVS.Text">#FFE9DDCE</Color>
-    <Color x:Key="DVS.TextImportant">#FFAD8948</Color>
-    <Color x:Key="DVS.Background">#FF342A20</Color>
-    <Color x:Key="DVS.Foreground">#FF403529</Color>
-    <Color x:Key="DVS.Element">#FF53493E</Color>
-    <Color x:Key="DVS.ElementBright">#FFE0CFBB</Color>
-    <Color x:Key="DVS.HoverColor">#FFF1D8BF</Color>
-    <Color x:Key="DVS.Error">#FF8C3F3F</Color>
+    <!-- Dark theme palette -->
+    <Color x:Key="Color.Text.Primary">#FFE9DDCE</Color>
+    <Color x:Key="Color.Text.Emphasis">#FFAD8948</Color>
+    <Color x:Key="Color.Surface.Primary">#FF403529</Color>
+    <Color x:Key="Color.Surface.Secondary">#FF342A20</Color>
+    <Color x:Key="Color.Control.Default">#FF53493E</Color>
+    <Color x:Key="Color.Control.Accent">#FFE0CFBB</Color>
+    <Color x:Key="Color.Control.Hover">#FFF1D8BF</Color>
+    <Color x:Key="Color.Button.Pressed">#FF342A20</Color>
+    <Color x:Key="Color.Status.Error">#FF8C3F3F</Color>
 
-    <SolidColorBrush x:Key="DVS.TextBrush" Color="{StaticResource DVS.Text}" />
-    <SolidColorBrush x:Key="DVS.TextImportantBrush" Color="{StaticResource DVS.TextImportant}" />
-    <SolidColorBrush x:Key="DVS.BackgroundBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="DVS.ForegroundBrush" Color="{StaticResource DVS.Foreground}" />
-    <SolidColorBrush x:Key="DVS.ElementBrush" Color="{StaticResource DVS.Element}" />
-    <SolidColorBrush x:Key="DVS.ElementBrightBrush" Color="{StaticResource DVS.ElementBright}" />
-    <SolidColorBrush x:Key="DVS.HoverBrush" Color="{StaticResource DVS.HoverColor}" />
-    <SolidColorBrush x:Key="DVS.ErrorBrush" Color="{StaticResource DVS.Error}" />
+    <!-- Text -->
+    <SolidColorBrush x:Key="Text_Primary_Brush" Color="{StaticResource Color.Text.Primary}" />
+    <SolidColorBrush x:Key="Text_Body_Brush" Color="{StaticResource Color.Text.Primary}" />
+    <SolidColorBrush x:Key="Text_Emphasis_Brush" Color="{StaticResource Color.Text.Emphasis}" />
+    <SolidColorBrush x:Key="Text_Subtle_Brush" Color="{StaticResource Color.Text.Primary}" Opacity="0.6" />
+    <SolidColorBrush x:Key="Text_Placeholder_Brush" Color="{StaticResource Color.Text.Primary}" Opacity="0.6" />
+    <SolidColorBrush x:Key="Text_Link_Brush" Color="{StaticResource Color.Text.Emphasis}" />
+    <SolidColorBrush x:Key="Text_Selection_Foreground_Brush" Color="{StaticResource Color.Text.Emphasis}" />
+    <SolidColorBrush x:Key="Text_Caret_Brush" Color="{StaticResource Color.Control.Accent}" />
 
-    <!-- Legacy IMM brushes mapped to the simplified palette -->
-    <SolidColorBrush x:Key="IMM.AccentBrush" Color="{StaticResource DVS.ElementBright}" />
-    <SolidColorBrush x:Key="IMM.SurfaceBrush" Color="{StaticResource DVS.Foreground}" />
-    <SolidColorBrush x:Key="IMM.SurfaceAltBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.DataGridBackgroundBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.NewDataGridBackgroundBrush" Color="{StaticResource DVS.Foreground}" />
-    <SolidColorBrush x:Key="IMM.RowsAndCardsBrush" Color="{StaticResource DVS.Foreground}" />
-    <SolidColorBrush x:Key="IMM.MenuBackgroundBrush" Color="{StaticResource DVS.Foreground}" />
-    <SolidColorBrush x:Key="IMM.BorderBrush" options:Freeze="False" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.WindowBorderBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.RowBorderBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.BorderHoverBrush" Color="{StaticResource DVS.HoverColor}" />
-    <SolidColorBrush x:Key="IMM.ButtonBackgroundBrush" options:Freeze="False" Color="{StaticResource DVS.Element}" />
-    <SolidColorBrush x:Key="IMM.ButtonHoverBrush" Color="{StaticResource DVS.HoverColor}" />
-    <SolidColorBrush x:Key="IMM.ButtonPressedBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.ButtonDisabledBrush" Color="{StaticResource DVS.Background}" Opacity="0.6" />
-    <SolidColorBrush x:Key="IMM.ButtonBorderBrush" Color="{StaticResource DVS.ElementBright}" />
-    <SolidColorBrush x:Key="IMM.ToggleOffBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.ToggleThumbBrush" Color="{StaticResource DVS.ElementBright}" />
-    <SolidColorBrush x:Key="IMM.ToggleDisabledBrush" Color="{StaticResource DVS.Background}" Opacity="0.7" />
-    <SolidColorBrush x:Key="IMM.ToggleDisabledThumbBrush" Color="{StaticResource DVS.ElementBright}" Opacity="0.5" />
-    <SolidColorBrush x:Key="IMM.PlaceholderForegroundBrush" Color="{StaticResource DVS.Text}" Opacity="0.6" />
-    <SolidColorBrush x:Key="IMM.ForegroundBrush" Color="{StaticResource DVS.Text}" />
-    <SolidColorBrush x:Key="IMM.BodyForegroundBrush" Color="{StaticResource DVS.Text}" />
-    <SolidColorBrush x:Key="IMM.ImportantForegroundBrush" Color="{StaticResource DVS.TextImportant}" />
-    <SolidColorBrush x:Key="IMM.SelectionForegroundBrush" Color="{StaticResource DVS.TextImportant}" />
-    <SolidColorBrush x:Key="IMM.LinkForegroundBrush" Color="{StaticResource DVS.TextImportant}" />
-    <SolidColorBrush x:Key="IMM.SuccessBrush" Color="{StaticResource DVS.ElementBright}" />
-    <SolidColorBrush x:Key="IMM.RowHoverBrush" Color="{StaticResource DVS.Element}" Opacity="0.3" />
-    <SolidColorBrush x:Key="IMM.RowSelectionBrush" Color="{StaticResource DVS.ElementBright}" Opacity="0.35" />
-    <SolidColorBrush x:Key="IMM.ScrollBarThumbBrush" Color="{StaticResource DVS.Element}" />
-    <SolidColorBrush x:Key="IMM.SearchBoxBackgroundBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.TagBackgroundBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.TagBorderBrush" Color="{StaticResource DVS.ElementBright}" />
-    <SolidColorBrush x:Key="IMM.DataGridHeaderBrush" Color="{StaticResource DVS.Element}" />
-    <SolidColorBrush x:Key="IMM.DropdownGlyphBrush" Color="{StaticResource DVS.ElementBright}" />
-    <SolidColorBrush x:Key="IMM.InputBackgroundBrush" Color="{StaticResource DVS.Background}" />
-    <SolidColorBrush x:Key="IMM.WindowBackgroundBrush" Color="{StaticResource DVS.Foreground}" />
-    <SolidColorBrush x:Key="IMM.AlertOverlayBrush" Color="{StaticResource DVS.TextImportant}" Opacity="0.45" />
-    <SolidColorBrush x:Key="IMM.SuccessOverlayBrush" Color="{StaticResource DVS.ElementBright}" Opacity="0.6" />
-    <SolidColorBrush x:Key="IMM.SubtleForegroundBrush" Color="{StaticResource DVS.Text}" Opacity="0.6" />
-    <SolidColorBrush x:Key="IMM.ErrorBrush" Color="{StaticResource DVS.Error}" />
+    <!-- Window and layout surfaces -->
+    <SolidColorBrush x:Key="Window_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
+    <SolidColorBrush x:Key="Window_Border_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Panel_Primary_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
+    <SolidColorBrush x:Key="Panel_Secondary_Background_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+
+    <!-- Borders -->
+    <SolidColorBrush x:Key="Border_Default_Brush" options:Freeze="False" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Border_Hover_Brush" Color="{StaticResource Color.Control.Hover}" />
+    <SolidColorBrush x:Key="DataGrid_Row_Border_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+
+    <!-- Buttons -->
+    <SolidColorBrush x:Key="Button_General_Background_Brush" options:Freeze="False" Color="{StaticResource Color.Control.Default}" />
+    <SolidColorBrush x:Key="Button_General_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="Button_General_Hover_Background_Brush" Color="{StaticResource Color.Control.Hover}" />
+    <SolidColorBrush x:Key="Button_General_Pressed_Background_Brush" Color="{StaticResource Color.Button.Pressed}" />
+    <SolidColorBrush x:Key="Button_General_Disabled_Background_Brush" Color="{StaticResource Color.Surface.Secondary}" Opacity="0.6" />
+    <SolidColorBrush x:Key="Accent_Primary_Brush" Color="{StaticResource Color.Control.Accent}" />
+
+    <!-- Toggle switches and toggle buttons -->
+    <SolidColorBrush x:Key="ToggleSwitch_Track_Off_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="ToggleSwitch_Track_On_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="ToggleSwitch_Track_Disabled_Brush" Color="{StaticResource Color.Surface.Secondary}" Opacity="0.7" />
+    <SolidColorBrush x:Key="ToggleSwitch_Thumb_Normal_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="ToggleSwitch_Thumb_Disabled_Brush" Color="{StaticResource Color.Control.Accent}" Opacity="0.5" />
+    <SolidColorBrush x:Key="ToggleSwitch_Focus_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="ToggleSwitch_Hover_Border_Brush" Color="{StaticResource Color.Control.Hover}" />
+    <SolidColorBrush x:Key="ToggleButton_Checked_Background_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="ToggleButton_Checked_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
+
+    <!-- Menu -->
+    <SolidColorBrush x:Key="Menu_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
+    <SolidColorBrush x:Key="Menu_Border_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Menu_Item_Hover_Background_Brush" Color="{StaticResource Color.Control.Default}" />
+    <SolidColorBrush x:Key="Menu_Item_Submenu_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
+
+    <!-- Inputs -->
+    <SolidColorBrush x:Key="TextInput_Background_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="TextInput_Focus_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="TextInput_Selection_Background_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="SearchBox_Background_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+
+    <!-- ComboBox -->
+    <SolidColorBrush x:Key="ComboBox_Glyph_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="ComboBox_Popup_Background_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="ComboBox_Popup_Border_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="ComboBox_Open_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
+
+    <!-- Data grid -->
+    <SolidColorBrush x:Key="DataGrid_Background_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="DataGrid_AlternateRow_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
+    <SolidColorBrush x:Key="DataGrid_Header_Background_Brush" Color="{StaticResource Color.Control.Default}" />
+    <SolidColorBrush x:Key="DataGrid_Row_Hover_Brush" Color="{StaticResource Color.Control.Default}" Opacity="0.3" />
+    <SolidColorBrush x:Key="DataGrid_Row_Selected_Brush" Color="{StaticResource Color.Control.Accent}" Opacity="0.35" />
+
+    <!-- Tags and badges -->
+    <SolidColorBrush x:Key="Tag_Badge_Background_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Tag_Badge_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
+
+    <!-- Status and overlays -->
+    <SolidColorBrush x:Key="Status_Success_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="Status_Error_Brush" Color="{StaticResource Color.Status.Error}" />
+    <SolidColorBrush x:Key="Overlay_Warning_Background_Brush" Color="{StaticResource Color.Text.Emphasis}" Opacity="0.45" />
+    <SolidColorBrush x:Key="Overlay_Success_Background_Brush" Color="{StaticResource Color.Control.Accent}" Opacity="0.6" />
+
+    <!-- Miscellaneous -->
+    <SolidColorBrush x:Key="ScrollBar_Thumb_Brush" Color="{StaticResource Color.Control.Default}" />
+    <SolidColorBrush x:Key="Selection_Background_Brush" Color="{StaticResource Color.Control.Accent}" />
 
     <Style TargetType="{x:Type Menu}">
-        <Setter Property="Background" Value="{StaticResource IMM.MenuBackgroundBrush}" />
-        <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
-        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+        <Setter Property="Background" Value="{StaticResource Menu_Background_Brush}" />
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border_Default_Brush}" />
     </Style>
 
     <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="{x:Type Separator}">
@@ -75,11 +103,11 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Separator}">
                     <Grid Height="8"
-                          Background="{StaticResource IMM.MenuBackgroundBrush}"
+                          Background="{StaticResource Menu_Background_Brush}"
                           SnapsToDevicePixels="True">
                         <Border Height="1"
                                 VerticalAlignment="Center"
-                                Background="{StaticResource IMM.BorderBrush}" />
+                                Background="{StaticResource Border_Default_Brush}" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -87,9 +115,9 @@
     </Style>
 
     <Style TargetType="{x:Type MenuItem}">
-        <Setter Property="Foreground" Value="{StaticResource IMM.ForegroundBrush}" />
-        <Setter Property="Background" Value="{StaticResource IMM.MenuBackgroundBrush}" />
-        <Setter Property="BorderBrush" Value="{StaticResource IMM.BorderBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+        <Setter Property="Background" Value="{StaticResource Menu_Background_Brush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border_Default_Brush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="12,6,12,6" />
         <Style.Resources>
@@ -116,8 +144,8 @@
                            Focusable="False"
                            PopupAnimation="Fade">
                         <Border x:Name="SubMenuBorder"
-                                Background="{StaticResource IMM.MenuBackgroundBrush}"
-                                BorderBrush="{StaticResource IMM.BorderBrush}"
+                                Background="{StaticResource Menu_Background_Brush}"
+                                BorderBrush="{StaticResource Border_Default_Brush}"
                                 BorderThickness="1"
                                 SnapsToDevicePixels="True">
                             <ScrollViewer CanContentScroll="True">
@@ -132,16 +160,16 @@
                         <Setter TargetName="PART_Popup" Property="PopupAnimation" Value="None" />
                     </Trigger>
                     <Trigger Property="IsSubmenuOpen" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
-                        <Setter Property="Foreground" Value="{StaticResource IMM.TextBrush}" />
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
+                        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
                     </Trigger>
                     <Trigger Property="IsHighlighted" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Foreground" Value="{StaticResource IMM.SubtleForegroundBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource Text_Subtle_Brush}" />
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
@@ -161,11 +189,11 @@
                 </Grid>
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsHighlighted" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Foreground" Value="{StaticResource IMM.SubtleForegroundBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource Text_Subtle_Brush}" />
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
@@ -216,7 +244,7 @@
                                   Grid.Column="4"
                                   Margin="12,0,0,0"
                                   VerticalAlignment="Center"
-                                  Fill="{StaticResource IMM.DropdownGlyphBrush}"
+                                  Fill="{StaticResource ComboBox_Glyph_Brush}"
                                   Data="M 0 0 L 4 4 L 0 8 Z"
                                   Visibility="Collapsed" />
                         </Grid>
@@ -230,8 +258,8 @@
                            Focusable="False"
                            PopupAnimation="Fade">
                         <Border x:Name="SubMenuBorder"
-                                Background="{StaticResource IMM.MenuBackgroundBrush}"
-                                BorderBrush="{StaticResource IMM.BorderBrush}"
+                                Background="{StaticResource Menu_Background_Brush}"
+                                BorderBrush="{StaticResource Border_Default_Brush}"
                                 BorderThickness="1"
                                 SnapsToDevicePixels="True">
                             <ScrollViewer CanContentScroll="True">
@@ -264,19 +292,19 @@
                         <Setter TargetName="Arrow" Property="Visibility" Value="Visible" />
                     </Trigger>
                     <Trigger Property="IsSubmenuOpen" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
-                        <Setter Property="Foreground" Value="{StaticResource IMM.TextBrush}" />
-                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource IMM.TextBrush}" />
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
+                        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource Text_Primary_Brush}" />
                     </Trigger>
                     <Trigger Property="IsHighlighted" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
-                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource IMM.TextBrush}" />
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
+                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource Text_Primary_Brush}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Foreground" Value="{StaticResource IMM.SubtleForegroundBrush}" />
-                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource IMM.SubtleForegroundBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource Text_Subtle_Brush}" />
+                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource Text_Subtle_Brush}" />
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
@@ -327,7 +355,7 @@
                                   Grid.Column="4"
                                   Margin="12,0,0,0"
                                   VerticalAlignment="Center"
-                                  Fill="{StaticResource IMM.DropdownGlyphBrush}"
+                                  Fill="{StaticResource ComboBox_Glyph_Brush}"
                                   Data="M 0 0 L 4 4 L 0 8 Z"
                                   Visibility="Collapsed" />
                         </Grid>
@@ -356,13 +384,13 @@
                         <Setter TargetName="Arrow" Property="Visibility" Value="Visible" />
                     </Trigger>
                     <Trigger Property="IsHighlighted" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource IMM.ElementBrush}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource IMM.BorderHoverBrush}" />
-                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource IMM.TextBrush}" />
+                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
+                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource Text_Primary_Brush}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Foreground" Value="{StaticResource IMM.SubtleForegroundBrush}" />
-                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource IMM.SubtleForegroundBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource Text_Subtle_Brush}" />
+                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource Text_Subtle_Brush}" />
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>

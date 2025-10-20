@@ -9,10 +9,10 @@
         ResizeMode="NoResize"
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
-        Background="{StaticResource DVS.ForegroundBrush}">
+        Background="{StaticResource Window_Background_Brush}">
     <Grid Margin="20"
-          Background="{StaticResource DVS.ForegroundBrush}"
-          TextElement.Foreground="{StaticResource DVS.TextBrush}">
+          Background="{StaticResource Panel_Primary_Background_Brush}"
+          TextElement.Foreground="{StaticResource Text_Primary_Brush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -33,9 +33,9 @@
                  SelectionMode="Single"
                  MouseDoubleClick="SlotsListBox_OnMouseDoubleClick"
                  SelectionChanged="SlotsListBox_OnSelectionChanged"
-                 Background="{StaticResource DVS.BackgroundBrush}"
-                 Foreground="{StaticResource DVS.TextBrush}"
-                 BorderBrush="{StaticResource DVS.BackgroundBrush}" />
+                 Background="{StaticResource Panel_Secondary_Background_Brush}"
+                 Foreground="{StaticResource Text_Primary_Brush}"
+                 BorderBrush="{StaticResource Panel_Secondary_Background_Brush}" />
 
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"
