@@ -12,144 +12,99 @@
     <Color x:Key="Palette.Status.Error">#FF8C3F3F</Color>
     <Color x:Key="Palette.Shadow.Default">#33000000</Color>
 
-    <Color x:Key="Color.Text.Primary">{StaticResource Palette.Text.Primary}</Color>
-    <Color x:Key="Color.Text.Emphasis">{StaticResource Palette.Text.Emphasis}</Color>
-    <Color x:Key="Color.Text.Placeholder">{StaticResource Palette.Text.Primary}</Color>
-    <Color x:Key="Color.Text.Link">{StaticResource Palette.Text.Emphasis}</Color>
-    <Color x:Key="Color.Surface.Primary">{StaticResource Palette.Surface.Primary}</Color>
-    <Color x:Key="Color.Surface.Secondary">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.Surface.Input">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.Surface.DataGridHeader">{StaticResource Palette.Surface.Header}</Color>
-    <Color x:Key="Color.Control.Default">{StaticResource Palette.Surface.Header}</Color>
-    <Color x:Key="Color.Control.Accent">{StaticResource Palette.Control.Accent}</Color>
-    <Color x:Key="Color.Control.Hover">{StaticResource Palette.Control.Hover}</Color>
-    <Color x:Key="Color.Control.Disabled">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.Control.ScrollBar">{StaticResource Palette.Surface.Header}</Color>
-    <Color x:Key="Color.Button.Pressed">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.Border.Primary">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.Border.Hover">{StaticResource Palette.Control.Hover}</Color>
-    <Color x:Key="Color.Border.DataGridRow">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.ComboBox.Background">{StaticResource Palette.Surface.Header}</Color>
-    <Color x:Key="Color.ComboBox.Border">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.ComboBox.HoverBackground">{StaticResource Palette.Control.Hover}</Color>
-    <Color x:Key="Color.ComboBox.HoverBorder">{StaticResource Palette.Control.Hover}</Color>
-    <Color x:Key="Color.ComboBox.DisabledBackground">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.ComboBox.DisabledBorder">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.ComboBox.ItemBackground">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.ComboBox.ItemHover">{StaticResource Palette.Control.Hover}</Color>
-    <Color x:Key="Color.ComboBox.ItemSelected">{StaticResource Palette.Control.Accent}</Color>
-    <Color x:Key="Color.ComboBox.PopupBackground">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.ComboBox.PopupBorder">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.ComboBox.OpenBackground">{StaticResource Palette.Control.Hover}</Color>
-    <Color x:Key="Color.Toggle.Track.Off">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.Toggle.Track.Disabled">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.Toggle.Thumb.Default">{StaticResource Palette.Control.Accent}</Color>
-    <Color x:Key="Color.Toggle.Thumb.Disabled">{StaticResource Palette.Control.Accent}</Color>
-    <Color x:Key="Color.Selection.Primary">{StaticResource Palette.Control.Accent}</Color>
-    <Color x:Key="Color.Tag.Badge.Background">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.Tag.Badge.Border">{StaticResource Palette.Control.Accent}</Color>
-    <Color x:Key="Color.Status.Success">{StaticResource Palette.Control.Accent}</Color>
-    <Color x:Key="Color.Status.Error">{StaticResource Palette.Status.Error}</Color>
-    <Color x:Key="Color.Shadow.Default">{StaticResource Palette.Shadow.Default}</Color>
-    <Color x:Key="Color.Dialog.TextBox.Background">{StaticResource Palette.Surface.Secondary}</Color>
-    <Color x:Key="Color.Dialog.TextBox.Border">{StaticResource Palette.Control.Accent}</Color>
-    <Color x:Key="Color.Dialog.TextBox.Selection">{StaticResource Palette.Control.Accent}</Color>
-    <Color x:Key="Color.Dialog.TextBox.SelectionText">{StaticResource Palette.Text.Emphasis}</Color>
-    <Color x:Key="Color.Dialog.TextBox.Caret">{StaticResource Palette.Control.Accent}</Color>
-
     <!-- Text -->
-    <SolidColorBrush x:Key="Text_Primary_Brush" Color="{StaticResource Color.Text.Primary}" />
-    <SolidColorBrush x:Key="Text_Body_Brush" Color="{StaticResource Color.Text.Primary}" />
-    <SolidColorBrush x:Key="Text_Emphasis_Brush" Color="{StaticResource Color.Text.Emphasis}" />
-    <SolidColorBrush x:Key="Text_Subtle_Brush" Color="{StaticResource Color.Text.Primary}" Opacity="0.6" />
-    <SolidColorBrush x:Key="Text_Placeholder_Brush" Color="{StaticResource Color.Text.Placeholder}" Opacity="0.6" />
-    <SolidColorBrush x:Key="Text_Link_Brush" Color="{StaticResource Color.Text.Link}" />
-    <SolidColorBrush x:Key="Text_Selection_Foreground_Brush" Color="{StaticResource Color.Text.Emphasis}" />
-    <SolidColorBrush x:Key="Text_Caret_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="Text_Primary_Brush" Color="{StaticResource Palette.Text.Primary}" />
+    <SolidColorBrush x:Key="Text_Body_Brush" Color="{StaticResource Palette.Text.Primary}" />
+    <SolidColorBrush x:Key="Text_Emphasis_Brush" Color="{StaticResource Palette.Text.Emphasis}" />
+    <SolidColorBrush x:Key="Text_Subtle_Brush" Color="{StaticResource Palette.Text.Primary}" Opacity="0.6" />
+    <SolidColorBrush x:Key="Text_Placeholder_Brush" Color="{StaticResource Palette.Text.Primary}" Opacity="0.6" />
+    <SolidColorBrush x:Key="Text_Link_Brush" Color="{StaticResource Palette.Text.Emphasis}" />
+    <SolidColorBrush x:Key="Text_Selection_Foreground_Brush" Color="{StaticResource Palette.Text.Emphasis}" />
+    <SolidColorBrush x:Key="Text_Caret_Brush" Color="{StaticResource Palette.Control.Accent}" />
 
     <!-- Window and layout surfaces -->
-    <SolidColorBrush x:Key="Window_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
-    <SolidColorBrush x:Key="Window_Border_Brush" Color="{StaticResource Color.Border.Primary}" />
-    <SolidColorBrush x:Key="Panel_Primary_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
-    <SolidColorBrush x:Key="Panel_Secondary_Background_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Window_Background_Brush" Color="{StaticResource Palette.Surface.Primary}" />
+    <SolidColorBrush x:Key="Window_Border_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Panel_Primary_Background_Brush" Color="{StaticResource Palette.Surface.Primary}" />
+    <SolidColorBrush x:Key="Panel_Secondary_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
 
     <!-- Borders -->
-    <SolidColorBrush x:Key="Border_Default_Brush" options:Freeze="False" Color="{StaticResource Color.Border.Primary}" />
-    <SolidColorBrush x:Key="Border_Hover_Brush" Color="{StaticResource Color.Border.Hover}" />
-    <SolidColorBrush x:Key="DataGrid_Row_Border_Brush" Color="{StaticResource Color.Border.DataGridRow}" />
+    <SolidColorBrush x:Key="Border_Default_Brush" options:Freeze="False" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Border_Hover_Brush" Color="{StaticResource Palette.Control.Hover}" />
+    <SolidColorBrush x:Key="DataGrid_Row_Border_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
 
     <!-- Buttons -->
-    <SolidColorBrush x:Key="Button_General_Background_Brush" options:Freeze="False" Color="{StaticResource Color.Control.Default}" />
-    <SolidColorBrush x:Key="Button_General_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
-    <SolidColorBrush x:Key="Button_General_Hover_Background_Brush" Color="{StaticResource Color.Control.Hover}" />
-    <SolidColorBrush x:Key="Button_General_Pressed_Background_Brush" Color="{StaticResource Color.Button.Pressed}" />
-    <SolidColorBrush x:Key="Button_General_Disabled_Background_Brush" Color="{StaticResource Color.Control.Disabled}" Opacity="0.6" />
-    <SolidColorBrush x:Key="Accent_Primary_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="Button_General_Background_Brush" options:Freeze="False" Color="{StaticResource Palette.Surface.Header}" />
+    <SolidColorBrush x:Key="Button_General_Border_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="Button_General_Hover_Background_Brush" Color="{StaticResource Palette.Control.Hover}" />
+    <SolidColorBrush x:Key="Button_General_Pressed_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Button_General_Disabled_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" Opacity="0.6" />
+    <SolidColorBrush x:Key="Accent_Primary_Brush" Color="{StaticResource Palette.Control.Accent}" />
 
     <!-- Toggle switches and toggle buttons -->
-    <SolidColorBrush x:Key="ToggleSwitch_Track_Off_Brush" Color="{StaticResource Color.Toggle.Track.Off}" />
-    <SolidColorBrush x:Key="ToggleSwitch_Track_On_Brush" Color="{StaticResource Color.Control.Accent}" />
-    <SolidColorBrush x:Key="ToggleSwitch_Track_Disabled_Brush" Color="{StaticResource Color.Toggle.Track.Disabled}" Opacity="0.7" />
-    <SolidColorBrush x:Key="ToggleSwitch_Thumb_Normal_Brush" Color="{StaticResource Color.Toggle.Thumb.Default}" />
-    <SolidColorBrush x:Key="ToggleSwitch_Thumb_Disabled_Brush" Color="{StaticResource Color.Toggle.Thumb.Disabled}" Opacity="0.5" />
-    <SolidColorBrush x:Key="ToggleSwitch_Focus_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
-    <SolidColorBrush x:Key="ToggleSwitch_Hover_Border_Brush" Color="{StaticResource Color.Border.Hover}" />
-    <SolidColorBrush x:Key="ToggleButton_Checked_Background_Brush" Color="{StaticResource Color.Control.Accent}" />
-    <SolidColorBrush x:Key="ToggleButton_Checked_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="ToggleSwitch_Track_Off_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="ToggleSwitch_Track_On_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="ToggleSwitch_Track_Disabled_Brush" Color="{StaticResource Palette.Surface.Secondary}" Opacity="0.7" />
+    <SolidColorBrush x:Key="ToggleSwitch_Thumb_Normal_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="ToggleSwitch_Thumb_Disabled_Brush" Color="{StaticResource Palette.Control.Accent}" Opacity="0.5" />
+    <SolidColorBrush x:Key="ToggleSwitch_Focus_Border_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="ToggleSwitch_Hover_Border_Brush" Color="{StaticResource Palette.Control.Hover}" />
+    <SolidColorBrush x:Key="ToggleButton_Checked_Background_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="ToggleButton_Checked_Border_Brush" Color="{StaticResource Palette.Control.Accent}" />
 
     <!-- Menu -->
-    <SolidColorBrush x:Key="Menu_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
-    <SolidColorBrush x:Key="Menu_Border_Brush" Color="{StaticResource Color.Border.Primary}" />
-    <SolidColorBrush x:Key="Menu_Item_Hover_Background_Brush" Color="{StaticResource Color.Control.Default}" />
-    <SolidColorBrush x:Key="Menu_Item_Submenu_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
+    <SolidColorBrush x:Key="Menu_Background_Brush" Color="{StaticResource Palette.Surface.Primary}" />
+    <SolidColorBrush x:Key="Menu_Border_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Menu_Item_Hover_Background_Brush" Color="{StaticResource Palette.Surface.Header}" />
+    <SolidColorBrush x:Key="Menu_Item_Submenu_Background_Brush" Color="{StaticResource Palette.Surface.Primary}" />
 
     <!-- Inputs -->
-    <SolidColorBrush x:Key="TextInput_Background_Brush" Color="{StaticResource Color.Surface.Input}" />
-    <SolidColorBrush x:Key="TextInput_Focus_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
-    <SolidColorBrush x:Key="TextInput_Selection_Background_Brush" Color="{StaticResource Color.Control.Accent}" />
-    <SolidColorBrush x:Key="SearchBox_Background_Brush" Color="{StaticResource Color.Surface.Input}" />
+    <SolidColorBrush x:Key="TextInput_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="TextInput_Focus_Border_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="TextInput_Selection_Background_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="SearchBox_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
 
     <!-- ComboBox -->
-    <SolidColorBrush x:Key="ComboBox_Background_Brush" Color="{StaticResource Color.ComboBox.Background}" />
-    <SolidColorBrush x:Key="ComboBox_Border_Brush" Color="{StaticResource Color.ComboBox.Border}" />
-    <SolidColorBrush x:Key="ComboBox_Hover_Background_Brush" Color="{StaticResource Color.ComboBox.HoverBackground}" />
-    <SolidColorBrush x:Key="ComboBox_Hover_Border_Brush" Color="{StaticResource Color.ComboBox.HoverBorder}" />
-    <SolidColorBrush x:Key="ComboBox_Disabled_Background_Brush" Color="{StaticResource Color.ComboBox.DisabledBackground}" />
-    <SolidColorBrush x:Key="ComboBox_Disabled_Border_Brush" Color="{StaticResource Color.ComboBox.DisabledBorder}" />
-    <SolidColorBrush x:Key="ComboBox_Item_Background_Brush" Color="{StaticResource Color.ComboBox.ItemBackground}" />
-    <SolidColorBrush x:Key="ComboBox_Item_Hover_Brush" Color="{StaticResource Color.ComboBox.ItemHover}" />
-    <SolidColorBrush x:Key="ComboBox_Item_Selected_Brush" Color="{StaticResource Color.ComboBox.ItemSelected}" />
-    <SolidColorBrush x:Key="ComboBox_Open_Background_Brush" Color="{StaticResource Color.ComboBox.OpenBackground}" />
-    <SolidColorBrush x:Key="ComboBox_Glyph_Brush" Color="{StaticResource Color.Control.Accent}" />
-    <SolidColorBrush x:Key="ComboBox_Popup_Background_Brush" Color="{StaticResource Color.ComboBox.PopupBackground}" />
-    <SolidColorBrush x:Key="ComboBox_Popup_Border_Brush" Color="{StaticResource Color.ComboBox.PopupBorder}" />
-    <SolidColorBrush x:Key="ComboBox_Open_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="ComboBox_Background_Brush" Color="{StaticResource Palette.Surface.Header}" />
+    <SolidColorBrush x:Key="ComboBox_Border_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="ComboBox_Hover_Background_Brush" Color="{StaticResource Palette.Control.Hover}" />
+    <SolidColorBrush x:Key="ComboBox_Hover_Border_Brush" Color="{StaticResource Palette.Control.Hover}" />
+    <SolidColorBrush x:Key="ComboBox_Disabled_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="ComboBox_Disabled_Border_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="ComboBox_Item_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="ComboBox_Item_Hover_Brush" Color="{StaticResource Palette.Control.Hover}" />
+    <SolidColorBrush x:Key="ComboBox_Item_Selected_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="ComboBox_Open_Background_Brush" Color="{StaticResource Palette.Control.Hover}" />
+    <SolidColorBrush x:Key="ComboBox_Glyph_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="ComboBox_Popup_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="ComboBox_Popup_Border_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="ComboBox_Open_Border_Brush" Color="{StaticResource Palette.Control.Accent}" />
 
     <!-- Data grid -->
-    <SolidColorBrush x:Key="DataGrid_Background_Brush" Color="{StaticResource Color.Surface.Input}" />
-    <SolidColorBrush x:Key="DataGrid_AlternateRow_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
-    <SolidColorBrush x:Key="DataGrid_Header_Background_Brush" Color="{StaticResource Color.Surface.DataGridHeader}" />
-    <SolidColorBrush x:Key="DataGrid_Row_Hover_Brush" Color="{StaticResource Color.Control.Default}" Opacity="0.3" />
-    <SolidColorBrush x:Key="DataGrid_Row_Selected_Brush" Color="{StaticResource Color.Selection.Primary}" Opacity="0.35" />
+    <SolidColorBrush x:Key="DataGrid_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="DataGrid_AlternateRow_Background_Brush" Color="{StaticResource Palette.Surface.Primary}" />
+    <SolidColorBrush x:Key="DataGrid_Header_Background_Brush" Color="{StaticResource Palette.Surface.Header}" />
+    <SolidColorBrush x:Key="DataGrid_Row_Hover_Brush" Color="{StaticResource Palette.Surface.Header}" Opacity="0.3" />
+    <SolidColorBrush x:Key="DataGrid_Row_Selected_Brush" Color="{StaticResource Palette.Control.Accent}" Opacity="0.35" />
 
     <!-- Tags and badges -->
-    <SolidColorBrush x:Key="Tag_Badge_Background_Brush" Color="{StaticResource Color.Tag.Badge.Background}" />
-    <SolidColorBrush x:Key="Tag_Badge_Border_Brush" Color="{StaticResource Color.Tag.Badge.Border}" />
+    <SolidColorBrush x:Key="Tag_Badge_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Tag_Badge_Border_Brush" Color="{StaticResource Palette.Control.Accent}" />
 
     <!-- Status and overlays -->
-    <SolidColorBrush x:Key="Status_Success_Brush" Color="{StaticResource Color.Status.Success}" />
-    <SolidColorBrush x:Key="Status_Error_Brush" Color="{StaticResource Color.Status.Error}" />
-    <SolidColorBrush x:Key="Overlay_Warning_Background_Brush" Color="{StaticResource Color.Text.Emphasis}" Opacity="0.45" />
-    <SolidColorBrush x:Key="Overlay_Success_Background_Brush" Color="{StaticResource Color.Status.Success}" Opacity="0.6" />
+    <SolidColorBrush x:Key="Status_Success_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="Status_Error_Brush" Color="{StaticResource Palette.Status.Error}" />
+    <SolidColorBrush x:Key="Overlay_Warning_Background_Brush" Color="{StaticResource Palette.Text.Emphasis}" Opacity="0.45" />
+    <SolidColorBrush x:Key="Overlay_Success_Background_Brush" Color="{StaticResource Palette.Control.Accent}" Opacity="0.6" />
 
     <!-- Miscellaneous -->
-    <SolidColorBrush x:Key="ScrollBar_Thumb_Brush" Color="{StaticResource Color.Control.ScrollBar}" />
-    <SolidColorBrush x:Key="Selection_Background_Brush" Color="{StaticResource Color.Control.Accent}" />
-    <SolidColorBrush x:Key="Dialog_TextBox_Background_Brush" Color="{StaticResource Color.Dialog.TextBox.Background}" />
-    <SolidColorBrush x:Key="Dialog_TextBox_Border_Brush" Color="{StaticResource Color.Dialog.TextBox.Border}" />
-    <SolidColorBrush x:Key="Dialog_TextBox_Selection_Brush" Color="{StaticResource Color.Dialog.TextBox.Selection}" />
-    <SolidColorBrush x:Key="Dialog_TextBox_SelectionText_Brush" Color="{StaticResource Color.Dialog.TextBox.SelectionText}" />
-    <SolidColorBrush x:Key="Dialog_TextBox_Caret_Brush" Color="{StaticResource Color.Dialog.TextBox.Caret}" />
+    <SolidColorBrush x:Key="ScrollBar_Thumb_Brush" Color="{StaticResource Palette.Surface.Header}" />
+    <SolidColorBrush x:Key="Selection_Background_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="Dialog_TextBox_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Dialog_TextBox_Border_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="Dialog_TextBox_Selection_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="Dialog_TextBox_SelectionText_Brush" Color="{StaticResource Palette.Text.Emphasis}" />
+    <SolidColorBrush x:Key="Dialog_TextBox_Caret_Brush" Color="{StaticResource Palette.Control.Accent}" />
 
     <Style TargetType="{x:Type TextBlock}">
         <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
