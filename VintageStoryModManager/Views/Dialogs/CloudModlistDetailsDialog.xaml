@@ -38,22 +38,22 @@
                  Margin="0,0,0,12"
                  MinWidth="220"
                  TextChanged="NameTextBox_OnTextChanged"
-                 Background="{StaticResource Panel_Secondary_Background_Brush}"
-                 BorderBrush="{StaticResource Accent_Primary_Brush}"
-                 SelectionBrush="{StaticResource Accent_Primary_Brush}"
-                 SelectionTextBrush="{StaticResource Text_Emphasis_Brush}"
-                 CaretBrush="{StaticResource Accent_Primary_Brush}" />
+                 Background="{StaticResource Dialog_TextBox_Background_Brush}"
+                 BorderBrush="{StaticResource Dialog_TextBox_Border_Brush}"
+                 SelectionBrush="{StaticResource Dialog_TextBox_Selection_Brush}"
+                 SelectionTextBrush="{StaticResource Dialog_TextBox_SelectionText_Brush}"
+                 CaretBrush="{StaticResource Dialog_TextBox_Caret_Brush}" />
 
         <TextBlock Text="Version:" Grid.Row="1" Grid.Column="0" Margin="0,0,12,12" VerticalAlignment="Center" />
         <TextBox x:Name="VersionTextBox"
                  Grid.Row="1"
                  Grid.Column="1"
                  Margin="0,0,0,12"
-                 Background="{StaticResource Panel_Secondary_Background_Brush}"
-                 BorderBrush="{StaticResource Accent_Primary_Brush}"
-                 SelectionBrush="{StaticResource Accent_Primary_Brush}"
-                 SelectionTextBrush="{StaticResource Text_Emphasis_Brush}"
-                 CaretBrush="{StaticResource Accent_Primary_Brush}" />
+                 Background="{StaticResource Dialog_TextBox_Background_Brush}"
+                 BorderBrush="{StaticResource Dialog_TextBox_Border_Brush}"
+                 SelectionBrush="{StaticResource Dialog_TextBox_Selection_Brush}"
+                 SelectionTextBrush="{StaticResource Dialog_TextBox_SelectionText_Brush}"
+                 CaretBrush="{StaticResource Dialog_TextBox_Caret_Brush}" />
 
         <TextBlock Text="Description:" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,6" />
         <TextBox x:Name="DescriptionTextBox"
@@ -65,11 +65,11 @@
                  AcceptsReturn="True"
                  MaxLength="190"
                  VerticalScrollBarVisibility="Auto"
-                 Background="{StaticResource Panel_Secondary_Background_Brush}"
-                 BorderBrush="{StaticResource Accent_Primary_Brush}"
-                 SelectionBrush="{StaticResource Accent_Primary_Brush}"
-                 SelectionTextBrush="{StaticResource Text_Emphasis_Brush}"
-                 CaretBrush="{StaticResource Accent_Primary_Brush}" />
+                 Background="{StaticResource Dialog_TextBox_Background_Brush}"
+                 BorderBrush="{StaticResource Dialog_TextBox_Border_Brush}"
+                 SelectionBrush="{StaticResource Dialog_TextBox_Selection_Brush}"
+                 SelectionTextBrush="{StaticResource Dialog_TextBox_SelectionText_Brush}"
+                 CaretBrush="{StaticResource Dialog_TextBox_Caret_Brush}" />
 
         <Grid Grid.Row="0" Grid.Column="3" Grid.RowSpan="4">
             <Grid.RowDefinitions>

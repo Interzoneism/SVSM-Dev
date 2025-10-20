@@ -30,11 +30,11 @@
                  MinWidth="220"
                  Margin="0,0,0,12"
                  TextChanged="NameTextBox_OnTextChanged"
-                 Background="{StaticResource Panel_Secondary_Background_Brush}"
-                 BorderBrush="{StaticResource Accent_Primary_Brush}"
-                 SelectionBrush="{StaticResource Accent_Primary_Brush}"
-                 SelectionTextBrush="{StaticResource Text_Emphasis_Brush}"
-                 CaretBrush="{StaticResource Accent_Primary_Brush}" />
+                 Background="{StaticResource Dialog_TextBox_Background_Brush}"
+                 BorderBrush="{StaticResource Dialog_TextBox_Border_Brush}"
+                 SelectionBrush="{StaticResource Dialog_TextBox_Selection_Brush}"
+                 SelectionTextBrush="{StaticResource Dialog_TextBox_SelectionText_Brush}"
+                 CaretBrush="{StaticResource Dialog_TextBox_Caret_Brush}" />
 
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"

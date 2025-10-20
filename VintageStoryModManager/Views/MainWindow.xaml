@@ -2274,8 +2274,8 @@
                 Width="166"
                 Height="30"
                 Padding="12,6"
-                Background="{DynamicResource Panel_Secondary_Background_Brush}"
-                BorderBrush="{DynamicResource Panel_Secondary_Background_Brush}"
+                Background="{DynamicResource ComboBox_Background_Brush}"
+                BorderBrush="{DynamicResource ComboBox_Border_Brush}"
                 BorderThickness="1"
                 Foreground="{DynamicResource Text_Primary_Brush}"
                 ui:ControlHelper.CornerRadius="6"
@@ -2287,7 +2287,7 @@
                         <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource {x:Type ComboBox}}">
                             <Setter Property="Visibility" Value="Visible" />
                             <Setter Property="IsEnabled" Value="False" />
-                            <Setter Property="Background" Value="{DynamicResource Panel_Secondary_Background_Brush}" />
+                            <Setter Property="Background" Value="{DynamicResource ComboBox_Background_Brush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SelectedMod.HasVersionOptions}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
