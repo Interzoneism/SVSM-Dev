@@ -119,7 +119,7 @@
             </Style.Triggers>
         </Style>
         <Style x:Key="IMM.PrimaryDataGridColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
-            <Setter Property="Background" Value="{StaticResource Button_General_Background_Brush}" />
+            <Setter Property="Background" Value="{StaticResource DataGrid_Header_Background_Brush}" />
             <Setter Property="BorderBrush" Value="{StaticResource Panel_Secondary_Background_Brush}" />
             <Setter Property="BorderThickness" Value="1,0,0,1" />
             <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
@@ -162,7 +162,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="HeaderBorder"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource Color.Control.Hover}"
+                                                            To="{Binding Color, Source={StaticResource DataGrid_Header_Hover_Background_Brush}}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -177,7 +177,7 @@
                                         <Storyboard>
                                             <ColorAnimation Storyboard.TargetName="HeaderBorder"
                                                             Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{StaticResource Color.Control.Default}"
+                                                            To="{Binding Color, Source={StaticResource DataGrid_Header_Background_Brush}}"
                                                             Duration="0:0:0.15">
                                                 <ColorAnimation.EasingFunction>
                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -214,11 +214,11 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <SolidColorBrush x:Key="CardGradient" Color="{StaticResource Color.Surface.Primary}" />
-        <SolidColorBrush x:Key="CardGradient2" Color="{StaticResource Color.Surface.Primary}" />
-        <SolidColorBrush x:Key="CardGradient3" Color="{StaticResource Color.Surface.Primary}" />
-        <SolidColorBrush x:Key="CardDisabledGradient" Color="{StaticResource Color.Surface.Secondary}" />
-        <SolidColorBrush x:Key="GridBackground1" Color="{StaticResource Color.Surface.Primary}" />
+        <SolidColorBrush x:Key="CardGradient" Color="{Binding Color, Source={StaticResource ModDatabase_Card_Background_Brush}}" />
+        <SolidColorBrush x:Key="CardGradient2" Color="{Binding Color, Source={StaticResource ModDatabase_Card_Background_Brush}}" />
+        <SolidColorBrush x:Key="CardGradient3" Color="{Binding Color, Source={StaticResource ModDatabase_Card_Background_Brush}}" />
+        <SolidColorBrush x:Key="CardDisabledGradient" Color="{Binding Color, Source={StaticResource ModDatabase_Card_Disabled_Background_Brush}}" />
+        <SolidColorBrush x:Key="GridBackground1" Color="{Binding Color, Source={StaticResource ModDatabase_Grid_Background_Brush}}" />
         <!-- Menu item style shared by toggle and standard items -->
         <Style x:Key="ToggleMenuItemStyle" TargetType="{x:Type MenuItem}">
             <Setter Property="Background" Value="{StaticResource Panel_Primary_Background_Brush}" />
@@ -376,7 +376,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <SolidColorBrush x:Key="ButtonError" Color="{StaticResource Color.Status.Error}" />
+        <SolidColorBrush x:Key="ButtonError" Color="{Binding Color, Source={StaticResource Status_Error_Brush}}" />
     </Window.Resources>
 
     <Grid Background="{DynamicResource GridBackground1}" Margin="0,0,0,8">
@@ -804,7 +804,9 @@
                   VerticalGridLinesBrush="Transparent"
                   HeadersVisibility="Column"
                   ui:ControlHelper.CornerRadius="10"
-                  FontSize="15" Margin="0,0,-29,0">
+                  FontSize="15" Margin="0,0,-29,0"
+                  Background="{DynamicResource Panel_Secondary_Background_Brush}"
+                  BorderBrush="{DynamicResource Panel_Secondary_Background_Brush}">
                     <DataGrid.Resources>
                         <Style TargetType="{x:Type ScrollBar}">
                             <Setter Property="Background" Value="{StaticResource Panel_Secondary_Background_Brush}" />
@@ -816,9 +818,6 @@
                         </Style>
                         <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
                     </DataGrid.Resources>
-                    <DataGrid.Background>
-                        <SolidColorBrush Color="{DynamicResource Color.Surface.Secondary}"/>
-                    </DataGrid.Background>
                     <DataGrid.CellStyle>
                         <StaticResource ResourceKey="IMM.DataGridCellBaseStyle"/>
                     </DataGrid.CellStyle>
@@ -844,9 +843,7 @@
                             </Style.Triggers>
                         </Style>
                     </DataGrid.Style>
-                    <DataGrid.BorderBrush>
-                        <SolidColorBrush Color="{DynamicResource Color.Surface.Secondary}" />
-                    </DataGrid.BorderBrush>
+                    
                     <DataGrid.RowHeaderStyle>
 
                         <Style/>
@@ -877,7 +874,7 @@
                                         Margin="4,0,4,4"
                                         SnapsToDevicePixels="True">
                                             <Border.Effect>
-                                                <DropShadowEffect Color="{StaticResource Color.Surface.Secondary}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
+                                            <DropShadowEffect Color="{Binding Color, Source={StaticResource DataGrid_Row_Shadow_Brush}}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
                                             </Border.Effect>
                                             <Grid>
                                                 <Border x:Name="SelectionOverlay"
@@ -1430,7 +1427,8 @@
                               FontSize="15"
                               Foreground="{StaticResource Text_Primary_Brush}"
                               SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged"
-                              Grid.RowSpan="2" Background="{DynamicResource Panel_Secondary_Background_Brush}">
+                              Grid.RowSpan="2" Background="{DynamicResource Panel_Secondary_Background_Brush}"
+                              BorderBrush="{DynamicResource Panel_Secondary_Background_Brush}">
                         <DataGrid.Resources>
                             <Style TargetType="{x:Type ScrollBar}">
                                 <Setter Property="Background" Value="{StaticResource Panel_Secondary_Background_Brush}" />
@@ -1447,9 +1445,7 @@
                         <DataGrid.CellStyle>
                             <StaticResource ResourceKey="IMM.DataGridCellBaseStyle" />
                         </DataGrid.CellStyle>
-                        <DataGrid.BorderBrush>
-                            <SolidColorBrush Color="{DynamicResource Color.Surface.Secondary}" />
-                        </DataGrid.BorderBrush>
+                        
                         <DataGrid.RowHeaderStyle>
                             <Style />
                         </DataGrid.RowHeaderStyle>
@@ -1481,7 +1477,7 @@
                                                     Margin="4,0,4,4"
                                                     SnapsToDevicePixels="True">
                                                 <Border.Effect>
-                                                    <DropShadowEffect Color="{StaticResource Color.Surface.Secondary}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5" />
+                                                    <DropShadowEffect Color="{Binding Color, Source={StaticResource DataGrid_Row_Shadow_Brush}}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5" />
                                                 </Border.Effect>
                                                 <Grid>
                                                     <Border x:Name="SelectionOverlay"
@@ -1808,7 +1804,7 @@
                                                 ScaleY="{StaticResource IMM.ModDbCardScale}" />
                             </Border.LayoutTransform>
                             <Border.Effect>
-                                <DropShadowEffect Color="{StaticResource Color.Surface.Secondary}"
+                                <DropShadowEffect Color="{Binding Color, Source={StaticResource ModDatabase_Card_Shadow_Brush}}"
                                                   BlurRadius="20"
                                                   Direction="270"
                                                   ShadowDepth="8"
@@ -2219,7 +2215,7 @@
                 </Style>
             </Border.Style>
             <Border.Effect>
-                <DropShadowEffect Color="{StaticResource Color.Surface.Secondary}" BlurRadius="20" Direction="270" ShadowDepth="8" Opacity="0.2"/>
+                <DropShadowEffect Color="{Binding Color, Source={StaticResource ModDatabase_Card_Shadow_Brush}}" BlurRadius="20" Direction="270" ShadowDepth="8" Opacity="0.2"/>
             </Border.Effect>
             <Grid x:Name="MODINFO_grid" Height="223" Width="324" Background="Transparent">
                 <Grid.ColumnDefinitions>
@@ -2227,7 +2223,7 @@
                     <ColumnDefinition Width="28*" />
                 </Grid.ColumnDefinitions>
                 <Grid.Effect>
-                    <DropShadowEffect BlurRadius="6" Direction="270" ShadowDepth="4" Opacity="0.1" Color="{StaticResource Color.Surface.Secondary}" />
+                    <DropShadowEffect BlurRadius="6" Direction="270" ShadowDepth="4" Opacity="0.1" Color="{Binding Color, Source={StaticResource ModDatabase_Details_Shadow_Brush}}" />
                 </Grid.Effect>
                 <Button x:Name="SelectedModDatabasePageButton"
                 Padding="12,6"
