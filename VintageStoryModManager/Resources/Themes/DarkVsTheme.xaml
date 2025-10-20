@@ -141,6 +141,97 @@
     <SolidColorBrush x:Key="Dialog_TextBox_SelectionText_Brush" Color="{StaticResource Color.Dialog.TextBox.SelectionText}" />
     <SolidColorBrush x:Key="Dialog_TextBox_Caret_Brush" Color="{StaticResource Color.Dialog.TextBox.Caret}" />
 
+    <Style TargetType="{x:Type TextBlock}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type TextBox}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+        <Setter Property="Background" Value="{StaticResource TextInput_Background_Brush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border_Default_Brush}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource TextInput_Selection_Background_Brush}" />
+        <Setter Property="SelectionTextBrush" Value="{StaticResource Text_Selection_Foreground_Brush}" />
+        <Setter Property="CaretBrush" Value="{StaticResource Text_Caret_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type PasswordBox}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+        <Setter Property="Background" Value="{StaticResource TextInput_Background_Brush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border_Default_Brush}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource TextInput_Selection_Background_Brush}" />
+        <Setter Property="CaretBrush" Value="{StaticResource Text_Caret_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type ComboBox}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+        <Setter Property="Background" Value="{StaticResource ComboBox_Background_Brush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ComboBox_Border_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type ComboBoxItem}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+        <Setter Property="Background" Value="{StaticResource ComboBox_Item_Background_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type ListBox}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+        <Setter Property="Background" Value="{StaticResource Panel_Primary_Background_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type ListBoxItem}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type ListView}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type TreeView}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type TreeViewItem}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type Label}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type CheckBox}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type RadioButton}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type Button}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type ToggleButton}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type DataGrid}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type DataGridRow}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type Hyperlink}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Link_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type ContextMenu}">
+        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+        <Setter Property="Background" Value="{StaticResource Menu_Background_Brush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Menu_Border_Brush}" />
+    </Style>
+
     <Style TargetType="{x:Type Menu}">
         <Setter Property="Background" Value="{StaticResource Menu_Background_Brush}" />
         <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
