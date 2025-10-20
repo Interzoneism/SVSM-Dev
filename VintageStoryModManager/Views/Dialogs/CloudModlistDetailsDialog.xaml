@@ -10,13 +10,13 @@
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
         Loaded="Window_OnLoaded"
-        Background="{StaticResource DVS.ForegroundBrush}">
+        Background="{StaticResource Window_Background_Brush}">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Window.Resources>
     <Grid Margin="20"
-          Background="{StaticResource DVS.ForegroundBrush}"
-          TextElement.Foreground="{StaticResource DVS.TextBrush}">
+          Background="{StaticResource Panel_Primary_Background_Brush}"
+          TextElement.Foreground="{StaticResource Text_Primary_Brush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -38,22 +38,22 @@
                  Margin="0,0,0,12"
                  MinWidth="220"
                  TextChanged="NameTextBox_OnTextChanged"
-                 Background="{StaticResource DVS.BackgroundBrush}"
-                 BorderBrush="{StaticResource DVS.ElementBrightBrush}"
-                 SelectionBrush="{StaticResource DVS.ElementBrightBrush}"
-                 SelectionTextBrush="{StaticResource DVS.TextImportantBrush}"
-                 CaretBrush="{StaticResource DVS.ElementBrightBrush}" />
+                 Background="{StaticResource Panel_Secondary_Background_Brush}"
+                 BorderBrush="{StaticResource Accent_Primary_Brush}"
+                 SelectionBrush="{StaticResource Accent_Primary_Brush}"
+                 SelectionTextBrush="{StaticResource Text_Emphasis_Brush}"
+                 CaretBrush="{StaticResource Accent_Primary_Brush}" />
 
         <TextBlock Text="Version:" Grid.Row="1" Grid.Column="0" Margin="0,0,12,12" VerticalAlignment="Center" />
         <TextBox x:Name="VersionTextBox"
                  Grid.Row="1"
                  Grid.Column="1"
                  Margin="0,0,0,12"
-                 Background="{StaticResource DVS.BackgroundBrush}"
-                 BorderBrush="{StaticResource DVS.ElementBrightBrush}"
-                 SelectionBrush="{StaticResource DVS.ElementBrightBrush}"
-                 SelectionTextBrush="{StaticResource DVS.TextImportantBrush}"
-                 CaretBrush="{StaticResource DVS.ElementBrightBrush}" />
+                 Background="{StaticResource Panel_Secondary_Background_Brush}"
+                 BorderBrush="{StaticResource Accent_Primary_Brush}"
+                 SelectionBrush="{StaticResource Accent_Primary_Brush}"
+                 SelectionTextBrush="{StaticResource Text_Emphasis_Brush}"
+                 CaretBrush="{StaticResource Accent_Primary_Brush}" />
 
         <TextBlock Text="Description:" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,6" />
         <TextBox x:Name="DescriptionTextBox"
@@ -65,11 +65,11 @@
                  AcceptsReturn="True"
                  MaxLength="190"
                  VerticalScrollBarVisibility="Auto"
-                 Background="{StaticResource DVS.BackgroundBrush}"
-                 BorderBrush="{StaticResource DVS.ElementBrightBrush}"
-                 SelectionBrush="{StaticResource DVS.ElementBrightBrush}"
-                 SelectionTextBrush="{StaticResource DVS.TextImportantBrush}"
-                 CaretBrush="{StaticResource DVS.ElementBrightBrush}" />
+                 Background="{StaticResource Panel_Secondary_Background_Brush}"
+                 BorderBrush="{StaticResource Accent_Primary_Brush}"
+                 SelectionBrush="{StaticResource Accent_Primary_Brush}"
+                 SelectionTextBrush="{StaticResource Text_Emphasis_Brush}"
+                 CaretBrush="{StaticResource Accent_Primary_Brush}" />
 
         <Grid Grid.Row="0" Grid.Column="3" Grid.RowSpan="4">
             <Grid.RowDefinitions>
@@ -106,16 +106,16 @@
 
             <Border Grid.Row="2"
                     BorderThickness="1"
-                    BorderBrush="{StaticResource DVS.BackgroundBrush}"
-                    Background="{StaticResource DVS.BackgroundBrush}"
+                    BorderBrush="{StaticResource Panel_Secondary_Background_Brush}"
+                    Background="{StaticResource Panel_Secondary_Background_Brush}"
                     Padding="6">
                 <ListBox ItemsSource="{Binding ConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                          Visibility="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}"
                          Height="220"
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         Background="{StaticResource DVS.BackgroundBrush}"
-                         BorderBrush="{StaticResource DVS.BackgroundBrush}"
-                         Foreground="{StaticResource DVS.TextBrush}">
+                         Background="{StaticResource Panel_Secondary_Background_Brush}"
+                         BorderBrush="{StaticResource Panel_Secondary_Background_Brush}"
+                         Foreground="{StaticResource Text_Primary_Brush}">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
                             <Setter Property="MinHeight" Value="26" />
@@ -148,7 +148,7 @@
             <TextBlock Grid.Row="3"
                        Text="No mods with saved configuration paths were found."
                        TextWrapping="Wrap"
-                       Foreground="{StaticResource DVS.TextBrush}"
+                       Foreground="{StaticResource Text_Primary_Brush}"
                        Opacity="0.6"
                        Margin="0,8,0,0">
                 <TextBlock.Style>
