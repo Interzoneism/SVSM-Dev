@@ -219,9 +219,8 @@
         <SolidColorBrush x:Key="CardGradient3" Color="{StaticResource Color.Surface.Primary}" />
         <SolidColorBrush x:Key="CardDisabledGradient" Color="{StaticResource Color.Surface.Secondary}" />
         <SolidColorBrush x:Key="GridBackground1" Color="{StaticResource Color.Surface.Primary}" />
-        <!-- Style for toggleable MenuItem that keeps the default look and feel -->
+        <!-- Menu item style shared by toggle and standard items -->
         <Style x:Key="ToggleMenuItemStyle" TargetType="{x:Type MenuItem}">
-            <Setter Property="IsCheckable" Value="True" />
             <Setter Property="Background" Value="{StaticResource Panel_Primary_Background_Brush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="12,0,12,0" />
@@ -230,52 +229,88 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type MenuItem}">
-                        <Border x:Name="templateRoot"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}"
-                                SnapsToDevicePixels="True">
-                            <Grid SnapsToDevicePixels="True"
-                                  Grid.IsSharedSizeScope="True">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIconColumnGroup" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIGTColumnGroup" />
-                                </Grid.ColumnDefinitions>
+                        <Grid SnapsToDevicePixels="True">
+                            <Border x:Name="templateRoot"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Padding="{TemplateBinding Padding}"
+                                    SnapsToDevicePixels="True">
+                                <Grid Grid.IsSharedSizeScope="True">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemCheckColumnGroup" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIconColumnGroup" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIGTColumnGroup" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                                <TextBlock x:Name="CheckMark"
-                                           Margin="0,0,8,0"
-                                           VerticalAlignment="Center"
-                                           FontFamily="{TemplateBinding FontFamily}"
-                                           FontSize="{TemplateBinding FontSize}"
-                                           Foreground="{TemplateBinding Foreground}"
-                                           Text="☐"
-                                           Visibility="Collapsed" />
+                                    <TextBlock x:Name="CheckMark"
+                                               Margin="0,0,8,0"
+                                               VerticalAlignment="Center"
+                                               FontFamily="{TemplateBinding FontFamily}"
+                                               FontSize="{TemplateBinding FontSize}"
+                                               Foreground="{TemplateBinding Foreground}"
+                                               Text="☐"
+                                               Visibility="Collapsed" />
 
-                                <ContentPresenter x:Name="Icon"
-                                                  Margin="0,0,8,0"
-                                                  VerticalAlignment="Center"
-                                                  ContentSource="Icon"
-                                                  RecognizesAccessKey="True"
-                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                    <ContentPresenter x:Name="Icon"
+                                                      Grid.Column="1"
+                                                      Margin="0,0,8,0"
+                                                      VerticalAlignment="Center"
+                                                      ContentSource="Icon"
+                                                      RecognizesAccessKey="True"
+                                                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
 
-                                <ContentPresenter x:Name="HeaderHost"
-                                                  Grid.Column="1"
-                                                  VerticalAlignment="Center"
-                                                  RecognizesAccessKey="True"
-                                                  ContentSource="Header"
-                                                  TextElement.Foreground="{TemplateBinding Foreground}" />
+                                    <ContentPresenter x:Name="HeaderHost"
+                                                      Grid.Column="2"
+                                                      VerticalAlignment="Center"
+                                                      RecognizesAccessKey="True"
+                                                      ContentSource="Header"
+                                                      TextElement.Foreground="{TemplateBinding Foreground}" />
 
-                                <TextBlock x:Name="InputGestureText"
-                                           Grid.Column="2"
-                                           Margin="24,0,0,0"
-                                           VerticalAlignment="Center"
-                                           Foreground="{TemplateBinding Foreground}"
-                                           Text="{TemplateBinding InputGestureText}"
-                                           Visibility="Visible" />
-                            </Grid>
-                        </Border>
+                                    <TextBlock x:Name="InputGestureText"
+                                               Grid.Column="3"
+                                               Margin="24,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Foreground="{TemplateBinding Foreground}"
+                                               Text="{TemplateBinding InputGestureText}"
+                                               Visibility="Visible" />
+
+                                    <TextBlock x:Name="ArrowGlyph"
+                                               Grid.Column="4"
+                                               Margin="24,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Foreground="{TemplateBinding Foreground}"
+                                               Text="▶"
+                                               Visibility="Collapsed" />
+                                </Grid>
+                            </Border>
+
+                            <Popup x:Name="SubMenuPopup"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   Placement="Right"
+                                   PlacementTarget="{Binding ElementName=templateRoot}"
+                                   HorizontalOffset="-2"
+                                   VerticalOffset="-3"
+                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                   PopupAnimation="Fade">
+                                <Border Margin="0,0,0,4"
+                                        Background="{StaticResource Panel_Primary_Background_Brush}"
+                                        BorderBrush="{StaticResource Accent_Primary_Brush}"
+                                        BorderThickness="1"
+                                        MinWidth="{Binding ActualWidth, ElementName=templateRoot}"
+                                        SnapsToDevicePixels="True">
+                                    <ScrollViewer CanContentScroll="False"
+                                                  Focusable="False"
+                                                  HorizontalScrollBarVisibility="Hidden"
+                                                  VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter Margin="2" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
 
                         <ControlTemplate.Triggers>
                             <Trigger SourceName="Icon" Property="Content" Value="{x:Null}">
@@ -290,13 +325,35 @@
                                 <Setter TargetName="InputGestureText" Property="Visibility" Value="Collapsed" />
                             </Trigger>
 
+                            <Trigger Property="HasItems" Value="True">
+                                <Setter TargetName="ArrowGlyph" Property="Visibility" Value="Visible" />
+                            </Trigger>
+
+                            <Trigger Property="Role" Value="TopLevelHeader">
+                                <Setter TargetName="SubMenuPopup" Property="Placement" Value="Bottom" />
+                                <Setter TargetName="SubMenuPopup" Property="HorizontalOffset" Value="0" />
+                                <Setter TargetName="SubMenuPopup" Property="VerticalOffset" Value="0" />
+                                <Setter TargetName="ArrowGlyph" Property="Text" Value="▼" />
+                            </Trigger>
+
+                            <Trigger Property="Role" Value="SubmenuHeader">
+                                <Setter TargetName="ArrowGlyph" Property="Text" Value="▶" />
+                            </Trigger>
+
+                            <Trigger Property="IsCheckable" Value="True">
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                            </Trigger>
+
+                            <Trigger Property="IsCheckable" Value="False">
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Collapsed" />
+                            </Trigger>
+
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
                                 <Setter TargetName="CheckMark" Property="Text" Value="🗹" />
                             </Trigger>
 
                             <Trigger Property="IsChecked" Value="False">
-                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
                                 <Setter TargetName="CheckMark" Property="Text" Value="☐" />
                             </Trigger>
 
@@ -308,6 +365,11 @@
 
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Foreground" Value="{StaticResource Text_Placeholder_Brush}" />
+                            </Trigger>
+
+                            <Trigger Property="IsSubmenuOpen" Value="True">
+                                <Setter TargetName="templateRoot" Property="Background" Value="{StaticResource Accent_Primary_Brush}" />
+                                <Setter Property="Foreground" Value="{StaticResource Text_Emphasis_Brush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -338,10 +400,7 @@
                   Background="{StaticResource Window_Background_Brush}"
                   Foreground="{StaticResource Text_Primary_Brush}">
                 <Menu.Resources>
-                    <Style TargetType="{x:Type MenuItem}">
-                        <Setter Property="Background" Value="{StaticResource Panel_Primary_Background_Brush}" />
-                        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
-                    </Style>
+                    <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource ToggleMenuItemStyle}" />
                 </Menu.Resources>
 
                 <MenuItem Header="_File" Height="35" >
