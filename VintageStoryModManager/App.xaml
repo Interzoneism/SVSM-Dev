@@ -391,8 +391,8 @@
 
             <Style TargetType="ComboBox">
                 <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
-                <Setter Property="Background" Value="{StaticResource Button_General_Background_Brush}" />
-                <Setter Property="BorderBrush" Value="{StaticResource Border_Default_Brush}" />
+                <Setter Property="Background" Value="{StaticResource ComboBox_Background_Brush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource ComboBox_Border_Brush}" />
                 <Setter Property="Padding" Value="10,4" />
                 <Setter Property="FontFamily" Value="Segoe UI" />
                 <Setter Property="ui:ControlHelper.CornerRadius" Value="6" />
@@ -400,14 +400,14 @@
                     <Setter.Value>
                         <Style TargetType="ComboBoxItem">
                             <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
-                            <Setter Property="Background" Value="{StaticResource Panel_Secondary_Background_Brush}" />
+                            <Setter Property="Background" Value="{StaticResource ComboBox_Item_Background_Brush}" />
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="{StaticResource Button_General_Hover_Background_Brush}" />
+                                    <Setter Property="Background" Value="{StaticResource ComboBox_Item_Hover_Brush}" />
                                 </Trigger>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="{StaticResource Button_General_Hover_Background_Brush}" />
+                                    <Setter Property="Background" Value="{StaticResource ComboBox_Item_Selected_Brush}" />
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -468,8 +468,8 @@
                                        PopupAnimation="Slide"
                                        IsOpen="{TemplateBinding IsDropDownOpen}"
                                        PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
-                                    <Border Background="{StaticResource Panel_Secondary_Background_Brush}"
-                                            BorderBrush="{StaticResource Border_Default_Brush}"
+                                    <Border Background="{StaticResource ComboBox_Popup_Background_Brush}"
+                                            BorderBrush="{StaticResource ComboBox_Popup_Border_Brush}"
                                             BorderThickness="1"
                                             CornerRadius="8"
                                             Padding="4"
@@ -487,16 +487,16 @@
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsDropDownOpen" Value="True">
                                     <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource ComboBox_Open_Border_Brush}" />
-                                    <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource Button_General_Hover_Background_Brush}" />
+                                    <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource ComboBox_Open_Background_Brush}" />
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource Button_General_Hover_Background_Brush}" />
-                                    <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
+                                    <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource ComboBox_Hover_Background_Brush}" />
+                                    <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource ComboBox_Hover_Border_Brush}" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Foreground" Value="{StaticResource Text_Placeholder_Brush}" />
-                                    <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource Button_General_Disabled_Background_Brush}" />
-                                    <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource Button_General_Border_Brush}" />
+                                    <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource ComboBox_Disabled_Background_Brush}" />
+                                    <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{StaticResource ComboBox_Disabled_Border_Brush}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>

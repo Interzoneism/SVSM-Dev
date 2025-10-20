@@ -19,6 +19,18 @@
     <Color x:Key="Color.Border.Primary">#FFCAD7EB</Color>
     <Color x:Key="Color.Border.Hover">#FF7AA6F9</Color>
     <Color x:Key="Color.Border.DataGridRow">#FF8EA0C0</Color>
+    <Color x:Key="Color.ComboBox.Background">#FFF9FBFF</Color>
+    <Color x:Key="Color.ComboBox.Border">#FFCAD7EB</Color>
+    <Color x:Key="Color.ComboBox.HoverBackground">#FFE7F0FF</Color>
+    <Color x:Key="Color.ComboBox.HoverBorder">#FF7AA6F9</Color>
+    <Color x:Key="Color.ComboBox.DisabledBackground">#FFEEF1F6</Color>
+    <Color x:Key="Color.ComboBox.DisabledBorder">#FFCAD7EB</Color>
+    <Color x:Key="Color.ComboBox.ItemBackground">#FFEFF3F9</Color>
+    <Color x:Key="Color.ComboBox.ItemHover">#FFE7F0FF</Color>
+    <Color x:Key="Color.ComboBox.ItemSelected">#334C8BF5</Color>
+    <Color x:Key="Color.ComboBox.PopupBackground">#FFEFF3F9</Color>
+    <Color x:Key="Color.ComboBox.PopupBorder">#FFCAD7EB</Color>
+    <Color x:Key="Color.ComboBox.OpenBackground">#FFE7F0FF</Color>
     <Color x:Key="Color.Toggle.Track.Off">#FFC7D1E5</Color>
     <Color x:Key="Color.Toggle.Track.Disabled">#FFE2E6F0</Color>
     <Color x:Key="Color.Toggle.Thumb.Default">#FFFFFFFF</Color>
@@ -29,6 +41,11 @@
     <Color x:Key="Color.Status.Success">#FF79C46E</Color>
     <Color x:Key="Color.Status.Error">#FFE06B6B</Color>
     <Color x:Key="Color.Shadow.Default">#33000000</Color>
+    <Color x:Key="Color.Dialog.TextBox.Background">#FFEFF3F9</Color>
+    <Color x:Key="Color.Dialog.TextBox.Border">#FF4C8BF5</Color>
+    <Color x:Key="Color.Dialog.TextBox.Selection">#FF4C8BF5</Color>
+    <Color x:Key="Color.Dialog.TextBox.SelectionText">#FF0F3B76</Color>
+    <Color x:Key="Color.Dialog.TextBox.Caret">#FF4C8BF5</Color>
 
     <!-- Text -->
     <SolidColorBrush x:Key="Text_Primary_Brush" Color="{StaticResource Color.Text.Primary}" />
@@ -83,9 +100,19 @@
     <SolidColorBrush x:Key="SearchBox_Background_Brush" Color="{StaticResource Color.Surface.Input}" />
 
     <!-- ComboBox -->
+    <SolidColorBrush x:Key="ComboBox_Background_Brush" Color="{StaticResource Color.ComboBox.Background}" />
+    <SolidColorBrush x:Key="ComboBox_Border_Brush" Color="{StaticResource Color.ComboBox.Border}" />
+    <SolidColorBrush x:Key="ComboBox_Hover_Background_Brush" Color="{StaticResource Color.ComboBox.HoverBackground}" />
+    <SolidColorBrush x:Key="ComboBox_Hover_Border_Brush" Color="{StaticResource Color.ComboBox.HoverBorder}" />
+    <SolidColorBrush x:Key="ComboBox_Disabled_Background_Brush" Color="{StaticResource Color.ComboBox.DisabledBackground}" />
+    <SolidColorBrush x:Key="ComboBox_Disabled_Border_Brush" Color="{StaticResource Color.ComboBox.DisabledBorder}" />
+    <SolidColorBrush x:Key="ComboBox_Item_Background_Brush" Color="{StaticResource Color.ComboBox.ItemBackground}" />
+    <SolidColorBrush x:Key="ComboBox_Item_Hover_Brush" Color="{StaticResource Color.ComboBox.ItemHover}" />
+    <SolidColorBrush x:Key="ComboBox_Item_Selected_Brush" Color="{StaticResource Color.ComboBox.ItemSelected}" />
+    <SolidColorBrush x:Key="ComboBox_Open_Background_Brush" Color="{StaticResource Color.ComboBox.OpenBackground}" />
     <SolidColorBrush x:Key="ComboBox_Glyph_Brush" Color="{StaticResource Color.Text.Primary}" />
-    <SolidColorBrush x:Key="ComboBox_Popup_Background_Brush" Color="{StaticResource Color.Surface.Secondary}" />
-    <SolidColorBrush x:Key="ComboBox_Popup_Border_Brush" Color="{StaticResource Color.Border.Primary}" />
+    <SolidColorBrush x:Key="ComboBox_Popup_Background_Brush" Color="{StaticResource Color.ComboBox.PopupBackground}" />
+    <SolidColorBrush x:Key="ComboBox_Popup_Border_Brush" Color="{StaticResource Color.ComboBox.PopupBorder}" />
     <SolidColorBrush x:Key="ComboBox_Open_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
 
     <!-- Data grid -->
@@ -108,4 +135,9 @@
     <!-- Miscellaneous -->
     <SolidColorBrush x:Key="ScrollBar_Thumb_Brush" Color="{StaticResource Color.Control.ScrollBar}" />
     <SolidColorBrush x:Key="Selection_Background_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="Dialog_TextBox_Background_Brush" Color="{StaticResource Color.Dialog.TextBox.Background}" />
+    <SolidColorBrush x:Key="Dialog_TextBox_Border_Brush" Color="{StaticResource Color.Dialog.TextBox.Border}" />
+    <SolidColorBrush x:Key="Dialog_TextBox_Selection_Brush" Color="{StaticResource Color.Dialog.TextBox.Selection}" />
+    <SolidColorBrush x:Key="Dialog_TextBox_SelectionText_Brush" Color="{StaticResource Color.Dialog.TextBox.SelectionText}" />
+    <SolidColorBrush x:Key="Dialog_TextBox_Caret_Brush" Color="{StaticResource Color.Dialog.TextBox.Caret}" />
 </ResourceDictionary>

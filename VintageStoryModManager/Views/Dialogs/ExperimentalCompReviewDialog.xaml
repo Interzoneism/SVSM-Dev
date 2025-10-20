@@ -51,11 +51,11 @@
                      Margin="0,0,0,8"
                      VerticalAlignment="Center"
                      HorizontalAlignment="Stretch"
-                     Background="{StaticResource Panel_Secondary_Background_Brush}"
-                     BorderBrush="{StaticResource Accent_Primary_Brush}"
-                     SelectionBrush="{StaticResource Accent_Primary_Brush}"
-                     SelectionTextBrush="{StaticResource Text_Emphasis_Brush}"
-                     CaretBrush="{StaticResource Accent_Primary_Brush}" />
+                     Background="{StaticResource Dialog_TextBox_Background_Brush}"
+                     BorderBrush="{StaticResource Dialog_TextBox_Border_Brush}"
+                     SelectionBrush="{StaticResource Dialog_TextBox_Selection_Brush}"
+                     SelectionTextBrush="{StaticResource Dialog_TextBox_SelectionText_Brush}"
+                     CaretBrush="{StaticResource Dialog_TextBox_Caret_Brush}" />
 
             <TextBlock Grid.Row="1"
                        Grid.Column="0"
@@ -69,11 +69,11 @@
                      MinWidth="200"
                      VerticalAlignment="Center"
                      HorizontalAlignment="Stretch"
-                     Background="{StaticResource Panel_Secondary_Background_Brush}"
-                     BorderBrush="{StaticResource Accent_Primary_Brush}"
-                     SelectionBrush="{StaticResource Accent_Primary_Brush}"
-                     SelectionTextBrush="{StaticResource Text_Emphasis_Brush}"
-                     CaretBrush="{StaticResource Accent_Primary_Brush}" />
+                     Background="{StaticResource Dialog_TextBox_Background_Brush}"
+                     BorderBrush="{StaticResource Dialog_TextBox_Border_Brush}"
+                     SelectionBrush="{StaticResource Dialog_TextBox_Selection_Brush}"
+                     SelectionTextBrush="{StaticResource Dialog_TextBox_SelectionText_Brush}"
+                     CaretBrush="{StaticResource Dialog_TextBox_Caret_Brush}" />
         </Grid>
 
         <Border Grid.Row="2"
