@@ -31,7 +31,7 @@
 
         <Border BorderBrush="{StaticResource Border_Default_Brush}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Panel_Primary_Background_Brush}" Padding="4">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="5" Opacity="0.16" Color="{StaticResource Color.Shadow.Default}" />
+                <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="5" Opacity="0.16" Color="{Binding Color, Source={StaticResource Dialog_Content_Shadow_Brush}}" />
             </Border.Effect>
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="Transparent">
                 <TreeView ItemsSource="{Binding RootNodes}"
@@ -55,7 +55,7 @@
                                                     <BeginStoryboard x:Name="ObjectHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource Color.Control.Hover}"
+                                                                            To="{Binding Color, Source={StaticResource ModConfig_TreeNode_Hover_Background_Brush}}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -86,7 +86,7 @@
                                                     <BeginStoryboard>
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource Color.Control.Accent}"
+                                                                            To="{Binding Color, Source={StaticResource ModConfig_TreeNode_Selected_Background_Brush}}"
                                                                             Duration="0:0:0.18">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -139,7 +139,7 @@
                                                     <BeginStoryboard x:Name="ArrayHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource Color.Control.Hover}"
+                                                                            To="{Binding Color, Source={StaticResource ModConfig_Value_Hover_Background_Brush}}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -170,7 +170,7 @@
                                                     <BeginStoryboard>
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource Color.Control.Accent}"
+                                                                            To="{Binding Color, Source={StaticResource ModConfig_TreeNode_Selected_Background_Brush}}"
                                                                             Duration="0:0:0.18">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -241,7 +241,7 @@
                                                     <BeginStoryboard x:Name="ValueHoverIn">
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource Color.Control.Hover}"
+                                                                            To="{Binding Color, Source={StaticResource ModConfig_Value_Hover_Background_Brush}}"
                                                                             Duration="0:0:0.15">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
@@ -272,7 +272,7 @@
                                                     <BeginStoryboard>
                                                         <Storyboard>
                                                             <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{StaticResource Color.Button.Pressed}"
+                                                                            To="{Binding Color, Source={StaticResource ModConfig_Value_Selected_Background_Brush}}"
                                                                             Duration="0:0:0.18">
                                                                 <ColorAnimation.EasingFunction>
                                                                     <QuadraticEase EasingMode="EaseOut" />
