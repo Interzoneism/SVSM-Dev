@@ -144,7 +144,7 @@
                            Focusable="False"
                            PopupAnimation="Fade">
                         <Border x:Name="SubMenuBorder"
-                                Background="{StaticResource Menu_Background_Brush}"
+                                Background="{StaticResource Panel_Primary_Background_Brush}"
                                 BorderBrush="{StaticResource Border_Default_Brush}"
                                 BorderThickness="1"
                                 SnapsToDevicePixels="True">
