@@ -12,6 +12,16 @@
     <Color x:Key="Palette.Status.Error">#FF8C3F3F</Color>
     <Color x:Key="Palette.Shadow.Default">#33000000</Color>
 
+    <!-- Theme color aliases -->
+    <Color x:Key="Color.Control.Accent">{StaticResource Palette.Control.Accent}</Color>
+    <Color x:Key="Color.Control.Default">{StaticResource Palette.Surface.Header}</Color>
+    <Color x:Key="Color.Control.Hover">{StaticResource Palette.Control.Hover}</Color>
+    <Color x:Key="Color.Button.Pressed">{StaticResource Palette.Surface.Secondary}</Color>
+    <Color x:Key="Color.Surface.Primary">{StaticResource Palette.Surface.Primary}</Color>
+    <Color x:Key="Color.Surface.Secondary">{StaticResource Palette.Surface.Secondary}</Color>
+    <Color x:Key="Color.Status.Error">{StaticResource Palette.Status.Error}</Color>
+    <Color x:Key="Color.Shadow.Default">{StaticResource Palette.Shadow.Default}</Color>
+
     <!-- Text -->
     <SolidColorBrush x:Key="Text_Primary_Brush" Color="{StaticResource Palette.Text.Primary}" />
     <SolidColorBrush x:Key="Text_Body_Brush" Color="{StaticResource Palette.Text.Primary}" />
