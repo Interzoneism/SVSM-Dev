@@ -765,7 +765,9 @@
                             </Style.Triggers>
                         </Style>
                     </StackPanel.Style>
-                    <Label Content="Sort by most downloads..." Width="273"/>
+                    <Label Content="Sort by most downloads..."
+                           Width="273"
+                           Foreground="{StaticResource Text_Primary_Brush}" />
                 </StackPanel>
             </Grid>
             <Grid Margin="0,32,25,0" Grid.RowSpan="2">
