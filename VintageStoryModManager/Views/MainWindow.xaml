@@ -756,7 +756,8 @@
                         BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Light}"
                         BorderThickness="0,0,2,2"
                         CornerRadius="{Binding Path=(ui:ControlHelper.CornerRadius), ElementName=ModsDataGrid}"
-                        SnapsToDevicePixels="True">
+                        SnapsToDevicePixels="True"
+                        Visibility="{Binding IsViewingCloudModlists, Converter={StaticResource IMM.VisibleWhenFalseConverter}}">
                     <Border Background="Transparent"
                             BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Dark}"
                             BorderThickness="2,2,0,0"
