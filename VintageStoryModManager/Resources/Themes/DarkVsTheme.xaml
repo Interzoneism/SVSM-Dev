@@ -74,7 +74,7 @@
     <!-- Menu -->
     <SolidColorBrush x:Key="Menu_Background_Brush" Color="{StaticResource Palette.Surface.Primary}" />
     <SolidColorBrush x:Key="Menu_Border_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
-    <SolidColorBrush x:Key="Menu_Item_Hover_Background_Brush" Color="{StaticResource Palette.Surface.Header}" />
+    <SolidColorBrush x:Key="Menu_Item_Hover_Background_Brush" Color="{StaticResource Palette.Control.Hover}" />
     <SolidColorBrush x:Key="Menu_Item_Submenu_Background_Brush" Color="{StaticResource Palette.Surface.Primary}" />
 
     <!-- Inputs -->
@@ -340,7 +340,6 @@
                                 <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIconColumnGroup" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIGTColumnGroup" />
-                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock x:Name="CheckMark"
                                        Margin="0,0,8,0"
@@ -368,13 +367,6 @@
                                        VerticalAlignment="Center"
                                        Foreground="{TemplateBinding Foreground}"
                                        Text="{TemplateBinding InputGestureText}" />
-                            <Path x:Name="Arrow"
-                                  Grid.Column="4"
-                                  Margin="12,0,0,0"
-                                  VerticalAlignment="Center"
-                                  Fill="{StaticResource ComboBox_Glyph_Brush}"
-                                  Data="M 0 0 L 4 4 L 0 8 Z"
-                                  Visibility="Collapsed" />
                         </Grid>
                     </Border>
                     <Popup x:Name="PART_Popup"
@@ -415,23 +407,17 @@
                     <Trigger Property="IsChecked" Value="False">
                         <Setter TargetName="CheckMark" Property="Text" Value="☐" />
                     </Trigger>
-                    <Trigger Property="HasItems" Value="True">
-                        <Setter TargetName="Arrow" Property="Visibility" Value="Visible" />
-                    </Trigger>
                     <Trigger Property="IsSubmenuOpen" Value="True">
                         <Setter TargetName="Border" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
                         <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
                         <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
-                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource Text_Primary_Brush}" />
                     </Trigger>
                     <Trigger Property="IsHighlighted" Value="True">
                         <Setter TargetName="Border" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
                         <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
-                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource Text_Primary_Brush}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Foreground" Value="{StaticResource Text_Subtle_Brush}" />
-                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource Text_Subtle_Brush}" />
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
@@ -450,7 +436,6 @@
                                 <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIconColumnGroup" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIGTColumnGroup" />
-                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock x:Name="CheckMark"
                                        Margin="0,0,8,0"
@@ -478,13 +463,6 @@
                                        VerticalAlignment="Center"
                                        Foreground="{TemplateBinding Foreground}"
                                        Text="{TemplateBinding InputGestureText}" />
-                            <Path x:Name="Arrow"
-                                  Grid.Column="4"
-                                  Margin="12,0,0,0"
-                                  VerticalAlignment="Center"
-                                  Fill="{StaticResource ComboBox_Glyph_Brush}"
-                                  Data="M 0 0 L 4 4 L 0 8 Z"
-                                  Visibility="Collapsed" />
                         </Grid>
                     </Border>
                 </Grid>
@@ -507,17 +485,12 @@
                     <Trigger Property="IsChecked" Value="False">
                         <Setter TargetName="CheckMark" Property="Text" Value="☐" />
                     </Trigger>
-                    <Trigger Property="HasItems" Value="True">
-                        <Setter TargetName="Arrow" Property="Visibility" Value="Visible" />
-                    </Trigger>
                     <Trigger Property="IsHighlighted" Value="True">
                         <Setter TargetName="Border" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
                         <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
-                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource Text_Primary_Brush}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Foreground" Value="{StaticResource Text_Subtle_Brush}" />
-                        <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource Text_Subtle_Brush}" />
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
