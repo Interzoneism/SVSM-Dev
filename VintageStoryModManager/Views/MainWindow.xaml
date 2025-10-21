@@ -14,7 +14,7 @@
         d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
         Title="Simple VS Manager"
         Height="797" Width="1179"
-        MinWidth="1200" MinHeight="775" Background="{DynamicResource GridBackground1}" WindowStartupLocation="CenterScreen"
+        MinWidth="1200" MinHeight="775" WindowStartupLocation="CenterScreen"
         PreviewKeyDown="MainWindow_OnPreviewKeyDown">
 
     <Window.Resources>
@@ -359,10 +359,7 @@
         <SolidColorBrush x:Key="ButtonError" Color="{Binding Color, Source={StaticResource Status_Error_Brush}}" />
     </Window.Resources>
 
-    <Grid Margin="0,0,0,8">
-        <Grid.Background>
-            <ImageBrush ImageSource="/Views/TiledBackground.jpg" Stretch="None" TileMode="None"/>
-        </Grid.Background>
+    <Grid Margin="0,0,0,8" Background="{DynamicResource Panel_Primary_Background_ImageBrush}">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="35" MinHeight="10" />

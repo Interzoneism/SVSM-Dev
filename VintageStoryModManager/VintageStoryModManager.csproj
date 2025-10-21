@@ -28,10 +28,12 @@
     <InformationalVersion>$(AppVersion)</InformationalVersion>     <!-- About box/semver -->
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Views\soilcorrect.png" />
     <None Remove="Views\TiledBackground.jpg" />
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Views\soilcorrect.png" />
     <Resource Include="Views\TiledBackground.jpg" />
     <Resource Include="warning.png" />
     <Resource Include="error.png" />
