@@ -12,7 +12,7 @@
         MinWidth="600"
         MinHeight="420"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource Window_Background_Brush}"
+        Background="{StaticResource Brush.Window.Shell.Background}"
         Loaded="Window_OnLoaded">
     <Window.Resources>
         <Style x:Key="IMM.TreeViewItemStyle" TargetType="TreeViewItem">
@@ -23,15 +23,15 @@
             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="TreeViewItem_OnPreviewMouseLeftButtonDown" />
         </Style>
     </Window.Resources>
-    <Grid Margin="12" Background="{StaticResource Panel_Secondary_Background_Brush}">
+    <Grid Margin="12" Background="{StaticResource Brush.Panel.Secondary.Background}">
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border BorderBrush="{StaticResource Border_Default_Brush}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Panel_Primary_Background_Brush}" Padding="4">
+        <Border BorderBrush="{StaticResource Brush.Border.Default}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Brush.Panel.Primary.Background}" Padding="4">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="5" Opacity="0.16" Color="{Binding Color, Source={StaticResource Dialog_Content_Shadow_Brush}}" />
+                <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="5" Opacity="0.16" Color="{Binding Color, Source={StaticResource Brush.Dialog.ContentShadow}}" />
             </Border.Effect>
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="Transparent">
                 <TreeView ItemsSource="{Binding RootNodes}"
@@ -51,11 +51,11 @@
                                     <Style TargetType="Border">
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource ModConfig_TreeNode_Hover_Background_Brush}" />
+                                                <Setter Property="Background" Value="{StaticResource Brush.ModConfig.TreeNode.Background.Hover}" />
                                             </Trigger>
                                             <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                                          Value="True">
-                                                <Setter Property="Background" Value="{StaticResource ModConfig_TreeNode_Selected_Background_Brush}" />
+                                                <Setter Property="Background" Value="{StaticResource Brush.ModConfig.TreeNode.Background.Selected}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -63,13 +63,13 @@
                                 <TextBlock x:Name="ObjectHeaderText"
                                            Text="{Binding DisplayName}"
                                            FontWeight="SemiBold"
-                                           Foreground="{StaticResource Text_Primary_Brush}"
+                                           Foreground="{StaticResource Brush.Text.Primary}"
                                            IsHitTestVisible="False" />
                             </Border>
                             <HierarchicalDataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                              Value="True">
-                                    <Setter TargetName="ObjectHeaderText" Property="Foreground" Value="{StaticResource Text_Selection_Foreground_Brush}" />
+                                    <Setter TargetName="ObjectHeaderText" Property="Foreground" Value="{StaticResource Brush.Text.SelectionForeground}" />
                                 </DataTrigger>
                             </HierarchicalDataTemplate.Triggers>
                         </HierarchicalDataTemplate>
@@ -83,11 +83,11 @@
                                     <Style TargetType="Border">
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource ModConfig_Value_Hover_Background_Brush}" />
+                                                <Setter Property="Background" Value="{StaticResource Brush.ModConfig.Value.Background.Hover}" />
                                             </Trigger>
                                             <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                                          Value="True">
-                                                <Setter Property="Background" Value="{StaticResource ModConfig_TreeNode_Selected_Background_Brush}" />
+                                                <Setter Property="Background" Value="{StaticResource Brush.ModConfig.TreeNode.Background.Selected}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -96,7 +96,7 @@
                                     <TextBlock x:Name="ArrayHeaderText"
                                                Text="{Binding DisplayName}"
                                                FontWeight="SemiBold"
-                                               Foreground="{StaticResource Text_Primary_Brush}"
+                                               Foreground="{StaticResource Brush.Text.Primary}"
                                                IsHitTestVisible="False" />
                                     <TextBlock Margin="8,0,0,0"
                                                Foreground="Gray"
@@ -120,7 +120,7 @@
                             <HierarchicalDataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                              Value="True">
-                                    <Setter TargetName="ArrayHeaderText" Property="Foreground" Value="{StaticResource Text_Selection_Foreground_Brush}" />
+                                    <Setter TargetName="ArrayHeaderText" Property="Foreground" Value="{StaticResource Brush.Text.SelectionForeground}" />
                                 </DataTrigger>
                             </HierarchicalDataTemplate.Triggers>
                         </HierarchicalDataTemplate>
@@ -133,11 +133,11 @@
                                     <Style TargetType="Border">
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource ModConfig_Value_Hover_Background_Brush}" />
+                                                <Setter Property="Background" Value="{StaticResource Brush.ModConfig.Value.Background.Hover}" />
                                             </Trigger>
                                             <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                                          Value="True">
-                                                <Setter Property="Background" Value="{StaticResource ModConfig_Value_Selected_Background_Brush}" />
+                                                <Setter Property="Background" Value="{StaticResource Brush.ModConfig.Value.Background.Selected}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -152,7 +152,7 @@
                                                Text="{Binding DisplayName}"
                                                VerticalAlignment="Center"
                                                Margin="0"
-                                               Foreground="{StaticResource Text_Primary_Brush}"
+                                               Foreground="{StaticResource Brush.Text.Primary}"
                                                IsHitTestVisible="False">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
@@ -206,7 +206,7 @@
         <DockPanel Grid.Row="1" Margin="0,12,0,0" LastChildFill="False">
             <TextBlock x:Name="FilePathTextBlock"
                        Text="{Binding FilePath}"
-                       Foreground="{StaticResource Text_Placeholder_Brush}"
+                       Foreground="{StaticResource Brush.Text.Placeholder}"
                        VerticalAlignment="Center"
                        Margin="0,0,16,0"
                        TextTrimming="CharacterEllipsis" />

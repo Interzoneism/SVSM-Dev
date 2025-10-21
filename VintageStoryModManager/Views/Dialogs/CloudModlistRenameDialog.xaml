@@ -10,10 +10,10 @@
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
         Loaded="Window_OnLoaded"
-        Background="{StaticResource Window_Background_Brush}">
+        Background="{StaticResource Brush.Window.Shell.Background}">
     <Grid Margin="20"
-          Background="{StaticResource Panel_Primary_Background_Brush}"
-          TextElement.Foreground="{StaticResource Text_Primary_Brush}">
+          Background="{StaticResource Brush.Panel.Primary.Background}"
+          TextElement.Foreground="{StaticResource Brush.Text.Primary}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -30,11 +30,11 @@
                  MinWidth="220"
                  Margin="0,0,0,12"
                  TextChanged="NameTextBox_OnTextChanged"
-                 Background="{StaticResource Dialog_TextBox_Background_Brush}"
-                 BorderBrush="{StaticResource Dialog_TextBox_Border_Brush}"
-                 SelectionBrush="{StaticResource Dialog_TextBox_Selection_Brush}"
-                 SelectionTextBrush="{StaticResource Dialog_TextBox_SelectionText_Brush}"
-                 CaretBrush="{StaticResource Dialog_TextBox_Caret_Brush}" />
+                 Background="{StaticResource Brush.Dialog.TextBox.Background}"
+                 BorderBrush="{StaticResource Brush.Dialog.TextBox.Border}"
+                 SelectionBrush="{StaticResource Brush.Dialog.TextBox.SelectionBackground}"
+                 SelectionTextBrush="{StaticResource Brush.Dialog.TextBox.SelectionForeground}"
+                 CaretBrush="{StaticResource Brush.Dialog.TextBox.Caret}" />
 
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"

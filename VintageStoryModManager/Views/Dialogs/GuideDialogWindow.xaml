@@ -9,10 +9,10 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         WindowStyle="SingleBorderWindow"
-        Background="{StaticResource Window_Background_Brush}">
+        Background="{StaticResource Brush.Window.Shell.Background}">
     <Grid Margin="24"
-          Background="{StaticResource Panel_Primary_Background_Brush}"
-          TextElement.Foreground="{StaticResource Text_Primary_Brush}">
+          Background="{StaticResource Brush.Panel.Primary.Background}"
+          TextElement.Foreground="{StaticResource Brush.Text.Primary}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -22,7 +22,7 @@
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
                       MaxHeight="420"
-                      Background="{StaticResource Panel_Secondary_Background_Brush}">
+                      Background="{StaticResource Brush.Panel.Secondary.Background}">
             <StackPanel>
                 <TextBlock FontSize="20"
                            FontWeight="Bold"
@@ -62,7 +62,7 @@
                     <Run Text="inside the" />
                     <Hyperlink x:Name="ConfigurationFileHyperlink"
                                RequestNavigate="OnHyperlinkRequestNavigate"
-                               Foreground="{StaticResource Text_Emphasis_Brush}">
+                               Foreground="{StaticResource Brush.Text.Emphasis}">
                         <Run Text="Simple VS Manager folder"/>
                     </Hyperlink>
                     <Run Text="." />
@@ -74,7 +74,7 @@
                     <Run Text="• All manager data lives under the" />
                     <Hyperlink x:Name="ManagerFolderHyperlink"
                                RequestNavigate="OnHyperlinkRequestNavigate"
-                               Foreground="{StaticResource Text_Emphasis_Brush}">
+                               Foreground="{StaticResource Brush.Text.Emphasis}">
                         <Run Text="Simple VS Manager folder" />
                     </Hyperlink>
                     <Run Text="- configs, caches, and presets." />
@@ -83,7 +83,7 @@
                            TextWrapping="Wrap"
                            FontSize="15"><Run Text="• " /><Run Text=" "/><Bold><Run Text="Mods &gt; Cache all versions locally"/></Bold><Run Text=" "/><Run Text="is on by default so downloads stay ready. Most mods are small, so the " /><Run Text=" "/><Hyperlink x:Name="CachedModsHyperlink"
                                RequestNavigate="OnHyperlinkRequestNavigate"
-                               Foreground="{StaticResource Text_Emphasis_Brush}"><Run Text="Cached Mods folder" /></Hyperlink><Run Text=" "/><Run Text=" saves re-download time." /></TextBlock>
+                               Foreground="{StaticResource Brush.Text.Emphasis}"><Run Text="Cached Mods folder" /></Hyperlink><Run Text=" "/><Run Text=" saves re-download time." /></TextBlock>
             </StackPanel>
         </ScrollViewer>
 
