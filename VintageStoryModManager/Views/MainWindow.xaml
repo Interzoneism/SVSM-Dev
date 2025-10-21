@@ -834,7 +834,7 @@
                     <DataGrid.RowStyle>
                         <Style TargetType="{x:Type DataGridRow}">
                             <Setter Property="Background" Value="Transparent" />
-                            <Setter Property="BorderBrush" Value="{StaticResource Panel_Secondary_Background_Brush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource InstalledMods_Row_Border_Brush}" />
                             <Setter Property="BorderThickness" Value="0" />
                             <Setter Property="Margin" Value="10,2,10,2" />
                             <Setter Property="Padding">
@@ -849,8 +849,9 @@
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="{x:Type DataGridRow}">
+                                        <!-- The brushes here come from InstalledMods_Row_* resources in Resources/Themes. -->
                                         <Border x:Name="RowBorder"
-                                            Background="{DynamicResource Panel_Primary_Background_Brush}"
+                                            Background="{DynamicResource InstalledMods_Row_Background_Brush}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}"
                                         CornerRadius="8"
