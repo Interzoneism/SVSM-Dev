@@ -780,7 +780,7 @@
                                   HorizontalGridLinesBrush="Transparent"
                                   VerticalGridLinesBrush="Transparent"
                                   HeadersVisibility="Column"
-                                  ui:ControlHelper.CornerRadius="10"
+                                  ui:ControlHelper.CornerRadius="0"
                                   FontSize="15"
                                   Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                   BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
