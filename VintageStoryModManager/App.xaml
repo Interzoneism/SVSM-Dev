@@ -156,120 +156,26 @@
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
                                     Padding="{TemplateBinding Padding}"
-                                    SnapsToDevicePixels="True"
-                                    RenderTransformOrigin="0.5,0.5">
-                                <Border.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1" />
-                                </Border.RenderTransform>
-                                <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="CommonStates">
-                                    <VisualState x:Name="Normal">
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="Root"
-                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource Button_General_Background_Brush}}"
-                                                            Duration="0:0:0.15">
-                                                <ColorAnimation.EasingFunction>
-                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                </ColorAnimation.EasingFunction>
-                                            </ColorAnimation>
-                                            <ColorAnimation Storyboard.TargetName="Root"
-                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource Border_Default_Brush}}"
-                                                            Duration="0:0:0.15">
-                                                <ColorAnimation.EasingFunction>
-                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                </ColorAnimation.EasingFunction>
-                                            </ColorAnimation>
-                                            <DoubleAnimation Storyboard.TargetName="Root"
-                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                             To="1"
-                                                             Duration="0:0:0.1" />
-                                            <DoubleAnimation Storyboard.TargetName="Root"
-                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                             To="1"
-                                                             Duration="0:0:0.1" />
-                                            <DoubleAnimation Storyboard.TargetName="Root"
-                                                             Storyboard.TargetProperty="Opacity"
-                                                             To="1"
-                                                             Duration="0:0:0.1" />
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="MouseOver">
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="Root"
-                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource Button_General_Hover_Background_Brush}}"
-                                                            Duration="0:0:0.15">
-                                                <ColorAnimation.EasingFunction>
-                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                </ColorAnimation.EasingFunction>
-                                            </ColorAnimation>
-                                            <ColorAnimation Storyboard.TargetName="Root"
-                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource Border_Hover_Brush}}"
-                                                            Duration="0:0:0.15">
-                                                <ColorAnimation.EasingFunction>
-                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                </ColorAnimation.EasingFunction>
-                                            </ColorAnimation>
-                                            <DoubleAnimation Storyboard.TargetName="Root"
-                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                             To="1.01"
-                                                             Duration="0:0:0.12">
-                                                <DoubleAnimation.EasingFunction>
-                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                </DoubleAnimation.EasingFunction>
-                                            </DoubleAnimation>
-                                            <DoubleAnimation Storyboard.TargetName="Root"
-                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                             To="1.01"
-                                                             Duration="0:0:0.12">
-                                                <DoubleAnimation.EasingFunction>
-                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                </DoubleAnimation.EasingFunction>
-                                            </DoubleAnimation>
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="Pressed">
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="Root"
-                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource Button_General_Pressed_Background_Brush}}"
-                                                            Duration="0:0:0.05" />
-                                            <ColorAnimation Storyboard.TargetName="Root"
-                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource Accent_Primary_Brush}}"
-                                                            Duration="0:0:0.05" />
-                                            <DoubleAnimation Storyboard.TargetName="Root"
-                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                             To="0.975"
-                                                             Duration="0:0:0.05" />
-                                            <DoubleAnimation Storyboard.TargetName="Root"
-                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                             To="0.975"
-                                                             Duration="0:0:0.05" />
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="Disabled">
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="Root"
-                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource Button_General_Disabled_Background_Brush}}"
-                                                            Duration="0:0:0.15" />
-                                            <DoubleAnimation Storyboard.TargetName="Root"
-                                                             Storyboard.TargetProperty="Opacity"
-                                                             To="0.55"
-                                                             Duration="0:0:0.1" />
-                                        </Storyboard>
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
+                                    SnapsToDevicePixels="True">
                                 <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                                   SnapsToDevicePixels="True" />
                             </Border>
-                            
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Root" Property="Background" Value="{StaticResource Button_General_Hover_Background_Brush}" />
+                                    <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Root" Property="Background" Value="{StaticResource Button_General_Pressed_Background_Brush}" />
+                                    <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Accent_Primary_Brush}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Root" Property="Background" Value="{StaticResource Button_General_Disabled_Background_Brush}" />
+                                    <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Border_Default_Brush}" />
+                                    <Setter TargetName="Root" Property="Opacity" Value="0.55" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
@@ -465,7 +371,6 @@
                                        Placement="Bottom"
                                        AllowsTransparency="True"
                                        Focusable="False"
-                                       PopupAnimation="Slide"
                                        IsOpen="{TemplateBinding IsDropDownOpen}"
                                        PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
                                     <Border Background="{StaticResource ComboBox_Popup_Background_Brush}"
@@ -527,46 +432,8 @@
                                     <Setter TargetName="Root" Property="Opacity" Value="0.6" />
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="Root"
-                                                                Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                Duration="0:0:0.12">
-                                                    <ColorAnimation.To>
-                                                        <DynamicResource ResourceKey="Color.TextInput.FocusBorder" />
-                                                    </ColorAnimation.To>
-                                                </ColorAnimation>
-                                                <ColorAnimation Storyboard.TargetName="Root"
-                                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                Duration="0:0:0.12">
-                                                    <ColorAnimation.To>
-                                                        <DynamicResource ResourceKey="Color.TextInput.FocusBackground" />
-                                                    </ColorAnimation.To>
-                                                </ColorAnimation>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="Root"
-                                                                Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                Duration="0:0:0.12">
-                                                    <ColorAnimation.To>
-                                                        <DynamicResource ResourceKey="Color.Border.Default" />
-                                                    </ColorAnimation.To>
-                                                </ColorAnimation>
-                                                <ColorAnimation Storyboard.TargetName="Root"
-                                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                Duration="0:0:0.12">
-                                                    <ColorAnimation.To>
-                                                        <DynamicResource ResourceKey="Color.TextInput.Background" />
-                                                    </ColorAnimation.To>
-                                                </ColorAnimation>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.ExitActions>
+                                    <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource TextInput_Focus_Border_Brush}" />
+                                    <Setter TargetName="Root" Property="Background" Value="{StaticResource TextInput_Focus_Background_Brush}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -590,55 +457,23 @@
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
                                     Padding="{TemplateBinding Padding}"
-                                    RenderTransformOrigin="0.5,0.5">
-                                <Border.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1" />
-                                </Border.RenderTransform>
-                                <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="CommonStates">
-                                    <VisualState x:Name="Normal" />
-                                        <VisualState x:Name="MouseOver">
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="Root"
-                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource Button_General_Hover_Background_Brush}}"
-                                                            Duration="0:0:0.15" />
-                                                <ColorAnimation Storyboard.TargetName="Root"
-                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource Border_Hover_Brush}}"
-                                                            Duration="0:0:0.15" />
-                                            </Storyboard>
-                                        </VisualState>
-                                        <VisualState x:Name="Disabled">
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="Root"
-                                                             Storyboard.TargetProperty="Opacity"
-                                                             To="0.5"
-                                                             Duration="0:0:0.1" />
-                                        </Storyboard>
-                                    </VisualState>
-                                </VisualStateGroup>
-                                <VisualStateGroup x:Name="CheckStates">
-                                    <VisualState x:Name="Unchecked" />
-                                    <VisualState x:Name="Checked">
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="Root"
-                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource ToggleButton_Checked_Background_Brush}}"
-                                                            Duration="0:0:0.15" />
-                                            <ColorAnimation Storyboard.TargetName="Root"
-                                                            Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource ToggleButton_Checked_Border_Brush}}"
-                                                            Duration="0:0:0.15" />
-                                        </Storyboard>
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
+                                    SnapsToDevicePixels="True">
                                 <ContentPresenter HorizontalAlignment="Center"
                                                   VerticalAlignment="Center" />
                             </Border>
-                            
+
                             <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Root" Property="Opacity" Value="0.5" />
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True" />
+                                        <Condition Property="IsChecked" Value="False" />
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="Root" Property="Background" Value="{StaticResource Button_General_Hover_Background_Brush}" />
+                                    <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
+                                </MultiTrigger>
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter Property="Foreground" Value="{StaticResource Text_Selection_Foreground_Brush}" />
                                     <Setter TargetName="Root"

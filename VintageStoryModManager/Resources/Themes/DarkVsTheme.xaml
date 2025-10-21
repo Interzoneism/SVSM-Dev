@@ -273,8 +273,7 @@
                            VerticalOffset="0"
                            IsOpen="{TemplateBinding IsSubmenuOpen}"
                            AllowsTransparency="True"
-                           Focusable="False"
-                           PopupAnimation="Fade">
+                           Focusable="False">
                         <Border x:Name="SubMenuBorder"
                                 Background="{StaticResource Panel_Primary_Background_Brush}"
                                 BorderBrush="{StaticResource Border_Default_Brush}"
@@ -288,9 +287,6 @@
                     </Popup>
                 </Grid>
                 <ControlTemplate.Triggers>
-                    <Trigger Property="IsSuspendingPopupAnimation" Value="True">
-                        <Setter TargetName="PART_Popup" Property="PopupAnimation" Value="None" />
-                    </Trigger>
                     <Trigger Property="IsSubmenuOpen" Value="True">
                         <Setter TargetName="Border" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
                         <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
@@ -387,8 +383,7 @@
                            VerticalOffset="-1"
                            IsOpen="{TemplateBinding IsSubmenuOpen}"
                            AllowsTransparency="True"
-                           Focusable="False"
-                           PopupAnimation="Fade">
+                           Focusable="False">
                         <Border x:Name="SubMenuBorder"
                                 Background="{StaticResource Menu_Background_Brush}"
                                 BorderBrush="{StaticResource Border_Default_Brush}"
