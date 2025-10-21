@@ -150,30 +150,49 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="Root"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
-                                    Padding="{TemplateBinding Padding}"
-                                    SnapsToDevicePixels="True">
-                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                  SnapsToDevicePixels="True" />
-                            </Border>
+                            <Grid x:Name="LayoutRoot" SnapsToDevicePixels="True">
+                                <Border x:Name="TopAndLeft"
+                                        Background="Transparent"
+                                        BorderBrush="{StaticResource Brush.Button.Bevel.Light}"
+                                        BorderThickness="1,1,0,0"
+                                        CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                        SnapsToDevicePixels="True">
+                                    <Border x:Name="BottomAndRight"
+                                            Background="Transparent"
+                                            BorderBrush="{StaticResource Brush.Button.Bevel.Dark}"
+                                            BorderThickness="0,0,1,1"
+                                            CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                            SnapsToDevicePixels="True">
+                                        <Border x:Name="ChromeBorder"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                                Padding="{TemplateBinding Padding}"
+                                                SnapsToDevicePixels="True">
+                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                              RecognizesAccessKey="True"
+                                                              SnapsToDevicePixels="True" />
+                                        </Border>
+                                    </Border>
+                                </Border>
+                            </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Root" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Hover}" />
-                                    <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
+                                    <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Hover}" />
+                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="Root" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Pressed}" />
-                                    <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Brush.Accent.Primary}" />
+                                    <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Pressed}" />
+                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="{StaticResource Brush.Accent.Primary}" />
+                                    <Setter TargetName="TopAndLeft" Property="BorderBrush" Value="{StaticResource Brush.Button.Bevel.Dark}" />
+                                    <Setter TargetName="BottomAndRight" Property="BorderBrush" Value="{StaticResource Brush.Button.Bevel.Light}" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="Root" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Disabled}" />
-                                    <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Brush.Border.Default}" />
-                                    <Setter TargetName="Root" Property="Opacity" Value="0.55" />
+                                    <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Disabled}" />
+                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="{StaticResource Brush.Border.Default}" />
+                                    <Setter TargetName="LayoutRoot" Property="Opacity" Value="0.55" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -451,46 +470,70 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ToggleButton">
-                            <Border x:Name="Root"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
-                                    Padding="{TemplateBinding Padding}"
-                                    SnapsToDevicePixels="True">
-                                <ContentPresenter HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center" />
-                            </Border>
+                            <Grid x:Name="LayoutRoot" SnapsToDevicePixels="True">
+                                <Border x:Name="TopAndLeft"
+                                        Background="Transparent"
+                                        BorderBrush="{StaticResource Brush.Button.Bevel.Light}"
+                                        BorderThickness="1,1,0,0"
+                                        CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                        SnapsToDevicePixels="True">
+                                    <Border x:Name="BottomAndRight"
+                                            Background="Transparent"
+                                            BorderBrush="{StaticResource Brush.Button.Bevel.Dark}"
+                                            BorderThickness="0,0,1,1"
+                                            CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                            SnapsToDevicePixels="True">
+                                        <Border x:Name="ChromeBorder"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                                Padding="{TemplateBinding Padding}"
+                                                SnapsToDevicePixels="True">
+                                            <ContentPresenter HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"
+                                                              RecognizesAccessKey="True"
+                                                              SnapsToDevicePixels="True" />
+                                        </Border>
+                                    </Border>
+                                </Border>
+                            </Grid>
 
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="Root" Property="Opacity" Value="0.5" />
+                                    <Setter TargetName="LayoutRoot" Property="Opacity" Value="0.5" />
                                 </Trigger>
                                 <MultiTrigger>
                                     <MultiTrigger.Conditions>
                                         <Condition Property="IsMouseOver" Value="True" />
                                         <Condition Property="IsChecked" Value="False" />
                                     </MultiTrigger.Conditions>
-                                    <Setter TargetName="Root" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Hover}" />
-                                    <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
+                                    <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Hover}" />
+                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsPressed" Value="True" />
+                                        <Condition Property="IsChecked" Value="False" />
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Pressed}" />
+                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="{StaticResource Brush.Accent.Primary}" />
+                                    <Setter TargetName="TopAndLeft" Property="BorderBrush" Value="{StaticResource Brush.Button.Bevel.Dark}" />
+                                    <Setter TargetName="BottomAndRight" Property="BorderBrush" Value="{StaticResource Brush.Button.Bevel.Light}" />
                                 </MultiTrigger>
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter Property="Foreground" Value="{StaticResource Brush.Text.SelectionForeground}" />
-                                    <Setter TargetName="Root"
-                                            Property="Background"
-                                            Value="{StaticResource Brush.ToggleButton.Background.Checked}" />
-                                    <Setter TargetName="Root"
-                                            Property="BorderBrush"
-                                            Value="{StaticResource Brush.ToggleButton.Border.Checked}" />
+                                    <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.ToggleButton.Background.Checked}" />
+                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="{StaticResource Brush.ToggleButton.Border.Checked}" />
+                                    <Setter TargetName="TopAndLeft" Property="BorderBrush" Value="{StaticResource Brush.Button.Bevel.Dark}" />
+                                    <Setter TargetName="BottomAndRight" Property="BorderBrush" Value="{StaticResource Brush.Button.Bevel.Light}" />
                                 </Trigger>
                                 <Trigger Property="IsChecked" Value="False">
                                     <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-                                    <Setter TargetName="Root"
-                                            Property="Background"
-                                            Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
-                                    <Setter TargetName="Root"
-                                            Property="BorderBrush"
-                                            Value="{StaticResource Brush.Border.Default}" />
+                                    <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
+                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="{StaticResource Brush.Border.Default}" />
+                                    <Setter TargetName="TopAndLeft" Property="BorderBrush" Value="{StaticResource Brush.Button.Bevel.Light}" />
+                                    <Setter TargetName="BottomAndRight" Property="BorderBrush" Value="{StaticResource Brush.Button.Bevel.Dark}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
