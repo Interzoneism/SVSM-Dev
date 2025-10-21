@@ -118,11 +118,6 @@ public sealed class ModDatabaseService
             if (cached != null)
             {
                 modEntry.DatabaseInfo = cached;
-
-                if (ShouldSkipTagsFetch(cached, installedModVersion))
-                {
-                    return;
-                }
             }
 
             if (internetDisabled)
@@ -177,25 +172,6 @@ public sealed class ModDatabaseService
         return CacheService.TryLoadAsync(modId, normalizedGameVersion, modVersion, cancellationToken);
     }
 
-    private static bool ShouldSkipTagsFetch(ModDatabaseInfo? cachedInfo, string? installedModVersion)
-    {
-        if (cachedInfo is null || string.IsNullOrWhiteSpace(installedModVersion))
-        {
-            return false;
-        }
-
-        string? normalizedInstalledVersion = VersionStringUtility.Normalize(installedModVersion);
-        if (string.IsNullOrWhiteSpace(normalizedInstalledVersion))
-        {
-            return false;
-        }
-
-        return string.Equals(
-            cachedInfo.CachedTagsVersion,
-            normalizedInstalledVersion,
-            StringComparison.OrdinalIgnoreCase);
-    }
-
     private async Task<ModDatabaseInfo?> TryLoadDatabaseInfoAsyncCore(
         string modId,
         string? modVersion,
@@ -205,11 +181,6 @@ public sealed class ModDatabaseService
         ModDatabaseInfo? cached = await CacheService
             .TryLoadAsync(modId, normalizedGameVersion, modVersion, cancellationToken)
             .ConfigureAwait(false);
-
-        if (ShouldSkipTagsFetch(cached, modVersion))
-        {
-            return cached;
-        }
 
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
