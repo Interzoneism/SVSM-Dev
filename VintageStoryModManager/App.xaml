@@ -42,13 +42,6 @@
                                       Height="{TemplateBinding Height}"
                                       VerticalAlignment="Center"
                                       Margin="0">
-                                    <Border x:Name="FocusVisual"
-                                            Margin="-3"
-                                            CornerRadius="16"
-                                            BorderBrush="{StaticResource Brush.ToggleSwitch.Focus.Border}"
-                                            BorderThickness="0"
-                                            Opacity="0.8"
-                                            Visibility="Collapsed" />
                                     <Border x:Name="Track"
                                             CornerRadius="12"
                                             Background="{TemplateBinding Background}"
@@ -90,9 +83,6 @@
                                 </Trigger>
                                 <Trigger Property="Header" Value="{x:Null}">
                                     <Setter TargetName="HeaderContent" Property="Visibility" Value="Collapsed" />
-                                </Trigger>
-                                <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                    <Setter TargetName="FocusVisual" Property="Visibility" Value="Visible" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
