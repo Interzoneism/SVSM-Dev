@@ -10,12 +10,12 @@
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
         Loaded="Window_OnLoaded"
-        Background="{StaticResource Brush.Window.Shell.Background}">
+        Background="{StaticResource Brush.Window.Shell.Background.Solid}">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Window.Resources>
     <Grid Margin="20"
-          Background="{StaticResource Brush.Panel.Primary.Background}"
+          Background="{StaticResource Brush.Panel.Primary.Background.Solid}"
           TextElement.Foreground="{StaticResource Brush.Text.Primary}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -106,15 +106,15 @@
 
             <Border Grid.Row="2"
                     BorderThickness="1"
-                    BorderBrush="{StaticResource Brush.Panel.Secondary.Background}"
-                    Background="{StaticResource Brush.Panel.Secondary.Background}"
+                    BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}"
+                    Background="{StaticResource Brush.Panel.Secondary.Background.Solid}"
                     Padding="6">
                 <ListBox ItemsSource="{Binding ConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                          Visibility="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}"
                          Height="220"
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         Background="{StaticResource Brush.Panel.Secondary.Background}"
-                         BorderBrush="{StaticResource Brush.Panel.Secondary.Background}"
+                         Background="{StaticResource Brush.Panel.Secondary.Background.Solid}"
+                         BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}"
                          Foreground="{StaticResource Brush.Text.Primary}">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">

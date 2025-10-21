@@ -15,7 +15,7 @@
         Title="Simple VS Manager"
         Height="797" Width="1179"
         MinWidth="1200" MinHeight="775" WindowStartupLocation="CenterScreen"
-        PreviewKeyDown="MainWindow_OnPreviewKeyDown" Background="{DynamicResource Brush.Window.Shell.Background}">
+        PreviewKeyDown="MainWindow_OnPreviewKeyDown" Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
 
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenTrueConverter" />
@@ -30,7 +30,7 @@
         <sys:Double x:Key="IMM.TagRowMaxHeight">70</sys:Double>
         <sys:Double x:Key="IMM.TagRowCompactMaxHeight">35</sys:Double>
         <Style x:Key="IMM.TagBadgeBorderStyle" TargetType="{x:Type Border}">
-            <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background}" />
+            <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
             <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent.Primary}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="10" />
@@ -124,7 +124,7 @@
                     <SolidColorBrush Color="{Binding Color, Source={StaticResource Brush.DataGrid.Header.Background}}" />
                 </Setter.Value>
             </Setter>
-            <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
             <Setter Property="BorderThickness" Value="1,0,0,1" />
             <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
             <Setter Property="Margin" Value="0,0,0,6" />
@@ -200,7 +200,7 @@
         <SolidColorBrush x:Key="GridBackground1" Color="{Binding Color, Source={StaticResource Brush.ModGrid.Background}}" />
         <!-- Menu item style shared by toggle and standard items -->
         <Style x:Key="ToggleMenuItemStyle" TargetType="{x:Type MenuItem}">
-            <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background}" />
+            <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background.Solid}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="12,0,12,0" />
             <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
@@ -276,7 +276,7 @@
                                    VerticalOffset="-3"
                                    IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
                                 <Border Margin="0,0,0,4"
-                                        Background="{StaticResource Brush.Panel.Primary.Background}"
+                                        Background="{StaticResource Brush.Panel.Primary.Background.Solid}"
                                         BorderBrush="{StaticResource Brush.Accent.Primary}"
                                         BorderThickness="1"
                                         MinWidth="{Binding ActualWidth, ElementName=templateRoot}"
@@ -359,7 +359,7 @@
         <SolidColorBrush x:Key="ButtonError" Color="{Binding Color, Source={StaticResource Brush.Status.Error}}" />
     </Window.Resources>
 
-    <Grid Margin="0,0,0,8" Background="{DynamicResource Brush.Panel.Primary.Background}">
+    <Grid Margin="0,0,0,8" Background="{DynamicResource Brush.Panel.Primary.Background.Solid}">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="35" MinHeight="10" />
@@ -377,7 +377,7 @@
                   IsMainMenu="True"
                   BorderThickness="0"
                   Margin="0,0,0,5"
-                  Background="{StaticResource Brush.Window.Shell.Background}"
+                  Background="{StaticResource Brush.Window.Shell.Background.Solid}"
                   Foreground="{StaticResource Brush.Text.Primary}">
                 <Menu.Resources>
                     <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource ToggleMenuItemStyle}" />
@@ -565,8 +565,8 @@
                         StaysOpen="False"
                         AllowsTransparency="True"
                         Focusable="False" Margin="0,36,0,33">
-                        <Border Background="{DynamicResource Brush.Panel.Primary.Background}"
-                            BorderBrush="{StaticResource Brush.Panel.Secondary.Background}"
+                        <Border Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+                            BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="12"
@@ -617,8 +617,8 @@
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="VerticalContentAlignment" Value="Top" />
-                                <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background}" />
+                                <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
                                 <Setter Property="Opacity" Value="0.3" />
                                 <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                                 <Setter Property="Padding" Value="12,6" />
@@ -629,7 +629,7 @@
                                             <Condition Binding="{Binding IsViewingCloudModlists}" Value="False" />
                                         </MultiDataTrigger.Conditions>
                                         <Setter Property="Opacity" Value="1" />
-                                        <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background}" />
+                                        <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background.Solid}" />
                                         <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent.Primary}" />
                                     </MultiDataTrigger>
                                 </Style.Triggers>
@@ -641,19 +641,19 @@
                             Width="138"
                             Height="63"
                             FontSize="16"
-                            BorderBrush="{StaticResource Brush.Panel.Secondary.Background}">
+                            BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="VerticalContentAlignment" Value="Top" />
-                                <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background}" />
+                                <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
                                 <Setter Property="Opacity" Value="0.3" />
                                 <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                                 <Setter Property="Padding" Value="12,6" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                         <Setter Property="Opacity" Value="1" />
-                                        <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background}" />
+                                        <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background.Solid}" />
                                         <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent.Primary}" />
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -665,19 +665,19 @@
                         Width="138"
                         Height="63"
                         FontSize="16"
-                        BorderBrush="{StaticResource Brush.Panel.Secondary.Background}">
+                        BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="VerticalContentAlignment" Value="Top" />
-                                <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background}" />
+                                <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
                                 <Setter Property="Opacity" Value="0.3" />
                                 <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
                                 <Setter Property="Padding" Value="12,6" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
                                         <Setter Property="Opacity" Value="1" />
-                                        <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background}" />
+                                        <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background.Solid}" />
                                         <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent.Primary}" />
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -785,11 +785,11 @@
                   HeadersVisibility="Column"
                   ui:ControlHelper.CornerRadius="10"
                   FontSize="15" Margin="0,0,-29,0"
-                  Background="{DynamicResource Brush.Panel.Secondary.Background}"
-                  BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}">
+                  Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                  BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
                     <DataGrid.Resources>
                         <Style TargetType="{x:Type ScrollBar}">
-                            <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background}" />
+                            <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
                             <Setter Property="Foreground" Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
                             <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent.Primary}" />
                         </Style>
@@ -1226,8 +1226,8 @@
                                                StaysOpen="False"
                                                AllowsTransparency="True"
                                                Focusable="False">
-                                            <Border Background="{DynamicResource Brush.Panel.Primary.Background}"
-                                                    BorderBrush="{StaticResource Brush.Panel.Secondary.Background}"
+                                            <Border Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+                                                    BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}"
                                                     BorderThickness="1"
                                                     CornerRadius="6"
                                                     Padding="8"
@@ -1416,11 +1416,11 @@
                               FontSize="15"
                               Foreground="{StaticResource Brush.Text.Primary}"
                               SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged"
-                              Grid.RowSpan="2" Background="{DynamicResource Brush.Panel.Secondary.Background}"
-                              BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}">
+                              Grid.RowSpan="2" Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                              BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
                         <DataGrid.Resources>
                             <Style TargetType="{x:Type ScrollBar}">
-                                <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background}" />
+                                <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
                                 <Setter Property="Foreground" Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
                             </Style>
                             <Style TargetType="{x:Type TextBlock}">
@@ -1429,7 +1429,7 @@
                             <Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
                         </DataGrid.Resources>
                         <DataGrid.RowBackground>
-                            <DynamicResource ResourceKey="Brush.Panel.Primary.Background"/>
+                            <DynamicResource ResourceKey="Brush.Panel.Primary.Background.Solid"/>
                         </DataGrid.RowBackground>
                         <DataGrid.CellStyle>
                             <StaticResource ResourceKey="IMM.DataGridCellBaseStyle" />
@@ -1441,7 +1441,7 @@
                         <DataGrid.RowStyle>
                             <Style TargetType="{x:Type DataGridRow}">
                                 <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
                                 <Setter Property="BorderThickness" Value="0" />
                                 <Setter Property="Margin" Value="10,2,10,2" />
                                 <Setter Property="Foreground"
@@ -1459,7 +1459,7 @@
                                     <Setter.Value>
                                         <ControlTemplate TargetType="{x:Type DataGridRow}">
                                             <Border x:Name="RowBorder"
-                                                    Background="{DynamicResource Brush.Panel.Primary.Background}"
+                                                    Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
                                                     BorderBrush="{TemplateBinding BorderBrush}"
                                                     BorderThickness="{TemplateBinding BorderThickness}"
                                                     CornerRadius="8"
@@ -1511,7 +1511,7 @@
                                                 <Trigger Property="IsSelected" Value="True">
                                                     <Setter TargetName="SelectionOverlay" Property="Opacity" Value="0.25" />
                                                     <Setter TargetName="HoverOverlay" Property="Opacity" Value="0" />
-                                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background}" />
+                                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
                                                     <Setter TargetName="RowBorder" Property="BorderThickness" Value="0" />
                                                 </Trigger>
                                                 <Trigger Property="IsSelected" Value="False">
@@ -1698,8 +1698,8 @@
                                      Width="170"
                                      IsReadOnly="True"
                                      IsTabStop="False"
-                                     Background="{DynamicResource Brush.Panel.Secondary.Background}"
-                                     BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                                     Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                                     BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                      Foreground="{DynamicResource Brush.Text.Primary}"
                                      ToolTip="Change your player name in Vintage Story to update this username."/>
                             <TextBlock HorizontalAlignment="Left"
@@ -1728,7 +1728,7 @@
             </Grid>
             <ListView x:Name="ModDatabaseCardsListView"
                       ItemsSource="{Binding CurrentModsView}"
-                      Background="{DynamicResource Brush.Panel.Secondary.Background}"
+                      Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                       BorderThickness="1,1,1,1"
                       Margin="0,32,0,0"
                       SelectionMode="Single"
@@ -1740,7 +1740,7 @@
                       ScrollViewer.CanContentScroll="True"
                       VirtualizingPanel.IsVirtualizing="True"
                       VirtualizingPanel.VirtualizationMode="Recycling"
-                      Grid.RowSpan="2" BorderBrush="{StaticResource Brush.Panel.Secondary.Background}" FontSize="16">
+                      Grid.RowSpan="2" BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}" FontSize="16">
                 <ListView.Style>
                     <Style TargetType="{x:Type ListView}">
                         <Setter Property="Visibility" Value="Collapsed" />
@@ -1801,9 +1801,9 @@
                             </Border.Effect>
                             <Border.Style>
                                 <Style TargetType="{x:Type Border}">
-                                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background}" />
+                                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
                                     <Setter Property="BorderThickness" Value="1" />
-                                    <Setter Property="Background" Value="{DynamicResource Brush.Panel.Primary.Background}" />
+                                    <Setter Property="Background" Value="{DynamicResource Brush.Panel.Primary.Background.Solid}" />
                                     <Style.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
                                             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
@@ -1895,7 +1895,7 @@
                                 </Border>
 
                                 <Border Grid.Row="1"
-                                        Background="{StaticResource Brush.Panel.Primary.Background}"
+                                        Background="{StaticResource Brush.Panel.Primary.Background.Solid}"
                                         Padding="12,10,12,12"
                                         CornerRadius="0,0,12,12">
                                     <Grid>
@@ -2026,7 +2026,7 @@
                                                 HorizontalAlignment="Right"
                                                 Margin="0,12,0,0"
                                                 Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                                                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                                                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                                 Click="InstallModButton_OnClick"
                                                 ToolTip="{Binding InstallButtonToolTip}">
                                             <Button.Style>
@@ -2137,34 +2137,34 @@
                             Margin="0,0,4,0"
                             Width="125"
                             Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                             Click="UpdateAllModsMenuItem_OnClick"
                             Height="32" Padding="6,6,6,6" />
                 <Button Content="Open Logs Folder"
                             Margin="0,0,4,0"
                             Width="125"
                             Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                             Click="OpenLogsFolderButton_OnClick"
                             Height="32" Padding="6,6,6,6" />
                 <Button Content="Open Config Folder"
                             Margin="0,0,4,0"
                             Width="125"
                             Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                             Click="OpenConfigFolderButton_OnClick"
                             Height="32" Padding="6,6,6,6" />
                 <Button Content="Open Mods Folder"
                             Margin="0,0,4,0"
                             Width="125"
                             Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                             Click="OpenModFolderButton_OnClick"
                             Height="32" Padding="6,6,6,6" />
                 <Button Content="Launch Vintage Story"
                             Width="150"
                             Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                             Click="LaunchGameButton_OnClick"
                             Height="32"
                             FontWeight="Bold" />
@@ -2176,7 +2176,7 @@
                         Foreground="{StaticResource Brush.Accent.Primary}" Margin="388,0,0,0" VerticalAlignment="Stretch" Width="40" Height="40" />
         </Grid>
         <Border Background="{DynamicResource CardGradient3}" x:Name="MODINFO_border"
-                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                 BorderThickness="0"
                 CornerRadius="15,15,15,15" Margin="0,255,40,185" Grid.Row="1" Height="201" HorizontalAlignment="Right" Width="326" Panel.ZIndex="400">
             <Border.Style>
@@ -2217,7 +2217,7 @@
                 <Button x:Name="SelectedModDatabasePageButton"
                 Padding="12,6"
                 Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="ModDatabasePageButton_OnClick"
@@ -2227,7 +2227,7 @@
                 <Button x:Name="SelectedModEditConfigButton"
                 Padding="12,6"
                 Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="EditConfigButton_OnClick"
@@ -2236,7 +2236,7 @@
                 <Button x:Name="SelectedModDeleteButton"
                 Padding="12,6"
                 Background="{StaticResource ButtonError}"
-                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="DeleteModButton_OnClick" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,80,0,0" Grid.Column="1">
@@ -2307,7 +2307,7 @@
                 <Button x:Name="SelectedModInstallButton"
                 Padding="12,6"
                 Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="InstallModButton_OnClick"
@@ -2388,7 +2388,7 @@
                 <Button x:Name="SelectedModUpdateButton"
                 Padding="12,6"
                 Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background}"
+                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="UpdateModButton_OnClick"

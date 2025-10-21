@@ -10,9 +10,9 @@
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
         Loaded="Window_OnLoaded"
-        Background="{StaticResource Brush.Window.Shell.Background}">
+        Background="{StaticResource Brush.Window.Shell.Background.Solid}">
     <Grid Margin="20"
-          Background="{StaticResource Brush.Panel.Primary.Background}"
+          Background="{StaticResource Brush.Panel.Primary.Background.Solid}"
           TextElement.Foreground="{StaticResource Brush.Text.Primary}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

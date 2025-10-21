@@ -9,9 +9,9 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         WindowStyle="SingleBorderWindow"
-        Background="{StaticResource Brush.Window.Shell.Background}">
+        Background="{StaticResource Brush.Window.Shell.Background.Solid}">
     <Grid Margin="24"
-          Background="{StaticResource Brush.Panel.Primary.Background}"
+          Background="{StaticResource Brush.Panel.Primary.Background.Solid}"
           TextElement.Foreground="{StaticResource Brush.Text.Primary}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -22,7 +22,7 @@
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
                       MaxHeight="420"
-                      Background="{StaticResource Brush.Panel.Secondary.Background}">
+                      Background="{StaticResource Brush.Panel.Secondary.Background.Solid}">
             <StackPanel>
                 <TextBlock FontSize="20"
                            FontWeight="Bold"

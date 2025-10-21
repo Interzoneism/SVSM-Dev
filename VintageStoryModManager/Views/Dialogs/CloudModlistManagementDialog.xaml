@@ -9,9 +9,9 @@
         ResizeMode="CanMinimize"
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
-        Background="{StaticResource Brush.Window.Shell.Background}">
+        Background="{StaticResource Brush.Window.Shell.Background.Solid}">
     <Grid Margin="20"
-          Background="{StaticResource Brush.Panel.Primary.Background}"
+          Background="{StaticResource Brush.Panel.Primary.Background.Solid}"
           TextElement.Foreground="{StaticResource Brush.Text.Primary}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -33,14 +33,14 @@
                   SelectionMode="Single"
                   SelectionChanged="ModlistsListView_OnSelectionChanged"
                   MouseDoubleClick="ModlistsListView_OnMouseDoubleClick"
-                  Background="{StaticResource Brush.Panel.Secondary.Background}"
-                  BorderBrush="{StaticResource Brush.Panel.Secondary.Background}"
+                  Background="{StaticResource Brush.Panel.Secondary.Background.Solid}"
+                  BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}"
                   Foreground="{StaticResource Brush.Text.Primary}">
             <ListView.Resources>
                 <Style TargetType="GridViewColumnHeader">
                     <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
                     <Setter Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
-                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
                 </Style>
                 <Style TargetType="ListViewItem">
                     <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />

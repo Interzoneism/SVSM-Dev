@@ -28,13 +28,14 @@
     <InformationalVersion>$(AppVersion)</InformationalVersion>     <!-- About box/semver -->
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="soil.png" />
     <None Remove="Views\soilcorrect.png" />
-    <None Remove="Views\TiledBackground.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Remove="Resources\Themes\LightTheme.xaml" />
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Views\soilcorrect.png" />
-    <Resource Include="Views\TiledBackground.jpg" />
     <Resource Include="warning.png" />
     <Resource Include="error.png" />
     <Resource Include="mod-default.png">

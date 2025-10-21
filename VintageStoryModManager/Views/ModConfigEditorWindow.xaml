@@ -12,7 +12,7 @@
         MinWidth="600"
         MinHeight="420"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource Brush.Window.Shell.Background}"
+        Background="{StaticResource Brush.Window.Shell.Background.Solid}"
         Loaded="Window_OnLoaded">
     <Window.Resources>
         <Style x:Key="IMM.TreeViewItemStyle" TargetType="TreeViewItem">
@@ -23,13 +23,13 @@
             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="TreeViewItem_OnPreviewMouseLeftButtonDown" />
         </Style>
     </Window.Resources>
-    <Grid Margin="12" Background="{StaticResource Brush.Panel.Secondary.Background}">
+    <Grid Margin="12" Background="{StaticResource Brush.Panel.Secondary.Background.Solid}">
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border BorderBrush="{StaticResource Brush.Border.Default}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Brush.Panel.Primary.Background}" Padding="4">
+        <Border BorderBrush="{StaticResource Brush.Border.Default}" BorderThickness="1" CornerRadius="10" Background="{StaticResource Brush.Panel.Primary.Background.Solid}" Padding="4">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="5" Opacity="0.16" Color="{Binding Color, Source={StaticResource Brush.Dialog.ContentShadow}}" />
             </Border.Effect>

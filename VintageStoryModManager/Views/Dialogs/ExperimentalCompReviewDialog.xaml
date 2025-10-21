@@ -10,9 +10,9 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         WindowStyle="SingleBorderWindow"
-        Background="{StaticResource Brush.Window.Shell.Background}">
+        Background="{StaticResource Brush.Window.Shell.Background.Solid}">
     <Grid Margin="24"
-          Background="{StaticResource Brush.Panel.Primary.Background}"
+          Background="{StaticResource Brush.Panel.Primary.Background.Solid}"
           TextElement.Foreground="{StaticResource Brush.Text.Primary}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -77,14 +77,14 @@
         </Grid>
 
         <Border Grid.Row="2"
-                BorderBrush="{StaticResource Brush.Panel.Secondary.Background}"
+                BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}"
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="12"
-                Background="{StaticResource Brush.Panel.Secondary.Background}">
+                Background="{StaticResource Brush.Panel.Secondary.Background.Solid}">
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Auto"
-                          Background="{StaticResource Brush.Panel.Secondary.Background}">
+                          Background="{StaticResource Brush.Panel.Secondary.Background.Solid}">
                 <TextBox x:Name="ResultsTextBox"
                          FontFamily="Consolas"
                          FontSize="13"
