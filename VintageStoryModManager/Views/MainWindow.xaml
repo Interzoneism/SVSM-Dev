@@ -741,37 +741,50 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <DataGrid x:Name="ModsDataGrid"
-                          Grid.Row="1"
-                          ItemsSource="{Binding CurrentModsView}"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  CanUserDeleteRows="False"
-                  IsReadOnly="False"
-                  EnableRowVirtualization="True"
-                  VirtualizingPanel.IsVirtualizing="True"
-                  VirtualizingPanel.VirtualizationMode="Recycling"
-                  ScrollViewer.CanContentScroll="True"
-                  GridLinesVisibility="None"
-                  SelectionUnit="FullRow"
-                  SelectionMode="Single"
-                  RowHeaderWidth="0"
-                  BorderThickness="2,1,2,1"
-                  IsSynchronizedWithCurrentItem="True" MinColumnWidth="20"
-                  SelectionChanged="ModsDataGrid_OnSelectionChanged" Foreground="{StaticResource Brush.Text.Primary}"
-                  PreviewKeyDown="ModsDataGrid_OnPreviewKeyDown"
-                  PreviewMouseLeftButtonDown="ModsDataGrid_OnPreviewMouseLeftButtonDown"
-                  PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
-                  Sorting="ModsDataGrid_OnSorting"
-                  RowBackground="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                  HorizontalGridLinesBrush="Transparent"
-                  VerticalGridLinesBrush="Transparent"
-                  HeadersVisibility="Column"
-                  ui:ControlHelper.CornerRadius="10"
-                  FontSize="15" Margin="0,0,-29,0"
-                  Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                  BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
-                    <DataGrid.Resources>
+                <Border Grid.Row="1"
+                        Margin="0,0,-29,0"
+                        Background="Transparent"
+                        BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Light}"
+                        BorderThickness="0,0,2,2"
+                        CornerRadius="{Binding Path=(ui:ControlHelper.CornerRadius), ElementName=ModsDataGrid}"
+                        SnapsToDevicePixels="True">
+                    <Border Background="Transparent"
+                            BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Dark}"
+                            BorderThickness="2,2,0,0"
+                            CornerRadius="{Binding Path=(ui:ControlHelper.CornerRadius), ElementName=ModsDataGrid}"
+                            SnapsToDevicePixels="True">
+                        <DataGrid x:Name="ModsDataGrid"
+                                  ItemsSource="{Binding CurrentModsView}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  IsReadOnly="False"
+                                  EnableRowVirtualization="True"
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.CanContentScroll="True"
+                                  GridLinesVisibility="None"
+                                  SelectionUnit="FullRow"
+                                  SelectionMode="Single"
+                                  RowHeaderWidth="0"
+                                  BorderThickness="2,1,2,1"
+                                  IsSynchronizedWithCurrentItem="True"
+                                  MinColumnWidth="20"
+                                  SelectionChanged="ModsDataGrid_OnSelectionChanged"
+                                  Foreground="{StaticResource Brush.Text.Primary}"
+                                  PreviewKeyDown="ModsDataGrid_OnPreviewKeyDown"
+                                  PreviewMouseLeftButtonDown="ModsDataGrid_OnPreviewMouseLeftButtonDown"
+                                  PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
+                                  Sorting="ModsDataGrid_OnSorting"
+                                  RowBackground="{DynamicResource Brush.Button.Primary.Background.Normal}"
+                                  HorizontalGridLinesBrush="Transparent"
+                                  VerticalGridLinesBrush="Transparent"
+                                  HeadersVisibility="Column"
+                                  ui:ControlHelper.CornerRadius="10"
+                                  FontSize="15"
+                                  Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                                  BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
+                            <DataGrid.Resources>
                         <Style TargetType="{x:Type ScrollBar}">
                             <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
                             <Setter Property="Foreground" Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
@@ -1336,6 +1349,8 @@
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
+                    </Border>
+                </Border>
                 <TextBlock Grid.Row="1"
                            Panel.ZIndex="1"
                            Margin="32"
@@ -1380,29 +1395,40 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <DataGrid x:Name="CloudModlistsDataGrid"
-                              ItemsSource="{Binding CloudModlistsView}"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False"
-                              CanUserDeleteRows="False"
-                              IsReadOnly="True"
-                              SelectionMode="Single"
-                              SelectionUnit="FullRow"
-                              Margin="0,0,0,166"
-                              IsEnabled="{Binding CanAccessCloudModlists}"
-                              GridLinesVisibility="None"
-                              RowHeaderWidth="0"
-                              BorderThickness="2,1,2,1"
-                              HorizontalGridLinesBrush="Transparent"
-                              VerticalGridLinesBrush="Transparent"
-                              HeadersVisibility="Column"
-                              ui:ControlHelper.CornerRadius="10"
-                              FontSize="15"
-                              Foreground="{StaticResource Brush.Text.Primary}"
-                              SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged"
-                              Grid.RowSpan="2" Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                              BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
-                        <DataGrid.Resources>
+                    <Border Margin="0,0,0,166"
+                            Grid.RowSpan="2"
+                            Background="Transparent"
+                            BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Light}"
+                            BorderThickness="0,0,2,2"
+                            CornerRadius="{Binding Path=(ui:ControlHelper.CornerRadius), ElementName=CloudModlistsDataGrid}"
+                            SnapsToDevicePixels="True">
+                        <Border Background="Transparent"
+                                BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Dark}"
+                                BorderThickness="2,2,0,0"
+                                CornerRadius="{Binding Path=(ui:ControlHelper.CornerRadius), ElementName=CloudModlistsDataGrid}"
+                                SnapsToDevicePixels="True">
+                            <DataGrid x:Name="CloudModlistsDataGrid"
+                                      ItemsSource="{Binding CloudModlistsView}"
+                                      AutoGenerateColumns="False"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      IsReadOnly="True"
+                                      SelectionMode="Single"
+                                      SelectionUnit="FullRow"
+                                      IsEnabled="{Binding CanAccessCloudModlists}"
+                                      GridLinesVisibility="None"
+                                      RowHeaderWidth="0"
+                                      BorderThickness="2,1,2,1"
+                                      HorizontalGridLinesBrush="Transparent"
+                                      VerticalGridLinesBrush="Transparent"
+                                      HeadersVisibility="Column"
+                                      ui:ControlHelper.CornerRadius="10"
+                                      FontSize="15"
+                                      Foreground="{StaticResource Brush.Text.Primary}"
+                                      SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged"
+                                      Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                                      BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
+                                <DataGrid.Resources>
                             <Style TargetType="{x:Type ScrollBar}">
                                 <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
                                 <Setter Property="Foreground" Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
@@ -1622,6 +1648,8 @@
                             </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
+                        </Border>
+                    </Border>
 
                     <TextBlock Grid.Row="1"
                                Text="No cloud modlists have been uploaded yet."

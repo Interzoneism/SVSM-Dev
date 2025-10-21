@@ -67,6 +67,8 @@
     <SolidColorBrush x:Key="Brush.TextInput.Border.Focused" Color="{StaticResource Palette.ColorActive}" />
     <SolidColorBrush x:Key="Brush.TextInput.SelectionBackground" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
     <SolidColorBrush x:Key="Brush.SearchBox.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Light" Color="#80FFFFFF" />
+    <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Dark" Color="#40000000" />
 
     <!-- ========================= -->
     <!-- Combo box colour system. -->

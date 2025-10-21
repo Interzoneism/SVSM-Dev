@@ -217,66 +217,80 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="TextBox">
-                            <Border x:Name="Border"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
+                            <Border x:Name="TopAndLeft"
+                                    Background="Transparent"
+                                    BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Light}"
+                                    BorderThickness="0,0,1,1"
                                     CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
-                                    Padding="{TemplateBinding Padding}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <ScrollViewer x:Name="PART_ContentHost"
-                                                  HorizontalAlignment="Stretch"
-                                                  VerticalAlignment="Stretch"
-                                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
-                                    <TextBlock x:Name="PlaceholderTextBlock"
-                                               Margin="0"
-                                               Text="{TemplateBinding ui:ControlHelper.PlaceholderText}"
-                                               FontFamily="{TemplateBinding FontFamily}"
-                                               FontSize="{TemplateBinding FontSize}"
-                                               Foreground="{TemplateBinding ui:ControlHelper.PlaceholderForeground}"
-                                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                               IsHitTestVisible="False"
-                                               TextTrimming="CharacterEllipsis"
-                                               Visibility="Collapsed" />
-                                    <Button x:Name="ClearButton"
-                                            Grid.Column="1"
-                                            Margin="6,0,0,0"
-                                            Focusable="False"
-                                            Style="{StaticResource IMM.ClearTextButtonStyle}"
-                                            ToolTip="Clear search"
-                                            AutomationProperties.Name="Clear search"
-                                            Visibility="{Binding DataContext.HasSearchText, RelativeSource={RelativeSource AncestorType=TextBox}, Converter={StaticResource IMM.BooleanToVisibilityConverter}}"
-                                            Command="{Binding DataContext.ClearSearchCommand, RelativeSource={RelativeSource AncestorType=TextBox}}">
-                                        <Path Width="12"
-                                              Height="12"
-                                              Stretch="Uniform"
-                                              Stroke="{StaticResource Brush.Text.Primary}"
-                                              StrokeThickness="1.6"
-                                              StrokeStartLineCap="Round"
-                                              StrokeEndLineCap="Round"
-                                              Data="M2,2 L10,10 M10,2 L2,10" />
-                                    </Button>
-                                </Grid>
+                                    SnapsToDevicePixels="True">
+                                <Border x:Name="BottomAndRight"
+                                        Background="Transparent"
+                                        BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Dark}"
+                                        BorderThickness="1,1,0,0"
+                                        CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                        SnapsToDevicePixels="True">
+                                    <Border x:Name="ChromeBorder"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                            Padding="{TemplateBinding Padding}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <ScrollViewer x:Name="PART_ContentHost"
+                                                          HorizontalAlignment="Stretch"
+                                                          VerticalAlignment="Stretch"
+                                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                            <TextBlock x:Name="PlaceholderTextBlock"
+                                                       Margin="0"
+                                                       Text="{TemplateBinding ui:ControlHelper.PlaceholderText}"
+                                                       FontFamily="{TemplateBinding FontFamily}"
+                                                       FontSize="{TemplateBinding FontSize}"
+                                                       Foreground="{TemplateBinding ui:ControlHelper.PlaceholderForeground}"
+                                                       HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                       IsHitTestVisible="False"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Visibility="Collapsed" />
+                                            <Button x:Name="ClearButton"
+                                                    Grid.Column="1"
+                                                    Margin="6,0,0,0"
+                                                    Focusable="False"
+                                                    Style="{StaticResource IMM.ClearTextButtonStyle}"
+                                                    ToolTip="Clear search"
+                                                    AutomationProperties.Name="Clear search"
+                                                    Visibility="{Binding DataContext.HasSearchText, RelativeSource={RelativeSource AncestorType=TextBox}, Converter={StaticResource IMM.BooleanToVisibilityConverter}}"
+                                                    Command="{Binding DataContext.ClearSearchCommand, RelativeSource={RelativeSource AncestorType=TextBox}}">
+                                                <Path Width="12"
+                                                      Height="12"
+                                                      Stretch="Uniform"
+                                                      Stroke="{StaticResource Brush.Text.Primary}"
+                                                      StrokeThickness="1.6"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      Data="M2,2 L10,10 M10,2 L2,10" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </Border>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="Border" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Disabled}" />
+                                    <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Disabled}" />
                                     <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
                                     <Setter Property="Opacity" Value="0.6" />
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
-                                    <Setter TargetName="Border" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Hover}" />
+                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
+                                    <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Hover}" />
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
-                                    <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Brush.TextInput.Border.Focused}" />
-                                    <Setter TargetName="Border" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Pressed}" />
+                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="{StaticResource Brush.TextInput.Border.Focused}" />
+                                    <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Pressed}" />
                                 </Trigger>
                                 <Trigger Property="Text" Value="">
                                     <Setter TargetName="PlaceholderTextBlock" Property="Visibility" Value="Visible" />
