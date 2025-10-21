@@ -119,7 +119,11 @@
             </Style.Triggers>
         </Style>
         <Style x:Key="IMM.PrimaryDataGridColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
-            <Setter Property="Background" Value="{StaticResource DataGrid_Header_Background_Brush}" />
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="{Binding Color, Source={StaticResource DataGrid_Header_Background_Brush}}" />
+                </Setter.Value>
+            </Setter>
             <Setter Property="BorderBrush" Value="{StaticResource Panel_Secondary_Background_Brush}" />
             <Setter Property="BorderThickness" Value="1,0,0,1" />
             <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
@@ -160,22 +164,20 @@
                                 <Trigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HeaderBorder"
-                                                       Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0:0:0.15"
-                                Value="{StaticResource DataGrid_Header_Hover_Background_Brush}" />
-                                            </ObjectAnimationUsingKeyFrames>
+                                            <ColorAnimation Storyboard.TargetName="HeaderBorder"
+                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                Duration="0:0:0.15"
+                                                To="{Binding Color, Source={StaticResource DataGrid_Header_Hover_Background_Brush}}" />
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.EnterActions>
                                 <Trigger.ExitActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HeaderBorder"
-                                                       Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0:0:0.15"
-                                Value="{StaticResource DataGrid_Header_Background_Brush}" />
-                                            </ObjectAnimationUsingKeyFrames>
+                                            <ColorAnimation Storyboard.TargetName="HeaderBorder"
+                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                Duration="0:0:0.15"
+                                                To="{Binding Color, Source={StaticResource DataGrid_Header_Background_Brush}}" />
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.ExitActions>
