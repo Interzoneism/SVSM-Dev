@@ -193,6 +193,47 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="IMM.ModTabButtonBaseStyle"
+               TargetType="{x:Type Button}"
+               BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{DynamicResource Brush.DataGrid.Background}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Opacity" Value="0.5" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="VerticalContentAlignment" Value="Top" />
+        </Style>
+        <Style x:Key="IMM.InstalledTabButtonStyle"
+               TargetType="{x:Type Button}"
+               BasedOn="{StaticResource IMM.ModTabButtonBaseStyle}">
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding SearchModDatabase}" Value="False" />
+                        <Condition Binding="{Binding IsViewingCloudModlists}" Value="False" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Opacity" Value="1" />
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="IMM.ModDatabaseTabButtonStyle"
+               TargetType="{x:Type Button}"
+               BasedOn="{StaticResource IMM.ModTabButtonBaseStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                    <Setter Property="Opacity" Value="1" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="IMM.ModlistsTabButtonStyle"
+               TargetType="{x:Type Button}"
+               BasedOn="{StaticResource IMM.ModTabButtonBaseStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
+                    <Setter Property="Opacity" Value="1" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         <SolidColorBrush x:Key="CardGradient" Color="{Binding Color, Source={StaticResource Brush.ModCard.Background.Active}}" />
         <SolidColorBrush x:Key="CardGradient2" Color="{Binding Color, Source={StaticResource Brush.ModCard.Background.Active}}" />
         <SolidColorBrush x:Key="CardGradient3" Color="{Binding Color, Source={StaticResource Brush.ModCard.Background.Active}}" />
@@ -613,77 +654,20 @@
                             Command="{Binding ShowInstalledModsCommand}"
                             Width="138"
                             Height="63"
-                            FontSize="16" Margin="0,0,1,0">
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
-                                <Setter Property="VerticalContentAlignment" Value="Top" />
-                                <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
-                                <Setter Property="Opacity" Value="0.3" />
-                                <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
-                                <Setter Property="Padding" Value="12,6" />
-                                <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding SearchModDatabase}" Value="False" />
-                                            <Condition Binding="{Binding IsViewingCloudModlists}" Value="False" />
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="Opacity" Value="1" />
-                                        <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background.Solid}" />
-                                        <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent.Primary}" />
-                                    </MultiDataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
+                            FontSize="16" Margin="0,0,1,0"
+                            Style="{StaticResource IMM.InstalledTabButtonStyle}" />
                     <Button Content="Mod DB"
                             Command="{Binding ShowModDatabaseCommand}"
                             Width="138"
                             Height="63"
                             FontSize="16"
-                            BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}">
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
-                                <Setter Property="VerticalContentAlignment" Value="Top" />
-                                <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
-                                <Setter Property="Opacity" Value="0.3" />
-                                <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
-                                <Setter Property="Padding" Value="12,6" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                        <Setter Property="Opacity" Value="1" />
-                                        <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background.Solid}" />
-                                        <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent.Primary}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
+                            Style="{StaticResource IMM.ModDatabaseTabButtonStyle}" />
                     <Button Content="Modlists (Beta)"
-                        Command="{Binding ShowCloudModlistsCommand}"
-                        Width="138"
-                        Height="63"
-                        FontSize="16"
-                        BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}">
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
-                                <Setter Property="VerticalContentAlignment" Value="Top" />
-                                <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
-                                <Setter Property="Opacity" Value="0.3" />
-                                <Setter Property="ui:ControlHelper.CornerRadius" Value="12" />
-                                <Setter Property="Padding" Value="12,6" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
-                                        <Setter Property="Opacity" Value="1" />
-                                        <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background.Solid}" />
-                                        <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent.Primary}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
+                            Command="{Binding ShowCloudModlistsCommand}"
+                            Width="138"
+                            Height="63"
+                            FontSize="16"
+                            Style="{StaticResource IMM.ModlistsTabButtonStyle}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="2"
