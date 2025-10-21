@@ -161,26 +161,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="HeaderBorder"
-                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                Duration="0:0:0.15"
-                                                To="{Binding Color, Source={StaticResource DataGrid_Header_Hover_Background_Brush}}" />
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="HeaderBorder"
-                                                Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                Duration="0:0:0.15"
-                                                To="{Binding Color, Source={StaticResource DataGrid_Header_Background_Brush}}" />
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
+                                <Setter TargetName="HeaderBorder" Property="Background">
+                                    <Setter.Value>
+                                        <SolidColorBrush Color="{Binding Color, Source={StaticResource DataGrid_Header_Hover_Background_Brush}}" />
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="SortDirection" Value="Ascending">
                                 <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
@@ -288,8 +273,7 @@
                                    PlacementTarget="{Binding ElementName=templateRoot}"
                                    HorizontalOffset="-2"
                                    VerticalOffset="-3"
-                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
-                                   PopupAnimation="Fade">
+                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
                                 <Border Margin="0,0,0,4"
                                         Background="{StaticResource Panel_Primary_Background_Brush}"
                                         BorderBrush="{StaticResource Accent_Primary_Brush}"

@@ -51,63 +51,11 @@
                                     <Style TargetType="Border">
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Trigger.EnterActions>
-                                                    <BeginStoryboard x:Name="ObjectHoverIn">
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{Binding Color, Source={StaticResource ModConfig_TreeNode_Hover_Background_Brush}}"
-                                                                            Duration="0:0:0.15">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </Trigger.EnterActions>
-                                                <Trigger.ExitActions>
-                                                    <BeginStoryboard x:Name="ObjectHoverOut">
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.2">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </Trigger.ExitActions>
+                                                <Setter Property="Background" Value="{StaticResource ModConfig_TreeNode_Hover_Background_Brush}" />
                                             </Trigger>
                                             <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                                          Value="True">
-                                                <DataTrigger.EnterActions>
-                                                    <StopStoryboard BeginStoryboardName="ObjectHoverIn" />
-                                                    <StopStoryboard BeginStoryboardName="ObjectHoverOut" />
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{Binding Color, Source={StaticResource ModConfig_TreeNode_Selected_Background_Brush}}"
-                                                                            Duration="0:0:0.18">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </DataTrigger.EnterActions>
-                                                <DataTrigger.ExitActions>
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.22">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </DataTrigger.ExitActions>
+                                                <Setter Property="Background" Value="{StaticResource ModConfig_TreeNode_Selected_Background_Brush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -135,63 +83,11 @@
                                     <Style TargetType="Border">
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Trigger.EnterActions>
-                                                    <BeginStoryboard x:Name="ArrayHoverIn">
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{Binding Color, Source={StaticResource ModConfig_Value_Hover_Background_Brush}}"
-                                                                            Duration="0:0:0.15">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </Trigger.EnterActions>
-                                                <Trigger.ExitActions>
-                                                    <BeginStoryboard x:Name="ArrayHoverOut">
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.2">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </Trigger.ExitActions>
+                                                <Setter Property="Background" Value="{StaticResource ModConfig_Value_Hover_Background_Brush}" />
                                             </Trigger>
                                             <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                                          Value="True">
-                                                <DataTrigger.EnterActions>
-                                                    <StopStoryboard BeginStoryboardName="ArrayHoverIn" />
-                                                    <StopStoryboard BeginStoryboardName="ArrayHoverOut" />
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{Binding Color, Source={StaticResource ModConfig_TreeNode_Selected_Background_Brush}}"
-                                                                            Duration="0:0:0.18">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </DataTrigger.EnterActions>
-                                                <DataTrigger.ExitActions>
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.22">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </DataTrigger.ExitActions>
+                                                <Setter Property="Background" Value="{StaticResource ModConfig_TreeNode_Selected_Background_Brush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -237,63 +133,11 @@
                                     <Style TargetType="Border">
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Trigger.EnterActions>
-                                                    <BeginStoryboard x:Name="ValueHoverIn">
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{Binding Color, Source={StaticResource ModConfig_Value_Hover_Background_Brush}}"
-                                                                            Duration="0:0:0.15">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </Trigger.EnterActions>
-                                                <Trigger.ExitActions>
-                                                    <BeginStoryboard x:Name="ValueHoverOut">
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.2">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </Trigger.ExitActions>
+                                                <Setter Property="Background" Value="{StaticResource ModConfig_Value_Hover_Background_Brush}" />
                                             </Trigger>
                                             <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
                                                          Value="True">
-                                                <DataTrigger.EnterActions>
-                                                    <StopStoryboard BeginStoryboardName="ValueHoverIn" />
-                                                    <StopStoryboard BeginStoryboardName="ValueHoverOut" />
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="{Binding Color, Source={StaticResource ModConfig_Value_Selected_Background_Brush}}"
-                                                                            Duration="0:0:0.18">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </DataTrigger.EnterActions>
-                                                <DataTrigger.ExitActions>
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                            To="Transparent"
-                                                                            Duration="0:0:0.22">
-                                                                <ColorAnimation.EasingFunction>
-                                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                                </ColorAnimation.EasingFunction>
-                                                            </ColorAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </DataTrigger.ExitActions>
+                                                <Setter Property="Background" Value="{StaticResource ModConfig_Value_Selected_Background_Brush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>

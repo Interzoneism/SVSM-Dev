@@ -23,7 +23,6 @@ using System.Windows.Threading;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Data;
-using System.Windows.Media.Animation;
 using ModernWpf.Controls;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
@@ -2514,7 +2513,7 @@ public partial class MainWindow : Window
         {
             row.DataContextChanged -= ModsDataGridRow_OnDataContextChanged;
             UpdateRowModSubscription(row, null);
-            ClearRowOverlayAnimations(row);
+            ClearRowOverlayValues(row);
             SetRowIsHovered(row, false);
         }
     }
@@ -2549,9 +2548,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        selectionOverlay?.BeginAnimation(UIElement.OpacityProperty, null);
-        hoverOverlay?.BeginAnimation(UIElement.OpacityProperty, null);
-
         if (row.DataContext is not ModListItemViewModel mod)
         {
             selectionOverlay?.ClearValue(UIElement.OpacityProperty);
@@ -2585,18 +2581,18 @@ public partial class MainWindow : Window
         return Window.GetWindow(row) is MainWindow mainWindow && mainWindow.AreHoverOverlaysSuppressed();
     }
 
-    private static void ClearRowOverlayAnimations(DataGridRow row)
+    private static void ClearRowOverlayValues(DataGridRow row)
     {
         row.ApplyTemplate();
 
         if (row.Template?.FindName("SelectionOverlay", row) is Border selectionOverlay)
         {
-            selectionOverlay.BeginAnimation(UIElement.OpacityProperty, null);
+            selectionOverlay.ClearValue(UIElement.OpacityProperty);
         }
 
         if (row.Template?.FindName("HoverOverlay", row) is Border hoverOverlay)
         {
-            hoverOverlay.BeginAnimation(UIElement.OpacityProperty, null);
+            hoverOverlay.ClearValue(UIElement.OpacityProperty);
         }
     }
 
