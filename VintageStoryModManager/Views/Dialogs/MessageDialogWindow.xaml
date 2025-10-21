@@ -34,7 +34,7 @@
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
                       MaxHeight="320"
-                      Background="{StaticResource Brush.Panel.Secondary.Background.Solid}">
+                      Background="{StaticResource Brush.Dialog.TextBox.Background}">
             <TextBlock x:Name="MessageTextBlock"
                        TextWrapping="Wrap"
                        MaxWidth="480"

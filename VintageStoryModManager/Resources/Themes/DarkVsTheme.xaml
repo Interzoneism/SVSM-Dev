@@ -142,7 +142,7 @@
     <!-- ================================ -->
     <!-- Dialog specific text box styles -->
     <!-- ================================ -->
-    <SolidColorBrush x:Key="Brush.Dialog.TextBox.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.Dialog.TextBox.Background" Color="{StaticResource Palette.ColorBackgroundMedium}" />
     <SolidColorBrush x:Key="Brush.Dialog.TextBox.Border" Color="{StaticResource Palette.ColorActive}" />
     <SolidColorBrush x:Key="Brush.Dialog.TextBox.SelectionBackground" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
     <SolidColorBrush x:Key="Brush.Dialog.TextBox.SelectionForeground" Color="{StaticResource Palette.ColorTextPrimary}" />

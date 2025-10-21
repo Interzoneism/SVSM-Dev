@@ -15,7 +15,7 @@
 
         <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
-                      Background="{StaticResource Brush.Panel.Secondary.Background.Solid}">
+                      Background="{StaticResource Brush.Dialog.TextBox.Background}">
             <TextBlock x:Name="MessageTextBlock"
                        TextWrapping="Wrap"
                        Margin="0"
