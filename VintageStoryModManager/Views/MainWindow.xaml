@@ -638,12 +638,7 @@
                     <TextBox MinWidth="200"
                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                         FontSize="14" VerticalContentAlignment="Center" VerticalAlignment="Top" Margin="0,36,0,0">
-                        <TextBox.BorderBrush>
-                            <LinearGradientBrush EndPoint="0,1" StartPoint="2,1" MappingMode="RelativeToBoundingBox">
-                                <GradientStop Color="Black" Offset="0.467"/>
-                                <GradientStop Color="White" Offset="0.467"/>
-                            </LinearGradientBrush>
-                        </TextBox.BorderBrush>
+                        
                         <TextBox.Style>
                             <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
                                 <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
