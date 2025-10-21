@@ -42,6 +42,8 @@
     <SolidColorBrush x:Key="Brush.Button.Primary.Background.Pressed" Color="{StaticResource Palette.ColorBackgroundMedium}" />
     <SolidColorBrush x:Key="Brush.Button.Primary.Background.Disabled" Color="{StaticResource Palette.ColorDisabled}" Opacity="0.6" />
     <SolidColorBrush x:Key="Brush.Button.Primary.Border.Normal" Color="{StaticResource Palette.ColorTextPrimary}" Opacity="0.6" />
+    <SolidColorBrush x:Key="Brush.Button.Bevel.Light" Color="#80FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Button.Bevel.Dark" Color="#40000000" />
     <SolidColorBrush x:Key="Brush.Accent.Primary" Color="{StaticResource Palette.ColorActive}" />
     <SolidColorBrush x:Key="Brush.ToggleButton.Background.Checked" Color="{StaticResource Palette.ColorActive}" />
     <SolidColorBrush x:Key="Brush.ToggleButton.Border.Checked" Color="{StaticResource Palette.ColorActive}" />
