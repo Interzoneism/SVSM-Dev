@@ -130,8 +130,8 @@
             <Style x:Key="IMM.ButtonBaseStyle" TargetType="Button">
                 <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
                 <Setter Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
-                <Setter Property="BorderBrush" Value="{StaticResource Brush.Border.Default}" />
-                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="Padding" Value="12,6" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="FontFamily" Value="Segoe UI" />
@@ -155,8 +155,8 @@
                                             SnapsToDevicePixels="True">
                                         <Border x:Name="ChromeBorder"
                                                 Background="{TemplateBinding Background}"
-                                                BorderBrush="{TemplateBinding BorderBrush}"
-                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                BorderBrush="Transparent"
+                                                BorderThickness="0"
                                                 CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
                                                 Padding="{TemplateBinding Padding}"
                                                 SnapsToDevicePixels="True">
