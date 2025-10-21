@@ -1409,7 +1409,7 @@
                             Background="Transparent"
                             BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Light}"
                             BorderThickness="0,0,2,2"
-                            CornerRadius="{Binding Path=(ui:ControlHelper.CornerRadius), ElementName=CloudModlistsDataGrid}"
+                            CornerRadius="0"
                             SnapsToDevicePixels="True">
                         <Border Background="Transparent"
                                 BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Dark}"
