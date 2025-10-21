@@ -27,7 +27,7 @@
                 AlignmentY="Top"
                 Opacity="0" />
     <!-- Swap the alias below to Brush.Window.Shell.Background.Solid if you prefer a flat colour fill. -->
-    <StaticResource x:Key="Brush.Window.Shell.Background" ResourceKey="Brush.Window.Shell.Background.Image" />
+    <StaticResource x:Key="Brush.Window.Shell.Background" ResourceKey="Brush.Window.Shell.Background.Solid" />
     <SolidColorBrush x:Key="Brush.Window.Shell.Border" Color="{StaticResource Palette.ColorBackgroundDark}" />
 
     <SolidColorBrush x:Key="Brush.Panel.Primary.Background.Solid" Color="{StaticResource Palette.ColorBackgroundMedium}" />
@@ -41,7 +41,7 @@
                 AlignmentY="Top"
                 Opacity="1" />
     <!-- Swap the alias below to Brush.Panel.Primary.Background.Solid if you prefer a flat colour fill. -->
-    <StaticResource x:Key="Brush.Panel.Primary.Background" ResourceKey="Brush.Panel.Primary.Background.Image" />
+    <StaticResource x:Key="Brush.Panel.Primary.Background" ResourceKey="Brush.Panel.Primary.Background.Solid" />
 
     <SolidColorBrush x:Key="Brush.Panel.Secondary.Background.Solid" Color="{StaticResource Palette.ColorBackgroundDark}" />
     <ImageBrush x:Key="Brush.Panel.Secondary.Background.Image"
@@ -53,7 +53,7 @@
                 AlignmentY="Top"
                 Opacity="1" />
     <!-- Swap the alias below to Brush.Panel.Secondary.Background.Solid if you prefer a flat colour fill. -->
-    <StaticResource x:Key="Brush.Panel.Secondary.Background" ResourceKey="Brush.Panel.Secondary.Background.Image" />
+    <StaticResource x:Key="Brush.Panel.Secondary.Background" ResourceKey="Brush.Panel.Secondary.Background.Solid" />
 
     <!-- =============================== -->
     <!-- Text and typography colouring. -->
@@ -153,7 +153,7 @@
                 AlignmentY="Top"
                 Opacity="1" />
     <!-- Swap the alias below to Brush.ModCard.Background.Active.Solid if you prefer a flat colour fill. -->
-    <StaticResource x:Key="Brush.ModCard.Background.Active" ResourceKey="Brush.ModCard.Background.Active.Image" />
+    <StaticResource x:Key="Brush.ModCard.Background.Active" ResourceKey="Brush.ModCard.Background.Active.Solid" />
 
     <SolidColorBrush x:Key="Brush.ModCard.Background.Disabled.Solid" Color="{StaticResource Palette.ColorDisabled}" />
     <ImageBrush x:Key="Brush.ModCard.Background.Disabled.Image"
@@ -166,7 +166,7 @@
                 AlignmentY="Top"
                 Opacity="0" />
     <!-- Swap the alias below to Brush.ModCard.Background.Disabled.Solid if you prefer a flat colour fill. -->
-    <StaticResource x:Key="Brush.ModCard.Background.Disabled" ResourceKey="Brush.ModCard.Background.Disabled.Image" />
+    <StaticResource x:Key="Brush.ModCard.Background.Disabled" ResourceKey="Brush.ModCard.Background.Disabled.Solid" />
 
     <SolidColorBrush x:Key="Brush.ModGrid.Background.Solid" Color="{StaticResource Palette.ColorBackgroundMedium}" />
     <ImageBrush x:Key="Brush.ModGrid.Background.Image"
@@ -179,7 +179,7 @@
                 AlignmentY="Top"
                 Opacity="0" />
     <!-- Swap the alias below to Brush.ModGrid.Background.Solid if you prefer a flat colour fill. -->
-    <StaticResource x:Key="Brush.ModGrid.Background" ResourceKey="Brush.ModGrid.Background.Image" />
+    <StaticResource x:Key="Brush.ModGrid.Background" ResourceKey="Brush.ModGrid.Background.Solid" />
 
     <SolidColorBrush x:Key="Brush.ModCard.Shadow" Color="{StaticResource Palette.ColorBackgroundDark}" Opacity="0.7" />
     <SolidColorBrush x:Key="Brush.ModDetails.Shadow" Color="{StaticResource Palette.ColorBackgroundDark}" Opacity="0.7" />
