@@ -20,6 +20,7 @@
     <Color x:Key="Color.ToolTip.Background">#FF4C4034</Color>
     <Color x:Key="Color.ToolTip.Border">#FFE0CFBB</Color>
     <Color x:Key="Color.ToolTip.Foreground">#FFF6E8D7</Color>
+    
 
     <!-- Text -->
     <SolidColorBrush x:Key="Text_Primary_Brush" Color="{StaticResource Palette.Text.Primary}" />
