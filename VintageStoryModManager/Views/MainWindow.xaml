@@ -204,6 +204,7 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="12,0,12,0" />
             <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -311,7 +312,7 @@
                                 <Setter TargetName="SubMenuPopup" Property="Placement" Value="Bottom" />
                                 <Setter TargetName="SubMenuPopup" Property="HorizontalOffset" Value="0" />
                                 <Setter TargetName="SubMenuPopup" Property="VerticalOffset" Value="0" />
-                                <Setter TargetName="ArrowGlyph" Property="Text" Value="▼" />
+                                <Setter TargetName="ArrowGlyph" Property="Visibility" Value="Collapsed" />
                             </Trigger>
 
                             <Trigger Property="Role" Value="SubmenuHeader">
@@ -336,9 +337,9 @@
                             </Trigger>
 
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="templateRoot" Property="Background" Value="{StaticResource Accent_Primary_Brush}" />
-                                <Setter TargetName="templateRoot" Property="BorderBrush" Value="{StaticResource Accent_Primary_Brush}" />
-                                <Setter Property="Foreground" Value="{StaticResource Text_Emphasis_Brush}" />
+                                <Setter TargetName="templateRoot" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
+                                <Setter TargetName="templateRoot" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
+                                <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
                             </Trigger>
 
                             <Trigger Property="IsEnabled" Value="False">
@@ -346,8 +347,9 @@
                             </Trigger>
 
                             <Trigger Property="IsSubmenuOpen" Value="True">
-                                <Setter TargetName="templateRoot" Property="Background" Value="{StaticResource Accent_Primary_Brush}" />
-                                <Setter Property="Foreground" Value="{StaticResource Text_Emphasis_Brush}" />
+                                <Setter TargetName="templateRoot" Property="Background" Value="{StaticResource Menu_Item_Hover_Background_Brush}" />
+                                <Setter TargetName="templateRoot" Property="BorderBrush" Value="{StaticResource Border_Hover_Brush}" />
+                                <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
