@@ -192,9 +192,9 @@
 
             <Style x:Key="IMM.SearchTextBoxStyle" TargetType="TextBox">
                 <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-                <Setter Property="Background" Value="{StaticResource Brush.SearchBox.Background}" />
-                <Setter Property="BorderBrush" Value="{StaticResource Brush.Button.Primary.Border.Normal}" />
-                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Hover}" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="Padding" Value="6,3" />
                 <Setter Property="FontFamily" Value="Segoe UI" />
                 <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -275,12 +275,8 @@
                                     <Setter Property="Opacity" Value="0.6" />
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
+                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="Transparent" />
                                     <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Hover}" />
-                                </Trigger>
-                                <Trigger Property="IsKeyboardFocused" Value="True">
-                                    <Setter TargetName="ChromeBorder" Property="BorderBrush" Value="{StaticResource Brush.TextInput.Border.Focused}" />
-                                    <Setter TargetName="ChromeBorder" Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Pressed}" />
                                 </Trigger>
                                 <Trigger Property="Text" Value="">
                                     <Setter TargetName="PlaceholderTextBlock" Property="Visibility" Value="Visible" />
