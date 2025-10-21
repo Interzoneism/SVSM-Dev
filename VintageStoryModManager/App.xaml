@@ -532,12 +532,18 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                To="{Binding Color, Source={StaticResource TextInput_Focus_Border_Brush}}"
-                                                                Duration="0:0:0.12" />
+                                                                Duration="0:0:0.12">
+                                                    <ColorAnimation.To>
+                                                        <DynamicResource ResourceKey="Color.TextInput.FocusBorder" />
+                                                    </ColorAnimation.To>
+                                                </ColorAnimation>
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="{Binding Color, Source={StaticResource TextInput_Focus_Background_Brush}}"
-                                                                Duration="0:0:0.12" />
+                                                                Duration="0:0:0.12">
+                                                    <ColorAnimation.To>
+                                                        <DynamicResource ResourceKey="Color.TextInput.FocusBackground" />
+                                                    </ColorAnimation.To>
+                                                </ColorAnimation>
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.EnterActions>
@@ -546,12 +552,18 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                To="{Binding Color, Source={StaticResource Border_Default_Brush}}"
-                                                                Duration="0:0:0.12" />
+                                                                Duration="0:0:0.12">
+                                                    <ColorAnimation.To>
+                                                        <DynamicResource ResourceKey="Color.Border.Default" />
+                                                    </ColorAnimation.To>
+                                                </ColorAnimation>
                                                 <ColorAnimation Storyboard.TargetName="Root"
                                                                 Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                To="{Binding Color, Source={StaticResource TextInput_Background_Brush}}"
-                                                                Duration="0:0:0.12" />
+                                                                Duration="0:0:0.12">
+                                                    <ColorAnimation.To>
+                                                        <DynamicResource ResourceKey="Color.TextInput.Background" />
+                                                    </ColorAnimation.To>
+                                                </ColorAnimation>
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.ExitActions>
