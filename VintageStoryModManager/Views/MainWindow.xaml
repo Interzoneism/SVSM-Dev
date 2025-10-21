@@ -776,7 +776,7 @@
                                   SelectionUnit="FullRow"
                                   SelectionMode="Single"
                                   RowHeaderWidth="0"
-                                  BorderThickness="2,1,2,1"
+                                  BorderThickness="0,1,2,1"
                                   IsSynchronizedWithCurrentItem="True"
                                   MinColumnWidth="20"
                                   SelectionChanged="ModsDataGrid_OnSelectionChanged"
@@ -1427,7 +1427,7 @@
                                       IsEnabled="{Binding CanAccessCloudModlists}"
                                       GridLinesVisibility="None"
                                       RowHeaderWidth="0"
-                                      BorderThickness="2,1,2,1"
+                                      BorderThickness="0,1,2,1"
                                       HorizontalGridLinesBrush="Transparent"
                                       VerticalGridLinesBrush="Transparent"
                                       HeadersVisibility="Column"
@@ -2349,6 +2349,37 @@
                 SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
                 SelectionChanged="SelectedModVersionComboBox_OnSelectionChanged"
                 VerticalAlignment="Top" HorizontalAlignment="Left" Margin="17,155,0,0">
+                    <ComboBox.Resources>
+                        <DataTemplate x:Key="SelectedModVersionTemplate" DataType="{x:Type viewModels:ModVersionOptionViewModel}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding VersionDisplay}" />
+                                <TextBlock Text=" (Installed)" Margin="6,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsInstalled}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="✓" Foreground="{StaticResource Brush.Accent.Primary}" Margin="6,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsCompatible}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.Resources>
                     <ComboBox.Style>
                         <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource {x:Type ComboBox}}">
                             <Setter Property="Visibility" Value="Visible" />
@@ -2371,38 +2402,7 @@
                         </Style>
                     </ComboBox.Style>
                     <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="{x:Type viewModels:ModVersionOptionViewModel}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding VersionDisplay}" />
-                                <TextBlock Text=" (Installed)"
-                                Margin="6,0,0,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="{x:Type TextBlock}">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsInstalled}" Value="True">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                                <TextBlock Text="✓"
-                                Foreground="{StaticResource Brush.Accent.Primary}"
-                                Margin="6,0,0,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="{x:Type TextBlock}">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsCompatible}" Value="True">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </StackPanel>
-                        </DataTemplate>
+                        <StaticResource ResourceKey="SelectedModVersionTemplate" />
                     </ComboBox.ItemTemplate>
                 </ComboBox>
                 <Button x:Name="SelectedModUpdateButton"

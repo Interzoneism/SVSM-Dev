@@ -31,6 +31,7 @@
     <Color x:Key="Palette.ToggleSwitch.Track.Background.On">#FF4C8BF5</Color>
     <Color x:Key="Palette.ToggleSwitch.Track.Background.Disabled">#FFE2E6F0</Color>
     <Color x:Key="Palette.ToggleSwitch.Thumb.Background.Normal">#FFFFFFFF</Color>
+    <Color x:Key="Palette.ToggleSwitch.Thumb.Background.On">#FFFFFFFF</Color>
     <Color x:Key="Palette.ToggleSwitch.Thumb.Background.Disabled">#FFF4F6FB</Color>
     <Color x:Key="Palette.ToggleSwitch.Focus.Border">#FF4C8BF5</Color>
     <Color x:Key="Palette.ToggleSwitch.Hover.Border">#FF7AA6F9</Color>
@@ -193,6 +194,7 @@
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.On" Color="{StaticResource Palette.ToggleSwitch.Track.Background.On}" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.Disabled" Color="{StaticResource Palette.ToggleSwitch.Track.Background.Disabled}" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Normal" Color="{StaticResource Palette.ToggleSwitch.Thumb.Background.Normal}" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.On" Color="{StaticResource Palette.ToggleSwitch.Thumb.Background.On}" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Disabled" Color="{StaticResource Palette.ToggleSwitch.Thumb.Background.Disabled}" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Focus.Border" Color="{StaticResource Palette.ToggleSwitch.Focus.Border}" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Hover.Border" Color="{StaticResource Palette.ToggleSwitch.Hover.Border}" />

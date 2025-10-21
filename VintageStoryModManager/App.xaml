@@ -69,6 +69,7 @@
                                 <Trigger Property="IsOn" Value="True">
                                     <Setter TargetName="Track" Property="Background" Value="{StaticResource Brush.ToggleSwitch.Track.Background.On}" />
                                     <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource Brush.ToggleSwitch.Track.Background.On}" />
+                                    <Setter TargetName="Thumb" Property="Background" Value="{StaticResource Brush.ToggleSwitch.Thumb.Background.On}" />
                                     <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
@@ -79,7 +80,10 @@
                                     <Setter TargetName="HeaderContent" Property="Opacity" Value="0.6" />
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
+                                    <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource Brush.ToggleSwitch.Hover.Border}" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                    <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource Brush.ToggleSwitch.Focus.Border}" />
                                 </Trigger>
                                 <Trigger Property="Header" Value="{x:Null}">
                                     <Setter TargetName="HeaderContent" Property="Visibility" Value="Collapsed" />
