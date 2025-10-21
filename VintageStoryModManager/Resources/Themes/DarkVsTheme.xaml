@@ -93,6 +93,7 @@
     <!-- Data grid formatting. -->
     <!-- ===================== -->
     <SolidColorBrush x:Key="Brush.DataGrid.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.ModTabs.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
     <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Alternate" Color="{StaticResource Palette.ColorBackgroundMedium}" />
     <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" Opacity="0.3" />
     <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Selected" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
