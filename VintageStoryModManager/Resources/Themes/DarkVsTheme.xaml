@@ -33,15 +33,81 @@
     <SolidColorBrush x:Key="Text_ToolTip_Brush" Color="{StaticResource Palette.Text.Primary}" />
 
     <!-- Window and layout surfaces -->
-    <SolidColorBrush x:Key="Window_Background_Brush" Color="{StaticResource Palette.Surface.Bright}" />
+    <SolidColorBrush x:Key="Window_Background_SolidBrush" Color="{StaticResource Palette.Surface.Bright}" />
+    <ImageBrush x:Key="Window_Background_ImageBrush"
+                ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/TiledBackground.jpg"
+                TileMode="Tile"
+                Viewport="0,0,512,512"
+                ViewportUnits="Absolute"
+                Stretch="Fill"
+                AlignmentX="Left"
+                AlignmentY="Top"
+                Opacity="0.85" />
+    <!-- Swap the alias below to Window_Background_SolidBrush if you prefer a flat colour fill. -->
+    <StaticResource x:Key="Window_Background_Brush" ResourceKey="Window_Background_ImageBrush" />
     <SolidColorBrush x:Key="Window_Border_Brush" Color="{StaticResource Palette.Surface.Dark}" />
-    <SolidColorBrush x:Key="Panel_Primary_Background_Brush" Color="{StaticResource Palette.Surface.Bright}" />
-    <SolidColorBrush x:Key="Panel_Secondary_Background_Brush" Color="{StaticResource Palette.Surface.Dark}" />
+    <SolidColorBrush x:Key="Panel_Primary_Background_SolidBrush" Color="{StaticResource Palette.Surface.Bright}" />
+    <ImageBrush x:Key="Panel_Primary_Background_ImageBrush"
+                ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/TiledBackground.jpg"
+                TileMode="Tile"
+                Viewport="0,0,384,384"
+                ViewportUnits="Absolute"
+                Stretch="Fill"
+                AlignmentX="Left"
+                AlignmentY="Top"
+                Opacity="0.75" />
+    <!-- Swap the alias below to Panel_Primary_Background_SolidBrush if you prefer a flat colour fill. -->
+    <StaticResource x:Key="Panel_Primary_Background_Brush" ResourceKey="Panel_Primary_Background_ImageBrush" />
+    <SolidColorBrush x:Key="Panel_Secondary_Background_SolidBrush" Color="{StaticResource Palette.Surface.Dark}" />
+    <ImageBrush x:Key="Panel_Secondary_Background_ImageBrush"
+                ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/TiledBackground.jpg"
+                TileMode="Tile"
+                Viewport="0,0,384,384"
+                ViewportUnits="Absolute"
+                Stretch="Fill"
+                AlignmentX="Left"
+                AlignmentY="Top"
+                Opacity="0.6" />
+    <!-- Swap the alias below to Panel_Secondary_Background_SolidBrush if you prefer a flat colour fill. -->
+    <StaticResource x:Key="Panel_Secondary_Background_Brush" ResourceKey="Panel_Secondary_Background_ImageBrush" />
 
     <!-- Mod database surfaces -->
-    <SolidColorBrush x:Key="ModDatabase_Card_Background_Brush" Color="{StaticResource Palette.Surface.Bright}" />
-    <SolidColorBrush x:Key="ModDatabase_Card_Disabled_Background_Brush" Color="{StaticResource Palette.Surface.Dark}" />
-    <SolidColorBrush x:Key="ModDatabase_Grid_Background_Brush" Color="{StaticResource Palette.Surface.Bright}" />
+    <SolidColorBrush x:Key="ModDatabase_Card_Background_SolidBrush" Color="{StaticResource Palette.Surface.Bright}" />
+    <ImageBrush x:Key="ModDatabase_Card_Background_ImageBrush"
+                ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/TiledBackground.jpg"
+                TileMode="Tile"
+                Viewport="0,0,320,320"
+                ViewportUnits="Absolute"
+                Stretch="Fill"
+                AlignmentX="Left"
+                AlignmentY="Top"
+                Opacity="0.8" />
+    <!-- Swap the alias below to ModDatabase_Card_Background_SolidBrush if you prefer a flat colour fill. -->
+    <StaticResource x:Key="ModDatabase_Card_Background_Brush" ResourceKey="ModDatabase_Card_Background_ImageBrush" />
+    <SolidColorBrush x:Key="ModDatabase_Card_Disabled_Background_SolidBrush" Color="{StaticResource Palette.Surface.Dark}" />
+    <ImageBrush x:Key="ModDatabase_Card_Disabled_Background_ImageBrush"
+                ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/TiledBackground.jpg"
+                TileMode="Tile"
+                Viewport="0,0,320,320"
+                ViewportUnits="Absolute"
+                Stretch="Fill"
+                AlignmentX="Left"
+                AlignmentY="Top"
+                Opacity="0.55" />
+    <!-- Swap the alias below to ModDatabase_Card_Disabled_Background_SolidBrush if you prefer a flat colour fill. -->
+    <StaticResource x:Key="ModDatabase_Card_Disabled_Background_Brush" ResourceKey="ModDatabase_Card_Disabled_Background_ImageBrush" />
+    <SolidColorBrush x:Key="ModDatabase_Grid_Background_SolidBrush" Color="{StaticResource Palette.Surface.Bright}" />
+    <ImageBrush x:Key="ModDatabase_Grid_Background_ImageBrush"
+                ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/TiledBackground.jpg"
+                TileMode="Tile"
+                Viewport="0,0,320,320"
+                ViewportUnits="Absolute"
+                Stretch="Fill"
+                AlignmentX="Left"
+                AlignmentY="Top"
+                Opacity="0.7" />
+    <!-- Swap the alias below to ModDatabase_Grid_Background_SolidBrush if you prefer a flat colour fill. -->
+    <StaticResource x:Key="ModDatabase_Grid_Background_Brush" ResourceKey="ModDatabase_Grid_Background_ImageBrush" />
 
     <!-- Shadows -->
     <SolidColorBrush x:Key="DataGrid_Row_Shadow_Brush" Color="{StaticResource Palette.Surface.Dark}" />
