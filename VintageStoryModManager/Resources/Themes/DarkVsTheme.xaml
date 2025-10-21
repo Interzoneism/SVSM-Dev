@@ -4,9 +4,9 @@
     <!-- Dark theme palette -->
     <Color x:Key="Palette.Text.Primary">#FFE9DDCE</Color>
     <Color x:Key="Palette.Text.Emphasis">#FFAD8948</Color>
-    <Color x:Key="Palette.Surface.Primary">#FF403529</Color>
-    <Color x:Key="Palette.Surface.Secondary">#FF342A20</Color>
-    <Color x:Key="Palette.Surface.Header">#FF53493E</Color>
+    <Color x:Key="Palette.Surface.Primary">#FF6b563e</Color>
+    <Color x:Key="Palette.Surface.Secondary">#FF3e3226</Color>
+    <Color x:Key="Palette.Surface.Header">#FF453424</Color>
     <Color x:Key="Palette.Control.Accent">#FFE0CFBB</Color>
     <Color x:Key="Palette.Control.Hover">#3FFFFFFF</Color>
     <Color x:Key="Palette.Status.Error">#FF8C3F3F</Color>
