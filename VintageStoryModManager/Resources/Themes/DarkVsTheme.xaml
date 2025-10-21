@@ -116,6 +116,10 @@
     <SolidColorBrush x:Key="DataGrid_Row_Selected_Brush" Color="{StaticResource Palette.Control.Accent}" Opacity="0.35" />
     <SolidColorBrush x:Key="DataGrid_Header_Hover_Background_Brush" Color="{StaticResource Palette.Control.Hover}" />
 
+    <!-- Installed mod list rows -->
+    <SolidColorBrush x:Key="InstalledMods_Row_Background_Brush" Color="{StaticResource Palette.Surface.Bright}" />
+    <SolidColorBrush x:Key="InstalledMods_Row_Border_Brush" Color="{StaticResource Palette.Surface.Dark}" />
+
     <!-- Tags and badges -->
     <SolidColorBrush x:Key="Tag_Badge_Background_Brush" Color="{StaticResource Palette.Surface.Dark}" />
     <SolidColorBrush x:Key="Tag_Badge_Border_Brush" Color="{StaticResource Palette.Control.Accent}" />
