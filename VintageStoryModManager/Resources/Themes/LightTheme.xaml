@@ -47,6 +47,11 @@
     <Color x:Key="Color.Dialog.TextBox.SelectionText">#FF0F3B76</Color>
     <Color x:Key="Color.Dialog.TextBox.Caret">#FF4C8BF5</Color>
 
+    <Color x:Key="Color.Border.Default">#FFCAD7EB</Color>
+    <Color x:Key="Color.TextInput.Background">#FFFFFFFF</Color>
+    <Color x:Key="Color.TextInput.FocusBackground">#FF4C8BF5</Color>
+    <Color x:Key="Color.TextInput.FocusBorder">#FF4C8BF5</Color>
+
     <!-- Text -->
     <SolidColorBrush x:Key="Text_Primary_Brush" Color="{StaticResource Color.Text.Primary}" />
     <SolidColorBrush x:Key="Text_Body_Brush" Color="{StaticResource Color.Text.Primary}" />
@@ -75,7 +80,7 @@
     <SolidColorBrush x:Key="Dialog_Content_Shadow_Brush" Color="{StaticResource Color.Shadow.Default}" />
 
     <!-- Borders -->
-    <SolidColorBrush x:Key="Border_Default_Brush" options:Freeze="False" Color="{StaticResource Color.Border.Primary}" />
+    <SolidColorBrush x:Key="Border_Default_Brush" options:Freeze="False" Color="{StaticResource Color.Border.Default}" />
     <SolidColorBrush x:Key="Border_Hover_Brush" Color="{StaticResource Color.Border.Hover}" />
     <SolidColorBrush x:Key="DataGrid_Row_Border_Brush" Color="{StaticResource Color.Border.DataGridRow}" />
 
@@ -88,7 +93,7 @@
     <SolidColorBrush x:Key="Accent_Primary_Brush" Color="{StaticResource Color.Control.Accent}" />
 
     <!-- Text inputs -->
-    <SolidColorBrush x:Key="TextInput_Focus_Background_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="TextInput_Focus_Background_Brush" Color="{StaticResource Color.TextInput.FocusBackground}" />
 
     <!-- Toggle switches and toggle buttons -->
     <SolidColorBrush x:Key="ToggleSwitch_Track_Off_Brush" Color="{StaticResource Color.Toggle.Track.Off}" />
@@ -108,8 +113,8 @@
     <SolidColorBrush x:Key="Menu_Item_Submenu_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
 
     <!-- Inputs -->
-    <SolidColorBrush x:Key="TextInput_Background_Brush" Color="{StaticResource Color.Surface.Input}" />
-    <SolidColorBrush x:Key="TextInput_Focus_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
+    <SolidColorBrush x:Key="TextInput_Background_Brush" Color="{StaticResource Color.TextInput.Background}" />
+    <SolidColorBrush x:Key="TextInput_Focus_Border_Brush" Color="{StaticResource Color.TextInput.FocusBorder}" />
     <SolidColorBrush x:Key="TextInput_Selection_Background_Brush" Color="{StaticResource Color.Control.Accent}" />
     <SolidColorBrush x:Key="SearchBox_Background_Brush" Color="{StaticResource Color.Surface.Input}" />
 
