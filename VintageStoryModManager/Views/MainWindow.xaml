@@ -131,28 +131,28 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type DataGridColumnHeader}">
                         <Border x:Name="HeaderBorder"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}"
-                                SnapsToDevicePixels="True">
+            Background="{TemplateBinding Background}"
+            BorderBrush="{TemplateBinding BorderBrush}"
+            BorderThickness="{TemplateBinding BorderThickness}"
+            Padding="{TemplateBinding Padding}"
+            SnapsToDevicePixels="True">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <ContentPresenter Grid.Column="0"
-                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                                 <Path x:Name="SortArrow"
-                                      Grid.Column="1"
-                                      Width="6"
-                                      Height="6"
-                                      Margin="6,0,0,0"
-                                      Fill="{StaticResource Accent_Primary_Brush}"
-                                      Stretch="Uniform"
-                                      Visibility="Collapsed"
-                                      VerticalAlignment="Center" />
+                  Grid.Column="1"
+                  Width="6"
+                  Height="6"
+                  Margin="6,0,0,0"
+                  Fill="{StaticResource Accent_Primary_Brush}"
+                  Stretch="Uniform"
+                  Visibility="Collapsed"
+                  VerticalAlignment="Center" />
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -160,30 +160,22 @@
                                 <Trigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="HeaderBorder"
-                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource DataGrid_Header_Hover_Background_Brush}}"
-                                                            Duration="0:0:0.15">
-                                                <ColorAnimation.EasingFunction>
-                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                </ColorAnimation.EasingFunction>
-                                            </ColorAnimation>
-
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HeaderBorder"
+                                                       Storyboard.TargetProperty="Background">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0.15"
+                                Value="{StaticResource DataGrid_Header_Hover_Background_Brush}" />
+                                            </ObjectAnimationUsingKeyFrames>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.EnterActions>
                                 <Trigger.ExitActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="HeaderBorder"
-                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                            To="{Binding Color, Source={StaticResource DataGrid_Header_Background_Brush}}"
-                                                            Duration="0:0:0.15">
-                                                <ColorAnimation.EasingFunction>
-                                                    <QuadraticEase EasingMode="EaseOut" />
-                                                </ColorAnimation.EasingFunction>
-                                            </ColorAnimation>
-
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HeaderBorder"
+                                                       Storyboard.TargetProperty="Background">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0.15"
+                                Value="{StaticResource DataGrid_Header_Background_Brush}" />
+                                            </ObjectAnimationUsingKeyFrames>
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.ExitActions>
