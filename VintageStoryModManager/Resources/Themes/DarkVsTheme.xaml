@@ -55,7 +55,7 @@
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.On" Color="{StaticResource Palette.ColorActive}" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.Disabled" Color="{StaticResource Palette.ColorDisabled}" Opacity="0.7" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Normal" Color="{StaticResource Palette.ColorElement}" />
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Disabled" Color="{StaticResource Palette.ColorDisabled}" Opacity="0.5" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Disabled" Color="{StaticResource Palette.ColorBackgroundLight}" Opacity="1" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Focus.Border" Color="{StaticResource Palette.ColorActive}" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Hover.Border" Color="{StaticResource Palette.ColorTextPrimary}" Opacity="0.7" />
 
@@ -96,7 +96,7 @@
     <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" Opacity="0.3" />
     <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Selected" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
     <SolidColorBrush x:Key="Brush.DataGrid.RowBorder" Color="{StaticResource Palette.ColorBackgroundMedium}" />
-    <SolidColorBrush x:Key="Brush.DataGrid.Header.Background" Color="{StaticResource Palette.ColorElement}" />
+    <SolidColorBrush x:Key="Brush.DataGrid.Header.Background" Color="{StaticResource Palette.ColorBackgroundLight}" />
     <SolidColorBrush x:Key="Brush.DataGrid.Header.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" />
     <SolidColorBrush x:Key="Brush.DataGrid.RowShadow" Color="{StaticResource Palette.ColorBackgroundDark}" Opacity="0.6" />
 
