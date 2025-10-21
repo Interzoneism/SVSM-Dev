@@ -1415,7 +1415,7 @@
                         <Border Background="Transparent"
                                 BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Dark}"
                                 BorderThickness="2,2,0,0"
-                                CornerRadius="{Binding Path=(ui:ControlHelper.CornerRadius), ElementName=CloudModlistsDataGrid}"
+                                CornerRadius="0"
                                 SnapsToDevicePixels="True">
                             <DataGrid x:Name="CloudModlistsDataGrid"
                                       ItemsSource="{Binding CloudModlistsView}"
@@ -1432,7 +1432,7 @@
                                       HorizontalGridLinesBrush="Transparent"
                                       VerticalGridLinesBrush="Transparent"
                                       HeadersVisibility="Column"
-                                      ui:ControlHelper.CornerRadius="10"
+                                      ui:ControlHelper.CornerRadius="0"
                                       FontSize="15"
                                       Foreground="{StaticResource Brush.Text.Primary}"
                                       SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged"
@@ -1482,26 +1482,23 @@
                                                     Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
                                                     BorderBrush="{TemplateBinding BorderBrush}"
                                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                                    CornerRadius="8"
+                                                    CornerRadius="0"
                                                     Margin="4,0,4,4"
                                                     SnapsToDevicePixels="True">
-                                                        <Border.Effect>
-                                                            <DropShadowEffect Color="{Binding Color, Source={StaticResource Brush.DataGrid.RowShadow}}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5" />
-                                                        </Border.Effect>
                                                         <Grid>
                                                             <Border x:Name="SelectionOverlay"
                                                             Background="{StaticResource Brush.Accent.Primary}"
                                                             Opacity="0"
-                                                            CornerRadius="8"
+                                                            CornerRadius="0"
                                                             IsHitTestVisible="False" />
                                                             <Border x:Name="HoverOverlay"
                                                             Background="{StaticResource Brush.Button.Primary.Background.Hover}"
                                                             Opacity="0"
-                                                            CornerRadius="8"
+                                                            CornerRadius="0"
                                                             IsHitTestVisible="False" />
                                                             <Border Padding="{TemplateBinding Padding}"
                                                             Background="Transparent"
-                                                            CornerRadius="8">
+                                                            CornerRadius="0">
                                                                 <SelectiveScrollingGrid>
                                                                     <SelectiveScrollingGrid.ColumnDefinitions>
                                                                         <ColumnDefinition Width="*" />
