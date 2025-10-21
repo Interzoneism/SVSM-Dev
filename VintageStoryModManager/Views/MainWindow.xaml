@@ -1002,6 +1002,7 @@
                                                FontFamily="Segoe UI"
                                                FontSize="12"
                                                FontWeight="Normal"
+                                               Foreground="{StaticResource Text_ToolTip_Brush}"
                                                TextWrapping="Wrap" />
                                         </ToolTipService.ToolTip>
                                         <Image Source="{Binding Icon}" Stretch="Uniform" Margin="0" />
@@ -1026,6 +1027,7 @@
                                                FontFamily="Segoe UI"
                                                FontSize="12"
                                                FontWeight="Normal"
+                                               Foreground="{StaticResource Text_ToolTip_Brush}"
                                                TextWrapping="Wrap" />
                                         </Setter.Value>
                                     </Setter>
@@ -1105,8 +1107,13 @@
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate>
                                                                 <StackPanel Margin="0,0,0,12">
-                                                                    <TextBlock Text="{Binding Version}" FontWeight="Bold" Margin="0,0,0,4" />
-                                                                    <TextBlock Text="{Binding Changelog}" TextWrapping="Wrap" />
+                                                                    <TextBlock Text="{Binding Version}"
+                                                                               FontWeight="Bold"
+                                                                               Margin="0,0,0,4"
+                                                                               Foreground="{StaticResource Text_ToolTip_Brush}" />
+                                                                    <TextBlock Text="{Binding Changelog}"
+                                                                               TextWrapping="Wrap"
+                                                                               Foreground="{StaticResource Text_ToolTip_Brush}" />
                                                                 </StackPanel>
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
@@ -1184,6 +1191,7 @@
                                             <TextBlock Text="{Binding AuthorsDisplay}"
                                                FontFamily="Segoe UI"
                                                FontSize="12"
+                                               Foreground="{StaticResource Text_ToolTip_Brush}"
                                                TextWrapping="Wrap"
                                                MaxWidth="300" />
                                         </Setter.Value>
