@@ -16,6 +16,9 @@
     <Color x:Key="Color.TextInput.Background">#FF342A20</Color>
     <Color x:Key="Color.TextInput.FocusBackground">#FFE0CFBB</Color>
     <Color x:Key="Color.TextInput.FocusBorder">#FFE0CFBB</Color>
+    <Color x:Key="Color.ToolTip.Background">#FF4C4034</Color>
+    <Color x:Key="Color.ToolTip.Border">#FFE0CFBB</Color>
+    <Color x:Key="Color.ToolTip.Foreground">#FFF6E8D7</Color>
 
     <!-- Text -->
     <SolidColorBrush x:Key="Text_Primary_Brush" Color="{StaticResource Palette.Text.Primary}" />
@@ -26,6 +29,7 @@
     <SolidColorBrush x:Key="Text_Link_Brush" Color="{StaticResource Palette.Text.Emphasis}" />
     <SolidColorBrush x:Key="Text_Selection_Foreground_Brush" Color="{StaticResource Palette.Text.Emphasis}" />
     <SolidColorBrush x:Key="Text_Caret_Brush" Color="{StaticResource Palette.Control.Accent}" />
+    <SolidColorBrush x:Key="Text_ToolTip_Brush" Color="{StaticResource Color.ToolTip.Foreground}" />
 
     <!-- Window and layout surfaces -->
     <SolidColorBrush x:Key="Window_Background_Brush" Color="{StaticResource Palette.Surface.Primary}" />
@@ -83,6 +87,10 @@
     <SolidColorBrush x:Key="TextInput_Selection_Background_Brush" Color="{StaticResource Palette.Control.Accent}" />
     <SolidColorBrush x:Key="SearchBox_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
 
+    <!-- Tooltips -->
+    <SolidColorBrush x:Key="ToolTip_Background_Brush" Color="{StaticResource Color.ToolTip.Background}" />
+    <SolidColorBrush x:Key="ToolTip_Border_Brush" Color="{StaticResource Color.ToolTip.Border}" />
+
     <!-- ComboBox -->
     <SolidColorBrush x:Key="ComboBox_Background_Brush" Color="{StaticResource Palette.Surface.Header}" />
     <SolidColorBrush x:Key="ComboBox_Border_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
@@ -133,7 +141,7 @@
     <SolidColorBrush x:Key="ModConfig_Value_Selected_Background_Brush" Color="{StaticResource Palette.Surface.Secondary}" />
 
     <Style TargetType="{x:Type TextBlock}">
-        <Setter Property="Foreground" Value="{StaticResource Text_Primary_Brush}" />
+        <Setter Property="Foreground" Value="{DynamicResource Text_Primary_Brush}" />
     </Style>
 
     <Style TargetType="{x:Type TextBox}">
@@ -215,6 +223,19 @@
 
     <Style TargetType="{x:Type Hyperlink}">
         <Setter Property="Foreground" Value="{StaticResource Text_Link_Brush}" />
+    </Style>
+
+    <Style TargetType="{x:Type ToolTip}">
+        <Setter Property="Background" Value="{StaticResource ToolTip_Background_Brush}" />
+        <Setter Property="Foreground" Value="{StaticResource Text_ToolTip_Brush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ToolTip_Border_Brush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Style.Resources>
+            <SolidColorBrush x:Key="Text_Primary_Brush" Color="{StaticResource Color.ToolTip.Foreground}" />
+            <Style TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource Text_ToolTip_Brush}" />
+            </Style>
+        </Style.Resources>
     </Style>
 
     <Style TargetType="{x:Type ContextMenu}">
