@@ -2,125 +2,21 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:options="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options">
     <!-- ========================================================= -->
-    <!-- Palette: tweak these base colours to retheme the dark UI. -->
+    <!-- Palette: base colours used throughout the dark VS theme. -->
     <!-- ========================================================= -->
-    <!-- Text -->
-    <Color x:Key="Palette.Text.Primary">#FFE9DDCE</Color>
-    <Color x:Key="Palette.Text.Emphasis">#FFAD8948</Color>
-    <Color x:Key="Palette.Text.Subtle">#99E9DDCE</Color>
-    <Color x:Key="Palette.Text.Placeholder">#99E9DDCE</Color>
-    <Color x:Key="Palette.Text.Link">#FFAD8948</Color>
-    <Color x:Key="Palette.Text.SelectionForeground">#FFE9DDCE</Color>
-    <Color x:Key="Palette.Text.Caret">#FFE9DDCE</Color>
-    <Color x:Key="Palette.ToolTip.Text">#FFF6E8D7</Color>
-
-    <!-- Window shell & panels -->
-    <Color x:Key="Palette.Window.Shell.Background.Solid">#FF6B563E</Color>
-    <Color x:Key="Palette.Window.Shell.Border">#FF3E3226</Color>
-    <Color x:Key="Palette.Panel.Primary.Background.Solid">#FF6B563E</Color>
-    <Color x:Key="Palette.Panel.Secondary.Background.Solid">#FF3E3226</Color>
-
-    <!-- Buttons & toggles -->
-    <Color x:Key="Palette.Button.Primary.Background.Normal">#FF453424</Color>
-    <Color x:Key="Palette.Button.Primary.Background.Hover">#3FFFFFFF</Color>
-    <Color x:Key="Palette.Button.Primary.Background.Pressed">#FF3E3226</Color>
-    <Color x:Key="Palette.Button.Primary.Background.Disabled">#FF3E3226</Color>
-    <Color x:Key="Palette.Button.Primary.Border">#FFE0CFBB</Color>
-    <Color x:Key="Palette.Accent.Primary">#FFE0CFBB</Color>
-    <Color x:Key="Palette.ToggleSwitch.Track.Background.Off">#FF3E3226</Color>
-    <Color x:Key="Palette.ToggleSwitch.Track.Background.On">#FFE0CFBB</Color>
-    <Color x:Key="Palette.ToggleSwitch.Track.Background.Disabled">#FF3E3226</Color>
-    <Color x:Key="Palette.ToggleSwitch.Thumb.Background.Normal">#FFE0CFBB</Color>
-    <Color x:Key="Palette.ToggleSwitch.Thumb.Background.Disabled">#FFE0CFBB</Color>
-    <Color x:Key="Palette.ToggleSwitch.Focus.Border">#FFE0CFBB</Color>
-    <Color x:Key="Palette.ToggleSwitch.Hover.Border">#3FFFFFFF</Color>
-    <Color x:Key="Palette.ToggleButton.Background.Checked">#FFE0CFBB</Color>
-    <Color x:Key="Palette.ToggleButton.Border.Checked">#FFE0CFBB</Color>
-
-    <!-- Text inputs & search -->
-    <Color x:Key="Palette.TextInput.Background.Normal">#FF342A20</Color>
-    <Color x:Key="Palette.TextInput.Background.Focused">#FFE0CFBB</Color>
-    <Color x:Key="Palette.TextInput.Border.Focused">#FFE0CFBB</Color>
-    <Color x:Key="Palette.TextInput.SelectionBackground">#FFE0CFBB</Color>
-    <Color x:Key="Palette.SearchBox.Background">#FF3E3226</Color>
-
-    <!-- Combo box -->
-    <Color x:Key="Palette.ComboBox.Background.Normal">#FF453424</Color>
-    <Color x:Key="Palette.ComboBox.Background.Hover">#3FFFFFFF</Color>
-    <Color x:Key="Palette.ComboBox.Background.Disabled">#FF3E3226</Color>
-    <Color x:Key="Palette.ComboBox.Background.Open">#3FFFFFFF</Color>
-    <Color x:Key="Palette.ComboBox.Border.Normal">#FF3E3226</Color>
-    <Color x:Key="Palette.ComboBox.Border.Hover">#3FFFFFFF</Color>
-    <Color x:Key="Palette.ComboBox.Border.Disabled">#FF3E3226</Color>
-    <Color x:Key="Palette.ComboBox.Border.Open">#FFE0CFBB</Color>
-    <Color x:Key="Palette.ComboBox.Item.Background.Normal">#FF3E3226</Color>
-    <Color x:Key="Palette.ComboBox.Item.Background.Hover">#3FFFFFFF</Color>
-    <Color x:Key="Palette.ComboBox.Item.Background.Selected">#FFE0CFBB</Color>
-    <Color x:Key="Palette.ComboBox.Glyph">#FFE0CFBB</Color>
-    <Color x:Key="Palette.ComboBox.Popup.Background">#FF3E3226</Color>
-    <Color x:Key="Palette.ComboBox.Popup.Border">#FF3E3226</Color>
-
-    <!-- Data grid -->
-    <Color x:Key="Palette.DataGrid.Background">#FF3E3226</Color>
-    <Color x:Key="Palette.DataGrid.Row.Background.Alternate">#FF6B563E</Color>
-    <Color x:Key="Palette.DataGrid.Row.Background.Hover">#FF453424</Color>
-    <Color x:Key="Palette.DataGrid.Row.Background.Selected">#FFE0CFBB</Color>
-    <Color x:Key="Palette.DataGrid.Row.Border">#FF3E3226</Color>
-    <Color x:Key="Palette.DataGrid.Header.Background">#FF453424</Color>
-    <Color x:Key="Palette.DataGrid.Header.Background.Hover">#3FFFFFFF</Color>
-    <Color x:Key="Palette.DataGrid.Row.Shadow">#FF3E3226</Color>
-
-    <!-- Menus & tooltips -->
-    <Color x:Key="Palette.Menu.Background">#FF6B563E</Color>
-    <Color x:Key="Palette.Menu.Border">#FF3E3226</Color>
-    <Color x:Key="Palette.Menu.Item.Background.Hover">#3FFFFFFF</Color>
-    <Color x:Key="Palette.Menu.Submenu.Background">#FF6B563E</Color>
-    <Color x:Key="Palette.ToolTip.Background">#FF4C4034</Color>
-    <Color x:Key="Palette.ToolTip.Border">#FFE0CFBB</Color>
-
-    <!-- Mod cards & grids -->
-    <Color x:Key="Palette.ModCard.Background.Active">#FF6B563E</Color>
-    <Color x:Key="Palette.ModCard.Background.Disabled">#FF3E3226</Color>
-    <Color x:Key="Palette.ModGrid.Background">#FF6B563E</Color>
-    <Color x:Key="Palette.ModCard.Shadow">#FF3E3226</Color>
-    <Color x:Key="Palette.ModDetails.Shadow">#FF3E3226</Color>
-
-    <!-- Installed mods list -->
-    <Color x:Key="Palette.InstalledMod.Row.Background">#FF6B563E</Color>
-    <Color x:Key="Palette.InstalledMod.Row.Border">#FF3E3226</Color>
-
-    <!-- Tags & status -->
-    <Color x:Key="Palette.Tag.Badge.Background">#FF3E3226</Color>
-    <Color x:Key="Palette.Tag.Badge.Border">#FFE0CFBB</Color>
-    <Color x:Key="Palette.Status.Success">#FFE0CFBB</Color>
-    <Color x:Key="Palette.Status.Error">#FF8C3F3F</Color>
-    <Color x:Key="Palette.Overlay.Warning.Background">#FFAD8948</Color>
-    <Color x:Key="Palette.Overlay.Success.Background">#FFE0CFBB</Color>
-
-    <!-- Dialog elements -->
-    <Color x:Key="Palette.Dialog.TextBox.Background">#FF3E3226</Color>
-    <Color x:Key="Palette.Dialog.TextBox.Border">#FFE0CFBB</Color>
-    <Color x:Key="Palette.Dialog.TextBox.SelectionBackground">#FFE0CFBB</Color>
-    <Color x:Key="Palette.Dialog.TextBox.SelectionForeground">#FFAD8948</Color>
-    <Color x:Key="Palette.Dialog.TextBox.Caret">#FFE0CFBB</Color>
-    <Color x:Key="Palette.Dialog.ContentShadow">#33000000</Color>
-
-    <!-- Miscellaneous -->
-    <Color x:Key="Palette.Border.Default">#FF342A20</Color>
-    <Color x:Key="Palette.Border.Hover">#3FFFFFFF</Color>
-    <Color x:Key="Palette.ScrollBar.Thumb">#FF453424</Color>
-    <Color x:Key="Palette.Selection.Background">#FFE0CFBB</Color>
-
-    <!-- Mod configuration tree -->
-    <Color x:Key="Palette.ModConfig.TreeNode.Background.Hover">#3FFFFFFF</Color>
-    <Color x:Key="Palette.ModConfig.TreeNode.Background.Selected">#FFE0CFBB</Color>
-    <Color x:Key="Palette.ModConfig.Value.Background.Hover">#3FFFFFFF</Color>
-    <Color x:Key="Palette.ModConfig.Value.Background.Selected">#FF3E3226</Color>
+    <Color x:Key="Palette.ColorBackgroundDark">#FF403529</Color>
+    <Color x:Key="Palette.ColorBackgroundMedium">#FF4D3D2D</Color>
+    <Color x:Key="Palette.ColorBackgroundLight">#FF5A4530</Color>
+    <Color x:Key="Palette.ColorElement">#FF453525</Color>
+    <Color x:Key="Palette.ColorActive">#FF479BBE</Color>
+    <Color x:Key="Palette.ColorDisabled">#FF332A21</Color>
+    <Color x:Key="Palette.ColorTextPrimary">#FFC8BCAE</Color>
+    <Color x:Key="Palette.ColorTextLink">#FF479BBE</Color>
 
     <!-- ====================================================== -->
     <!-- Window shell and shared panel surfaces (Main windows). -->
     <!-- ====================================================== -->
-    <SolidColorBrush x:Key="Brush.Window.Shell.Background.Solid" Color="{StaticResource Palette.Window.Shell.Background.Solid}" />
+    <SolidColorBrush x:Key="Brush.Window.Shell.Background.Solid" Color="{StaticResource Palette.ColorBackgroundMedium}" />
     <ImageBrush x:Key="Brush.Window.Shell.Background.Image"
                 ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/soilcorrect.png"
                 TileMode="Tile"
@@ -132,9 +28,9 @@
                 Opacity="0" />
     <!-- Swap the alias below to Brush.Window.Shell.Background.Solid if you prefer a flat colour fill. -->
     <StaticResource x:Key="Brush.Window.Shell.Background" ResourceKey="Brush.Window.Shell.Background.Image" />
-    <SolidColorBrush x:Key="Brush.Window.Shell.Border" Color="{StaticResource Palette.Window.Shell.Border}" />
+    <SolidColorBrush x:Key="Brush.Window.Shell.Border" Color="{StaticResource Palette.ColorBackgroundDark}" />
 
-    <SolidColorBrush x:Key="Brush.Panel.Primary.Background.Solid" Color="{StaticResource Palette.Panel.Primary.Background.Solid}" />
+    <SolidColorBrush x:Key="Brush.Panel.Primary.Background.Solid" Color="{StaticResource Palette.ColorBackgroundMedium}" />
     <ImageBrush x:Key="Brush.Panel.Primary.Background.Image"
                 ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/soilcorrect.png"
                 TileMode="FlipXY"
@@ -147,7 +43,7 @@
     <!-- Swap the alias below to Brush.Panel.Primary.Background.Solid if you prefer a flat colour fill. -->
     <StaticResource x:Key="Brush.Panel.Primary.Background" ResourceKey="Brush.Panel.Primary.Background.Image" />
 
-    <SolidColorBrush x:Key="Brush.Panel.Secondary.Background.Solid" Color="{StaticResource Palette.Panel.Secondary.Background.Solid}" />
+    <SolidColorBrush x:Key="Brush.Panel.Secondary.Background.Solid" Color="{StaticResource Palette.ColorBackgroundDark}" />
     <ImageBrush x:Key="Brush.Panel.Secondary.Background.Image"
                 ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/soilcorrect.png"
                 TileMode="Tile"
@@ -162,92 +58,92 @@
     <!-- =============================== -->
     <!-- Text and typography colouring. -->
     <!-- =============================== -->
-    <SolidColorBrush x:Key="Brush.Text.Primary" Color="{StaticResource Palette.Text.Primary}" />
-    <SolidColorBrush x:Key="Brush.Text.Body" Color="{StaticResource Palette.Text.Primary}" />
-    <SolidColorBrush x:Key="Brush.Text.Emphasis" Color="{StaticResource Palette.Text.Emphasis}" />
-    <SolidColorBrush x:Key="Brush.Text.Subtle" Color="{StaticResource Palette.Text.Subtle}" />
-    <SolidColorBrush x:Key="Brush.Text.Placeholder" Color="{StaticResource Palette.Text.Placeholder}" />
-    <SolidColorBrush x:Key="Brush.Text.Link" Color="{StaticResource Palette.Text.Link}" />
-    <SolidColorBrush x:Key="Brush.Text.SelectionForeground" Color="{StaticResource Palette.Text.SelectionForeground}" />
-    <SolidColorBrush x:Key="Brush.Text.Caret" Color="{StaticResource Palette.Text.Caret}" />
-    <SolidColorBrush x:Key="Brush.ToolTip.Text" Color="{StaticResource Palette.ToolTip.Text}" />
+    <SolidColorBrush x:Key="Brush.Text.Primary" Color="{StaticResource Palette.ColorTextPrimary}" />
+    <SolidColorBrush x:Key="Brush.Text.Body" Color="{StaticResource Palette.ColorTextPrimary}" />
+    <SolidColorBrush x:Key="Brush.Text.Emphasis" Color="{StaticResource Palette.ColorActive}" />
+    <SolidColorBrush x:Key="Brush.Text.Subtle" Color="{StaticResource Palette.ColorTextPrimary}" Opacity="0.7" />
+    <SolidColorBrush x:Key="Brush.Text.Placeholder" Color="{StaticResource Palette.ColorTextPrimary}" Opacity="0.45" />
+    <SolidColorBrush x:Key="Brush.Text.Link" Color="{StaticResource Palette.ColorTextLink}" />
+    <SolidColorBrush x:Key="Brush.Text.SelectionForeground" Color="{StaticResource Palette.ColorTextPrimary}" />
+    <SolidColorBrush x:Key="Brush.Text.Caret" Color="{StaticResource Palette.ColorTextPrimary}" />
+    <SolidColorBrush x:Key="Brush.ToolTip.Text" Color="{StaticResource Palette.ColorTextPrimary}" />
 
     <!-- ============================================ -->
     <!-- Primary buttons and toggle button surfaces. -->
     <!-- ============================================ -->
-    <SolidColorBrush x:Key="Brush.Button.Primary.Background.Normal" options:Freeze="False" Color="{StaticResource Palette.Button.Primary.Background.Normal}" />
-    <SolidColorBrush x:Key="Brush.Button.Primary.Background.Hover" Color="{StaticResource Palette.Button.Primary.Background.Hover}" />
-    <SolidColorBrush x:Key="Brush.Button.Primary.Background.Pressed" Color="{StaticResource Palette.Button.Primary.Background.Pressed}" />
-    <SolidColorBrush x:Key="Brush.Button.Primary.Background.Disabled" Color="{StaticResource Palette.Button.Primary.Background.Disabled}" Opacity="0.6" />
-    <SolidColorBrush x:Key="Brush.Button.Primary.Border.Normal" Color="{StaticResource Palette.Button.Primary.Border}" />
-    <SolidColorBrush x:Key="Brush.Accent.Primary" Color="{StaticResource Palette.Accent.Primary}" />
-    <SolidColorBrush x:Key="Brush.ToggleButton.Background.Checked" Color="{StaticResource Palette.ToggleButton.Background.Checked}" />
-    <SolidColorBrush x:Key="Brush.ToggleButton.Border.Checked" Color="{StaticResource Palette.ToggleButton.Border.Checked}" />
+    <SolidColorBrush x:Key="Brush.Button.Primary.Background.Normal" options:Freeze="False" Color="{StaticResource Palette.ColorElement}" />
+    <SolidColorBrush x:Key="Brush.Button.Primary.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" />
+    <SolidColorBrush x:Key="Brush.Button.Primary.Background.Pressed" Color="{StaticResource Palette.ColorBackgroundMedium}" />
+    <SolidColorBrush x:Key="Brush.Button.Primary.Background.Disabled" Color="{StaticResource Palette.ColorDisabled}" Opacity="0.6" />
+    <SolidColorBrush x:Key="Brush.Button.Primary.Border.Normal" Color="{StaticResource Palette.ColorTextPrimary}" Opacity="0.6" />
+    <SolidColorBrush x:Key="Brush.Accent.Primary" Color="{StaticResource Palette.ColorActive}" />
+    <SolidColorBrush x:Key="Brush.ToggleButton.Background.Checked" Color="{StaticResource Palette.ColorActive}" />
+    <SolidColorBrush x:Key="Brush.ToggleButton.Border.Checked" Color="{StaticResource Palette.ColorActive}" />
 
     <!-- ============================================ -->
     <!-- Toggle switches (App.xaml toggle controls). -->
     <!-- ============================================ -->
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.Off" Color="{StaticResource Palette.ToggleSwitch.Track.Background.Off}" />
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.On" Color="{StaticResource Palette.ToggleSwitch.Track.Background.On}" />
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.Disabled" Color="{StaticResource Palette.ToggleSwitch.Track.Background.Disabled}" Opacity="0.7" />
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Normal" Color="{StaticResource Palette.ToggleSwitch.Thumb.Background.Normal}" />
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Disabled" Color="{StaticResource Palette.ToggleSwitch.Thumb.Background.Disabled}" Opacity="0.5" />
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Focus.Border" Color="{StaticResource Palette.ToggleSwitch.Focus.Border}" />
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Hover.Border" Color="{StaticResource Palette.ToggleSwitch.Hover.Border}" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.Off" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.On" Color="{StaticResource Palette.ColorActive}" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.Disabled" Color="{StaticResource Palette.ColorDisabled}" Opacity="0.7" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Normal" Color="{StaticResource Palette.ColorElement}" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Disabled" Color="{StaticResource Palette.ColorDisabled}" Opacity="0.5" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Focus.Border" Color="{StaticResource Palette.ColorActive}" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Hover.Border" Color="{StaticResource Palette.ColorTextPrimary}" Opacity="0.7" />
 
     <!-- =================================== -->
     <!-- Text inputs and the search controls. -->
     <!-- =================================== -->
-    <SolidColorBrush x:Key="Brush.TextInput.Background.Normal" Color="{StaticResource Palette.TextInput.Background.Normal}" />
-    <SolidColorBrush x:Key="Brush.TextInput.Background.Focused" Color="{StaticResource Palette.TextInput.Background.Focused}" />
-    <SolidColorBrush x:Key="Brush.TextInput.Border.Focused" Color="{StaticResource Palette.TextInput.Border.Focused}" />
-    <SolidColorBrush x:Key="Brush.TextInput.SelectionBackground" Color="{StaticResource Palette.TextInput.SelectionBackground}" />
-    <SolidColorBrush x:Key="Brush.SearchBox.Background" Color="{StaticResource Palette.SearchBox.Background}" />
+    <SolidColorBrush x:Key="Brush.TextInput.Background.Normal" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.TextInput.Background.Focused" Color="{StaticResource Palette.ColorElement}" />
+    <SolidColorBrush x:Key="Brush.TextInput.Border.Focused" Color="{StaticResource Palette.ColorActive}" />
+    <SolidColorBrush x:Key="Brush.TextInput.SelectionBackground" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
+    <SolidColorBrush x:Key="Brush.SearchBox.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
 
     <!-- ========================= -->
     <!-- Combo box colour system. -->
     <!-- ========================= -->
-    <SolidColorBrush x:Key="Brush.ComboBox.Background.Normal" Color="{StaticResource Palette.ComboBox.Background.Normal}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Background.Hover" Color="{StaticResource Palette.ComboBox.Background.Hover}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Background.Disabled" Color="{StaticResource Palette.ComboBox.Background.Disabled}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Background.Open" Color="{StaticResource Palette.ComboBox.Background.Open}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Border.Normal" Color="{StaticResource Palette.ComboBox.Border.Normal}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Border.Hover" Color="{StaticResource Palette.ComboBox.Border.Hover}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Border.Disabled" Color="{StaticResource Palette.ComboBox.Border.Disabled}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Border.Open" Color="{StaticResource Palette.ComboBox.Border.Open}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Item.Background.Normal" Color="{StaticResource Palette.ComboBox.Item.Background.Normal}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Item.Background.Hover" Color="{StaticResource Palette.ComboBox.Item.Background.Hover}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Item.Background.Selected" Color="{StaticResource Palette.ComboBox.Item.Background.Selected}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Glyph" Color="{StaticResource Palette.ComboBox.Glyph}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Popup.Background" Color="{StaticResource Palette.ComboBox.Popup.Background}" />
-    <SolidColorBrush x:Key="Brush.ComboBox.Popup.Border" Color="{StaticResource Palette.ComboBox.Popup.Border}" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Background.Normal" Color="{StaticResource Palette.ColorElement}" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Background.Disabled" Color="{StaticResource Palette.ColorDisabled}" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Background.Open" Color="{StaticResource Palette.ColorElement}" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Border.Normal" Color="{StaticResource Palette.ColorBackgroundMedium}" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Border.Hover" Color="{StaticResource Palette.ColorTextPrimary}" Opacity="0.7" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Border.Disabled" Color="{StaticResource Palette.ColorDisabled}" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Border.Open" Color="{StaticResource Palette.ColorActive}" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Item.Background.Normal" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Item.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" Opacity="0.7" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Item.Background.Selected" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Glyph" Color="{StaticResource Palette.ColorTextPrimary}" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Popup.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.ComboBox.Popup.Border" Color="{StaticResource Palette.ColorBackgroundMedium}" />
 
     <!-- ===================== -->
     <!-- Data grid formatting. -->
     <!-- ===================== -->
-    <SolidColorBrush x:Key="Brush.DataGrid.Background" Color="{StaticResource Palette.DataGrid.Background}" />
-    <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Alternate" Color="{StaticResource Palette.DataGrid.Row.Background.Alternate}" />
-    <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Hover" Color="{StaticResource Palette.DataGrid.Row.Background.Hover}" Opacity="0.3" />
-    <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Selected" Color="{StaticResource Palette.DataGrid.Row.Background.Selected}" Opacity="0.35" />
-    <SolidColorBrush x:Key="Brush.DataGrid.RowBorder" Color="{StaticResource Palette.DataGrid.Row.Border}" />
-    <SolidColorBrush x:Key="Brush.DataGrid.Header.Background" Color="{StaticResource Palette.DataGrid.Header.Background}" />
-    <SolidColorBrush x:Key="Brush.DataGrid.Header.Background.Hover" Color="{StaticResource Palette.DataGrid.Header.Background.Hover}" />
-    <SolidColorBrush x:Key="Brush.DataGrid.RowShadow" Color="{StaticResource Palette.DataGrid.Row.Shadow}" />
+    <SolidColorBrush x:Key="Brush.DataGrid.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Alternate" Color="{StaticResource Palette.ColorBackgroundMedium}" />
+    <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" Opacity="0.3" />
+    <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Selected" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
+    <SolidColorBrush x:Key="Brush.DataGrid.RowBorder" Color="{StaticResource Palette.ColorBackgroundMedium}" />
+    <SolidColorBrush x:Key="Brush.DataGrid.Header.Background" Color="{StaticResource Palette.ColorElement}" />
+    <SolidColorBrush x:Key="Brush.DataGrid.Header.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" />
+    <SolidColorBrush x:Key="Brush.DataGrid.RowShadow" Color="{StaticResource Palette.ColorBackgroundDark}" Opacity="0.6" />
 
     <!-- ===================================== -->
     <!-- Menu, context menu, and tool tip UI. -->
     <!-- ===================================== -->
-    <SolidColorBrush x:Key="Brush.Menu.Background" Color="{StaticResource Palette.Menu.Background}" />
-    <SolidColorBrush x:Key="Brush.Menu.Border" Color="{StaticResource Palette.Menu.Border}" />
-    <SolidColorBrush x:Key="Brush.Menu.Item.Background.Hover" Color="{StaticResource Palette.Menu.Item.Background.Hover}" />
-    <SolidColorBrush x:Key="Brush.Menu.Submenu.Background" Color="{StaticResource Palette.Menu.Submenu.Background}" />
-    <SolidColorBrush x:Key="Brush.ToolTip.Background" Color="{StaticResource Palette.ToolTip.Background}" />
-    <SolidColorBrush x:Key="Brush.ToolTip.Border" Color="{StaticResource Palette.ToolTip.Border}" />
+    <SolidColorBrush x:Key="Brush.Menu.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.Menu.Border" Color="{StaticResource Palette.ColorBackgroundMedium}" />
+    <SolidColorBrush x:Key="Brush.Menu.Item.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" />
+    <SolidColorBrush x:Key="Brush.Menu.Submenu.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.ToolTip.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.ToolTip.Border" Color="{StaticResource Palette.ColorBackgroundMedium}" />
 
     <!-- ================================== -->
     <!-- Mod list cards, grids, and shadows -->
     <!-- ================================== -->
-    <SolidColorBrush x:Key="Brush.ModCard.Background.Active.Solid" Color="{StaticResource Palette.ModCard.Background.Active}" />
+    <SolidColorBrush x:Key="Brush.ModCard.Background.Active.Solid" Color="{StaticResource Palette.ColorElement}" />
     <ImageBrush x:Key="Brush.ModCard.Background.Active.Image"
                 ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/soilcorrect.png"
                 TileMode="Tile"
@@ -259,7 +155,7 @@
     <!-- Swap the alias below to Brush.ModCard.Background.Active.Solid if you prefer a flat colour fill. -->
     <StaticResource x:Key="Brush.ModCard.Background.Active" ResourceKey="Brush.ModCard.Background.Active.Image" />
 
-    <SolidColorBrush x:Key="Brush.ModCard.Background.Disabled.Solid" Color="{StaticResource Palette.ModCard.Background.Disabled}" />
+    <SolidColorBrush x:Key="Brush.ModCard.Background.Disabled.Solid" Color="{StaticResource Palette.ColorDisabled}" />
     <ImageBrush x:Key="Brush.ModCard.Background.Disabled.Image"
                 ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/soilcorrect.png"
                 TileMode="Tile"
@@ -272,7 +168,7 @@
     <!-- Swap the alias below to Brush.ModCard.Background.Disabled.Solid if you prefer a flat colour fill. -->
     <StaticResource x:Key="Brush.ModCard.Background.Disabled" ResourceKey="Brush.ModCard.Background.Disabled.Image" />
 
-    <SolidColorBrush x:Key="Brush.ModGrid.Background.Solid" Color="{StaticResource Palette.ModGrid.Background}" />
+    <SolidColorBrush x:Key="Brush.ModGrid.Background.Solid" Color="{StaticResource Palette.ColorBackgroundMedium}" />
     <ImageBrush x:Key="Brush.ModGrid.Background.Image"
                 ImageSource="pack://application:,,,/VintageStoryModManager;component/Views/soilcorrect.png"
                 TileMode="Tile"
@@ -285,50 +181,50 @@
     <!-- Swap the alias below to Brush.ModGrid.Background.Solid if you prefer a flat colour fill. -->
     <StaticResource x:Key="Brush.ModGrid.Background" ResourceKey="Brush.ModGrid.Background.Image" />
 
-    <SolidColorBrush x:Key="Brush.ModCard.Shadow" Color="{StaticResource Palette.ModCard.Shadow}" />
-    <SolidColorBrush x:Key="Brush.ModDetails.Shadow" Color="{StaticResource Palette.ModDetails.Shadow}" />
+    <SolidColorBrush x:Key="Brush.ModCard.Shadow" Color="{StaticResource Palette.ColorBackgroundDark}" Opacity="0.7" />
+    <SolidColorBrush x:Key="Brush.ModDetails.Shadow" Color="{StaticResource Palette.ColorBackgroundDark}" Opacity="0.7" />
 
     <!-- =============================== -->
     <!-- Installed mods list formatting. -->
     <!-- =============================== -->
-    <SolidColorBrush x:Key="Brush.InstalledMod.Row.Background" Color="{StaticResource Palette.InstalledMod.Row.Background}" />
-    <SolidColorBrush x:Key="Brush.InstalledMod.Row.Border" Color="{StaticResource Palette.InstalledMod.Row.Border}" />
+    <SolidColorBrush x:Key="Brush.InstalledMod.Row.Background" Color="{StaticResource Palette.ColorBackgroundMedium}" />
+    <SolidColorBrush x:Key="Brush.InstalledMod.Row.Border" Color="{StaticResource Palette.ColorBackgroundDark}" />
 
     <!-- ============================== -->
     <!-- Tags, statuses, and overlays. -->
     <!-- ============================== -->
-    <SolidColorBrush x:Key="Brush.Tag.Badge.Background" Color="{StaticResource Palette.Tag.Badge.Background}" />
-    <SolidColorBrush x:Key="Brush.Tag.Badge.Border" Color="{StaticResource Palette.Tag.Badge.Border}" />
-    <SolidColorBrush x:Key="Brush.Status.Success" Color="{StaticResource Palette.Status.Success}" />
-    <SolidColorBrush x:Key="Brush.Status.Error" Color="{StaticResource Palette.Status.Error}" />
-    <SolidColorBrush x:Key="Brush.Overlay.Warning.Background" Color="{StaticResource Palette.Overlay.Warning.Background}" Opacity="0.45" />
-    <SolidColorBrush x:Key="Brush.Overlay.Success.Background" Color="{StaticResource Palette.Overlay.Success.Background}" Opacity="0.6" />
+    <SolidColorBrush x:Key="Brush.Tag.Badge.Background" Color="{StaticResource Palette.ColorElement}" />
+    <SolidColorBrush x:Key="Brush.Tag.Badge.Border" Color="{StaticResource Palette.ColorTextPrimary}" Opacity="0.7" />
+    <SolidColorBrush x:Key="Brush.Status.Success" Color="{StaticResource Palette.ColorActive}" />
+    <SolidColorBrush x:Key="Brush.Status.Error" Color="{StaticResource Palette.ColorElement}" />
+    <SolidColorBrush x:Key="Brush.Overlay.Warning.Background" Color="{StaticResource Palette.ColorElement}" Opacity="0.45" />
+    <SolidColorBrush x:Key="Brush.Overlay.Success.Background" Color="{StaticResource Palette.ColorActive}" Opacity="0.6" />
 
     <!-- ================================ -->
     <!-- Dialog specific text box styles -->
     <!-- ================================ -->
-    <SolidColorBrush x:Key="Brush.Dialog.TextBox.Background" Color="{StaticResource Palette.Dialog.TextBox.Background}" />
-    <SolidColorBrush x:Key="Brush.Dialog.TextBox.Border" Color="{StaticResource Palette.Dialog.TextBox.Border}" />
-    <SolidColorBrush x:Key="Brush.Dialog.TextBox.SelectionBackground" Color="{StaticResource Palette.Dialog.TextBox.SelectionBackground}" />
-    <SolidColorBrush x:Key="Brush.Dialog.TextBox.SelectionForeground" Color="{StaticResource Palette.Dialog.TextBox.SelectionForeground}" />
-    <SolidColorBrush x:Key="Brush.Dialog.TextBox.Caret" Color="{StaticResource Palette.Dialog.TextBox.Caret}" />
-    <SolidColorBrush x:Key="Brush.Dialog.ContentShadow" Color="{StaticResource Palette.Dialog.ContentShadow}" />
+    <SolidColorBrush x:Key="Brush.Dialog.TextBox.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
+    <SolidColorBrush x:Key="Brush.Dialog.TextBox.Border" Color="{StaticResource Palette.ColorActive}" />
+    <SolidColorBrush x:Key="Brush.Dialog.TextBox.SelectionBackground" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
+    <SolidColorBrush x:Key="Brush.Dialog.TextBox.SelectionForeground" Color="{StaticResource Palette.ColorTextPrimary}" />
+    <SolidColorBrush x:Key="Brush.Dialog.TextBox.Caret" Color="{StaticResource Palette.ColorTextPrimary}" />
+    <SolidColorBrush x:Key="Brush.Dialog.ContentShadow" Color="{StaticResource Palette.ColorBackgroundDark}" Opacity="0.6" />
 
     <!-- ============================== -->
     <!-- Miscellaneous global brushes. -->
     <!-- ============================== -->
-    <SolidColorBrush x:Key="Brush.Border.Default" options:Freeze="False" Color="{StaticResource Palette.Border.Default}" />
-    <SolidColorBrush x:Key="Brush.Border.Hover" Color="{StaticResource Palette.Border.Hover}" />
-    <SolidColorBrush x:Key="Brush.ScrollBar.Thumb" Color="{StaticResource Palette.ScrollBar.Thumb}" />
-    <SolidColorBrush x:Key="Brush.Selection.Background" Color="{StaticResource Palette.Selection.Background}" />
+    <SolidColorBrush x:Key="Brush.Border.Default" options:Freeze="False" Color="{StaticResource Palette.ColorBackgroundMedium}" />
+    <SolidColorBrush x:Key="Brush.Border.Hover" Color="{StaticResource Palette.ColorTextPrimary}" />
+    <SolidColorBrush x:Key="Brush.ScrollBar.Thumb" Color="{StaticResource Palette.ColorElement}" />
+    <SolidColorBrush x:Key="Brush.Selection.Background" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
 
     <!-- ================================== -->
     <!-- Mod configuration tree formatting -->
     <!-- ================================== -->
-    <SolidColorBrush x:Key="Brush.ModConfig.TreeNode.Background.Hover" Color="{StaticResource Palette.ModConfig.TreeNode.Background.Hover}" />
-    <SolidColorBrush x:Key="Brush.ModConfig.TreeNode.Background.Selected" Color="{StaticResource Palette.ModConfig.TreeNode.Background.Selected}" />
-    <SolidColorBrush x:Key="Brush.ModConfig.Value.Background.Hover" Color="{StaticResource Palette.ModConfig.Value.Background.Hover}" />
-    <SolidColorBrush x:Key="Brush.ModConfig.Value.Background.Selected" Color="{StaticResource Palette.ModConfig.Value.Background.Selected}" />
+    <SolidColorBrush x:Key="Brush.ModConfig.TreeNode.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" Opacity="0.4" />
+    <SolidColorBrush x:Key="Brush.ModConfig.TreeNode.Background.Selected" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
+    <SolidColorBrush x:Key="Brush.ModConfig.Value.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" Opacity="0.5" />
+    <SolidColorBrush x:Key="Brush.ModConfig.Value.Background.Selected" Color="{StaticResource Palette.ColorBackgroundDark}" />
 
     <!-- ==================== -->
     <!-- Control base styles -->
@@ -424,7 +320,7 @@
         <Setter Property="BorderBrush" Value="{StaticResource Brush.ToolTip.Border}" />
         <Setter Property="BorderThickness" Value="1" />
         <Style.Resources>
-            <SolidColorBrush x:Key="Brush.Text.Primary" Color="{StaticResource Palette.ToolTip.Text}" />
+            <SolidColorBrush x:Key="Brush.Text.Primary" Color="{StaticResource Palette.ColorTextPrimary}" />
             <Style TargetType="{x:Type TextBlock}">
                 <Setter Property="Foreground" Value="{StaticResource Brush.ToolTip.Text}" />
             </Style>
