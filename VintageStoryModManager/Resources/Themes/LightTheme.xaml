@@ -6,8 +6,8 @@
     <Color x:Key="Color.Text.Emphasis">#FF0F3B76</Color>
     <Color x:Key="Color.Text.Placeholder">#661C2635</Color>
     <Color x:Key="Color.Text.Link">#FF1552B6</Color>
-    <Color x:Key="Color.Surface.Primary">#FFF6F8FB</Color>
-    <Color x:Key="Color.Surface.Secondary">#FFEFF3F9</Color>
+    <Color x:Key="Color.Surface.Bright">#FFF6F8FB</Color>
+    <Color x:Key="Color.Surface.Dark">#FFEFF3F9</Color>
     <Color x:Key="Color.Surface.Input">#FFFFFFFF</Color>
     <Color x:Key="Color.Surface.DataGridHeader">#FFEFF3F9</Color>
     <Color x:Key="Color.Control.Default">#FFF9FBFF</Color>
@@ -63,20 +63,20 @@
     <SolidColorBrush x:Key="Text_Caret_Brush" Color="{StaticResource Color.Control.Accent}" />
 
     <!-- Window and layout surfaces -->
-    <SolidColorBrush x:Key="Window_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
+    <SolidColorBrush x:Key="Window_Background_Brush" Color="{StaticResource Color.Surface.Bright}" />
     <SolidColorBrush x:Key="Window_Border_Brush" Color="{StaticResource Color.Border.Primary}" />
-    <SolidColorBrush x:Key="Panel_Primary_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
-    <SolidColorBrush x:Key="Panel_Secondary_Background_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="Panel_Primary_Background_Brush" Color="{StaticResource Color.Surface.Bright}" />
+    <SolidColorBrush x:Key="Panel_Secondary_Background_Brush" Color="{StaticResource Color.Surface.Dark}" />
 
     <!-- Mod database surfaces -->
-    <SolidColorBrush x:Key="ModDatabase_Card_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
-    <SolidColorBrush x:Key="ModDatabase_Card_Disabled_Background_Brush" Color="{StaticResource Color.Surface.Secondary}" />
-    <SolidColorBrush x:Key="ModDatabase_Grid_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
+    <SolidColorBrush x:Key="ModDatabase_Card_Background_Brush" Color="{StaticResource Color.Surface.Bright}" />
+    <SolidColorBrush x:Key="ModDatabase_Card_Disabled_Background_Brush" Color="{StaticResource Color.Surface.Dark}" />
+    <SolidColorBrush x:Key="ModDatabase_Grid_Background_Brush" Color="{StaticResource Color.Surface.Bright}" />
 
     <!-- Shadows -->
-    <SolidColorBrush x:Key="DataGrid_Row_Shadow_Brush" Color="{StaticResource Color.Surface.Secondary}" />
-    <SolidColorBrush x:Key="ModDatabase_Card_Shadow_Brush" Color="{StaticResource Color.Surface.Secondary}" />
-    <SolidColorBrush x:Key="ModDatabase_Details_Shadow_Brush" Color="{StaticResource Color.Surface.Secondary}" />
+    <SolidColorBrush x:Key="DataGrid_Row_Shadow_Brush" Color="{StaticResource Color.Surface.Dark}" />
+    <SolidColorBrush x:Key="ModDatabase_Card_Shadow_Brush" Color="{StaticResource Color.Surface.Dark}" />
+    <SolidColorBrush x:Key="ModDatabase_Details_Shadow_Brush" Color="{StaticResource Color.Surface.Dark}" />
     <SolidColorBrush x:Key="Dialog_Content_Shadow_Brush" Color="{StaticResource Color.Shadow.Default}" />
 
     <!-- Borders -->
@@ -107,10 +107,10 @@
     <SolidColorBrush x:Key="ToggleButton_Checked_Border_Brush" Color="{StaticResource Color.Control.Accent}" />
 
     <!-- Menu -->
-    <SolidColorBrush x:Key="Menu_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
+    <SolidColorBrush x:Key="Menu_Background_Brush" Color="{StaticResource Color.Surface.Bright}" />
     <SolidColorBrush x:Key="Menu_Border_Brush" Color="{StaticResource Color.Border.Primary}" />
     <SolidColorBrush x:Key="Menu_Item_Hover_Background_Brush" Color="{StaticResource Color.Control.Hover}" />
-    <SolidColorBrush x:Key="Menu_Item_Submenu_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
+    <SolidColorBrush x:Key="Menu_Item_Submenu_Background_Brush" Color="{StaticResource Color.Surface.Bright}" />
 
     <!-- Inputs -->
     <SolidColorBrush x:Key="TextInput_Background_Brush" Color="{StaticResource Color.TextInput.Background}" />
@@ -136,7 +136,7 @@
 
     <!-- Data grid -->
     <SolidColorBrush x:Key="DataGrid_Background_Brush" Color="{StaticResource Color.Surface.Input}" />
-    <SolidColorBrush x:Key="DataGrid_AlternateRow_Background_Brush" Color="{StaticResource Color.Surface.Primary}" />
+    <SolidColorBrush x:Key="DataGrid_AlternateRow_Background_Brush" Color="{StaticResource Color.Surface.Bright}" />
     <SolidColorBrush x:Key="DataGrid_Header_Background_Brush" Color="{StaticResource Color.Surface.DataGridHeader}" />
     <SolidColorBrush x:Key="DataGrid_Row_Hover_Brush" Color="{StaticResource Color.Control.Hover}" />
     <SolidColorBrush x:Key="DataGrid_Row_Selected_Brush" Color="{StaticResource Color.Selection.Primary}" />

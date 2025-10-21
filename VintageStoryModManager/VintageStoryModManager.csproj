@@ -27,8 +27,12 @@
     <FileVersion>$(AppFileVersion)</FileVersion>                   <!-- File version (Details tab) -->
     <InformationalVersion>$(AppVersion)</InformationalVersion>     <!-- About box/semver -->
   </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Views\TiledBackground.jpg" />
+  </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Views\TiledBackground.jpg" />
     <Resource Include="warning.png" />
     <Resource Include="error.png" />
     <Resource Include="mod-default.png">
@@ -44,7 +48,6 @@
 
   <ItemGroup>
     <Folder Include="ViewModels\" />
-    <Folder Include="Views\" />
   </ItemGroup>
 
   <ItemGroup>

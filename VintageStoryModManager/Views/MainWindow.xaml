@@ -359,7 +359,10 @@
         <SolidColorBrush x:Key="ButtonError" Color="{Binding Color, Source={StaticResource Status_Error_Brush}}" />
     </Window.Resources>
 
-    <Grid Background="{DynamicResource GridBackground1}" Margin="0,0,0,8">
+    <Grid Margin="0,0,0,8">
+        <Grid.Background>
+            <ImageBrush ImageSource="/Views/TiledBackground.jpg" Stretch="None" TileMode="None"/>
+        </Grid.Background>
 
         <Grid.RowDefinitions>
             <RowDefinition Height="35" MinHeight="10" />
@@ -823,7 +826,7 @@
                             </Style.Triggers>
                         </Style>
                     </DataGrid.Style>
-                    
+
                     <DataGrid.RowHeaderStyle>
 
                         <Style/>
@@ -854,7 +857,7 @@
                                         Margin="4,0,4,4"
                                         SnapsToDevicePixels="True">
                                             <Border.Effect>
-                                            <DropShadowEffect Color="{Binding Color, Source={StaticResource DataGrid_Row_Shadow_Brush}}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
+                                                <DropShadowEffect Color="{Binding Color, Source={StaticResource DataGrid_Row_Shadow_Brush}}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
                                             </Border.Effect>
                                             <Grid>
                                                 <Border x:Name="SelectionOverlay"
@@ -1433,7 +1436,7 @@
                         <DataGrid.CellStyle>
                             <StaticResource ResourceKey="IMM.DataGridCellBaseStyle" />
                         </DataGrid.CellStyle>
-                        
+
                         <DataGrid.RowHeaderStyle>
                             <Style />
                         </DataGrid.RowHeaderStyle>
