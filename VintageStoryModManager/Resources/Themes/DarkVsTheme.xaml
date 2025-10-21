@@ -12,6 +12,8 @@
     <Color x:Key="Palette.ColorDisabled">#FF332A21</Color>
     <Color x:Key="Palette.ColorTextPrimary">#FFC8BCAE</Color>
     <Color x:Key="Palette.ColorTextLink">#FF479BBE</Color>
+    <Color x:Key="Palette.ColorBevelLight">#80FFFFFF</Color>
+    <Color x:Key="Palette.ColorBevelDark">#40000000</Color>
 
     <!-- ====================================================== -->
     <!-- Window shell and shared panel surfaces (Main windows). -->
@@ -42,8 +44,8 @@
     <SolidColorBrush x:Key="Brush.Button.Primary.Background.Pressed" Color="{StaticResource Palette.ColorBackgroundMedium}" />
     <SolidColorBrush x:Key="Brush.Button.Primary.Background.Disabled" Color="{StaticResource Palette.ColorDisabled}" Opacity="0.6" />
     <SolidColorBrush x:Key="Brush.Button.Primary.Border.Normal" Color="{StaticResource Palette.ColorTextPrimary}" Opacity="0.6" />
-    <SolidColorBrush x:Key="Brush.Button.Bevel.Light" Color="#80FFFFFF" />
-    <SolidColorBrush x:Key="Brush.Button.Bevel.Dark" Color="#40000000" />
+    <SolidColorBrush x:Key="Brush.Button.Bevel.Light" Color="{StaticResource Palette.ColorBevelLight}" />
+    <SolidColorBrush x:Key="Brush.Button.Bevel.Dark" Color="{StaticResource Palette.ColorBevelDark}" />
     <SolidColorBrush x:Key="Brush.Accent.Primary" Color="{StaticResource Palette.ColorActive}" />
     <SolidColorBrush x:Key="Brush.ToggleButton.Background.Checked" Color="{StaticResource Palette.ColorActive}" />
     <SolidColorBrush x:Key="Brush.ToggleButton.Border.Checked" Color="{StaticResource Palette.ColorActive}" />
@@ -68,8 +70,8 @@
     <SolidColorBrush x:Key="Brush.TextInput.Border.Focused" Color="{StaticResource Palette.ColorActive}" />
     <SolidColorBrush x:Key="Brush.TextInput.SelectionBackground" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
     <SolidColorBrush x:Key="Brush.SearchBox.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
-    <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Light" Color="#80FFFFFF" />
-    <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Dark" Color="#40000000" />
+    <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Light" Color="{StaticResource Palette.ColorBevelLight}" />
+    <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Dark" Color="{StaticResource Palette.ColorBevelDark}" />
 
     <!-- ========================= -->
     <!-- Combo box colour system. -->
