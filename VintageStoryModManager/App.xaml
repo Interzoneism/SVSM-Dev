@@ -284,7 +284,12 @@
                                         CornerRadius="3">
                                     <Track x:Name="PART_Track"
                                            Margin="0"
-                                           Orientation="{TemplateBinding Orientation}">
+                                           Orientation="{TemplateBinding Orientation}"
+                                           IsDirectionReversed="{Binding IsDirectionReversed, RelativeSource={RelativeSource TemplatedParent}}"
+                                           Maximum="{TemplateBinding Maximum}"
+                                           Minimum="{TemplateBinding Minimum}"
+                                           Value="{TemplateBinding Value}"
+                                           ViewportSize="{TemplateBinding ViewportSize}">
                                         <Track.DecreaseRepeatButton>
                                             <RepeatButton x:Name="DecreasePage"
                                                           Style="{StaticResource IMM.DataGridScrollBarTrackButtonStyle}"
