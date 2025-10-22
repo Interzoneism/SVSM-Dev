@@ -1750,6 +1750,7 @@
                       Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                       BorderThickness="1,1,1,1"
                       Margin="0,32,0,0"
+                      ui:ControlHelper.CornerRadius="0"
                       SelectionMode="Single"
                       SelectionChanged="ModDatabaseCardsListView_OnSelectionChanged"
                       PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
