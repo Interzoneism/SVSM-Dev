@@ -113,6 +113,8 @@
     <Color x:Key="Palette.Border.Default">#FFCAD7EB</Color>
     <Color x:Key="Palette.Border.Hover">#FF7AA6F9</Color>
     <Color x:Key="Palette.ScrollBar.Thumb">#FFCAD7EB</Color>
+    <Color x:Key="Palette.ScrollBar.Button">#FFE2E6F0</Color>
+    <Color x:Key="Palette.ScrollBar.Glyph">#FF1C2635</Color>
     <Color x:Key="Palette.Selection.Background">#FF4C8BF5</Color>
 
     <!-- Mod configuration tree -->
@@ -331,6 +333,8 @@
     <SolidColorBrush x:Key="Brush.Border.Hover" Color="{StaticResource Palette.Border.Hover}" />
     <SolidColorBrush x:Key="Brush.ScrollBar.Thumb" Color="{StaticResource Palette.ScrollBar.Thumb}" />
     <SolidColorBrush x:Key="Brush.ScrollBar.Track" Color="{StaticResource Palette.Panel.Secondary.Background.Solid}" />
+    <SolidColorBrush x:Key="Brush.ScrollBar.Button" Color="{StaticResource Palette.ScrollBar.Button}" />
+    <SolidColorBrush x:Key="Brush.ScrollBar.Glyph" Color="{StaticResource Palette.ScrollBar.Glyph}" />
     <SolidColorBrush x:Key="Brush.Selection.Background" Color="{StaticResource Palette.Selection.Background}" />
 
     <!-- ================================== -->
