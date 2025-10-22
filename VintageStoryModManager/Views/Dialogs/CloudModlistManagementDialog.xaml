@@ -25,35 +25,74 @@
                    TextWrapping="Wrap"
                    FontSize="14" />
 
-        <ListView x:Name="ModlistsListView"
-                  Grid.Row="1"
-                  MinHeight="220"
-                  Width="460"
-                  HorizontalAlignment="Stretch"
-                  SelectionMode="Single"
-                  SelectionChanged="ModlistsListView_OnSelectionChanged"
-                  MouseDoubleClick="ModlistsListView_OnMouseDoubleClick"
-                  Background="{StaticResource Brush.Panel.Secondary.Background.Solid}"
-                  BorderBrush="{StaticResource Brush.Panel.Secondary.Background.Solid}"
-                  Foreground="{StaticResource Brush.Text.Primary}">
-            <ListView.Resources>
-                <Style TargetType="GridViewColumnHeader">
-                    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-                    <Setter Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
-                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
-                </Style>
-                <Style TargetType="ListViewItem">
-                    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-                </Style>
-            </ListView.Resources>
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Slot" DisplayMemberBinding="{Binding SlotLabel}" Width="100" />
-                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding EffectiveName}" Width="240" />
-                    <GridViewColumn Header="Version" DisplayMemberBinding="{Binding Version}" Width="100" />
-                </GridView>
-            </ListView.View>
-        </ListView>
+        <Border Grid.Row="1"
+                Width="460"
+                Background="Transparent"
+                BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Light}"
+                BorderThickness="0,0,1,1"
+                SnapsToDevicePixels="True">
+            <Border Background="Transparent"
+                    BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Dark}"
+                    BorderThickness="1,1,0,0"
+                    SnapsToDevicePixels="True">
+                <ListView x:Name="ModlistsListView"
+                          MinHeight="220"
+                          HorizontalAlignment="Stretch"
+                          SelectionMode="Single"
+                          SelectionChanged="ModlistsListView_OnSelectionChanged"
+                          MouseDoubleClick="ModlistsListView_OnMouseDoubleClick"
+                          Background="{StaticResource Brush.Panel.Secondary.Background.Solid}"
+                          BorderThickness="0"
+                          Foreground="{StaticResource Brush.Text.Primary}">
+                    <ListView.Resources>
+                        <Style TargetType="GridViewColumnHeader">
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+                            <Setter Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
+                        </Style>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+                            <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="Padding" Value="8,4" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListViewItem">
+                                        <Border x:Name="ContainerBorder"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                SnapsToDevicePixels="True">
+                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Hover}" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource Brush.Selection.Background}" />
+                                    <Setter Property="Foreground" Value="{StaticResource Brush.Text.SelectionForeground}" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListView.Resources>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Slot" DisplayMemberBinding="{Binding SlotLabel}" Width="100" />
+                            <GridViewColumn Header="Name" DisplayMemberBinding="{Binding EffectiveName}" Width="240" />
+                            <GridViewColumn Header="Version" DisplayMemberBinding="{Binding Version}" Width="100" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Border>
+        </Border>
 
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"

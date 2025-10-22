@@ -18,6 +18,43 @@
             <converters:ScaledDoubleConverter x:Key="IMM.ScaledDoubleConverter" />
             <converters:DoubleOffsetConverter x:Key="IMM.DoubleOffsetConverter" />
 
+            <ControlTemplate x:Key="IMM.SunkenListControlTemplate" TargetType="{x:Type ListBox}">
+                <Border x:Name="TopAndLeft"
+                        Background="Transparent"
+                        BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Light}"
+                        BorderThickness="0,0,1,1"
+                        CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                        SnapsToDevicePixels="True">
+                    <Border x:Name="BottomAndRight"
+                            Background="Transparent"
+                            BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Dark}"
+                            BorderThickness="1,1,0,0"
+                            CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                            SnapsToDevicePixels="True">
+                        <Border x:Name="ChromeBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ScrollViewer"
+                                          Focusable="False"
+                                          HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                          VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                                          CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}">
+                                <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                            </ScrollViewer>
+                        </Border>
+                    </Border>
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter TargetName="ChromeBorder" Property="Opacity" Value="0.6" />
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
             <Style x:Key="IMM.ToggleSwitchBaseStyle" TargetType="{x:Type ui:ToggleSwitch}">
                 <Setter Property="Width" Value="52" />
                 <Setter Property="Height" Value="24" />
