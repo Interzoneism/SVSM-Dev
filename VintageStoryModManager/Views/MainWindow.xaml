@@ -1238,6 +1238,10 @@
                                                         <ScrollViewer MaxHeight="260"
                                                               HorizontalScrollBarVisibility="Disabled"
                                                               VerticalScrollBarVisibility="Auto">
+                                                            <ScrollViewer.Resources>
+                                                                <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
+                                                                <Style TargetType="{x:Type Thumb}" BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" />
+                                                            </ScrollViewer.Resources>
                                                             <ItemsControl ItemsPanel="{StaticResource IMM.TagFilterItemsPanelTemplate}">
                                                                 <ItemsControl.Style>
                                                                     <Style TargetType="{x:Type ItemsControl}">

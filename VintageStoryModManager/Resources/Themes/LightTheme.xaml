@@ -330,6 +330,7 @@
     <SolidColorBrush x:Key="Brush.Border.Default" options:Freeze="False" Color="{StaticResource Palette.Border.Default}" />
     <SolidColorBrush x:Key="Brush.Border.Hover" Color="{StaticResource Palette.Border.Hover}" />
     <SolidColorBrush x:Key="Brush.ScrollBar.Thumb" Color="{StaticResource Palette.ScrollBar.Thumb}" />
+    <SolidColorBrush x:Key="Brush.ScrollBar.Track" Color="{StaticResource Palette.Panel.Secondary.Background.Solid}" />
     <SolidColorBrush x:Key="Brush.Selection.Background" Color="{StaticResource Palette.Selection.Background}" />
 
     <!-- ================================== -->
