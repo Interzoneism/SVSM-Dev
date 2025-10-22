@@ -353,6 +353,11 @@ public sealed class ModCompatibilityCommentsService
                 breakdown["offtopicPenalty"] = -0.5;
             }
 
+            if (!HasMeaningfulSignal(score, hasExactVersion, breakdown))
+            {
+                continue;
+            }
+
             double relevance = Math.Abs(score);
             string polarity = score > 0 ? "positive" : score < 0 ? "negative" : "mixed/unclear";
 
@@ -373,6 +378,27 @@ public sealed class ModCompatibilityCommentsService
             .ThenByDescending(item => item.HasExactVersion)
             .ThenByDescending(item => item.Base.Text.Length)
             .ToList();
+    }
+
+    private static bool HasMeaningfulSignal(
+        double score,
+        bool hasExactVersion,
+        IReadOnlyDictionary<string, double> breakdown)
+    {
+        if (hasExactVersion)
+        {
+            return true;
+        }
+
+        if (breakdown.ContainsKey("sameMinor") ||
+            breakdown.ContainsKey("positiveCues") ||
+            breakdown.ContainsKey("negativeCues") ||
+            breakdown.ContainsKey("details"))
+        {
+            return true;
+        }
+
+        return Math.Abs(score) >= 1.0;
     }
 
     private static ExperimentalCompReviewComment BuildCommentResult(ScoredComment comment)
