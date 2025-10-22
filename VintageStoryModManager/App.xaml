@@ -186,9 +186,9 @@
             </Style>
 
             <Style x:Key="IMM.DataGridScrollBarStyle" TargetType="{x:Type ScrollBar}">
-                <Setter Property="Background" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
+                <Setter Property="Background" Value="{DynamicResource Brush.ScrollBar.Track}" />
                 <Setter Property="Foreground" Value="{DynamicResource Brush.ScrollBar.Thumb}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.ScrollBar.Track}" />
             </Style>
 
             <Style x:Key="IMM.ButtonBaseStyle" TargetType="Button">
