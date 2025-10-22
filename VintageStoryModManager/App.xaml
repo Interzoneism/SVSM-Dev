@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="clr-namespace:VintageStoryModManager.Converters"
              xmlns:options="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+             xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
              xmlns:ui="http://schemas.modernwpf.com/2019"
              StartupUri="Views/MainWindow.xaml">
     <Application.Resources>
@@ -185,10 +186,158 @@
                 </Setter>
             </Style>
 
+            <Style x:Key="IMM.DataGridScrollBarButtonStyle" TargetType="{x:Type RepeatButton}">
+                <Setter Property="Background" Value="{DynamicResource Brush.ScrollBar.Button}" />
+                <Setter Property="Foreground" Value="{DynamicResource Brush.ScrollBar.Glyph}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.ScrollBar.Button}" />
+                <Setter Property="MinHeight" Value="18" />
+                <Setter Property="MinWidth" Value="18" />
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type RepeatButton}">
+                            <Border x:Name="Border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="0"
+                                    CornerRadius="3"
+                                    SnapsToDevicePixels="True">
+                                <Path x:Name="Arrow"
+                                      Width="7"
+                                      Height="7"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Stretch="Uniform"
+                                      Data="M 0 4 L 3.5 0 L 7 4 Z"
+                                      Fill="{TemplateBinding Foreground}"
+                                      RenderTransformOrigin="0.5,0.5">
+                                    <Path.RenderTransform>
+                                        <RotateTransform Angle="{TemplateBinding Tag}" />
+                                    </Path.RenderTransform>
+                                </Path>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.ScrollBar.Thumb}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.ScrollBar.Thumb}" />
+                                    <Setter TargetName="Border" Property="Opacity" Value="0.85" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.ScrollBar.Track}" />
+                                    <Setter TargetName="Arrow" Property="Opacity" Value="0.4" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="IMM.DataGridScrollBarTrackButtonStyle" TargetType="{x:Type RepeatButton}">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type RepeatButton}">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="0" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <Style x:Key="IMM.DataGridScrollBarStyle" TargetType="{x:Type ScrollBar}">
                 <Setter Property="Background" Value="{DynamicResource Brush.ScrollBar.Track}" />
-                <Setter Property="Foreground" Value="{DynamicResource Brush.ScrollBar.Thumb}" />
+                <Setter Property="Foreground" Value="{DynamicResource Brush.ScrollBar.Glyph}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource Brush.ScrollBar.Track}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ScrollBar}">
+                            <Grid x:Name="Root" Background="Transparent" SnapsToDevicePixels="True">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <RepeatButton x:Name="LineDecreaseButton"
+                                              Grid.Row="0"
+                                              Grid.Column="0"
+                                              Grid.ColumnSpan="3"
+                                              Style="{StaticResource IMM.DataGridScrollBarButtonStyle}"
+                                              Command="{x:Static primitives:ScrollBar.LineUpCommand}"
+                                              Tag="0" />
+
+                                <Border x:Name="TrackHost"
+                                        Grid.Row="1"
+                                        Grid.Column="0"
+                                        Grid.ColumnSpan="3"
+                                        Background="{TemplateBinding Background}"
+                                        CornerRadius="3">
+                                    <Track x:Name="PART_Track"
+                                           Margin="0"
+                                           Orientation="{TemplateBinding Orientation}">
+                                        <Track.DecreaseRepeatButton>
+                                            <RepeatButton x:Name="DecreasePage"
+                                                          Style="{StaticResource IMM.DataGridScrollBarTrackButtonStyle}"
+                                                          Command="{x:Static primitives:ScrollBar.PageUpCommand}" />
+                                        </Track.DecreaseRepeatButton>
+                                        <Track.Thumb>
+                                            <Thumb Style="{StaticResource IMM.DataGridScrollBarThumbStyle}" />
+                                        </Track.Thumb>
+                                        <Track.IncreaseRepeatButton>
+                                            <RepeatButton x:Name="IncreasePage"
+                                                          Style="{StaticResource IMM.DataGridScrollBarTrackButtonStyle}"
+                                                          Command="{x:Static primitives:ScrollBar.PageDownCommand}" />
+                                        </Track.IncreaseRepeatButton>
+                                    </Track>
+                                </Border>
+
+                                <RepeatButton x:Name="LineIncreaseButton"
+                                              Grid.Row="2"
+                                              Grid.Column="0"
+                                              Grid.ColumnSpan="3"
+                                              Style="{StaticResource IMM.DataGridScrollBarButtonStyle}"
+                                              Command="{x:Static primitives:ScrollBar.LineDownCommand}"
+                                              Tag="180" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="Orientation" Value="Horizontal">
+                                    <Setter TargetName="LineDecreaseButton" Property="Grid.Row" Value="0" />
+                                    <Setter TargetName="LineDecreaseButton" Property="Grid.RowSpan" Value="3" />
+                                    <Setter TargetName="LineDecreaseButton" Property="Grid.Column" Value="0" />
+                                    <Setter TargetName="LineDecreaseButton" Property="Grid.ColumnSpan" Value="1" />
+                                    <Setter TargetName="LineDecreaseButton" Property="Tag" Value="270" />
+                                    <Setter TargetName="LineDecreaseButton" Property="Command" Value="{x:Static primitives:ScrollBar.LineLeftCommand}" />
+                                    <Setter TargetName="TrackHost" Property="Grid.Row" Value="0" />
+                                    <Setter TargetName="TrackHost" Property="Grid.RowSpan" Value="3" />
+                                    <Setter TargetName="TrackHost" Property="Grid.Column" Value="1" />
+                                    <Setter TargetName="TrackHost" Property="Grid.ColumnSpan" Value="1" />
+                                    <Setter TargetName="LineIncreaseButton" Property="Grid.Row" Value="0" />
+                                    <Setter TargetName="LineIncreaseButton" Property="Grid.RowSpan" Value="3" />
+                                    <Setter TargetName="LineIncreaseButton" Property="Grid.Column" Value="2" />
+                                    <Setter TargetName="LineIncreaseButton" Property="Grid.ColumnSpan" Value="1" />
+                                    <Setter TargetName="LineIncreaseButton" Property="Tag" Value="90" />
+                                    <Setter TargetName="LineIncreaseButton" Property="Command" Value="{x:Static primitives:ScrollBar.LineRightCommand}" />
+                                    <Setter TargetName="DecreasePage" Property="Command" Value="{x:Static primitives:ScrollBar.PageLeftCommand}" />
+                                    <Setter TargetName="IncreasePage" Property="Command" Value="{x:Static primitives:ScrollBar.PageRightCommand}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="LineDecreaseButton" Property="IsEnabled" Value="False" />
+                                    <Setter TargetName="LineIncreaseButton" Property="IsEnabled" Value="False" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <Style x:Key="IMM.ButtonBaseStyle" TargetType="Button">
