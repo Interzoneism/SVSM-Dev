@@ -168,6 +168,29 @@
                 </Setter>
             </Style>
 
+            <Style x:Key="IMM.DataGridScrollBarThumbStyle" TargetType="{x:Type Thumb}">
+                <Setter Property="MinHeight" Value="18" />
+                <Setter Property="MinWidth" Value="18" />
+                <Setter Property="Background" Value="{DynamicResource Brush.ScrollBar.Thumb}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.ScrollBar.Thumb}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Thumb}">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="0"
+                                    CornerRadius="4" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="IMM.DataGridScrollBarStyle" TargetType="{x:Type ScrollBar}">
+                <Setter Property="Background" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
+                <Setter Property="Foreground" Value="{DynamicResource Brush.ScrollBar.Thumb}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
+            </Style>
+
             <Style x:Key="IMM.ButtonBaseStyle" TargetType="Button">
                 <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
                 <Setter Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
