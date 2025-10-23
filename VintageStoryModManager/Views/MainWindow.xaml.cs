@@ -54,6 +54,8 @@ public partial class MainWindow : Window
     private const double SelectionOverlayOpacity = 0.25;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";
     private const string ManagerModDatabaseModId = "5545";
+    private const string ModDatabaseUnavailableMessage =
+        "Could not reach the online Mod Database, please check your internet connection";
     private const string PresetDirectoryName = "Presets";
     private const string ModListDirectoryName = "Modlists";
     private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
@@ -3634,6 +3636,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (!await EnsureModDatabaseReachableForRebuildAsync().ConfigureAwait(true))
+        {
+            return;
+        }
+
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
         string requestedModlistName = $"Rebuilt_{timestamp}";
         string savedModlistName = string.Empty;
@@ -5741,12 +5748,57 @@ public partial class MainWindow : Window
 
     private ModlistLoadMode? GetRebuildModlistLoadMode()
     {
-        return _userConfiguration.ModlistAutoLoadBehavior switch
+        MessageBoxResult confirmation = WpfMessageBox.Show(
+            this,
+            "This will remove all cache and reinstall all current mods, proceed?",
+            "Rebuild Mods",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        return confirmation == MessageBoxResult.Yes ? ModlistLoadMode.Replace : null;
+    }
+
+    private async Task<bool> EnsureModDatabaseReachableForRebuildAsync()
+    {
+        try
         {
-            ModlistAutoLoadBehavior.Replace => ModlistLoadMode.Replace,
-            ModlistAutoLoadBehavior.Add => ModlistLoadMode.Add,
-            _ => PromptModlistLoadMode()
-        };
+            await _modDatabaseService.GetMostDownloadedModsAsync(1).ConfigureAwait(true);
+            return true;
+        }
+        catch (InternetAccessDisabledException ex)
+        {
+            WpfMessageBox.Show(
+                ex.Message,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        catch (HttpRequestException)
+        {
+            WpfMessageBox.Show(
+                ModDatabaseUnavailableMessage,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (TaskCanceledException)
+        {
+            WpfMessageBox.Show(
+                ModDatabaseUnavailableMessage,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"{ModDatabaseUnavailableMessage}.{Environment.NewLine}{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+
+        return false;
     }
 
     private ModlistLoadMode? PromptModlistLoadMode()
