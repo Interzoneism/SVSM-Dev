@@ -30,6 +30,24 @@ internal sealed class ModDatabaseCacheService
 
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _fileLocks = new(StringComparer.OrdinalIgnoreCase);
 
+    internal static void ClearCacheDirectory()
+    {
+        string? baseDirectory = ModCacheLocator.GetModDatabaseCacheDirectory();
+        if (string.IsNullOrWhiteSpace(baseDirectory) || !Directory.Exists(baseDirectory))
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.Delete(baseDirectory, recursive: true);
+        }
+        catch (Exception ex)
+        {
+            throw new IOException($"Failed to delete the mod database cache at {baseDirectory}.", ex);
+        }
+    }
+
     public async Task<ModDatabaseInfo?> TryLoadAsync(
         string modId,
         string? normalizedGameVersion,

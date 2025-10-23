@@ -99,6 +99,7 @@ public partial class MainWindow : Window
 
     private DispatcherTimer? _modsWatcherTimer;
     private bool _isAutomaticRefreshRunning;
+    private bool _isFullRefreshInProgress;
 
     private readonly List<ModListItemViewModel> _selectedMods = new();
     private readonly Dictionary<ModListItemViewModel, PropertyChangedEventHandler> _selectedModPropertyHandlers = new();
@@ -3548,6 +3549,100 @@ public partial class MainWindow : Window
         comboBox.Dispatcher.BeginInvoke((Action)ScrollToTop, DispatcherPriority.Background);
     }
 
+    private async void RefreshButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_isFullRefreshInProgress)
+        {
+            return;
+        }
+
+        var viewModel = _viewModel;
+        if (viewModel?.RefreshCommand == null)
+        {
+            return;
+        }
+
+        if (viewModel.IsBusy)
+        {
+            WpfMessageBox.Show(
+                "Please wait for the current operation to finish before refreshing.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (!_userConfiguration.SuppressRefreshCachePrompt)
+        {
+            const string confirmationMessage =
+                "The manager works with cached/stored mod information so mods load faster. This button deletes all that cache and fetches everything from the online Mod DB again - good for resetting if you suspect something is wrong, but not something you need to use daily as the manager refreshes automatically.";
+
+            var buttonOverrides = new MessageDialogButtonContentOverrides
+            {
+                Ok = "Ok do not show again"
+            };
+
+            MessageBoxResult prompt = WpfMessageBox.Show(
+                this,
+                confirmationMessage,
+                "Simple VS Manager",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning,
+                buttonContentOverrides: buttonOverrides);
+
+            if (prompt != MessageBoxResult.OK)
+            {
+                return;
+            }
+
+            _userConfiguration.SetSuppressRefreshCachePrompt(true);
+        }
+
+        _isFullRefreshInProgress = true;
+        bool cachesCleared = false;
+
+        try
+        {
+            try
+            {
+                await Task.Run(ClearManagerCaches).ConfigureAwait(true);
+                cachesCleared = true;
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show(
+                    $"Failed to clear cached mod data:\n{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+
+            await RefreshDeleteCachedModsMenuHeaderAsync().ConfigureAwait(true);
+
+            if (!cachesCleared)
+            {
+                return;
+            }
+
+            try
+            {
+                await RefreshModsAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show(
+                    $"Failed to refresh mods:\n{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+        finally
+        {
+            _isFullRefreshInProgress = false;
+        }
+    }
+
     private async void UpdateAllModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (_isModUpdateInProgress || _viewModel?.ModsView == null)
@@ -4438,6 +4533,76 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    private static void ClearManagerCaches()
+    {
+        var errors = new List<string>();
+
+        try
+        {
+            ModDatabaseCacheService.ClearCacheDirectory();
+        }
+        catch (Exception ex)
+        {
+            errors.Add(BuildCacheClearErrorMessage("Mod database cache", ex));
+        }
+
+        try
+        {
+            ModManifestCacheService.ClearCache();
+        }
+        catch (Exception ex)
+        {
+            errors.Add(BuildCacheClearErrorMessage("Mod metadata cache", ex));
+        }
+
+        string? cachedModsDirectory = ModCacheLocator.GetCachedModsDirectory();
+        if (!string.IsNullOrWhiteSpace(cachedModsDirectory))
+        {
+            try
+            {
+                ClearCachedModsDirectory(cachedModsDirectory);
+            }
+            catch (Exception ex)
+            {
+                errors.Add(BuildCacheClearErrorMessage($"Cached mods at {cachedModsDirectory}", ex));
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            throw new InvalidOperationException(string.Join(Environment.NewLine + Environment.NewLine, errors));
+        }
+    }
+
+    private static void ClearCachedModsDirectory(string cachedModsDirectory)
+    {
+        if (!Directory.Exists(cachedModsDirectory))
+        {
+            return;
+        }
+
+        Directory.Delete(cachedModsDirectory, recursive: true);
+    }
+
+    private static string BuildCacheClearErrorMessage(string context, Exception ex)
+    {
+        var builder = new StringBuilder();
+        builder.Append(context);
+        builder.Append(':');
+        builder.AppendLine();
+        builder.Append(ex.Message);
+
+        Exception? inner = ex.InnerException;
+        while (inner is not null)
+        {
+            builder.AppendLine();
+            builder.Append(inner.Message);
+            inner = inner.InnerException;
+        }
+
+        return builder.ToString();
     }
 
     private async void SelectDataFolderMenuItem_OnClick(object sender, RoutedEventArgs e)
