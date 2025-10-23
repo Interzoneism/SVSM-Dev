@@ -3598,7 +3598,7 @@ public partial class MainWindow : Window
         comboBox.Dispatcher.BeginInvoke((Action)ScrollToTop, DispatcherPriority.Background);
     }
 
-    private async void RefreshButton_OnClick(object sender, RoutedEventArgs e)
+    private async void RebuildButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (_isFullRefreshInProgress)
         {
@@ -3621,37 +3621,27 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!_userConfiguration.SuppressRefreshCachePrompt)
+        ModlistLoadMode? loadMode = GetRebuildModlistLoadMode();
+        if (loadMode is not ModlistLoadMode resolvedLoadMode)
         {
-            const string confirmationMessage =
-                "The manager works with cached/stored mod information so mods load faster. This button deletes all that cache and fetches everything from the online Mod DB again - good for resetting if you suspect something is wrong, but not something you need to use daily as the manager refreshes automatically.";
+            return;
+        }
 
-            var buttonOverrides = new MessageDialogButtonContentOverrides
-            {
-                Ok = "Ok do not show again"
-            };
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+        string requestedModlistName = $"Rebuilt_{timestamp}";
+        string savedModlistName = string.Empty;
+        string savedModlistPath = string.Empty;
 
-            MessageBoxResult prompt = WpfMessageBox.Show(
-                this,
-                confirmationMessage,
-                "Simple VS Manager",
-                MessageBoxButton.OKCancel,
-                MessageBoxImage.Warning,
-                buttonContentOverrides: buttonOverrides);
-
-            if (prompt != MessageBoxResult.OK)
+        _isFullRefreshInProgress = true;
+        bool cachesCleared = false;
+        
+        try
+        {
+            if (!TrySaveAutomaticModlist(requestedModlistName, out savedModlistName, out savedModlistPath))
             {
                 return;
             }
 
-            _userConfiguration.SetSuppressRefreshCachePrompt(true);
-        }
-
-        _isFullRefreshInProgress = true;
-        bool cachesCleared = false;
-
-        try
-        {
             try
             {
                 await Task.Run(ClearManagerCaches).ConfigureAwait(true);
@@ -3673,7 +3663,38 @@ public partial class MainWindow : Window
                 return;
             }
 
-            await RefreshModsWithErrorHandlingAsync().ConfigureAwait(true);
+            (bool Success, int RemovedCount) deletionResult = await DeleteAllInstalledModsForRebuildAsync().ConfigureAwait(true);
+            if (!deletionResult.Success)
+            {
+                WpfMessageBox.Show(
+                    "Rebuild cancelled because some mods could not be removed.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            PresetLoadOptions loadOptions = GetModlistLoadOptions(resolvedLoadMode);
+
+            if (!TryLoadPresetFromFile(savedModlistPath, "Modlist", loadOptions, out ModPreset? preset, out string? errorMessage))
+            {
+                string message = string.IsNullOrWhiteSpace(errorMessage)
+                    ? "The saved rebuild modlist could not be loaded."
+                    : errorMessage!;
+                WpfMessageBox.Show(
+                    $"Failed to load the rebuild modlist:\n{message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            await ApplyPresetAsync(preset!).ConfigureAwait(true);
+
+            string status = resolvedLoadMode == ModlistLoadMode.Replace
+                ? $"Rebuilt mods from \"{savedModlistName}\"."
+                : $"Rebuilt mods from \"{savedModlistName}\" (added mods).";
+            viewModel.ReportStatus(status);
         }
         finally
         {
@@ -5557,6 +5578,86 @@ public partial class MainWindow : Window
         };
     }
 
+    private async Task<(bool Success, int RemovedCount)> DeleteAllInstalledModsForRebuildAsync()
+    {
+        if (_viewModel?.ModsView is null)
+        {
+            return (true, 0);
+        }
+
+        var installedMods = _viewModel.ModsView.Cast<ModListItemViewModel>()
+            .Where(mod => mod.IsInstalled)
+            .ToList();
+
+        if (installedMods.Count == 0)
+        {
+            return (true, 0);
+        }
+
+        var pathErrors = new List<string>();
+        int removedCount = 0;
+        bool hadDeletionFailure = false;
+
+        foreach (var mod in installedMods)
+        {
+            if (!TryGetManagedModPath(mod, out string modPath, out string? errorMessage))
+            {
+                if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    pathErrors.Add($"{mod.DisplayName}: {errorMessage}");
+                }
+
+                hadDeletionFailure = true;
+                continue;
+            }
+
+            if (TryDeleteModAtPath(mod, modPath))
+            {
+                removedCount++;
+            }
+            else
+            {
+                hadDeletionFailure = true;
+            }
+        }
+
+        if (_viewModel.RefreshCommand != null)
+        {
+            try
+            {
+                await RefreshModsAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show($"The mod list could not be refreshed:{Environment.NewLine}{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return (false, removedCount);
+            }
+        }
+
+        if (pathErrors.Count > 0)
+        {
+            string message = string.Join(Environment.NewLine + Environment.NewLine, pathErrors);
+            WpfMessageBox.Show($"Some mods could not be removed automatically:{Environment.NewLine}{Environment.NewLine}{message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+
+        bool success = !hadDeletionFailure && pathErrors.Count == 0;
+        if (success)
+        {
+            string status = removedCount == 0
+                ? "No installed mods were found to delete."
+                : $"Removed {removedCount} mod{(removedCount == 1 ? string.Empty : "s")} before rebuild.";
+            _viewModel.ReportStatus(status);
+        }
+
+        return (success, removedCount);
+    }
+
     private void SavePresetMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         string presetDirectory = EnsurePresetDirectory();
@@ -5591,6 +5692,59 @@ public partial class MainWindow : Window
             failureContext: "modlist",
             includeModVersions: true,
             exclusive: true);
+    }
+
+    private bool TrySaveAutomaticModlist(string requestedName, out string savedName, out string filePath)
+    {
+        savedName = string.Empty;
+        filePath = string.Empty;
+
+        if (_viewModel is null)
+        {
+            return false;
+        }
+
+        string modListDirectory = EnsureModListDirectory();
+        savedName = BuildSuggestedFileName(requestedName, "Modlist");
+        filePath = Path.Combine(modListDirectory, savedName + ".json");
+
+        var serializable = BuildSerializablePreset(savedName, includeModVersions: true, exclusive: true);
+
+        try
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
+            string json = JsonSerializer.Serialize(serializable, options);
+            File.WriteAllText(filePath, json);
+
+            _viewModel.ReportStatus($"Saved modlist \"{savedName}\".");
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            WpfMessageBox.Show($"Failed to save the modlist:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            savedName = string.Empty;
+            filePath = string.Empty;
+            return false;
+        }
+    }
+
+    private ModlistLoadMode? GetRebuildModlistLoadMode()
+    {
+        return _userConfiguration.ModlistAutoLoadBehavior switch
+        {
+            ModlistAutoLoadBehavior.Replace => ModlistLoadMode.Replace,
+            ModlistAutoLoadBehavior.Add => ModlistLoadMode.Add,
+            _ => PromptModlistLoadMode()
+        };
     }
 
     private ModlistLoadMode? PromptModlistLoadMode()
