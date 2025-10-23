@@ -658,12 +658,34 @@
                         ToolTip="Deletes all mod info cache and fetches fresh data online. Slower but ensures everything is reindexed."
                         Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                         BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                        Click="RefreshButton_OnClick" Padding="6,6,6,6" Margin="-109,37,214,0" />
+                        Click="RefreshButton_OnClick" Padding="6,6,6,6" Margin="-109,37,214,0">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsViewingInstalledMods}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                     <Button Content="Refresh"
                         ToolTip="Quickly refreshes the current view using cached data if no changes are detected on the online mod page."
                         Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                         BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                        Click="RefreshModsMenuItem_OnClick" Padding="6,6,6,6" Margin="-217,37,322,0" />
+                        Click="RefreshModsMenuItem_OnClick" Padding="6,6,6,6" Margin="-217,37,322,0">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsViewingInstalledMods}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </Grid>
 
                 <StackPanel Grid.Column="0"
