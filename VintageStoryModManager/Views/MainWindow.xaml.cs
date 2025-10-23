@@ -132,7 +132,9 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
-        RefreshModsUiCommand = new AsyncRelayCommand(RefreshModsWithErrorHandlingAsync);
+        RefreshModsUiCommand = new AsyncRelayCommand(
+            RefreshModsWithErrorHandlingAsync,
+            AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
         InitializeComponent();
 
