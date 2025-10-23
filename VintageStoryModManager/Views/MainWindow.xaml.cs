@@ -24,6 +24,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Data;
 using ModernWpf.Controls;
+using CommunityToolkit.Mvvm.Input;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 
@@ -118,6 +119,8 @@ public partial class MainWindow : Window
     private bool _suppressSortPreferenceSave;
     private string? _cachedSortMemberPath;
     private ListSortDirection? _cachedSortDirection;
+
+    public IAsyncRelayCommand RefreshModsUiCommand { get; }
     private SortOption? _cachedSortOption;
     private readonly SemaphoreSlim _backupSemaphore = new(1, 1);
     private readonly SemaphoreSlim _cloudStoreLock = new(1, 1);
@@ -129,6 +132,8 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        RefreshModsUiCommand = new AsyncRelayCommand(RefreshModsWithErrorHandlingAsync);
+
         InitializeComponent();
 
         _userConfiguration = new UserConfigurationService();
@@ -4648,11 +4653,6 @@ public partial class MainWindow : Window
         {
             return null;
         }
-    }
-
-    private async void RefreshModsMenuItem_OnClick(object sender, RoutedEventArgs e)
-    {
-        await RefreshModsWithErrorHandlingAsync().ConfigureAwait(true);
     }
 
     private async Task RefreshModsWithErrorHandlingAsync()

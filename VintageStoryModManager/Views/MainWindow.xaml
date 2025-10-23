@@ -457,7 +457,9 @@
                     <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="_Mods" Height="35" SubmenuOpened="ModsMenuItem_OnSubmenuOpened">
-                    <MenuItem Header="_Refresh Mods" Height="35" Click="RefreshModsMenuItem_OnClick" />
+                    <MenuItem Header="_Refresh Mods"
+                              Height="35"
+                              Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
                     <MenuItem Header="_Update All Mods" Height="35" Click="UpdateAllModsMenuItem_OnClick" />
                     <MenuItem Header="Check mods compatibility" Height="35" Click="CheckModsCompatibilityMenuItem_OnClick" />
                     <MenuItem x:Name="CacheAllVersionsMenuItem"
@@ -669,7 +671,7 @@
                                 ToolTip="Quickly refreshes the current view using cached data if no changes are detected on the online mod page."
                                 Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                                 BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                Click="RefreshModsMenuItem_OnClick">
+                                Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType=Window}}">
                                 <Button.Style>
                                     <Style TargetType="{x:Type Button}">
                                         <Setter Property="Visibility" Value="Collapsed" />
