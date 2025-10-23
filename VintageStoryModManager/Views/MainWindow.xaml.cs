@@ -111,6 +111,8 @@ public partial class MainWindow : Window
     private readonly ModCompatibilityCommentsService _modCompatibilityCommentsService = new();
     private bool _isModUpdateInProgress;
     private bool _isDependencyResolutionRefreshPending;
+    private bool _refreshAfterModlistLoadPending;
+    private bool _isRefreshingAfterModlistLoad;
     private ScrollViewer? _modsScrollViewer;
     private ScrollViewer? _modDatabaseCardsScrollViewer;
     private bool _suppressSortPreferenceSave;
@@ -595,7 +597,11 @@ public partial class MainWindow : Window
         else if (e.PropertyName == nameof(MainViewModel.IsLoadingMods)
                  || e.PropertyName == nameof(MainViewModel.IsLoadingModDetails))
         {
-            Dispatcher.Invoke(RefreshHoverOverlayState);
+            Dispatcher.Invoke(() =>
+            {
+                RefreshHoverOverlayState();
+                ScheduleRefreshAfterModlistLoadIfReady();
+            });
         }
         else if (e.PropertyName == nameof(MainViewModel.StatusMessage))
         {
@@ -607,6 +613,8 @@ public partial class MainWindow : Window
                     await RefreshModsAfterDependencyResolutionAsync().ConfigureAwait(true);
                 }, DispatcherPriority.Background);
             }
+
+            Dispatcher.Invoke(ScheduleRefreshAfterModlistLoadIfReady);
         }
     }
 
@@ -925,6 +933,47 @@ public partial class MainWindow : Window
         {
             _isDependencyResolutionRefreshPending = false;
         }
+    }
+
+    private void ScheduleRefreshAfterModlistLoadIfReady()
+    {
+        if (!_refreshAfterModlistLoadPending || _isRefreshingAfterModlistLoad)
+        {
+            return;
+        }
+
+        var viewModel = _viewModel;
+        if (viewModel?.RefreshCommand == null)
+        {
+            return;
+        }
+
+        if (viewModel.IsLoadingMods || viewModel.IsLoadingModDetails)
+        {
+            return;
+        }
+
+        _isRefreshingAfterModlistLoad = true;
+
+        Dispatcher.InvokeAsync(async () =>
+        {
+            try
+            {
+                await RefreshModsAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show($"Failed to refresh mods after loading the modlist:{Environment.NewLine}{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            finally
+            {
+                _refreshAfterModlistLoadPending = false;
+                _isRefreshingAfterModlistLoad = false;
+            }
+        }, DispatcherPriority.Background);
     }
 
     private void RestoreCachedSortState()
@@ -7622,20 +7671,21 @@ public partial class MainWindow : Window
             return;
         }
 
+        bool scheduleRefreshAfterLoad = false;
         _isApplyingPreset = true;
         try
         {
             if (preset.IncludesModVersions && preset.ModStates.Count > 0)
             {
-                await ApplyPresetModVersionsAsync(preset);
+                scheduleRefreshAfterLoad = await ApplyPresetModVersionsAsync(preset).ConfigureAwait(true);
             }
 
-            bool applied = await _viewModel.ApplyPresetAsync(preset);
+            bool applied = await _viewModel.ApplyPresetAsync(preset).ConfigureAwait(true);
             if (applied)
             {
                 if (preset.IsExclusive)
                 {
-                    await ApplyExclusivePresetAsync(preset);
+                    await ApplyExclusivePresetAsync(preset).ConfigureAwait(true);
                 }
 
                 _viewModel.SelectedSortOption?.Apply(_viewModel.ModsView);
@@ -7650,6 +7700,12 @@ public partial class MainWindow : Window
         finally
         {
             _isApplyingPreset = false;
+
+            if (scheduleRefreshAfterLoad)
+            {
+                _refreshAfterModlistLoadPending = true;
+                ScheduleRefreshAfterModlistLoadIfReady();
+            }
         }
     }
 
@@ -7809,11 +7865,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task ApplyPresetModVersionsAsync(ModPreset preset)
+    private async Task<bool> ApplyPresetModVersionsAsync(ModPreset preset)
     {
         if (_viewModel?.ModsView is null)
         {
-            return;
+            return false;
         }
 
         var mods = _viewModel.ModsView.Cast<ModListItemViewModel>().ToList();
@@ -7983,12 +8039,14 @@ public partial class MainWindow : Window
             }
         }
 
-        if (overrides.Count == 0)
+        bool hasOverrides = overrides.Count > 0;
+        if (hasOverrides)
         {
-            return;
+            await UpdateModsAsync(overrides.Keys.ToList(), isBulk: true, overrides, showSummary: false)
+                .ConfigureAwait(true);
         }
 
-        await UpdateModsAsync(overrides.Keys.ToList(), isBulk: true, overrides, showSummary: false);
+        return installedAnyMods || hasOverrides;
     }
 
     private readonly record struct PresetModInstallResult(bool Success, bool ModMissing, bool VersionMissing, string? ErrorMessage);
