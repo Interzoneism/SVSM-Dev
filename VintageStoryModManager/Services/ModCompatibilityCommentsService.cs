@@ -174,8 +174,25 @@ public sealed class ModCompatibilityCommentsService
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         using JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
 
+        int? statusCode = TryGetStatusCode(document.RootElement);
         if (!document.RootElement.TryGetProperty("mod", out JsonElement modElement))
         {
+            if (statusCode == 404)
+            {
+                throw new InvalidOperationException(string.Format(
+                    CultureInfo.CurrentCulture,
+                    "Mod '{0}' was not found in the Mod DB.",
+                    normalizedSlug));
+            }
+
+            if (statusCode is not null)
+            {
+                throw new InvalidOperationException(string.Format(
+                    CultureInfo.CurrentCulture,
+                    "Unexpected response from the Mod DB API (status code {0}).",
+                    statusCode));
+            }
+
             throw new InvalidOperationException("Unexpected response from the Mod DB API (missing 'mod' element).");
         }
 
@@ -210,6 +227,30 @@ public sealed class ModCompatibilityCommentsService
         }
 
         return new ModMetadata(lastReleaseUtc);
+    }
+
+    private static int? TryGetStatusCode(JsonElement rootElement)
+    {
+        if (!rootElement.TryGetProperty("statuscode", out JsonElement statusElement))
+        {
+            return null;
+        }
+
+        if (statusElement.ValueKind == JsonValueKind.Number && statusElement.TryGetInt32(out int numeric))
+        {
+            return numeric;
+        }
+
+        if (statusElement.ValueKind == JsonValueKind.String)
+        {
+            string? statusString = statusElement.GetString();
+            if (int.TryParse(statusString, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed))
+            {
+                return parsed;
+            }
+        }
+
+        return null;
     }
 
     private static async Task<string> FetchCommentsHtmlAsync(string normalizedSlug, CancellationToken cancellationToken)
