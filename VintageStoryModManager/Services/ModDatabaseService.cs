@@ -112,7 +112,12 @@ public sealed class ModDatabaseService
             string? installedModVersion = modEntry.Version;
 
             ModDatabaseInfo? cached = await CacheService
-                .TryLoadAsync(modEntry.ModId, normalizedGameVersion, installedModVersion, cancellationToken)
+                .TryLoadAsync(
+                    modEntry.ModId,
+                    normalizedGameVersion,
+                    installedModVersion,
+                    allowExpiredEntryRefresh: !internetDisabled,
+                    cancellationToken)
                 .ConfigureAwait(false);
 
             if (cached != null)
@@ -169,7 +174,12 @@ public sealed class ModDatabaseService
         }
 
         string? normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
-        return CacheService.TryLoadAsync(modId, normalizedGameVersion, modVersion, cancellationToken);
+        return CacheService.TryLoadAsync(
+            modId,
+            normalizedGameVersion,
+            modVersion,
+            allowExpiredEntryRefresh: false,
+            cancellationToken);
     }
 
     private async Task<ModDatabaseInfo?> TryLoadDatabaseInfoAsyncCore(
@@ -178,11 +188,18 @@ public sealed class ModDatabaseService
         string? normalizedGameVersion,
         CancellationToken cancellationToken)
     {
+        bool internetDisabled = InternetAccessManager.IsInternetAccessDisabled;
+
         ModDatabaseInfo? cached = await CacheService
-            .TryLoadAsync(modId, normalizedGameVersion, modVersion, cancellationToken)
+            .TryLoadAsync(
+                modId,
+                normalizedGameVersion,
+                modVersion,
+                allowExpiredEntryRefresh: !internetDisabled,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        if (InternetAccessManager.IsInternetAccessDisabled)
+        if (internetDisabled)
         {
             return cached;
         }

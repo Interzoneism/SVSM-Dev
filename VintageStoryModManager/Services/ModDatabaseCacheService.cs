@@ -19,6 +19,7 @@ internal sealed class ModDatabaseCacheService
     private const int CacheSchemaVersion = 2;
     private const int MinimumSupportedCacheSchemaVersion = 1;
     private const string AnyGameVersionToken = "any";
+    private static readonly TimeSpan CacheEntryMaxAge = TimeSpan.FromHours(12);
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -33,6 +34,7 @@ internal sealed class ModDatabaseCacheService
         string modId,
         string? normalizedGameVersion,
         string? installedModVersion,
+        bool allowExpiredEntryRefresh,
         CancellationToken cancellationToken)
     {
         string? cachePath = GetCacheFilePath(modId, normalizedGameVersion);
@@ -53,6 +55,19 @@ internal sealed class ModDatabaseCacheService
                 || !IsSupportedSchemaVersion(cached.SchemaVersion)
                 || !IsGameVersionMatch(cached.GameVersion, normalizedGameVersion))
             {
+                return null;
+            }
+
+            if (IsCacheEntryExpired(cached.CachedUtc))
+            {
+                bool canRefreshExpiredEntry = allowExpiredEntryRefresh
+                    && !InternetAccessManager.IsInternetAccessDisabled;
+
+                if (!canRefreshExpiredEntry)
+                {
+                    return ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion);
+                }
+
                 return null;
             }
 
@@ -451,6 +466,17 @@ internal sealed class ModDatabaseCacheService
         SemaphoreSlim gate = _fileLocks.GetOrAdd(path, _ => new SemaphoreSlim(1, 1));
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         return gate;
+    }
+
+    private static bool IsCacheEntryExpired(DateTime cachedUtc)
+    {
+        if (cachedUtc == default)
+        {
+            return true;
+        }
+
+        DateTime expirationThreshold = DateTime.UtcNow - CacheEntryMaxAge;
+        return cachedUtc < expirationThreshold;
     }
 
     private static bool IsSupportedSchemaVersion(int schemaVersion)
