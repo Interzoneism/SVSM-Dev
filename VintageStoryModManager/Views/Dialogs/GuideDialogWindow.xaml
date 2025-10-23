@@ -81,9 +81,9 @@
                 </TextBlock>
                 <TextBlock Margin="0,12,0,0"
                            TextWrapping="Wrap"
-                           FontSize="15"><Run Text="• " /><Run Text=" "/><Bold><Run Text="Mods &gt; Cache all versions locally"/></Bold><Run Text=" "/><Run Text="is on by default so downloads stay ready. Most mods are small, so the " /><Run Text=" "/><Hyperlink x:Name="CachedModsHyperlink"
+                           FontSize="15"><Run Text="• " /><Run Text=" "/><Bold><Run Text="Mods &gt; Cache all versions locally"/></Bold><Run Text=" "/><Run Text="is on by default so downloads stay ready. Most mods are small, so the" /><Run Text=" "/><Hyperlink x:Name="CachedModsHyperlink"
                                RequestNavigate="OnHyperlinkRequestNavigate"
-                               Foreground="{StaticResource Brush.Text.Emphasis}"><Run Text="Cached Mods folder" /></Hyperlink><Run Text=" "/><Run Text=" saves re-download time." /></TextBlock>
+                               Foreground="{StaticResource Brush.Text.Emphasis}"><Run Text="Cached Mods folder" /></Hyperlink><Run Text=" "/><Run Text="saves re-download time." /></TextBlock>
             </StackPanel>
         </ScrollViewer>
 

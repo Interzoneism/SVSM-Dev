@@ -285,7 +285,7 @@
                                     <Track x:Name="PART_Track"
                                            Margin="0"
                                            Orientation="{TemplateBinding Orientation}"
-                                           IsDirectionReversed="{Binding IsDirectionReversed, RelativeSource={RelativeSource TemplatedParent}}"
+                                           IsDirectionReversed="True"
                                            Maximum="{TemplateBinding Maximum}"
                                            Minimum="{TemplateBinding Minimum}"
                                            Value="{TemplateBinding Value}"
