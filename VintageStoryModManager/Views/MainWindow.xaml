@@ -654,6 +654,10 @@
                             </Style>
                         </TextBox.Style>
                     </TextBox>
+                    <Button Content="Refresh"
+                        Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
+                        BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                        Click="UpdateAllModsMenuItem_OnClick" Padding="6,6,6,6" Margin="-109,37,214,0" />
                 </Grid>
 
                 <StackPanel Grid.Column="0"

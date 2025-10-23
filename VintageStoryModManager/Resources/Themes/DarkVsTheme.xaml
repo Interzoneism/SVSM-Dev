@@ -15,9 +15,7 @@
     <Color x:Key="Palette.ColorTextLink">#FF479BBE</Color>
     <Color x:Key="Palette.ColorBevelLight">#80FFFFFF</Color>
     <Color x:Key="Palette.ColorBevelDark">#40000000</Color>
-    <Color x:Key="Palette.ScrollBar.Thumb">#FF5F4733</Color>
-    <Color x:Key="Palette.ScrollBar.Button">#FF362B20</Color>
-    <Color x:Key="Palette.ScrollBar.Glyph">#FFC8BCAE</Color>
+    <Color x:Key="Palette.ColorHover">#10FFFFFF</Color>
 
     <!-- ====================================================== -->
     <!-- Window shell and shared panel surfaces (Main windows). -->
@@ -58,11 +56,11 @@
     <!-- Toggle switches (App.xaml toggle controls). -->
     <!-- ============================================ -->
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.Off" Color="{StaticResource Palette.ColorBackgroundDark}" />
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.On" Color="{StaticResource Palette.ColorActive}" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.On" Color="{StaticResource Palette.ColorBackgroundDark}" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Track.Background.Disabled" Color="{StaticResource Palette.ColorDisabled}" Opacity="0.7" />
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Normal" Color="{StaticResource Palette.ColorBackgroundLight}" />
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.On" Color="{StaticResource Palette.ColorElement}" />
-    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Disabled" Color="{StaticResource Palette.ColorDisabled}" Opacity="0.5" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Normal" Color="{StaticResource Palette.ColorBevelLight}" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.On" Color="{StaticResource Palette.ColorActive}" />
+    <SolidColorBrush x:Key="Brush.ToggleSwitch.Thumb.Background.Disabled" Color="{StaticResource Palette.ColorDisabled}" Opacity="0.7" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Focus.Border" Color="{StaticResource Palette.ColorActive}" />
     <SolidColorBrush x:Key="Brush.ToggleSwitch.Hover.Border" Color="{StaticResource Palette.ColorTextPrimary}" Opacity="0.7" />
 
@@ -101,11 +99,11 @@
     <SolidColorBrush x:Key="Brush.DataGrid.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
     <SolidColorBrush x:Key="Brush.ModTabs.Background" Color="{StaticResource Palette.ColorBackgroundDark}" />
     <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Alternate" Color="{StaticResource Palette.ColorBackgroundMedium}" />
-    <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Hover" Color="{StaticResource Palette.ColorBackgroundLight}" Opacity="0.3" />
+    <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Hover" Color="{StaticResource Palette.ColorHover}"/>
     <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Selected" Color="{StaticResource Palette.ColorActive}" Opacity="0.35" />
     <SolidColorBrush x:Key="Brush.DataGrid.RowBorder" Color="{StaticResource Palette.ColorBackgroundMedium}" />
     <SolidColorBrush x:Key="Brush.DataGrid.Header.Background" Color="{StaticResource Palette.ColorBackgroundLight}" />
-    <SolidColorBrush x:Key="Brush.DataGrid.Header.Background.Hover" Color="{StaticResource Palette.ColorTextPrimary}" Opacity="0.1" />
+    <SolidColorBrush x:Key="Brush.DataGrid.Header.Background.Hover" Color="{StaticResource Palette.ColorHover}"/>
     <SolidColorBrush x:Key="Brush.DataGrid.RowShadow" Color="{StaticResource Palette.ColorBackgroundDark}" Opacity="0.6" />
 
     <!-- ===================================== -->
