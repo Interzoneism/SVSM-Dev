@@ -3521,6 +3521,33 @@ public partial class MainWindow : Window
         await UpdateModsAsync(new[] { mod }, isBulk: false, overrides);
     }
 
+    private void SelectedModVersionComboBox_OnDropDownOpened(object sender, EventArgs e)
+    {
+        if (sender is not System.Windows.Controls.ComboBox comboBox)
+        {
+            return;
+        }
+
+        void ScrollToTop()
+        {
+            ScrollViewer? scrollViewer = null;
+
+            if (comboBox.Template?.FindName("Popup", comboBox) is Popup popup)
+            {
+                scrollViewer = FindDescendantScrollViewer(popup.Child);
+            }
+
+            scrollViewer ??= FindDescendantScrollViewer(comboBox);
+            if (scrollViewer != null)
+            {
+                scrollViewer.ScrollToHome();
+                scrollViewer.ScrollToVerticalOffset(0);
+            }
+        }
+
+        comboBox.Dispatcher.BeginInvoke((Action)ScrollToTop, DispatcherPriority.Background);
+    }
+
     private async void UpdateAllModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (_isModUpdateInProgress || _viewModel?.ModsView == null)
