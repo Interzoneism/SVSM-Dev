@@ -2345,6 +2345,7 @@
                 ItemsSource="{Binding SelectedMod.VersionOptions}"
                 SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
                 SelectionChanged="SelectedModVersionComboBox_OnSelectionChanged"
+                DropDownOpened="SelectedModVersionComboBox_OnDropDownOpened"
                 VerticalAlignment="Top" HorizontalAlignment="Left" Margin="17,155,0,0">
                     <ComboBox.Resources>
                         <DataTemplate x:Key="SelectedModVersionTemplate" DataType="{x:Type viewModels:ModVersionOptionViewModel}">
