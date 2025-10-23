@@ -3673,18 +3673,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            try
-            {
-                await RefreshModsAsync().ConfigureAwait(true);
-            }
-            catch (Exception ex)
-            {
-                WpfMessageBox.Show(
-                    $"Failed to refresh mods:\n{ex.Message}",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
+            await RefreshModsWithErrorHandlingAsync().ConfigureAwait(true);
         }
         finally
         {
@@ -4642,6 +4631,11 @@ public partial class MainWindow : Window
 
     private async void RefreshModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
+        await RefreshModsWithErrorHandlingAsync().ConfigureAwait(true);
+    }
+
+    private async Task RefreshModsWithErrorHandlingAsync()
+    {
         if (_viewModel?.RefreshCommand == null)
         {
             return;
@@ -4649,11 +4643,12 @@ public partial class MainWindow : Window
 
         try
         {
-            await RefreshModsAsync();
+            await RefreshModsAsync().ConfigureAwait(true);
         }
         catch (Exception ex)
         {
-            WpfMessageBox.Show($"Failed to refresh mods:\n{ex.Message}",
+            WpfMessageBox.Show(
+                $"Failed to refresh mods:\n{ex.Message}",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
