@@ -8737,7 +8737,7 @@ public partial class MainWindow : Window
             var results = new List<ModUpdateOperationResult>();
             ModUpdateReleasePreference? bulkPreference = null;
             bool abortRequested = false;
-            bool anySuccess = false;
+            bool requiresRefresh = false;
 
             foreach (ModListItemViewModel mod in mods)
             {
@@ -8756,19 +8756,26 @@ public partial class MainWindow : Window
                         ? "The mod location could not be determined."
                         : pathError!;
                     results.Add(ModUpdateOperationResult.Failure(mod, message));
+                    requiresRefresh = true;
                     continue;
                 }
 
+                int previousResultCount = results.Count;
                 ModReleaseInfo? release = hasOverride
                     ? overrideRelease
                     : SelectReleaseForMod(mod, isBulk, ref bulkPreference, results, ref abortRequested);
                 if (abortRequested)
                 {
+                    requiresRefresh = true;
                     break;
                 }
 
                 if (release is null)
                 {
+                    if (results.Count > previousResultCount)
+                    {
+                        requiresRefresh = true;
+                    }
                     continue;
                 }
 
@@ -8803,16 +8810,17 @@ public partial class MainWindow : Window
                         : updateResult.ErrorMessage!;
                     _viewModel.ReportStatus($"Failed to update {mod.DisplayName}: {failureMessage}", true);
                     results.Add(ModUpdateOperationResult.Failure(mod, failureMessage));
+                    requiresRefresh = true;
                     continue;
                 }
 
-                anySuccess = true;
+                requiresRefresh = true;
                 _viewModel.ReportStatus($"Updated {mod.DisplayName} to {release.Version}.");
                 await _viewModel.PreserveActivationStateAsync(mod.ModId, mod.Version, release.Version, mod.IsActive).ConfigureAwait(true);
                 results.Add(ModUpdateOperationResult.SuccessResult(mod, release.Version));
             }
 
-            if (anySuccess && _viewModel.RefreshCommand != null)
+            if (requiresRefresh && _viewModel.RefreshCommand != null)
             {
                 try
                 {
