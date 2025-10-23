@@ -4085,23 +4085,99 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ExperimentalCompReviewMenuItem_OnClick(object sender, RoutedEventArgs e)
+    private async void ExperimentalCompReviewMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        string? defaultSlug = null;
-        string? latestVersion = _viewModel?.InstalledGameVersion;
-
-        if (_viewModel?.SelectedMod is ModListItemViewModel selectedMod)
+        if (_viewModel?.SelectedMod is not ModListItemViewModel selectedMod)
         {
-            defaultSlug = TryExtractModSlug(selectedMod.ModDatabasePageUrl) ?? selectedMod.ModId;
+            WpfMessageBox.Show(
+                "Select a mod first!",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
         }
 
-        var dialog = new ExperimentalCompReviewDialog(
-            this,
-            defaultSlug,
-            string.IsNullOrWhiteSpace(latestVersion) ? null : latestVersion,
-            _modCompatibilityCommentsService);
+        string modSlug = TryExtractModSlug(selectedMod.ModDatabasePageUrl) ?? selectedMod.ModId;
+        string? latestVersion = string.IsNullOrWhiteSpace(_viewModel?.InstalledGameVersion)
+            ? null
+            : _viewModel!.InstalledGameVersion;
 
-        dialog.ShowDialog();
+        try
+        {
+            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
+
+            ModCompatibilityCommentsService.ExperimentalCompReviewResult result = await _modCompatibilityCommentsService
+                .GetTop3CommentsAsync(modSlug, latestVersion)
+                .ConfigureAwait(true);
+
+            string messageText = BuildExperimentalCompReviewMessage(result);
+            if (string.IsNullOrWhiteSpace(messageText))
+            {
+                messageText = result.Reason ?? "No relevant comments were found.";
+            }
+
+            string title = string.Format(
+                CultureInfo.CurrentCulture,
+                "Compatibility comments for {0}",
+                selectedMod.DisplayName);
+
+            WpfMessageBox.Show(
+                messageText,
+                title,
+                MessageBoxButton.OK,
+                result.Top3.Count > 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        }
+        catch (InternetAccessDisabledException ex)
+        {
+            WpfMessageBox.Show(
+                ex.Message,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"The experimental compatibility review failed:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+    }
+
+    private static string BuildExperimentalCompReviewMessage(
+        ModCompatibilityCommentsService.ExperimentalCompReviewResult result)
+    {
+        if (result.Top3 is not { Count: > 0 })
+        {
+            return result.Reason ?? string.Empty;
+        }
+
+        var builder = new StringBuilder();
+        for (int index = 0; index < result.Top3.Count; index++)
+        {
+            ModCompatibilityCommentsService.ExperimentalCompReviewComment comment = result.Top3[index];
+            double totalScore = comment.ScoreBreakdown?.Values.Sum() ?? 0;
+            string scoreText = FormatExperimentalCompReviewScore(totalScore);
+
+            builder.Append(index + 1);
+            builder.Append(". [");
+            builder.Append(scoreText);
+            builder.Append("] ");
+            builder.AppendLine(comment.Snippet);
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+
+    private static string FormatExperimentalCompReviewScore(double score)
+    {
+        double rounded = Math.Round(score, 2);
+        return rounded.ToString("+0.##;-0.##;0", CultureInfo.CurrentCulture);
     }
 
     private async void DeleteCloudAuthMenuItem_OnClick(object sender, RoutedEventArgs e)
