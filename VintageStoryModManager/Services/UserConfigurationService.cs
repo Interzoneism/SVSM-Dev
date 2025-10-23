@@ -39,6 +39,7 @@ public sealed class UserConfigurationService
     private bool _disableInternetAccess;
     private bool _enableDebugLogging;
     private bool _suppressModlistSavePrompt;
+    private bool _suppressRefreshCachePrompt;
     private ModlistAutoLoadBehavior _modlistAutoLoadBehavior = ModlistAutoLoadBehavior.Prompt;
     private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
     private int _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
@@ -88,6 +89,8 @@ public sealed class UserConfigurationService
     public bool EnableDebugLogging => _enableDebugLogging;
 
     public bool SuppressModlistSavePrompt => _suppressModlistSavePrompt;
+
+    public bool SuppressRefreshCachePrompt => _suppressRefreshCachePrompt;
 
     public ModlistAutoLoadBehavior ModlistAutoLoadBehavior => _modlistAutoLoadBehavior;
 
@@ -431,6 +434,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetSuppressRefreshCachePrompt(bool suppress)
+    {
+        if (_suppressRefreshCachePrompt == suppress)
+        {
+            return;
+        }
+
+        _suppressRefreshCachePrompt = suppress;
+        Save();
+    }
+
     public void SetCloudUploaderName(string? name)
     {
         string? normalized = NormalizeUploaderName(name);
@@ -497,6 +511,7 @@ public sealed class UserConfigurationService
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _enableDebugLogging = obj["enableDebugLogging"]?.GetValue<bool?>() ?? false;
             _suppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
+            _suppressRefreshCachePrompt = obj["suppressRefreshCachePrompt"]?.GetValue<bool?>() ?? false;
             _useDarkVsMode = obj["useDarkVsMode"]?.GetValue<bool?>() ?? true;
             _modlistAutoLoadBehavior = ParseModlistAutoLoadBehavior(GetOptionalString(obj["modlistAutoLoadBehavior"]));
             _modsSortMemberPath = NormalizeSortMemberPath(GetOptionalString(obj["modsSortMemberPath"]));
@@ -528,6 +543,7 @@ public sealed class UserConfigurationService
             _disableInternetAccess = false;
             _enableDebugLogging = false;
             _suppressModlistSavePrompt = false;
+            _suppressRefreshCachePrompt = false;
             _useDarkVsMode = true;
             _modlistAutoLoadBehavior = ModlistAutoLoadBehavior.Prompt;
             _modsSortMemberPath = null;
@@ -578,6 +594,7 @@ public sealed class UserConfigurationService
                 ["disableInternetAccess"] = _disableInternetAccess,
                 ["enableDebugLogging"] = _enableDebugLogging,
                 ["suppressModlistSavePrompt"] = _suppressModlistSavePrompt,
+                ["suppressRefreshCachePrompt"] = _suppressRefreshCachePrompt,
                 ["useDarkVsMode"] = _useDarkVsMode,
                 ["modlistAutoLoadBehavior"] = _modlistAutoLoadBehavior.ToString(),
                 ["modsSortMemberPath"] = _modsSortMemberPath,
