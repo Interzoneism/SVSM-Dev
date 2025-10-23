@@ -1894,9 +1894,9 @@
                                         <Border HorizontalAlignment="Right"
                                                 VerticalAlignment="Top"
                                                 Margin="0,8,8,0"
-                                                Background="{StaticResource Brush.Overlay.Success.Background}"
-                                                CornerRadius="12"
-                                                Padding="6">
+                                                Background="{DynamicResource Brush.DataGrid.Background}"
+                                                CornerRadius="4"
+                                                Padding="3">
                                             <Border.Style>
                                                 <Style TargetType="{x:Type Border}">
                                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -1907,9 +1907,9 @@
                                                     </Style.Triggers>
                                                 </Style>
                                             </Border.Style>
-                                            <TextBlock Text="&#xE001;"
-                                                       FontFamily="Segoe MDL2 Assets"
-                                                       Foreground="{StaticResource Brush.Text.Emphasis}"
+                                            <TextBlock Text="Compatible"
+                                                       
+                                                       Foreground="LightGreen"
                                                        FontSize="16" />
                                         </Border>
                                     </Grid>
