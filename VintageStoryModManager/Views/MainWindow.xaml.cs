@@ -130,6 +130,8 @@ public partial class MainWindow : Window
     private bool _cloudModlistsLoaded;
     private bool _isCloudModlistRefreshInProgress;
     private CloudModlistListEntry? _selectedCloudModlist;
+    private string? _recentLocalModBackupDirectory;
+    private List<string>? _recentLocalModBackupModNames;
 
 
     public MainWindow()
@@ -7823,6 +7825,96 @@ public partial class MainWindow : Window
         return backupDirectory;
     }
 
+    private string EnsureLocalModBackupRootDirectory()
+    {
+        string backupDirectory = EnsureBackupDirectory();
+        string localModsDirectory = Path.Combine(backupDirectory, "Backup Local Mods");
+        Directory.CreateDirectory(localModsDirectory);
+        return localModsDirectory;
+    }
+
+    private string CreateLocalModBackupSessionDirectory()
+    {
+        string rootDirectory = EnsureLocalModBackupRootDirectory();
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+        string sessionName = $"Local Mods {timestamp}";
+        string sessionDirectory = Path.Combine(rootDirectory, sessionName);
+        sessionDirectory = EnsureUniqueDirectoryPath(sessionDirectory);
+        Directory.CreateDirectory(sessionDirectory);
+        return sessionDirectory;
+    }
+
+    private static string EnsureUniqueDirectoryPath(string path)
+    {
+        if (!Directory.Exists(path) && !File.Exists(path))
+        {
+            return path;
+        }
+
+        string basePath = path;
+        int counter = 1;
+        string candidate;
+        do
+        {
+            candidate = $"{basePath} ({counter++})";
+        }
+        while (Directory.Exists(candidate) || File.Exists(candidate));
+
+        return candidate;
+    }
+
+    private static void CopyDirectoryContents(string sourceDirectory, string destinationDirectory)
+    {
+        Directory.CreateDirectory(destinationDirectory);
+
+        foreach (string directory in Directory.GetDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            string relativePath = Path.GetRelativePath(sourceDirectory, directory);
+            string targetDirectory = Path.Combine(destinationDirectory, relativePath);
+            Directory.CreateDirectory(targetDirectory);
+        }
+
+        foreach (string file in Directory.GetFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            string relativePath = Path.GetRelativePath(sourceDirectory, file);
+            string targetPath = Path.Combine(destinationDirectory, relativePath);
+            string? targetDirectory = Path.GetDirectoryName(targetPath);
+            if (!string.IsNullOrEmpty(targetDirectory))
+            {
+                Directory.CreateDirectory(targetDirectory);
+            }
+
+            File.Copy(file, targetPath, overwrite: false);
+        }
+    }
+
+    private string GetLocalModBackupEntryDirectory(string sessionDirectory, ModListItemViewModel mod)
+    {
+        string fallbackName = string.IsNullOrWhiteSpace(mod.ModId) ? "Mod" : mod.ModId;
+        string displayName = string.IsNullOrWhiteSpace(mod.DisplayName) ? fallbackName : mod.DisplayName;
+        string sanitized = SanitizeFileName(displayName, fallbackName);
+        string entryDirectory = Path.Combine(sessionDirectory, sanitized);
+        return EnsureUniqueDirectoryPath(entryDirectory);
+    }
+
+    private static void BackupLocalModAtPath(string sourcePath, string destinationDirectory)
+    {
+        if (Directory.Exists(sourcePath))
+        {
+            CopyDirectoryContents(sourcePath, destinationDirectory);
+            return;
+        }
+
+        if (File.Exists(sourcePath))
+        {
+            Directory.CreateDirectory(destinationDirectory);
+            string fileName = Path.GetFileName(sourcePath);
+            string targetPath = Path.Combine(destinationDirectory, fileName);
+            targetPath = EnsureUniqueFilePath(targetPath);
+            File.Copy(sourcePath, targetPath, overwrite: false);
+        }
+    }
+
     private string EnsureModListDirectory()
     {
         string baseDirectory = _userConfiguration.GetConfigurationDirectory();
@@ -7949,6 +8041,9 @@ public partial class MainWindow : Window
         {
             return;
         }
+
+        _recentLocalModBackupDirectory = null;
+        _recentLocalModBackupModNames = null;
 
         bool scheduleRefreshAfterLoad = false;
         _isApplyingPreset = true;
@@ -8308,6 +8403,35 @@ public partial class MainWindow : Window
                 }
             }
 
+            if (missingMods.Count > 0
+                && !string.IsNullOrWhiteSpace(_recentLocalModBackupDirectory)
+                && _recentLocalModBackupModNames is { Count: > 0 })
+            {
+                if (builder.Length > 0)
+                {
+                    builder.AppendLine();
+                    builder.AppendLine();
+                }
+
+                builder.AppendLine("Local copies of mods that are not on the mod database were saved to:");
+                builder.AppendLine($" • {_recentLocalModBackupDirectory}");
+
+                var distinctBackups = _recentLocalModBackupModNames
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (distinctBackups.Count > 0)
+                {
+                    builder.AppendLine("Backed up mods:");
+                    foreach (string backupName in distinctBackups)
+                    {
+                        builder.AppendLine($"   • {backupName}");
+                    }
+                }
+            }
+
             string message = builder.ToString().Trim();
             if (!string.IsNullOrWhiteSpace(message))
             {
@@ -8437,6 +8561,9 @@ public partial class MainWindow : Window
 
         var failures = new List<string>();
         int removedCount = 0;
+        string? localBackupSessionDirectory = null;
+        List<string>? backedUpModNames = null;
+        bool localBackupInitializationFailed = false;
 
         foreach (var mod in installedMods)
         {
@@ -8458,6 +8585,46 @@ public partial class MainWindow : Window
                 }
 
                 continue;
+            }
+
+            bool sourceExists = Directory.Exists(modPath) || File.Exists(modPath);
+            if (!mod.HasModDatabasePageLink && sourceExists && !localBackupInitializationFailed)
+            {
+                if (string.IsNullOrWhiteSpace(localBackupSessionDirectory))
+                {
+                    try
+                    {
+                        localBackupSessionDirectory = CreateLocalModBackupSessionDirectory();
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
+                    {
+                        failures.Add($"Failed to prepare the local mod backup directory: {ex.Message}");
+                        localBackupInitializationFailed = true;
+                    }
+                }
+
+                if (!localBackupInitializationFailed && !string.IsNullOrWhiteSpace(localBackupSessionDirectory))
+                {
+                    try
+                    {
+                        string entryDirectory = GetLocalModBackupEntryDirectory(localBackupSessionDirectory, mod);
+                        BackupLocalModAtPath(modPath, entryDirectory);
+
+                        string? name = string.IsNullOrWhiteSpace(mod.DisplayName)
+                            ? mod.ModId
+                            : mod.DisplayName;
+
+                        if (!string.IsNullOrWhiteSpace(name))
+                        {
+                            backedUpModNames ??= new List<string>();
+                            backedUpModNames.Add(name.Trim());
+                        }
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
+                    {
+                        failures.Add($"{mod.DisplayName}: Failed to backup the local copy before deletion — {ex.Message}");
+                    }
+                }
             }
 
             try
@@ -8484,6 +8651,12 @@ public partial class MainWindow : Window
             }
 
             _userConfiguration.RemoveModConfigPath(mod.ModId, preserveHistory: true);
+        }
+
+        if (!string.IsNullOrWhiteSpace(localBackupSessionDirectory) && backedUpModNames is { Count: > 0 })
+        {
+            _recentLocalModBackupDirectory = localBackupSessionDirectory;
+            _recentLocalModBackupModNames = backedUpModNames;
         }
 
         if (removedCount > 0)
