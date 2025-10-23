@@ -3278,7 +3278,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return false;
         }
 
-        return entry.DatabaseInfo == null || entry.DatabaseInfo.IsOfflineOnly;
+        // Always refresh database info so we can detect new releases even when
+        // cached metadata or offline info is already available.
+        return true;
     }
 
     private async Task RefreshDatabaseInfoAsync(ModEntry entry, SemaphoreSlim limiter)
