@@ -673,7 +673,7 @@
                                 BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                 Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType=Window}}">
                                 <Button.Style>
-                                    <Style TargetType="{x:Type Button}">
+                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                         <Setter Property="Visibility" Value="Collapsed" />
                                         <Setter Property="Padding" Value="6,6,6,6" />
                                         <Style.Triggers>
@@ -693,7 +693,7 @@
                                 BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                 Click="RebuildButton_OnClick">
                                 <Button.Style>
-                                    <Style TargetType="{x:Type Button}">
+                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                         <Setter Property="Visibility" Value="Collapsed" />
                                         <Setter Property="Padding" Value="6,6,6,6" />
                                         <Style.Triggers>
