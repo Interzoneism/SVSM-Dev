@@ -2349,19 +2349,7 @@
                     <ComboBox.Resources>
                         <DataTemplate x:Key="SelectedModVersionTemplate" DataType="{x:Type viewModels:ModVersionOptionViewModel}">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding VersionDisplay}" />
-                                <TextBlock Text=" (Installed)" Margin="6,0,0,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="{x:Type TextBlock}">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsInstalled}" Value="True">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                                <TextBlock Text="{Binding SelectionDisplay}" />
                                 <TextBlock Text="✓" Foreground="{StaticResource Brush.Accent.Primary}" Margin="6,0,0,0">
                                     <TextBlock.Style>
                                         <Style TargetType="{x:Type TextBlock}">
