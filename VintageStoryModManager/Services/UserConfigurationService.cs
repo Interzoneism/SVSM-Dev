@@ -22,49 +22,49 @@ public sealed class UserConfigurationService
     private static readonly IReadOnlyDictionary<string, string> VintageStoryPaletteColors =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Palette.ColorBackgroundDark"] = "#FF403529",
-            ["Palette.ColorBackgroundMedium"] = "#FF4D3D2D",
-            ["Palette.ColorBackgroundLight"] = "#FF5A4530",
-            ["Palette.ColorElement"] = "#FF453525",
-            ["Palette.ColorActive"] = "#FF479BBE",
-            ["Palette.ColorDisabled"] = "#FF332A21",
-            ["Palette.ColorTextPrimary"] = "#FFC8BCAE",
-            ["Palette.ColorTextLink"] = "#FF479BBE",
-            ["Palette.ColorBevelLight"] = "#80FFFFFF",
-            ["Palette.ColorBevelDark"] = "#40000000",
-            ["Palette.ColorHover"] = "#10FFFFFF"
+            ["Palette.BaseSurface.Shadowed"] = "#FF403529",
+            ["Palette.BaseSurface.Raised"] = "#FF4D3D2D",
+            ["Palette.BaseSurface.HoverGlow"] = "#FF5A4530",
+            ["Palette.Interactive.Surface"] = "#FF453525",
+            ["Palette.Accent.Primary"] = "#FF479BBE",
+            ["Palette.Interactive.DisabledSurface"] = "#FF332A21",
+            ["Palette.Text.Primary"] = "#FFC8BCAE",
+            ["Palette.Text.Link"] = "#FF479BBE",
+            ["Palette.Bevel.Highlight"] = "#80FFFFFF",
+            ["Palette.Bevel.Shadow"] = "#40000000",
+            ["Palette.Overlay.HoverTint"] = "#10FFFFFF"
         };
 
     private static readonly IReadOnlyDictionary<string, string> DarkPaletteColors =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Palette.ColorActive"] = "#FF0078D4",
-            ["Palette.ColorBackgroundDark"] = "#FF202020",
-            ["Palette.ColorBackgroundLight"] = "#FF323232",
-            ["Palette.ColorBackgroundMedium"] = "#FF2B2B2B",
-            ["Palette.ColorBevelDark"] = "#26000000",
-            ["Palette.ColorBevelLight"] = "#21FFFFFF",
-            ["Palette.ColorDisabled"] = "#FF2A2A2A",
-            ["Palette.ColorElement"] = "#FF2E2E2E",
-            ["Palette.ColorHover"] = "#14FFFFFF",
-            ["Palette.ColorTextLink"] = "#FF0F6CBD",
-            ["Palette.ColorTextPrimary"] = "#FFEDEDED"
+            ["Palette.Accent.Primary"] = "#FF0078D4",
+            ["Palette.BaseSurface.Shadowed"] = "#FF202020",
+            ["Palette.BaseSurface.HoverGlow"] = "#FF323232",
+            ["Palette.BaseSurface.Raised"] = "#FF2B2B2B",
+            ["Palette.Bevel.Shadow"] = "#26000000",
+            ["Palette.Bevel.Highlight"] = "#21FFFFFF",
+            ["Palette.Interactive.DisabledSurface"] = "#FF2A2A2A",
+            ["Palette.Interactive.Surface"] = "#FF2E2E2E",
+            ["Palette.Overlay.HoverTint"] = "#14FFFFFF",
+            ["Palette.Text.Link"] = "#FF0F6CBD",
+            ["Palette.Text.Primary"] = "#FFEDEDED"
         };
 
     private static readonly IReadOnlyDictionary<string, string> LightPaletteColors =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Palette.ColorActive"] = "#FF0078D4",
-            ["Palette.ColorBackgroundDark"] = "#FFF3F3F3",
-            ["Palette.ColorBackgroundLight"] = "#FFFFFFFF",
-            ["Palette.ColorBackgroundMedium"] = "#FFE3E3E3",
-            ["Palette.ColorBevelDark"] = "#14000000",
-            ["Palette.ColorBevelLight"] = "#2FFFFFFF",
-            ["Palette.ColorDisabled"] = "#FFF5F5F5",
-            ["Palette.ColorElement"] = "#FFFFFFFF",
-            ["Palette.ColorHover"] = "#0F000000",
-            ["Palette.ColorTextLink"] = "#FF0F6CBD",
-            ["Palette.ColorTextPrimary"] = "#FF1F1F1F"
+            ["Palette.Accent.Primary"] = "#FF0078D4",
+            ["Palette.BaseSurface.Shadowed"] = "#FFF3F3F3",
+            ["Palette.BaseSurface.HoverGlow"] = "#FFFFFFFF",
+            ["Palette.BaseSurface.Raised"] = "#FFE3E3E3",
+            ["Palette.Bevel.Shadow"] = "#14000000",
+            ["Palette.Bevel.Highlight"] = "#2FFFFFFF",
+            ["Palette.Interactive.DisabledSurface"] = "#FFF5F5F5",
+            ["Palette.Interactive.Surface"] = "#FFFFFFFF",
+            ["Palette.Overlay.HoverTint"] = "#0F000000",
+            ["Palette.Text.Link"] = "#FF0F6CBD",
+            ["Palette.Text.Primary"] = "#FF1F1F1F"
         };
     private const int DefaultModDatabaseSearchResultLimit = 30;
     private const int DefaultModDatabaseNewModsRecentMonths = 3;

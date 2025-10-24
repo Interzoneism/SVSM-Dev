@@ -35,7 +35,7 @@
                                   Direction="270"
                                   ShadowDepth="5"
                                   Opacity="0.16"
-                                  Color="{DynamicResource Palette.ColorBackgroundDark}" />
+                                  Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
             </Border.Effect>
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="Transparent">
                 <TreeView ItemsSource="{Binding RootNodes}"
