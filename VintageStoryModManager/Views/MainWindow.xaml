@@ -2297,7 +2297,11 @@
                 </Style>
             </Border.Style>
             <Border.Effect>
-                <DropShadowEffect Color="{Binding Color, Source={DynamicResource Brush.ModCard.Shadow}}" BlurRadius="20" Direction="270" ShadowDepth="8" Opacity="0.2"/>
+                <DropShadowEffect Color="{DynamicResource Palette.ColorBackgroundDark}"
+                                  BlurRadius="20"
+                                  Direction="270"
+                                  ShadowDepth="8"
+                                  Opacity="0.2" />
             </Border.Effect>
             <Grid x:Name="MODINFO_grid" Height="223" Width="324" Background="Transparent">
                 <Grid.ColumnDefinitions>
@@ -2305,7 +2309,11 @@
                     <ColumnDefinition Width="28*" />
                 </Grid.ColumnDefinitions>
                 <Grid.Effect>
-                    <DropShadowEffect BlurRadius="6" Direction="270" ShadowDepth="4" Opacity="0.1" Color="{Binding Color, Source={DynamicResource Brush.ModDetails.Shadow}}" />
+                    <DropShadowEffect BlurRadius="6"
+                                      Direction="270"
+                                      ShadowDepth="4"
+                                      Opacity="0.1"
+                                      Color="{DynamicResource Palette.ColorBackgroundDark}" />
                 </Grid.Effect>
                 <Button x:Name="SelectedModDatabasePageButton"
                 Padding="12,6"
