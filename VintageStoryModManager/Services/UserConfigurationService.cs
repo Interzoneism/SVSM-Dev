@@ -19,6 +19,21 @@ public sealed class UserConfigurationService
     private const string ModConfigPathsFileName = "SimpleVSManagerModConfigPaths.json";
     private static readonly string CurrentModManagerVersion = ResolveCurrentVersion();
     private static readonly string CurrentConfigurationVersion = CurrentModManagerVersion;
+    private static readonly IReadOnlyDictionary<string, string> DefaultDarkVsPaletteColors =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Palette.ColorBackgroundDark"] = "#FF403529",
+            ["Palette.ColorBackgroundMedium"] = "#FF4D3D2D",
+            ["Palette.ColorBackgroundLight"] = "#FF5A4530",
+            ["Palette.ColorElement"] = "#FF453525",
+            ["Palette.ColorActive"] = "#FF479BBE",
+            ["Palette.ColorDisabled"] = "#FF332A21",
+            ["Palette.ColorTextPrimary"] = "#FFC8BCAE",
+            ["Palette.ColorTextLink"] = "#FF479BBE",
+            ["Palette.ColorBevelLight"] = "#80FFFFFF",
+            ["Palette.ColorBevelDark"] = "#40000000",
+            ["Palette.ColorHover"] = "#10FFFFFF"
+        };
     private const int DefaultModDatabaseSearchResultLimit = 30;
     private const int DefaultModDatabaseNewModsRecentMonths = 3;
     private const int MaxModDatabaseNewModsRecentMonths = 24;
@@ -27,6 +42,7 @@ public sealed class UserConfigurationService
     private readonly string _modConfigPathsPath;
     private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ModConfigPathEntry> _storedModConfigPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _darkVsPaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private string? _selectedPresetName;
     private string _configurationVersion = CurrentConfigurationVersion;
     private string _modManagerVersion = CurrentModManagerVersion;
@@ -107,6 +123,11 @@ public sealed class UserConfigurationService
     public string? CustomShortcutPath => _customShortcutPath;
 
     public string? CloudUploaderName => _cloudUploaderName;
+
+    public IReadOnlyDictionary<string, string> GetDarkVsPaletteColors()
+    {
+        return new Dictionary<string, string>(_darkVsPaletteColors, StringComparer.OrdinalIgnoreCase);
+    }
 
     public (string? SortMemberPath, ListSortDirection Direction) GetModListSortPreference()
     {
@@ -483,6 +504,7 @@ public sealed class UserConfigurationService
     private void Load()
     {
         _modConfigPaths.Clear();
+        ResetDarkVsPaletteToDefaults();
         _selectedPresetName = null;
 
         try
@@ -525,6 +547,7 @@ public sealed class UserConfigurationService
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             LoadModConfigPaths(obj["modConfigPaths"]);
+            LoadDarkVsPalette(obj["darkVsPalette"]);
             _selectedPresetName = NormalizePresetName(GetOptionalString(obj["selectedPreset"]));
             _customShortcutPath = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
             _cloudUploaderName = NormalizeUploaderName(GetOptionalString(obj["cloudUploaderName"]));
@@ -535,6 +558,7 @@ public sealed class UserConfigurationService
             DataDirectory = null;
             GameDirectory = null;
             _modConfigPaths.Clear();
+            ResetDarkVsPaletteToDefaults();
             _configurationVersion = CurrentConfigurationVersion;
             _modManagerVersion = CurrentModManagerVersion;
             _isCompactView = false;
@@ -607,6 +631,7 @@ public sealed class UserConfigurationService
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
+                ["darkVsPalette"] = BuildDarkVsPaletteJson(),
                 ["selectedPreset"] = _selectedPresetName,
                 ["customShortcutPath"] = _customShortcutPath,
                 ["cloudUploaderName"] = _cloudUploaderName
@@ -751,6 +776,33 @@ public sealed class UserConfigurationService
         return result;
     }
 
+    private JsonObject BuildDarkVsPaletteJson()
+    {
+        var result = new JsonObject();
+
+        foreach (var pair in _darkVsPaletteColors.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
+            {
+                continue;
+            }
+
+            result[pair.Key] = pair.Value;
+        }
+
+        foreach (var pair in DefaultDarkVsPaletteColors.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            if (result.ContainsKey(pair.Key))
+            {
+                continue;
+            }
+
+            result[pair.Key] = pair.Value;
+        }
+
+        return result;
+    }
+
     private void LoadModConfigPaths(JsonNode? node)
     {
         _modConfigPaths.Clear();
@@ -776,6 +828,66 @@ public sealed class UserConfigurationService
             }
 
             _modConfigPaths[modId.Trim()] = normalized;
+        }
+    }
+
+    private void LoadDarkVsPalette(JsonNode? node)
+    {
+        if (node is not JsonObject obj)
+        {
+            _hasPendingSave = true;
+            return;
+        }
+
+        bool requiresSave = false;
+        var processedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var pair in obj)
+        {
+            string key = pair.Key;
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                continue;
+            }
+
+            string normalizedKey = key.Trim();
+            if (!_darkVsPaletteColors.ContainsKey(normalizedKey))
+            {
+                continue;
+            }
+
+            string? value = GetOptionalString(pair.Value);
+            if (!TryNormalizeHexColor(value, out string normalized))
+            {
+                requiresSave = true;
+                continue;
+            }
+
+            _darkVsPaletteColors[normalizedKey] = normalized;
+            processedKeys.Add(normalizedKey);
+        }
+
+        foreach (var pair in DefaultDarkVsPaletteColors)
+        {
+            if (!processedKeys.Contains(pair.Key))
+            {
+                requiresSave = true;
+            }
+        }
+
+        if (requiresSave)
+        {
+            _hasPendingSave = true;
+        }
+    }
+
+    private void ResetDarkVsPaletteToDefaults()
+    {
+        _darkVsPaletteColors.Clear();
+
+        foreach (var pair in DefaultDarkVsPaletteColors)
+        {
+            _darkVsPaletteColors[pair.Key] = pair.Value;
         }
     }
 
@@ -1017,6 +1129,46 @@ public sealed class UserConfigurationService
         }
 
         return null;
+    }
+
+    private static bool TryNormalizeHexColor(string? value, out string normalized)
+    {
+        normalized = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        string trimmed = value.Trim();
+        if (!trimmed.StartsWith('#') || trimmed.Length <= 1)
+        {
+            return false;
+        }
+
+        string hex = trimmed[1..];
+        if (hex.Length is not 6 and not 8)
+        {
+            return false;
+        }
+
+        foreach (char c in hex)
+        {
+            if (!IsHexDigit(c))
+            {
+                return false;
+            }
+        }
+
+        normalized = "#" + hex.ToUpperInvariant();
+        return true;
+    }
+
+    private static bool IsHexDigit(char c)
+    {
+        return (c >= '0' && c <= '9')
+            || (c >= 'A' && c <= 'F')
+            || (c >= 'a' && c <= 'f');
     }
 
     private static string? GetOptionalString(JsonNode? node)
