@@ -863,6 +863,8 @@
                                   Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                   BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
                             <DataGrid.Resources>
+                                <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource DefaultScrollBarStyle}" />
+                                <Style TargetType="{x:Type Thumb}" BasedOn="{StaticResource DefaultThumbStyle}" />
                                 <Style TargetType="{x:Type TextBlock}">
                                     <Setter Property="TextWrapping" Value="Wrap" />
                                 </Style>
