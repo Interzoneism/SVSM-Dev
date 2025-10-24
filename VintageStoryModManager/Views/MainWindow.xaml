@@ -581,28 +581,117 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <Grid Grid.Row="0" Margin="0,-15,-27,0">
+            <Grid Grid.Row="0" Margin="0,-31,0,0" Height="160" VerticalAlignment="Top">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" MinWidth="290" />
-                    <ColumnDefinition Width="125*" />
-                    <ColumnDefinition Width="48*"/>
-                    <ColumnDefinition Width="750*"/>
+                    <ColumnDefinition Width="Auto" MinWidth="428" />
+                    <ColumnDefinition Width="392"/>
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <Grid Grid.Column="3"
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Top" Height="40" Margin="0,30,0,0" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="444">
+                    <Button Content="Installed Mods"
+                            Command="{Binding ShowInstalledModsCommand}"
+                            Width="138"
+                            Height="34"
+                            FontSize="16"
+                            Style="{StaticResource IMM.InstalledTabButtonStyle}" />
+                    <Button Content="Mod DB"
+                            Command="{Binding ShowModDatabaseCommand}"
+                            Width="138"
+                            Height="33"
+                            FontSize="16"
+                            Style="{StaticResource IMM.ModDatabaseTabButtonStyle}" Margin="5,0,0,0" />
+                    <Button Content="Modlists (Beta)"
+                            Command="{Binding ShowCloudModlistsCommand}"
+                            Width="138"
+                            Height="33"
+                            FontSize="16"
+                            Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="5,0,0,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal" Margin="16,44,231,97" Grid.ColumnSpan="2">
+                    <StackPanel.Style>
+                        <Style TargetType="{x:Type StackPanel}">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                        <Condition Binding="{Binding SearchText}" Value="" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                        <Condition Binding="{Binding SearchText}" Value="{x:Null}" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <RadioButton Content="All time"
+                                 GroupName="ModDatabaseAutoLoadMode"
+                                 IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" Width="65" MinWidth="65" ClickMode="Press"
+                                 />
+                    <RadioButton Content="Last 30 days"
+                                 GroupName="ModDatabaseAutoLoadMode"
+                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" Margin="0,0,0,0" Width="90" MinWidth="90" ClickMode="Press" />
+                    <RadioButton Content="{Binding DownloadsNewModsRecentMonthsLabel}"
+                                 GroupName="ModDatabaseAutoLoadMode"
+                                 IsChecked="{Binding IsDownloadsNewModsRecentMonthsMode, Mode=TwoWay}" Margin="0,0,0,0" Width="309" ClickMode="Press" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" 
+                    Orientation="Horizontal"
+                    VerticalAlignment="Top" Height="24" Margin="16,20,327,0">
+                    <StackPanel.Style>
+                        <Style TargetType="{x:Type StackPanel}">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                        <Condition Binding="{Binding SearchText}" Value="" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
+                                        <Condition Binding="{Binding SearchText}" Value="{x:Null}" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <Label Content="Sort by most downloads..."
+                           Width="146"
+                           Foreground="{StaticResource Brush.Text.Primary}" Height="26" />
+                </StackPanel>
+                <Grid Grid.Column="2"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
-                    Margin="0,-28,24,71" Height="69" Grid.RowSpan="2">
+                    Margin="0,0,-29,97" Height="63" Width="251">
                     <ToggleButton x:Name="SearchOptionsToggleButton"
                         Content="Search options"
-                        HorizontalAlignment="Left"
                         VerticalAlignment="Top"
-                        Margin="50,5,0,0"
-                        Width="227">
+                        Margin="148,-1,1,0" RenderTransformOrigin="0.5,0.5" Height="27" Width="102">
+                        <ToggleButton.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform/>
+                                <SkewTransform AngleY="0.25"/>
+                                <RotateTransform/>
+                                <TranslateTransform Y="-0.496"/>
+                            </TransformGroup>
+                        </ToggleButton.RenderTransform>
                         <ToggleButton.Style>
                             <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource IMM.ToggleButtonBaseStyle}">
-                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Setter Property="Visibility" Value="Visible" />
                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                                 <Style.Triggers>
@@ -637,7 +726,7 @@
                             </StackPanel>
                         </Border>
                     </Popup>
-                    <Grid Margin="0,36,0,0" VerticalAlignment="Top">
+                    <Grid VerticalAlignment="Center" Height="64">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -645,7 +734,7 @@
 
                         <TextBox Grid.Column="0" MinWidth="200"
                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                            FontSize="14" VerticalContentAlignment="Center">
+                            FontSize="14" VerticalContentAlignment="Center" Height="32" Grid.ColumnSpan="2" Margin="48,28,0,4">
 
                             <TextBox.Style>
                                 <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
@@ -671,7 +760,7 @@
                                 ToolTip="Quickly refreshes the current view using cached data if no changes are detected on the online mod page."
                                 Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                                 BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                                Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
                                 <Button.Style>
                                     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                         <Setter Property="Visibility" Value="Collapsed" />
@@ -707,92 +796,6 @@
                         </StackPanel>
                     </Grid>
                 </Grid>
-
-                <StackPanel Grid.Column="0"
-                            Orientation="Horizontal"
-                            VerticalAlignment="Top" Height="40" Margin="0,10,0,0" Grid.ColumnSpan="3" HorizontalAlignment="Left" Width="444">
-                    <Button Content="Installed Mods"
-                            Command="{Binding ShowInstalledModsCommand}"
-                            Width="138"
-                            Height="34"
-                            FontSize="16"
-                            Style="{StaticResource IMM.InstalledTabButtonStyle}" />
-                    <Button Content="Mod DB"
-                            Command="{Binding ShowModDatabaseCommand}"
-                            Width="138"
-                            Height="33"
-                            FontSize="16"
-                            Style="{StaticResource IMM.ModDatabaseTabButtonStyle}" Margin="5,0,0,0" />
-                    <Button Content="Modlists (Beta)"
-                            Command="{Binding ShowCloudModlistsCommand}"
-                            Width="138"
-                            Height="33"
-                            FontSize="16"
-                            Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="5,0,0,0" />
-                </StackPanel>
-
-                <StackPanel Grid.Column="2"
-                            Orientation="Horizontal" Margin="15,24,167,71" Width="600" Grid.ColumnSpan="2">
-                    <StackPanel.Style>
-                        <Style TargetType="{x:Type StackPanel}">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                        <Condition Binding="{Binding SearchText}" Value="" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </MultiDataTrigger>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                        <Condition Binding="{Binding SearchText}" Value="{x:Null}" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
-                    <RadioButton Content="All time"
-                                 GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" Width="65" MinWidth="65" ClickMode="Press"
-                                 />
-                    <RadioButton Content="Last 30 days"
-                                 GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" Margin="0,0,0,0" Width="90" MinWidth="90" ClickMode="Press" />
-                    <RadioButton Content="{Binding DownloadsNewModsRecentMonthsLabel}"
-                                 GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsDownloadsNewModsRecentMonthsMode, Mode=TwoWay}" Margin="0,0,0,0" Width="309" ClickMode="Press" />
-                </StackPanel>
-                <StackPanel Grid.Column="2"
-                    Orientation="Horizontal"
-                    VerticalAlignment="Top" Height="24" Margin="15,0,155,0" Grid.ColumnSpan="2">
-                    <StackPanel.Style>
-                        <Style TargetType="{x:Type StackPanel}">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                        <Condition Binding="{Binding SearchText}" Value="" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </MultiDataTrigger>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                        <Condition Binding="{Binding SearchText}" Value="{x:Null}" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
-                    <Label Content="Sort by most downloads..."
-                           Width="273"
-                           Foreground="{StaticResource Brush.Text.Primary}" Height="27" />
-                </StackPanel>
             </Grid>
             <Grid Margin="0,32,25,0" Grid.RowSpan="2">
                 <Grid.RowDefinitions>
