@@ -4691,6 +4691,15 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (Dispatcher.CheckAccess())
+        {
+            await Dispatcher.Yield(DispatcherPriority.Background);
+        }
+        else
+        {
+            await Task.Yield();
+        }
+
         try
         {
             await RefreshModsAsync().ConfigureAwait(true);
