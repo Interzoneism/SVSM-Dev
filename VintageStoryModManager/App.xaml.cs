@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using VintageStoryModManager.Services;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
+using Color = System.Windows.Media.Color;
 
 namespace VintageStoryModManager;
 
@@ -118,11 +121,13 @@ public partial class App : System.Windows.Application
     private void ApplyPreferredTheme()
     {
         bool useDarkVsMode = false;
+        IReadOnlyDictionary<string, string>? darkVsPalette = null;
 
         try
         {
             var configuration = new UserConfigurationService();
             useDarkVsMode = configuration.UseDarkVsMode;
+            darkVsPalette = configuration.GetDarkVsPaletteColors();
         }
         catch (Exception)
         {
@@ -147,10 +152,10 @@ public partial class App : System.Windows.Application
             }
         }
 
-        ApplyThemeDictionary(useDarkVsMode ? DarkVsThemeUri : LightThemeUri);
+        ApplyThemeDictionary(useDarkVsMode ? DarkVsThemeUri : LightThemeUri, darkVsPalette);
     }
 
-    private void ApplyThemeDictionary(Uri source)
+    private void ApplyThemeDictionary(Uri source, IReadOnlyDictionary<string, string>? darkVsPalette)
     {
         if (Resources is null)
         {
@@ -166,6 +171,11 @@ public partial class App : System.Windows.Application
         try
         {
             var dictionary = new ResourceDictionary { Source = source };
+            if (darkVsPalette is not null && IsDarkVsTheme(source))
+            {
+                ApplyPaletteOverrides(dictionary, darkVsPalette);
+            }
+
             Resources.MergedDictionaries.Add(dictionary);
             _activeTheme = dictionary;
         }
@@ -174,8 +184,93 @@ public partial class App : System.Windows.Application
             // If loading the preferred theme fails, fall back to the light theme.
             if (!ReferenceEquals(source, LightThemeUri))
             {
-                ApplyThemeDictionary(LightThemeUri);
+                ApplyThemeDictionary(LightThemeUri, darkVsPalette);
             }
         }
+    }
+
+    private static bool IsDarkVsTheme(Uri source)
+    {
+        if (ReferenceEquals(source, DarkVsThemeUri))
+        {
+            return true;
+        }
+
+        string? original = source.OriginalString;
+        return string.Equals(original, DarkVsThemeUri.OriginalString, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void ApplyPaletteOverrides(ResourceDictionary dictionary, IReadOnlyDictionary<string, string> darkVsPalette)
+    {
+        foreach (var pair in darkVsPalette)
+        {
+            if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
+            {
+                continue;
+            }
+
+            if (!dictionary.Contains(pair.Key))
+            {
+                continue;
+            }
+
+            if (!TryParseColor(pair.Value, out Color color))
+            {
+                continue;
+            }
+
+            dictionary[pair.Key] = color;
+        }
+    }
+
+    private static bool TryParseColor(string value, out Color color)
+    {
+        color = default;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        string trimmed = value.Trim();
+        if (!trimmed.StartsWith("#", StringComparison.Ordinal) || trimmed.Length <= 1)
+        {
+            return false;
+        }
+
+        string hex = trimmed[1..];
+        if (hex.Length == 6)
+        {
+            if (TryParseHexByte(hex.Substring(0, 2), out byte r)
+                && TryParseHexByte(hex.Substring(2, 2), out byte g)
+                && TryParseHexByte(hex.Substring(4, 2), out byte b))
+            {
+                color = Color.FromRgb(r, g, b);
+                return true;
+            }
+
+            return false;
+        }
+
+        if (hex.Length == 8)
+        {
+            if (TryParseHexByte(hex.Substring(0, 2), out byte a)
+                && TryParseHexByte(hex.Substring(2, 2), out byte r)
+                && TryParseHexByte(hex.Substring(4, 2), out byte g)
+                && TryParseHexByte(hex.Substring(6, 2), out byte b))
+            {
+                color = Color.FromArgb(a, r, g, b);
+                return true;
+            }
+
+            return false;
+        }
+
+        return false;
+    }
+
+    private static bool TryParseHexByte(string hex, out byte value)
+    {
+        return byte.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
     }
 }
