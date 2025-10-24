@@ -5,5 +5,6 @@ public enum ColorTheme
     VintageStory,
     Dark,
     Light,
-    SurpriseMe
+    SurpriseMe,
+    Custom
 }

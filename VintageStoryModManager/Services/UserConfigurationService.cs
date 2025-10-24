@@ -161,6 +161,41 @@ public sealed class UserConfigurationService
         return new Dictionary<string, string>(_themePaletteColors, StringComparer.OrdinalIgnoreCase);
     }
 
+    public bool TrySetThemePaletteColor(string key, string color)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return false;
+        }
+
+        string normalizedKey = key.Trim();
+        if (!_themePaletteColors.ContainsKey(normalizedKey))
+        {
+            return false;
+        }
+
+        if (!TryNormalizeHexColor(color, out string normalizedColor))
+        {
+            return false;
+        }
+
+        if (_themePaletteColors.TryGetValue(normalizedKey, out string? current)
+            && string.Equals(current, normalizedColor, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        _themePaletteColors[normalizedKey] = normalizedColor;
+        Save();
+        return true;
+    }
+
+    public void ResetThemePalette()
+    {
+        ResetThemePaletteToDefaults();
+        Save();
+    }
+
     public static IReadOnlyDictionary<string, string> GetDefaultThemePalette(ColorTheme theme)
     {
         return new Dictionary<string, string>(GetDefaultPalette(theme), StringComparer.OrdinalIgnoreCase);
@@ -1003,6 +1038,7 @@ public sealed class UserConfigurationService
             ColorTheme.Dark => DarkPaletteColors,
             ColorTheme.Light => LightPaletteColors,
             ColorTheme.SurpriseMe => VintageStoryPaletteColors,
+            ColorTheme.Custom => VintageStoryPaletteColors,
             _ => VintageStoryPaletteColors
         };
     }
