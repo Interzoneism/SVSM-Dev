@@ -609,19 +609,19 @@
                     <Button Content="Installed Mods"
                             Command="{Binding ShowInstalledModsCommand}"
                             Width="138"
-                            Height="34"
+                            Height="40"
                             FontSize="16"
                             Style="{StaticResource IMM.InstalledTabButtonStyle}" />
                     <Button Content="Mod DB"
                             Command="{Binding ShowModDatabaseCommand}"
                             Width="138"
-                            Height="33"
+                            Height="40"
                             FontSize="16"
                             Style="{StaticResource IMM.ModDatabaseTabButtonStyle}" Margin="5,0,0,0" />
                     <Button Content="Modlists (Beta)"
                             Command="{Binding ShowCloudModlistsCommand}"
                             Width="138"
-                            Height="33"
+                            Height="40"
                             FontSize="16"
                             Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="5,0,0,0" />
                 </StackPanel>
@@ -905,7 +905,7 @@
                                     <Setter Property="Background" Value="Transparent" />
                                     <Setter Property="BorderBrush" Value="{DynamicResource Brush.InstalledMod.Row.Border}" />
                                     <Setter Property="BorderThickness" Value="0" />
-                                    <Setter Property="Margin" Value="10,2,10,2" />
+                                    <Setter Property="Margin" Value="2,2,2,2" />
                                     <Setter Property="Padding">
                                         <Setter.Value>
                                             <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
