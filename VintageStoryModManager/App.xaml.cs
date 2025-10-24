@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -41,30 +40,7 @@ public partial class App : System.Windows.Application
             return;
         }
 
-        UserConfigurationService? configuration = TryCreateConfiguration();
-
-        if (configuration is not null && configuration.ConfigurationFileExists && configuration.IsLegacyConfiguration)
-        {
-            if (!PromptForLegacyConfigurationCleanup())
-            {
-                Current?.Shutdown();
-                return;
-            }
-
-            IReadOnlyList<string> cleanupErrors = ClearLegacyManagerData();
-            if (cleanupErrors.Count > 0)
-            {
-                string message = "Simple VS Manager could not remove some cached data:" +
-                    "\n\n" + string.Join("\n", cleanupErrors);
-                WpfMessageBox.Show(
-                    message,
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-            }
-        }
-
-        ApplyPreferredTheme(configuration);
+        ApplyPreferredTheme();
 
         base.OnStartup(e);
     }
@@ -177,122 +153,16 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private static UserConfigurationService? TryCreateConfiguration()
-    {
-        try
-        {
-            return new UserConfigurationService();
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    private bool PromptForLegacyConfigurationCleanup()
-    {
-        try
-        {
-            var buttonOverrides = new MessageDialogButtonContentOverrides
-            {
-                Ok = "Continue",
-                Cancel = "Exit"
-            };
-
-            MessageBoxResult result = WpfMessageBox.Show(
-                "Simple VS Manager detected settings from an older version. " +
-                "To make this update run smoothly we need to clear the manager's cached mods, metadata, " +
-                "and database information. This will not delete any installed mods or other files.\n\n" +
-                "Select Continue to remove the cached data now, or Exit to close the manager.",
-                "Simple VS Manager",
-                MessageBoxButton.OKCancel,
-                MessageBoxImage.Information,
-                buttonContentOverrides: buttonOverrides);
-
-            return result == MessageBoxResult.OK;
-        }
-        catch (Exception)
-        {
-            return true;
-        }
-    }
-
-    private static IReadOnlyList<string> ClearLegacyManagerData()
-    {
-        var errors = new List<string>();
-
-        TryDeleteDirectory(ModCacheLocator.GetCachedModsDirectory(), errors);
-        TryDeleteDirectory(ModCacheLocator.GetModDatabaseCacheDirectory(), errors);
-
-        string? managerDirectory = ModCacheLocator.GetManagerDataDirectory();
-        if (!string.IsNullOrWhiteSpace(managerDirectory))
-        {
-            TryDeleteDirectory(Path.Combine(managerDirectory!, "Mod Metadata"), errors);
-            TryDeleteDirectory(Path.Combine(managerDirectory!, "Modlists (Cloud Cache)"), errors);
-            TryDeleteFile(Path.Combine(managerDirectory!, "SimpleVSManagerStatus.log"), errors);
-        }
-
-        TryDeleteFile(Path.Combine(AppContext.BaseDirectory, "SimpleVSManagerStatus.log"), errors);
-
-        return errors;
-    }
-
-    private static void TryDeleteDirectory(string? path, ICollection<string> errors)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return;
-        }
-
-        try
-        {
-            if (!Directory.Exists(path))
-            {
-                return;
-            }
-
-            Directory.Delete(path, recursive: true);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException
-            or System.Security.SecurityException or PathTooLongException)
-        {
-            errors.Add($"{path}: {ex.Message}");
-        }
-    }
-
-    private static void TryDeleteFile(string? path, ICollection<string> errors)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return;
-        }
-
-        try
-        {
-            if (!File.Exists(path))
-            {
-                return;
-            }
-
-            File.Delete(path);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException
-            or System.Security.SecurityException or PathTooLongException)
-        {
-            errors.Add($"{path}: {ex.Message}");
-        }
-    }
-
-    private void ApplyPreferredTheme(UserConfigurationService? configuration)
+    private void ApplyPreferredTheme()
     {
         ColorTheme theme = ColorTheme.VintageStory;
         IReadOnlyDictionary<string, string>? palette = null;
 
         try
         {
-            UserConfigurationService? resolved = configuration ?? new UserConfigurationService();
-            theme = resolved.ColorTheme;
-            palette = resolved.GetThemePaletteColors();
+            var configuration = new UserConfigurationService();
+            theme = configuration.ColorTheme;
+            palette = configuration.GetThemePaletteColors();
         }
         catch (Exception)
         {
