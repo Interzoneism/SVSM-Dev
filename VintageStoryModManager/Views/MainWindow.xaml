@@ -828,7 +828,7 @@
                                   GridLinesVisibility="None"
                                   SelectionUnit="FullRow"
                                   SelectionMode="Single"
-                                  Background="Transparent"
+                                  
                                   RowHeaderWidth="0"
                                   BorderThickness="0,1,2,1"
                                   IsSynchronizedWithCurrentItem="True"
