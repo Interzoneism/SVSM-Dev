@@ -154,7 +154,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ClearSearchCommand = _clearSearchCommand;
 
         _showInstalledModsCommand = new RelayCommand(() => SetViewSection(ViewSection.InstalledMods));
-        _showModDatabaseCommand = new RelayCommand(() => SetViewSection(ViewSection.ModDatabase));
+        _showModDatabaseCommand = new RelayCommand(
+            () => SetViewSection(ViewSection.ModDatabase),
+            () => !InternetAccessManager.IsInternetAccessDisabled);
         _showCloudModlistsCommand = new RelayCommand(
             () => SetViewSection(ViewSection.CloudModlists),
             () => !InternetAccessManager.IsInternetAccessDisabled);
@@ -483,6 +485,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (_viewSection == section)
         {
+            return;
+        }
+
+        if (section == ViewSection.ModDatabase && InternetAccessManager.IsInternetAccessDisabled)
+        {
+            SetStatus(InternetAccessDisabledStatusMessage, false);
             return;
         }
 
@@ -3972,8 +3980,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             mod.RefreshInternetAccessDependentState();
         }
 
+        _showModDatabaseCommand.NotifyCanExecuteChanged();
         _showCloudModlistsCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(CanAccessCloudModlists));
+
+        if (InternetAccessManager.IsInternetAccessDisabled && _viewSection == ViewSection.ModDatabase)
+        {
+            SetStatus(InternetAccessDisabledStatusMessage, false);
+            SetViewSection(ViewSection.InstalledMods);
+            return;
+        }
 
         if (InternetAccessManager.IsInternetAccessDisabled && _viewSection == ViewSection.CloudModlists)
         {
