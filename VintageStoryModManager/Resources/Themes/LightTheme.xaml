@@ -38,8 +38,8 @@
     <Color x:Key="Palette.ToggleSwitch.Hover.Border">#FF7AA6F9</Color>
     <Color x:Key="Palette.ToggleButton.Background.Checked">#FF4C8BF5</Color>
     <Color x:Key="Palette.ToggleButton.Border.Checked">#FF4C8BF5</Color>
-    <Color x:Key="Palette.ColorBevelLight">#FFFFFFFF</Color>
-    <Color x:Key="Palette.ColorBevelDark">#33000000</Color>
+    <Color x:Key="Palette.Bevel.Highlight">#FFFFFFFF</Color>
+    <Color x:Key="Palette.Bevel.Shadow">#33000000</Color>
 
     <!-- Text inputs & search -->
     <Color x:Key="Palette.TextInput.Background.Normal">#FFFFFFFF</Color>
@@ -186,8 +186,8 @@
     <SolidColorBrush x:Key="Brush.Button.Primary.Background.Pressed" Color="{StaticResource Palette.Button.Primary.Background.Pressed}" />
     <SolidColorBrush x:Key="Brush.Button.Primary.Background.Disabled" Color="{StaticResource Palette.Button.Primary.Background.Disabled}" />
     <SolidColorBrush x:Key="Brush.Button.Primary.Border.Normal" Color="{StaticResource Palette.Button.Primary.Border}" />
-    <SolidColorBrush x:Key="Brush.Button.Bevel.Light" Color="{StaticResource Palette.ColorBevelLight}" />
-    <SolidColorBrush x:Key="Brush.Button.Bevel.Dark" Color="{StaticResource Palette.ColorBevelDark}" />
+    <SolidColorBrush x:Key="Brush.Button.Bevel.Light" Color="{StaticResource Palette.Bevel.Highlight}" />
+    <SolidColorBrush x:Key="Brush.Button.Bevel.Dark" Color="{StaticResource Palette.Bevel.Shadow}" />
     <SolidColorBrush x:Key="Brush.Accent.Primary" Color="{StaticResource Palette.Accent.Primary}" />
     <SolidColorBrush x:Key="Brush.ToggleButton.Background.Checked" Color="{StaticResource Palette.ToggleButton.Background.Checked}" />
     <SolidColorBrush x:Key="Brush.ToggleButton.Border.Checked" Color="{StaticResource Palette.ToggleButton.Border.Checked}" />
@@ -212,8 +212,8 @@
     <SolidColorBrush x:Key="Brush.TextInput.Border.Focused" Color="{StaticResource Palette.TextInput.Border.Focused}" />
     <SolidColorBrush x:Key="Brush.TextInput.SelectionBackground" Color="{StaticResource Palette.TextInput.SelectionBackground}" />
     <SolidColorBrush x:Key="Brush.SearchBox.Background" Color="{StaticResource Palette.SearchBox.Background}" />
-    <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Light" Color="{StaticResource Palette.ColorBevelLight}" />
-    <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Dark" Color="{StaticResource Palette.ColorBevelDark}" />
+    <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Light" Color="{StaticResource Palette.Bevel.Highlight}" />
+    <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Dark" Color="{StaticResource Palette.Bevel.Shadow}" />
     <LinearGradientBrush x:Key="Brush.SunkenSurface.Background" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Color="{StaticResource Palette.DataGrid.Background}" Offset="0" />
         <GradientStop Color="{StaticResource Palette.Panel.Primary.Background.Solid}" Offset="0.45" />

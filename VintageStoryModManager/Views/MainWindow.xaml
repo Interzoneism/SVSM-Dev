@@ -2297,7 +2297,7 @@
                 </Style>
             </Border.Style>
             <Border.Effect>
-                <DropShadowEffect Color="{DynamicResource Palette.ColorBackgroundDark}"
+                <DropShadowEffect Color="{DynamicResource Palette.BaseSurface.Shadowed}"
                                   BlurRadius="20"
                                   Direction="270"
                                   ShadowDepth="8"
@@ -2313,7 +2313,7 @@
                                       Direction="270"
                                       ShadowDepth="4"
                                       Opacity="0.1"
-                                      Color="{DynamicResource Palette.ColorBackgroundDark}" />
+                                      Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
                 </Grid.Effect>
                 <Button x:Name="SelectedModDatabasePageButton"
                 Padding="12,6"
