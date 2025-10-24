@@ -55,16 +55,16 @@ public sealed class UserConfigurationService
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["Palette.Accent.Primary"] = "#FF0078D4",
-            ["Palette.BaseSurface.Shadowed"] = "#FFF3F3F3",
-            ["Palette.BaseSurface.HoverGlow"] = "#FFFFFFFF",
-            ["Palette.BaseSurface.Raised"] = "#FFE3E3E3",
-            ["Palette.Bevel.Shadow"] = "#14000000",
-            ["Palette.Bevel.Highlight"] = "#2FFFFFFF",
-            ["Palette.Interactive.DisabledSurface"] = "#FFF5F5F5",
-            ["Palette.Interactive.Surface"] = "#FFFFFFFF",
-            ["Palette.Overlay.HoverTint"] = "#0F000000",
-            ["Palette.Text.Link"] = "#FF0F6CBD",
-            ["Palette.Text.Primary"] = "#FF1F1F1F"
+            ["Palette.BaseSurface.HoverGlow"] = "#FFE0EAF5",
+            ["Palette.BaseSurface.Raised"] = "#FFFFFFFF",
+            ["Palette.BaseSurface.Shadowed"] = "#FFD0DBE5",
+            ["Palette.Bevel.Highlight"] = "#80FFFFFF",
+            ["Palette.Bevel.Shadow"] = "#66000000",
+            ["Palette.Interactive.DisabledSurface"] = "#FFBAC5D0",
+            ["Palette.Interactive.Surface"] = "#FFE5F0FA",
+            ["Palette.Overlay.HoverTint"] = "#20000000",
+            ["Palette.Text.Link"] = "#FF0078D4",
+            ["Palette.Text.Primary"] = "#FF000000"
         };
     private const int DefaultModDatabaseSearchResultLimit = 30;
     private const int DefaultModDatabaseNewModsRecentMonths = 3;
