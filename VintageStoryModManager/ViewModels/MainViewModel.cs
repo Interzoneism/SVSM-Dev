@@ -85,6 +85,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
     private readonly object _busyStateLock = new();
     private int _busyOperationCount;
+    private bool _hasActiveBusyScope;
     private CancellationTokenSource? _busyReleaseCts;
     private bool _isLoadingMods;
     private bool _isLoadingModDetails;
@@ -228,13 +229,25 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public bool IsLoadingMods
     {
         get => _isLoadingMods;
-        private set => SetProperty(ref _isLoadingMods, value);
+        private set
+        {
+            if (SetProperty(ref _isLoadingMods, value))
+            {
+                RecalculateIsBusy();
+            }
+        }
     }
 
     public bool IsLoadingModDetails
     {
         get => _isLoadingModDetails;
-        private set => SetProperty(ref _isLoadingModDetails, value);
+        private set
+        {
+            if (SetProperty(ref _isLoadingModDetails, value))
+            {
+                RecalculateIsBusy();
+            }
+        }
     }
 
     public bool IsCompactView
@@ -432,6 +445,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _isModDatabaseLoading, value))
             {
                 NotifyLoadMoreCommandCanExecuteChanged();
+                RecalculateIsBusy();
             }
         }
     }
@@ -2543,6 +2557,33 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void UpdateIsBusy(bool isBusy)
     {
+        if (System.Windows.Application.Current?.Dispatcher is Dispatcher dispatcher)
+        {
+            if (dispatcher.CheckAccess())
+            {
+                _hasActiveBusyScope = isBusy;
+                RecalculateIsBusy();
+            }
+            else
+            {
+                dispatcher.BeginInvoke(new Action(() =>
+                {
+                    _hasActiveBusyScope = isBusy;
+                    RecalculateIsBusy();
+                }));
+            }
+        }
+        else
+        {
+            _hasActiveBusyScope = isBusy;
+            RecalculateIsBusy();
+        }
+    }
+
+    private void RecalculateIsBusy()
+    {
+        bool isBusy = _hasActiveBusyScope || _isLoadingMods || _isLoadingModDetails || _isModDatabaseLoading;
+
         if (System.Windows.Application.Current?.Dispatcher is Dispatcher dispatcher)
         {
             if (dispatcher.CheckAccess())
