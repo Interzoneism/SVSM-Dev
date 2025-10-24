@@ -1770,9 +1770,9 @@ public sealed class ModListItemViewModel : ObservableObject
         return Task.CompletedTask;
     }
 
-    private void LogDebug(string message)
+    private static void LogDebug(string message)
     {
-        StatusLogService.AppendStatus($"[Debug][{DisplayName} ({ModId})] {message}", false);
+        _ = message;
     }
 
     private static void TryFreezeImageSource(ImageSource image, string context, Action<string>? log)

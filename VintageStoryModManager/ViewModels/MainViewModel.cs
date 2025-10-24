@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -3293,23 +3294,38 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         await limiter.WaitAsync().ConfigureAwait(false);
 
+        using var logScope = StatusLogService.BeginDebugScope(entry.Name, entry.ModId, "metadata");
+        bool cacheHit = false;
+        string source = string.Empty;
+        int tagCount = 0;
+        int releaseCount = 0;
+
         try
         {
             ModDatabaseInfo? cachedInfo = await _databaseService
                 .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion)
                 .ConfigureAwait(false);
 
+            cacheHit = cachedInfo != null;
+
             if (cachedInfo != null)
             {
                 await ApplyDatabaseInfoAsync(entry, cachedInfo, loadLogoImmediately: false).ConfigureAwait(false);
+                tagCount = cachedInfo.Tags?.Count ?? 0;
+                releaseCount = cachedInfo.Releases?.Count ?? 0;
+
                 if (InternetAccessManager.IsInternetAccessDisabled)
                 {
+                    source = "cache";
                     return;
                 }
             }
             else if (InternetAccessManager.IsInternetAccessDisabled)
             {
                 await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                tagCount = entry.DatabaseInfo?.Tags?.Count ?? 0;
+                releaseCount = entry.DatabaseInfo?.Releases?.Count ?? 0;
+                source = "offline";
                 return;
             }
 
@@ -3322,24 +3338,45 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
             catch (Exception)
             {
+                source = cacheHit ? "cache" : "error";
                 return;
             }
 
             if (info is null)
             {
-                if (InternetAccessManager.IsInternetAccessDisabled)
+                if (cacheHit)
                 {
-                    await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                    source = "cache";
+                    return;
                 }
 
+                await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                tagCount = entry.DatabaseInfo?.Tags?.Count ?? 0;
+                releaseCount = entry.DatabaseInfo?.Releases?.Count ?? 0;
+                source = "offline";
                 return;
             }
 
             await ApplyDatabaseInfoAsync(entry, info).ConfigureAwait(false);
+            tagCount = info.Tags?.Count ?? tagCount;
+            releaseCount = info.Releases?.Count ?? releaseCount;
+            source = info.IsOfflineOnly ? "offline" : "net";
         }
         finally
         {
             limiter.Release();
+            if (logScope != null)
+            {
+                logScope.SetCacheStatus(cacheHit);
+                if (!string.IsNullOrWhiteSpace(source))
+                {
+                    logScope.SetDetail("src", source);
+                }
+
+                logScope.SetDetail("tags", tagCount);
+                logScope.SetDetail("rel", releaseCount);
+            }
+
             OnModDetailsRefreshCompleted();
         }
     }
