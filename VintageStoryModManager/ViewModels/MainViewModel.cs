@@ -226,6 +226,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _isBusy, value);
     }
 
+    public IDisposable EnterBusyScope()
+    {
+        return BeginBusyScope();
+    }
+
     public bool IsLoadingMods
     {
         get => _isLoadingMods;
