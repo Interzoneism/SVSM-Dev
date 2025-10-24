@@ -585,7 +585,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" MinWidth="428" />
                     <ColumnDefinition Width="392"/>
-                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0"
@@ -675,8 +675,8 @@
                 </StackPanel>
                 <Grid Grid.Column="2"
                     HorizontalAlignment="Right"
-                    VerticalAlignment="Bottom"
-                    Margin="0,0,-29,97" Height="63" Width="251">
+                    VerticalAlignment="Top"
+                    Margin="0,16,0,0" Height="63" Width="251">
                     <ToggleButton x:Name="SearchOptionsToggleButton"
                         Content="Search options"
                         VerticalAlignment="Top"
