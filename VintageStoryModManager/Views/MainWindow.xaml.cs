@@ -240,6 +240,24 @@ public partial class MainWindow : Window
 
     private void MainWindow_OnClosing(object? sender, CancelEventArgs e)
     {
+        if (_isApplyingPreset || _viewModel?.IsLoadingMods == true)
+        {
+            const string message =
+                "A modlist is still being applied. Exiting now may leave some mods missing or disabled. Do you want to exit anyway?";
+
+            MessageBoxResult result = WpfMessageBox.Show(
+                message,
+                "Simple VS Manager",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes)
+            {
+                e.Cancel = true;
+                return;
+            }
+        }
+
         SaveWindowDimensions();
         SaveUploaderName();
         DisposeCurrentViewModel();
