@@ -549,10 +549,10 @@
                               IsEnabled="False"
                               Focusable="False"
                               Visibility="Collapsed" />
-                    <MenuItem Header="Open Documents/Simple VS Manager/ folder"
+                    <MenuItem Header="Open manager config folder"
                               Padding="12,6"
                               Click="ManagerDataFolderMenuItem_OnClick" />
-                    <MenuItem Header="Open _Mod DB Page for Simple VS Manager"
+                    <MenuItem Header="Open _Mod DB page for the manager"
                               Padding="12,6"
                               Click="ManagerModDbPageMenuItem_OnClick" />
                     <MenuItem Header="_Guide"
@@ -568,10 +568,7 @@
                         <MenuItem Header="Experimental Comp Review"
                                   Padding="12,6"
                                   Click="ExperimentalCompReviewMenuItem_OnClick" />
-                        <MenuItem Header="Delete cloud modlists and firebase-auth"
-                                  Padding="12,6"
-                                  Click="DeleteCloudAuthMenuItem_OnClick" />
-                        <MenuItem Header="Delete all Simple VS Manager files"
+                        <MenuItem Header="Delete all Simple VS Manager files (Uninstall)"
                                   Padding="12,6"
                                   Click="DeleteAllManagerFilesMenuItem_OnClick" />
                     </MenuItem>

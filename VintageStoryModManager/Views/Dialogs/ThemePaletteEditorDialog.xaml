@@ -6,6 +6,7 @@
         WindowStartupLocation="CenterOwner"
         MinWidth="540"
         MinHeight="360"
+        Background="{DynamicResource Brush.Window.Shell.Background.Solid}"
         ResizeMode="CanResizeWithGrip">
     <Grid Margin="20">
         <Grid.RowDefinitions>
