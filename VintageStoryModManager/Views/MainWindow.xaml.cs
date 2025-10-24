@@ -8129,10 +8129,13 @@ public partial class MainWindow : Window
 
     private async Task ApplyPresetAsync(ModPreset preset, bool importConfigurations = true)
     {
-        if (_viewModel is null || _isApplyingPreset)
+        MainViewModel? viewModel = _viewModel;
+        if (viewModel is null || _isApplyingPreset)
         {
             return;
         }
+
+        using IDisposable busyScope = viewModel.EnterBusyScope();
 
         _recentLocalModBackupDirectory = null;
         _recentLocalModBackupModNames = null;
@@ -8146,7 +8149,7 @@ public partial class MainWindow : Window
                 scheduleRefreshAfterLoad = await ApplyPresetModVersionsAsync(preset).ConfigureAwait(true);
             }
 
-            bool applied = await _viewModel.ApplyPresetAsync(preset).ConfigureAwait(true);
+            bool applied = await viewModel.ApplyPresetAsync(preset).ConfigureAwait(true);
             if (applied)
             {
                 if (preset.IsExclusive)
@@ -8154,8 +8157,8 @@ public partial class MainWindow : Window
                     await ApplyExclusivePresetAsync(preset).ConfigureAwait(true);
                 }
 
-                _viewModel.SelectedSortOption?.Apply(_viewModel.ModsView);
-                _viewModel.ModsView.Refresh();
+                viewModel.SelectedSortOption?.Apply(viewModel.ModsView);
+                viewModel.ModsView.Refresh();
             }
 
             if (importConfigurations)
