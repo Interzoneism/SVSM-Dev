@@ -29,7 +29,7 @@ namespace VintageStoryModManager.ViewModels;
 public sealed class MainViewModel : ObservableObject, IDisposable
 {
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
-    private static readonly TimeSpan BusyStateReleaseDelay = TimeSpan.FromMilliseconds(200);
+    private static readonly TimeSpan BusyStateReleaseDelay = TimeSpan.FromMilliseconds(600);
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
     private const string NoCompatibleModDatabaseResultsStatusMessage = "No compatible mods found in the mod database.";
     private const int MaxConcurrentDatabaseRefreshes = 4;
