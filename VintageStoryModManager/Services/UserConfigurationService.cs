@@ -75,6 +75,7 @@ public sealed class UserConfigurationService
     private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ModConfigPathEntry> _storedModConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _themePaletteColors = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _customThemePaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private string? _selectedPresetName;
     private string _configurationVersion = CurrentConfigurationVersion;
     private string _modManagerVersion = CurrentModManagerVersion;
@@ -186,12 +187,22 @@ public sealed class UserConfigurationService
         }
 
         _themePaletteColors[normalizedKey] = normalizedColor;
+        if (_colorTheme == ColorTheme.Custom)
+        {
+            EnsureCustomThemePaletteInitialized();
+            _customThemePaletteColors[normalizedKey] = normalizedColor;
+        }
         Save();
         return true;
     }
 
     public void ResetThemePalette()
     {
+        if (_colorTheme == ColorTheme.Custom)
+        {
+            ResetCustomThemePaletteToDefaults();
+        }
+
         ResetThemePaletteToDefaults();
         Save();
     }
@@ -587,6 +598,7 @@ public sealed class UserConfigurationService
     private void Load()
     {
         _modConfigPaths.Clear();
+        ResetCustomThemePaletteToDefaults();
         _colorTheme = ColorTheme.VintageStory;
         ResetThemePaletteToDefaults();
         _selectedPresetName = null;
@@ -632,6 +644,7 @@ public sealed class UserConfigurationService
                     : ColorTheme.VintageStory;
                 _hasPendingSave = true;
             }
+            bool hasCustomPalette = LoadCustomThemePalette(obj["customThemePalette"]);
             ResetThemePaletteToDefaults();
             _modlistAutoLoadBehavior = ParseModlistAutoLoadBehavior(GetOptionalString(obj["modlistAutoLoadBehavior"]));
             _modsSortMemberPath = NormalizeSortMemberPath(GetOptionalString(obj["modsSortMemberPath"]));
@@ -646,6 +659,14 @@ public sealed class UserConfigurationService
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             LoadModConfigPaths(obj["modConfigPaths"]);
             LoadThemePalette(obj["themePalette"] ?? obj["darkVsPalette"]);
+            if (_colorTheme == ColorTheme.Custom)
+            {
+                SyncCustomThemePaletteWithCurrentTheme();
+                if (!hasCustomPalette)
+                {
+                    _hasPendingSave = true;
+                }
+            }
             _selectedPresetName = NormalizePresetName(GetOptionalString(obj["selectedPreset"]));
             _customShortcutPath = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
             _cloudUploaderName = NormalizeUploaderName(GetOptionalString(obj["cloudUploaderName"]));
@@ -657,6 +678,7 @@ public sealed class UserConfigurationService
             GameDirectory = null;
             _modConfigPaths.Clear();
             _colorTheme = ColorTheme.VintageStory;
+            ResetCustomThemePaletteToDefaults();
             ResetThemePaletteToDefaults();
             _configurationVersion = CurrentConfigurationVersion;
             _modManagerVersion = CurrentModManagerVersion;
@@ -732,6 +754,7 @@ public sealed class UserConfigurationService
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
                 ["themePalette"] = BuildThemePaletteJson(),
                 ["darkVsPalette"] = BuildThemePaletteJson(),
+                ["customThemePalette"] = BuildCustomThemePaletteJson(),
                 ["selectedPreset"] = _selectedPresetName,
                 ["customShortcutPath"] = _customShortcutPath,
                 ["cloudUploaderName"] = _cloudUploaderName
@@ -878,9 +901,24 @@ public sealed class UserConfigurationService
 
     private JsonObject BuildThemePaletteJson()
     {
+        IReadOnlyDictionary<string, string> defaults = _colorTheme == ColorTheme.Custom
+            ? _customThemePaletteColors
+            : GetDefaultPalette(_colorTheme);
+        return BuildPaletteJson(_themePaletteColors, defaults);
+    }
+
+    private JsonObject BuildCustomThemePaletteJson()
+    {
+        return BuildPaletteJson(_customThemePaletteColors, GetDefaultPalette(ColorTheme.Custom));
+    }
+
+    private static JsonObject BuildPaletteJson(
+        IReadOnlyDictionary<string, string> palette,
+        IReadOnlyDictionary<string, string> defaults)
+    {
         var result = new JsonObject();
 
-        foreach (var pair in _themePaletteColors.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        foreach (var pair in palette.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
             if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
             {
@@ -890,7 +928,6 @@ public sealed class UserConfigurationService
             result[pair.Key] = pair.Value;
         }
 
-        IReadOnlyDictionary<string, string> defaults = GetDefaultPalette(_colorTheme);
         foreach (var pair in defaults.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
             if (result.ContainsKey(pair.Key))
@@ -934,8 +971,11 @@ public sealed class UserConfigurationService
 
     private void LoadThemePalette(JsonNode? node)
     {
+        IReadOnlyDictionary<string, string> defaults = GetCurrentThemeDefaults();
+
         if (node is not JsonObject obj)
         {
+            EnsurePaletteDefaults(_themePaletteColors, defaults);
             _hasPendingSave = true;
             return;
         }
@@ -954,6 +994,11 @@ public sealed class UserConfigurationService
             string normalizedKey = key.Trim();
             if (!_themePaletteColors.ContainsKey(normalizedKey))
             {
+                if (defaults.ContainsKey(normalizedKey))
+                {
+                    _themePaletteColors[normalizedKey] = defaults[normalizedKey];
+                }
+
                 continue;
             }
 
@@ -968,7 +1013,7 @@ public sealed class UserConfigurationService
             processedKeys.Add(normalizedKey);
         }
 
-        foreach (var pair in GetDefaultPalette(_colorTheme))
+        foreach (var pair in defaults)
         {
             if (!processedKeys.Contains(pair.Key))
             {
@@ -987,9 +1032,98 @@ public sealed class UserConfigurationService
         }
     }
 
+    private bool LoadCustomThemePalette(JsonNode? node)
+    {
+        IReadOnlyDictionary<string, string> defaults = GetDefaultPalette(ColorTheme.Custom);
+        _customThemePaletteColors.Clear();
+
+        bool requiresSave = false;
+        bool propertyFound;
+        var processedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (node is JsonObject obj)
+        {
+            propertyFound = true;
+
+            foreach (var pair in obj)
+            {
+                string key = pair.Key;
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                string normalizedKey = key.Trim();
+                if (!defaults.ContainsKey(normalizedKey))
+                {
+                    continue;
+                }
+
+                string? value = GetOptionalString(pair.Value);
+                if (!TryNormalizeHexColor(value, out string normalized))
+                {
+                    requiresSave = true;
+                    continue;
+                }
+
+                _customThemePaletteColors[normalizedKey] = normalized;
+                processedKeys.Add(normalizedKey);
+            }
+        }
+        else
+        {
+            propertyFound = false;
+            requiresSave = true;
+        }
+
+        foreach (var pair in defaults)
+        {
+            if (!processedKeys.Contains(pair.Key))
+            {
+                requiresSave = true;
+            }
+
+            if (!_customThemePaletteColors.ContainsKey(pair.Key))
+            {
+                _customThemePaletteColors[pair.Key] = pair.Value;
+            }
+        }
+
+        if (requiresSave)
+        {
+            _hasPendingSave = true;
+        }
+
+        return propertyFound;
+    }
+
+    private void SyncCustomThemePaletteWithCurrentTheme()
+    {
+        EnsureCustomThemePaletteInitialized();
+
+        foreach (var pair in _themePaletteColors)
+        {
+            _customThemePaletteColors[pair.Key] = pair.Value;
+        }
+
+        EnsurePaletteDefaults(_customThemePaletteColors, GetDefaultPalette(ColorTheme.Custom));
+    }
+
     private void ResetThemePaletteToDefaults()
     {
         _themePaletteColors.Clear();
+
+        if (_colorTheme == ColorTheme.Custom)
+        {
+            EnsureCustomThemePaletteInitialized();
+            foreach (var pair in _customThemePaletteColors)
+            {
+                _themePaletteColors[pair.Key] = pair.Value;
+            }
+
+            EnsurePaletteDefaults(_themePaletteColors, GetDefaultPalette(ColorTheme.Custom));
+            return;
+        }
 
         foreach (var pair in GetDefaultPalette(_colorTheme))
         {
@@ -1023,11 +1157,61 @@ public sealed class UserConfigurationService
                 || !string.Equals(currentValue, normalizedValue, StringComparison.OrdinalIgnoreCase))
             {
                 _themePaletteColors[normalizedKey] = normalizedValue;
+                if (_colorTheme == ColorTheme.Custom)
+                {
+                    EnsureCustomThemePaletteInitialized();
+                    _customThemePaletteColors[normalizedKey] = normalizedValue;
+                }
                 changed = true;
             }
         }
 
         return changed;
+    }
+
+    private void ResetCustomThemePaletteToDefaults()
+    {
+        _customThemePaletteColors.Clear();
+
+        foreach (var pair in GetDefaultPalette(ColorTheme.Custom))
+        {
+            _customThemePaletteColors[pair.Key] = pair.Value;
+        }
+    }
+
+    private void EnsureCustomThemePaletteInitialized()
+    {
+        if (_customThemePaletteColors.Count == 0)
+        {
+            ResetCustomThemePaletteToDefaults();
+            return;
+        }
+
+        EnsurePaletteDefaults(_customThemePaletteColors, GetDefaultPalette(ColorTheme.Custom));
+    }
+
+    private IReadOnlyDictionary<string, string> GetCurrentThemeDefaults()
+    {
+        if (_colorTheme == ColorTheme.Custom)
+        {
+            EnsureCustomThemePaletteInitialized();
+            return _customThemePaletteColors;
+        }
+
+        return GetDefaultPalette(_colorTheme);
+    }
+
+    private static void EnsurePaletteDefaults(
+        IDictionary<string, string> palette,
+        IReadOnlyDictionary<string, string> defaults)
+    {
+        foreach (var pair in defaults)
+        {
+            if (!palette.ContainsKey(pair.Key))
+            {
+                palette[pair.Key] = pair.Value;
+            }
+        }
     }
 
     private static IReadOnlyDictionary<string, string> GetDefaultPalette(ColorTheme theme)
