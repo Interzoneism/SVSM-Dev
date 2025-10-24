@@ -1131,6 +1131,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         using var busyScope = BeginBusyScope();
         SetStatus("Loading mods...", false);
 
+        // Yield once so the UI thread has a chance to process the busy-state
+        // notification before we start potentially expensive work below. This
+        // keeps the refresh progress ring responsive instead of appearing to
+        // freeze when the refresh begins.
+        await Task.Yield();
+
         try
         {
             _modsWatcher.EnsureWatchers();
