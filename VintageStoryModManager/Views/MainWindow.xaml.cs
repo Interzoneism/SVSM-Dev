@@ -3281,6 +3281,7 @@ public partial class MainWindow : Window
         {
             var descriptor = new ModUpdateDescriptor(
                 mod.ModId,
+                mod.DisplayName,
                 release.DownloadUri,
                 targetPath,
                 false,
@@ -3396,6 +3397,7 @@ public partial class MainWindow : Window
 
             var descriptor = new ModUpdateDescriptor(
                 dependency.ModId,
+                dependency.Display,
                 release.DownloadUri,
                 targetPath,
                 targetIsDirectory,
@@ -8503,6 +8505,7 @@ public partial class MainWindow : Window
 
         var descriptor = new ModUpdateDescriptor(
             modId,
+            modId,
             release.DownloadUri,
             targetPath,
             false,
@@ -9491,6 +9494,7 @@ public partial class MainWindow : Window
 
                 var descriptor = new ModUpdateDescriptor(
                     mod.ModId,
+                    mod.DisplayName,
                     release.DownloadUri,
                     modPath,
                     targetIsDirectory,
