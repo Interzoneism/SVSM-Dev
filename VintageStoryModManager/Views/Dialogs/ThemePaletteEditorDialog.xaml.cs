@@ -7,13 +7,9 @@ using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VintageStoryModManager.Services;
-using Color = System.Windows.Media.Color;
-using DrawingColor = System.Drawing.Color;
-using FormsColorDialog = System.Windows.Forms.ColorDialog;
-using FormsDialogResult = System.Windows.Forms.DialogResult;
-using FormsIWin32Window = System.Windows.Forms.IWin32Window;
 using MediaBrush = System.Windows.Media.Brush;
 using MediaBrushes = System.Windows.Media.Brushes;
+using MediaColor = System.Windows.Media.Color;
 using MediaColorConverter = System.Windows.Media.ColorConverter;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 
@@ -51,31 +47,18 @@ public partial class ThemePaletteEditorDialog : Window
             return;
         }
 
-        using var dialog = new FormsColorDialog
+        var dialog = new ColorPickerDialog(entry.HexValue)
         {
-            FullOpen = true,
-            AnyColor = true
+            Owner = this
         };
 
-        if (TryParseColor(entry.HexValue, out Color currentColor))
-        {
-            dialog.Color = DrawingColor.FromArgb(currentColor.A, currentColor.R, currentColor.G, currentColor.B);
-        }
-
-        IntPtr ownerHandle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
-        FormsDialogResult result = ownerHandle != IntPtr.Zero
-            ? dialog.ShowDialog(new Win32Window(ownerHandle))
-            : dialog.ShowDialog();
-
-        if (result != FormsDialogResult.OK)
+        bool? result = dialog.ShowDialog();
+        if (result != true)
         {
             return;
         }
 
-        DrawingColor selected = dialog.Color;
-        string hex = $"#{selected.A:X2}{selected.R:X2}{selected.G:X2}{selected.B:X2}";
-
-        ApplyPaletteEntry(entry, hex);
+        ApplyPaletteEntry(entry, dialog.SelectedHexValue);
     }
 
     private void ApplyPaletteEntry(PaletteColorEntry entry, string hexValue)
@@ -101,32 +84,6 @@ public partial class ThemePaletteEditorDialog : Window
         App.ApplyTheme(_configuration.ColorTheme, palette.Count > 0 ? palette : null);
     }
 
-    private static bool TryParseColor(string? value, out Color color)
-    {
-        color = default;
-
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return false;
-        }
-
-        try
-        {
-            object? converted = MediaColorConverter.ConvertFromString(value);
-            if (converted is Color parsed)
-            {
-                color = parsed;
-                return true;
-            }
-        }
-        catch
-        {
-            return false;
-        }
-
-        return false;
-    }
-
     private void ResetButton_OnClick(object sender, RoutedEventArgs e)
     {
         _configuration.ResetThemePalette();
@@ -139,15 +96,6 @@ public partial class ThemePaletteEditorDialog : Window
         Close();
     }
 
-    private sealed class Win32Window : FormsIWin32Window
-    {
-        public Win32Window(IntPtr handle)
-        {
-            Handle = handle;
-        }
-
-        public IntPtr Handle { get; }
-    }
 }
 
 public sealed class PaletteColorEntry : ObservableObject
@@ -194,7 +142,7 @@ public sealed class PaletteColorEntry : ObservableObject
         try
         {
             object? converted = MediaColorConverter.ConvertFromString(hexValue);
-            if (converted is Color color)
+            if (converted is MediaColor color)
             {
                 var brush = new SolidColorBrush(color);
                 brush.Freeze();
