@@ -358,36 +358,36 @@
     </Style>
 
     <Style TargetType="{x:Type TextBox}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-        <Setter Property="Background" Value="{StaticResource Brush.TextInput.Background.Normal}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border.Default}" />
-        <Setter Property="SelectionBrush" Value="{StaticResource Brush.TextInput.SelectionBackground}" />
-        <Setter Property="SelectionTextBrush" Value="{StaticResource Brush.Text.SelectionForeground}" />
-        <Setter Property="CaretBrush" Value="{StaticResource Brush.Text.Caret}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.TextInput.Background.Normal}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border.Default}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource Brush.TextInput.SelectionBackground}" />
+        <Setter Property="SelectionTextBrush" Value="{DynamicResource Brush.Text.SelectionForeground}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource Brush.Text.Caret}" />
     </Style>
 
     <Style TargetType="{x:Type PasswordBox}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-        <Setter Property="Background" Value="{StaticResource Brush.TextInput.Background.Normal}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border.Default}" />
-        <Setter Property="SelectionBrush" Value="{StaticResource Brush.TextInput.SelectionBackground}" />
-        <Setter Property="CaretBrush" Value="{StaticResource Brush.Text.Caret}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.TextInput.Background.Normal}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border.Default}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource Brush.TextInput.SelectionBackground}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource Brush.Text.Caret}" />
     </Style>
 
     <Style TargetType="{x:Type ComboBox}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-        <Setter Property="Background" Value="{StaticResource Brush.ComboBox.Background.Normal}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Brush.ComboBox.Border.Normal}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.ComboBox.Background.Normal}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.ComboBox.Border.Normal}" />
     </Style>
 
     <Style TargetType="{x:Type ComboBoxItem}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-        <Setter Property="Background" Value="{StaticResource Brush.ComboBox.Item.Background.Normal}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.ComboBox.Item.Background.Normal}" />
     </Style>
 
     <Style TargetType="{x:Type ListBox}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-        <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Panel.Primary.Background}" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="ui:ControlHelper.CornerRadius" Value="6" />
@@ -395,12 +395,12 @@
     </Style>
 
     <Style TargetType="{x:Type ListBoxItem}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
     </Style>
 
     <Style TargetType="{x:Type ListView}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-        <Setter Property="Background" Value="{StaticResource Brush.Panel.Primary.Background}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Panel.Primary.Background}" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="ui:ControlHelper.CornerRadius" Value="6" />
@@ -408,68 +408,68 @@
     </Style>
 
     <Style TargetType="{x:Type TreeView}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
     </Style>
 
     <Style TargetType="{x:Type TreeViewItem}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
     </Style>
 
     <Style TargetType="{x:Type Label}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
     </Style>
 
     <Style TargetType="{x:Type CheckBox}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
     </Style>
 
     <Style TargetType="{x:Type RadioButton}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
     </Style>
 
     <Style TargetType="{x:Type Button}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
     </Style>
 
     <Style TargetType="{x:Type ToggleButton}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
     </Style>
 
     <Style TargetType="{x:Type DataGrid}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
     </Style>
 
     <Style TargetType="{x:Type DataGridRow}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
     </Style>
 
     <Style TargetType="{x:Type Hyperlink}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Link}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Link}" />
     </Style>
 
     <Style TargetType="{x:Type ToolTip}">
-        <Setter Property="Background" Value="{StaticResource Brush.ToolTip.Background}" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.ToolTip.Text}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Brush.ToolTip.Border}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.ToolTip.Background}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.ToolTip.Text}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.ToolTip.Border}" />
         <Setter Property="BorderThickness" Value="1" />
         <Style.Resources>
             <SolidColorBrush x:Key="Brush.Text.Primary" Color="{StaticResource Palette.ToolTip.Text}" />
             <Style TargetType="{x:Type TextBlock}">
-                <Setter Property="Foreground" Value="{StaticResource Brush.ToolTip.Text}" />
+                <Setter Property="Foreground" Value="{DynamicResource Brush.ToolTip.Text}" />
             </Style>
         </Style.Resources>
     </Style>
 
     <Style TargetType="{x:Type ContextMenu}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-        <Setter Property="Background" Value="{StaticResource Brush.Menu.Background}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Brush.Menu.Border}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Menu.Background}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Menu.Border}" />
     </Style>
 
     <Style TargetType="{x:Type Menu}">
-        <Setter Property="Background" Value="{StaticResource Brush.Menu.Background}" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border.Default}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Menu.Background}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border.Default}" />
     </Style>
 
     <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="{x:Type Separator}">
@@ -478,11 +478,11 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Separator}">
                     <Grid Height="8"
-                          Background="{StaticResource Brush.Menu.Background}"
+                          Background="{DynamicResource Brush.Menu.Background}"
                           SnapsToDevicePixels="True">
                         <Border Height="1"
                                 VerticalAlignment="Center"
-                                Background="{StaticResource Brush.Border.Default}" />
+                                Background="{DynamicResource Brush.Border.Default}" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -490,9 +490,9 @@
     </Style>
 
     <Style TargetType="{x:Type MenuItem}">
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-        <Setter Property="Background" Value="{StaticResource Brush.Menu.Background}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border.Default}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Menu.Background}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border.Default}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="12,6,12,6" />
         <Style.Resources>
@@ -518,8 +518,8 @@
                            AllowsTransparency="True"
                            Focusable="False">
                         <Border x:Name="SubMenuBorder"
-                                Background="{StaticResource Brush.Panel.Primary.Background}"
-                                BorderBrush="{StaticResource Brush.Border.Default}"
+                                Background="{DynamicResource Brush.Panel.Primary.Background}"
+                                BorderBrush="{DynamicResource Brush.Border.Default}"
                                 BorderThickness="1"
                                 SnapsToDevicePixels="True">
                             <ScrollViewer CanContentScroll="True">
@@ -531,16 +531,16 @@
                 </Grid>
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsSubmenuOpen" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
-                        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
+                        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
                     </Trigger>
                     <Trigger Property="IsHighlighted" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
+                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Subtle}" />
+                        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Subtle}" />
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
@@ -559,11 +559,11 @@
                 </Grid>
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsHighlighted" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
+                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Subtle}" />
+                        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Subtle}" />
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
@@ -591,7 +591,7 @@
                                   Margin="10,0,0,0"
                                   Width="6"
                                   Height="10"
-                                  Fill="{StaticResource Brush.Accent.Primary}"
+                                  Fill="{DynamicResource Brush.Accent.Primary}"
                                   Stretch="Uniform"
                                   RenderTransformOrigin="0.5,0.5"
                                   Data="M0,0 L0,10 6,5 Z"
@@ -607,8 +607,8 @@
                            Focusable="False"
                            PopupAnimation="Fade">
                         <Border x:Name="SubMenuBorder"
-                                Background="{StaticResource Brush.Menu.Submenu.Background}"
-                                BorderBrush="{StaticResource Brush.Border.Default}"
+                                Background="{DynamicResource Brush.Menu.Submenu.Background}"
+                                BorderBrush="{DynamicResource Brush.Border.Default}"
                                 BorderThickness="1"
                                 SnapsToDevicePixels="True">
                             <ScrollViewer CanContentScroll="True">
@@ -621,12 +621,12 @@
                 </Grid>
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsHighlighted" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
+                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
                     </Trigger>
                     <Trigger Property="IsSubmenuOpen" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
+                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
                     </Trigger>
                     <Trigger Property="FlowDirection" Value="RightToLeft">
                         <Setter TargetName="Glyph" Property="RenderTransform">
@@ -637,7 +637,7 @@
                         <Setter TargetName="PART_Popup" Property="Placement" Value="Left" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Subtle}" />
+                        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Subtle}" />
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
@@ -656,11 +656,11 @@
                 </Grid>
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsHighlighted" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{StaticResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource Brush.Border.Hover}" />
+                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Subtle}" />
+                        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Subtle}" />
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
