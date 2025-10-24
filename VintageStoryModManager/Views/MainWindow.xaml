@@ -117,11 +117,7 @@
             </Style.Triggers>
         </Style>
         <Style x:Key="IMM.PrimaryDataGridColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <SolidColorBrush Color="{Binding Color, Source={StaticResource Brush.DataGrid.Header.Background}}" />
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Background" Value="{DynamicResource Brush.DataGrid.Header.Background}" />
             <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
             <Setter Property="BorderThickness" Value="1,0,0,1" />
             <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
@@ -159,11 +155,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="HeaderBorder" Property="Background">
-                                    <Setter.Value>
-                                        <SolidColorBrush Color="{Binding Color, Source={StaticResource Brush.DataGrid.Header.Background.Hover}}" />
-                                    </Setter.Value>
-                                </Setter>
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="{DynamicResource Brush.DataGrid.Header.Background.Hover}" />
                             </Trigger>
                             <Trigger Property="SortDirection" Value="Ascending">
                                 <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
@@ -412,7 +404,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <SolidColorBrush x:Key="ButtonError" Color="{Binding Color, Source={StaticResource Brush.Status.Error}}" />
     </Window.Resources>
 
     <Grid Margin="0,0,0,8" Background="{DynamicResource Brush.Panel.Primary.Background.Solid}">
@@ -2344,7 +2335,7 @@
                 Content="Edit Config" Height="30" Width="92" HorizontalContentAlignment="Stretch" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0" Grid.Column="1" />
                 <Button x:Name="SelectedModDeleteButton"
                 Padding="12,6"
-                Background="{StaticResource ButtonError}"
+                Background="{DynamicResource Brush.Status.Error}"
                 BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                 Visibility="Visible"
                 IsEnabled="False"
@@ -2366,7 +2357,7 @@
                 </Button>
                 <Button x:Name="SelectedModFixButton"
                         Padding="12,6"
-                        Background="{DynamicResource ButtonError}"
+                        Background="{DynamicResource Brush.Status.Error}"
                         BorderBrush="{DynamicResource Brush.Text.Primary}"
                         Visibility="Collapsed"
                         IsEnabled="False"
@@ -2374,7 +2365,7 @@
                         ToolTip="Resolve dependency issues" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,115,0,0" Grid.Column="1">
                     <Button.Style>
                         <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
-                            <Setter Property="Background" Value="{DynamicResource ButtonError}" />
+                            <Setter Property="Background" Value="{DynamicResource Brush.Status.Error}" />
                             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Text.Primary}" />
                             <Setter Property="Template">
                                 <Setter.Value>
@@ -2395,11 +2386,11 @@
                                                 <Setter TargetName="Root" Property="Opacity" Value="0.6" />
                                             </Trigger>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource ButtonError}" />
+                                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource Brush.Status.Error}" />
                                                 <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource Brush.Text.Primary}" />
                                             </Trigger>
                                             <Trigger Property="IsPressed" Value="True">
-                                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource ButtonError}" />
+                                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource Brush.Status.Error}" />
                                                 <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource Brush.Text.Primary}" />
                                             </Trigger>
                                         </ControlTemplate.Triggers>
