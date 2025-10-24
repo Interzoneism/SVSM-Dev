@@ -35,7 +35,6 @@ using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
 using VintageStoryModManager.Views.Dialogs;
 using WinForms = System.Windows.Forms;
-using WpfApplication = System.Windows.Application;
 using WpfButton = System.Windows.Controls.Button;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 using WpfToolTip = System.Windows.Controls.ToolTip;
@@ -297,22 +296,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        const string message = "To apply the selected theme, the app will restart.";
-        MessageBoxResult result = WpfMessageBox.Show(
-            message,
-            "Simple VS Manager",
-            MessageBoxButton.OKCancel,
-            MessageBoxImage.Question);
-
-        if (result != MessageBoxResult.OK)
-        {
-            UpdateThemeMenuSelection(currentTheme);
-            return;
-        }
-
         UpdateThemeMenuSelection(theme);
         _userConfiguration.SetColorTheme(theme, paletteOverride);
-        RestartApplication();
+        IReadOnlyDictionary<string, string> palette = _userConfiguration.GetThemePaletteColors();
+        App.ApplyTheme(theme, palette.Count > 0 ? palette : null);
     }
 
     private void UpdateThemeMenuSelection(ColorTheme theme)
@@ -10115,37 +10102,6 @@ public partial class MainWindow : Window
     private void Button_Click(object sender, RoutedEventArgs e)
     {
 
-    }
-
-    private static void RestartApplication()
-    {
-        try
-        {
-            string? executablePath = Process.GetCurrentProcess().MainModule?.FileName;
-            if (!string.IsNullOrWhiteSpace(executablePath))
-            {
-                var startInfo = new ProcessStartInfo(executablePath)
-                {
-                    UseShellExecute = false
-                };
-
-                string[] args = Environment.GetCommandLineArgs();
-                for (int i = 1; i < args.Length; i++)
-                {
-                    startInfo.ArgumentList.Add(args[i]);
-                }
-
-                Process.Start(startInfo);
-            }
-        }
-        catch (Exception)
-        {
-            // Restarting is best-effort; ignore failures and continue shutting down.
-        }
-        finally
-        {
-            WpfApplication.Current?.Shutdown();
-        }
     }
 
     protected override void OnClosed(EventArgs e)
