@@ -242,11 +242,6 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <SolidColorBrush x:Key="CardGradient" Color="{Binding Color, Source={DynamicResource Brush.ModCard.Background.Active}}" />
-        <SolidColorBrush x:Key="CardGradient2" Color="{Binding Color, Source={DynamicResource Brush.ModCard.Background.Active}}" />
-        <SolidColorBrush x:Key="CardGradient3" Color="{Binding Color, Source={DynamicResource Brush.ModCard.Background.Active}}" />
-        <SolidColorBrush x:Key="CardDisabledGradient" Color="{Binding Color, Source={DynamicResource Brush.ModCard.Background.Disabled}}" />
-        <SolidColorBrush x:Key="GridBackground1" Color="{Binding Color, Source={DynamicResource Brush.ModGrid.Background}}" />
         <!-- Menu item style shared by toggle and standard items -->
         <Style x:Key="ToggleMenuItemStyle" TargetType="{x:Type MenuItem}">
             <Setter Property="Background" Value="{DynamicResource Brush.Panel.Primary.Background.Solid}" />
@@ -974,7 +969,7 @@
                                                             <Condition Binding="{Binding IsActive}" Value="False" />
                                                             <Condition Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
                                                         </MultiDataTrigger.Conditions>
-                                                        <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource CardDisabledGradient}" />
+                                                        <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.ModCard.Background.Disabled}" />
                                                         <Setter TargetName="RowBorder" Property="Opacity" Value="0.5" />
                                                     </MultiDataTrigger>
                                                     <Trigger Property="DetailsVisibility" Value="Visible">
@@ -1745,7 +1740,7 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Border Margin="0,0,0,10" Grid.Row="1" Width="614" Background="{DynamicResource CardGradient2}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Center" Height="151" VerticalAlignment="Bottom">
+                    <Border Margin="0,0,0,10" Grid.Row="1" Width="614" Background="{DynamicResource Brush.ModCard.Background.Active}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Center" Height="151" VerticalAlignment="Bottom">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2"/>
                         </Border.Effect>
@@ -1795,7 +1790,7 @@
                                        Text="Username:"
                                        VerticalAlignment="Top"
                                        Foreground="{DynamicResource Brush.Text.Primary}"/>
-                            <Border HorizontalAlignment="Left" Height="88" Margin="224,10,0,0"  Padding="10" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource CardGradient3}">
+                            <Border HorizontalAlignment="Left" Height="88" Margin="224,10,0,0"  Padding="10" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource Brush.ModCard.Background.Active}">
                                 <Grid>
                                     <TextBlock x:Name="SelectedModlistDescription"
                                                HorizontalAlignment="Left"
@@ -2275,7 +2270,7 @@
                         Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
                         Foreground="{DynamicResource Brush.Accent.Primary}" Margin="388,0,0,0" VerticalAlignment="Stretch" Width="40" Height="40" />
         </Grid>
-        <Border Background="{DynamicResource CardGradient3}" x:Name="MODINFO_border"
+        <Border Background="{DynamicResource Brush.ModCard.Background.Active}" x:Name="MODINFO_border"
                 BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                 BorderThickness="0"
                 CornerRadius="15,15,15,15" Margin="0,255,40,185" Grid.Row="1" Height="201" HorizontalAlignment="Right" Width="326" Panel.ZIndex="400">
