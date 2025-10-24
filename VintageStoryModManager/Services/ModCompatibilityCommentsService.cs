@@ -102,10 +102,11 @@ public sealed class ModCompatibilityCommentsService
             : latestVsVersion!.Trim();
 
         ModMetadata metadata = await FetchModMetadataAsync(normalizedSlug, cancellationToken).ConfigureAwait(false);
-        string html = await FetchCommentsHtmlAsync(normalizedSlug, cancellationToken).ConfigureAwait(false);
+        string pagePath = metadata.PagePath ?? normalizedSlug;
+        string html = await FetchCommentsHtmlAsync(pagePath, cancellationToken).ConfigureAwait(false);
 
         DateTime cutoffUtc = metadata.LastReleaseUtc ?? DateTime.MinValue;
-        IReadOnlyList<Comment> comments = ExtractComments(html, normalizedSlug, cutoffUtc);
+        IReadOnlyList<Comment> comments = ExtractComments(html, pagePath, cutoffUtc);
         IReadOnlyList<ScoredComment> scoredComments = ScoreComments(comments, normalizedLatestVersion);
 
         IReadOnlyList<ExperimentalCompReviewComment> top3 = scoredComments
@@ -132,7 +133,7 @@ public sealed class ModCompatibilityCommentsService
 
         return new ExperimentalCompReviewResult
         {
-            Mod = normalizedSlug,
+            Mod = metadata.CanonicalIdentifier ?? normalizedSlug,
             LatestVsVersion = normalizedLatestVersion,
             ModLastReleaseUtc = metadata.LastReleaseUtc?.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture),
             Top3 = top3,
@@ -159,6 +160,25 @@ public sealed class ModCompatibilityCommentsService
         }
 
         trimmed = trimmed.Trim('/');
+
+        int queryIndex = trimmed.IndexOf('?', StringComparison.Ordinal);
+        if (queryIndex >= 0)
+        {
+            trimmed = trimmed[..queryIndex];
+        }
+
+        int fragmentIndex = trimmed.IndexOf('#', StringComparison.Ordinal);
+        if (fragmentIndex >= 0)
+        {
+            trimmed = trimmed[..fragmentIndex];
+        }
+
+        const string ShowModPrefix = "show/mod/";
+        if (trimmed.StartsWith(ShowModPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed[ShowModPrefix.Length..];
+        }
+
         return trimmed;
     }
 
@@ -197,6 +217,32 @@ public sealed class ModCompatibilityCommentsService
         }
 
         DateTime? lastReleaseUtc = null;
+        string? urlAlias = GetStringProperty(modElement, "urlalias");
+        string? assetId = GetStringProperty(modElement, "assetid");
+        string? canonicalIdentifier = !string.IsNullOrWhiteSpace(urlAlias)
+            ? NormalizeSlug(urlAlias!)
+            : !string.IsNullOrWhiteSpace(assetId)
+                ? assetId!.Trim()
+                : normalizedSlug;
+
+        string? pagePath = null;
+        if (!string.IsNullOrWhiteSpace(urlAlias))
+        {
+            string normalizedAlias = NormalizePageComponent(urlAlias!);
+            if (!string.IsNullOrWhiteSpace(normalizedAlias))
+            {
+                pagePath = normalizedAlias;
+            }
+        }
+
+        if (pagePath is null && !string.IsNullOrWhiteSpace(assetId))
+        {
+            string trimmedAssetId = assetId!.Trim();
+            if (trimmedAssetId.Length > 0)
+            {
+                pagePath = "show/mod/" + trimmedAssetId;
+            }
+        }
         if (modElement.TryGetProperty("releases", out JsonElement releasesElement) &&
             releasesElement.ValueKind == JsonValueKind.Array)
         {
@@ -226,7 +272,7 @@ public sealed class ModCompatibilityCommentsService
             }
         }
 
-        return new ModMetadata(lastReleaseUtc);
+        return new ModMetadata(lastReleaseUtc, pagePath, canonicalIdentifier);
     }
 
     private static int? TryGetStatusCode(JsonElement rootElement)
@@ -253,16 +299,16 @@ public sealed class ModCompatibilityCommentsService
         return null;
     }
 
-    private static async Task<string> FetchCommentsHtmlAsync(string normalizedSlug, CancellationToken cancellationToken)
+    private static async Task<string> FetchCommentsHtmlAsync(string pagePath, CancellationToken cancellationToken)
     {
-        string requestUrl = string.Format(CultureInfo.InvariantCulture, ModPageUrlTemplate, normalizedSlug);
+        string requestUrl = string.Format(CultureInfo.InvariantCulture, ModPageUrlTemplate, pagePath);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
         using HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static IReadOnlyList<Comment> ExtractComments(string html, string normalizedSlug, DateTime lastReleaseUtc)
+    private static IReadOnlyList<Comment> ExtractComments(string html, string pagePath, DateTime lastReleaseUtc)
     {
         if (string.IsNullOrWhiteSpace(html))
         {
@@ -311,7 +357,7 @@ public sealed class ModCompatibilityCommentsService
                 : HtmlEntity.DeEntitize(authorNode!.InnerText).Trim();
 
             bool isModAuthor = titleNode?.InnerText?.IndexOf("Author", StringComparison.OrdinalIgnoreCase) >= 0;
-            string? permalink = BuildPermalink(node, normalizedSlug);
+            string? permalink = BuildPermalink(node, pagePath);
 
             results.Add(new Comment
             {
@@ -523,12 +569,12 @@ public sealed class ModCompatibilityCommentsService
         };
     }
 
-    private static string? BuildPermalink(HtmlNode node, string normalizedSlug)
+    private static string? BuildPermalink(HtmlNode node, string pagePath)
     {
         string? id = node.GetAttributeValue("id", null);
         if (!string.IsNullOrWhiteSpace(id))
         {
-            return string.Format(CultureInfo.InvariantCulture, "https://mods.vintagestory.at/{0}#{1}", normalizedSlug, id);
+            return string.Format(CultureInfo.InvariantCulture, "https://mods.vintagestory.at/{0}#{1}", pagePath, id);
         }
 
         HtmlNode? anchor = node.SelectSingleNode(".//a[starts-with(@href,'#cmt-')]");
@@ -540,7 +586,7 @@ public sealed class ModCompatibilityCommentsService
 
         if (href.StartsWith("#", StringComparison.Ordinal))
         {
-            return string.Format(CultureInfo.InvariantCulture, "https://mods.vintagestory.at/{0}{1}", normalizedSlug, href);
+            return string.Format(CultureInfo.InvariantCulture, "https://mods.vintagestory.at/{0}{1}", pagePath, href);
         }
 
         if (href.StartsWith("/", StringComparison.Ordinal))
@@ -696,7 +742,38 @@ public sealed class ModCompatibilityCommentsService
         return Regex.Replace(text, "\\s+", " ").Trim();
     }
 
-    private sealed record ModMetadata(DateTime? LastReleaseUtc);
+    private static string? GetStringProperty(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out JsonElement property))
+        {
+            return null;
+        }
+
+        return property.ValueKind switch
+        {
+            JsonValueKind.String => property.GetString(),
+            JsonValueKind.Number => property.TryGetInt64(out long numeric)
+                ? numeric.ToString(CultureInfo.InvariantCulture)
+                : property.TryGetDouble(out double floating)
+                    ? floating.ToString(CultureInfo.InvariantCulture)
+                    : property.GetRawText(),
+            JsonValueKind.Null => null,
+            _ => property.ToString()
+        };
+    }
+
+    private static string NormalizePageComponent(string value)
+    {
+        string trimmed = value.Trim();
+        if (trimmed.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        return trimmed.Trim('/');
+    }
+
+    private sealed record ModMetadata(DateTime? LastReleaseUtc, string? PagePath, string? CanonicalIdentifier);
 
     private sealed record Comment
     {
