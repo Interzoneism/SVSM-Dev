@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -150,10 +151,7 @@ public partial class MainWindow : Window
         EnableDebugLoggingMenuItem.IsChecked = _userConfiguration.EnableDebugLogging;
         StatusLogService.IsLoggingEnabled = _userConfiguration.EnableDebugLogging;
 
-        if (DarkVsModeMenuItem is not null)
-        {
-            DarkVsModeMenuItem.IsChecked = _userConfiguration.UseDarkVsMode;
-        }
+        UpdateThemeMenuSelection(_userConfiguration.ColorTheme);
 
         if (ManagerVersionMenuItem is not null)
         {
@@ -260,22 +258,28 @@ public partial class MainWindow : Window
         _viewModel?.OnInternetAccessStateChanged();
     }
 
-    private void DarkVsModeMenuItem_OnClick(object sender, RoutedEventArgs e)
+    private void ThemeMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuItem menuItem)
+        if (sender is not MenuItem menuItem || menuItem.Tag is not ColorTheme theme)
         {
             return;
         }
 
-        bool enableDarkMode = menuItem.IsChecked;
-        bool currentValue = _userConfiguration.UseDarkVsMode;
+        ColorTheme currentTheme = _userConfiguration.ColorTheme;
+        IReadOnlyDictionary<string, string>? paletteOverride = null;
 
-        if (enableDarkMode == currentValue)
+        if (theme == ColorTheme.SurpriseMe)
         {
+            paletteOverride = GenerateSurprisePalette();
+        }
+
+        if (theme == currentTheme && paletteOverride is null)
+        {
+            UpdateThemeMenuSelection(currentTheme);
             return;
         }
 
-        const string message = "To activate the alternate color scheme, the app will restart.";
+        const string message = "To apply the selected theme, the app will restart.";
         MessageBoxResult result = WpfMessageBox.Show(
             message,
             "Simple VS Manager",
@@ -284,12 +288,68 @@ public partial class MainWindow : Window
 
         if (result != MessageBoxResult.OK)
         {
-            menuItem.IsChecked = currentValue;
+            UpdateThemeMenuSelection(currentTheme);
             return;
         }
 
-        _userConfiguration.SetUseDarkVsMode(enableDarkMode);
+        UpdateThemeMenuSelection(theme);
+        _userConfiguration.SetColorTheme(theme, paletteOverride);
         RestartApplication();
+    }
+
+    private void UpdateThemeMenuSelection(ColorTheme theme)
+    {
+        if (VintageStoryThemeMenuItem is not null)
+        {
+            VintageStoryThemeMenuItem.IsChecked = theme == ColorTheme.VintageStory;
+        }
+
+        if (DarkThemeMenuItem is not null)
+        {
+            DarkThemeMenuItem.IsChecked = theme == ColorTheme.Dark;
+        }
+
+        if (LightThemeMenuItem is not null)
+        {
+            LightThemeMenuItem.IsChecked = theme == ColorTheme.Light;
+        }
+
+        if (SurpriseMeThemeMenuItem is not null)
+        {
+            SurpriseMeThemeMenuItem.IsChecked = theme == ColorTheme.SurpriseMe;
+        }
+    }
+
+    private static IReadOnlyDictionary<string, string> GenerateSurprisePalette()
+    {
+        IReadOnlyDictionary<string, string> defaults = UserConfigurationService.GetDefaultThemePalette(ColorTheme.VintageStory);
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var pair in defaults)
+        {
+            result[pair.Key] = GenerateRandomColor(pair.Value);
+        }
+
+        return result;
+    }
+
+    private static string GenerateRandomColor(string baseColor)
+    {
+        byte alpha = 0xFF;
+
+        if (!string.IsNullOrWhiteSpace(baseColor) && baseColor.Length == 9)
+        {
+            string alphaComponent = baseColor.Substring(1, 2);
+            if (byte.TryParse(alphaComponent, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte parsedAlpha))
+            {
+                alpha = parsedAlpha;
+            }
+        }
+
+        Span<byte> rgb = stackalloc byte[3];
+        RandomNumberGenerator.Fill(rgb);
+
+        return $"#{alpha:X2}{rgb[0]:X2}{rgb[1]:X2}{rgb[2]:X2}";
     }
 
     private void AlwaysClearModlistsMenuItem_OnClick(object sender, RoutedEventArgs e)

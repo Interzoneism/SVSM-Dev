@@ -15,7 +15,6 @@ namespace VintageStoryModManager;
 public partial class App : System.Windows.Application
 {
     private const string SingleInstanceMutexName = "VintageStoryModManager.SingleInstance";
-    private static readonly Uri LightThemeUri = new("Resources/Themes/LightTheme.xaml", UriKind.Relative);
     private static readonly Uri DarkVsThemeUri = new("Resources/Themes/DarkVsTheme.xaml", UriKind.Relative);
     private Mutex? _instanceMutex;
     private bool _ownsMutex;
@@ -120,14 +119,14 @@ public partial class App : System.Windows.Application
 
     private void ApplyPreferredTheme()
     {
-        bool useDarkVsMode = false;
-        IReadOnlyDictionary<string, string>? darkVsPalette = null;
+        ColorTheme theme = ColorTheme.VintageStory;
+        IReadOnlyDictionary<string, string>? palette = null;
 
         try
         {
             var configuration = new UserConfigurationService();
-            useDarkVsMode = configuration.UseDarkVsMode;
-            darkVsPalette = configuration.GetDarkVsPaletteColors();
+            theme = configuration.ColorTheme;
+            palette = configuration.GetThemePaletteColors();
         }
         catch (Exception)
         {
@@ -152,10 +151,10 @@ public partial class App : System.Windows.Application
             }
         }
 
-        ApplyThemeDictionary(useDarkVsMode ? DarkVsThemeUri : LightThemeUri, darkVsPalette);
+        ApplyThemeDictionary(ResolveThemeUri(theme), palette);
     }
 
-    private void ApplyThemeDictionary(Uri source, IReadOnlyDictionary<string, string>? darkVsPalette)
+    private void ApplyThemeDictionary(Uri source, IReadOnlyDictionary<string, string>? paletteOverrides)
     {
         if (Resources is null)
         {
@@ -171,9 +170,9 @@ public partial class App : System.Windows.Application
         try
         {
             var dictionary = new ResourceDictionary { Source = source };
-            if (darkVsPalette is not null && IsDarkVsTheme(source))
+            if (paletteOverrides is not null)
             {
-                ApplyPaletteOverrides(dictionary, darkVsPalette);
+                ApplyPaletteOverrides(dictionary, paletteOverrides);
             }
 
             Resources.MergedDictionaries.Add(dictionary);
@@ -181,28 +180,22 @@ public partial class App : System.Windows.Application
         }
         catch (Exception)
         {
-            // If loading the preferred theme fails, fall back to the light theme.
-            if (!ReferenceEquals(source, LightThemeUri))
+            // If loading the preferred theme fails, fall back to the default theme.
+            if (!ReferenceEquals(source, DarkVsThemeUri))
             {
-                ApplyThemeDictionary(LightThemeUri, darkVsPalette);
+                ApplyThemeDictionary(DarkVsThemeUri, paletteOverrides);
             }
         }
     }
 
-    private static bool IsDarkVsTheme(Uri source)
+    private static Uri ResolveThemeUri(ColorTheme theme)
     {
-        if (ReferenceEquals(source, DarkVsThemeUri))
-        {
-            return true;
-        }
-
-        string? original = source.OriginalString;
-        return string.Equals(original, DarkVsThemeUri.OriginalString, StringComparison.OrdinalIgnoreCase);
+        return DarkVsThemeUri;
     }
 
-    private static void ApplyPaletteOverrides(ResourceDictionary dictionary, IReadOnlyDictionary<string, string> darkVsPalette)
+    private static void ApplyPaletteOverrides(ResourceDictionary dictionary, IReadOnlyDictionary<string, string> paletteOverrides)
     {
-        foreach (var pair in darkVsPalette)
+        foreach (var pair in paletteOverrides)
         {
             if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
             {
