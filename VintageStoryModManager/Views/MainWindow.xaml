@@ -536,7 +536,7 @@
                                   Tag="{x:Static services:ColorTheme.Light}"
                                   Click="ThemeMenuItem_OnClick" />
                         <MenuItem x:Name="SurpriseMeThemeMenuItem"
-                                  Header="_Surprise me!"
+                                  Header="_Surprise me! (In A Bad Way)"
                                   Height="35"
                                   IsCheckable="True"
                                   Style="{StaticResource ToggleMenuItemStyle}"
