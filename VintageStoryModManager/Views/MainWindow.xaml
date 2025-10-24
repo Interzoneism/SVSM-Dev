@@ -555,9 +555,9 @@
                     <MenuItem Header="Open _Mod DB page for the manager"
                               Padding="12,6"
                               Click="ManagerModDbPageMenuItem_OnClick" />
-                    <MenuItem Header="_Guide"
+                    <MenuItem Header="_Documentation"
                               Padding="12,6"
-                              Click="GuideMenuItem_OnClick" />
+                              Click="DocumentationMenuItem_OnClick" />
                     <MenuItem Header="_Advanced" Height="35">
                         <MenuItem x:Name="EnableDebugLoggingMenuItem"
                                   Header="Enable debug logging"
