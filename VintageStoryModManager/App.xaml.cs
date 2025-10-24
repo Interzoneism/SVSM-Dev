@@ -133,25 +133,45 @@ public partial class App : System.Windows.Application
             // If the configuration fails to load we silently fall back to the default theme.
         }
 
-        if (_activeTheme is null && Resources is { MergedDictionaries.Count: > 0 })
-        {
-            foreach (ResourceDictionary dictionary in Resources.MergedDictionaries)
-            {
-                string? source = dictionary.Source?.OriginalString;
-                if (string.IsNullOrEmpty(source))
-                {
-                    continue;
-                }
+        EnsureActiveThemeDictionary();
+        ApplyTheme(theme, palette);
+    }
 
-                if (source.Contains("Resources/Themes/", StringComparison.OrdinalIgnoreCase))
-                {
-                    _activeTheme = dictionary;
-                    break;
-                }
-            }
+    public static void ApplyTheme(ColorTheme theme, IReadOnlyDictionary<string, string>? paletteOverrides)
+    {
+        if (Current is not App app)
+        {
+            return;
         }
 
-        ApplyThemeDictionary(ResolveThemeUri(theme), palette);
+        app.EnsureActiveThemeDictionary();
+        IReadOnlyDictionary<string, string>? overridesToApply = paletteOverrides is { Count: > 0 }
+            ? paletteOverrides
+            : null;
+        app.ApplyThemeDictionary(ResolveThemeUri(theme), overridesToApply);
+    }
+
+    private void EnsureActiveThemeDictionary()
+    {
+        if (_activeTheme is not null || Resources is not { MergedDictionaries.Count: > 0 })
+        {
+            return;
+        }
+
+        foreach (ResourceDictionary dictionary in Resources.MergedDictionaries)
+        {
+            string? source = dictionary.Source?.OriginalString;
+            if (string.IsNullOrEmpty(source))
+            {
+                continue;
+            }
+
+            if (source.Contains("Resources/Themes/", StringComparison.OrdinalIgnoreCase))
+            {
+                _activeTheme = dictionary;
+                break;
+            }
+        }
     }
 
     private void ApplyThemeDictionary(Uri source, IReadOnlyDictionary<string, string>? paletteOverrides)
