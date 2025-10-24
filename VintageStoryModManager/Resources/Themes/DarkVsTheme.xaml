@@ -76,9 +76,9 @@
     <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Light" Color="{DynamicResource Palette.ColorBevelLight}" />
     <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Dark" Color="{DynamicResource Palette.ColorBevelDark}" />
     <LinearGradientBrush x:Key="Brush.SunkenSurface.Background" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Color="{StaticResource Palette.ColorBackgroundLight}" Offset="0" />
-        <GradientStop Color="{StaticResource Palette.ColorElement}" Offset="0.5" />
-        <GradientStop Color="{StaticResource Palette.ColorBackgroundDark}" Offset="1" />
+        <GradientStop Color="{DynamicResource Palette.ColorBackgroundLight}" Offset="0" />
+        <GradientStop Color="{DynamicResource Palette.ColorElement}" Offset="0.5" />
+        <GradientStop Color="{DynamicResource Palette.ColorBackgroundDark}" Offset="1" />
     </LinearGradientBrush>
 
 
