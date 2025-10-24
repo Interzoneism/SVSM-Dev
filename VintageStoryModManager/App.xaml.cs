@@ -63,6 +63,18 @@ public partial class App : System.Windows.Application
     {
         string message = $"An unexpected error occurred:\n{e.Exception.Message}";
         WpfMessageBox.Show(message, "Simple VS Manager", MessageBoxButton.OK, MessageBoxImage.Error);
+
+        try
+        {
+            Current?.Shutdown(-1);
+        }
+        catch
+        {
+            // If shutdown fails we fall back to letting WPF terminate the process.
+            e.Handled = false;
+            return;
+        }
+
         e.Handled = true;
     }
 
