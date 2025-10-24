@@ -282,6 +282,12 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (theme == ColorTheme.Custom)
+        {
+            ShowCustomThemeEditor();
+            return;
+        }
+
         ColorTheme currentTheme = _userConfiguration.ColorTheme;
         IReadOnlyDictionary<string, string>? paletteOverride = null;
 
@@ -323,6 +329,11 @@ public partial class MainWindow : Window
         {
             SurpriseMeThemeMenuItem.IsChecked = theme == ColorTheme.SurpriseMe;
         }
+
+        if (CustomThemeMenuItem is not null)
+        {
+            CustomThemeMenuItem.IsChecked = theme == ColorTheme.Custom;
+        }
     }
 
     private static IReadOnlyDictionary<string, string> GenerateSurprisePalette()
@@ -355,6 +366,27 @@ public partial class MainWindow : Window
         RandomNumberGenerator.Fill(rgb);
 
         return $"#{alpha:X2}{rgb[0]:X2}{rgb[1]:X2}{rgb[2]:X2}";
+    }
+
+    private void ShowCustomThemeEditor()
+    {
+        if (_userConfiguration.ColorTheme != ColorTheme.Custom)
+        {
+            _userConfiguration.SetColorTheme(ColorTheme.Custom);
+        }
+
+        UpdateThemeMenuSelection(ColorTheme.Custom);
+
+        IReadOnlyDictionary<string, string> palette = _userConfiguration.GetThemePaletteColors();
+        App.ApplyTheme(ColorTheme.Custom, palette.Count > 0 ? palette : null);
+
+        var dialog = new ThemePaletteEditorDialog(_userConfiguration)
+        {
+            Owner = this
+        };
+
+        _ = dialog.ShowDialog();
+        UpdateThemeMenuSelection(_userConfiguration.ColorTheme);
     }
 
     private void AlwaysClearModlistsMenuItem_OnClick(object sender, RoutedEventArgs e)
