@@ -928,7 +928,8 @@
                                         Margin="4,0,4,4"
                                         SnapsToDevicePixels="True">
                                                     <Border.Effect>
-                                                        <DropShadowEffect Color="{Binding Color, Source={DynamicResource Brush.DataGrid.RowShadow}}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
+                                                        <DropShadowEffect Color="{Binding Source={StaticResource Brush.DataGrid.RowShadow}, Path=Color}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
+
                                                     </Border.Effect>
                                                     <Grid>
                                                         <Border x:Name="SelectionOverlay"
@@ -1880,11 +1881,8 @@
                                                 ScaleY="{StaticResource IMM.ModDbCardScale}" />
                             </Border.LayoutTransform>
                             <Border.Effect>
-                                <DropShadowEffect Color="{Binding Color, Source={DynamicResource Brush.ModCard.Shadow}}"
-                                                  BlurRadius="20"
-                                                  Direction="270"
-                                                  ShadowDepth="8"
-                                                  Opacity="0.2" />
+                                <DropShadowEffect Color="{Binding Source={StaticResource Brush.DataGrid.RowShadow}, Path=Color}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
+
                             </Border.Effect>
                             <Border.Style>
                                 <Style TargetType="{x:Type Border}">
