@@ -4209,45 +4209,18 @@ public partial class MainWindow : Window
         OpenManagerModDatabasePage();
     }
 
-    private void DocumentationMenuItem_OnClick(object sender, RoutedEventArgs e)
+    private void GuideMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        string baseDirectory = AppContext.BaseDirectory;
-        string[] candidatePaths =
+        string managerDirectory = _userConfiguration.GetConfigurationDirectory();
+        string configurationFilePath = Path.Combine(managerDirectory, "SimpleVSManagerConfiguration.json");
+        string? cachedModsDirectory = ModCacheLocator.GetCachedModsDirectory();
+
+        var dialog = new GuideDialogWindow(managerDirectory, cachedModsDirectory, configurationFilePath)
         {
-            Path.Combine(baseDirectory, "Documentation", "README.md"),
-            Path.Combine(baseDirectory, "README.md")
+            Owner = this
         };
 
-        string? documentationPath = candidatePaths.FirstOrDefault(File.Exists);
-
-        if (documentationPath is null)
-        {
-            WpfMessageBox.Show(
-                "The bundled documentation could not be found. Please reinstall Simple VS Manager or view the project README on GitHub.",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-            return;
-        }
-
-        try
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = documentationPath,
-                UseShellExecute = true
-            };
-
-            Process.Start(startInfo);
-        }
-        catch (Exception ex)
-        {
-            WpfMessageBox.Show(
-                $"Unable to open the documentation file. {ex.Message}",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
+        _ = dialog.ShowDialog();
     }
 
     private void ManagerUpdateLink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
