@@ -4174,7 +4174,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        string modSlug = TryExtractModSlug(selectedMod.ModDatabasePageUrl) ?? selectedMod.ModId;
+        string modSlug = ResolveExperimentalCompReviewIdentifier(selectedMod);
         string? latestVersion = string.IsNullOrWhiteSpace(_viewModel?.InstalledGameVersion)
             ? null
             : _viewModel!.InstalledGameVersion;
@@ -4277,6 +4277,22 @@ public partial class MainWindow : Window
         await ExecuteCloudOperationAsync(
             store => DeleteAllCloudModlistsAndAuthorizationAsync(store),
             "delete all cloud modlists and Firebase authorization");
+    }
+
+    private static string ResolveExperimentalCompReviewIdentifier(ModListItemViewModel selectedMod)
+    {
+        string? fromUrl = TryExtractModSlug(selectedMod.ModDatabasePageUrl);
+        if (!string.IsNullOrWhiteSpace(fromUrl))
+        {
+            return fromUrl!;
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedMod.ModDatabaseAssetId))
+        {
+            return selectedMod.ModDatabaseAssetId!;
+        }
+
+        return selectedMod.ModId;
     }
 
     private static string? TryExtractModSlug(string? modDatabasePageUrl)
