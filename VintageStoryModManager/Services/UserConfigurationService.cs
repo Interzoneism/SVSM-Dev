@@ -72,7 +72,6 @@ public sealed class UserConfigurationService
 
     private readonly string _configurationPath;
     private readonly string _modConfigPathsPath;
-    private bool _configurationFileExists;
     private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ModConfigPathEntry> _storedModConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _themePaletteColors = new(StringComparer.OrdinalIgnoreCase);
@@ -80,7 +79,6 @@ public sealed class UserConfigurationService
     private string? _selectedPresetName;
     private string _configurationVersion = CurrentConfigurationVersion;
     private string _modManagerVersion = CurrentModManagerVersion;
-    private bool _isLegacyConfiguration;
     private bool _isCompactView;
     private bool _useModDbDesignView = true;
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
@@ -122,10 +120,6 @@ public sealed class UserConfigurationService
     public string ConfigurationVersion => _configurationVersion;
 
     public string ModManagerVersion => _modManagerVersion;
-
-    public bool ConfigurationFileExists => _configurationFileExists;
-
-    public bool IsLegacyConfiguration => _configurationFileExists && _isLegacyConfiguration;
 
     public bool IsCompactView => _isCompactView;
 
@@ -608,12 +602,10 @@ public sealed class UserConfigurationService
         _colorTheme = ColorTheme.VintageStory;
         ResetThemePaletteToDefaults();
         _selectedPresetName = null;
-        _configurationFileExists = File.Exists(_configurationPath);
-        _isLegacyConfiguration = false;
 
         try
         {
-            if (!_configurationFileExists)
+            if (!File.Exists(_configurationPath))
             {
                 return;
             }
@@ -785,13 +777,6 @@ public sealed class UserConfigurationService
     private void InitializeVersionMetadata(string? configurationVersion, string? modManagerVersion)
     {
         bool requiresSave = false;
-
-        bool configurationMatches = !string.IsNullOrWhiteSpace(configurationVersion)
-            && string.Equals(configurationVersion, CurrentConfigurationVersion, StringComparison.OrdinalIgnoreCase);
-        bool managerMatches = !string.IsNullOrWhiteSpace(modManagerVersion)
-            && string.Equals(modManagerVersion, CurrentModManagerVersion, StringComparison.OrdinalIgnoreCase);
-
-        _isLegacyConfiguration = !configurationMatches || !managerMatches;
 
         string resolvedConfigurationVersion = string.IsNullOrWhiteSpace(configurationVersion)
             ? CurrentConfigurationVersion
