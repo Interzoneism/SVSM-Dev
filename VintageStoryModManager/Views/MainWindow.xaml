@@ -1975,7 +1975,7 @@
                                             </Border.Style>
                                             <TextBlock Text="Compatible"
                                                        
-                                                       Foreground="LightGreen"
+                                                       Foreground="{StaticResource Brush.Text.Body}"
                                                        FontSize="16" />
                                         </Border>
                                     </Grid>
