@@ -29,6 +29,7 @@ namespace VintageStoryModManager.ViewModels;
 public sealed class MainViewModel : ObservableObject, IDisposable
 {
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
+    private static readonly TimeSpan BusyStateReleaseDelay = TimeSpan.FromMilliseconds(200);
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
     private const string NoCompatibleModDatabaseResultsStatusMessage = "No compatible mods found in the mod database.";
     private const int MaxConcurrentDatabaseRefreshes = 4;
@@ -84,6 +85,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
     private readonly object _busyStateLock = new();
     private int _busyOperationCount;
+    private CancellationTokenSource? _busyReleaseCts;
     private bool _isLoadingMods;
     private bool _isLoadingModDetails;
     private int _pendingModDetailsRefreshCount;
@@ -2451,11 +2453,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private IDisposable BeginBusyScope()
     {
         bool isBusy;
+        CancellationTokenSource? pendingRelease = null;
         lock (_busyStateLock)
         {
             _busyOperationCount++;
             isBusy = _busyOperationCount > 0;
+
+            if (_busyReleaseCts is not null)
+            {
+                pendingRelease = _busyReleaseCts;
+                _busyReleaseCts = null;
+            }
         }
+
+        pendingRelease?.Cancel();
 
         UpdateIsBusy(isBusy);
         return new BusyScope(this);
@@ -2464,6 +2475,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private void EndBusyScope()
     {
         bool isBusy;
+        CancellationTokenSource? pendingRelease = null;
+        CancellationTokenSource? releaseToSchedule = null;
         lock (_busyStateLock)
         {
             if (_busyOperationCount > 0)
@@ -2472,9 +2485,60 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
 
             isBusy = _busyOperationCount > 0;
+            if (!isBusy)
+            {
+                pendingRelease = _busyReleaseCts;
+                releaseToSchedule = new CancellationTokenSource();
+                _busyReleaseCts = releaseToSchedule;
+            }
         }
 
-        UpdateIsBusy(isBusy);
+        pendingRelease?.Cancel();
+
+        if (isBusy)
+        {
+            UpdateIsBusy(true);
+        }
+        else
+        {
+            ScheduleBusyRelease(releaseToSchedule);
+        }
+    }
+
+    private void ScheduleBusyRelease(CancellationTokenSource? releaseCts)
+    {
+        if (releaseCts is null)
+        {
+            UpdateIsBusy(false);
+            return;
+        }
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(BusyStateReleaseDelay, releaseCts.Token).ConfigureAwait(false);
+
+                lock (_busyStateLock)
+                {
+                    if (!ReferenceEquals(_busyReleaseCts, releaseCts))
+                    {
+                        return;
+                    }
+
+                    _busyReleaseCts = null;
+                }
+
+                UpdateIsBusy(false);
+            }
+            catch (TaskCanceledException)
+            {
+            }
+            finally
+            {
+                releaseCts.Dispose();
+            }
+        });
     }
 
     private void UpdateIsBusy(bool isBusy)
