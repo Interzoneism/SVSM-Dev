@@ -1,0 +1,240 @@
+<Window x:Class="VintageStoryModManager.Views.Dialogs.ColorPickerDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Select Colour"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterOwner"
+        MinWidth="520"
+        MinHeight="420"
+        Background="{DynamicResource Brush.Window.Shell.Background.Solid}"
+        ResizeMode="CanResizeWithGrip">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <SolidColorBrush x:Key="ColorPicker.ErrorBrush" Color="#CC3333" />
+    </Window.Resources>
+    <Grid Margin="20" Width="520">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Width="96"
+                    Height="96"
+                    CornerRadius="8"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource Brush.Border.Default}"
+                    Background="{Binding PreviewBrush}" />
+            <StackPanel Grid.Column="1"
+                        Margin="16,0,0,0"
+                        VerticalAlignment="Center">
+                <TextBlock Text="Hex value (#AARRGGBB or #RRGGBB)" />
+                <TextBox Text="{Binding HexValue, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,6,0,0"
+                         MinWidth="200"
+                         FontFamily="Consolas"
+                         CharacterCasing="Upper"
+                         HorizontalAlignment="Left"
+                         MaxLength="9"
+                         ToolTip="Paste or type a hex colour value." />
+                <TextBlock Margin="0,6,0,0"
+                           Text="{Binding HexErrorMessage}"
+                           Foreground="{StaticResource ColorPicker.ErrorBrush}"
+                           Visibility="{Binding HasHexError, Converter={StaticResource BooleanToVisibilityConverter}}" />
+            </StackPanel>
+        </Grid>
+
+        <GroupBox Grid.Row="1" Header="RGB" Margin="0,20,0,0">
+            <Grid Margin="12,12,12,8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="64" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Grid.Column="0"
+                           Text="Alpha"
+                           VerticalAlignment="Center" />
+                <Slider Grid.Row="0"
+                        Grid.Column="1"
+                        Margin="12,0,12,0"
+                        Minimum="0"
+                        Maximum="255"
+                        Value="{Binding Alpha, Mode=TwoWay}"
+                        IsSnapToTickEnabled="True"
+                        TickFrequency="1" />
+                <TextBlock Grid.Row="0"
+                           Grid.Column="2"
+                           Text="{Binding Alpha}"
+                           HorizontalAlignment="Right"
+                           FontFamily="Consolas" />
+
+                <TextBlock Grid.Row="1"
+                           Grid.Column="0"
+                           Text="Red"
+                           VerticalAlignment="Center"
+                           Margin="0,8,0,0" />
+                <Slider Grid.Row="1"
+                        Grid.Column="1"
+                        Margin="12,8,12,0"
+                        Minimum="0"
+                        Maximum="255"
+                        Value="{Binding Red, Mode=TwoWay}"
+                        IsSnapToTickEnabled="True"
+                        TickFrequency="1" />
+                <TextBlock Grid.Row="1"
+                           Grid.Column="2"
+                           Margin="0,8,0,0"
+                           Text="{Binding Red}"
+                           HorizontalAlignment="Right"
+                           FontFamily="Consolas" />
+
+                <TextBlock Grid.Row="2"
+                           Grid.Column="0"
+                           Text="Green"
+                           VerticalAlignment="Center"
+                           Margin="0,8,0,0" />
+                <Slider Grid.Row="2"
+                        Grid.Column="1"
+                        Margin="12,8,12,0"
+                        Minimum="0"
+                        Maximum="255"
+                        Value="{Binding Green, Mode=TwoWay}"
+                        IsSnapToTickEnabled="True"
+                        TickFrequency="1" />
+                <TextBlock Grid.Row="2"
+                           Grid.Column="2"
+                           Margin="0,8,0,0"
+                           Text="{Binding Green}"
+                           HorizontalAlignment="Right"
+                           FontFamily="Consolas" />
+
+                <TextBlock Grid.Row="3"
+                           Grid.Column="0"
+                           Text="Blue"
+                           VerticalAlignment="Center"
+                           Margin="0,8,0,0" />
+                <Slider Grid.Row="3"
+                        Grid.Column="1"
+                        Margin="12,8,12,0"
+                        Minimum="0"
+                        Maximum="255"
+                        Value="{Binding Blue, Mode=TwoWay}"
+                        IsSnapToTickEnabled="True"
+                        TickFrequency="1" />
+                <TextBlock Grid.Row="3"
+                           Grid.Column="2"
+                           Margin="0,8,0,0"
+                           Text="{Binding Blue}"
+                           HorizontalAlignment="Right"
+                           FontFamily="Consolas" />
+            </Grid>
+        </GroupBox>
+
+        <GroupBox Grid.Row="2" Header="HSL" Margin="0,16,0,0">
+            <Grid Margin="12,12,12,8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="64" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Grid.Column="0"
+                           Text="Hue"
+                           VerticalAlignment="Center" />
+                <Slider Grid.Row="0"
+                        Grid.Column="1"
+                        Margin="12,0,12,0"
+                        Minimum="0"
+                        Maximum="360"
+                        Value="{Binding Hue, Mode=TwoWay}"
+                        IsSnapToTickEnabled="True"
+                        TickFrequency="1" />
+                <TextBlock Grid.Row="0"
+                           Grid.Column="2"
+                           Text="{Binding Hue, StringFormat={}{0}°}"
+                           HorizontalAlignment="Right"
+                           FontFamily="Consolas" />
+
+                <TextBlock Grid.Row="1"
+                           Grid.Column="0"
+                           Text="Saturation"
+                           VerticalAlignment="Center"
+                           Margin="0,8,0,0" />
+                <Slider Grid.Row="1"
+                        Grid.Column="1"
+                        Margin="12,8,12,0"
+                        Minimum="0"
+                        Maximum="100"
+                        Value="{Binding Saturation, Mode=TwoWay}"
+                        IsSnapToTickEnabled="True"
+                        TickFrequency="1" />
+                <TextBlock Grid.Row="1"
+                           Grid.Column="2"
+                           Margin="0,8,0,0"
+                           Text="{Binding Saturation, StringFormat={}{0}%}"
+                           HorizontalAlignment="Right"
+                           FontFamily="Consolas" />
+
+                <TextBlock Grid.Row="2"
+                           Grid.Column="0"
+                           Text="Lightness"
+                           VerticalAlignment="Center"
+                           Margin="0,8,0,0" />
+                <Slider Grid.Row="2"
+                        Grid.Column="1"
+                        Margin="12,8,12,0"
+                        Minimum="0"
+                        Maximum="100"
+                        Value="{Binding Lightness, Mode=TwoWay}"
+                        IsSnapToTickEnabled="True"
+                        TickFrequency="1" />
+                <TextBlock Grid.Row="2"
+                           Grid.Column="2"
+                           Margin="0,8,0,0"
+                           Text="{Binding Lightness, StringFormat={}{0}%}"
+                           HorizontalAlignment="Right"
+                           FontFamily="Consolas" />
+            </Grid>
+        </GroupBox>
+
+        <StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,24,0,0">
+            <Button Width="96"
+                    Height="32"
+                    Margin="0,0,12,0"
+                    Content="Cancel"
+                    IsCancel="True" />
+            <Button Width="96"
+                    Height="32"
+                    Content="Select"
+                    IsDefault="True"
+                    IsEnabled="{Binding HasValidColor}"
+                    Click="SelectButton_OnClick" />
+        </StackPanel>
+    </Grid>
+</Window>
