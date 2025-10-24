@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using VintageStoryModManager.Services;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 using Color = System.Windows.Media.Color;
+using VintageStoryModManager.Views.Dialogs;
 
 namespace VintageStoryModManager;
 
@@ -33,6 +34,7 @@ public partial class App : System.Windows.Application
 
         if (!createdNew)
         {
+            ShowSingleInstanceWarning();
             ActivateExistingInstance();
             Current?.Shutdown();
             return;
@@ -104,6 +106,28 @@ public partial class App : System.Windows.Application
         catch (Exception)
         {
             // If we cannot activate the existing instance we silently continue shutting down.
+        }
+    }
+
+    private static void ShowSingleInstanceWarning()
+    {
+        try
+        {
+            var buttonOverrides = new MessageDialogButtonContentOverrides
+            {
+                Ok = "Abort"
+            };
+
+            WpfMessageBox.Show(
+                "Simple VS Manager is already running. This launch will be aborted.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning,
+                buttonContentOverrides: buttonOverrides);
+        }
+        catch
+        {
+            // We ignore failures showing the warning so the application can shut down cleanly.
         }
     }
 
