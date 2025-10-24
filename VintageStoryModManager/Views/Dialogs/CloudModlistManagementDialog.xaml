@@ -9,10 +9,10 @@
         ResizeMode="CanMinimize"
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
-        Background="{StaticResource Brush.Window.Shell.Background.Solid}">
+        Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
     <Grid Margin="20"
-          Background="{StaticResource Brush.Panel.Primary.Background.Solid}"
-          TextElement.Foreground="{StaticResource Brush.Text.Primary}">
+          Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+          TextElement.Foreground="{DynamicResource Brush.Text.Primary}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -28,11 +28,11 @@
         <Border Grid.Row="1"
                 Width="460"
                 Background="Transparent"
-                BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Light}"
+                BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
                 BorderThickness="0,0,1,1"
                 SnapsToDevicePixels="True">
             <Border Background="Transparent"
-                    BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Dark}"
+                    BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Dark}"
                     BorderThickness="1,1,0,0"
                     SnapsToDevicePixels="True">
                 <ListView x:Name="ModlistsListView"
@@ -41,18 +41,18 @@
                           SelectionMode="Single"
                           SelectionChanged="ModlistsListView_OnSelectionChanged"
                           MouseDoubleClick="ModlistsListView_OnMouseDoubleClick"
-                          Background="{StaticResource Brush.Panel.Secondary.Background.Solid}"
+                          Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                           BorderThickness="0"
-                          Foreground="{StaticResource Brush.Text.Primary}">
+                          Foreground="{DynamicResource Brush.Text.Primary}">
                     <ListView.Resources>
                         <Style TargetType="GridViewColumnHeader">
-                            <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-                            <Setter Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Normal}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+                            <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Normal}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
                         </Style>
                         <Style TargetType="ListViewItem">
-                            <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-                            <Setter Property="Background" Value="{StaticResource Brush.Panel.Secondary.Background.Solid}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+                            <Setter Property="Background" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
                             <Setter Property="BorderBrush" Value="Transparent" />
                             <Setter Property="BorderThickness" Value="0" />
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -74,11 +74,11 @@
                             </Setter>
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="{StaticResource Brush.Button.Primary.Background.Hover}" />
+                                    <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
                                 </Trigger>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="{StaticResource Brush.Selection.Background}" />
-                                    <Setter Property="Foreground" Value="{StaticResource Brush.Text.SelectionForeground}" />
+                                    <Setter Property="Background" Value="{DynamicResource Brush.Selection.Background}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Text.SelectionForeground}" />
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -107,8 +107,8 @@
                     Content="Delete"
                     MinWidth="88"
                     Margin="0,0,12,0"
-                    Background="{StaticResource Brush.Status.Error}"
-                    Foreground="{StaticResource Brush.Text.Primary}"
+                    Background="{DynamicResource Brush.Status.Error}"
+                    Foreground="{DynamicResource Brush.Text.Primary}"
                     Click="DeleteButton_OnClick" />
             <Button Content="Close"
                     MinWidth="88"

@@ -9,10 +9,10 @@
         ResizeMode="NoResize"
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
-        Background="{StaticResource Brush.Window.Shell.Background.Solid}">
+        Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
     <Grid Margin="20"
-          Background="{StaticResource Brush.Panel.Primary.Background.Solid}"
-          TextElement.Foreground="{StaticResource Brush.Text.Primary}">
+          Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+          TextElement.Foreground="{DynamicResource Brush.Text.Primary}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -33,12 +33,12 @@
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
                       MaxHeight="360"
-                      Background="{StaticResource Brush.Dialog.TextBox.Background}">
+                      Background="{DynamicResource Brush.Dialog.TextBox.Background}">
             <TextBlock x:Name="MessageTextBlock"
                        TextWrapping="Wrap"
                        MaxWidth="520"
                        VerticalAlignment="Center"
-                       Foreground="{StaticResource Brush.Text.Primary}" />
+                       Foreground="{DynamicResource Brush.Text.Primary}" />
         </ScrollViewer>
 
         <StackPanel Grid.Row="1"

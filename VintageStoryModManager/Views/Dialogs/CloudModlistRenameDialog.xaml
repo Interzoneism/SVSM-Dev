@@ -10,10 +10,10 @@
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
         Loaded="Window_OnLoaded"
-        Background="{StaticResource Brush.Window.Shell.Background.Solid}">
+        Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
     <Grid Margin="20"
-          Background="{StaticResource Brush.Panel.Primary.Background.Solid}"
-          TextElement.Foreground="{StaticResource Brush.Text.Primary}">
+          Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+          TextElement.Foreground="{DynamicResource Brush.Text.Primary}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -30,11 +30,11 @@
                  MinWidth="220"
                  Margin="0,0,0,12"
                  TextChanged="NameTextBox_OnTextChanged"
-                 Background="{StaticResource Brush.Dialog.TextBox.Background}"
-                 BorderBrush="{StaticResource Brush.Dialog.TextBox.Border}"
-                 SelectionBrush="{StaticResource Brush.Dialog.TextBox.SelectionBackground}"
-                 SelectionTextBrush="{StaticResource Brush.Dialog.TextBox.SelectionForeground}"
-                 CaretBrush="{StaticResource Brush.Dialog.TextBox.Caret}" />
+                 Background="{DynamicResource Brush.Dialog.TextBox.Background}"
+                 BorderBrush="{DynamicResource Brush.Dialog.TextBox.Border}"
+                 SelectionBrush="{DynamicResource Brush.Dialog.TextBox.SelectionBackground}"
+                 SelectionTextBrush="{DynamicResource Brush.Dialog.TextBox.SelectionForeground}"
+                 CaretBrush="{DynamicResource Brush.Dialog.TextBox.Caret}" />
 
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"
