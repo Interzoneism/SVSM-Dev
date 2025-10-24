@@ -810,7 +810,7 @@
                         CornerRadius="{Binding Path=(ui:ControlHelper.CornerRadius), ElementName=ModsDataGrid}"
                         SnapsToDevicePixels="True"
                         Visibility="{Binding IsViewingCloudModlists, Converter={StaticResource IMM.VisibleWhenFalseConverter}}">
-                    <Border Background="Transparent"
+                    <Border Background="{StaticResource Brush.SunkenSurface.Background}"
                             BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Dark}"
                             BorderThickness="2,2,0,0"
                             CornerRadius="{Binding Path=(ui:ControlHelper.CornerRadius), ElementName=ModsDataGrid}"
@@ -828,6 +828,7 @@
                                   GridLinesVisibility="None"
                                   SelectionUnit="FullRow"
                                   SelectionMode="Single"
+                                  Background="Transparent"
                                   RowHeaderWidth="0"
                                   BorderThickness="0,1,2,1"
                                   IsSynchronizedWithCurrentItem="True"
@@ -2168,35 +2169,48 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <Border x:Name="StatusTextBorder" HorizontalAlignment="Left" Height="50" VerticalAlignment="Center" Width="376" Background="{DynamicResource CardGradient}" CornerRadius="3,3,3,3">
-                <Border.Effect>
-                    <DropShadowEffect Opacity="0.1" Direction="240" ShadowDepth="3" BlurRadius="4"/>
-                </Border.Effect>
-                <Grid>
-
-
-                    <TextBlock Grid.Column="0"
-                        Text="{Binding StatusMessage}"
-                        TextWrapping="Wrap"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center" FontSize="14" Foreground="{StaticResource Brush.Text.Primary}" FontWeight="Bold" Padding="4,2,4,2">
-                        <TextBlock.Style>
-                            <Style TargetType="{x:Type TextBlock}">
-                                <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
-                                <Setter Property="Visibility" Value="Visible" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                        <Setter Property="Foreground" Value="{StaticResource Brush.Text.Emphasis}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-
-                </Grid>
+            <Border x:Name="StatusTextBorder"
+                    HorizontalAlignment="Left"
+                    Height="50"
+                    VerticalAlignment="Center"
+                    Width="376"
+                    Background="Transparent"
+                    BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Light}"
+                    BorderThickness="0,0,2,2"
+                    CornerRadius="3"
+                    SnapsToDevicePixels="True">
+                <Border Background="{StaticResource Brush.SunkenSurface.Background}"
+                        BorderBrush="{StaticResource Brush.SunkenSurface.Bevel.Dark}"
+                        BorderThickness="2,2,0,0"
+                        CornerRadius="3"
+                        SnapsToDevicePixels="True">
+                    <Grid>
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding StatusMessage}"
+                                   TextWrapping="Wrap"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="14"
+                                   Foreground="{StaticResource Brush.Text.Primary}"
+                                   FontWeight="Bold"
+                                   Padding="4,2,4,2">
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}" />
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource Brush.Text.Emphasis}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </Border>
             </Border>
 
             <StackPanel Grid.Column="1"

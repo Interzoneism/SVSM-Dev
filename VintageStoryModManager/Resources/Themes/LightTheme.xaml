@@ -214,6 +214,11 @@
     <SolidColorBrush x:Key="Brush.SearchBox.Background" Color="{StaticResource Palette.SearchBox.Background}" />
     <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Light" Color="{StaticResource Palette.ColorBevelLight}" />
     <SolidColorBrush x:Key="Brush.SunkenSurface.Bevel.Dark" Color="{StaticResource Palette.ColorBevelDark}" />
+    <LinearGradientBrush x:Key="Brush.SunkenSurface.Background" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="{StaticResource Palette.DataGrid.Background}" Offset="0" />
+        <GradientStop Color="{StaticResource Palette.Panel.Primary.Background.Solid}" Offset="0.45" />
+        <GradientStop Color="{StaticResource Palette.Panel.Secondary.Background.Solid}" Offset="1" />
+    </LinearGradientBrush>
 
     <!-- ========================= -->
     <!-- Combo box colour system. -->
