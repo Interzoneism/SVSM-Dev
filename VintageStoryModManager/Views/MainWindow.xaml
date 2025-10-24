@@ -2168,7 +2168,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <Border HorizontalAlignment="Left" Height="50" VerticalAlignment="Center" Width="376" Background="{DynamicResource CardGradient}" CornerRadius="3,3,3,3">
+            <Border x:Name="StatusTextBorder" HorizontalAlignment="Left" Height="50" VerticalAlignment="Center" Width="376" Background="{DynamicResource CardGradient}" CornerRadius="3,3,3,3">
                 <Border.Effect>
                     <DropShadowEffect Opacity="0.1" Direction="240" ShadowDepth="3" BlurRadius="4"/>
                 </Border.Effect>
