@@ -635,6 +635,7 @@ public sealed class ModDatabaseService
             int? comments = GetNullableInt(modElement, "comments");
             int? follows = GetNullableInt(modElement, "follows");
             int? trendingPoints = GetNullableInt(modElement, "trendingpoints");
+            string? side = GetString(modElement, "side");
             string? logoUrl = GetString(modElement, "logofile");
             if (string.IsNullOrWhiteSpace(logoUrl))
             {
@@ -669,7 +670,8 @@ public sealed class ModDatabaseService
                 CreatedUtc = createdUtc,
                 LatestRelease = latestRelease,
                 LatestCompatibleRelease = latestCompatibleRelease,
-                Releases = releases
+                Releases = releases,
+                Side = side
             };
 
             await CacheService.StoreAsync(modId, normalizedGameVersion, info, modVersion, cancellationToken).ConfigureAwait(false);

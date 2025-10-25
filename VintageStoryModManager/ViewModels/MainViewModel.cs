@@ -2972,7 +2972,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             Follows = result.Follows,
             TrendingPoints = result.TrendingPoints,
             LogoUrl = result.LogoUrl,
-            LastReleasedUtc = result.LastReleasedUtc
+            LastReleasedUtc = result.LastReleasedUtc,
+            Side = result.Side
         };
 
         return new ModEntry
@@ -3612,7 +3613,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             LatestCompatibleRelease = latestCompatibleRelease ?? latestRelease,
             Releases = releases,
             LastReleasedUtc = lastUpdatedUtc,
-            IsOfflineOnly = true
+            IsOfflineOnly = true,
+            Side = entry.Side
         };
     }
 
@@ -3665,7 +3667,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             LatestRelease = latestRelease,
             LatestCompatibleRelease = latestCompatibleRelease ?? latestRelease,
             Releases = mergedReleases,
-            IsOfflineOnly = offlineInfo.IsOfflineOnly && (cachedInfo?.IsOfflineOnly ?? true)
+            IsOfflineOnly = offlineInfo.IsOfflineOnly && (cachedInfo?.IsOfflineOnly ?? true),
+            Side = cachedInfo?.Side ?? offlineInfo.Side
         };
     }
 
