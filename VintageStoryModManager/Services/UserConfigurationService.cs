@@ -76,6 +76,8 @@ public sealed class UserConfigurationService
     private readonly Dictionary<string, ModConfigPathEntry> _storedModConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _themePaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _customThemePaletteColors = new(StringComparer.OrdinalIgnoreCase);
+    private string? _previousConfigurationVersion;
+    private string? _previousModManagerVersion;
     private string? _selectedPresetName;
     private string _configurationVersion = CurrentConfigurationVersion;
     private string _modManagerVersion = CurrentModManagerVersion;
@@ -102,6 +104,7 @@ public sealed class UserConfigurationService
     private bool _hasPendingSave;
     private bool _hasPendingModConfigPathSave;
     private ColorTheme _colorTheme = ColorTheme.VintageStory;
+    private bool _hasVersionMismatch;
 
     public UserConfigurationService()
     {
@@ -120,6 +123,12 @@ public sealed class UserConfigurationService
     public string ConfigurationVersion => _configurationVersion;
 
     public string ModManagerVersion => _modManagerVersion;
+
+    public bool HasVersionMismatch => _hasVersionMismatch;
+
+    public string? PreviousConfigurationVersion => _previousConfigurationVersion;
+
+    public string? PreviousModManagerVersion => _previousModManagerVersion;
 
     public bool IsCompactView => _isCompactView;
 
@@ -777,6 +786,17 @@ public sealed class UserConfigurationService
     private void InitializeVersionMetadata(string? configurationVersion, string? modManagerVersion)
     {
         bool requiresSave = false;
+
+        _previousConfigurationVersion = configurationVersion;
+        _previousModManagerVersion = modManagerVersion;
+
+        bool configurationMismatch = !string.IsNullOrWhiteSpace(configurationVersion)
+            && !string.Equals(configurationVersion, CurrentConfigurationVersion, StringComparison.OrdinalIgnoreCase);
+
+        bool modManagerMismatch = !string.IsNullOrWhiteSpace(modManagerVersion)
+            && !string.Equals(modManagerVersion, CurrentModManagerVersion, StringComparison.OrdinalIgnoreCase);
+
+        _hasVersionMismatch = configurationMismatch || modManagerMismatch;
 
         string resolvedConfigurationVersion = string.IsNullOrWhiteSpace(configurationVersion)
             ? CurrentConfigurationVersion
@@ -1532,25 +1552,33 @@ public sealed class UserConfigurationService
     {
         Assembly assembly = typeof(UserConfigurationService).Assembly;
 
-        string? informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        if (!string.IsNullOrWhiteSpace(informationalVersion))
+        string? version = VersionStringUtility.Normalize(
+            assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
+        if (!string.IsNullOrWhiteSpace(version))
         {
-            return informationalVersion!;
+            return version!;
         }
 
-        string? fileVersion = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version;
-        if (!string.IsNullOrWhiteSpace(fileVersion))
+        version = VersionStringUtility.Normalize(
+            assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version);
+        if (!string.IsNullOrWhiteSpace(version))
         {
-            return fileVersion!;
+            return version!;
         }
 
-        Version? version = assembly.GetName().Version;
-        return version?.ToString() ?? "0.0.0";
+        version = VersionStringUtility.Normalize(assembly.GetName().Version?.ToString());
+        return string.IsNullOrWhiteSpace(version) ? "0.0.0" : version!;
     }
 
     private static string? NormalizeVersion(string? version)
     {
-        return string.IsNullOrWhiteSpace(version) ? null : version.Trim();
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return null;
+        }
+
+        string? normalized = VersionStringUtility.Normalize(version);
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 
     private static string? NormalizePath(string? path)
