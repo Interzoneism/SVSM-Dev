@@ -197,6 +197,8 @@ public partial class MainWindow : Window
 
         _userConfiguration.EnablePersistence();
 
+        await PromptCacheRefreshIfNeededAsync().ConfigureAwait(true);
+
         if (_viewModel != null)
         {
             await InitializeViewModelAsync(_viewModel).ConfigureAwait(true);
@@ -206,6 +208,73 @@ public partial class MainWindow : Window
 
         await RefreshDeleteCachedModsMenuHeaderAsync();
         await RefreshManagerUpdateLinkAsync();
+    }
+
+    private async Task PromptCacheRefreshIfNeededAsync()
+    {
+        if (!_userConfiguration.HasVersionMismatch || _userConfiguration.SuppressRefreshCachePrompt)
+        {
+            return;
+        }
+
+        string currentVersion = _userConfiguration.ModManagerVersion;
+        string? previousVersion = _userConfiguration.PreviousModManagerVersion
+            ?? _userConfiguration.PreviousConfigurationVersion;
+
+        string message = previousVersion is null
+            ? $"Simple VS Manager {currentVersion} is now installed. Clearing cached mod data is recommended after updates to avoid stale information.\n\nWould you like to clear the caches now?"
+            : $"Simple VS Manager was updated from version {previousVersion} to {currentVersion}. Clearing cached mod data is recommended after updates to avoid stale information.\n\nWould you like to clear the caches now?";
+
+        var buttonOverrides = new MessageDialogButtonContentOverrides
+        {
+            Yes = "Clear caches now",
+            No = "Remind me later"
+        };
+
+        var extraButton = new MessageDialogExtraButton("Don't remind me again", MessageBoxResult.Cancel);
+
+        MessageBoxResult result = WpfMessageBox.Show(
+            this,
+            message,
+            "Simple VS Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            extraButton,
+            buttonOverrides);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            await ClearManagerCachesForVersionUpdateAsync().ConfigureAwait(true);
+        }
+        else if (result == MessageBoxResult.Cancel)
+        {
+            _userConfiguration.SetSuppressRefreshCachePrompt(true);
+        }
+    }
+
+    private async Task ClearManagerCachesForVersionUpdateAsync()
+    {
+        try
+        {
+            await Task.Run(ClearManagerCaches).ConfigureAwait(true);
+            await RefreshDeleteCachedModsMenuHeaderAsync().ConfigureAwait(true);
+
+            WpfMessageBox.Show(
+                this,
+                "Cached mod data cleared successfully. Fresh data will be downloaded as needed.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                this,
+                $"Failed to clear cached mod data:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private Task EnsureInstalledModsCachedAsync(MainViewModel viewModel)
