@@ -615,7 +615,7 @@
                             Height="40"
                             FontSize="16"
                             Style="{StaticResource IMM.ModDatabaseTabButtonStyle}" Margin="5,0,0,0" />
-                    <Button Content="Modlists (Beta)"
+                    <Button Content="Modlists"
                             Command="{Binding ShowCloudModlistsCommand}"
                             Width="138"
                             Height="40"
