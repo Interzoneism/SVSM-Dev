@@ -294,7 +294,8 @@ internal sealed class ModDatabaseCacheService
             LastReleasedUtc = info.LastReleasedUtc,
             CreatedUtc = info.CreatedUtc,
             RequiredGameVersions = info.RequiredGameVersions?.ToArray() ?? Array.Empty<string>(),
-            Releases = releaseModels.ToArray()
+            Releases = releaseModels.ToArray(),
+            Side = info.Side
         };
     }
 
@@ -338,7 +339,8 @@ internal sealed class ModDatabaseCacheService
             CreatedUtc = cached.CreatedUtc,
             LatestRelease = latestRelease,
             LatestCompatibleRelease = latestCompatibleRelease,
-            Releases = releases
+            Releases = releases,
+            Side = cached.Side
         };
     }
 
@@ -570,6 +572,8 @@ internal sealed class ModDatabaseCacheService
         public string[] RequiredGameVersions { get; init; } = Array.Empty<string>();
 
         public CachedModRelease[] Releases { get; init; } = Array.Empty<CachedModRelease>();
+
+        public string? Side { get; init; }
     }
 
     private sealed class CachedModRelease
