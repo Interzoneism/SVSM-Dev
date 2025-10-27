@@ -1629,22 +1629,45 @@ public sealed class UserConfigurationService
     {
         Assembly assembly = typeof(UserConfigurationService).Assembly;
 
-        string? version = VersionStringUtility.Normalize(
-            assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
+        string? version = TrimToSemanticVersion(
+            VersionStringUtility.Normalize(
+                assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion));
         if (!string.IsNullOrWhiteSpace(version))
         {
             return version!;
         }
 
-        version = VersionStringUtility.Normalize(
-            assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version);
+        version = TrimToSemanticVersion(
+            VersionStringUtility.Normalize(
+                assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version));
         if (!string.IsNullOrWhiteSpace(version))
         {
             return version!;
         }
 
-        version = VersionStringUtility.Normalize(assembly.GetName().Version?.ToString());
+        version = TrimToSemanticVersion(VersionStringUtility.Normalize(assembly.GetName().Version?.ToString()));
         return string.IsNullOrWhiteSpace(version) ? "0.0.0" : version!;
+    }
+
+    private static string? TrimToSemanticVersion(string? version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return null;
+        }
+
+        string[] parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+        {
+            return null;
+        }
+
+        if (parts.Length <= 3)
+        {
+            return string.Join('.', parts);
+        }
+
+        return string.Join('.', parts.Take(3));
     }
 
     private static string? NormalizeVersion(string? version)
