@@ -518,13 +518,6 @@
                                   Style="{StaticResource ToggleMenuItemStyle}"
                                   Checked="InstalledModsColumnMenuItem_OnChecked"
                                   Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                        <MenuItem x:Name="InstalledColumnMenuItem"
-                                  Header="_Installed"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
                         <MenuItem x:Name="VersionColumnMenuItem"
                                   Header="_Version"
                                   IsCheckable="True"
@@ -534,13 +527,6 @@
                                   Unchecked="InstalledModsColumnMenuItem_OnChecked" />
                         <MenuItem x:Name="LatestVersionColumnMenuItem"
                                   Header="Latest _Version"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                        <MenuItem x:Name="DownloadsColumnMenuItem"
-                                  Header="_Downloads"
                                   IsCheckable="True"
                                   IsChecked="True"
                                   Style="{StaticResource ToggleMenuItemStyle}"
