@@ -78,6 +78,21 @@ public partial class MainWindow : Window
     private static readonly PresetLoadOptions ModListLoadOptions = new(true, true, true);
     private readonly record struct ManagerDeletionResult(List<string> DeletedPaths, List<string> FailedPaths);
 
+    private enum InstalledModsColumn
+    {
+        Active,
+        Icon,
+        Name,
+        Installed,
+        Version,
+        LatestVersion,
+        Downloads,
+        Authors,
+        Tags,
+        Status,
+        Side
+    }
+
     private static readonly DependencyProperty BoundModProperty =
         DependencyProperty.RegisterAttached(
             "BoundMod",
@@ -136,6 +151,8 @@ public partial class MainWindow : Window
     private CloudModlistListEntry? _selectedCloudModlist;
     private string? _recentLocalModBackupDirectory;
     private List<string>? _recentLocalModBackupModNames;
+    private readonly Dictionary<InstalledModsColumn, bool> _installedColumnVisibilityPreferences = new();
+    private bool _isSearchingModDatabase;
 
 
     public MainWindow()
@@ -145,6 +162,8 @@ public partial class MainWindow : Window
             AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
         InitializeComponent();
+
+        InitializeColumnVisibilityMenu();
 
         _userConfiguration = new UserConfigurationService();
         ApplyStoredWindowDimensions();
@@ -193,6 +212,81 @@ public partial class MainWindow : Window
         InternetAccessManager.InternetAccessChanged += InternetAccessManager_OnInternetAccessChanged;
 
         UpdateCloudModlistControlsEnabledState();
+    }
+
+    private void InitializeColumnVisibilityMenu()
+    {
+        RegisterColumnMenuItem(ActiveColumnMenuItem, InstalledModsColumn.Active);
+        RegisterColumnMenuItem(IconColumnMenuItem, InstalledModsColumn.Icon);
+        RegisterColumnMenuItem(NameColumnMenuItem, InstalledModsColumn.Name);
+        RegisterColumnMenuItem(InstalledColumnMenuItem, InstalledModsColumn.Installed);
+        RegisterColumnMenuItem(VersionColumnMenuItem, InstalledModsColumn.Version);
+        RegisterColumnMenuItem(LatestVersionColumnMenuItem, InstalledModsColumn.LatestVersion);
+        RegisterColumnMenuItem(DownloadsColumnMenuItem, InstalledModsColumn.Downloads);
+        RegisterColumnMenuItem(AuthorsColumnMenuItem, InstalledModsColumn.Authors);
+        RegisterColumnMenuItem(TagsColumnMenuItem, InstalledModsColumn.Tags);
+        RegisterColumnMenuItem(StatusColumnMenuItem, InstalledModsColumn.Status);
+        RegisterColumnMenuItem(SideColumnMenuItem, InstalledModsColumn.Side);
+
+        UpdateColumnVisibility();
+    }
+
+    private void RegisterColumnMenuItem(MenuItem? menuItem, InstalledModsColumn column)
+    {
+        if (menuItem == null)
+        {
+            return;
+        }
+
+        menuItem.Tag = column;
+        _installedColumnVisibilityPreferences[column] = menuItem.IsChecked;
+        menuItem.Checked += InstalledModsColumnMenuItem_OnChecked;
+        menuItem.Unchecked += InstalledModsColumnMenuItem_OnChecked;
+    }
+
+    private void InstalledModsColumnMenuItem_OnChecked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not InstalledModsColumn column)
+        {
+            return;
+        }
+
+        _installedColumnVisibilityPreferences[column] = menuItem.IsChecked;
+        UpdateColumnVisibility();
+    }
+
+    private void UpdateColumnVisibility()
+    {
+        bool isSearching = _isSearchingModDatabase;
+        bool isCompactView = _viewModel?.IsCompactView == true;
+
+        SetColumnVisibility(ActiveColumn, InstalledModsColumn.Active, !isSearching);
+        SetColumnVisibility(IconColumn, InstalledModsColumn.Icon, !isSearching && !isCompactView);
+        SetColumnVisibility(NameColumn, InstalledModsColumn.Name, true);
+        SetColumnVisibility(InstalledColumn, InstalledModsColumn.Installed, isSearching);
+        SetColumnVisibility(VersionColumn, InstalledModsColumn.Version, !isSearching);
+        SetColumnVisibility(LatestVersionColumn, InstalledModsColumn.LatestVersion, true);
+        SetColumnVisibility(DownloadsColumn, InstalledModsColumn.Downloads, isSearching);
+        SetColumnVisibility(AuthorsColumn, InstalledModsColumn.Authors, true);
+        SetColumnVisibility(TagsColumn, InstalledModsColumn.Tags, true);
+        SetColumnVisibility(StatusColumn, InstalledModsColumn.Status, !isSearching);
+        SetColumnVisibility(SideColumn, InstalledModsColumn.Side, true);
+    }
+
+    private void SetColumnVisibility(DataGridColumn? column, InstalledModsColumn columnKey, bool isContextuallyVisible)
+    {
+        if (column == null)
+        {
+            return;
+        }
+
+        bool isPreferredVisible = _installedColumnVisibilityPreferences.TryGetValue(columnKey, out bool preference)
+            ? preference
+            : true;
+
+        column.Visibility = isPreferredVisible && isContextuallyVisible
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -801,50 +895,13 @@ public partial class MainWindow : Window
 
     private void ApplyCompactViewState(bool isCompactView)
     {
-        if (IconColumn == null)
-        {
-            return;
-        }
-
-        if (_viewModel?.SearchModDatabase == true)
-        {
-            IconColumn.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        IconColumn.Visibility = isCompactView ? Visibility.Collapsed : Visibility.Visible;
+        UpdateColumnVisibility();
     }
 
     private void UpdateSearchColumnVisibility(bool isSearchingModDatabase)
     {
-        Visibility visibility = isSearchingModDatabase ? Visibility.Collapsed : Visibility.Visible;
-
-        if (ActiveColumn != null)
-        {
-            ActiveColumn.Visibility = visibility;
-        }
-
-        if (StatusColumn != null)
-        {
-            StatusColumn.Visibility = visibility;
-        }
-
-        if (VersionColumn != null)
-        {
-            VersionColumn.Visibility = visibility;
-        }
-
-        if (InstalledColumn != null)
-        {
-            InstalledColumn.Visibility = isSearchingModDatabase ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        if (DownloadsColumn != null)
-        {
-            DownloadsColumn.Visibility = isSearchingModDatabase ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        ApplyCompactViewState(_viewModel?.IsCompactView ?? false);
+        _isSearchingModDatabase = isSearchingModDatabase;
+        UpdateColumnVisibility();
         UpdateSearchSortingBehavior(isSearchingModDatabase);
     }
 
