@@ -61,6 +61,10 @@ public partial class MainWindow : Window
     private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
     private const string BackupDirectoryName = "Backups";
     private const int AutomaticConfigMaxWordDistance = 2;
+    private static readonly HttpClient ConnectivityTestHttpClient = new()
+    {
+        Timeout = TimeSpan.FromSeconds(10)
+    };
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
 
@@ -5955,45 +5959,205 @@ public partial class MainWindow : Window
 
     private async Task<bool> EnsureModDatabaseReachableForRebuildAsync()
     {
+        if (_viewModel is null)
+        {
+            return false;
+        }
+
+        IReadOnlyList<ModPresetModState> states = _viewModel.GetCurrentModStates();
+        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var candidates = new List<ModPresetModState>(5);
+
+        foreach (ModPresetModState state in states)
+        {
+            if (state is null || string.IsNullOrWhiteSpace(state.ModId))
+            {
+                continue;
+            }
+
+            string trimmedId = state.ModId.Trim();
+            if (!seenIds.Add(trimmedId))
+            {
+                continue;
+            }
+
+            candidates.Add(state);
+            if (candidates.Count >= 5)
+            {
+                break;
+            }
+        }
+
+        if (candidates.Count == 0)
+        {
+            try
+            {
+                await _modDatabaseService.GetMostDownloadedModsAsync(1).ConfigureAwait(true);
+                return true;
+            }
+            catch (InternetAccessDisabledException ex)
+            {
+                WpfMessageBox.Show(
+                    ex.Message,
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return false;
+            }
+            catch (HttpRequestException)
+            {
+                WpfMessageBox.Show(
+                    ModDatabaseUnavailableMessage,
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return false;
+            }
+            catch (TaskCanceledException)
+            {
+                WpfMessageBox.Show(
+                    ModDatabaseUnavailableMessage,
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show(
+                    $"{ModDatabaseUnavailableMessage}.{Environment.NewLine}{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return false;
+            }
+        }
+
+        string? installedGameVersion = _viewModel.InstalledGameVersion;
+        foreach (ModPresetModState candidate in candidates)
+        {
+            try
+            {
+                if (await TryTestRebuildModConnectivityAsync(candidate, installedGameVersion).ConfigureAwait(true))
+                {
+                    return true;
+                }
+            }
+            catch (InternetAccessDisabledException ex)
+            {
+                WpfMessageBox.Show(
+                    ex.Message,
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return false;
+            }
+        }
+
+        WpfMessageBox.Show(
+            "Aborted because couldn't reach mod DB, check connection.",
+            "Simple VS Manager",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+
+        return false;
+    }
+
+    private async Task<bool> TryTestRebuildModConnectivityAsync(ModPresetModState state, string? installedGameVersion)
+    {
+        string modId = state.ModId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            return false;
+        }
+
+        string? desiredVersion = string.IsNullOrWhiteSpace(state.Version) ? null : state.Version!.Trim();
+
+        ModDatabaseInfo? info = await _modDatabaseService
+            .TryLoadDatabaseInfoAsync(modId, desiredVersion, installedGameVersion)
+            .ConfigureAwait(true);
+
+        if (info is null)
+        {
+            Trace.TraceWarning("Connectivity test failed to load metadata for mod {0}.", modId);
+            return false;
+        }
+
+        ModReleaseInfo? release = TrySelectReleaseForConnectivityTest(info, desiredVersion);
+        if (release?.DownloadUri is null)
+        {
+            Trace.TraceWarning("Connectivity test could not find a downloadable release for mod {0}.", modId);
+            return false;
+        }
+
+        bool success = await TryProbeModDownloadAsync(release.DownloadUri).ConfigureAwait(true);
+        if (!success)
+        {
+            Trace.TraceWarning("Connectivity test failed to reach download URI for mod {0} (version {1}).", modId, release.Version);
+        }
+
+        return success;
+    }
+
+    private static ModReleaseInfo? TrySelectReleaseForConnectivityTest(ModDatabaseInfo info, string? desiredVersion)
+    {
+        if (!string.IsNullOrWhiteSpace(desiredVersion))
+        {
+            string trimmedVersion = desiredVersion.Trim();
+            string? normalizedDesired = VersionStringUtility.Normalize(desiredVersion);
+
+            foreach (ModReleaseInfo release in info.Releases ?? Array.Empty<ModReleaseInfo>())
+            {
+                if (!string.IsNullOrWhiteSpace(release.Version)
+                    && string.Equals(release.Version.Trim(), trimmedVersion, StringComparison.OrdinalIgnoreCase))
+                {
+                    return release;
+                }
+
+                if (normalizedDesired is not null
+                    && !string.IsNullOrWhiteSpace(release.NormalizedVersion)
+                    && string.Equals(release.NormalizedVersion, normalizedDesired, StringComparison.OrdinalIgnoreCase))
+                {
+                    return release;
+                }
+            }
+        }
+
+        IReadOnlyList<ModReleaseInfo> releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
+
+        return info.LatestCompatibleRelease
+            ?? info.LatestRelease
+            ?? (releases.Count > 0 ? releases[0] : null);
+    }
+
+    private static async Task<bool> TryProbeModDownloadAsync(Uri downloadUri)
+    {
         try
         {
-            await _modDatabaseService.GetMostDownloadedModsAsync(1).ConfigureAwait(true);
-            return true;
+            InternetAccessManager.ThrowIfInternetAccessDisabled();
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, downloadUri);
+            using HttpResponseMessage response = await ConnectivityTestHttpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead)
+                .ConfigureAwait(true);
+
+            return response.IsSuccessStatusCode;
         }
-        catch (InternetAccessDisabledException ex)
+        catch (HttpRequestException ex)
         {
-            WpfMessageBox.Show(
-                ex.Message,
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            Trace.TraceWarning("Connectivity test download probe failed for {0}: {1}", downloadUri, ex.Message);
+            return false;
         }
-        catch (HttpRequestException)
+        catch (TaskCanceledException ex)
         {
-            WpfMessageBox.Show(
-                ModDatabaseUnavailableMessage,
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-        catch (TaskCanceledException)
-        {
-            WpfMessageBox.Show(
-                ModDatabaseUnavailableMessage,
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            Trace.TraceWarning("Connectivity test download probe timed out for {0}: {1}", downloadUri, ex.Message);
+            return false;
         }
         catch (Exception ex)
         {
-            WpfMessageBox.Show(
-                $"{ModDatabaseUnavailableMessage}.{Environment.NewLine}{ex.Message}",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            Trace.TraceWarning("Connectivity test download probe encountered an unexpected error for {0}: {1}", downloadUri, ex.Message);
+            return false;
         }
-
-        return false;
     }
 
     private ModlistLoadMode? PromptModlistLoadMode()
