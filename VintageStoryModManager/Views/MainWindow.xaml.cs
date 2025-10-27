@@ -165,6 +165,8 @@ public partial class MainWindow : Window
 
         InitializeComponent();
 
+        UpdateModlistLoadingUiState();
+
         InitializeColumnVisibilityMenu();
 
         ApplyStoredWindowDimensions();
@@ -2636,6 +2638,11 @@ public partial class MainWindow : Window
 
     private async Task<bool> TryHandleModListKeyDownAsync(System.Windows.Input.KeyEventArgs e)
     {
+        if (_isApplyingPreset)
+        {
+            return true;
+        }
+
         if (_viewModel?.SearchModDatabase == true)
         {
             return false;
@@ -2668,6 +2675,12 @@ public partial class MainWindow : Window
 
     private void ModsDataGrid_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (_isApplyingPreset)
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (e.Handled)
         {
             return;
@@ -2746,6 +2759,12 @@ public partial class MainWindow : Window
 
     private void ModsDataGridRow_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (_isApplyingPreset)
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (ShouldIgnoreRowSelection(e.OriginalSource as DependencyObject))
         {
             return;
@@ -2763,6 +2782,12 @@ public partial class MainWindow : Window
 
     private void ModDatabaseCard_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (_isApplyingPreset)
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (ShouldIgnoreRowSelection(e.OriginalSource as DependencyObject))
         {
             return;
@@ -3844,6 +3869,11 @@ public partial class MainWindow : Window
 
     private async void RebuildButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (_isApplyingPreset)
+        {
+            return;
+        }
+
         if (_isFullRefreshInProgress)
         {
             return;
@@ -3967,6 +3997,11 @@ public partial class MainWindow : Window
 
     private async void UpdateAllModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
+        if (_isApplyingPreset)
+        {
+            return;
+        }
+
         if (_isModUpdateInProgress || _viewModel?.ModsView == null)
         {
             return;
@@ -4718,6 +4753,62 @@ public partial class MainWindow : Window
         }
     }
 
+    private void PrepareForModlistLoad()
+    {
+        SwitchToInstalledModsTab();
+        ClearSelection(resetAnchor: true);
+    }
+
+    private void UpdateModlistLoadingUiState()
+    {
+        bool isEnabled = !_isApplyingPreset;
+
+        if (UpdateAllButton != null)
+        {
+            UpdateAllButton.IsEnabled = isEnabled;
+        }
+
+        if (RebuildButton != null)
+        {
+            RebuildButton.IsEnabled = isEnabled;
+        }
+
+        if (LaunchGameButton != null)
+        {
+            LaunchGameButton.IsEnabled = isEnabled;
+        }
+
+        if (ModDatabaseTabButton != null)
+        {
+            ModDatabaseTabButton.IsEnabled = isEnabled;
+        }
+
+        if (ModlistsTabButton != null)
+        {
+            ModlistsTabButton.IsEnabled = isEnabled;
+        }
+
+        if (PresetsAndModlistsMenuItem != null)
+        {
+            PresetsAndModlistsMenuItem.IsEnabled = isEnabled;
+        }
+
+        if (UpdateAllModsMenuItem != null)
+        {
+            UpdateAllModsMenuItem.IsEnabled = isEnabled;
+        }
+
+        if (ModsDataGrid != null)
+        {
+            ModsDataGrid.IsEnabled = isEnabled;
+        }
+
+        if (ModDatabaseCardsListView != null)
+        {
+            ModDatabaseCardsListView.IsEnabled = isEnabled;
+        }
+    }
+
     private async Task RefreshDeleteCachedModsMenuHeaderAsync()
     {
         if (DeleteCachedModsMenuItem is null)
@@ -5112,6 +5203,11 @@ public partial class MainWindow : Window
 
     private void LaunchGameButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (_isApplyingPreset)
+        {
+            return;
+        }
+
         if (!string.IsNullOrWhiteSpace(_customShortcutPath))
         {
             if (!File.Exists(_customShortcutPath))
@@ -6996,8 +7092,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        _viewModel.ShowInstalledModsCommand.Execute(null);
-
         ModlistLoadMode? loadMode = PromptModlistLoadMode();
         if (loadMode is not ModlistLoadMode mode)
         {
@@ -7008,6 +7102,8 @@ public partial class MainWindow : Window
         {
             return;
         }
+
+        PrepareForModlistLoad();
 
         PresetLoadOptions loadOptions = GetModlistLoadOptions(mode);
         string fallbackName = entry.Name ?? entry.DisplayName ?? "Modlist";
@@ -7075,6 +7171,8 @@ public partial class MainWindow : Window
             {
                 return;
             }
+
+            PrepareForModlistLoad();
 
             PresetLoadOptions loadOptions = GetModlistLoadOptions(mode);
             string? json = selectedSlot.CachedContent;
@@ -7376,6 +7474,8 @@ public partial class MainWindow : Window
         {
             return;
         }
+
+        PrepareForModlistLoad();
 
         PresetLoadOptions loadOptions = GetModlistLoadOptions(mode);
 
@@ -8513,6 +8613,7 @@ public partial class MainWindow : Window
 
         bool scheduleRefreshAfterLoad = false;
         _isApplyingPreset = true;
+        UpdateModlistLoadingUiState();
         try
         {
             if (preset.IncludesModVersions && preset.ModStates.Count > 0)
@@ -8540,6 +8641,7 @@ public partial class MainWindow : Window
         finally
         {
             _isApplyingPreset = false;
+            UpdateModlistLoadingUiState();
 
             if (scheduleRefreshAfterLoad)
             {
@@ -9375,6 +9477,11 @@ public partial class MainWindow : Window
 
     private void HandleModRowSelection(ModListItemViewModel mod)
     {
+        if (_isApplyingPreset)
+        {
+            return;
+        }
+
         bool isShiftPressed = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
         bool isCtrlPressed = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
 
@@ -9424,6 +9531,11 @@ public partial class MainWindow : Window
 
     private void SelectAllModsInCurrentView()
     {
+        if (_isApplyingPreset)
+        {
+            return;
+        }
+
         if (_viewModel?.SearchModDatabase == true)
         {
             return;
