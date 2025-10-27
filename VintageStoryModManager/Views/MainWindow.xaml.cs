@@ -219,10 +219,8 @@ public partial class MainWindow : Window
         RegisterColumnMenuItem(ActiveColumnMenuItem, InstalledModsColumn.Active);
         RegisterColumnMenuItem(IconColumnMenuItem, InstalledModsColumn.Icon);
         RegisterColumnMenuItem(NameColumnMenuItem, InstalledModsColumn.Name);
-        RegisterColumnMenuItem(InstalledColumnMenuItem, InstalledModsColumn.Installed);
         RegisterColumnMenuItem(VersionColumnMenuItem, InstalledModsColumn.Version);
         RegisterColumnMenuItem(LatestVersionColumnMenuItem, InstalledModsColumn.LatestVersion);
-        RegisterColumnMenuItem(DownloadsColumnMenuItem, InstalledModsColumn.Downloads);
         RegisterColumnMenuItem(AuthorsColumnMenuItem, InstalledModsColumn.Authors);
         RegisterColumnMenuItem(TagsColumnMenuItem, InstalledModsColumn.Tags);
         RegisterColumnMenuItem(StatusColumnMenuItem, InstalledModsColumn.Status);
