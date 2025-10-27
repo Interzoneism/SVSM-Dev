@@ -9956,7 +9956,10 @@ public partial class MainWindow : Window
                 requiresRefresh = true;
                 _viewModel.ReportStatus($"Updated {mod.DisplayName} to {release.Version}.");
                 await _viewModel.PreserveActivationStateAsync(mod.ModId, mod.Version, release.Version, mod.IsActive).ConfigureAwait(true);
-                results.Add(ModUpdateOperationResult.SuccessResult(mod, release.Version));
+                IReadOnlyList<ModListItemViewModel.ReleaseChangelog> appliedChangelogEntries =
+                    mod.GetChangelogEntriesForUpgrade(release.Version);
+                string? changelogSummary = BuildChangelogSummary(appliedChangelogEntries);
+                results.Add(ModUpdateOperationResult.SuccessResult(mod, release.Version, mod.Version, changelogSummary));
             }
 
             if (requiresRefresh && _viewModel.RefreshCommand != null)
@@ -9981,6 +9984,11 @@ public partial class MainWindow : Window
 
             if (results.Count > 0 && showSummary)
             {
+                if (isBulk)
+                {
+                    ShowBulkUpdateChangelogDialog(results);
+                }
+
                 ShowUpdateSummary(results, isBulk, abortRequested);
             }
             else if (abortRequested && showSummary)
@@ -10272,6 +10280,72 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ShowBulkUpdateChangelogDialog(IReadOnlyList<ModUpdateOperationResult> results)
+    {
+        if (results is not { Count: > 0 })
+        {
+            return;
+        }
+
+        var items = new List<BulkUpdateChangelogWindow.BulkUpdateChangelogItem>();
+
+        foreach (ModUpdateOperationResult result in results)
+        {
+            if (!result.Success)
+            {
+                continue;
+            }
+
+            string fromVersion = string.IsNullOrWhiteSpace(result.OldVersion)
+                ? "Unknown"
+                : result.OldVersion!;
+            string toVersion = string.IsNullOrWhiteSpace(result.NewVersion)
+                ? "Unknown"
+                : result.NewVersion!;
+            string title = $"{result.Mod.DisplayName} ({fromVersion} → {toVersion})";
+            string changelog = string.IsNullOrWhiteSpace(result.ChangelogSummary)
+                ? "No changelog entries were provided for this update."
+                : result.ChangelogSummary!;
+            items.Add(new BulkUpdateChangelogWindow.BulkUpdateChangelogItem(title, changelog));
+        }
+
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        var dialog = new BulkUpdateChangelogWindow(items)
+        {
+            Owner = this
+        };
+
+        dialog.ShowDialog();
+    }
+
+    private static string? BuildChangelogSummary(IReadOnlyList<ModListItemViewModel.ReleaseChangelog> changelogEntries)
+    {
+        if (changelogEntries is not { Count: > 0 })
+        {
+            return null;
+        }
+
+        var builder = new StringBuilder();
+
+        for (int i = 0; i < changelogEntries.Count; i++)
+        {
+            ModListItemViewModel.ReleaseChangelog entry = changelogEntries[i];
+            if (i > 0)
+            {
+                builder.AppendLine();
+            }
+
+            builder.AppendLine($"{entry.Version}:");
+            builder.AppendLine(entry.Changelog);
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+
     private static void ShowUpdateSummary(IReadOnlyList<ModUpdateOperationResult> results, bool isBulk, bool aborted)
     {
         if (results.Count == 0)
@@ -10284,6 +10358,11 @@ public partial class MainWindow : Window
         int skippedCount = results.Count(result => result.Skipped);
 
         if (!isBulk && failureCount == 0 && skippedCount == 0)
+        {
+            return;
+        }
+
+        if (isBulk && failureCount == 0 && skippedCount == 0 && !aborted)
         {
             return;
         }
@@ -10345,16 +10424,27 @@ public partial class MainWindow : Window
         LatestCompatible
     }
 
-    private readonly record struct ModUpdateOperationResult(ModListItemViewModel Mod, bool Success, bool Skipped, string Message)
+    private readonly record struct ModUpdateOperationResult(
+        ModListItemViewModel Mod,
+        bool Success,
+        bool Skipped,
+        string Message,
+        string? OldVersion,
+        string? NewVersion,
+        string? ChangelogSummary)
     {
-        public static ModUpdateOperationResult SuccessResult(ModListItemViewModel mod, string version) =>
-            new(mod, true, false, $"Updated to {version}.");
+        public static ModUpdateOperationResult SuccessResult(
+            ModListItemViewModel mod,
+            string newVersion,
+            string? previousVersion,
+            string? changelogSummary) =>
+            new(mod, true, false, $"Updated to {newVersion}.", previousVersion, newVersion, changelogSummary);
 
         public static ModUpdateOperationResult Failure(ModListItemViewModel mod, string message) =>
-            new(mod, false, false, message);
+            new(mod, false, false, message, mod.Version, null, null);
 
         public static ModUpdateOperationResult SkippedResult(ModListItemViewModel mod, string message) =>
-            new(mod, false, true, message);
+            new(mod, false, true, message, mod.Version, null, null);
     }
 
     private void ActiveToggle_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
