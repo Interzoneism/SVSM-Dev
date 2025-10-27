@@ -364,10 +364,12 @@
 
                             <Trigger Property="IsCheckable" Value="True">
                                 <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                                <Setter Property="StaysOpenOnClick" Value="True" />
                             </Trigger>
 
                             <Trigger Property="IsCheckable" Value="False">
                                 <Setter TargetName="CheckMark" Property="Visibility" Value="Collapsed" />
+                                <Setter Property="StaysOpenOnClick" Value="False" />
                             </Trigger>
 
                             <Trigger Property="IsChecked" Value="True">
