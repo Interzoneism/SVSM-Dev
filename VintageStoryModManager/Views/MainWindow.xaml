@@ -494,6 +494,87 @@
                               IsCheckable="True"
                               Style="{StaticResource ToggleMenuItemStyle}"
                               IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
+                    <MenuItem x:Name="ColumnsMenuItem"
+                              Header="_Columns"
+                              Visibility="{Binding IsViewingInstalledMods, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
+                        <MenuItem x:Name="ActiveColumnMenuItem"
+                                  Header="_Active"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        <MenuItem x:Name="IconColumnMenuItem"
+                                  Header="_Icon"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        <MenuItem x:Name="NameColumnMenuItem"
+                                  Header="_Name"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        <MenuItem x:Name="InstalledColumnMenuItem"
+                                  Header="_Installed"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        <MenuItem x:Name="VersionColumnMenuItem"
+                                  Header="_Version"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        <MenuItem x:Name="LatestVersionColumnMenuItem"
+                                  Header="Latest _Version"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        <MenuItem x:Name="DownloadsColumnMenuItem"
+                                  Header="_Downloads"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        <MenuItem x:Name="AuthorsColumnMenuItem"
+                                  Header="_Authors"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        <MenuItem x:Name="TagsColumnMenuItem"
+                                  Header="_Tags"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        <MenuItem x:Name="StatusColumnMenuItem"
+                                  Header="_Status"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        <MenuItem x:Name="SideColumnMenuItem"
+                                  Header="S_ide"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                    </MenuItem>
                     <MenuItem Header="_ModDB Design"
                               Height="35"
                               IsCheckable="True"
@@ -1081,7 +1162,7 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="220" SortMemberPath="DisplayName" IsReadOnly="True">
+                                <DataGridTextColumn x:Name="NameColumn" Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="220" SortMemberPath="DisplayName" IsReadOnly="True">
                                     <DataGridTextColumn.ElementStyle>
                                         <Style TargetType="{x:Type TextBlock}">
                                             <Setter Property="FontFamily" Value="Segoe UI" />
@@ -1160,7 +1241,7 @@
                                         </Style>
                                     </DataGridTextColumn.CellStyle>
                                 </DataGridTextColumn>
-                                <DataGridTextColumn Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" SortMemberPath="LatestVersionSortKey" Width="140" MinWidth="139" IsReadOnly="True">
+                                <DataGridTextColumn x:Name="LatestVersionColumn" Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" SortMemberPath="LatestVersionSortKey" Width="140" MinWidth="139" IsReadOnly="True">
                                     <DataGridTextColumn.ElementStyle>
                                         <Style TargetType="{x:Type TextBlock}">
                                             <Setter Property="HorizontalAlignment" Value="Center" />
@@ -1247,7 +1328,7 @@
 
 
 
-                                <DataGridTextColumn Header="Authors" Binding="{Binding AuthorsDisplay, Mode=OneWay}" Width="150" IsReadOnly="True">
+                                <DataGridTextColumn x:Name="AuthorsColumn" Header="Authors" Binding="{Binding AuthorsDisplay, Mode=OneWay}" Width="150" IsReadOnly="True">
                                     <DataGridTextColumn.ElementStyle>
                                         <Style TargetType="{x:Type TextBlock}">
                                             <Setter Property="TextWrapping" Value="NoWrap" />
@@ -1424,7 +1505,7 @@
                                         </Style>
                                     </DataGridTemplateColumn.CellStyle>
                                 </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="Side"
+                                <DataGridTextColumn x:Name="SideColumn" Header="Side"
                                     Binding="{Binding SideDisplay, Mode=OneWay}"
                                     SortMemberPath="Side"
                                     Width="90"
