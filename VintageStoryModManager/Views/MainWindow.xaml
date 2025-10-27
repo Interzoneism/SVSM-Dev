@@ -651,7 +651,7 @@
                 <Hyperlink NavigateUri="https://mods.vintagestory.at/simplevsmanager"
                            Foreground="{DynamicResource Brush.Text.Emphasis}"
                            RequestNavigate="ManagerUpdateLink_OnRequestNavigate">
-                    Update available!
+                    Manager update available!
                 </Hyperlink>
             </TextBlock>
 

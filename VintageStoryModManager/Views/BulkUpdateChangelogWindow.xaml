@@ -10,7 +10,7 @@
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResizeWithGrip"
         MinHeight="300"
-        MinWidth="400">
+        MinWidth="400" Background="{DynamicResource Brush.Panel.Primary.Background.Solid}">
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -18,16 +18,16 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="The following mods were updated:" FontSize="16" FontWeight="SemiBold" />
+        <TextBlock Text="The following mods were updated:" FontSize="16" />
 
-        <ScrollViewer Grid.Row="1" Margin="0,12,0,12" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="1" Margin="0,12,0,12" VerticalScrollBarVisibility="Auto" Padding="8" Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
             <ItemsControl ItemsSource="{Binding ChangelogItems}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Margin="0,0,0,16">
                             <StackPanel>
-                                <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap" />
-                                <TextBlock Text="{Binding Changelog}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="16" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Changelog}" Margin="0,4,0,0" FontSize="14" TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
                     </DataTemplate>
