@@ -3995,8 +3995,38 @@ public partial class MainWindow : Window
             return;
         }
 
+        var dialog = new UpdateModsDialog(_userConfiguration, mods, overrides)
+        {
+            Owner = this
+        };
+
+        bool? dialogResult = dialog.ShowDialog();
+        if (dialogResult != true)
+        {
+            return;
+        }
+
+        IReadOnlyList<ModListItemViewModel> selectedMods = dialog.SelectedMods;
+        if (selectedMods.Count == 0)
+        {
+            return;
+        }
+
+        Dictionary<ModListItemViewModel, ModReleaseInfo>? selectedOverrides = null;
+        if (overrides != null)
+        {
+            foreach (ModListItemViewModel mod in selectedMods)
+            {
+                if (overrides.TryGetValue(mod, out ModReleaseInfo? release) && release != null)
+                {
+                    selectedOverrides ??= new Dictionary<ModListItemViewModel, ModReleaseInfo>();
+                    selectedOverrides[mod] = release;
+                }
+            }
+        }
+
         await CreateAutomaticBackupAsync().ConfigureAwait(true);
-        await UpdateModsAsync(mods, isBulk: true, overrides);
+        await UpdateModsAsync(selectedMods, isBulk: true, selectedOverrides).ConfigureAwait(true);
     }
 
     private async void CheckModsCompatibilityMenuItem_OnClick(object sender, RoutedEventArgs e)
