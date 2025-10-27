@@ -7982,7 +7982,8 @@ public partial class MainWindow : Window
                 metadata.Version,
                 metadata.Uploader,
                 metadata.Mods,
-                entry.ContentJson));
+                entry.ContentJson,
+                entry.DateAdded));
         }
 
         list.Sort((left, right) =>
