@@ -161,11 +161,12 @@ public partial class MainWindow : Window
             RefreshModsWithErrorHandlingAsync,
             AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
+        _userConfiguration = new UserConfigurationService();
+
         InitializeComponent();
 
         InitializeColumnVisibilityMenu();
 
-        _userConfiguration = new UserConfigurationService();
         ApplyStoredWindowDimensions();
         CacheAllVersionsMenuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
         DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
@@ -237,6 +238,10 @@ public partial class MainWindow : Window
         }
 
         menuItem.Tag = column;
+        if (_userConfiguration.GetInstalledColumnVisibility(column.ToString()) is bool storedVisibility)
+        {
+            menuItem.IsChecked = storedVisibility;
+        }
         _installedColumnVisibilityPreferences[column] = menuItem.IsChecked;
         menuItem.Checked += InstalledModsColumnMenuItem_OnChecked;
         menuItem.Unchecked += InstalledModsColumnMenuItem_OnChecked;
@@ -250,6 +255,7 @@ public partial class MainWindow : Window
         }
 
         _installedColumnVisibilityPreferences[column] = menuItem.IsChecked;
+        _userConfiguration.SetInstalledColumnVisibility(column.ToString(), menuItem.IsChecked);
         UpdateColumnVisibility();
     }
 

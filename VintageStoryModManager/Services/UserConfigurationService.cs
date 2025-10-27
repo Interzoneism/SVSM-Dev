@@ -76,6 +76,7 @@ public sealed class UserConfigurationService
     private readonly Dictionary<string, ModConfigPathEntry> _storedModConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _themePaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _customThemePaletteColors = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, bool> _installedColumnVisibility = new(StringComparer.OrdinalIgnoreCase);
     private string? _previousConfigurationVersion;
     private string? _previousModManagerVersion;
     private string? _selectedPresetName;
@@ -224,6 +225,39 @@ public sealed class UserConfigurationService
     public (string? SortMemberPath, ListSortDirection Direction) GetModListSortPreference()
     {
         return (_modsSortMemberPath, _modsSortDirection);
+    }
+
+    public bool? GetInstalledColumnVisibility(string columnName)
+    {
+        string? normalized = NormalizeInstalledColumnKey(columnName);
+
+        if (normalized is null)
+        {
+            return null;
+        }
+
+        return _installedColumnVisibility.TryGetValue(normalized, out bool value)
+            ? value
+            : null;
+    }
+
+    public void SetInstalledColumnVisibility(string columnName, bool isVisible)
+    {
+        string? normalized = NormalizeInstalledColumnKey(columnName);
+
+        if (normalized is null)
+        {
+            throw new ArgumentException("Column name cannot be empty.", nameof(columnName));
+        }
+
+        if (_installedColumnVisibility.TryGetValue(normalized, out bool current)
+            && current == isVisible)
+        {
+            return;
+        }
+
+        _installedColumnVisibility[normalized] = isVisible;
+        Save();
     }
 
     public string GetConfigurationDirectory()
@@ -667,6 +701,7 @@ public sealed class UserConfigurationService
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             LoadModConfigPaths(obj["modConfigPaths"]);
+            LoadInstalledColumnVisibility(obj["installedColumnVisibility"]);
             LoadThemePalette(obj["themePalette"] ?? obj["darkVsPalette"]);
             if (_colorTheme == ColorTheme.Custom)
             {
@@ -711,6 +746,7 @@ public sealed class UserConfigurationService
             _windowHeight = null;
             _customShortcutPath = null;
             _cloudUploaderName = null;
+            _installedColumnVisibility.Clear();
         }
 
         LoadPersistentModConfigPaths();
@@ -761,6 +797,7 @@ public sealed class UserConfigurationService
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
+                ["installedColumnVisibility"] = BuildInstalledColumnVisibilityJson(),
                 ["themePalette"] = BuildThemePaletteJson(),
                 ["darkVsPalette"] = BuildThemePaletteJson(),
                 ["customThemePalette"] = BuildCustomThemePaletteJson(),
@@ -919,6 +956,23 @@ public sealed class UserConfigurationService
         return result;
     }
 
+    private JsonObject BuildInstalledColumnVisibilityJson()
+    {
+        var result = new JsonObject();
+
+        foreach (var pair in _installedColumnVisibility.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(pair.Key))
+            {
+                continue;
+            }
+
+            result[pair.Key] = pair.Value;
+        }
+
+        return result;
+    }
+
     private JsonObject BuildThemePaletteJson()
     {
         IReadOnlyDictionary<string, string> defaults = _colorTheme == ColorTheme.Custom
@@ -986,6 +1040,29 @@ public sealed class UserConfigurationService
             }
 
             _modConfigPaths[modId.Trim()] = normalized;
+        }
+    }
+
+    private void LoadInstalledColumnVisibility(JsonNode? node)
+    {
+        _installedColumnVisibility.Clear();
+
+        if (node is not JsonObject obj)
+        {
+            return;
+        }
+
+        foreach (var pair in obj)
+        {
+            string? columnKey = NormalizeInstalledColumnKey(pair.Key);
+            bool? isVisible = pair.Value?.GetValue<bool?>();
+
+            if (columnKey is null || !isVisible.HasValue)
+            {
+                continue;
+            }
+
+            _installedColumnVisibility[columnKey] = isVisible.Value;
         }
     }
 
@@ -1606,6 +1683,16 @@ public sealed class UserConfigurationService
         }
 
         return sortMemberPath.Trim();
+    }
+
+    private static string? NormalizeInstalledColumnKey(string? columnName)
+    {
+        if (string.IsNullOrWhiteSpace(columnName))
+        {
+            return null;
+        }
+
+        return columnName.Trim();
     }
 
     private static ListSortDirection ParseSortDirection(string? value)
