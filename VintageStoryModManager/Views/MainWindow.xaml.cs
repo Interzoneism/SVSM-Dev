@@ -260,7 +260,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            await Task.Run(ClearManagerCaches).ConfigureAwait(true);
+            await Task.Run(() => ClearManagerCaches(preserveModCache: false)).ConfigureAwait(true);
             await RefreshDeleteCachedModsMenuHeaderAsync().ConfigureAwait(true);
 
             WpfMessageBox.Show(
@@ -281,9 +281,9 @@ public partial class MainWindow : Window
         }
     }
 
-    private Task EnsureInstalledModsCachedAsync(MainViewModel viewModel)
+    private Task EnsureInstalledModsCachedAsync(MainViewModel viewModel, bool ignoreUserSetting = false)
     {
-        if (viewModel is null || !_userConfiguration.CacheAllVersionsLocally)
+        if (viewModel is null || (!_userConfiguration.CacheAllVersionsLocally && !ignoreUserSetting))
         {
             return Task.CompletedTask;
         }
@@ -3815,6 +3815,20 @@ public partial class MainWindow : Window
             return;
         }
 
+        try
+        {
+            await EnsureInstalledModsCachedAsync(viewModel, ignoreUserSetting: true).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to cache the currently installed mods before rebuilding:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
         string requestedModlistName = $"Rebuilt_{timestamp}";
         string savedModlistName = string.Empty;
@@ -3832,7 +3846,7 @@ public partial class MainWindow : Window
 
             try
             {
-                await Task.Run(ClearManagerCaches).ConfigureAwait(true);
+                await Task.Run(() => ClearManagerCaches(preserveModCache: true)).ConfigureAwait(true);
                 cachesCleared = true;
             }
             catch (Exception ex)
@@ -4884,7 +4898,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private static void ClearManagerCaches()
+    private static void ClearManagerCaches(bool preserveModCache)
     {
         var errors = new List<string>();
 
@@ -4907,7 +4921,7 @@ public partial class MainWindow : Window
         }
 
         string? cachedModsDirectory = ModCacheLocator.GetCachedModsDirectory();
-        if (!string.IsNullOrWhiteSpace(cachedModsDirectory))
+        if (!preserveModCache && !string.IsNullOrWhiteSpace(cachedModsDirectory))
         {
             try
             {
