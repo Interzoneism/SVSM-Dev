@@ -77,6 +77,7 @@ public sealed class UserConfigurationService
     private readonly Dictionary<string, string> _themePaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _customThemePaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _installedColumnVisibility = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, bool> _bulkUpdateModExclusions = new(StringComparer.OrdinalIgnoreCase);
     private string? _previousConfigurationVersion;
     private string? _previousModManagerVersion;
     private string? _selectedPresetName;
@@ -667,9 +668,49 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public bool IsModExcludedFromBulkUpdates(string? modId)
+    {
+        string? normalized = NormalizeModId(modId);
+        if (normalized is null)
+        {
+            return false;
+        }
+
+        return _bulkUpdateModExclusions.TryGetValue(normalized, out bool isExcluded) && isExcluded;
+    }
+
+    public void SetModExcludedFromBulkUpdates(string? modId, bool isExcluded)
+    {
+        string? normalized = NormalizeModId(modId);
+        if (normalized is null)
+        {
+            return;
+        }
+
+        if (isExcluded)
+        {
+            if (_bulkUpdateModExclusions.TryGetValue(normalized, out bool current) && current)
+            {
+                return;
+            }
+
+            _bulkUpdateModExclusions[normalized] = true;
+            Save();
+            return;
+        }
+
+        if (!_bulkUpdateModExclusions.Remove(normalized))
+        {
+            return;
+        }
+
+        Save();
+    }
+
     private void Load()
     {
         _modConfigPaths.Clear();
+        _bulkUpdateModExclusions.Clear();
         ResetCustomThemePaletteToDefaults();
         _colorTheme = ColorTheme.VintageStory;
         ResetThemePaletteToDefaults();
@@ -743,6 +784,7 @@ public sealed class UserConfigurationService
             _onlyShowCompatibleModDatabaseResults = obj["onlyShowCompatibleModDatabaseResults"]?.GetValue<bool?>() ?? false;
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
+            LoadBulkUpdateModExclusions(obj["bulkUpdateModExclusions"]);
             LoadModConfigPaths(obj["modConfigPaths"]);
             LoadInstalledColumnVisibility(obj["installedColumnVisibility"]);
             LoadThemePalette(obj["themePalette"] ?? obj["darkVsPalette"]);
@@ -791,6 +833,7 @@ public sealed class UserConfigurationService
             _customShortcutPath = null;
             _cloudUploaderName = null;
             _installedColumnVisibility.Clear();
+            _bulkUpdateModExclusions.Clear();
         }
 
         LoadPersistentModConfigPaths();
@@ -841,6 +884,7 @@ public sealed class UserConfigurationService
                 ["onlyShowCompatibleModDatabaseResults"] = _onlyShowCompatibleModDatabaseResults,
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
+                ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(),
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
                 ["installedColumnVisibility"] = BuildInstalledColumnVisibilityJson(),
                 ["themePalette"] = BuildThemePaletteJson(),
@@ -1018,6 +1062,23 @@ public sealed class UserConfigurationService
         return result;
     }
 
+    private JsonObject BuildBulkUpdateModExclusionsJson()
+    {
+        var result = new JsonObject();
+
+        foreach (var pair in _bulkUpdateModExclusions.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(pair.Key) || !pair.Value)
+            {
+                continue;
+            }
+
+            result[pair.Key] = true;
+        }
+
+        return result;
+    }
+
     private JsonObject BuildThemePaletteJson()
     {
         IReadOnlyDictionary<string, string> defaults = _colorTheme == ColorTheme.Custom
@@ -1058,6 +1119,47 @@ public sealed class UserConfigurationService
         }
 
         return result;
+    }
+
+    private void LoadBulkUpdateModExclusions(JsonNode? node)
+    {
+        _bulkUpdateModExclusions.Clear();
+
+        if (node is not JsonObject obj)
+        {
+            return;
+        }
+
+        bool requiresSave = false;
+
+        foreach ((string key, JsonNode? value) in obj)
+        {
+            string? normalized = NormalizeModId(key);
+            if (normalized is null)
+            {
+                requiresSave = true;
+                continue;
+            }
+
+            bool isExcluded = value?.GetValue<bool?>() ?? false;
+            if (!isExcluded)
+            {
+                requiresSave = true;
+                continue;
+            }
+
+            if (_bulkUpdateModExclusions.ContainsKey(normalized))
+            {
+                continue;
+            }
+
+            _bulkUpdateModExclusions[normalized] = true;
+        }
+
+        if (requiresSave)
+        {
+            _hasPendingSave = true;
+        }
     }
 
     private void LoadModConfigPaths(JsonNode? node)
@@ -1761,6 +1863,11 @@ public sealed class UserConfigurationService
         }
 
         return columnName.Trim();
+    }
+
+    private static string? NormalizeModId(string? modId)
+    {
+        return string.IsNullOrWhiteSpace(modId) ? null : modId.Trim();
     }
 
     private static ListSortDirection ParseSortDirection(string? value)
