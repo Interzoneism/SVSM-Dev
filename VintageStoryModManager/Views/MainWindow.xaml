@@ -494,8 +494,51 @@
                               IsCheckable="True"
                               Style="{StaticResource ToggleMenuItemStyle}"
                               IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
+                    <MenuItem Header="_ModDB Design"
+                              Height="35"
+                              IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
+                              IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}" />
+                    <MenuItem Header="_Themes" Height="35">
+                        <MenuItem x:Name="VintageStoryThemeMenuItem"
+                                  Header="_Vintage Story"
+                                  Height="35"
+                                  IsCheckable="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Tag="{x:Static services:ColorTheme.VintageStory}"
+                                  Click="ThemeMenuItem_OnClick" />
+                        <MenuItem x:Name="DarkThemeMenuItem"
+                                  Header="_Dark"
+                                  Height="35"
+                                  IsCheckable="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Tag="{x:Static services:ColorTheme.Dark}"
+                                  Click="ThemeMenuItem_OnClick" />
+                        <MenuItem x:Name="LightThemeMenuItem"
+                                  Header="_Light"
+                                  Height="35"
+                                  IsCheckable="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Tag="{x:Static services:ColorTheme.Light}"
+                                  Click="ThemeMenuItem_OnClick" />
+                        <MenuItem x:Name="CustomThemeMenuItem"
+                                  Header="_Custom..."
+                                  Height="35"
+                                  IsCheckable="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Tag="{x:Static services:ColorTheme.Custom}"
+                                  Click="ThemeMenuItem_OnClick" />
+                        <MenuItem x:Name="SurpriseMeThemeMenuItem"
+                                  Header="_Surprise me! (In A Bad Way)"
+                                  Height="35"
+                                  IsCheckable="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Tag="{x:Static services:ColorTheme.SurpriseMe}"
+                                  Click="ThemeMenuItem_OnClick" />
+                    </MenuItem>
                     <MenuItem x:Name="ColumnsMenuItem"
                               Header="_Columns"
+                              Height="35"
                               Visibility="{Binding IsViewingInstalledMods, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
                         <MenuItem x:Name="ActiveColumnMenuItem"
                                   Header="_Active"
@@ -560,48 +603,6 @@
                                   Style="{StaticResource ToggleMenuItemStyle}"
                                   Checked="InstalledModsColumnMenuItem_OnChecked"
                                   Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                    </MenuItem>
-                    <MenuItem Header="_ModDB Design"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}" />
-                    <MenuItem Header="_Themes" Height="35">
-                        <MenuItem x:Name="VintageStoryThemeMenuItem"
-                                  Header="_Vintage Story"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Tag="{x:Static services:ColorTheme.VintageStory}"
-                                  Click="ThemeMenuItem_OnClick" />
-                        <MenuItem x:Name="DarkThemeMenuItem"
-                                  Header="_Dark"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Tag="{x:Static services:ColorTheme.Dark}"
-                                  Click="ThemeMenuItem_OnClick" />
-                        <MenuItem x:Name="LightThemeMenuItem"
-                                  Header="_Light"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Tag="{x:Static services:ColorTheme.Light}"
-                                  Click="ThemeMenuItem_OnClick" />
-                        <MenuItem x:Name="CustomThemeMenuItem"
-                                  Header="_Custom..."
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Tag="{x:Static services:ColorTheme.Custom}"
-                                  Click="ThemeMenuItem_OnClick" />
-                        <MenuItem x:Name="SurpriseMeThemeMenuItem"
-                                  Header="_Surprise me! (In A Bad Way)"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Tag="{x:Static services:ColorTheme.SurpriseMe}"
-                                  Click="ThemeMenuItem_OnClick" />
                     </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_Help / Advanced" Height="35">
