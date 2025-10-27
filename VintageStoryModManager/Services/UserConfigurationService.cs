@@ -92,6 +92,7 @@ public sealed class UserConfigurationService
     private bool _enableDebugLogging;
     private bool _suppressModlistSavePrompt;
     private bool _suppressRefreshCachePrompt;
+    private string? _suppressRefreshCachePromptVersion;
     private ModlistAutoLoadBehavior _modlistAutoLoadBehavior = ModlistAutoLoadBehavior.Prompt;
     private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
     private int _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
@@ -149,7 +150,26 @@ public sealed class UserConfigurationService
 
     public bool SuppressModlistSavePrompt => _suppressModlistSavePrompt;
 
-    public bool SuppressRefreshCachePrompt => _suppressRefreshCachePrompt;
+    public bool SuppressRefreshCachePrompt
+    {
+        get
+        {
+            if (!_suppressRefreshCachePrompt)
+            {
+                return false;
+            }
+
+            if (_suppressRefreshCachePromptVersion is null)
+            {
+                return true;
+            }
+
+            return string.Equals(
+                _suppressRefreshCachePromptVersion,
+                _modManagerVersion,
+                StringComparison.OrdinalIgnoreCase);
+        }
+    }
 
     public ModlistAutoLoadBehavior ModlistAutoLoadBehavior => _modlistAutoLoadBehavior;
 
@@ -594,12 +614,21 @@ public sealed class UserConfigurationService
 
     public void SetSuppressRefreshCachePrompt(bool suppress)
     {
-        if (_suppressRefreshCachePrompt == suppress)
+        string? normalizedVersion = suppress
+            ? NormalizeVersion(_modManagerVersion) ?? _modManagerVersion
+            : null;
+
+        if (_suppressRefreshCachePrompt == suppress
+            && string.Equals(
+                _suppressRefreshCachePromptVersion,
+                normalizedVersion,
+                StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
         _suppressRefreshCachePrompt = suppress;
+        _suppressRefreshCachePromptVersion = normalizedVersion;
         Save();
     }
 
@@ -673,6 +702,20 @@ public sealed class UserConfigurationService
             _enableDebugLogging = obj["enableDebugLogging"]?.GetValue<bool?>() ?? false;
             _suppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePrompt = obj["suppressRefreshCachePrompt"]?.GetValue<bool?>() ?? false;
+            _suppressRefreshCachePromptVersion = NormalizeVersion(
+                GetOptionalString(obj["suppressRefreshCachePromptVersion"]));
+            if (_suppressRefreshCachePrompt)
+            {
+                if (_suppressRefreshCachePromptVersion is null)
+                {
+                    _suppressRefreshCachePromptVersion = _previousModManagerVersion ?? _modManagerVersion;
+                    _hasPendingSave = true;
+                }
+            }
+            else
+            {
+                _suppressRefreshCachePromptVersion = null;
+            }
             string? colorThemeValue = GetOptionalString(obj["colorTheme"]);
             bool? legacyDarkVsMode = obj["useDarkVsMode"]?.GetValue<bool?>();
             if (!string.IsNullOrWhiteSpace(colorThemeValue)
@@ -733,6 +776,7 @@ public sealed class UserConfigurationService
             _enableDebugLogging = false;
             _suppressModlistSavePrompt = false;
             _suppressRefreshCachePrompt = false;
+            _suppressRefreshCachePromptVersion = null;
             _modlistAutoLoadBehavior = ModlistAutoLoadBehavior.Prompt;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
@@ -784,6 +828,7 @@ public sealed class UserConfigurationService
                 ["enableDebugLogging"] = _enableDebugLogging,
                 ["suppressModlistSavePrompt"] = _suppressModlistSavePrompt,
                 ["suppressRefreshCachePrompt"] = _suppressRefreshCachePrompt,
+                ["suppressRefreshCachePromptVersion"] = _suppressRefreshCachePromptVersion,
                 ["useDarkVsMode"] = _colorTheme != ColorTheme.Light,
                 ["colorTheme"] = _colorTheme.ToString(),
                 ["modlistAutoLoadBehavior"] = _modlistAutoLoadBehavior.ToString(),
