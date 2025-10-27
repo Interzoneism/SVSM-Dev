@@ -450,7 +450,9 @@
                               Height="35"
                               Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
                     <MenuItem x:Name="UpdateAllModsMenuItem"
-                              Header="_Update All Mods" Height="35" Click="UpdateAllModsMenuItem_OnClick" />
+                              Header="{Binding DataContext.UpdateAllModsMenuHeader, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=_Update All Mods}"
+                              Height="35"
+                              Click="UpdateAllModsMenuItem_OnClick" />
                     <MenuItem Header="Check mods compatibility" Height="35" Click="CheckModsCompatibilityMenuItem_OnClick" />
                     <MenuItem x:Name="CacheAllVersionsMenuItem"
                               Header="Cache all versions locally"
@@ -2343,7 +2345,7 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Top" Margin="0,18,0,0">
                 <Button x:Name="UpdateAllButton"
-                        Content="Update All"
+                        Content="{Binding DataContext.UpdateAllButtonLabel, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Update All}"
                         Margin="0,0,4,0"
                         Width="125"
                         Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
