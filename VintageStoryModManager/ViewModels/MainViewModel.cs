@@ -1603,6 +1603,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             mod.PropertyChanged += OnSearchResultPropertyChanged;
         }
+
+        QueueLatestReleaseUserReportRefresh(mod);
     }
 
     private void DetachSearchResult(ModListItemViewModel mod)
@@ -1656,6 +1658,100 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         ScheduleModDatabaseTagRefresh();
+    }
+
+    private void QueueLatestReleaseUserReportRefresh(ModListItemViewModel mod)
+    {
+        if (mod is null)
+        {
+            return;
+        }
+
+        _ = RefreshLatestReleaseUserReportAsync(mod, suppressErrors: true, CancellationToken.None);
+    }
+
+    public Task<ModVersionVoteSummary?> RefreshLatestReleaseUserReportAsync(
+        ModListItemViewModel mod,
+        CancellationToken cancellationToken = default)
+    {
+        return RefreshLatestReleaseUserReportAsync(mod, suppressErrors: false, cancellationToken);
+    }
+
+    private async Task<ModVersionVoteSummary?> RefreshLatestReleaseUserReportAsync(
+        ModListItemViewModel mod,
+        bool suppressErrors,
+        CancellationToken cancellationToken)
+    {
+        if (mod is null)
+        {
+            return null;
+        }
+
+        string? latestReleaseVersion = mod.LatestRelease?.Version;
+        if (string.IsNullOrWhiteSpace(latestReleaseVersion))
+        {
+            await InvokeOnDispatcherAsync(mod.ClearLatestReleaseUserReport, cancellationToken, DispatcherPriority.Background)
+                .ConfigureAwait(false);
+            return null;
+        }
+
+        if (string.Equals(mod.LatestReleaseUserReportVersion, latestReleaseVersion, StringComparison.OrdinalIgnoreCase)
+            && mod.LatestReleaseUserReportSummary is not null)
+        {
+            return mod.LatestReleaseUserReportSummary;
+        }
+
+        if (string.IsNullOrWhiteSpace(_installedGameVersion))
+        {
+            await InvokeOnDispatcherAsync(mod.ClearLatestReleaseUserReport, cancellationToken, DispatcherPriority.Background)
+                .ConfigureAwait(false);
+            return null;
+        }
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            await InvokeOnDispatcherAsync(mod.ClearLatestReleaseUserReport, cancellationToken, DispatcherPriority.Background)
+                .ConfigureAwait(false);
+            return null;
+        }
+
+        try
+        {
+            ModVersionVoteSummary summary = await _voteService
+                .GetVoteSummaryAsync(mod.ModId, latestReleaseVersion, _installedGameVersion!, cancellationToken)
+                .ConfigureAwait(false);
+
+            await InvokeOnDispatcherAsync(
+                    () => mod.ApplyLatestReleaseUserReportSummary(summary),
+                    cancellationToken,
+                    DispatcherPriority.Background)
+                .ConfigureAwait(false);
+
+            return summary;
+        }
+        catch (InternetAccessDisabledException)
+        {
+            await InvokeOnDispatcherAsync(mod.ClearLatestReleaseUserReport, cancellationToken, DispatcherPriority.Background)
+                .ConfigureAwait(false);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            if (!suppressErrors)
+            {
+                StatusLogService.AppendStatus(
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        "Failed to refresh user reports for the latest release of {0}: {1}",
+                        mod.DisplayName,
+                        ex.Message),
+                    true);
+            }
+
+            await InvokeOnDispatcherAsync(mod.ClearLatestReleaseUserReport, cancellationToken, DispatcherPriority.Background)
+                .ConfigureAwait(false);
+            return null;
+        }
     }
 
     private void QueueUserReportRefresh(ModListItemViewModel mod)
@@ -2510,6 +2606,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         () => viewModel.UpdateDatabaseInfo(capturedInfo, loadLogoImmediately: false),
                         cancellationToken)
                     .ConfigureAwait(false);
+
+                QueueLatestReleaseUserReportRefresh(viewModel);
             }
 
             if (cancellationToken.IsCancellationRequested)
@@ -2538,7 +2636,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         ModDatabaseInfo? info = entries[i].Entry.DatabaseInfo;
                         if (info != null)
                         {
-                            viewModels[i].UpdateDatabaseInfo(info, loadLogoImmediately: false);
+                            ModListItemViewModel viewModel = viewModels[i];
+                            viewModel.UpdateDatabaseInfo(info, loadLogoImmediately: false);
+                            QueueLatestReleaseUserReportRefresh(viewModel);
                         }
                     }
                 },
@@ -3759,6 +3859,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
                         {
                             viewModel.UpdateDatabaseInfo(info, loadLogoImmediately);
+                            QueueLatestReleaseUserReportRefresh(viewModel);
                         }
                     },
                     CancellationToken.None,
