@@ -19,6 +19,8 @@ public sealed class ModVersionVoteService
 {
     private const string DefaultDbUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
 
+    private const string VotesRootPath = "compatVotes";
+
     private static readonly HttpClient HttpClient = new();
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -94,7 +96,7 @@ public sealed class ModVersionVoteService
             UpdatedUtc = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture)
         };
 
-        string url = BuildAuthenticatedUrl(session.IdToken, modKey, versionKey, "users", userKey);
+        string url = BuildAuthenticatedUrl(session.IdToken, VotesRootPath, modKey, versionKey, "users", userKey);
         string payload = JsonSerializer.Serialize(record, SerializerOptions);
 
         using var content = new StringContent(payload, Encoding.UTF8, "application/json");
@@ -122,7 +124,7 @@ public sealed class ModVersionVoteService
     {
         string modKey = SanitizeKey(modId);
         string versionKey = SanitizeKey(modVersion);
-        string url = BuildAuthenticatedUrl(session.IdToken, modKey, versionKey, "users");
+        string url = BuildAuthenticatedUrl(session.IdToken, VotesRootPath, modKey, versionKey, "users");
 
         using HttpResponseMessage response = await HttpClient
             .GetAsync(url, cancellationToken)
