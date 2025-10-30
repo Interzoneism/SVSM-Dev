@@ -1672,7 +1672,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public async Task<ModVersionVoteSummary?> SubmitUserReportVoteAsync(
         ModListItemViewModel mod,
-        ModVersionVoteOption option,
+        ModVersionVoteOption? option,
         CancellationToken cancellationToken = default)
     {
         if (mod is null)
@@ -1701,9 +1701,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         try
         {
-            ModVersionVoteSummary summary = await _voteService
-                .SubmitVoteAsync(mod.ModId, mod.Version!, _installedGameVersion!, option, cancellationToken)
-                .ConfigureAwait(false);
+            ModVersionVoteSummary summary = option.HasValue
+                ? await _voteService
+                    .SubmitVoteAsync(mod.ModId, mod.Version!, _installedGameVersion!, option.Value, cancellationToken)
+                    .ConfigureAwait(false)
+                : await _voteService
+                    .RemoveVoteAsync(mod.ModId, mod.Version!, _installedGameVersion!, cancellationToken)
+                    .ConfigureAwait(false);
 
             await InvokeOnDispatcherAsync(
                     () => mod.ApplyUserReportSummary(summary),

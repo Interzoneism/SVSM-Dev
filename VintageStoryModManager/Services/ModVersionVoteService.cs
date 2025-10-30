@@ -115,6 +115,43 @@ public sealed class ModVersionVoteService
             .ConfigureAwait(false);
     }
 
+    public async Task<ModVersionVoteSummary> RemoveVoteAsync(
+        string modId,
+        string modVersion,
+        string vintageStoryVersion,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateIdentifiers(modId, modVersion, vintageStoryVersion);
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession session = await _authenticator
+            .GetSessionAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        string modKey = SanitizeKey(modId);
+        string versionKey = SanitizeKey(modVersion);
+        string userKey = session.UserId ?? throw new InvalidOperationException("Firebase session did not provide a user ID.");
+
+        string url = BuildAuthenticatedUrl(session.IdToken, VotesRootPath, modKey, versionKey, "users", userKey);
+
+        using HttpResponseMessage response = await HttpClient
+            .DeleteAsync(url, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (response.StatusCode != HttpStatusCode.NotFound)
+        {
+            await EnsureOkAsync(response, "Remove vote").ConfigureAwait(false);
+        }
+
+        return await GetVoteSummaryInternalAsync(
+                session,
+                modId,
+                modVersion,
+                vintageStoryVersion,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     private async Task<ModVersionVoteSummary> GetVoteSummaryInternalAsync(
         FirebaseAnonymousAuthenticator.FirebaseAuthSession session,
         string modId,
