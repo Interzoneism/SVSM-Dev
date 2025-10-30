@@ -188,7 +188,6 @@ public partial class MainWindow : Window
         CacheAllVersionsMenuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
         DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
-        EnableDebugLoggingMenuItem.IsChecked = _userConfiguration.EnableDebugLogging;
         StatusLogService.IsLoggingEnabled = _userConfiguration.EnableDebugLogging;
 
         UpdateThemeMenuSelection(_userConfiguration.ColorTheme);

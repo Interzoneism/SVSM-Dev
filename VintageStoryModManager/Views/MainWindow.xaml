@@ -617,7 +617,7 @@
                                   Unchecked="InstalledModsColumnMenuItem_OnChecked" />
                     </MenuItem>
                 </MenuItem>
-                <MenuItem Header="_Help / Advanced" Height="35">
+                <MenuItem Header="_Help &amp; Advanced" Height="35">
                     <MenuItem x:Name="ManagerVersionMenuItem"
                               Header="Version: --"
                               Padding="12,6"
@@ -638,20 +638,14 @@
                     <MenuItem Header="_Additonal Info"
                               Padding="12,6"
                               Click="GuideMenuItem_OnClick" />
-                    <MenuItem Header="_Advanced" Height="35">
-                        <MenuItem x:Name="EnableDebugLoggingMenuItem"
-                                  Header="Enable debug logging"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Click="EnableDebugLoggingMenuItem_OnClick" />
-                        <MenuItem Header="Experimental Mod Debugging"
+                    <Separator />
+                        <MenuItem Header="Debug: Show all game log lines referencing the selected mod."
                                   Padding="12,6"
                                   Click="ExperimentalModDebuggingMenuItem_OnClick" />
                         <MenuItem Header="Delete all Simple VS Manager files (Uninstall)"
                                   Padding="12,6"
                                   Click="DeleteAllManagerFilesMenuItem_OnClick" />
-                    </MenuItem>
+                    
                 </MenuItem>
             </Menu>
 
