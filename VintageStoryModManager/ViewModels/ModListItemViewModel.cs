@@ -78,6 +78,9 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _userReportTooltip;
     private bool _isUserReportLoading;
     private bool _userReportHasError;
+    private ModVersionVoteSummary? _latestReleaseUserReportSummary;
+    private string? _latestReleaseUserReportVersion;
+    private string? _latestReleaseUserReportDisplay;
 
     public sealed record ReleaseChangelog(string Version, string Changelog);
 
@@ -337,6 +340,24 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool HasNewerReleaseChangelogs => _newerReleaseChangelogs.Count > 0;
 
+    public ModVersionVoteSummary? LatestReleaseUserReportSummary => _latestReleaseUserReportSummary;
+
+    public string? LatestReleaseUserReportVersion => _latestReleaseUserReportVersion;
+
+    public string? LatestReleaseUserReportDisplay
+    {
+        get => _latestReleaseUserReportDisplay;
+        private set
+        {
+            if (SetProperty(ref _latestReleaseUserReportDisplay, value))
+            {
+                OnPropertyChanged(nameof(HasLatestReleaseUserReport));
+            }
+        }
+    }
+
+    public bool HasLatestReleaseUserReport => !string.IsNullOrWhiteSpace(_latestReleaseUserReportDisplay);
+
     public IReadOnlyList<ReleaseChangelog> GetChangelogEntriesForUpgrade(string? targetVersion)
     {
         if (_releases.Count == 0 || string.IsNullOrWhiteSpace(targetVersion))
@@ -545,6 +566,43 @@ public sealed class ModListItemViewModel : ObservableObject
             counts.SomeIssuesButWorks,
             counts.NotWorking,
             counts.Total);
+    }
+
+    public void ApplyLatestReleaseUserReportSummary(ModVersionVoteSummary summary)
+    {
+        if (summary is null)
+        {
+            return;
+        }
+
+        _latestReleaseUserReportSummary = summary;
+        _latestReleaseUserReportVersion = summary.ModVersion;
+        LatestReleaseUserReportDisplay = BuildLatestReleaseUserReportDisplay(summary);
+    }
+
+    public void ClearLatestReleaseUserReport()
+    {
+        if (_latestReleaseUserReportSummary is null
+            && _latestReleaseUserReportVersion is null
+            && _latestReleaseUserReportDisplay is null)
+        {
+            return;
+        }
+
+        _latestReleaseUserReportSummary = null;
+        _latestReleaseUserReportVersion = null;
+        LatestReleaseUserReportDisplay = null;
+    }
+
+    private static string? BuildLatestReleaseUserReportDisplay(ModVersionVoteSummary? summary)
+    {
+        if (summary is null || summary.TotalVotes == 0)
+        {
+            return null;
+        }
+
+        string display = BuildUserReportDisplay(summary);
+        return string.Equals(display, "No votes", StringComparison.Ordinal) ? null : display;
     }
 
     public string InstallButtonToolTip
@@ -798,6 +856,12 @@ public sealed class ModListItemViewModel : ObservableObject
         ModReleaseInfo? latestRelease = info.LatestRelease;
         ModReleaseInfo? latestCompatibleRelease = info.LatestCompatibleRelease;
         IReadOnlyList<ModReleaseInfo> releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
+
+        string? latestReleaseVersion = latestRelease?.Version;
+        if (!string.Equals(_latestReleaseUserReportVersion, latestReleaseVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            ClearLatestReleaseUserReport();
+        }
 
         _latestRelease = latestRelease;
         _latestCompatibleRelease = latestCompatibleRelease;
