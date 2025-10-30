@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace VintageStoryModManager.Models;
 
@@ -115,8 +115,8 @@ public static class ModVersionVoteOptionExtensions
 {
     public static string ToDisplayString(this ModVersionVoteOption option) => option switch
     {
-        ModVersionVoteOption.WorkingPerfectly => "Working Perfectly",
-        ModVersionVoteOption.SomeIssuesButWorks => "Some Issues But Works",
+        ModVersionVoteOption.WorkingPerfectly => "Working Fine",
+        ModVersionVoteOption.SomeIssuesButWorks => "Some Issues",
         ModVersionVoteOption.NotWorking => "Not Working",
         _ => option.ToString() ?? string.Empty
     };

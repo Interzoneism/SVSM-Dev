@@ -539,7 +539,7 @@ public sealed class ModListItemViewModel : ObservableObject
         ModVersionVoteCounts counts = summary.Counts;
         return string.Format(
             CultureInfo.CurrentCulture,
-            "{0}: {1} Working Perfectly · {2} Some Issues But Works · {3} Not Working (Total {4}).",
+            "{0}: {1} Working Fine · {2} Some Issues · {3} Not Working (Total {4}).",
             versionText,
             counts.WorkingPerfectly,
             counts.SomeIssuesButWorks,
