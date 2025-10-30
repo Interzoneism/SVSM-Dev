@@ -27,20 +27,26 @@
 
         <Border Grid.Row="1"
                 Margin="0,16,0,16"
-                Background="{DynamicResource Brush.Dialog.TextBox.Background}"
+                Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                 BorderBrush="{DynamicResource Brush.Border.Default}"
                 BorderThickness="1">
             <Grid>
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Auto">
+                <ScrollViewer
+                                VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
                     <ItemsControl ItemsSource="{Binding LogLines}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding}"
-                                           FontFamily="Consolas"
-                                           TextWrapping="Wrap"
-                                           Margin="4"
-                                           Foreground="{DynamicResource Brush.Text.Primary}" />
+                                <TextBox Text="{Binding Mode=OneWay}"
+                                         FontFamily="Consolas"
+                                         TextWrapping="Wrap"
+                                         Margin="4"
+                                         Foreground="{DynamicResource Brush.Text.Primary}"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         IsReadOnly="True"
+                                         IsReadOnlyCaretVisible="False"
+                                         Cursor="Arrow" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
