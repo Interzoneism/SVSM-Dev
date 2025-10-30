@@ -98,7 +98,13 @@ public sealed class ModUpdateService
         }
 
         string? cachePath = ModCacheLocator.GetModCachePath(descriptor.ModId, descriptor.ReleaseVersion, fileName);
-        if (cachePath != null && File.Exists(cachePath))
+        if (cachePath != null)
+        {
+            ModCacheLocator.TryPromoteLegacyCacheFile(descriptor.ModId, descriptor.ReleaseVersion, fileName, cachePath);
+        }
+
+        if (ModCacheLocator.TryLocateCachedModFile(descriptor.ModId, descriptor.ReleaseVersion, fileName, out string? existingCachePath)
+            && existingCachePath is not null)
         {
             if (logScope != null)
             {
@@ -106,7 +112,7 @@ public sealed class ModUpdateService
                 logScope.SetDetail("src", "cache");
                 try
                 {
-                    long bytes = new FileInfo(cachePath).Length;
+                    long bytes = new FileInfo(existingCachePath).Length;
                     logScope.SetDetail("bytes", bytes);
                 }
                 catch (IOException)
@@ -119,7 +125,11 @@ public sealed class ModUpdateService
                 }
             }
 
-            return new DownloadResult(Path: cachePath, IsTemporary: false, CachePath: cachePath, IsCacheHit: true);
+            return new DownloadResult(
+                Path: existingCachePath,
+                IsTemporary: false,
+                CachePath: cachePath ?? existingCachePath,
+                IsCacheHit: true);
         }
 
         string tempDirectory = CreateTemporaryDirectory();
@@ -402,9 +412,28 @@ public sealed class ModUpdateService
             return null;
         }
 
+        if (ModCacheLocator.TryPromoteLegacyCacheFile(descriptor.ModId, descriptor.InstalledVersion, targetFileName, cachePath)
+            && File.Exists(cachePath))
+        {
+            return null;
+        }
+
         if (File.Exists(cachePath))
         {
             return null;
+        }
+
+        if (ModCacheLocator.TryLocateCachedModFile(descriptor.ModId, descriptor.InstalledVersion, targetFileName, out string? existingCacheFile)
+            && existingCacheFile is not null)
+        {
+            string? existingDirectory = Path.GetDirectoryName(existingCacheFile);
+            string? cacheDirectory = Path.GetDirectoryName(cachePath);
+            if (!string.IsNullOrWhiteSpace(existingDirectory)
+                && !string.IsNullOrWhiteSpace(cacheDirectory)
+                && string.Equals(existingDirectory, cacheDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
         }
 
         try
@@ -450,14 +479,36 @@ public sealed class ModUpdateService
             return;
         }
 
-        string? cachePath = ModCacheLocator.GetModCachePath(
-            descriptor.ModId,
-            descriptor.InstalledVersion,
-            descriptor.ReleaseFileName ?? Path.GetFileName(descriptor.TargetPath));
+        string? cacheFileName = descriptor.ReleaseFileName ?? Path.GetFileName(descriptor.TargetPath);
+        string? cachePath = ModCacheLocator.GetModCachePath(descriptor.ModId, descriptor.InstalledVersion, cacheFileName);
 
-        if (cachePath is null || File.Exists(cachePath))
+        if (cachePath is null)
         {
             return;
+        }
+
+        if (ModCacheLocator.TryPromoteLegacyCacheFile(descriptor.ModId, descriptor.InstalledVersion, cacheFileName, cachePath)
+            && File.Exists(cachePath))
+        {
+            return;
+        }
+
+        if (File.Exists(cachePath))
+        {
+            return;
+        }
+
+        if (ModCacheLocator.TryLocateCachedModFile(descriptor.ModId, descriptor.InstalledVersion, cacheFileName, out string? existingCacheFile)
+            && existingCacheFile is not null)
+        {
+            string? existingDirectory = Path.GetDirectoryName(existingCacheFile);
+            string? cacheDirectory = Path.GetDirectoryName(cachePath);
+            if (!string.IsNullOrWhiteSpace(existingDirectory)
+                && !string.IsNullOrWhiteSpace(cacheDirectory)
+                && string.Equals(existingDirectory, cacheDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
         }
 
         string tempDirectory = CreateTemporaryDirectory();
