@@ -3843,17 +3843,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             yield break;
         }
 
-        IEnumerable<string> files;
-        try
-        {
-            files = Directory.EnumerateFiles(cacheDirectory, "*", SearchOption.TopDirectoryOnly);
-        }
-        catch (Exception)
-        {
-            yield break;
-        }
-
-        foreach (string file in files)
+        foreach (string file in ModCacheLocator.EnumerateCachedFiles(modId))
         {
             ModReleaseInfo? release = TryCreateCachedRelease(file, modId);
             if (release != null)
