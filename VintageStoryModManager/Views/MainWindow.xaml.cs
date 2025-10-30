@@ -3179,7 +3179,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        await CreateAutomaticBackupAsync().ConfigureAwait(true);
+        await CreateAutomaticBackupAsync("ModsDeleted").ConfigureAwait(true);
 
         bool removed = TryDeleteModAtPath(mod, modPath);
 
@@ -3269,7 +3269,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        await CreateAutomaticBackupAsync().ConfigureAwait(true);
+        await CreateAutomaticBackupAsync("ModsDeleted").ConfigureAwait(true);
 
         int removedCount = 0;
         foreach ((ModListItemViewModel mod, string path) in deletable)
@@ -3528,7 +3528,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        await CreateAutomaticBackupAsync().ConfigureAwait(true);
+        await CreateAutomaticBackupAsync("ModsUpdated").ConfigureAwait(true);
 
         _isModUpdateInProgress = true;
         UpdateSelectedModButtons();
@@ -4060,7 +4060,7 @@ public partial class MainWindow : Window
             }
         }
 
-        await CreateAutomaticBackupAsync().ConfigureAwait(true);
+        await CreateAutomaticBackupAsync("ModsUpdated").ConfigureAwait(true);
         await UpdateModsAsync(selectedMods, isBulk: true, selectedOverrides).ConfigureAwait(true);
     }
 
@@ -6474,13 +6474,10 @@ public partial class MainWindow : Window
         return true;
     }
 
-    private Task CreateAutomaticBackupAsync()
+    private Task CreateAutomaticBackupAsync(string trigger)
     {
-        DateTime timestamp = DateTime.Now;
-        string formattedTimestamp = timestamp.ToString("dd MMM yyyy '•' HH.mm '•' ss's'", CultureInfo.InvariantCulture);
-        string displayName = $"Backup - {formattedTimestamp}";
         return CreateBackupAsync(
-            displayName,
+            trigger,
             fallbackFileName: "Backup",
             pruneAutomaticBackups: true,
             pruneAppStartedBackups: false);
@@ -6488,18 +6485,15 @@ public partial class MainWindow : Window
 
     private Task CreateAppStartedBackupAsync()
     {
-        DateTime timestamp = DateTime.Now;
-        string formattedTimestamp = timestamp.ToString("dd MMM yyyy '•' HH.mm '•' ss's'", CultureInfo.InvariantCulture);
-        string displayName = $"Backup - {formattedTimestamp}_AppStarted";
         return CreateBackupAsync(
-            displayName,
+            "AppStarted",
             fallbackFileName: "Backup_AppStarted",
             pruneAutomaticBackups: false,
             pruneAppStartedBackups: true);
     }
 
     private async Task CreateBackupAsync(
-        string displayName,
+        string trigger,
         string fallbackFileName,
         bool pruneAutomaticBackups,
         bool pruneAppStartedBackups)
@@ -6512,6 +6506,18 @@ public partial class MainWindow : Window
         await _backupSemaphore.WaitAsync().ConfigureAwait(true);
         try
         {
+            IReadOnlyList<ModListItemViewModel> mods = _viewModel.GetInstalledModsSnapshot();
+            int modCount = mods.Count;
+
+            DateTime timestamp = DateTime.Now;
+            string formattedTimestamp = timestamp.ToString("dd MMM yyyy '•' HH.mm '•' ss's'", CultureInfo.InvariantCulture);
+
+            string normalizedTrigger = string.IsNullOrWhiteSpace(trigger)
+                ? "Automatic"
+                : trigger.Trim();
+            string modLabel = modCount == 1 ? "1 mod" : $"{modCount} mods";
+            string displayName = $"{formattedTimestamp} -- {normalizedTrigger} ({modLabel})";
+
             string directory;
             try
             {
@@ -6527,7 +6533,7 @@ public partial class MainWindow : Window
             string filePath = Path.Combine(directory, $"{fileName}.json");
 
             IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations =
-                CaptureConfigurationsForBackup();
+                CaptureConfigurationsForBackup(mods);
 
             SerializablePreset serializable = BuildSerializablePreset(
                 displayName,
@@ -6570,15 +6576,10 @@ public partial class MainWindow : Window
         }
     }
 
-    private IReadOnlyDictionary<string, ModConfigurationSnapshot>? CaptureConfigurationsForBackup()
+    private IReadOnlyDictionary<string, ModConfigurationSnapshot>? CaptureConfigurationsForBackup(
+        IReadOnlyList<ModListItemViewModel> mods)
     {
-        if (_viewModel is null)
-        {
-            return null;
-        }
-
-        IReadOnlyList<ModListItemViewModel> mods = _viewModel.GetInstalledModsSnapshot();
-        if (mods.Count == 0)
+        if (mods is null || mods.Count == 0)
         {
             return null;
         }
@@ -6637,7 +6638,8 @@ public partial class MainWindow : Window
         }
 
         string name = Path.GetFileNameWithoutExtension(path);
-        return name.EndsWith("_AppStarted", StringComparison.OrdinalIgnoreCase);
+        return name.EndsWith("_AppStarted", StringComparison.OrdinalIgnoreCase)
+            || name.Contains("-- AppStarted", StringComparison.OrdinalIgnoreCase);
     }
 
     private static void PruneAutomaticBackups(string directory)
@@ -7129,7 +7131,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        await CreateAutomaticBackupAsync().ConfigureAwait(true);
+        await CreateAutomaticBackupAsync("ModlistLoaded").ConfigureAwait(true);
         await ApplyPresetAsync(preset);
         string status = mode == ModlistLoadMode.Replace
             ? $"Installed cloud modlist \"{preset.Name}\"."
@@ -7208,7 +7210,7 @@ public partial class MainWindow : Window
             }
 
             ModPreset loadedModlist = preset!;
-            await CreateAutomaticBackupAsync().ConfigureAwait(true);
+            await CreateAutomaticBackupAsync("ModlistLoaded").ConfigureAwait(true);
             await ApplyPresetAsync(loadedModlist);
             string slotLabel = FormatCloudSlotLabel(selectedSlot.SlotKey);
             string status = mode == ModlistLoadMode.Replace
@@ -7492,7 +7494,7 @@ public partial class MainWindow : Window
         }
 
         ModPreset loadedModlist = preset!;
-        await CreateAutomaticBackupAsync().ConfigureAwait(true);
+        await CreateAutomaticBackupAsync("ModlistLoaded").ConfigureAwait(true);
         await ApplyPresetAsync(loadedModlist);
         string status = mode == ModlistLoadMode.Replace
             ? $"Loaded modlist \"{loadedModlist.Name}\"."
