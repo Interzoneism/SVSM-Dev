@@ -66,6 +66,20 @@ public partial class MainWindow : Window
         Timeout = TimeSpan.FromSeconds(10)
     };
 
+    private static readonly string[] ExperimentalModDebugLogPrefixes =
+    {
+        "client-debug",
+        "client-main",
+        "server-debug",
+        "server-main"
+    };
+
+    private static readonly string[] ExperimentalModDebugLogExtensions =
+    {
+        ".txt",
+        ".log"
+    };
+
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
 
     private enum ModlistLoadMode
@@ -727,6 +741,131 @@ public partial class MainWindow : Window
         bool isEnabled = _userConfiguration.EnableDebugLogging;
         menuItem.IsChecked = isEnabled;
         StatusLogService.IsLoggingEnabled = isEnabled;
+    }
+
+    private void ExperimentalModDebuggingMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel?.SelectedMod is not ModListItemViewModel selectedMod)
+        {
+            WpfMessageBox.Show(
+                "Please select a mod before using Experimental Mod Debugging.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        string modId = selectedMod.ModId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            WpfMessageBox.Show(
+                "The selected mod does not specify a mod ID to search for in the logs.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_dataDirectory))
+        {
+            WpfMessageBox.Show(
+                "The manager data directory is not available. Please configure the Vintage Story data folder and try again.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        string logsDirectory = Path.Combine(_dataDirectory, "Logs");
+        if (!Directory.Exists(logsDirectory))
+        {
+            WpfMessageBox.Show(
+                "No log files were found in the manager's Logs folder.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        List<string> logLines = CollectExperimentalModDebugLines(logsDirectory, modId);
+        if (logLines.Count == 0)
+        {
+            logLines.Add($"No log entries referencing '{modId}' were found in client-debug, client-main, server-debug, or server-main logs.");
+        }
+
+        var dialog = new ExperimentalModDebugDialog(modId, logLines)
+        {
+            Owner = this
+        };
+
+        _ = dialog.ShowDialog();
+    }
+
+    private static List<string> CollectExperimentalModDebugLines(string logsDirectory, string modId)
+    {
+        var logLines = new List<string>();
+        var filePaths = new List<string>();
+        var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string prefix in ExperimentalModDebugLogPrefixes)
+        {
+            foreach (string extension in ExperimentalModDebugLogExtensions)
+            {
+                string pattern = extension.StartsWith('.') ? $"{prefix}*{extension}" : $"{prefix}*.{extension}";
+                try
+                {
+                    foreach (string path in Directory.EnumerateFiles(logsDirectory, pattern, SearchOption.TopDirectoryOnly))
+                    {
+                        if (processedFiles.Add(path))
+                        {
+                            filePaths.Add(path);
+                        }
+                    }
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+
+            string directPath = Path.Combine(logsDirectory, prefix);
+            if (File.Exists(directPath) && processedFiles.Add(directPath))
+            {
+                filePaths.Add(directPath);
+            }
+        }
+
+        filePaths.Sort(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string filePath in filePaths)
+        {
+            AppendExperimentalModDebugLines(logLines, filePath, modId);
+        }
+
+        return logLines;
+    }
+
+    private static void AppendExperimentalModDebugLines(ICollection<string> logLines, string filePath, string modId)
+    {
+        try
+        {
+            string fileName = Path.GetFileName(filePath);
+            foreach (string line in File.ReadLines(filePath))
+            {
+                if (line.IndexOf(modId, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    logLines.Add($"{fileName}: {line}");
+                }
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 
     private void InitializeViewModel()

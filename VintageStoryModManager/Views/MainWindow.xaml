@@ -638,6 +638,9 @@
                                   IsCheckable="True"
                                   Style="{StaticResource ToggleMenuItemStyle}"
                                   Click="EnableDebugLoggingMenuItem_OnClick" />
+                        <MenuItem Header="Experimental Mod Debugging"
+                                  Padding="12,6"
+                                  Click="ExperimentalModDebuggingMenuItem_OnClick" />
                         <MenuItem Header="Delete all Simple VS Manager files (Uninstall)"
                                   Padding="12,6"
                                   Click="DeleteAllManagerFilesMenuItem_OnClick" />
