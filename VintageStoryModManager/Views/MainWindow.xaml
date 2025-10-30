@@ -601,6 +601,13 @@
                                   Style="{StaticResource ToggleMenuItemStyle}"
                                   Checked="InstalledModsColumnMenuItem_OnChecked"
                                   Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        <MenuItem x:Name="UserReportsColumnMenuItem"
+                                  Header="User _Reports"
+                                  IsCheckable="True"
+                                  IsChecked="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Checked="InstalledModsColumnMenuItem_OnChecked"
+                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
                         <MenuItem x:Name="SideColumnMenuItem"
                                   Header="S_ide"
                                   IsCheckable="True"
@@ -1499,6 +1506,39 @@
                                             <Setter Property="ToolTip" Value="{Binding StatusDetails}" />
                                         </Style>
                                     </DataGridTemplateColumn.CellStyle>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn x:Name="UserReportsColumn" Header="User Reports" Width="150" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellStyle>
+                                        <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                                        </Style>
+                                    </DataGridTemplateColumn.CellStyle>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="{Binding UserReportDisplay}"
+                                                    ToolTip="{Binding UserReportTooltip}"
+                                                    Click="UserReportsButton_OnClick"
+                                                    IsEnabled="{Binding CanSubmitUserReport}"
+                                                    HorizontalAlignment="Stretch">
+                                                <Button.Style>
+                                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource IMM.UserReportButtonStyle}">
+                                                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                                        <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                        <Setter Property="Padding" Value="4,0" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsUserReportLoading}" Value="True">
+                                                                <Setter Property="Cursor" Value="Wait" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding UserReportHasError}" Value="True">
+                                                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Emphasis}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn x:Name="SideColumn" Header="Side"
                                     Binding="{Binding SideDisplay, Mode=OneWay}"
