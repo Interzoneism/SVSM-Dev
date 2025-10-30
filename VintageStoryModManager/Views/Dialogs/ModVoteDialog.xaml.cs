@@ -12,13 +12,13 @@ namespace VintageStoryModManager.Views.Dialogs;
 public partial class ModVoteDialog : Window
 {
     private ModVersionVoteSummary _summary;
-    private readonly Func<ModVersionVoteOption, Task<ModVersionVoteSummary?>> _submitVoteAsync;
+    private readonly Func<ModVersionVoteOption?, Task<ModVersionVoteSummary?>> _submitVoteAsync;
     private bool _isSubmitting;
 
     public ModVoteDialog(
         ModListItemViewModel mod,
         ModVersionVoteSummary summary,
-        Func<ModVersionVoteOption, Task<ModVersionVoteSummary?>> submitVoteAsync)
+        Func<ModVersionVoteOption?, Task<ModVersionVoteSummary?>> submitVoteAsync)
     {
         InitializeComponent();
 
@@ -93,21 +93,33 @@ public partial class ModVoteDialog : Window
             return;
         }
 
+        ModVersionVoteOption? requestedOption = option;
+        bool isRemovingVote = _summary.UserVote == option;
+        if (isRemovingVote)
+        {
+            requestedOption = null;
+        }
+
         _isSubmitting = true;
         UpdateOptionButtons();
-        StatusTextBlock.Text = "Submitting vote…";
+        StatusTextBlock.Text = isRemovingVote ? "Removing vote…" : "Submitting vote…";
 
         try
         {
-            ModVersionVoteSummary? result = await _submitVoteAsync(option).ConfigureAwait(true);
+            ModVersionVoteSummary? result = await _submitVoteAsync(requestedOption).ConfigureAwait(true);
             if (result is not null)
             {
                 _summary = result;
             }
 
+            string statusPrefix = requestedOption.HasValue
+                ? "Your vote has been recorded."
+                : "Your vote has been removed.";
+
             StatusTextBlock.Text = string.Format(
                 CultureInfo.CurrentCulture,
-                "Your vote has been recorded. {0}",
+                "{0} {1}",
+                statusPrefix,
                 BuildStatusText());
         }
         catch (InternetAccessDisabledException ex)
