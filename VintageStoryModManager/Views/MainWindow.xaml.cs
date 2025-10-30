@@ -89,6 +89,7 @@ public partial class MainWindow : Window
         Downloads,
         Authors,
         Tags,
+        UserReports,
         Status,
         Side
     }
@@ -226,6 +227,7 @@ public partial class MainWindow : Window
         RegisterColumnMenuItem(LatestVersionColumnMenuItem, InstalledModsColumn.LatestVersion);
         RegisterColumnMenuItem(AuthorsColumnMenuItem, InstalledModsColumn.Authors);
         RegisterColumnMenuItem(TagsColumnMenuItem, InstalledModsColumn.Tags);
+        RegisterColumnMenuItem(UserReportsColumnMenuItem, InstalledModsColumn.UserReports);
         RegisterColumnMenuItem(StatusColumnMenuItem, InstalledModsColumn.Status);
         RegisterColumnMenuItem(SideColumnMenuItem, InstalledModsColumn.Side);
 
@@ -275,6 +277,7 @@ public partial class MainWindow : Window
         SetColumnVisibility(DownloadsColumn, InstalledModsColumn.Downloads, isSearching);
         SetColumnVisibility(AuthorsColumn, InstalledModsColumn.Authors, true);
         SetColumnVisibility(TagsColumn, InstalledModsColumn.Tags, true);
+        SetColumnVisibility(UserReportsColumn, InstalledModsColumn.UserReports, !isSearching);
         SetColumnVisibility(StatusColumn, InstalledModsColumn.Status, !isSearching);
         SetColumnVisibility(SideColumn, InstalledModsColumn.Side, true);
     }
@@ -2633,6 +2636,74 @@ public partial class MainWindow : Window
         if (await TryHandleModListKeyDownAsync(e))
         {
             e.Handled = true;
+        }
+    }
+
+    private async void UserReportsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfButton { DataContext: ModListItemViewModel mod })
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        if (!mod.CanSubmitUserReport)
+        {
+            WpfMessageBox.Show(
+                "User reports are unavailable because the mod version or Vintage Story version could not be determined.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            ModVersionVoteSummary? summary = await _viewModel
+                .RefreshUserReportAsync(mod)
+                .ConfigureAwait(true);
+
+            summary ??= mod.UserReportSummary;
+
+            if (summary is null)
+            {
+                summary = new ModVersionVoteSummary(
+                    mod.ModId,
+                    mod.Version ?? string.Empty,
+                    _viewModel.InstalledGameVersion,
+                    ModVersionVoteCounts.Empty,
+                    null);
+            }
+
+            var dialog = new ModVoteDialog(
+                mod,
+                summary,
+                option => _viewModel.SubmitUserReportVoteAsync(mod, option));
+
+            dialog.Owner = this;
+            dialog.ShowDialog();
+        }
+        catch (InternetAccessDisabledException ex)
+        {
+            WpfMessageBox.Show(
+                ex.Message,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to load user reports:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 

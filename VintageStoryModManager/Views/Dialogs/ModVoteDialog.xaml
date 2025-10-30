@@ -1,0 +1,87 @@
+<Window x:Class="VintageStoryModManager.Views.Dialogs.ModVoteDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:VintageStoryModManager.Models"
+        Title="User Reports"
+        Width="460"
+        Height="360"
+        MinWidth="420"
+        MinHeight="320"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        ShowInTaskbar="False"
+        Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
+    <Grid Margin="24"
+          Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+          TextElement.Foreground="{DynamicResource Brush.Text.Primary}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0"
+                    Margin="0,0,0,12">
+            <TextBlock x:Name="TitleTextBlock"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Text="User reports" />
+            <TextBlock x:Name="ModVersionTextBlock"
+                       Margin="0,6,0,0"
+                       Foreground="{DynamicResource Brush.Text.Subtle}" />
+            <TextBlock x:Name="GameVersionTextBlock"
+                       Foreground="{DynamicResource Brush.Text.Subtle}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1"
+                    Margin="0,0,0,12">
+            <TextBlock Text="Select the option that best describes how this mod works for you."
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource Brush.Text.Primary}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2"
+                    Margin="0,0,0,16">
+            <Button x:Name="WorkingPerfectlyButton"
+                    Height="48"
+                    Margin="0,0,0,8"
+                    Style="{StaticResource IMM.UserReportButtonStyle}"
+                    Tag="{x:Static models:ModVersionVoteOption.WorkingPerfectly}"
+                    Click="VoteButton_OnClick" />
+            <Button x:Name="SomeIssuesButton"
+                    Height="48"
+                    Margin="0,0,0,8"
+                    Style="{StaticResource IMM.UserReportButtonStyle}"
+                    Tag="{x:Static models:ModVersionVoteOption.SomeIssuesButWorks}"
+                    Click="VoteButton_OnClick" />
+            <Button x:Name="NotWorkingButton"
+                    Height="48"
+                    Style="{StaticResource IMM.UserReportButtonStyle}"
+                    Tag="{x:Static models:ModVersionVoteOption.NotWorking}"
+                    Click="VoteButton_OnClick" />
+        </StackPanel>
+
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock x:Name="StatusTextBlock"
+                       Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource Brush.Text.Subtle}" />
+
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+                <Button Width="100"
+                        Height="32"
+                        Margin="0,0,0,0"
+                        Content="Close"
+                        IsCancel="True" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

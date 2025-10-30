@@ -73,6 +73,11 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _updateMessage;
     private ModVersionOptionViewModel? _selectedVersionOption;
     private string? _modDatabaseSide;
+    private ModVersionVoteSummary? _userReportSummary;
+    private string _userReportDisplay = "—";
+    private string? _userReportTooltip;
+    private bool _isUserReportLoading;
+    private bool _userReportHasError;
 
     public sealed record ReleaseChangelog(string Version, string Changelog);
 
@@ -173,6 +178,7 @@ public sealed class ModListItemViewModel : ObservableObject
         UpdateNewerReleaseChangelogs();
         UpdateStatusFromErrors();
         UpdateTooltip();
+        InitializeUserReportState(_installedGameVersion, Version);
         _searchIndex = BuildSearchIndex(entry, location);
     }
 
@@ -373,6 +379,172 @@ public sealed class ModListItemViewModel : ObservableObject
         }
 
         return entries.Count == 0 ? Array.Empty<ReleaseChangelog>() : entries;
+    }
+
+    public ModVersionVoteSummary? UserReportSummary => _userReportSummary;
+
+    public ModVersionVoteCounts UserReportCounts => _userReportSummary?.Counts ?? ModVersionVoteCounts.Empty;
+
+    public ModVersionVoteOption? UserVoteOption => _userReportSummary?.UserVote;
+
+    public string UserReportDisplay
+    {
+        get => _userReportDisplay;
+        private set => SetProperty(ref _userReportDisplay, value);
+    }
+
+    public string? UserReportTooltip
+    {
+        get => _userReportTooltip;
+        private set => SetProperty(ref _userReportTooltip, value);
+    }
+
+    public bool IsUserReportLoading
+    {
+        get => _isUserReportLoading;
+        private set => SetProperty(ref _isUserReportLoading, value);
+    }
+
+    public bool UserReportHasError
+    {
+        get => _userReportHasError;
+        private set => SetProperty(ref _userReportHasError, value);
+    }
+
+    public bool CanSubmitUserReport => !string.IsNullOrWhiteSpace(_installedGameVersion) && !string.IsNullOrWhiteSpace(Version);
+
+    private void InitializeUserReportState(string? installedGameVersion, string? modVersion)
+    {
+        if (string.IsNullOrWhiteSpace(installedGameVersion) || string.IsNullOrWhiteSpace(modVersion))
+        {
+            SetUserReportUnavailable("User reports require a known Vintage Story and mod version.");
+            return;
+        }
+
+        SetUserReportLoading();
+    }
+
+    public void SetUserReportLoading()
+    {
+        ClearUserReportSummary();
+        UserReportHasError = false;
+        IsUserReportLoading = true;
+        UserReportDisplay = "Loading…";
+        UserReportTooltip = "Fetching user reports…";
+    }
+
+    public void SetUserReportOffline()
+    {
+        IsUserReportLoading = false;
+        UserReportHasError = false;
+        UserReportDisplay = "Offline";
+        UserReportTooltip = "Enable Internet Access in the File menu to load user reports.";
+    }
+
+    public void SetUserReportUnavailable(string message)
+    {
+        ClearUserReportSummary();
+        UserReportHasError = false;
+        IsUserReportLoading = false;
+        UserReportDisplay = "Unavailable";
+        UserReportTooltip = string.IsNullOrWhiteSpace(message) ? BuildUserReportTooltip(null) : message;
+    }
+
+    public void SetUserReportError(string message)
+    {
+        IsUserReportLoading = false;
+        UserReportHasError = true;
+        UserReportTooltip = string.IsNullOrWhiteSpace(message)
+            ? "Failed to load user reports. Try again later."
+            : message;
+
+        if (_userReportSummary is null)
+        {
+            UserReportDisplay = "Error";
+        }
+    }
+
+    public void ApplyUserReportSummary(ModVersionVoteSummary summary)
+    {
+        _userReportSummary = summary ?? throw new ArgumentNullException(nameof(summary));
+        IsUserReportLoading = false;
+        UserReportHasError = false;
+        UserReportDisplay = BuildUserReportDisplay(summary);
+        UserReportTooltip = BuildUserReportTooltip(summary);
+        OnPropertyChanged(nameof(UserReportSummary));
+        OnPropertyChanged(nameof(UserReportCounts));
+        OnPropertyChanged(nameof(UserVoteOption));
+    }
+
+    private void ClearUserReportSummary()
+    {
+        if (_userReportSummary is null)
+        {
+            OnPropertyChanged(nameof(UserReportSummary));
+            OnPropertyChanged(nameof(UserReportCounts));
+            OnPropertyChanged(nameof(UserVoteOption));
+            return;
+        }
+
+        _userReportSummary = null;
+        OnPropertyChanged(nameof(UserReportSummary));
+        OnPropertyChanged(nameof(UserReportCounts));
+        OnPropertyChanged(nameof(UserVoteOption));
+    }
+
+    private static string BuildUserReportDisplay(ModVersionVoteSummary? summary)
+    {
+        if (summary is null || summary.TotalVotes == 0)
+        {
+            return "No votes";
+        }
+
+        ModVersionVoteOption? majority = summary.GetMajorityOption();
+        if (majority is null)
+        {
+            return string.Create(
+                8 + summary.TotalVotes.ToString(CultureInfo.CurrentCulture).Length,
+                summary.TotalVotes,
+                static (span, total) =>
+                {
+                    const string prefix = "Mixed (";
+                    prefix.AsSpan().CopyTo(span);
+                    int offset = prefix.Length;
+                    string totalText = total.ToString(CultureInfo.CurrentCulture);
+                    totalText.AsSpan().CopyTo(span[offset..]);
+                    span[offset + totalText.Length] = ')';
+                });
+        }
+
+        int count = summary.Counts.GetCount(majority.Value);
+        string displayName = majority.Value.ToDisplayString();
+        string countText = count.ToString(CultureInfo.CurrentCulture);
+        return string.Concat(displayName, " (", countText, ")");
+    }
+
+    private string BuildUserReportTooltip(ModVersionVoteSummary? summary)
+    {
+        string versionText = string.IsNullOrWhiteSpace(_installedGameVersion)
+            ? "this Vintage Story version"
+            : string.Format(CultureInfo.CurrentCulture, "Vintage Story {0}", _installedGameVersion);
+
+        if (summary is null)
+        {
+            return string.Format(
+                CultureInfo.CurrentCulture,
+                "No votes recorded yet for {0}. Click to share your experience.",
+                versionText);
+        }
+
+        ModVersionVoteCounts counts = summary.Counts;
+        return string.Format(
+            CultureInfo.CurrentCulture,
+            "{0}: {1} Working Perfectly · {2} Some Issues But Works · {3} Not Working (Total {4}).",
+            versionText,
+            counts.WorkingPerfectly,
+            counts.SomeIssuesButWorks,
+            counts.NotWorking,
+            counts.Total);
     }
 
     public string InstallButtonToolTip

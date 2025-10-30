@@ -52,6 +52,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly ClientSettingsStore _settingsStore;
     private readonly ModDiscoveryService _discoveryService;
     private readonly ModDatabaseService _databaseService;
+    private readonly ModVersionVoteService _voteService = new();
     private readonly int _modDatabaseSearchResultLimit;
     private int _modDatabaseCurrentResultLimit;
     private readonly ObservableCollection<SortOption> _sortOptions;
@@ -965,7 +966,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             : null;
     }
 
-    internal string? InstalledGameVersion => _installedGameVersion;
+    public string? InstalledGameVersion => _installedGameVersion;
 
     internal async Task<bool> PreserveActivationStateAsync(string modId, string? previousVersion, string? newVersion, bool wasActive)
     {
@@ -1569,6 +1570,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             mod.PropertyChanged += OnInstalledModPropertyChanged;
         }
+
+        QueueUserReportRefresh(mod);
     }
 
     private void DetachInstalledMod(ModListItemViewModel mod)
@@ -1653,6 +1656,150 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         ScheduleModDatabaseTagRefresh();
+    }
+
+    private void QueueUserReportRefresh(ModListItemViewModel mod)
+    {
+        _ = RefreshUserReportAsync(mod, suppressErrors: true, CancellationToken.None);
+    }
+
+    public Task<ModVersionVoteSummary?> RefreshUserReportAsync(
+        ModListItemViewModel mod,
+        CancellationToken cancellationToken = default)
+    {
+        return RefreshUserReportAsync(mod, suppressErrors: false, cancellationToken);
+    }
+
+    public async Task<ModVersionVoteSummary?> SubmitUserReportVoteAsync(
+        ModListItemViewModel mod,
+        ModVersionVoteOption option,
+        CancellationToken cancellationToken = default)
+    {
+        if (mod is null)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(_installedGameVersion) || string.IsNullOrWhiteSpace(mod.Version))
+        {
+            await InvokeOnDispatcherAsync(
+                    () => mod.SetUserReportUnavailable("User reports require a known Vintage Story and mod version."),
+                    cancellationToken,
+                    DispatcherPriority.Background)
+                .ConfigureAwait(false);
+            return null;
+        }
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            throw new InternetAccessDisabledException(
+                "Internet access is disabled. Enable it in the File menu to submit your vote.");
+        }
+
+        await InvokeOnDispatcherAsync(mod.SetUserReportLoading, cancellationToken, DispatcherPriority.Background)
+            .ConfigureAwait(false);
+
+        try
+        {
+            ModVersionVoteSummary summary = await _voteService
+                .SubmitVoteAsync(mod.ModId, mod.Version!, _installedGameVersion!, option, cancellationToken)
+                .ConfigureAwait(false);
+
+            await InvokeOnDispatcherAsync(
+                    () => mod.ApplyUserReportSummary(summary),
+                    cancellationToken,
+                    DispatcherPriority.Background)
+                .ConfigureAwait(false);
+
+            return summary;
+        }
+        catch (InternetAccessDisabledException)
+        {
+            await InvokeOnDispatcherAsync(mod.SetUserReportOffline, cancellationToken, DispatcherPriority.Background)
+                .ConfigureAwait(false);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            StatusLogService.AppendStatus(
+                string.Format(CultureInfo.CurrentCulture, "Failed to submit user report for {0}: {1}", mod.DisplayName, ex.Message),
+                true);
+            throw;
+        }
+    }
+
+    private async Task<ModVersionVoteSummary?> RefreshUserReportAsync(
+        ModListItemViewModel mod,
+        bool suppressErrors,
+        CancellationToken cancellationToken)
+    {
+        if (mod is null)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(_installedGameVersion) || string.IsNullOrWhiteSpace(mod.Version))
+        {
+            await InvokeOnDispatcherAsync(
+                    () => mod.SetUserReportUnavailable("User reports require a known Vintage Story and mod version."),
+                    cancellationToken,
+                    DispatcherPriority.Background)
+                .ConfigureAwait(false);
+            return null;
+        }
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            await InvokeOnDispatcherAsync(mod.SetUserReportOffline, cancellationToken, DispatcherPriority.Background)
+                .ConfigureAwait(false);
+            return null;
+        }
+
+        await InvokeOnDispatcherAsync(mod.SetUserReportLoading, cancellationToken, DispatcherPriority.Background)
+            .ConfigureAwait(false);
+
+        try
+        {
+            ModVersionVoteSummary summary = await _voteService
+                .GetVoteSummaryAsync(mod.ModId, mod.Version!, _installedGameVersion!, cancellationToken)
+                .ConfigureAwait(false);
+
+            await InvokeOnDispatcherAsync(
+                    () => mod.ApplyUserReportSummary(summary),
+                    cancellationToken,
+                    DispatcherPriority.Background)
+                .ConfigureAwait(false);
+
+            return summary;
+        }
+        catch (InternetAccessDisabledException)
+        {
+            await InvokeOnDispatcherAsync(mod.SetUserReportOffline, cancellationToken, DispatcherPriority.Background)
+                .ConfigureAwait(false);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            if (!suppressErrors)
+            {
+                StatusLogService.AppendStatus(
+                    string.Format(CultureInfo.CurrentCulture, "Failed to refresh user reports for {0}: {1}", mod.DisplayName, ex.Message),
+                    true);
+            }
+
+            await InvokeOnDispatcherAsync(
+                    () => mod.SetUserReportError(ex.Message),
+                    cancellationToken,
+                    DispatcherPriority.Background)
+                .ConfigureAwait(false);
+
+            if (suppressErrors)
+            {
+                return null;
+            }
+
+            throw;
+        }
     }
 
     private void ScheduleInstalledTagFilterRefresh()
@@ -4155,9 +4302,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void RefreshInternetAccessDependentState()
     {
+        bool isOffline = InternetAccessManager.IsInternetAccessDisabled;
+
         foreach (ModListItemViewModel mod in _mods)
         {
             mod.RefreshInternetAccessDependentState();
+            if (isOffline)
+            {
+                mod.SetUserReportOffline();
+            }
+            else
+            {
+                QueueUserReportRefresh(mod);
+            }
         }
 
         foreach (ModListItemViewModel mod in _searchResults)
