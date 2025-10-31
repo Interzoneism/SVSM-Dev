@@ -1093,6 +1093,19 @@ public partial class MainWindow : Window
 
     private bool EnsureCloudModlistsConsent()
     {
+        string message =
+            "In this tab you can easily save and load Modlists from an online database (Google Firebase), for free." +
+            Environment.NewLine + Environment.NewLine +
+            "When you continue, Simple VS Manager will create a firebase-auth.json (basically just a code that identifies you as the owner of your uploaded modlists) file in the AppData/Local/Simple VS Manager folder. " +
+            "If you lose this file you will not be able to delete or modify your uploaded online modlists." +
+            Environment.NewLine + Environment.NewLine +
+            "You will not need to sign in or provide any account information or do anything really :) Press OK to continue and never show this again!";
+
+        return EnsureFirebaseAuthConsent(message);
+    }
+
+    private bool EnsureFirebaseAuthConsent(string message)
+    {
         string stateFilePath = FirebaseAnonymousAuthenticator.GetStateFilePath();
         if (string.IsNullOrWhiteSpace(stateFilePath))
         {
@@ -1110,14 +1123,6 @@ public partial class MainWindow : Window
             Cancel = "No thanks"
         };
 
-        string message =
-            "In this tab you can easily save and load Modlists from an online database (Google Firebase), for free." +
-            Environment.NewLine + Environment.NewLine +
-            "When you continue, Simple VS Manager will create a firebase-auth.json (basically just a code that identifies you as the owner of your uploaded modlists) file in the AppData/Local/Simple VS Manager folder. " +
-            "If you lose this file you will not be able to delete or modify your uploaded online modlists." +
-            Environment.NewLine + Environment.NewLine +
-            "You will not need to sign in or provide any account information or do anything really :) Press OK to continue and never show this again!";
-
         MessageBoxResult result = WpfMessageBox.Show(
             this,
             message,
@@ -1127,6 +1132,19 @@ public partial class MainWindow : Window
             buttonContentOverrides: buttonOverrides);
 
         return result == MessageBoxResult.OK;
+    }
+
+    private bool EnsureUserReportVotingConsent()
+    {
+        string message =
+            "In this tab you can vote on mod compatibility using an online database (Google Firebase), for free." +
+            Environment.NewLine + Environment.NewLine +
+            "When you continue, Simple VS Manager will create a firebase-auth.json (basically just a code that identifies you as the owner of your mod compatibility votes) file in the AppData/Local/Simple VS Manager folder. " +
+            "If you lose this file you will not be able to manage or remove your mod compatibility votes." +
+            Environment.NewLine + Environment.NewLine +
+            "You will not need to sign in or provide any account information or do anything really :) Press OK to continue and never show this again!";
+
+        return EnsureFirebaseAuthConsent(message);
     }
 
     private void EnsureFirebaseAuthBackedUpIfAvailable()
@@ -2798,6 +2816,11 @@ public partial class MainWindow : Window
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
+            return;
+        }
+
+        if (!EnsureUserReportVotingConsent())
+        {
             return;
         }
 
