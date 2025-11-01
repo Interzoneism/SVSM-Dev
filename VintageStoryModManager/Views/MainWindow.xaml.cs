@@ -91,6 +91,7 @@ public partial class MainWindow : Window
     private static readonly PresetLoadOptions StandardPresetLoadOptions = new(true, false, false);
     private static readonly PresetLoadOptions ModListLoadOptions = new(true, true, true);
     private readonly record struct ManagerDeletionResult(List<string> DeletedPaths, List<string> FailedPaths);
+    private readonly record struct InstalledModLogIdentifier(string SearchValue, string DisplayLabel);
 
     private enum InstalledModsColumn
     {
@@ -803,9 +804,133 @@ public partial class MainWindow : Window
         _ = dialog.ShowDialog();
     }
 
+    private void ExperimentalAllModsDebuggingMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel is null)
+        {
+            WpfMessageBox.Show(
+                "The installed mod list is not available. Please wait for the manager to finish loading and try again.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        IReadOnlyList<ModListItemViewModel> installedMods = _viewModel.GetInstalledModsSnapshot();
+        var modIdentifiers = new List<InstalledModLogIdentifier>();
+        var seenModIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (ModListItemViewModel mod in installedMods)
+        {
+            if (mod is null)
+            {
+                continue;
+            }
+
+            string? modId = mod.ModId;
+            if (string.IsNullOrWhiteSpace(modId))
+            {
+                continue;
+            }
+
+            string trimmedModId = modId.Trim();
+            if (!seenModIds.Add(trimmedModId))
+            {
+                continue;
+            }
+
+            string? displayName = mod.DisplayName;
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                displayName = displayName.Trim();
+            }
+
+            string displayLabel = string.IsNullOrWhiteSpace(displayName)
+                ? trimmedModId
+                : $"{displayName} ({trimmedModId})";
+
+            modIdentifiers.Add(new InstalledModLogIdentifier(trimmedModId, displayLabel));
+        }
+
+        if (modIdentifiers.Count == 0)
+        {
+            WpfMessageBox.Show(
+                "No installed mods with a valid mod ID were found to search for in the logs.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_dataDirectory))
+        {
+            WpfMessageBox.Show(
+                "The manager data directory is not available. Please configure the Vintage Story data folder and try again.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        string logsDirectory = Path.Combine(_dataDirectory, "Logs");
+        if (!Directory.Exists(logsDirectory))
+        {
+            WpfMessageBox.Show(
+                "No log files were found in the manager's Logs folder.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        List<string> logLines = CollectInstalledModDebugLines(logsDirectory, modIdentifiers);
+        if (logLines.Count == 0)
+        {
+            logLines.Add("No log entries referencing the installed mods were found in client-debug, client-main, server-debug, or server-main logs.");
+        }
+
+        var dialog = new ExperimentalModDebugDialog(
+            "Log entries referencing installed mods",
+            "No log entries referencing installed mods were found.",
+            logLines)
+        {
+            Owner = this
+        };
+
+        _ = dialog.ShowDialog();
+    }
+
     private static List<string> CollectExperimentalModDebugLines(string logsDirectory, string modId)
     {
         var logLines = new List<string>();
+        foreach (string filePath in GetExperimentalModDebugFilePaths(logsDirectory))
+        {
+            AppendExperimentalModDebugLines(logLines, filePath, modId);
+        }
+
+        return logLines;
+    }
+
+    private static List<string> CollectInstalledModDebugLines(
+        string logsDirectory,
+        IReadOnlyList<InstalledModLogIdentifier> modIdentifiers)
+    {
+        var logLines = new List<string>();
+        if (modIdentifiers.Count == 0)
+        {
+            return logLines;
+        }
+
+        foreach (string filePath in GetExperimentalModDebugFilePaths(logsDirectory))
+        {
+            AppendInstalledModDebugLines(logLines, filePath, modIdentifiers);
+        }
+
+        return logLines;
+    }
+
+    private static List<string> GetExperimentalModDebugFilePaths(string logsDirectory)
+    {
         var filePaths = new List<string>();
         var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -840,13 +965,7 @@ public partial class MainWindow : Window
         }
 
         filePaths.Sort(StringComparer.OrdinalIgnoreCase);
-
-        foreach (string filePath in filePaths)
-        {
-            AppendExperimentalModDebugLines(logLines, filePath, modId);
-        }
-
-        return logLines;
+        return filePaths;
     }
 
     private static void AppendExperimentalModDebugLines(ICollection<string> logLines, string filePath, string modId)
@@ -859,6 +978,43 @@ public partial class MainWindow : Window
                 if (line.IndexOf(modId, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     logLines.Add($"{fileName}: {line}");
+                }
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private static void AppendInstalledModDebugLines(
+        ICollection<string> logLines,
+        string filePath,
+        IReadOnlyList<InstalledModLogIdentifier> modIdentifiers)
+    {
+        try
+        {
+            string fileName = Path.GetFileName(filePath);
+            foreach (string line in File.ReadLines(filePath))
+            {
+                List<string>? matchedMods = null;
+                foreach (InstalledModLogIdentifier identifier in modIdentifiers)
+                {
+                    if (line.IndexOf(identifier.SearchValue, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        matchedMods ??= new List<string>();
+                        matchedMods.Add(identifier.DisplayLabel);
+                    }
+                }
+
+                if (matchedMods is { Count: > 0 })
+                {
+                    string matchLabel = matchedMods.Count == 1
+                        ? matchedMods[0]
+                        : string.Join(", ", matchedMods);
+                    logLines.Add($"{fileName} [{matchLabel}]: {line}");
                 }
             }
         }

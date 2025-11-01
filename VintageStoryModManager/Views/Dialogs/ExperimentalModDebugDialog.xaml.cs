@@ -7,21 +7,31 @@ namespace VintageStoryModManager.Views.Dialogs;
 public partial class ExperimentalModDebugDialog : Window
 {
     public ExperimentalModDebugDialog(string modId, IReadOnlyList<string> logLines)
+        : this(
+            $"Log entries mentioning '{modId}'",
+            $"No log entries referencing '{modId}' were found.",
+            logLines)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(modId);
+        ModId = modId;
+    }
+
+    public ExperimentalModDebugDialog(string headerText, string emptyMessage, IReadOnlyList<string> logLines)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(headerText);
+        ArgumentException.ThrowIfNullOrWhiteSpace(emptyMessage);
         ArgumentNullException.ThrowIfNull(logLines);
 
         InitializeComponent();
 
-        ModId = modId;
+        HeaderText = headerText;
+        EmptyMessage = emptyMessage;
         LogLines = logLines;
-        HeaderText = $"Log entries mentioning '{modId}'";
-        EmptyMessage = $"No log entries referencing '{modId}' were found.";
 
         DataContext = this;
     }
 
-    public string ModId { get; }
+    public string? ModId { get; }
 
     public IReadOnlyList<string> LogLines { get; }
 
