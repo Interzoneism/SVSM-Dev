@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Security.Cryptography;
@@ -85,8 +86,14 @@ public partial class MainWindow : Window
         "Check for mod systems in mod ",
         "Loaded assembly ",
         "Instantiate mod systems for ",
-        "Starting system:"
+        "Starting system:",
+        "Mods, sorted by dependency:",
+        "External Origins in load order:"
     };
+
+    private static readonly Regex PatchAssetMissingRegex = new(
+        @"Patch \d+ in (?<mod>[^:]+): .* not found",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
 
@@ -1051,8 +1058,14 @@ public partial class MainWindow : Window
             return;
         }
 
+        List<string> processedLines = SummarizePatchMissingLines(matchedLines);
+        if (processedLines.Count == 0)
+        {
+            return;
+        }
+
         logLines.Add($"**{fileName}**");
-        logLines.AddRange(matchedLines);
+        logLines.AddRange(processedLines);
     }
 
     private static bool ShouldIgnoreExperimentalModDebugLine(string line)
@@ -1066,6 +1079,59 @@ public partial class MainWindow : Window
         }
 
         return false;
+    }
+
+    private static List<string> SummarizePatchMissingLines(List<string> matchedLines)
+    {
+        if (matchedLines.Count == 0)
+        {
+            return matchedLines;
+        }
+
+        var summarized = new List<string>(matchedLines.Count);
+        var modSummary = new Dictionary<string, (int Index, int HiddenCount)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string line in matchedLines)
+        {
+            Match match = PatchAssetMissingRegex.Match(line);
+            if (!match.Success)
+            {
+                summarized.Add(line);
+                continue;
+            }
+
+            string modId = match.Groups["mod"].Value;
+            if (string.IsNullOrEmpty(modId))
+            {
+                summarized.Add(line);
+                continue;
+            }
+
+            if (modSummary.TryGetValue(modId, out var entry))
+            {
+                modSummary[modId] = (entry.Index, entry.HiddenCount + 1);
+                continue;
+            }
+
+            modSummary[modId] = (summarized.Count, 0);
+            summarized.Add(line);
+        }
+
+        foreach (KeyValuePair<string, (int Index, int HiddenCount)> kvp in modSummary)
+        {
+            if (kvp.Value.HiddenCount <= 0)
+            {
+                continue;
+            }
+
+            int index = kvp.Value.Index;
+            if (index >= 0 && index < summarized.Count)
+            {
+                summarized[index] = $"{summarized[index]} ({kvp.Value.HiddenCount} similar lines hidden...)";
+            }
+        }
+
+        return summarized;
     }
 
     private void InitializeViewModel()
