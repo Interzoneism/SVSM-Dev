@@ -80,6 +80,14 @@ public partial class MainWindow : Window
         ".log"
     };
 
+    private static readonly string[] ExperimentalModDebugIgnoredLinePhrases =
+    {
+        "Check for mod systems in mod ",
+        "Loaded assembly ",
+        "Instantiate mod systems for ",
+        "Starting system:"
+    };
+
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
 
     private enum ModlistLoadMode
@@ -975,6 +983,11 @@ public partial class MainWindow : Window
             string fileName = Path.GetFileName(filePath);
             foreach (string line in File.ReadLines(filePath))
             {
+                if (ShouldIgnoreExperimentalModDebugLine(line))
+                {
+                    continue;
+                }
+
                 if (line.IndexOf(modId, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     logLines.Add($"{fileName}: {line}");
@@ -999,6 +1012,11 @@ public partial class MainWindow : Window
             string fileName = Path.GetFileName(filePath);
             foreach (string line in File.ReadLines(filePath))
             {
+                if (ShouldIgnoreExperimentalModDebugLine(line))
+                {
+                    continue;
+                }
+
                 List<string>? matchedMods = null;
                 foreach (InstalledModLogIdentifier identifier in modIdentifiers)
                 {
@@ -1024,6 +1042,19 @@ public partial class MainWindow : Window
         catch (UnauthorizedAccessException)
         {
         }
+    }
+
+    private static bool ShouldIgnoreExperimentalModDebugLine(string line)
+    {
+        foreach (string phrase in ExperimentalModDebugIgnoredLinePhrases)
+        {
+            if (line.IndexOf(phrase, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void InitializeViewModel()
