@@ -92,7 +92,7 @@ public partial class MainWindow : Window
     };
 
     private static readonly Regex PatchAssetMissingRegex = new(
-        @"Patch \d+ in (?<mod>[^:]+): .* not found",
+        @"Patch \d+ in (?<mod>[^:]+)(?<rest>: .* not found)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
@@ -1101,37 +1101,73 @@ public partial class MainWindow : Window
             }
 
             string modId = match.Groups["mod"].Value;
-            if (string.IsNullOrEmpty(modId))
+            string summaryRest = match.Groups["rest"].Value;
+            if (string.IsNullOrEmpty(modId) || string.IsNullOrEmpty(summaryRest))
             {
                 summarized.Add(line);
                 continue;
             }
 
-            if (modSummary.TryGetValue(modId, out var entry))
+            string summaryKey = CreatePatchMissingSummaryKey(modId, summaryRest);
+            if (string.IsNullOrEmpty(summaryKey))
             {
-                modSummary[modId] = (entry.Index, entry.HiddenCount + 1);
+                summarized.Add(line);
                 continue;
             }
 
-            modSummary[modId] = (summarized.Count, 0);
+            if (modSummary.TryGetValue(summaryKey, out var entry))
+            {
+                modSummary[summaryKey] = (entry.Index, entry.HiddenCount + 1);
+                continue;
+            }
+
+            modSummary[summaryKey] = (summarized.Count, 0);
             summarized.Add(line);
         }
 
-        foreach (KeyValuePair<string, (int Index, int HiddenCount)> kvp in modSummary)
+        foreach ((int Index, int HiddenCount) value in modSummary.Values)
         {
-            if (kvp.Value.HiddenCount <= 0)
+            if (value.HiddenCount <= 0)
             {
                 continue;
             }
 
-            int index = kvp.Value.Index;
+            int index = value.Index;
             if (index >= 0 && index < summarized.Count)
             {
-                summarized[index] = $"{summarized[index]} ({kvp.Value.HiddenCount} similar lines hidden...)";
+                summarized[index] = $"{summarized[index]} ({value.HiddenCount} similar lines hidden...)";
             }
         }
 
         return summarized;
+    }
+
+    private static string CreatePatchMissingSummaryKey(string modId, string rest)
+    {
+        string trimmedModId = modId.Trim();
+        if (string.IsNullOrEmpty(trimmedModId))
+        {
+            return string.Empty;
+        }
+
+        string normalizedRest = NormalizePatchMissingSummaryRest(rest);
+        if (string.IsNullOrEmpty(normalizedRest))
+        {
+            return string.Empty;
+        }
+
+        return string.Concat(trimmedModId, "|", normalizedRest);
+    }
+
+    private static string NormalizePatchMissingSummaryRest(string rest)
+    {
+        string trimmed = rest.Trim();
+        if (trimmed.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        return trimmed;
     }
 
     private void InitializeViewModel()
