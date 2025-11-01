@@ -615,6 +615,33 @@ public sealed class ModListItemViewModel : ObservableObject
             return;
         }
 
+        var uniqueComments = new List<string>(comments.Count);
+        var countsByComment = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (string comment in comments)
+        {
+            if (string.IsNullOrWhiteSpace(comment))
+            {
+                continue;
+            }
+
+            string trimmedComment = comment.Trim();
+            if (countsByComment.TryGetValue(trimmedComment, out int count))
+            {
+                countsByComment[trimmedComment] = count + 1;
+            }
+            else
+            {
+                countsByComment.Add(trimmedComment, 1);
+                uniqueComments.Add(trimmedComment);
+            }
+        }
+
+        if (uniqueComments.Count == 0)
+        {
+            return;
+        }
+
         if (builder.Length > 0)
         {
             builder.AppendLine();
@@ -624,16 +651,19 @@ public sealed class ModListItemViewModel : ObservableObject
         builder.Append(heading);
         builder.Append(':');
 
-        foreach (string comment in comments)
+        foreach (string comment in uniqueComments)
         {
-            if (string.IsNullOrWhiteSpace(comment))
-            {
-                continue;
-            }
-
             builder.AppendLine();
             builder.Append(" • ");
             builder.Append(comment);
+
+            if (countsByComment[comment] > 1)
+            {
+                builder.Append(' ');
+                builder.Append('(');
+                builder.Append(countsByComment[comment].ToString(CultureInfo.CurrentCulture));
+                builder.Append(')');
+            }
         }
     }
 
