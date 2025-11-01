@@ -761,7 +761,7 @@ public partial class MainWindow : Window
         StatusLogService.IsLoggingEnabled = isEnabled;
     }
 
-    private void ExperimentalModDebuggingMenuItem_OnClick(object sender, RoutedEventArgs e)
+    private async void ExperimentalModDebuggingMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (_viewModel?.SelectedMod is not ModListItemViewModel selectedMod)
         {
@@ -805,7 +805,16 @@ public partial class MainWindow : Window
             return;
         }
 
-        List<string> logLines = CollectExperimentalModDebugLines(logsDirectory, modId);
+        List<string> logLines;
+        IDisposable? busyScope = _viewModel?.EnterBusyScope();
+        try
+        {
+            logLines = await Task.Run(() => CollectExperimentalModDebugLines(logsDirectory, modId)).ConfigureAwait(true);
+        }
+        finally
+        {
+            busyScope?.Dispose();
+        }
         if (logLines.Count == 0)
         {
             logLines.Add($"No log entries referencing '{modId}' were found in client-debug, client-main, server-debug, or server-main logs.");
@@ -819,7 +828,7 @@ public partial class MainWindow : Window
         _ = dialog.ShowDialog();
     }
 
-    private void ExperimentalAllModsDebuggingMenuItem_OnClick(object sender, RoutedEventArgs e)
+    private async void ExperimentalAllModsDebuggingMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (_viewModel is null)
         {
@@ -898,7 +907,16 @@ public partial class MainWindow : Window
             return;
         }
 
-        List<string> logLines = CollectInstalledModDebugLines(logsDirectory, modIdentifiers);
+        List<string> logLines;
+        IDisposable? busyScope = _viewModel.EnterBusyScope();
+        try
+        {
+            logLines = await Task.Run(() => CollectInstalledModDebugLines(logsDirectory, modIdentifiers)).ConfigureAwait(true);
+        }
+        finally
+        {
+            busyScope.Dispose();
+        }
         if (logLines.Count == 0)
         {
             logLines.Add("No log entries referencing the installed mods were found in client-debug, client-main, server-debug, or server-main logs.");
