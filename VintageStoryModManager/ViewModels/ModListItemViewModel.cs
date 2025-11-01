@@ -578,7 +578,7 @@ public sealed class ModListItemViewModel : ObservableObject
         var builder = new StringBuilder();
         builder.AppendFormat(CultureInfo.CurrentCulture, "User reports for {0}:{1}", versionText, Environment.NewLine);
         builder.AppendFormat(CultureInfo.CurrentCulture, "Fully functional ({0}){1}", counts.FullyFunctional, Environment.NewLine);
-        builder.AppendFormat(CultureInfo.CurrentCulture, "No issues so far ({0}){1}", counts.NoIssuesSoFar, Environment.NewLine);
+        builder.AppendFormat(CultureInfo.CurrentCulture, "No issues noticed ({0}){1}", counts.NoIssuesSoFar, Environment.NewLine);
         builder.AppendFormat(CultureInfo.CurrentCulture, "Some issues but works ({0}){1}", counts.SomeIssuesButWorks, Environment.NewLine);
         builder.AppendFormat(CultureInfo.CurrentCulture, "Not functional ({0}){1}", counts.NotFunctional, Environment.NewLine);
         builder.AppendFormat(CultureInfo.CurrentCulture, "Crashes/Freezes game ({0})", counts.CrashesOrFreezesGame);
@@ -615,6 +615,33 @@ public sealed class ModListItemViewModel : ObservableObject
             return;
         }
 
+        var uniqueComments = new List<string>(comments.Count);
+        var countsByComment = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (string comment in comments)
+        {
+            if (string.IsNullOrWhiteSpace(comment))
+            {
+                continue;
+            }
+
+            string trimmedComment = comment.Trim();
+            if (countsByComment.TryGetValue(trimmedComment, out int count))
+            {
+                countsByComment[trimmedComment] = count + 1;
+            }
+            else
+            {
+                countsByComment.Add(trimmedComment, 1);
+                uniqueComments.Add(trimmedComment);
+            }
+        }
+
+        if (uniqueComments.Count == 0)
+        {
+            return;
+        }
+
         if (builder.Length > 0)
         {
             builder.AppendLine();
@@ -624,16 +651,19 @@ public sealed class ModListItemViewModel : ObservableObject
         builder.Append(heading);
         builder.Append(':');
 
-        foreach (string comment in comments)
+        foreach (string comment in uniqueComments)
         {
-            if (string.IsNullOrWhiteSpace(comment))
-            {
-                continue;
-            }
-
             builder.AppendLine();
             builder.Append(" • ");
             builder.Append(comment);
+
+            if (countsByComment[comment] > 1)
+            {
+                builder.Append(' ');
+                builder.Append('(');
+                builder.Append(countsByComment[comment].ToString(CultureInfo.CurrentCulture));
+                builder.Append(')');
+            }
         }
     }
 

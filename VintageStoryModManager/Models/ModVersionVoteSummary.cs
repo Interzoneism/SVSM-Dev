@@ -116,40 +116,56 @@ public sealed class ModVersionVoteSummary
             return null;
         }
 
+        bool fullyFunctionalIsMax = fullyFunctional == max;
+        bool noIssuesIsMax = noIssues == max;
+        bool issuesIsMax = issues == max;
+        bool notFunctionalIsMax = notFunctional == max;
+        bool crashesIsMax = crashes == max;
+
         int duplicates = 0;
         ModVersionVoteOption? candidate = null;
 
-        if (fullyFunctional == max)
+        if (fullyFunctionalIsMax)
         {
             duplicates++;
             candidate = ModVersionVoteOption.FullyFunctional;
         }
 
-        if (noIssues == max)
+        if (noIssuesIsMax)
         {
             duplicates++;
             candidate = ModVersionVoteOption.NoIssuesSoFar;
         }
 
-        if (issues == max)
+        if (issuesIsMax)
         {
             duplicates++;
             candidate = ModVersionVoteOption.SomeIssuesButWorks;
         }
 
-        if (notFunctional == max)
+        if (notFunctionalIsMax)
         {
             duplicates++;
             candidate = ModVersionVoteOption.NotFunctional;
         }
 
-        if (crashes == max)
+        if (crashesIsMax)
         {
             duplicates++;
             candidate = ModVersionVoteOption.CrashesOrFreezesGame;
         }
 
-        return duplicates == 1 ? candidate : null;
+        if (duplicates == 1)
+        {
+            return candidate;
+        }
+
+        if (duplicates == 2 && fullyFunctionalIsMax && noIssuesIsMax)
+        {
+            return ModVersionVoteOption.FullyFunctional;
+        }
+
+        return null;
     }
 }
 
@@ -158,7 +174,7 @@ public static class ModVersionVoteOptionExtensions
     public static string ToDisplayString(this ModVersionVoteOption option) => option switch
     {
         ModVersionVoteOption.FullyFunctional => "Fully functional",
-        ModVersionVoteOption.NoIssuesSoFar => "No issues so far",
+        ModVersionVoteOption.NoIssuesSoFar => "No issues noticed",
         ModVersionVoteOption.SomeIssuesButWorks => "Some issues but works",
         ModVersionVoteOption.NotFunctional => "Not functional",
         ModVersionVoteOption.CrashesOrFreezesGame => "Crashes/Freezes game",

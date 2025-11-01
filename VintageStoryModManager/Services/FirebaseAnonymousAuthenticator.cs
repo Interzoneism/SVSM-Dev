@@ -163,6 +163,51 @@ public sealed class FirebaseAnonymousAuthenticator
         }
     }
 
+    internal static bool HasPersistedState()
+    {
+        string stateFilePath = GetStateFilePath();
+        if (string.IsNullOrWhiteSpace(stateFilePath) || !File.Exists(stateFilePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            string json = File.ReadAllText(stateFilePath);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return false;
+            }
+
+            AuthStateModel? model = JsonSerializer.Deserialize<AuthStateModel>(json, JsonOptions);
+            if (model is null
+                || string.IsNullOrWhiteSpace(model.IdToken)
+                || string.IsNullOrWhiteSpace(model.RefreshToken)
+                || string.IsNullOrWhiteSpace(model.UserId))
+            {
+                return false;
+            }
+
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+        catch (SecurityException)
+        {
+            return false;
+        }
+    }
+
     internal static string GetStateFilePath()
     {
         string? developerOverride = DeveloperProfileManager.GetFirebaseStateFilePathOverride();

@@ -18,6 +18,7 @@ using System.Windows.Data;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SimpleVsManager.Cloud;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 
@@ -116,6 +117,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _hasSelectedTags;
     private bool _disposed;
     private bool _onlyShowCompatibleModDatabaseResults;
+    private bool _canFetchUserReports;
 
     public MainViewModel(
         string dataDirectory,
@@ -155,6 +157,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         _excludeInstalledModDatabaseResults = excludeInstalledModDatabaseResults;
         _onlyShowCompatibleModDatabaseResults = onlyShowCompatibleModDatabaseResults;
+        _canFetchUserReports = FirebaseAnonymousAuthenticator.HasPersistedState();
 
         _clearSearchCommand = new RelayCommand(() => SearchText = string.Empty, () => HasSearchText);
         ClearSearchCommand = _clearSearchCommand;
@@ -1662,7 +1665,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void QueueLatestReleaseUserReportRefresh(ModListItemViewModel mod)
     {
-        if (mod is null)
+        if (!_canFetchUserReports || mod is null)
         {
             return;
         }
@@ -1756,7 +1759,32 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void QueueUserReportRefresh(ModListItemViewModel mod)
     {
+        if (!_canFetchUserReports)
+        {
+            return;
+        }
+
         _ = RefreshUserReportAsync(mod, suppressErrors: true, CancellationToken.None);
+    }
+
+    public void EnableUserReportFetching()
+    {
+        if (_canFetchUserReports)
+        {
+            return;
+        }
+
+        _canFetchUserReports = true;
+
+        foreach (ModListItemViewModel mod in _installedModSubscriptions)
+        {
+            QueueUserReportRefresh(mod);
+        }
+
+        foreach (ModListItemViewModel mod in _searchResultSubscriptions)
+        {
+            QueueLatestReleaseUserReportRefresh(mod);
+        }
     }
 
     public Task<ModVersionVoteSummary?> RefreshUserReportAsync(
