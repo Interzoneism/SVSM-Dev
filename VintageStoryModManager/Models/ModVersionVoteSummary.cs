@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace VintageStoryModManager.Models;
 
@@ -7,9 +8,11 @@ namespace VintageStoryModManager.Models;
 /// </summary>
 public enum ModVersionVoteOption
 {
-    WorkingPerfectly,
+    FullyFunctional,
+    NoIssuesSoFar,
     SomeIssuesButWorks,
-    NotWorking
+    NotFunctional,
+    CrashesOrFreezesGame
 }
 
 /// <summary>
@@ -17,30 +20,43 @@ public enum ModVersionVoteOption
 /// </summary>
 public sealed class ModVersionVoteCounts
 {
-    public ModVersionVoteCounts(int workingPerfectly, int someIssuesButWorks, int notWorking)
+    public ModVersionVoteCounts(
+        int fullyFunctional,
+        int noIssuesSoFar,
+        int someIssuesButWorks,
+        int notFunctional,
+        int crashesOrFreezesGame)
     {
-        WorkingPerfectly = Math.Max(0, workingPerfectly);
+        FullyFunctional = Math.Max(0, fullyFunctional);
+        NoIssuesSoFar = Math.Max(0, noIssuesSoFar);
         SomeIssuesButWorks = Math.Max(0, someIssuesButWorks);
-        NotWorking = Math.Max(0, notWorking);
+        NotFunctional = Math.Max(0, notFunctional);
+        CrashesOrFreezesGame = Math.Max(0, crashesOrFreezesGame);
     }
 
-    public int WorkingPerfectly { get; }
+    public int FullyFunctional { get; }
+
+    public int NoIssuesSoFar { get; }
 
     public int SomeIssuesButWorks { get; }
 
-    public int NotWorking { get; }
+    public int NotFunctional { get; }
 
-    public int Total => WorkingPerfectly + SomeIssuesButWorks + NotWorking;
+    public int CrashesOrFreezesGame { get; }
+
+    public int Total => FullyFunctional + NoIssuesSoFar + SomeIssuesButWorks + NotFunctional + CrashesOrFreezesGame;
 
     public int GetCount(ModVersionVoteOption option) => option switch
     {
-        ModVersionVoteOption.WorkingPerfectly => WorkingPerfectly,
+        ModVersionVoteOption.FullyFunctional => FullyFunctional,
+        ModVersionVoteOption.NoIssuesSoFar => NoIssuesSoFar,
         ModVersionVoteOption.SomeIssuesButWorks => SomeIssuesButWorks,
-        ModVersionVoteOption.NotWorking => NotWorking,
+        ModVersionVoteOption.NotFunctional => NotFunctional,
+        ModVersionVoteOption.CrashesOrFreezesGame => CrashesOrFreezesGame,
         _ => 0
     };
 
-    public static ModVersionVoteCounts Empty { get; } = new(0, 0, 0);
+    public static ModVersionVoteCounts Empty { get; } = new(0, 0, 0, 0, 0);
 }
 
 /// <summary>
@@ -53,13 +69,17 @@ public sealed class ModVersionVoteSummary
         string modVersion,
         string? vintageStoryVersion,
         ModVersionVoteCounts counts,
-        ModVersionVoteOption? userVote)
+        ModVersionVoteComments comments,
+        ModVersionVoteOption? userVote,
+        string? userComment)
     {
         ModId = modId ?? throw new ArgumentNullException(nameof(modId));
         ModVersion = modVersion ?? throw new ArgumentNullException(nameof(modVersion));
         VintageStoryVersion = vintageStoryVersion;
         Counts = counts ?? throw new ArgumentNullException(nameof(counts));
+        Comments = comments ?? throw new ArgumentNullException(nameof(comments));
         UserVote = userVote;
+        UserComment = userComment;
     }
 
     public string ModId { get; }
@@ -72,15 +92,25 @@ public sealed class ModVersionVoteSummary
 
     public ModVersionVoteOption? UserVote { get; }
 
+    public string? UserComment { get; }
+
+    public ModVersionVoteComments Comments { get; }
+
     public int TotalVotes => Counts.Total;
 
     public ModVersionVoteOption? GetMajorityOption()
     {
-        int working = Counts.WorkingPerfectly;
+        int fullyFunctional = Counts.FullyFunctional;
+        int noIssues = Counts.NoIssuesSoFar;
         int issues = Counts.SomeIssuesButWorks;
-        int failing = Counts.NotWorking;
+        int notFunctional = Counts.NotFunctional;
+        int crashes = Counts.CrashesOrFreezesGame;
 
-        int max = Math.Max(working, Math.Max(issues, failing));
+        int max = Math.Max(
+            fullyFunctional,
+            Math.Max(
+                noIssues,
+                Math.Max(issues, Math.Max(notFunctional, crashes))));
         if (max == 0)
         {
             return null;
@@ -89,10 +119,16 @@ public sealed class ModVersionVoteSummary
         int duplicates = 0;
         ModVersionVoteOption? candidate = null;
 
-        if (working == max)
+        if (fullyFunctional == max)
         {
             duplicates++;
-            candidate = ModVersionVoteOption.WorkingPerfectly;
+            candidate = ModVersionVoteOption.FullyFunctional;
+        }
+
+        if (noIssues == max)
+        {
+            duplicates++;
+            candidate = ModVersionVoteOption.NoIssuesSoFar;
         }
 
         if (issues == max)
@@ -101,10 +137,16 @@ public sealed class ModVersionVoteSummary
             candidate = ModVersionVoteOption.SomeIssuesButWorks;
         }
 
-        if (failing == max)
+        if (notFunctional == max)
         {
             duplicates++;
-            candidate = ModVersionVoteOption.NotWorking;
+            candidate = ModVersionVoteOption.NotFunctional;
+        }
+
+        if (crashes == max)
+        {
+            duplicates++;
+            candidate = ModVersionVoteOption.CrashesOrFreezesGame;
         }
 
         return duplicates == 1 ? candidate : null;
@@ -115,9 +157,33 @@ public static class ModVersionVoteOptionExtensions
 {
     public static string ToDisplayString(this ModVersionVoteOption option) => option switch
     {
-        ModVersionVoteOption.WorkingPerfectly => "Working Fine",
-        ModVersionVoteOption.SomeIssuesButWorks => "Some Issues",
-        ModVersionVoteOption.NotWorking => "Not Working",
+        ModVersionVoteOption.FullyFunctional => "Fully functional",
+        ModVersionVoteOption.NoIssuesSoFar => "No issues so far",
+        ModVersionVoteOption.SomeIssuesButWorks => "Some issues but works",
+        ModVersionVoteOption.NotFunctional => "Not functional",
+        ModVersionVoteOption.CrashesOrFreezesGame => "Crashes/Freezes game",
         _ => option.ToString() ?? string.Empty
     };
+
+    public static bool RequiresComment(this ModVersionVoteOption option) => option switch
+    {
+        ModVersionVoteOption.NotFunctional => true,
+        ModVersionVoteOption.CrashesOrFreezesGame => true,
+        _ => false
+    };
+}
+
+public sealed class ModVersionVoteComments
+{
+    public ModVersionVoteComments(IReadOnlyList<string> notFunctional, IReadOnlyList<string> crashesOrFreezesGame)
+    {
+        NotFunctional = notFunctional ?? Array.Empty<string>();
+        CrashesOrFreezesGame = crashesOrFreezesGame ?? Array.Empty<string>();
+    }
+
+    public IReadOnlyList<string> NotFunctional { get; }
+
+    public IReadOnlyList<string> CrashesOrFreezesGame { get; }
+
+    public static ModVersionVoteComments Empty { get; } = new(Array.Empty<string>(), Array.Empty<string>());
 }

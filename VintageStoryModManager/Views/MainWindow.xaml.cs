@@ -3155,13 +3155,15 @@ public partial class MainWindow : Window
                     mod.Version ?? string.Empty,
                     _viewModel.InstalledGameVersion,
                     ModVersionVoteCounts.Empty,
+                    ModVersionVoteComments.Empty,
+                    null,
                     null);
             }
 
             var dialog = new ModVoteDialog(
                 mod,
                 summary,
-                option => _viewModel.SubmitUserReportVoteAsync(mod, option));
+                (option, comment) => _viewModel.SubmitUserReportVoteAsync(mod, option, comment));
 
             dialog.Owner = this;
             dialog.ShowDialog();

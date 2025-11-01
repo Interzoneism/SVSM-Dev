@@ -81,6 +81,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private ModVersionVoteSummary? _latestReleaseUserReportSummary;
     private string? _latestReleaseUserReportVersion;
     private string? _latestReleaseUserReportDisplay;
+    private string? _latestReleaseUserReportTooltip;
 
     public sealed record ReleaseChangelog(string Version, string Changelog);
 
@@ -356,6 +357,12 @@ public sealed class ModListItemViewModel : ObservableObject
         }
     }
 
+    public string? LatestReleaseUserReportTooltip
+    {
+        get => _latestReleaseUserReportTooltip;
+        private set => SetProperty(ref _latestReleaseUserReportTooltip, value);
+    }
+
     public bool HasLatestReleaseUserReport => !string.IsNullOrWhiteSpace(_latestReleaseUserReportDisplay);
 
     public IReadOnlyList<ReleaseChangelog> GetChangelogEntriesForUpgrade(string? targetVersion)
@@ -558,14 +565,78 @@ public sealed class ModListItemViewModel : ObservableObject
         }
 
         ModVersionVoteCounts counts = summary.Counts;
+        string countsLine = BuildCountsSummary(versionText, counts);
+
+        string commentsText = BuildNegativeCommentsText(summary, requireNegativeMajority: false);
+        return string.IsNullOrEmpty(commentsText)
+            ? countsLine
+            : string.Concat(countsLine, Environment.NewLine, Environment.NewLine, commentsText);
+    }
+
+    private static string BuildCountsSummary(string versionText, ModVersionVoteCounts counts)
+    {
         return string.Format(
             CultureInfo.CurrentCulture,
-            "{0}: {1} Working Fine · {2} Some Issues · {3} Not Working (Total {4}).",
+            "{0}: {1} Fully functional · {2} No issues so far · {3} Some issues but works · {4} Not functional · {5} Crashes/Freezes game (Total {6}).",
             versionText,
-            counts.WorkingPerfectly,
+            counts.FullyFunctional,
+            counts.NoIssuesSoFar,
             counts.SomeIssuesButWorks,
-            counts.NotWorking,
+            counts.NotFunctional,
+            counts.CrashesOrFreezesGame,
             counts.Total);
+    }
+
+    private static string BuildNegativeCommentsText(ModVersionVoteSummary summary, bool requireNegativeMajority)
+    {
+        if (summary is null)
+        {
+            return string.Empty;
+        }
+
+        if (requireNegativeMajority)
+        {
+            ModVersionVoteOption? majority = summary.GetMajorityOption();
+            if (majority is not ModVersionVoteOption.NotFunctional
+                && majority is not ModVersionVoteOption.CrashesOrFreezesGame)
+            {
+                return string.Empty;
+            }
+        }
+
+        var builder = new StringBuilder();
+        AppendCommentSection(builder, "Not functional reports", summary.Comments.NotFunctional);
+        AppendCommentSection(builder, "Crashes/Freezes game reports", summary.Comments.CrashesOrFreezesGame);
+        return builder.ToString();
+    }
+
+    private static void AppendCommentSection(StringBuilder builder, string heading, IReadOnlyList<string> comments)
+    {
+        if (comments is null || comments.Count == 0)
+        {
+            return;
+        }
+
+        if (builder.Length > 0)
+        {
+            builder.AppendLine();
+            builder.AppendLine();
+        }
+
+        builder.Append(heading);
+        builder.Append(':');
+
+        foreach (string comment in comments)
+        {
+            if (string.IsNullOrWhiteSpace(comment))
+            {
+                continue;
+            }
+
+            builder.AppendLine();
+            builder.Append(" • ");
+            builder.Append(comment);
+        }
     }
 
     public void ApplyLatestReleaseUserReportSummary(ModVersionVoteSummary summary)
@@ -578,6 +649,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _latestReleaseUserReportSummary = summary;
         _latestReleaseUserReportVersion = summary.ModVersion;
         LatestReleaseUserReportDisplay = BuildLatestReleaseUserReportDisplay(summary);
+        LatestReleaseUserReportTooltip = BuildLatestReleaseUserReportTooltip(summary);
     }
 
     public void ClearLatestReleaseUserReport()
@@ -592,6 +664,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _latestReleaseUserReportSummary = null;
         _latestReleaseUserReportVersion = null;
         LatestReleaseUserReportDisplay = null;
+        LatestReleaseUserReportTooltip = null;
     }
 
     private static string? BuildLatestReleaseUserReportDisplay(ModVersionVoteSummary? summary)
@@ -603,6 +676,25 @@ public sealed class ModListItemViewModel : ObservableObject
 
         string display = BuildUserReportDisplay(summary);
         return string.Equals(display, "No votes", StringComparison.Ordinal) ? null : display;
+    }
+
+    private static string? BuildLatestReleaseUserReportTooltip(ModVersionVoteSummary? summary)
+    {
+        if (summary is null || summary.TotalVotes == 0)
+        {
+            return null;
+        }
+
+        string versionText = string.IsNullOrWhiteSpace(summary.VintageStoryVersion)
+            ? "this Vintage Story version"
+            : string.Format(CultureInfo.CurrentCulture, "Vintage Story {0}", summary.VintageStoryVersion);
+
+        string countsLine = BuildCountsSummary(versionText, summary.Counts);
+        string commentsText = BuildNegativeCommentsText(summary, requireNegativeMajority: true);
+
+        return string.IsNullOrEmpty(commentsText)
+            ? countsLine
+            : string.Concat(countsLine, Environment.NewLine, Environment.NewLine, commentsText);
     }
 
     public string InstallButtonToolTip

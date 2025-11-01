@@ -12,13 +12,13 @@ namespace VintageStoryModManager.Views.Dialogs;
 public partial class ModVoteDialog : Window
 {
     private ModVersionVoteSummary _summary;
-    private readonly Func<ModVersionVoteOption?, Task<ModVersionVoteSummary?>> _submitVoteAsync;
+    private readonly Func<ModVersionVoteOption?, string?, Task<ModVersionVoteSummary?>> _submitVoteAsync;
     private bool _isSubmitting;
 
     public ModVoteDialog(
         ModListItemViewModel mod,
         ModVersionVoteSummary summary,
-        Func<ModVersionVoteOption?, Task<ModVersionVoteSummary?>> submitVoteAsync)
+        Func<ModVersionVoteOption?, string?, Task<ModVersionVoteSummary?>> submitVoteAsync)
     {
         InitializeComponent();
 
@@ -43,14 +43,17 @@ public partial class ModVoteDialog : Window
         }
 
         UpdateOptionButtons();
+        CommentTextBox.Text = _summary.UserComment ?? string.Empty;
         StatusTextBlock.Text = BuildStatusText();
     }
 
     private void UpdateOptionButtons()
     {
-        UpdateOptionButton(WorkingPerfectlyButton, ModVersionVoteOption.WorkingPerfectly);
+        UpdateOptionButton(FullyFunctionalButton, ModVersionVoteOption.FullyFunctional);
+        UpdateOptionButton(NoIssuesButton, ModVersionVoteOption.NoIssuesSoFar);
         UpdateOptionButton(SomeIssuesButton, ModVersionVoteOption.SomeIssuesButWorks);
-        UpdateOptionButton(NotWorkingButton, ModVersionVoteOption.NotWorking);
+        UpdateOptionButton(NotFunctionalButton, ModVersionVoteOption.NotFunctional);
+        UpdateOptionButton(CrashesButton, ModVersionVoteOption.CrashesOrFreezesGame);
     }
 
     private void UpdateOptionButton(WpfButton button, ModVersionVoteOption option)
@@ -67,6 +70,9 @@ public partial class ModVoteDialog : Window
 
         button.FontWeight = _summary.UserVote == option ? FontWeights.Bold : FontWeights.Normal;
         button.IsEnabled = !_isSubmitting;
+        button.ToolTip = option.RequiresComment()
+            ? "A comment is required for this vote."
+            : null;
     }
 
     private string BuildStatusText()
@@ -100,16 +106,27 @@ public partial class ModVoteDialog : Window
             requestedOption = null;
         }
 
+        string? comment = requestedOption.HasValue ? CommentTextBox.Text : null;
+        if (requestedOption.HasValue
+            && requestedOption.Value.RequiresComment()
+            && string.IsNullOrWhiteSpace(comment))
+        {
+            StatusTextBlock.Text = "Please describe why the mod is not functional or crashes before submitting.";
+            _ = CommentTextBox.Focus();
+            return;
+        }
+
         _isSubmitting = true;
         UpdateOptionButtons();
         StatusTextBlock.Text = isRemovingVote ? "Removing vote…" : "Submitting vote…";
 
         try
         {
-            ModVersionVoteSummary? result = await _submitVoteAsync(requestedOption).ConfigureAwait(true);
+            ModVersionVoteSummary? result = await _submitVoteAsync(requestedOption, comment).ConfigureAwait(true);
             if (result is not null)
             {
                 _summary = result;
+                CommentTextBox.Text = _summary.UserComment ?? string.Empty;
             }
 
             string statusPrefix = requestedOption.HasValue
