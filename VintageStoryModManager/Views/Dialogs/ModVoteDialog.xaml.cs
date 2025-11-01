@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows;
@@ -11,6 +12,24 @@ namespace VintageStoryModManager.Views.Dialogs;
 
 public partial class ModVoteDialog : Window
 {
+    private static readonly IReadOnlyList<string> NotFunctionalReasons = new[]
+    {
+        "The main function of the mod doesn't work",
+        "It has major performance issues",
+        "GUI or visual issues that makes it unplayable",
+        "Supposed to work in multiplayer but doesn't",
+        "Other"
+    };
+
+    private static readonly IReadOnlyList<string> CrashReasons = new[]
+    {
+        "Crash with error on game start",
+        "Crash with error during gameplay",
+        "Crash/freeze straight to desktop on game start",
+        "Crash/freeze straight to desktop during gameplay",
+        "Breaks so much you might as well call it a crash"
+    };
+
     private ModVersionVoteSummary _summary;
     private readonly Func<ModVersionVoteOption?, string?, Task<ModVersionVoteSummary?>> _submitVoteAsync;
     private bool _isSubmitting;
@@ -43,7 +62,6 @@ public partial class ModVoteDialog : Window
         }
 
         UpdateOptionButtons();
-        CommentTextBox.Text = _summary.UserComment ?? string.Empty;
         StatusTextBlock.Text = BuildStatusText();
     }
 
@@ -71,7 +89,7 @@ public partial class ModVoteDialog : Window
         button.FontWeight = _summary.UserVote == option ? FontWeights.Bold : FontWeights.Normal;
         button.IsEnabled = !_isSubmitting;
         button.ToolTip = option.RequiresComment()
-            ? "A comment is required for this vote."
+            ? "Selecting this option will ask you to choose a reason."
             : null;
     }
 
@@ -106,14 +124,15 @@ public partial class ModVoteDialog : Window
             requestedOption = null;
         }
 
-        string? comment = requestedOption.HasValue ? CommentTextBox.Text : null;
-        if (requestedOption.HasValue
-            && requestedOption.Value.RequiresComment()
-            && string.IsNullOrWhiteSpace(comment))
+        string? comment = null;
+        if (requestedOption.HasValue && requestedOption.Value.RequiresComment())
         {
-            StatusTextBlock.Text = "Please describe why the mod is not functional or crashes before submitting.";
-            _ = CommentTextBox.Focus();
-            return;
+            comment = PromptForReason(requestedOption.Value, _summary.UserComment);
+            if (comment is null)
+            {
+                StatusTextBlock.Text = "Vote cancelled.";
+                return;
+            }
         }
 
         _isSubmitting = true;
@@ -126,7 +145,6 @@ public partial class ModVoteDialog : Window
             if (result is not null)
             {
                 _summary = result;
-                CommentTextBox.Text = _summary.UserComment ?? string.Empty;
             }
 
             string statusPrefix = requestedOption.HasValue
@@ -155,5 +173,43 @@ public partial class ModVoteDialog : Window
             _isSubmitting = false;
             UpdateOptionButtons();
         }
+    }
+
+    private string? PromptForReason(ModVersionVoteOption option, string? existingReason)
+    {
+        IReadOnlyList<string> reasons = option switch
+        {
+            ModVersionVoteOption.NotFunctional => NotFunctionalReasons,
+            ModVersionVoteOption.CrashesOrFreezesGame => CrashReasons,
+            _ => Array.Empty<string>()
+        };
+
+        string title = option switch
+        {
+            ModVersionVoteOption.NotFunctional => "Why is the mod not functional?",
+            ModVersionVoteOption.CrashesOrFreezesGame => "Tell us about the crash",
+            _ => "Share more details"
+        };
+
+        string description = option switch
+        {
+            ModVersionVoteOption.NotFunctional => "Pick the option that best matches why the mod isn't working for you.",
+            ModVersionVoteOption.CrashesOrFreezesGame => "Pick the option that best matches the crash or freeze you experienced.",
+            _ => "Pick the option that best matches your experience."
+        };
+
+        string? initialSelection = null;
+        if (!string.IsNullOrWhiteSpace(existingReason) && reasons.IndexOf(existingReason) >= 0)
+        {
+            initialSelection = existingReason;
+        }
+
+        ModVoteReasonDialog dialog = new(title, description, reasons, initialSelection)
+        {
+            Owner = this
+        };
+
+        bool? result = dialog.ShowDialog();
+        return result == true ? dialog.SelectedReason : null;
     }
 }
