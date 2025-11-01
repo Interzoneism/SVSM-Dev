@@ -638,6 +638,10 @@
                     <MenuItem Header="_Additonal Info"
                               Padding="12,6"
                               Click="GuideMenuItem_OnClick" />
+                    <MenuItem x:Name="DeveloperProfilesMenuItem"
+                              Header="Developer Profiles"
+                              Padding="12,6"
+                              Visibility="Collapsed" />
                     <Separator />
                     <MenuItem Header="Debug: Show all game log lines referencing the selected mod."
                               Padding="12,6"

@@ -143,6 +143,7 @@ public partial class MainWindow : Window
             typeof(MainWindow));
 
     private readonly UserConfigurationService _userConfiguration;
+    private readonly List<MenuItem> _developerProfileMenuItems = new();
     private MainViewModel? _viewModel;
     private string? _dataDirectory;
     private string? _gameDirectory;
@@ -196,6 +197,8 @@ public partial class MainWindow : Window
 
         InitializeComponent();
 
+        DeveloperProfileManager.CurrentProfileChanged += DeveloperProfileManager_OnCurrentProfileChanged;
+
         UpdateModlistLoadingUiState();
 
         InitializeColumnVisibilityMenu();
@@ -225,6 +228,7 @@ public partial class MainWindow : Window
         UpdateModlistAutoLoadMenu(_userConfiguration.ModlistAutoLoadBehavior);
 
         TryInitializePaths();
+        RefreshDeveloperProfilesMenuEntries();
 
         UpdateGameVersionMenuItem(VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory));
 
@@ -464,6 +468,7 @@ public partial class MainWindow : Window
         SaveUploaderName();
         DisposeCurrentViewModel();
         InternetAccessManager.InternetAccessChanged -= InternetAccessManager_OnInternetAccessChanged;
+        DeveloperProfileManager.CurrentProfileChanged -= DeveloperProfileManager_OnCurrentProfileChanged;
     }
 
     private void DisableInternetAccessMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -2637,6 +2642,7 @@ public partial class MainWindow : Window
         if (dataResolved)
         {
             _userConfiguration.SetDataDirectory(_dataDirectory!);
+            DeveloperProfileManager.UpdateOriginalProfile(_dataDirectory!);
         }
 
         if (gameResolved)
@@ -5720,6 +5726,8 @@ public partial class MainWindow : Window
 
         _dataDirectory = selected;
         _userConfiguration.SetDataDirectory(selected);
+        DeveloperProfileManager.UpdateOriginalProfile(selected);
+        RefreshDeveloperProfilesMenuEntries();
         await ReloadViewModelAsync();
     }
 
@@ -5744,6 +5752,133 @@ public partial class MainWindow : Window
         _gameDirectory = selected;
         _userConfiguration.SetGameDirectory(selected);
         UpdateGameVersionMenuItem(VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory));
+    }
+
+    private void RefreshDeveloperProfilesMenuEntries()
+    {
+        if (DeveloperProfilesMenuItem is null)
+        {
+            return;
+        }
+
+        foreach (MenuItem item in _developerProfileMenuItems)
+        {
+            item.Click -= DeveloperProfileMenuItem_OnClick;
+        }
+
+        _developerProfileMenuItems.Clear();
+        DeveloperProfilesMenuItem.Items.Clear();
+
+        if (!DeveloperProfileManager.DevDebug)
+        {
+            DeveloperProfilesMenuItem.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        IReadOnlyList<DeveloperProfile> profiles = DeveloperProfileManager.GetProfiles();
+        if (profiles.Count == 0)
+        {
+            DeveloperProfilesMenuItem.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        foreach (DeveloperProfile profile in profiles)
+        {
+            var menuItem = new MenuItem
+            {
+                Header = profile.DisplayName,
+                Tag = profile,
+                IsCheckable = true
+            };
+
+            menuItem.Click += DeveloperProfileMenuItem_OnClick;
+            DeveloperProfilesMenuItem.Items.Add(menuItem);
+            _developerProfileMenuItems.Add(menuItem);
+        }
+
+        DeveloperProfilesMenuItem.Visibility = Visibility.Visible;
+        UpdateDeveloperProfileMenuChecks();
+    }
+
+    private void UpdateDeveloperProfileMenuChecks()
+    {
+        if (!DeveloperProfileManager.DevDebug)
+        {
+            return;
+        }
+
+        DeveloperProfile? current = DeveloperProfileManager.CurrentProfile;
+
+        foreach (MenuItem menuItem in _developerProfileMenuItems)
+        {
+            if (menuItem.Tag is not DeveloperProfile profile)
+            {
+                menuItem.IsChecked = false;
+                continue;
+            }
+
+            bool isSelected = current is not null
+                && string.Equals(profile.Id, current.Id, StringComparison.OrdinalIgnoreCase);
+            menuItem.IsChecked = isSelected;
+        }
+    }
+
+    private async void DeveloperProfileMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: DeveloperProfile profile })
+        {
+            return;
+        }
+
+        bool changed = DeveloperProfileManager.TrySetCurrentProfile(profile.Id);
+        if (!changed)
+        {
+            UpdateDeveloperProfileMenuChecks();
+            return;
+        }
+
+        string profileDirectory = profile.DataDirectory;
+
+        if (string.Equals(_dataDirectory, profileDirectory, StringComparison.OrdinalIgnoreCase))
+        {
+            UpdateDeveloperProfileMenuChecks();
+            return;
+        }
+
+        _dataDirectory = profileDirectory;
+
+        if (profile.IsOriginal)
+        {
+            _userConfiguration.SetDataDirectory(profileDirectory);
+            DeveloperProfileManager.UpdateOriginalProfile(profileDirectory);
+        }
+
+        _cloudModlistStore = null;
+        await ReloadViewModelAsync();
+        UpdateDeveloperProfileMenuChecks();
+    }
+
+    private void DeveloperProfileManager_OnCurrentProfileChanged(object? sender, DeveloperProfileChangedEventArgs e)
+    {
+        if (!DeveloperProfileManager.DevDebug)
+        {
+            return;
+        }
+
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(() => DeveloperProfileManager_OnCurrentProfileChanged(sender, e));
+            return;
+        }
+
+        if (e.ProfilesUpdated)
+        {
+            RefreshDeveloperProfilesMenuEntries();
+        }
+        else
+        {
+            UpdateDeveloperProfileMenuChecks();
+        }
     }
 
     private void ExitMenuItem_OnClick(object sender, RoutedEventArgs e)

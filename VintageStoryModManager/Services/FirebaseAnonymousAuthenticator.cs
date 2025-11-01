@@ -165,6 +165,12 @@ public sealed class FirebaseAnonymousAuthenticator
 
     internal static string GetStateFilePath()
     {
+        string? developerOverride = DeveloperProfileManager.GetFirebaseStateFilePathOverride();
+        if (!string.IsNullOrWhiteSpace(developerOverride))
+        {
+            return developerOverride!;
+        }
+
         string? secureDirectory = TryGetSecureBaseDirectory();
 
         if (!string.IsNullOrWhiteSpace(secureDirectory))
