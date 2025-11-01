@@ -639,12 +639,15 @@
                               Padding="12,6"
                               Click="GuideMenuItem_OnClick" />
                     <Separator />
-                        <MenuItem Header="Debug: Show all game log lines referencing the selected mod."
-                                  Padding="12,6"
-                                  Click="ExperimentalModDebuggingMenuItem_OnClick" />
-                        <MenuItem Header="Delete all Simple VS Manager files (Uninstall)"
-                                  Padding="12,6"
-                                  Click="DeleteAllManagerFilesMenuItem_OnClick" />
+                    <MenuItem Header="Debug: Show all game log lines referencing the selected mod."
+                              Padding="12,6"
+                              Click="ExperimentalModDebuggingMenuItem_OnClick" />
+                    <MenuItem Header="Debug: Show all game log lines found referencing any installed mod"
+                              Padding="12,6"
+                              Click="ExperimentalAllModsDebuggingMenuItem_OnClick" />
+                    <MenuItem Header="Delete all Simple VS Manager files (Uninstall)"
+                              Padding="12,6"
+                              Click="DeleteAllManagerFilesMenuItem_OnClick" />
                     
                 </MenuItem>
             </Menu>
