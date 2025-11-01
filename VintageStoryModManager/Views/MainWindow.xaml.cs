@@ -92,7 +92,7 @@ public partial class MainWindow : Window
     };
 
     private static readonly Regex PatchAssetMissingRegex = new(
-        @"Patch \d+ in (?<mod>[^:]+)(?<rest>: .* not found)",
+        @"\bPatch \d+ in (?<mod>[^:]+)(?<rest>: .* not found)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
