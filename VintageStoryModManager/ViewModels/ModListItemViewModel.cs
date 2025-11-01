@@ -578,7 +578,7 @@ public sealed class ModListItemViewModel : ObservableObject
         var builder = new StringBuilder();
         builder.AppendFormat(CultureInfo.CurrentCulture, "User reports for {0}:{1}", versionText, Environment.NewLine);
         builder.AppendFormat(CultureInfo.CurrentCulture, "Fully functional ({0}){1}", counts.FullyFunctional, Environment.NewLine);
-        builder.AppendFormat(CultureInfo.CurrentCulture, "No issues so far ({0}){1}", counts.NoIssuesSoFar, Environment.NewLine);
+        builder.AppendFormat(CultureInfo.CurrentCulture, "No issues noticed ({0}){1}", counts.NoIssuesSoFar, Environment.NewLine);
         builder.AppendFormat(CultureInfo.CurrentCulture, "Some issues but works ({0}){1}", counts.SomeIssuesButWorks, Environment.NewLine);
         builder.AppendFormat(CultureInfo.CurrentCulture, "Not functional ({0}){1}", counts.NotFunctional, Environment.NewLine);
         builder.AppendFormat(CultureInfo.CurrentCulture, "Crashes/Freezes game ({0})", counts.CrashesOrFreezesGame);
