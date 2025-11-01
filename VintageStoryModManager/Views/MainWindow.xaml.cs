@@ -3146,6 +3146,8 @@ public partial class MainWindow : Window
             return;
         }
 
+        _viewModel.EnableUserReportFetching();
+
         try
         {
             ModVersionVoteSummary? summary = await _viewModel
