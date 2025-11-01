@@ -59,8 +59,8 @@ public sealed class ModVersionVoteService
         ValidateIdentifiers(modId, modVersion, vintageStoryVersion);
         InternetAccessManager.ThrowIfInternetAccessDisabled();
 
-        FirebaseAnonymousAuthenticator.FirebaseAuthSession session = await _authenticator
-            .GetSessionAsync(cancellationToken)
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession? session = await _authenticator
+            .TryGetExistingSessionAsync(cancellationToken)
             .ConfigureAwait(false);
 
         return await GetVoteSummaryInternalAsync(
@@ -99,7 +99,7 @@ public sealed class ModVersionVoteService
             Comment = NormalizeComment(comment)
         };
 
-        string url = BuildAuthenticatedUrl(session.IdToken, VotesRootPath, modKey, versionKey, "users", userKey);
+        string url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "users", userKey);
         string payload = JsonSerializer.Serialize(record, SerializerOptions);
 
         using var content = new StringContent(payload, Encoding.UTF8, "application/json");
@@ -135,7 +135,7 @@ public sealed class ModVersionVoteService
         string versionKey = SanitizeKey(modVersion);
         string userKey = session.UserId ?? throw new InvalidOperationException("Firebase session did not provide a user ID.");
 
-        string url = BuildAuthenticatedUrl(session.IdToken, VotesRootPath, modKey, versionKey, "users", userKey);
+        string url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "users", userKey);
 
         using HttpResponseMessage response = await HttpClient
             .DeleteAsync(url, cancellationToken)
@@ -156,7 +156,7 @@ public sealed class ModVersionVoteService
     }
 
     private async Task<ModVersionVoteSummary> GetVoteSummaryInternalAsync(
-        FirebaseAnonymousAuthenticator.FirebaseAuthSession session,
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession? session,
         string modId,
         string modVersion,
         string vintageStoryVersion,
@@ -164,7 +164,7 @@ public sealed class ModVersionVoteService
     {
         string modKey = SanitizeKey(modId);
         string versionKey = SanitizeKey(modVersion);
-        string url = BuildAuthenticatedUrl(session.IdToken, VotesRootPath, modKey, versionKey, "users");
+        string url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "users");
 
         using HttpResponseMessage response = await HttpClient
             .GetAsync(url, cancellationToken)
@@ -219,6 +219,7 @@ public sealed class ModVersionVoteService
         ModVersionVoteOption? userVote = null;
         string? userComment = null;
         string? installedVersionNormalized = NormalizeVersion(vintageStoryVersion);
+        string? currentUserId = session?.UserId;
         var notFunctionalComments = new List<string>();
         var crashesOrFreezesComments = new List<string>();
 
@@ -233,7 +234,8 @@ public sealed class ModVersionVoteService
             ModVersionVoteOption option = record.Value.Option;
             string? normalizedComment = NormalizeComment(record.Value.Comment);
 
-            if (string.Equals(property.Name, session.UserId, StringComparison.Ordinal))
+            if (!string.IsNullOrWhiteSpace(currentUserId)
+                && string.Equals(property.Name, currentUserId, StringComparison.Ordinal))
             {
                 userVote = option;
                 userComment = normalizedComment;
@@ -300,7 +302,9 @@ public sealed class ModVersionVoteService
         }
     }
 
-    private string BuildAuthenticatedUrl(string authToken, params string[] segments)
+    private string BuildVotesUrl(
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession? session,
+        params string[] segments)
     {
         var builder = new StringBuilder();
         builder.Append(_dbUrl);
@@ -316,8 +320,14 @@ public sealed class ModVersionVoteService
             builder.Append(segment);
         }
 
-        builder.Append(".json?auth=");
-        builder.Append(Uri.EscapeDataString(authToken));
+        builder.Append(".json");
+
+        if (session.HasValue)
+        {
+            builder.Append("?auth=");
+            builder.Append(Uri.EscapeDataString(session.Value.IdToken));
+        }
+
         return builder.ToString();
     }
 
