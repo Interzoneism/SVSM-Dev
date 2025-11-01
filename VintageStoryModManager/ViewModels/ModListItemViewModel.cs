@@ -553,8 +553,8 @@ public sealed class ModListItemViewModel : ObservableObject
     private string BuildUserReportTooltip(ModVersionVoteSummary? summary)
     {
         string versionText = string.IsNullOrWhiteSpace(_installedGameVersion)
-            ? "this Vintage Story version"
-            : string.Format(CultureInfo.CurrentCulture, "Vintage Story {0}", _installedGameVersion);
+            ? "this VS version"
+            : string.Format(CultureInfo.CurrentCulture, "VS {0}", _installedGameVersion);
 
         if (summary is null)
         {
@@ -575,16 +575,14 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private static string BuildCountsSummary(string versionText, ModVersionVoteCounts counts)
     {
-        return string.Format(
-            CultureInfo.CurrentCulture,
-            "{0}: {1} Fully functional · {2} No issues so far · {3} Some issues but works · {4} Not functional · {5} Crashes/Freezes game (Total {6}).",
-            versionText,
-            counts.FullyFunctional,
-            counts.NoIssuesSoFar,
-            counts.SomeIssuesButWorks,
-            counts.NotFunctional,
-            counts.CrashesOrFreezesGame,
-            counts.Total);
+        var builder = new StringBuilder();
+        builder.AppendFormat(CultureInfo.CurrentCulture, "User reports for {0}:{1}", versionText, Environment.NewLine);
+        builder.AppendFormat(CultureInfo.CurrentCulture, "Fully functional ({0}){1}", counts.FullyFunctional, Environment.NewLine);
+        builder.AppendFormat(CultureInfo.CurrentCulture, "No issues so far ({0}){1}", counts.NoIssuesSoFar, Environment.NewLine);
+        builder.AppendFormat(CultureInfo.CurrentCulture, "Some issues but works ({0}){1}", counts.SomeIssuesButWorks, Environment.NewLine);
+        builder.AppendFormat(CultureInfo.CurrentCulture, "Not functional ({0}){1}", counts.NotFunctional, Environment.NewLine);
+        builder.AppendFormat(CultureInfo.CurrentCulture, "Crashes/Freezes game ({0})", counts.CrashesOrFreezesGame);
+        return builder.ToString();
     }
 
     private static string BuildNegativeCommentsText(ModVersionVoteSummary summary, bool requireNegativeMajority)
