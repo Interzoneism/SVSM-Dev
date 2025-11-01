@@ -976,11 +976,12 @@ public partial class MainWindow : Window
         return filePaths;
     }
 
-    private static void AppendExperimentalModDebugLines(ICollection<string> logLines, string filePath, string modId)
+    private static void AppendExperimentalModDebugLines(List<string> logLines, string filePath, string modId)
     {
         try
         {
             string fileName = Path.GetFileName(filePath);
+            var matchedLines = new List<string>();
             foreach (string line in File.ReadLines(filePath))
             {
                 if (ShouldIgnoreExperimentalModDebugLine(line))
@@ -990,9 +991,11 @@ public partial class MainWindow : Window
 
                 if (line.IndexOf(modId, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    logLines.Add($"{fileName}: {line}");
+                    matchedLines.Add(line);
                 }
             }
+
+            AppendExperimentalModDebugFileSection(logLines, fileName, matchedLines);
         }
         catch (IOException)
         {
@@ -1003,13 +1006,14 @@ public partial class MainWindow : Window
     }
 
     private static void AppendInstalledModDebugLines(
-        ICollection<string> logLines,
+        List<string> logLines,
         string filePath,
         IReadOnlyList<InstalledModLogIdentifier> modIdentifiers)
     {
         try
         {
             string fileName = Path.GetFileName(filePath);
+            var matchedLines = new List<string>();
             foreach (string line in File.ReadLines(filePath))
             {
                 if (ShouldIgnoreExperimentalModDebugLine(line))
@@ -1017,24 +1021,17 @@ public partial class MainWindow : Window
                     continue;
                 }
 
-                List<string>? matchedMods = null;
                 foreach (InstalledModLogIdentifier identifier in modIdentifiers)
                 {
                     if (line.IndexOf(identifier.SearchValue, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        matchedMods ??= new List<string>();
-                        matchedMods.Add(identifier.DisplayLabel);
+                        matchedLines.Add(line);
+                        break;
                     }
                 }
-
-                if (matchedMods is { Count: > 0 })
-                {
-                    string matchLabel = matchedMods.Count == 1
-                        ? matchedMods[0]
-                        : string.Join(", ", matchedMods);
-                    logLines.Add($"{fileName} [{matchLabel}]: {line}");
-                }
             }
+
+            AppendExperimentalModDebugFileSection(logLines, fileName, matchedLines);
         }
         catch (IOException)
         {
@@ -1042,6 +1039,20 @@ public partial class MainWindow : Window
         catch (UnauthorizedAccessException)
         {
         }
+    }
+
+    private static void AppendExperimentalModDebugFileSection(
+        List<string> logLines,
+        string fileName,
+        List<string> matchedLines)
+    {
+        if (matchedLines.Count == 0)
+        {
+            return;
+        }
+
+        logLines.Add($"**{fileName}**");
+        logLines.AddRange(matchedLines);
     }
 
     private static bool ShouldIgnoreExperimentalModDebugLine(string line)
