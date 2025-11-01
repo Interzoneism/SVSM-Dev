@@ -34,19 +34,33 @@
                 <ScrollViewer
                                 VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding LogLines}">
+                    <ItemsControl ItemsSource="{Binding LogLines}"
+                                  AlternationCount="2">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding Mode=OneWay}"
-                                         FontFamily="Consolas"
-                                         TextWrapping="Wrap"
-                                         Margin="4"
-                                         Foreground="{DynamicResource Brush.Text.Primary}"
-                                         Background="Transparent"
-                                         BorderThickness="0"
-                                         IsReadOnly="True"
-                                         IsReadOnlyCaretVisible="False"
-                                         Cursor="Arrow" />
+                                <Border Margin="4"
+                                        Background="Transparent">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Style.Triggers>
+                                                <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                                                    <Setter Property="Background"
+                                                            Value="{DynamicResource Brush.ScrollBar.Button}" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBox Text="{Binding Mode=OneWay}"
+                                             FontFamily="Consolas"
+                                             TextWrapping="Wrap"
+                                             Foreground="{DynamicResource Brush.Text.Primary}"
+                                             Background="Transparent"
+                                             BorderThickness="0"
+                                             IsReadOnly="True"
+                                             IsReadOnlyCaretVisible="False"
+                                             Cursor="Arrow" />
+                                </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
