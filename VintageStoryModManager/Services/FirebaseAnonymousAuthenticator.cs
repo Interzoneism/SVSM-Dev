@@ -101,6 +101,69 @@ public sealed class FirebaseAnonymousAuthenticator
         }
     }
 
+    public async Task<FirebaseAuthSession?> TryGetExistingSessionAsync(CancellationToken ct)
+    {
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            return null;
+        }
+
+        await _stateLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            _cachedState ??= LoadStateFromDisk();
+
+            if (_cachedState is null)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(_cachedState.UserId))
+            {
+                _cachedState = null;
+                DeleteStateFile();
+                return null;
+            }
+
+            FirebaseAuthState currentState = _cachedState!;
+
+            if (!currentState.IsExpired)
+            {
+                return new FirebaseAuthSession(currentState.IdToken, currentState.UserId);
+            }
+
+            if (string.IsNullOrWhiteSpace(currentState.RefreshToken))
+            {
+                return null;
+            }
+
+            FirebaseAuthState? refreshed;
+            try
+            {
+                refreshed = await TryRefreshAsync(currentState, ct).ConfigureAwait(false);
+            }
+            catch (InternetAccessDisabledException)
+            {
+                return null;
+            }
+
+            if (refreshed is null || string.IsNullOrWhiteSpace(refreshed.UserId))
+            {
+                _cachedState = null;
+                DeleteStateFile();
+                return null;
+            }
+
+            _cachedState = refreshed;
+            SaveStateToDisk(refreshed);
+            return new FirebaseAuthSession(refreshed.IdToken, refreshed.UserId);
+        }
+        finally
+        {
+            _stateLock.Release();
+        }
+    }
+
     /// <summary>
     /// Marks the current token as expired so the next call will refresh it.
     /// </summary>

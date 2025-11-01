@@ -117,7 +117,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _hasSelectedTags;
     private bool _disposed;
     private bool _onlyShowCompatibleModDatabaseResults;
-    private bool _canFetchUserReports;
+    private bool _hasEnabledUserReportFetching;
 
     public MainViewModel(
         string dataDirectory,
@@ -157,7 +157,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         _excludeInstalledModDatabaseResults = excludeInstalledModDatabaseResults;
         _onlyShowCompatibleModDatabaseResults = onlyShowCompatibleModDatabaseResults;
-        _canFetchUserReports = FirebaseAnonymousAuthenticator.HasPersistedState();
+        _hasEnabledUserReportFetching = FirebaseAnonymousAuthenticator.HasPersistedState();
 
         _clearSearchCommand = new RelayCommand(() => SearchText = string.Empty, () => HasSearchText);
         ClearSearchCommand = _clearSearchCommand;
@@ -1665,7 +1665,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void QueueLatestReleaseUserReportRefresh(ModListItemViewModel mod)
     {
-        if (!_canFetchUserReports || mod is null)
+        if (mod is null)
         {
             return;
         }
@@ -1759,7 +1759,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void QueueUserReportRefresh(ModListItemViewModel mod)
     {
-        if (!_canFetchUserReports)
+        if (mod is null)
         {
             return;
         }
@@ -1769,12 +1769,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public void EnableUserReportFetching()
     {
-        if (_canFetchUserReports)
+        if (_hasEnabledUserReportFetching)
         {
             return;
         }
 
-        _canFetchUserReports = true;
+        _hasEnabledUserReportFetching = true;
 
         foreach (ModListItemViewModel mod in _installedModSubscriptions)
         {
