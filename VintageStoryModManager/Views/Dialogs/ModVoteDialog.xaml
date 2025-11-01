@@ -4,16 +4,16 @@
         xmlns:models="clr-namespace:VintageStoryModManager.Models"
         xmlns:av="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="av" x:Class="VintageStoryModManager.Views.Dialogs.ModVoteDialog"
         Title="User Reports"
-        Height="408"
+        Height="478"
         MinWidth="650"
         MinHeight="400"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         ShowInTaskbar="False"
-        Background="{DynamicResource Brush.Window.Shell.Background.Solid}" Width="654" MaxWidth="800" MaxHeight="600">
-    <Grid Margin="24,24,0,0"
+        Background="{DynamicResource Brush.Window.Shell.Background.Solid}" Width="651" MaxWidth="800" MaxHeight="600">
+    <Grid Margin="0,24,0,0"
           Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
-          TextElement.Foreground="{DynamicResource Brush.Text.Primary}" Height="340" HorizontalAlignment="Left" Width="606" VerticalAlignment="Top">
+          TextElement.Foreground="{DynamicResource Brush.Text.Primary}" Height="417" HorizontalAlignment="Center" Width="606" VerticalAlignment="Top">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -89,13 +89,9 @@
                     Click="VoteButton_OnClick"
                     HorizontalAlignment="Left"
                     HorizontalContentAlignment="Center" />
-            <TextBlock Margin="0,12,0,0"
-                       TextWrapping="Wrap"
-                       Foreground="{DynamicResource Brush.Text.Subtle}"
-                       Text="Selecting Not functional or Crashes/Freezes game will prompt you to choose a reason before your vote is submitted." />
         </StackPanel>
 
-        <Grid Grid.Row="2" HorizontalAlignment="Right" Width="606" Height="44" VerticalAlignment="Bottom">
+        <Grid Grid.Row="2" HorizontalAlignment="Center" Width="606" Height="44" VerticalAlignment="Top" Margin="0,245,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
 
