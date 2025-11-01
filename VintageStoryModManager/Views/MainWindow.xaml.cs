@@ -1137,9 +1137,7 @@ public partial class MainWindow : Window
     private bool EnsureUserReportVotingConsent()
     {
         string message =
-            "In this tab you can vote on mod compatibility using an online database (Google Firebase), for free." +
-            Environment.NewLine + Environment.NewLine +
-            "When you continue, Simple VS Manager will create a firebase-auth.json (basically just a code that identifies you as the owner of your mod compatibility votes) file in the AppData/Local/Simple VS Manager folder. " +
+            "To enable voting, Simple VS Manager will create a firebase-auth.json (basically just a code that identifies you as the owner of your mod compatibility votes) file in the AppData/Local/Simple VS Manager folder. " +
             "If you lose this file you will not be able to manage or remove your mod compatibility votes." +
             Environment.NewLine + Environment.NewLine +
             "You will not need to sign in or provide any account information or do anything really :) Press OK to continue and never show this again!";
