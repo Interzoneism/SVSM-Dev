@@ -45,10 +45,11 @@
                                         <Style TargetType="Border">
                                             <Setter Property="Background" Value="Transparent" />
                                             <Style.Triggers>
-                                                <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
+                                                             Value="1">
                                                     <Setter Property="Background"
                                                             Value="{DynamicResource Brush.ScrollBar.Button}" />
-                                                </Trigger>
+                                                </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
