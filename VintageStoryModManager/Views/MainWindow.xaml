@@ -2145,7 +2145,8 @@
                                                 </Border.Style>
                                                 <TextBlock Text="{Binding LatestReleaseUserReportDisplay}"
                                                            Foreground="{DynamicResource Brush.Text.Body}"
-                                                           FontSize="14" />
+                                                           FontSize="14"
+                                                           ToolTip="{Binding LatestReleaseUserReportTooltip}" />
                                             </Border>
                                         </StackPanel>
                                     </Grid>

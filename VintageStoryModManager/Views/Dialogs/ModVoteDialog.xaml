@@ -43,30 +43,67 @@
                 Foreground="{DynamicResource Brush.Text.Primary}" Text="Each vote is tied to the combination of this mod version and your installed Vintage Story version." Height="17" FontStyle="Italic" />
         </StackPanel>
 
-        <StackPanel Grid.Row="2" HorizontalAlignment="Left" Margin="0,0,0,71" Width="373">
-            <Button x:Name="WorkingPerfectlyButton"
+        <StackPanel Grid.Row="2" HorizontalAlignment="Stretch" Margin="0,0,0,70" Width="606">
+            <Button x:Name="FullyFunctionalButton"
                     FontSize="18"
                     Height="32"
                     Margin="0,4,0,0"
                     Style="{StaticResource IMM.UserReportButtonStyle}"
-                    Tag="{x:Static models:ModVersionVoteOption.WorkingPerfectly}"
-                    Click="VoteButton_OnClick" HorizontalAlignment="Left" Content="Working Fine" HorizontalContentAlignment="Center" />
+                    Tag="{x:Static models:ModVersionVoteOption.FullyFunctional}"
+                    Click="VoteButton_OnClick"
+                    HorizontalAlignment="Left"
+                    HorizontalContentAlignment="Center" />
+            <Button x:Name="NoIssuesButton"
+                    FontSize="18"
+                    Height="32"
+                    Margin="0,4,0,0"
+                    Style="{StaticResource IMM.UserReportButtonStyle}"
+                    Tag="{x:Static models:ModVersionVoteOption.NoIssuesSoFar}"
+                    Click="VoteButton_OnClick"
+                    HorizontalAlignment="Left"
+                    HorizontalContentAlignment="Center" />
             <Button x:Name="SomeIssuesButton"
                     FontSize="18"
                     Height="32"
                     Margin="0,4,0,0"
                     Style="{StaticResource IMM.UserReportButtonStyle}"
                     Tag="{x:Static models:ModVersionVoteOption.SomeIssuesButWorks}"
-                    Click="VoteButton_OnClick" HorizontalAlignment="Left" Content="Some Issues" HorizontalContentAlignment="Center" />
-            <Button x:Name="NotWorkingButton"
+                    Click="VoteButton_OnClick"
+                    HorizontalAlignment="Left"
+                    HorizontalContentAlignment="Center" />
+            <Button x:Name="NotFunctionalButton"
                     FontSize="18"
                     Height="32"
+                    Margin="0,4,0,0"
                     Style="{StaticResource IMM.UserReportButtonStyle}"
-                    Tag="{x:Static models:ModVersionVoteOption.NotWorking}"
-                    Click="VoteButton_OnClick" HorizontalAlignment="Left" Content="Not Working" Margin="0,4,0,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                    Tag="{x:Static models:ModVersionVoteOption.NotFunctional}"
+                    Click="VoteButton_OnClick"
+                    HorizontalAlignment="Left"
+                    HorizontalContentAlignment="Center" />
+            <Button x:Name="CrashesButton"
+                    FontSize="18"
+                    Height="32"
+                    Margin="0,4,0,0"
+                    Style="{StaticResource IMM.UserReportButtonStyle}"
+                    Tag="{x:Static models:ModVersionVoteOption.CrashesOrFreezesGame}"
+                    Click="VoteButton_OnClick"
+                    HorizontalAlignment="Left"
+                    HorizontalContentAlignment="Center" />
+            <TextBlock Margin="0,12,0,4"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource Brush.Text.Subtle}"
+                       Text="Share additional details (required for Not functional or Crashes/Freezes game votes)." />
+            <TextBox x:Name="CommentTextBox"
+                     AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"
+                     TextWrapping="Wrap"
+                     Height="88"
+                     Margin="0,0,0,0"
+                     Style="{StaticResource IMM.TextBoxStyle}"
+                     ToolTip="Required for Not functional or Crashes/Freezes game votes." />
         </StackPanel>
 
-        <Grid Grid.Row="2" HorizontalAlignment="Right" Width="606" Height="44" VerticalAlignment="Top" Margin="0,162,0,0">
+        <Grid Grid.Row="2" HorizontalAlignment="Right" Width="606" Height="44" VerticalAlignment="Bottom">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
 

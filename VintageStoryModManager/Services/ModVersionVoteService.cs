@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
 using System.Net.Http;
@@ -27,7 +28,7 @@ public sealed class ModVersionVoteService
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+        Converters = { new ModVersionVoteOptionJsonConverter() }
     };
 
     private readonly string _dbUrl;
@@ -76,6 +77,7 @@ public sealed class ModVersionVoteService
         string modVersion,
         string vintageStoryVersion,
         ModVersionVoteOption option,
+        string? comment,
         CancellationToken cancellationToken = default)
     {
         ValidateIdentifiers(modId, modVersion, vintageStoryVersion);
@@ -93,7 +95,8 @@ public sealed class ModVersionVoteService
         {
             Option = option,
             VintageStoryVersion = vintageStoryVersion,
-            UpdatedUtc = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture)
+            UpdatedUtc = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+            Comment = NormalizeComment(comment)
         };
 
         string url = BuildAuthenticatedUrl(session.IdToken, VotesRootPath, modKey, versionKey, "users", userKey);
@@ -174,6 +177,8 @@ public sealed class ModVersionVoteService
                 modVersion,
                 vintageStoryVersion,
                 ModVersionVoteCounts.Empty,
+                ModVersionVoteComments.Empty,
+                null,
                 null);
         }
 
@@ -187,6 +192,8 @@ public sealed class ModVersionVoteService
                 modVersion,
                 vintageStoryVersion,
                 ModVersionVoteCounts.Empty,
+                ModVersionVoteComments.Empty,
+                null,
                 null);
         }
 
@@ -199,14 +206,21 @@ public sealed class ModVersionVoteService
                 modVersion,
                 vintageStoryVersion,
                 ModVersionVoteCounts.Empty,
+                ModVersionVoteComments.Empty,
+                null,
                 null);
         }
 
-        int working = 0;
-        int issues = 0;
-        int failing = 0;
+        int fullyFunctional = 0;
+        int noIssuesSoFar = 0;
+        int someIssuesButWorks = 0;
+        int notFunctional = 0;
+        int crashesOrFreezes = 0;
         ModVersionVoteOption? userVote = null;
+        string? userComment = null;
         string? installedVersionNormalized = NormalizeVersion(vintageStoryVersion);
+        var notFunctionalComments = new List<string>();
+        var crashesOrFreezesComments = new List<string>();
 
         foreach (JsonProperty property in root.EnumerateObject())
         {
@@ -216,9 +230,13 @@ public sealed class ModVersionVoteService
                 continue;
             }
 
+            ModVersionVoteOption option = record.Value.Option;
+            string? normalizedComment = NormalizeComment(record.Value.Comment);
+
             if (string.Equals(property.Name, session.UserId, StringComparison.Ordinal))
             {
-                userVote = record.Value.Option;
+                userVote = option;
+                userComment = normalizedComment;
             }
 
             if (!string.Equals(
@@ -229,22 +247,45 @@ public sealed class ModVersionVoteService
                 continue;
             }
 
-            switch (record.Value.Option)
+            switch (option)
             {
-                case ModVersionVoteOption.WorkingPerfectly:
-                    working++;
+                case ModVersionVoteOption.FullyFunctional:
+                    fullyFunctional++;
+                    break;
+                case ModVersionVoteOption.NoIssuesSoFar:
+                    noIssuesSoFar++;
                     break;
                 case ModVersionVoteOption.SomeIssuesButWorks:
-                    issues++;
+                    someIssuesButWorks++;
                     break;
-                case ModVersionVoteOption.NotWorking:
-                    failing++;
+                case ModVersionVoteOption.NotFunctional:
+                    notFunctional++;
+                    AddComment(notFunctionalComments, normalizedComment);
+                    break;
+                case ModVersionVoteOption.CrashesOrFreezesGame:
+                    crashesOrFreezes++;
+                    AddComment(crashesOrFreezesComments, normalizedComment);
                     break;
             }
         }
 
-        var counts = new ModVersionVoteCounts(working, issues, failing);
-        return new ModVersionVoteSummary(modId, modVersion, vintageStoryVersion, counts, userVote);
+        var counts = new ModVersionVoteCounts(
+            fullyFunctional,
+            noIssuesSoFar,
+            someIssuesButWorks,
+            notFunctional,
+            crashesOrFreezes);
+        var comments = new ModVersionVoteComments(
+            ToReadOnlyList(notFunctionalComments),
+            ToReadOnlyList(crashesOrFreezesComments));
+        return new ModVersionVoteSummary(
+            modId,
+            modVersion,
+            vintageStoryVersion,
+            counts,
+            comments,
+            userVote,
+            userComment);
     }
 
     private static VoteRecord? TryDeserializeRecord(JsonElement element)
@@ -322,6 +363,32 @@ public sealed class ModVersionVoteService
         return base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
     }
 
+    private static void AddComment(List<string> target, string? comment)
+    {
+        string? normalized = NormalizeComment(comment);
+        if (string.IsNullOrEmpty(normalized))
+        {
+            return;
+        }
+
+        target.Add(normalized);
+    }
+
+    private static IReadOnlyList<string> ToReadOnlyList(List<string> source) => source.Count == 0
+        ? Array.Empty<string>()
+        : source.ToArray();
+
+    private static string? NormalizeComment(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        string trimmed = value.Trim();
+        return trimmed.Length == 0 ? null : trimmed;
+    }
+
     private static string? NormalizeVersion(string? value) => string.IsNullOrWhiteSpace(value)
         ? null
         : value.Trim();
@@ -336,6 +403,50 @@ public sealed class ModVersionVoteService
         return value[..maxLength];
     }
 
+    private sealed class ModVersionVoteOptionJsonConverter : JsonConverter<ModVersionVoteOption>
+    {
+        public override ModVersionVoteOption Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.String)
+            {
+                throw new JsonException("Expected string value for mod version vote option.");
+            }
+
+            string? value = reader.GetString();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new JsonException("Vote option value was empty.");
+            }
+
+            return value switch
+            {
+                var v when v.Equals("fullyFunctional", StringComparison.OrdinalIgnoreCase) => ModVersionVoteOption.FullyFunctional,
+                var v when v.Equals("workingPerfectly", StringComparison.OrdinalIgnoreCase) => ModVersionVoteOption.FullyFunctional,
+                var v when v.Equals("noIssuesSoFar", StringComparison.OrdinalIgnoreCase) => ModVersionVoteOption.NoIssuesSoFar,
+                var v when v.Equals("someIssuesButWorks", StringComparison.OrdinalIgnoreCase) => ModVersionVoteOption.SomeIssuesButWorks,
+                var v when v.Equals("notFunctional", StringComparison.OrdinalIgnoreCase) => ModVersionVoteOption.NotFunctional,
+                var v when v.Equals("notWorking", StringComparison.OrdinalIgnoreCase) => ModVersionVoteOption.NotFunctional,
+                var v when v.Equals("crashesOrFreezesGame", StringComparison.OrdinalIgnoreCase) => ModVersionVoteOption.CrashesOrFreezesGame,
+                _ => throw new JsonException($"Unrecognized vote option '{value}'.")
+            };
+        }
+
+        public override void Write(Utf8JsonWriter writer, ModVersionVoteOption value, JsonSerializerOptions options)
+        {
+            string stringValue = value switch
+            {
+                ModVersionVoteOption.FullyFunctional => "fullyFunctional",
+                ModVersionVoteOption.NoIssuesSoFar => "noIssuesSoFar",
+                ModVersionVoteOption.SomeIssuesButWorks => "someIssuesButWorks",
+                ModVersionVoteOption.NotFunctional => "notFunctional",
+                ModVersionVoteOption.CrashesOrFreezesGame => "crashesOrFreezesGame",
+                _ => value.ToString() ?? string.Empty
+            };
+
+            writer.WriteStringValue(stringValue);
+        }
+    }
+
     private struct VoteRecord
     {
         [JsonPropertyName("option")]
@@ -346,5 +457,8 @@ public sealed class ModVersionVoteService
 
         [JsonPropertyName("updatedUtc")]
         public string? UpdatedUtc { get; set; }
+
+        [JsonPropertyName("comment")]
+        public string? Comment { get; set; }
     }
 }
