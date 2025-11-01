@@ -1,0 +1,52 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "owners": {
+      "$playerUid": {
+        ".read": "auth != null && data.val() == auth.uid",
+        ".write": "auth != null && ((!data.exists() && newData.val() == auth.uid) || (data.exists() && data.val() == auth.uid && (!newData.exists() || newData.val() == auth.uid)))"
+      }
+    },
+
+    "users": {
+      "$playerUid": {
+        ".read": "auth != null && root.child('owners').child($playerUid).val() == auth.uid",
+        "$slot": {
+          ".write": "auth != null && ($slot == 'slot1' || $slot == 'slot2' || $slot == 'slot3' || $slot == 'slot4' || $slot == 'slot5') && root.child('owners').child($playerUid).val() == auth.uid",
+          ".validate": "!newData.exists() || (newData.hasChildren(['content']) && newData.child('content').hasChildren())"
+        }
+      }
+    },
+
+    "registry": {
+      ".read": true,
+      "$entryId": {
+        ".write": "auth != null && (root.child('registryOwners').child($entryId).val() == auth.uid || !data.exists())",
+        ".validate": "!newData.exists() || (!newData.child('owner').exists() && (data.exists() || (!data.exists() && newData.child('content').hasChild('uploaderId') && root.child('owners').child(newData.child('content').child('uploaderId').val()).val() == auth.uid)))"
+      }
+    },
+
+    "registryOwners": {
+      "$entryId": {
+        ".read": false,
+        ".write": "auth != null && ((!data.exists() && newData.val() == auth.uid) || (data.exists() && data.val() == auth.uid))"
+      }
+    },
+
+    "compatVotes": {
+      "$modKey": {
+        "$versionKey": {
+          "users": {
+            ".read": "auth != null",
+            "$userId": {
+              ".write": "auth != null && auth.uid == $userId",
+              ".validate": "!newData.exists() || (newData.hasChildren(['option','vintageStoryVersion','updatedUtc']) && newData.child('option').isString() && (newData.child('option').val() == 'fullyFunctional' || newData.child('option').val() == 'noIssuesSoFar' || newData.child('option').val() == 'someIssuesButWorks' || newData.child('option').val() == 'notFunctional' || newData.child('option').val() == 'crashesOrFreezesGame' || newData.child('option').val() == 'workingPerfectly' || newData.child('option').val() == 'notWorking') && newData.child('vintageStoryVersion').isString() && newData.child('updatedUtc').isString() && (!newData.child('comment').exists() || newData.child('comment').isString()) && (!((newData.child('option').val() == 'notFunctional') || (newData.child('option').val() == 'notWorking') || (newData.child('option').val() == 'crashesOrFreezesGame')) || (newData.child('comment').isString() && newData.child('comment').val().matches(/\\S/))))"
+            }
+          }
+        }
+      }
+    }
+  }
+}
