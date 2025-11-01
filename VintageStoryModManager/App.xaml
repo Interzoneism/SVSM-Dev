@@ -749,6 +749,8 @@
                 </Setter>
             </Style>
 
+            <Style x:Key="IMM.ComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}" />
+
             <Style TargetType="TextBox">
                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
                 <Setter Property="Background" Value="{DynamicResource Brush.TextInput.Background.Normal}" />
