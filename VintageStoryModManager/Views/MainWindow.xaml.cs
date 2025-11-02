@@ -49,24 +49,23 @@ namespace VintageStoryModManager.Views;
 
 public partial class MainWindow : Window
 {
-    private const double ModListScrollMultiplier = 0.5;
-    private const double ModDbDesignScrollMultiplier = 20.0;
-    private const double LoadMoreScrollThreshold = 0.98;
-    private const double HoverOverlayOpacity = 0.1;
-    private const double SelectionOverlayOpacity = 0.25;
-    private const double ModInfoPanelHorizontalOverhang = 0;
-    private const double DefaultModInfoPanelLeft = 1060.0;
-    private const double DefaultModInfoPanelTop = 350.0;
-    private const double DefaultModInfoPanelRightMargin = 40.0;
-    private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";
-    private const string ManagerModDatabaseModId = "5545";
-    private const string ModDatabaseUnavailableMessage =
-        "Could not reach the online Mod Database, please check your internet connection";
-    private const string PresetDirectoryName = "Presets";
-    private const string ModListDirectoryName = "Modlists";
-    private const string CloudModListCacheDirectoryName = "Modlists (Cloud Cache)";
-    private const string BackupDirectoryName = "Backups";
-    private const int AutomaticConfigMaxWordDistance = 2;
+    private static readonly double ModListScrollMultiplier = DevConfig.ModListScrollMultiplier;
+    private static readonly double ModDbDesignScrollMultiplier = DevConfig.ModDbDesignScrollMultiplier;
+    private static readonly double LoadMoreScrollThreshold = DevConfig.LoadMoreScrollThreshold;
+    private static readonly double HoverOverlayOpacity = DevConfig.HoverOverlayOpacity;
+    private static readonly double SelectionOverlayOpacity = DevConfig.SelectionOverlayOpacity;
+    private static readonly double ModInfoPanelHorizontalOverhang = DevConfig.ModInfoPanelHorizontalOverhang;
+    private static readonly double DefaultModInfoPanelLeft = DevConfig.DefaultModInfoPanelLeft;
+    private static readonly double DefaultModInfoPanelTop = DevConfig.DefaultModInfoPanelTop;
+    private static readonly double DefaultModInfoPanelRightMargin = DevConfig.DefaultModInfoPanelRightMargin;
+    private static readonly string ManagerModDatabaseUrl = DevConfig.ManagerModDatabaseUrl;
+    private static readonly string ManagerModDatabaseModId = DevConfig.ManagerModDatabaseModId;
+    private static readonly string ModDatabaseUnavailableMessage = DevConfig.ModDatabaseUnavailableMessage;
+    private static readonly string PresetDirectoryName = DevConfig.PresetDirectoryName;
+    private static readonly string ModListDirectoryName = DevConfig.ModListDirectoryName;
+    private static readonly string CloudModListCacheDirectoryName = DevConfig.CloudModListCacheDirectoryName;
+    private static readonly string BackupDirectoryName = DevConfig.BackupDirectoryName;
+    private static readonly int AutomaticConfigMaxWordDistance = DevConfig.AutomaticConfigMaxWordDistance;
     private static readonly HttpClient ConnectivityTestHttpClient = new()
     {
         Timeout = TimeSpan.FromSeconds(10)

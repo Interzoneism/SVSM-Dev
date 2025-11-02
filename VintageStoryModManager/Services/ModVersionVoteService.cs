@@ -18,9 +18,9 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public sealed class ModVersionVoteService
 {
-    private const string DefaultDbUrl = "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
+    private static readonly string DefaultDbUrl = DevConfig.ModVersionVoteDefaultDbUrl;
 
-    private const string VotesRootPath = "compatVotes";
+    private static readonly string VotesRootPath = DevConfig.ModVersionVoteRootPath;
 
     private static readonly HttpClient HttpClient = new();
 

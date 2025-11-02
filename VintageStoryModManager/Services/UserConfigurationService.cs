@@ -15,8 +15,8 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public sealed class UserConfigurationService
 {
-    private const string ConfigurationFileName = "SimpleVSManagerConfiguration.json";
-    private const string ModConfigPathsFileName = "SimpleVSManagerModConfigPaths.json";
+    private static readonly string ConfigurationFileName = DevConfig.ConfigurationFileName;
+    private static readonly string ModConfigPathsFileName = DevConfig.ModConfigPathsFileName;
     private static readonly string CurrentModManagerVersion = ResolveCurrentVersion();
     private static readonly string CurrentConfigurationVersion = CurrentModManagerVersion;
     private static readonly IReadOnlyDictionary<string, string> VintageStoryPaletteColors =
@@ -66,10 +66,10 @@ public sealed class UserConfigurationService
             ["Palette.Text.Link"] = "#FF0078D4",
             ["Palette.Text.Primary"] = "#FF000000"
         };
-    private const int DefaultModDatabaseSearchResultLimit = 30;
-    private const int DefaultModDatabaseNewModsRecentMonths = 3;
-    private const int MaxModDatabaseNewModsRecentMonths = 24;
-    private const int GameSessionVoteThreshold = 5;
+    private static readonly int DefaultModDatabaseSearchResultLimit = DevConfig.DefaultModDatabaseSearchResultLimit;
+    private static readonly int DefaultModDatabaseNewModsRecentMonths = DevConfig.DefaultModDatabaseNewModsRecentMonths;
+    private static readonly int MaxModDatabaseNewModsRecentMonths = DevConfig.MaxModDatabaseNewModsRecentMonths;
+    private static readonly int GameSessionVoteThreshold = DevConfig.GameSessionVoteThreshold;
 
     private readonly string _configurationPath;
     private readonly string _modConfigPathsPath;

@@ -17,15 +17,15 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public sealed class ModDatabaseService
 {
-    private const string ApiEndpointFormat = "https://mods.vintagestory.at/api/mod/{0}";
-    private const string SearchEndpointFormat = "https://mods.vintagestory.at/api/mods?search={0}&limit={1}";
-    private const string MostDownloadedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=downloadsdesc&limit={0}";
-    private const string RecentlyCreatedEndpointFormat = "https://mods.vintagestory.at/api/mods?sort=createddesc&limit={0}";
-    private const string ModPageBaseUrl = "https://mods.vintagestory.at/show/mod/";
-    private const int MaxConcurrentMetadataRequests = 4;
-    private const int MinimumTotalDownloadsForTrending = 1000;
-    private const int DefaultNewModsMonths = 3;
-    private const int MaxNewModsMonths = 24;
+    private static readonly string ApiEndpointFormat = DevConfig.ModDatabaseApiEndpointFormat;
+    private static readonly string SearchEndpointFormat = DevConfig.ModDatabaseSearchEndpointFormat;
+    private static readonly string MostDownloadedEndpointFormat = DevConfig.ModDatabaseMostDownloadedEndpointFormat;
+    private static readonly string RecentlyCreatedEndpointFormat = DevConfig.ModDatabaseRecentlyCreatedEndpointFormat;
+    private static readonly string ModPageBaseUrl = DevConfig.ModDatabasePageBaseUrl;
+    private static readonly int MaxConcurrentMetadataRequests = DevConfig.ModDatabaseMaxConcurrentMetadataRequests;
+    private static readonly int MinimumTotalDownloadsForTrending = DevConfig.ModDatabaseMinimumTotalDownloadsForTrending;
+    private static readonly int DefaultNewModsMonths = DevConfig.ModDatabaseDefaultNewModsMonths;
+    private static readonly int MaxNewModsMonths = DevConfig.ModDatabaseMaxNewModsMonths;
 
     private static readonly HttpClient HttpClient = new();
     private static readonly ModDatabaseCacheService CacheService = new();
@@ -772,7 +772,7 @@ public sealed class ModDatabaseService
             return null;
         }
 
-        const double MinimumIntervalDays = 1d / 24d; // One hour.
+        double minimumIntervalDays = DevConfig.ModDatabaseMinimumIntervalDays; // Default: one hour.
 
         double estimatedDownloads = 0;
         DateTime intervalEnd = now;
@@ -797,7 +797,7 @@ public sealed class ModDatabaseService
                 continue;
             }
 
-            double dailyDownloads = Math.Max(release.Downloads!.Value, 0) / Math.Max(intervalLengthDays, MinimumIntervalDays);
+            double dailyDownloads = Math.Max(release.Downloads!.Value, 0) / Math.Max(intervalLengthDays, minimumIntervalDays);
 
             DateTime effectiveStart = releaseDate < windowStart ? windowStart : releaseDate;
             double effectiveIntervalDays = (intervalEnd - effectiveStart).TotalDays;

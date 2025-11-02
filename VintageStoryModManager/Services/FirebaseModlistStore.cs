@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using VintageStoryModManager;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 
@@ -29,8 +30,7 @@ namespace SimpleVsManager.Cloud
         private string? _playerName;
         private string? _ownershipClaimedForUid;
 
-        private const string DefaultDbUrl =
-            "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
+        private static readonly string DefaultDbUrl = DevConfig.FirebaseModlistDefaultDbUrl;
 
         public FirebaseModlistStore()
             : this(DefaultDbUrl, new FirebaseAnonymousAuthenticator()) { }

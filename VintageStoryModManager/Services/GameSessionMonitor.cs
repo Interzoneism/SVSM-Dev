@@ -33,7 +33,7 @@ public sealed class GameSessionMonitor : IDisposable
         public object SyncRoot { get; } = new();
     }
 
-    private static readonly TimeSpan MinimumSessionDuration = TimeSpan.FromMinutes(20);
+    private static readonly TimeSpan MinimumSessionDuration = DevConfig.MinimumSessionDuration;
 
     private static readonly string[] ClientStartMarkers =
     {
