@@ -92,7 +92,7 @@ public partial class MainWindow : Window
     };
 
     private static readonly Regex PatchAssetMissingRegex = new(
-        @"\bPatch \d+ in (?<mod>[^:]+)(?<rest>: .* not found)",
+        @"\bPatch \d+ in (?<mod>[^:\r\n]+)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
@@ -1119,14 +1119,13 @@ public partial class MainWindow : Window
             }
 
             string modId = match.Groups["mod"].Value;
-            string summaryRest = match.Groups["rest"].Value;
-            if (string.IsNullOrEmpty(modId) || string.IsNullOrEmpty(summaryRest))
+            if (string.IsNullOrEmpty(modId))
             {
                 summarized.Add(line);
                 continue;
             }
 
-            string summaryKey = CreatePatchMissingSummaryKey(modId, summaryRest);
+            string summaryKey = CreatePatchMissingSummaryKey(modId);
             if (string.IsNullOrEmpty(summaryKey))
             {
                 summarized.Add(line);
@@ -1160,7 +1159,7 @@ public partial class MainWindow : Window
         return summarized;
     }
 
-    private static string CreatePatchMissingSummaryKey(string modId, string rest)
+    private static string CreatePatchMissingSummaryKey(string modId)
     {
         string trimmedModId = modId.Trim();
         if (string.IsNullOrEmpty(trimmedModId))
@@ -1168,24 +1167,7 @@ public partial class MainWindow : Window
             return string.Empty;
         }
 
-        string normalizedRest = NormalizePatchMissingSummaryRest(rest);
-        if (string.IsNullOrEmpty(normalizedRest))
-        {
-            return string.Empty;
-        }
-
-        return string.Concat(trimmedModId, "|", normalizedRest);
-    }
-
-    private static string NormalizePatchMissingSummaryRest(string rest)
-    {
-        string trimmed = rest.Trim();
-        if (trimmed.Length == 0)
-        {
-            return string.Empty;
-        }
-
-        return trimmed;
+        return trimmedModId;
     }
 
     private void InitializeViewModel()
