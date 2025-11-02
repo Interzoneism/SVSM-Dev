@@ -69,6 +69,7 @@ public sealed class UserConfigurationService
     private const int DefaultModDatabaseSearchResultLimit = 30;
     private const int DefaultModDatabaseNewModsRecentMonths = 3;
     private const int MaxModDatabaseNewModsRecentMonths = 24;
+    private const int GameSessionVoteThreshold = 5;
 
     private readonly string _configurationPath;
     private readonly string _modConfigPathsPath;
@@ -78,6 +79,7 @@ public sealed class UserConfigurationService
     private readonly Dictionary<string, string> _customThemePaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _installedColumnVisibility = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _bulkUpdateModExclusions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _modUsageSessionCounts = new(StringComparer.OrdinalIgnoreCase);
     private string? _previousConfigurationVersion;
     private string? _previousModManagerVersion;
     private string? _selectedPresetName;
@@ -108,6 +110,8 @@ public sealed class UserConfigurationService
     private bool _hasPendingModConfigPathSave;
     private ColorTheme _colorTheme = ColorTheme.VintageStory;
     private bool _hasVersionMismatch;
+    private int _longRunningSessionCount;
+    private bool _hasPendingModUsagePrompt;
 
     public UserConfigurationService()
     {
@@ -188,9 +192,127 @@ public sealed class UserConfigurationService
 
     public string? CloudUploaderName => _cloudUploaderName;
 
+    public bool HasPendingModUsagePrompt => _hasPendingModUsagePrompt && _modUsageSessionCounts.Count > 0;
+
     public IReadOnlyDictionary<string, string> GetThemePaletteColors()
     {
         return new Dictionary<string, string>(_themePaletteColors, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public IReadOnlyDictionary<string, int> GetPendingModUsageCounts()
+    {
+        return new Dictionary<string, int>(_modUsageSessionCounts, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public bool RecordLongRunningSession(IReadOnlyList<string>? activeModIds)
+    {
+        bool wasPending = HasPendingModUsagePrompt;
+
+        if (activeModIds is not null && activeModIds.Count > 0)
+        {
+            var distinct = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string modId in activeModIds)
+            {
+                if (string.IsNullOrWhiteSpace(modId))
+                {
+                    continue;
+                }
+
+                string trimmed = modId.Trim();
+                if (!distinct.Add(trimmed))
+                {
+                    continue;
+                }
+
+                if (_modUsageSessionCounts.TryGetValue(trimmed, out int existing))
+                {
+                    _modUsageSessionCounts[trimmed] = existing >= int.MaxValue - 1 ? int.MaxValue : existing + 1;
+                }
+                else
+                {
+                    _modUsageSessionCounts[trimmed] = 1;
+                }
+            }
+        }
+
+        if (_longRunningSessionCount < int.MaxValue)
+        {
+            _longRunningSessionCount++;
+        }
+
+        if (_longRunningSessionCount > GameSessionVoteThreshold)
+        {
+            _longRunningSessionCount = GameSessionVoteThreshold;
+        }
+
+        if (_longRunningSessionCount >= GameSessionVoteThreshold && _modUsageSessionCounts.Count > 0)
+        {
+            _hasPendingModUsagePrompt = true;
+        }
+
+        Save();
+
+        bool isPending = HasPendingModUsagePrompt;
+        return !wasPending && isPending;
+    }
+
+    public void CompleteModUsageVotes(IEnumerable<string>? completedModIds)
+    {
+        bool changed = false;
+
+        if (completedModIds is not null)
+        {
+            foreach (string modId in completedModIds)
+            {
+                if (string.IsNullOrWhiteSpace(modId))
+                {
+                    continue;
+                }
+
+                string trimmed = modId.Trim();
+                if (_modUsageSessionCounts.Remove(trimmed))
+                {
+                    changed = true;
+                }
+            }
+        }
+
+        if (_modUsageSessionCounts.Count == 0)
+        {
+            if (_longRunningSessionCount != 0 || _hasPendingModUsagePrompt)
+            {
+                _longRunningSessionCount = 0;
+                _hasPendingModUsagePrompt = false;
+                changed = true;
+            }
+        }
+        else
+        {
+            _hasPendingModUsagePrompt = true;
+            if (_longRunningSessionCount < GameSessionVoteThreshold)
+            {
+                _longRunningSessionCount = GameSessionVoteThreshold;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            Save();
+        }
+    }
+
+    public void ResetModUsageTracking()
+    {
+        if (_longRunningSessionCount == 0 && _modUsageSessionCounts.Count == 0 && !_hasPendingModUsagePrompt)
+        {
+            return;
+        }
+
+        _longRunningSessionCount = 0;
+        _modUsageSessionCounts.Clear();
+        _hasPendingModUsagePrompt = false;
+        Save();
     }
 
     public bool TrySetThemePaletteColor(string key, string color)
@@ -799,6 +921,7 @@ public sealed class UserConfigurationService
             _selectedPresetName = NormalizePresetName(GetOptionalString(obj["selectedPreset"]));
             _customShortcutPath = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
             _cloudUploaderName = NormalizeUploaderName(GetOptionalString(obj["cloudUploaderName"]));
+            LoadModUsageTracking(obj["modUsageTracking"]);
 
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -834,6 +957,9 @@ public sealed class UserConfigurationService
             _cloudUploaderName = null;
             _installedColumnVisibility.Clear();
             _bulkUpdateModExclusions.Clear();
+            _modUsageSessionCounts.Clear();
+            _longRunningSessionCount = 0;
+            _hasPendingModUsagePrompt = false;
         }
 
         LoadPersistentModConfigPaths();
@@ -887,6 +1013,7 @@ public sealed class UserConfigurationService
                 ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(),
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
                 ["installedColumnVisibility"] = BuildInstalledColumnVisibilityJson(),
+                ["modUsageTracking"] = BuildModUsageTrackingJson(),
                 ["themePalette"] = BuildThemePaletteJson(),
                 ["darkVsPalette"] = BuildThemePaletteJson(),
                 ["customThemePalette"] = BuildCustomThemePaletteJson(),
@@ -1077,6 +1204,28 @@ public sealed class UserConfigurationService
         }
 
         return result;
+    }
+
+    private JsonObject BuildModUsageTrackingJson()
+    {
+        var counts = new JsonObject();
+
+        foreach (var pair in _modUsageSessionCounts.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(pair.Key) || pair.Value <= 0)
+            {
+                continue;
+            }
+
+            counts[pair.Key] = pair.Value;
+        }
+
+        return new JsonObject
+        {
+            ["longSessionCount"] = _longRunningSessionCount,
+            ["pendingPrompt"] = _hasPendingModUsagePrompt && counts.Count > 0,
+            ["modCounts"] = counts
+        };
     }
 
     private JsonObject BuildThemePaletteJson()
@@ -1273,6 +1422,51 @@ public sealed class UserConfigurationService
         if (requiresSave)
         {
             _hasPendingSave = true;
+        }
+    }
+
+    private void LoadModUsageTracking(JsonNode? node)
+    {
+        _longRunningSessionCount = 0;
+        _hasPendingModUsagePrompt = false;
+        _modUsageSessionCounts.Clear();
+
+        if (node is not JsonObject obj)
+        {
+            return;
+        }
+
+        int? storedCount = obj["longSessionCount"]?.GetValue<int?>();
+        _longRunningSessionCount = storedCount.HasValue && storedCount.Value > 0 ? storedCount.Value : 0;
+        _hasPendingModUsagePrompt = obj["pendingPrompt"]?.GetValue<bool?>() ?? false;
+
+        if (obj["modCounts"] is JsonObject modCounts)
+        {
+            foreach ((string? key, JsonNode? value) in modCounts)
+            {
+                if (string.IsNullOrWhiteSpace(key) || value is null)
+                {
+                    continue;
+                }
+
+                int? usageCount = value.GetValue<int?>();
+                if (!usageCount.HasValue || usageCount.Value <= 0)
+                {
+                    continue;
+                }
+
+                _modUsageSessionCounts[key.Trim()] = usageCount.Value;
+            }
+        }
+
+        if (_modUsageSessionCounts.Count == 0)
+        {
+            _longRunningSessionCount = 0;
+            _hasPendingModUsagePrompt = false;
+        }
+        else if (_longRunningSessionCount >= GameSessionVoteThreshold)
+        {
+            _hasPendingModUsagePrompt = true;
         }
     }
 
