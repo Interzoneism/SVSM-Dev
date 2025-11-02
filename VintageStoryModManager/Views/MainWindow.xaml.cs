@@ -55,7 +55,8 @@ public partial class MainWindow : Window
     private const double HoverOverlayOpacity = 0.1;
     private const double SelectionOverlayOpacity = 0.25;
     private const double ModInfoPanelHorizontalOverhang = 0;
-    private const double DefaultModInfoPanelTop = 255.0;
+    private const double DefaultModInfoPanelLeft = 1060.0;
+    private const double DefaultModInfoPanelTop = 350.0;
     private const double DefaultModInfoPanelRightMargin = 40.0;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";
     private const string ManagerModDatabaseModId = "5545";
@@ -193,6 +194,7 @@ public partial class MainWindow : Window
     private System.Windows.Point _modInfoDragOffset;
     private GameSessionMonitor? _gameSessionMonitor;
     private bool _hasShownModUsagePromptThisSession;
+    private bool _hasAppliedInitialModInfoPanelPosition;
 
 
     public MainWindow()
@@ -708,6 +710,7 @@ public partial class MainWindow : Window
             double top = _userConfiguration.ModInfoPanelTop ?? DefaultModInfoPanelTop;
 
             SetModInfoPanelPosition(left, top, persist: false);
+            _hasAppliedInitialModInfoPanelPosition = true;
         }), DispatcherPriority.Loaded);
     }
 
@@ -730,7 +733,8 @@ public partial class MainWindow : Window
             top = _userConfiguration.ModInfoPanelTop ?? DefaultModInfoPanelTop;
         }
 
-        SetModInfoPanelPosition(left, top, persist);
+        bool shouldPersist = persist && _hasAppliedInitialModInfoPanelPosition;
+        SetModInfoPanelPosition(left, top, shouldPersist);
     }
 
     private void SetModInfoPanelPosition(double left, double top, bool persist)
@@ -780,16 +784,23 @@ public partial class MainWindow : Window
 
         double panelWidth = GetModInfoPanelWidth();
 
-        if (containerWidth <= 0)
+        double preferredLeft = DefaultModInfoPanelLeft;
+
+        if (containerWidth > 0 && panelWidth > 0)
         {
-            return 0;
+            double rightAlignedLeft = containerWidth - panelWidth - DefaultModInfoPanelRightMargin;
+            if (!double.IsNaN(rightAlignedLeft))
+            {
+                preferredLeft = Math.Min(preferredLeft, rightAlignedLeft);
+            }
+
+            double minLeft = -ModInfoPanelHorizontalOverhang;
+            double maxLeft = Math.Max(minLeft, containerWidth - panelWidth + ModInfoPanelHorizontalOverhang);
+
+            return Math.Min(Math.Max(preferredLeft, minLeft), maxLeft);
         }
 
-        double preferredLeft = containerWidth - panelWidth - DefaultModInfoPanelRightMargin;
-        double minLeft = -ModInfoPanelHorizontalOverhang;
-        double maxLeft = Math.Max(minLeft, containerWidth - panelWidth + ModInfoPanelHorizontalOverhang);
-
-        return Math.Min(Math.Max(preferredLeft, minLeft), maxLeft);
+        return preferredLeft;
     }
 
     private double GetModInfoPanelWidth()
