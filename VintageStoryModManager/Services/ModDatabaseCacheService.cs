@@ -16,9 +16,9 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 internal sealed class ModDatabaseCacheService
 {
-    private const int CacheSchemaVersion = 2;
-    private const int MinimumSupportedCacheSchemaVersion = 1;
-    private const string AnyGameVersionToken = "any";
+    private static readonly int CacheSchemaVersion = DevConfig.ModDatabaseCacheSchemaVersion;
+    private static readonly int MinimumSupportedCacheSchemaVersion = DevConfig.ModDatabaseMinimumSupportedCacheSchemaVersion;
+    private static readonly string AnyGameVersionToken = DevConfig.ModDatabaseAnyGameVersionToken;
     private static readonly TimeSpan CacheEntryMaxAge = TimeSpan.FromHours(12);
 
     private static readonly JsonSerializerOptions SerializerOptions = new()

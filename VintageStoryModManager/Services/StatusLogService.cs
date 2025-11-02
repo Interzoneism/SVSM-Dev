@@ -13,9 +13,9 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public static class StatusLogService
 {
-    private const string TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff";
-    private const int MaxModNameLength = 10;
-    private const int MaxLogLines = 5000;
+    private static readonly string TimestampFormat = DevConfig.StatusTimestampFormat;
+    private static readonly int MaxModNameLength = DevConfig.StatusLogMaxModNameLength;
+    private static readonly int MaxLogLines = DevConfig.StatusLogMaxLines;
     private static readonly object SyncRoot = new();
     private static readonly string LogFilePath = InitializeLogFilePath();
     private static volatile bool _isLoggingEnabled;

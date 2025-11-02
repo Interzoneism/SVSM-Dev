@@ -33,10 +33,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan BusyStateReleaseDelay = TimeSpan.FromMilliseconds(600);
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
     private const string NoCompatibleModDatabaseResultsStatusMessage = "No compatible mods found in the mod database.";
-    private const int MaxConcurrentDatabaseRefreshes = 4;
-    private const int MaxNewModsRecentMonths = 24;
-    private const int InstalledModsIncrementalBatchSize = 32;
-    private const int MaxModDatabaseResultLimit = int.MaxValue;
+    private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
+    private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
+    private static readonly int InstalledModsIncrementalBatchSize = DevConfig.InstalledModsIncrementalBatchSize;
+    private static readonly int MaxModDatabaseResultLimit = DevConfig.MaxModDatabaseResultLimit;
 
     private enum ViewSection
     {

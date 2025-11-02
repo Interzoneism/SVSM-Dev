@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using VintageStoryModManager;
 using VintageStoryModManager.Services;
 
 namespace SimpleVsManager.Cloud;
@@ -18,10 +19,10 @@ namespace SimpleVsManager.Cloud;
 /// </summary>
 public sealed class FirebaseAnonymousAuthenticator
 {
-    private const string SignInEndpoint = "https://identitytoolkit.googleapis.com/v1/accounts:signUp";
-    private const string RefreshEndpoint = "https://securetoken.googleapis.com/v1/token";
-    private const string DeleteEndpoint = "https://identitytoolkit.googleapis.com/v1/accounts:delete";
-    private const string StateFileName = "firebase-auth.json";
+    private static readonly string SignInEndpoint = DevConfig.FirebaseSignInEndpoint;
+    private static readonly string RefreshEndpoint = DevConfig.FirebaseRefreshEndpoint;
+    private static readonly string DeleteEndpoint = DevConfig.FirebaseDeleteEndpoint;
+    private static readonly string StateFileName = DevConfig.FirebaseAuthStateFileName;
     private static readonly HttpClient HttpClient = new();
     private static readonly TimeSpan ExpirationSkew = TimeSpan.FromMinutes(2);
 
@@ -31,7 +32,7 @@ public sealed class FirebaseAnonymousAuthenticator
 
     private FirebaseAuthState? _cachedState;
 
-    private const string DefaultApiKey = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
+    private static readonly string DefaultApiKey = DevConfig.FirebaseDefaultApiKey;
 
     public FirebaseAnonymousAuthenticator() : this(DefaultApiKey) { }
 
