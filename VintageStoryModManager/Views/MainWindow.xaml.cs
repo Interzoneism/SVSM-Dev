@@ -1575,6 +1575,7 @@ public partial class MainWindow : Window
 
         _viewModel = new MainViewModel(
             _dataDirectory,
+            _userConfiguration,
             _userConfiguration.ModDatabaseSearchResultLimit,
             _userConfiguration.ModDatabaseNewModsRecentMonths,
             _userConfiguration.ModDatabaseAutoLoadMode,
@@ -3234,6 +3235,7 @@ public partial class MainWindow : Window
         {
             newViewModel = new MainViewModel(
                 _dataDirectory,
+                _userConfiguration,
                 _userConfiguration.ModDatabaseSearchResultLimit,
                 _userConfiguration.ModDatabaseNewModsRecentMonths,
                 _userConfiguration.ModDatabaseAutoLoadMode,

@@ -34,6 +34,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly IReadOnlyList<string> _contributors;
     private readonly string? _description;
     private readonly string? _metadataError;
+    private readonly Func<string?, string?, bool>? _shouldSkipVersion;
     private string? _loadError;
     private IReadOnlyList<ModDependencyInfo> _missingDependencies;
     private bool _dependencyHasErrors;
@@ -91,11 +92,13 @@ public sealed class ModListItemViewModel : ObservableObject
         string location,
         Func<ModListItemViewModel, bool, Task<ActivationResult>> activationHandler,
         string? installedGameVersion = null,
-        bool isInstalled = false)
+        bool isInstalled = false,
+        Func<string?, string?, bool>? shouldSkipVersion = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
         _activationHandler = activationHandler ?? throw new ArgumentNullException(nameof(activationHandler));
         _installedGameVersion = installedGameVersion;
+        _shouldSkipVersion = shouldSkipVersion;
 
         ModId = entry.ModId;
         DisplayName = string.IsNullOrWhiteSpace(entry.Name) ? entry.ModId : entry.Name;
@@ -1109,6 +1112,34 @@ public sealed class ModListItemViewModel : ObservableObject
         UpdateTooltip();
     }
 
+    public void RefreshSkippedUpdateState()
+    {
+        bool previousHasUpdate = _hasUpdate;
+        string? previousMessage = _updateMessage;
+
+        InitializeUpdateAvailability();
+
+        if (previousHasUpdate != _hasUpdate)
+        {
+            OnPropertyChanged(nameof(CanUpdate));
+            OnPropertyChanged(nameof(ShouldHighlightLatestVersion));
+            OnPropertyChanged(nameof(LatestVersionSortKey));
+            OnPropertyChanged(nameof(RequiresCompatibilitySelection));
+            OnPropertyChanged(nameof(HasCompatibleUpdate));
+            OnPropertyChanged(nameof(HasDownloadableRelease));
+            OnPropertyChanged(nameof(UpdateButtonToolTip));
+            UpdateStatusFromErrors();
+            UpdateTooltip();
+            return;
+        }
+
+        if (!string.Equals(previousMessage, _updateMessage, StringComparison.Ordinal))
+        {
+            UpdateStatusFromErrors();
+            UpdateTooltip();
+        }
+    }
+
     public void EnsureModDatabaseLogoLoaded()
     {
         if (_modDatabaseLogo is not null)
@@ -1397,6 +1428,13 @@ public sealed class ModListItemViewModel : ObservableObject
         }
 
         if (!VersionStringUtility.IsCandidateVersionNewer(_latestRelease.Version, Version))
+        {
+            _hasUpdate = false;
+            _updateMessage = null;
+            return;
+        }
+
+        if (_shouldSkipVersion?.Invoke(ModId, _latestRelease.Version) == true)
         {
             _hasUpdate = false;
             _updateMessage = null;

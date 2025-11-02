@@ -79,6 +79,7 @@ public sealed class UserConfigurationService
     private readonly Dictionary<string, string> _customThemePaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _installedColumnVisibility = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _bulkUpdateModExclusions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _skippedModVersions = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> _modUsageSessionCounts = new(StringComparer.OrdinalIgnoreCase);
     private string? _previousConfigurationVersion;
     private string? _previousModManagerVersion;
@@ -858,10 +859,62 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SkipModVersion(string? modId, string? version)
+    {
+        string? normalizedId = NormalizeModId(modId);
+        if (normalizedId is null)
+        {
+            return;
+        }
+
+        string? normalizedVersion = NormalizeVersion(version);
+        if (normalizedVersion is null)
+        {
+            return;
+        }
+
+        if (_skippedModVersions.TryGetValue(normalizedId, out string? current)
+            && string.Equals(current, normalizedVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _skippedModVersions[normalizedId] = normalizedVersion;
+        Save();
+    }
+
+    public bool ShouldSkipModVersion(string? modId, string? version)
+    {
+        string? normalizedId = NormalizeModId(modId);
+        if (normalizedId is null)
+        {
+            return false;
+        }
+
+        if (!_skippedModVersions.TryGetValue(normalizedId, out string? storedVersion))
+        {
+            return false;
+        }
+
+        string? normalizedVersion = NormalizeVersion(version);
+        if (normalizedVersion is null
+            || !string.Equals(storedVersion, normalizedVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            if (_skippedModVersions.Remove(normalizedId))
+            {
+                Save();
+            }
+
+        }
+
+        return string.Equals(storedVersion, normalizedVersion, StringComparison.OrdinalIgnoreCase);
+    }
+
     private void Load()
     {
         _modConfigPaths.Clear();
         _bulkUpdateModExclusions.Clear();
+        _skippedModVersions.Clear();
         ResetCustomThemePaletteToDefaults();
         _colorTheme = ColorTheme.VintageStory;
         ResetThemePaletteToDefaults();
@@ -938,6 +991,7 @@ public sealed class UserConfigurationService
             _modInfoPanelLeft = NormalizeModInfoCoordinate(obj["modInfoPanelLeft"]?.GetValue<double?>());
             _modInfoPanelTop = NormalizeModInfoCoordinate(obj["modInfoPanelTop"]?.GetValue<double?>());
             LoadBulkUpdateModExclusions(obj["bulkUpdateModExclusions"]);
+            LoadSkippedModVersions(obj["skippedModVersions"]);
             LoadModConfigPaths(obj["modConfigPaths"]);
             LoadInstalledColumnVisibility(obj["installedColumnVisibility"]);
             LoadThemePalette(obj["themePalette"] ?? obj["darkVsPalette"]);
@@ -960,6 +1014,7 @@ public sealed class UserConfigurationService
             DataDirectory = null;
             GameDirectory = null;
             _modConfigPaths.Clear();
+            _skippedModVersions.Clear();
             _colorTheme = ColorTheme.VintageStory;
             ResetCustomThemePaletteToDefaults();
             ResetThemePaletteToDefaults();
@@ -1046,6 +1101,7 @@ public sealed class UserConfigurationService
                 ["modInfoPanelLeft"] = _modInfoPanelLeft,
                 ["modInfoPanelTop"] = _modInfoPanelTop,
                 ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(),
+                ["skippedModVersions"] = BuildSkippedModVersionsJson(),
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
                 ["installedColumnVisibility"] = BuildInstalledColumnVisibilityJson(),
                 ["modUsageTracking"] = BuildModUsageTrackingJson(),
@@ -1257,6 +1313,23 @@ public sealed class UserConfigurationService
         return result;
     }
 
+    private JsonObject BuildSkippedModVersionsJson()
+    {
+        var result = new JsonObject();
+
+        foreach (var pair in _skippedModVersions.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
+            {
+                continue;
+            }
+
+            result[pair.Key] = pair.Value;
+        }
+
+        return result;
+    }
+
     private JsonObject BuildModUsageTrackingJson()
     {
         var counts = new JsonObject();
@@ -1354,6 +1427,47 @@ public sealed class UserConfigurationService
             }
 
             _bulkUpdateModExclusions[normalized] = true;
+        }
+
+        if (requiresSave)
+        {
+            _hasPendingSave = true;
+        }
+    }
+
+    private void LoadSkippedModVersions(JsonNode? node)
+    {
+        _skippedModVersions.Clear();
+
+        if (node is not JsonObject obj)
+        {
+            return;
+        }
+
+        bool requiresSave = false;
+
+        foreach ((string key, JsonNode? value) in obj)
+        {
+            string? normalizedId = NormalizeModId(key);
+            if (normalizedId is null)
+            {
+                requiresSave = true;
+                continue;
+            }
+
+            string? version = NormalizeVersion(GetOptionalString(value));
+            if (version is null)
+            {
+                requiresSave = true;
+                continue;
+            }
+
+            if (_skippedModVersions.ContainsKey(normalizedId))
+            {
+                continue;
+            }
+
+            _skippedModVersions[normalizedId] = version;
         }
 
         if (requiresSave)
