@@ -403,7 +403,7 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="0,0,0,8" Background="{DynamicResource Brush.Panel.Primary.Background.Solid}">
+    <Grid x:Name="RootGrid" Margin="0,0,0,8" Background="{DynamicResource Brush.Panel.Primary.Background.Solid}">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="35" MinHeight="10" />
@@ -2453,10 +2453,18 @@
                         Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
                         Foreground="{DynamicResource Brush.Accent.Primary}" Margin="388,0,0,0" VerticalAlignment="Stretch" Width="40" Height="40" />
         </Grid>
-        <Border Background="{DynamicResource Brush.ModCard.Background.Active}" x:Name="MODINFO_border"
-                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                BorderThickness="0"
-                CornerRadius="15,15,15,15" Margin="0,255,40,185" Grid.Row="1" Height="201" HorizontalAlignment="Right" Width="326" Panel.ZIndex="400">
+        <Canvas x:Name="ModInfoOverlay" Grid.RowSpan="3" Panel.ZIndex="400">
+            <Border Background="{DynamicResource Brush.ModCard.Background.Active}" x:Name="MODINFO_border"
+                    BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                    BorderThickness="0"
+                    CornerRadius="15,15,15,15" Height="201" Width="326"
+                    Canvas.Left="0"
+                    Canvas.Top="0"
+                    Panel.ZIndex="400"
+                    MouseLeftButtonDown="ModInfoBorder_OnMouseLeftButtonDown"
+                    MouseLeftButtonUp="ModInfoBorder_OnMouseLeftButtonUp"
+                    MouseMove="ModInfoBorder_OnMouseMove"
+                    LostMouseCapture="ModInfoBorder_OnLostMouseCapture">
             <Border.Style>
                 <Style TargetType="{x:Type Border}">
                     <Setter Property="Visibility" Value="Collapsed" />
@@ -2706,8 +2714,8 @@
                     </TextBlock.Style>
                 </TextBlock>
             </Grid>
-
-        </Border>
+            </Border>
+        </Canvas>
 
     </Grid>
 </Window>

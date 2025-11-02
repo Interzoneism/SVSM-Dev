@@ -101,6 +101,8 @@ public sealed class UserConfigurationService
     private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
     private double? _windowWidth;
     private double? _windowHeight;
+    private double? _modInfoPanelLeft;
+    private double? _modInfoPanelTop;
     private string? _customShortcutPath;
     private string? _cloudUploaderName;
     private bool _isPersistenceEnabled;
@@ -183,6 +185,10 @@ public sealed class UserConfigurationService
     public double? WindowWidth => _windowWidth;
 
     public double? WindowHeight => _windowHeight;
+
+    public double? ModInfoPanelLeft => _modInfoPanelLeft;
+
+    public double? ModInfoPanelTop => _modInfoPanelTop;
 
     public string? CustomShortcutPath => _customShortcutPath;
 
@@ -529,6 +535,29 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetModInfoPanelPosition(double left, double top)
+    {
+        double? normalizedLeft = NormalizeModInfoCoordinate(left);
+        double? normalizedTop = NormalizeModInfoCoordinate(top);
+
+        if (!normalizedLeft.HasValue || !normalizedTop.HasValue)
+        {
+            return;
+        }
+
+        bool hasLeftChanged = !_modInfoPanelLeft.HasValue || Math.Abs(_modInfoPanelLeft.Value - normalizedLeft.Value) > 0.1;
+        bool hasTopChanged = !_modInfoPanelTop.HasValue || Math.Abs(_modInfoPanelTop.Value - normalizedTop.Value) > 0.1;
+
+        if (!hasLeftChanged && !hasTopChanged)
+        {
+            return;
+        }
+
+        _modInfoPanelLeft = normalizedLeft;
+        _modInfoPanelTop = normalizedTop;
+        Save();
+    }
+
     public void SetDataDirectory(string path)
     {
         DataDirectory = NormalizePath(path);
@@ -784,6 +813,8 @@ public sealed class UserConfigurationService
             _onlyShowCompatibleModDatabaseResults = obj["onlyShowCompatibleModDatabaseResults"]?.GetValue<bool?>() ?? false;
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
+            _modInfoPanelLeft = NormalizeModInfoCoordinate(obj["modInfoPanelLeft"]?.GetValue<double?>());
+            _modInfoPanelTop = NormalizeModInfoCoordinate(obj["modInfoPanelTop"]?.GetValue<double?>());
             LoadBulkUpdateModExclusions(obj["bulkUpdateModExclusions"]);
             LoadModConfigPaths(obj["modConfigPaths"]);
             LoadInstalledColumnVisibility(obj["installedColumnVisibility"]);
@@ -830,6 +861,8 @@ public sealed class UserConfigurationService
             _onlyShowCompatibleModDatabaseResults = false;
             _windowWidth = null;
             _windowHeight = null;
+            _modInfoPanelLeft = null;
+            _modInfoPanelTop = null;
             _customShortcutPath = null;
             _cloudUploaderName = null;
             _installedColumnVisibility.Clear();
@@ -884,6 +917,8 @@ public sealed class UserConfigurationService
                 ["onlyShowCompatibleModDatabaseResults"] = _onlyShowCompatibleModDatabaseResults,
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
+                ["modInfoPanelLeft"] = _modInfoPanelLeft,
+                ["modInfoPanelTop"] = _modInfoPanelTop,
                 ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(),
                 ["modConfigPaths"] = BuildModConfigPathsJson(),
                 ["installedColumnVisibility"] = BuildInstalledColumnVisibilityJson(),
@@ -1014,6 +1049,22 @@ public sealed class UserConfigurationService
 
         double value = dimension.Value;
         if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0)
+        {
+            return null;
+        }
+
+        return value;
+    }
+
+    private static double? NormalizeModInfoCoordinate(double? coordinate)
+    {
+        if (!coordinate.HasValue)
+        {
+            return null;
+        }
+
+        double value = coordinate.Value;
+        if (double.IsNaN(value) || double.IsInfinity(value))
         {
             return null;
         }

@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Navigation;
 
@@ -53,6 +54,9 @@ public partial class MainWindow : Window
     private const double LoadMoreScrollThreshold = 0.98;
     private const double HoverOverlayOpacity = 0.1;
     private const double SelectionOverlayOpacity = 0.25;
+    private const double ModInfoPanelHorizontalOverhang = 150.0;
+    private const double DefaultModInfoPanelTop = 255.0;
+    private const double DefaultModInfoPanelRightMargin = 40.0;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";
     private const string ManagerModDatabaseModId = "5545";
     private const string ModDatabaseUnavailableMessage =
@@ -185,6 +189,8 @@ public partial class MainWindow : Window
     private List<string>? _recentLocalModBackupModNames;
     private readonly Dictionary<InstalledModsColumn, bool> _installedColumnVisibilityPreferences = new();
     private bool _isSearchingModDatabase;
+    private bool _isDraggingModInfoPanel;
+    private System.Windows.Point _modInfoDragOffset;
 
 
     public MainWindow()
@@ -198,6 +204,8 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         DeveloperProfileManager.CurrentProfileChanged += DeveloperProfileManager_OnCurrentProfileChanged;
+
+        RootGrid.SizeChanged += RootGrid_OnSizeChanged;
 
         UpdateModlistLoadingUiState();
 
@@ -335,6 +343,8 @@ public partial class MainWindow : Window
     {
         Loaded -= MainWindow_Loaded;
 
+        ApplyStoredModInfoPanelPosition();
+
         _userConfiguration.EnablePersistence();
 
         await PromptCacheRefreshIfNeededAsync().ConfigureAwait(true);
@@ -469,6 +479,217 @@ public partial class MainWindow : Window
         DisposeCurrentViewModel();
         InternetAccessManager.InternetAccessChanged -= InternetAccessManager_OnInternetAccessChanged;
         DeveloperProfileManager.CurrentProfileChanged -= DeveloperProfileManager_OnCurrentProfileChanged;
+    }
+
+    private void RootGrid_OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (_isDraggingModInfoPanel)
+        {
+            return;
+        }
+
+        EnsureModInfoPanelWithinBounds(true);
+    }
+
+    private void ModInfoBorder_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Border border)
+        {
+            return;
+        }
+
+        if (IsModInfoDragInitiationBlocked(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        _isDraggingModInfoPanel = true;
+        _modInfoDragOffset = e.GetPosition(border);
+        border.CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void ModInfoBorder_OnMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!_isDraggingModInfoPanel || sender is not Border border)
+        {
+            return;
+        }
+
+        System.Windows.Point pointerPosition = e.GetPosition(RootGrid);
+        double left = pointerPosition.X - _modInfoDragOffset.X;
+        double top = pointerPosition.Y - _modInfoDragOffset.Y;
+
+        SetModInfoPanelPosition(left, top, persist: false);
+        e.Handled = true;
+    }
+
+    private void ModInfoBorder_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isDraggingModInfoPanel || sender is not Border border)
+        {
+            return;
+        }
+
+        _isDraggingModInfoPanel = false;
+        border.ReleaseMouseCapture();
+        EnsureModInfoPanelWithinBounds(true);
+        e.Handled = true;
+    }
+
+    private void ModInfoBorder_OnLostMouseCapture(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!_isDraggingModInfoPanel)
+        {
+            return;
+        }
+
+        _isDraggingModInfoPanel = false;
+        EnsureModInfoPanelWithinBounds(true);
+    }
+
+    private void ApplyStoredModInfoPanelPosition()
+    {
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            double left = _userConfiguration.ModInfoPanelLeft ?? ComputeDefaultModInfoPanelLeft();
+            double top = _userConfiguration.ModInfoPanelTop ?? DefaultModInfoPanelTop;
+
+            SetModInfoPanelPosition(left, top, persist: false);
+        }), DispatcherPriority.Loaded);
+    }
+
+    private void EnsureModInfoPanelWithinBounds(bool persist)
+    {
+        if (MODINFO_border is null)
+        {
+            return;
+        }
+
+        double left = Canvas.GetLeft(MODINFO_border);
+        if (double.IsNaN(left))
+        {
+            left = _userConfiguration.ModInfoPanelLeft ?? ComputeDefaultModInfoPanelLeft();
+        }
+
+        double top = Canvas.GetTop(MODINFO_border);
+        if (double.IsNaN(top))
+        {
+            top = _userConfiguration.ModInfoPanelTop ?? DefaultModInfoPanelTop;
+        }
+
+        SetModInfoPanelPosition(left, top, persist);
+    }
+
+    private void SetModInfoPanelPosition(double left, double top, bool persist)
+    {
+        if (RootGrid is null || MODINFO_border is null)
+        {
+            return;
+        }
+
+        double containerWidth = RootGrid.ActualWidth;
+        double containerHeight = RootGrid.ActualHeight;
+
+        if (containerWidth <= 0 || containerHeight <= 0)
+        {
+            Dispatcher.BeginInvoke(new Action(() => SetModInfoPanelPosition(left, top, persist)), DispatcherPriority.Loaded);
+            return;
+        }
+
+        double panelWidth = GetModInfoPanelWidth();
+        double panelHeight = GetModInfoPanelHeight();
+
+        double minLeft = -ModInfoPanelHorizontalOverhang;
+        double maxLeft = Math.Max(minLeft, containerWidth - panelWidth + ModInfoPanelHorizontalOverhang);
+        double minTop = 0;
+        double maxTop = Math.Max(minTop, containerHeight - panelHeight);
+
+        double clampedLeft = Math.Min(Math.Max(left, minLeft), maxLeft);
+        double clampedTop = Math.Min(Math.Max(top, minTop), maxTop);
+
+        Canvas.SetLeft(MODINFO_border, clampedLeft);
+        Canvas.SetTop(MODINFO_border, clampedTop);
+
+        if (persist)
+        {
+            _userConfiguration.SetModInfoPanelPosition(clampedLeft, clampedTop);
+        }
+    }
+
+    private double ComputeDefaultModInfoPanelLeft()
+    {
+        double containerWidth = RootGrid?.ActualWidth ?? ActualWidth;
+
+        if (containerWidth <= 0)
+        {
+            containerWidth = Width;
+        }
+
+        double panelWidth = GetModInfoPanelWidth();
+
+        if (containerWidth <= 0)
+        {
+            return 0;
+        }
+
+        double preferredLeft = containerWidth - panelWidth - DefaultModInfoPanelRightMargin;
+        double minLeft = -ModInfoPanelHorizontalOverhang;
+        double maxLeft = Math.Max(minLeft, containerWidth - panelWidth + ModInfoPanelHorizontalOverhang);
+
+        return Math.Min(Math.Max(preferredLeft, minLeft), maxLeft);
+    }
+
+    private double GetModInfoPanelWidth()
+    {
+        if (MODINFO_border is null)
+        {
+            return 0;
+        }
+
+        double width = MODINFO_border.ActualWidth;
+        if (width <= 0)
+        {
+            width = MODINFO_border.Width;
+        }
+
+        return double.IsNaN(width) ? 0 : width;
+    }
+
+    private double GetModInfoPanelHeight()
+    {
+        if (MODINFO_border is null)
+        {
+            return 0;
+        }
+
+        double height = MODINFO_border.ActualHeight;
+        if (height <= 0)
+        {
+            height = MODINFO_border.Height;
+        }
+
+        return double.IsNaN(height) ? 0 : height;
+    }
+
+    private static bool IsModInfoDragInitiationBlocked(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is Border border && border.Name == nameof(MODINFO_border))
+            {
+                break;
+            }
+
+            if (source is System.Windows.Controls.Primitives.ButtonBase || source is Selector || source is System.Windows.Controls.Primitives.TextBoxBase || source is Hyperlink || source is Slider || source is System.Windows.Controls.Primitives.ScrollBar)
+            {
+                return true;
+            }
+
+            source = VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
     }
 
     private void DisableInternetAccessMenuItem_OnClick(object sender, RoutedEventArgs e)
