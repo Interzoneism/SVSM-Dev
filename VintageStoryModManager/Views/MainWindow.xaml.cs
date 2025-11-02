@@ -6658,11 +6658,7 @@ public partial class MainWindow : Window
 
         try
         {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = path,
-                UseShellExecute = true
-            });
+            OpenFolderWithShell(path);
         }
         catch (Exception ex)
         {
@@ -6671,6 +6667,27 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    private static void OpenFolderWithShell(string path)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            var explorerStartInfo = new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                UseShellExecute = true
+            };
+            explorerStartInfo.ArgumentList.Add(path);
+            Process.Start(explorerStartInfo);
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = path,
+            UseShellExecute = true
+        });
     }
 
     private bool TryGetManagedModPath(ModListItemViewModel mod, out string fullPath, out string? errorMessage)
