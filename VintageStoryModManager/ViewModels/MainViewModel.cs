@@ -54,6 +54,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly ModDiscoveryService _discoveryService;
     private readonly ModDatabaseService _databaseService;
     private readonly ModVersionVoteService _voteService = new();
+    private readonly UserConfigurationService _configuration;
     private readonly int _modDatabaseSearchResultLimit;
     private int _modDatabaseCurrentResultLimit;
     private readonly ObservableCollection<SortOption> _sortOptions;
@@ -121,6 +122,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public MainViewModel(
         string dataDirectory,
+        UserConfigurationService configuration,
         int modDatabaseSearchResultLimit,
         int newModsRecentMonths,
         ModDatabaseAutoLoadMode initialModDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads,
@@ -129,8 +131,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         bool onlyShowCompatibleModDatabaseResults = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
+        ArgumentNullException.ThrowIfNull(configuration);
 
         DataDirectory = Path.GetFullPath(dataDirectory);
+        _configuration = configuration;
 
         _settingsStore = new ClientSettingsStore(DataDirectory);
         _discoveryService = new ModDiscoveryService(_settingsStore);
@@ -1414,7 +1418,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         bool isActive = !_settingsStore.IsDisabled(entry.ModId, entry.Version);
         string location = GetDisplayPath(entry.SourcePath);
-        return new ModListItemViewModel(entry, isActive, location, ApplyActivationChangeAsync, _installedGameVersion, true);
+        return new ModListItemViewModel(
+            entry,
+            isActive,
+            location,
+            ApplyActivationChangeAsync,
+            _installedGameVersion,
+            true,
+            _configuration.ShouldSkipModVersion);
     }
 
     private async Task UpdateModsStateSnapshotAsync()
