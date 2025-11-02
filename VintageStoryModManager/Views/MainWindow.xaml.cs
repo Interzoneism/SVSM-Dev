@@ -7658,6 +7658,17 @@ public partial class MainWindow : Window
         return builder.ToString();
     }
 
+    private void ModlistsTabButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (_viewModel?.IsViewingCloudModlists == true)
+            {
+                _ = RefreshCloudModlistsAsync(force: true);
+            }
+        }, DispatcherPriority.Background);
+    }
+
     private async void SaveModlistToCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         await SaveModlistToCloudAsync();
