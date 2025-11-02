@@ -703,6 +703,7 @@
                     <Button x:Name="ModlistsTabButton"
                             Content="Modlists"
                             Command="{Binding ShowCloudModlistsCommand}"
+                            Click="ModlistsTabButton_OnClick"
                             Width="138"
                             Height="40"
                             FontSize="16"
