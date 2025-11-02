@@ -54,7 +54,7 @@ public partial class MainWindow : Window
     private const double LoadMoreScrollThreshold = 0.98;
     private const double HoverOverlayOpacity = 0.1;
     private const double SelectionOverlayOpacity = 0.25;
-    private const double ModInfoPanelHorizontalOverhang = 150.0;
+    private const double ModInfoPanelHorizontalOverhang = 0;
     private const double DefaultModInfoPanelTop = 255.0;
     private const double DefaultModInfoPanelRightMargin = 40.0;
     private const string ManagerModDatabaseUrl = "https://mods.vintagestory.at/simplevsmanager";

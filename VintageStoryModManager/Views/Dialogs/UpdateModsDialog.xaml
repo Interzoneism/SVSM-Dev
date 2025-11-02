@@ -51,12 +51,12 @@
                             <StackPanel>
                                 <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}">
                                     <CheckBox.Content>
-                                        <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="{Binding DisplayName}"
                                                        FontSize="14"
                                                        FontWeight="SemiBold" />
                                             <TextBlock Text="{Binding VersionSummary}"
-                                                       Margin="0,4,0,0"
+                                                       Margin="8,2,0,0"
                                                        Foreground="{DynamicResource Brush.Text.Secondary}" />
                                         </StackPanel>
                                     </CheckBox.Content>
