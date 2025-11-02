@@ -747,6 +747,33 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return _mods.ToList();
     }
 
+    public IReadOnlyList<string> GetActiveModIdsSnapshot()
+    {
+        var distinct = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var result = new List<string>();
+
+        foreach (ModListItemViewModel mod in _mods)
+        {
+            if (mod is null || !mod.IsActive || string.IsNullOrWhiteSpace(mod.ModId))
+            {
+                continue;
+            }
+
+            string trimmed = mod.ModId.Trim();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            if (distinct.Add(trimmed))
+            {
+                result.Add(trimmed);
+            }
+        }
+
+        return result;
+    }
+
     public bool TryGetInstalledModDisplayName(string? modId, out string? displayName)
     {
         displayName = null;
@@ -939,16 +966,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    internal ModListItemViewModel? FindInstalledModById(string modId)
+    public ModListItemViewModel? FindInstalledModById(string? modId)
     {
         if (string.IsNullOrWhiteSpace(modId))
         {
             return null;
         }
 
-        foreach (var mod in _mods)
+        string trimmed = modId.Trim();
+
+        foreach (ModListItemViewModel mod in _mods)
         {
-            if (string.Equals(mod.ModId, modId, StringComparison.OrdinalIgnoreCase))
+            if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
+            {
+                continue;
+            }
+
+            if (string.Equals(mod.ModId.Trim(), trimmed, StringComparison.OrdinalIgnoreCase))
             {
                 return mod;
             }

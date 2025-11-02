@@ -185,6 +185,8 @@ public partial class MainWindow : Window
     private List<string>? _recentLocalModBackupModNames;
     private readonly Dictionary<InstalledModsColumn, bool> _installedColumnVisibilityPreferences = new();
     private bool _isSearchingModDatabase;
+    private GameSessionMonitor? _gameSessionMonitor;
+    private bool _hasShownModUsagePromptThisSession;
 
 
     public MainWindow()
@@ -414,6 +416,156 @@ public partial class MainWindow : Window
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
+        }
+    }
+
+    private async Task TryShowModUsagePromptAsync()
+    {
+        if (_hasShownModUsagePromptThisSession)
+        {
+            return;
+        }
+
+        if (_viewModel is null || !_userConfiguration.HasPendingModUsagePrompt)
+        {
+            return;
+        }
+
+        IReadOnlyDictionary<string, int> usageCounts = _userConfiguration.GetPendingModUsageCounts();
+        if (usageCounts.Count == 0)
+        {
+            _userConfiguration.ResetModUsageTracking();
+            _gameSessionMonitor?.RefreshPromptState();
+            return;
+        }
+
+        var candidates = new List<ModUsageVoteCandidateViewModel>();
+        int skippedCount = 0;
+
+        foreach (KeyValuePair<string, int> entry in usageCounts.OrderByDescending(pair => pair.Value))
+        {
+            ModListItemViewModel? mod = _viewModel.FindInstalledModById(entry.Key);
+            if (mod is null || !mod.CanSubmitUserReport)
+            {
+                skippedCount++;
+                continue;
+            }
+
+            candidates.Add(new ModUsageVoteCandidateViewModel(mod, entry.Value));
+        }
+
+        if (candidates.Count == 0)
+        {
+            _userConfiguration.ResetModUsageTracking();
+            _gameSessionMonitor?.RefreshPromptState();
+            if (skippedCount > 0)
+            {
+                StatusLogService.AppendStatus("No mods were eligible for automatic \"No issues\" votes.", false);
+            }
+            return;
+        }
+
+        if (skippedCount > 0)
+        {
+            StatusLogService.AppendStatus(
+                string.Format(
+                    CultureInfo.CurrentCulture,
+                    "Skipped {0} mod(s) that cannot receive automatic votes.",
+                    skippedCount),
+                false);
+        }
+
+        var dialog = new ModUsageNoIssuesDialog(candidates)
+        {
+            Owner = this
+        };
+
+        bool? result = dialog.ShowDialog();
+        _hasShownModUsagePromptThisSession = true;
+
+        if (result != true)
+        {
+            _gameSessionMonitor?.RefreshPromptState();
+            return;
+        }
+
+        IReadOnlyList<ModUsageVoteCandidateViewModel> selected = dialog.SelectedCandidates;
+        if (selected.Count == 0)
+        {
+            _gameSessionMonitor?.RefreshPromptState();
+            return;
+        }
+
+        if (!EnsureUserReportVotingConsent())
+        {
+            _gameSessionMonitor?.RefreshPromptState();
+            return;
+        }
+
+        _viewModel.EnableUserReportFetching();
+
+        var successfulIds = new List<string>();
+        var errors = new List<string>();
+
+        using IDisposable? busyScope = _viewModel.EnterBusyScope();
+        foreach (ModUsageVoteCandidateViewModel candidate in selected)
+        {
+            try
+            {
+                await _viewModel
+                    .SubmitUserReportVoteAsync(candidate.Mod, ModVersionVoteOption.NoIssuesSoFar, null)
+                    .ConfigureAwait(true);
+                if (!string.IsNullOrWhiteSpace(candidate.ModId))
+                {
+                    successfulIds.Add(candidate.ModId);
+                }
+            }
+            catch (InternetAccessDisabledException ex)
+            {
+                errors.Add(ex.Message);
+                break;
+            }
+            catch (Exception ex)
+            {
+                errors.Add(string.Format(
+                    CultureInfo.CurrentCulture,
+                    "{0}: {1}",
+                    candidate.DisplayLabel,
+                    ex.Message));
+            }
+        }
+
+        if (successfulIds.Count > 0)
+        {
+            _userConfiguration.CompleteModUsageVotes(successfulIds);
+            StatusLogService.AppendStatus(
+                string.Format(
+                    CultureInfo.CurrentCulture,
+                    "Submitted \"No issues\" votes for {0} mod(s).",
+                    successfulIds.Count),
+                false);
+        }
+
+        _gameSessionMonitor?.RefreshPromptState();
+
+        if (errors.Count > 0)
+        {
+            string message = string.Join(Environment.NewLine, errors.Distinct(StringComparer.OrdinalIgnoreCase));
+            WpfMessageBox.Show(
+                this,
+                "Some votes could not be submitted:" + Environment.NewLine + message,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        else if (successfulIds.Count > 0)
+        {
+            WpfMessageBox.Show(
+                this,
+                "Thanks! Your \"No issues\" votes were submitted.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
     }
 
@@ -2074,6 +2226,8 @@ public partial class MainWindow : Window
         {
             await AutoAssignMissingModConfigPathsAsync(viewModel);
             StartModsWatcher();
+            StartGameSessionMonitor();
+            await TryShowModUsagePromptAsync().ConfigureAwait(true);
         }
     }
 
@@ -2087,6 +2241,7 @@ public partial class MainWindow : Window
         MainViewModel? current = _viewModel;
         _viewModel = null;
         DataContext = null;
+        StopGameSessionMonitor();
         DisposeViewModel(current);
     }
 
@@ -2116,6 +2271,57 @@ public partial class MainWindow : Window
         };
         _modsWatcherTimer.Tick += ModsWatcherTimerOnTick;
         _modsWatcherTimer.Start();
+    }
+
+    private void StartGameSessionMonitor()
+    {
+        if (string.IsNullOrWhiteSpace(_dataDirectory) || _viewModel is null)
+        {
+            return;
+        }
+
+        StopGameSessionMonitor();
+
+        string logsDirectory = Path.Combine(_dataDirectory, "Logs");
+
+        try
+        {
+            _gameSessionMonitor = new GameSessionMonitor(
+                logsDirectory,
+                Dispatcher,
+                _userConfiguration,
+                () => _viewModel.GetActiveModIdsSnapshot());
+            _gameSessionMonitor.PromptRequired += GameSessionMonitor_OnPromptRequired;
+            _gameSessionMonitor.RefreshPromptState();
+
+            if (_userConfiguration.HasPendingModUsagePrompt)
+            {
+                _ = Dispatcher.BeginInvoke(DispatcherPriority.Background, new Func<Task>(TryShowModUsagePromptAsync));
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusLogService.AppendStatus(
+                string.Format(CultureInfo.CurrentCulture, "Failed to initialize log monitor: {0}", ex.Message),
+                true);
+        }
+    }
+
+    private void StopGameSessionMonitor()
+    {
+        if (_gameSessionMonitor is null)
+        {
+            return;
+        }
+
+        _gameSessionMonitor.PromptRequired -= GameSessionMonitor_OnPromptRequired;
+        _gameSessionMonitor.Dispose();
+        _gameSessionMonitor = null;
+    }
+
+    private void GameSessionMonitor_OnPromptRequired(object? sender, EventArgs e)
+    {
+        _ = Dispatcher.BeginInvoke(DispatcherPriority.Background, new Func<Task>(TryShowModUsagePromptAsync));
     }
 
     private Task AutoAssignMissingModConfigPathsAsync(MainViewModel viewModel)
@@ -2793,6 +2999,7 @@ public partial class MainWindow : Window
         }
 
         StopModsWatcher();
+        StopGameSessionMonitor();
 
         MainViewModel? previousViewModel = _viewModel;
         if (previousViewModel is not null)
