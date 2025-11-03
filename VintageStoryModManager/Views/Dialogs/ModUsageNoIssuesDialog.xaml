@@ -25,7 +25,7 @@
                    Margin="12,0,0,12"
                    FontSize="18"
                    FontWeight="Bold"
-                   Text="Help your fellow Survivalists out!" />
+                   Text="No issues so far? Let others know these mods work for you." />
 
         <TextBlock Grid.Row="1"
                    Margin="12,0,0,16"
