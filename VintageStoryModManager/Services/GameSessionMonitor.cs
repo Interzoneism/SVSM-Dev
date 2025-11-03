@@ -44,6 +44,7 @@ public sealed class GameSessionMonitor : IDisposable
     private static readonly string[] ClientEndMarkers =
     {
         "destroying game session",
+        "Exiting current game",
         "stopping single player server"
     };
 

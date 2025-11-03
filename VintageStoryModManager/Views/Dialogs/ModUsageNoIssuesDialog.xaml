@@ -72,12 +72,12 @@
             <Button Content="Never ask me again"
                     Margin="0,0,8,0"
                     Click="NeverAskAgainButton_OnClick" />
-            <Button Content="Remind me later"
+            <Button Content="Not yet"
                     Margin="0,0,8,0"
                     IsCancel="True"
                     Click="RemindMeLaterButton_OnClick" />
             <Button x:Name="SubmitButton"
-                    Content="Sounds good"
+                    Content="Sounds good!"
                     IsDefault="True"
                     Click="SubmitButton_OnClick" />
         </StackPanel>
