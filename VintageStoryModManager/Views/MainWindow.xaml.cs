@@ -437,7 +437,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_viewModel is null || !_userConfiguration.HasPendingModUsagePrompt)
+        if (_viewModel is null || !_userConfiguration.IsModUsageTrackingEnabled || !_userConfiguration.HasPendingModUsagePrompt)
         {
             return;
         }
@@ -491,11 +491,28 @@ public partial class MainWindow : Window
             Owner = this
         };
 
-        bool? result = dialog.ShowDialog();
+        _ = dialog.ShowDialog();
         _hasShownModUsagePromptThisSession = true;
 
-        if (result != true)
+        IReadOnlyList<string> candidateModIds = candidates
+            .Select(candidate => candidate.ModId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (dialog.Result == ModUsageNoIssuesDialogResult.DisableTracking)
         {
+            _userConfiguration.DisableModUsageTracking();
+            _userConfiguration.ResetModUsageCounts(candidateModIds);
+            _gameSessionMonitor?.RefreshPromptState();
+            StopGameSessionMonitor();
+            return;
+        }
+
+        if (dialog.Result != ModUsageNoIssuesDialogResult.SubmitVotes)
+        {
+            _userConfiguration.ResetModUsageCounts(candidateModIds);
             _gameSessionMonitor?.RefreshPromptState();
             return;
         }
@@ -557,6 +574,7 @@ public partial class MainWindow : Window
                 false);
         }
 
+        _userConfiguration.ResetModUsageCounts(candidateModIds);
         _gameSessionMonitor?.RefreshPromptState();
 
         if (errors.Count > 0)
@@ -2527,6 +2545,11 @@ public partial class MainWindow : Window
     private void StartGameSessionMonitor()
     {
         if (string.IsNullOrWhiteSpace(_dataDirectory) || _viewModel is null)
+        {
+            return;
+        }
+
+        if (!_userConfiguration.IsModUsageTrackingEnabled)
         {
             return;
         }
