@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:ModernWpf.Controls;assembly=ModernWpf.Controls"
         xmlns:viewModels="clr-namespace:VintageStoryModManager.ViewModels"
-        Title="Confirm &quot;No issues&quot; votes"
+        Title="Sorry for the popup..."
         Height="460"
         Width="600"
         MinHeight="360"
