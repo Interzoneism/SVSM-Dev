@@ -751,6 +751,50 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return _mods.ToList();
     }
 
+    public IReadOnlyList<ModUsageTrackingEntry> GetActiveModUsageSnapshot()
+    {
+        var result = new List<ModUsageTrackingEntry>();
+
+        if (string.IsNullOrWhiteSpace(_installedGameVersion))
+        {
+            return result;
+        }
+
+        string gameVersion = _installedGameVersion.Trim();
+        var distinct = new HashSet<ModUsageTrackingKey>();
+
+        foreach (ModListItemViewModel mod in _mods)
+        {
+            if (mod is null || !mod.IsActive)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(mod.ModId) || string.IsNullOrWhiteSpace(mod.Version))
+            {
+                continue;
+            }
+
+            string modId = mod.ModId.Trim();
+            string modVersion = mod.Version.Trim();
+
+            var key = new ModUsageTrackingKey(modId, modVersion, gameVersion);
+            if (!distinct.Add(key))
+            {
+                continue;
+            }
+
+            result.Add(new ModUsageTrackingEntry(
+                modId,
+                modVersion,
+                gameVersion,
+                mod.CanSubmitUserReport,
+                mod.UserVoteOption.HasValue));
+        }
+
+        return result;
+    }
+
     public IReadOnlyList<string> GetActiveModIdsSnapshot()
     {
         var distinct = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

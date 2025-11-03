@@ -112,6 +112,25 @@ public partial class MainWindow : Window
     private readonly record struct ManagerDeletionResult(List<string> DeletedPaths, List<string> FailedPaths);
     private readonly record struct InstalledModLogIdentifier(string SearchValue, string DisplayLabel);
 
+    private sealed class ModUsagePromptData
+    {
+        public ModUsagePromptData(
+            IReadOnlyList<ModUsageVoteCandidateViewModel> candidates,
+            IReadOnlyList<ModUsageTrackingKey> candidateKeys,
+            int skippedCount)
+        {
+            Candidates = candidates ?? Array.Empty<ModUsageVoteCandidateViewModel>();
+            CandidateKeys = candidateKeys ?? Array.Empty<ModUsageTrackingKey>();
+            SkippedCount = skippedCount < 0 ? 0 : skippedCount;
+        }
+
+        public IReadOnlyList<ModUsageVoteCandidateViewModel> Candidates { get; }
+
+        public IReadOnlyList<ModUsageTrackingKey> CandidateKeys { get; }
+
+        public int SkippedCount { get; }
+    }
+
     private enum InstalledModsColumn
     {
         Active,
@@ -192,8 +211,9 @@ public partial class MainWindow : Window
     private bool _isDraggingModInfoPanel;
     private System.Windows.Point _modInfoDragOffset;
     private GameSessionMonitor? _gameSessionMonitor;
-    private bool _hasShownModUsagePromptThisSession;
     private bool _hasAppliedInitialModInfoPanelPosition;
+    private ModUsagePromptData? _modUsagePromptData;
+    private bool _isModUsageDialogOpen;
 
 
     public MainWindow()
@@ -430,174 +450,300 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task TryShowModUsagePromptAsync()
+    private Task TryShowModUsagePromptAsync()
     {
-        if (_hasShownModUsagePromptThisSession)
+        if (_isModUsageDialogOpen)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        if (_viewModel is null || !_userConfiguration.IsModUsageTrackingEnabled || !_userConfiguration.HasPendingModUsagePrompt)
+        if (_viewModel is null || !_userConfiguration.IsModUsageTrackingEnabled)
         {
-            return;
+            _modUsagePromptData = null;
+            UpdateModUsagePromptIndicator(false);
+            return Task.CompletedTask;
         }
 
-        IReadOnlyDictionary<string, int> usageCounts = _userConfiguration.GetPendingModUsageCounts();
-        if (usageCounts.Count == 0)
+        if (!_userConfiguration.HasPendingModUsagePrompt)
         {
-            _userConfiguration.ResetModUsageTracking();
+            _modUsagePromptData = null;
+            UpdateModUsagePromptIndicator(false);
+            return Task.CompletedTask;
+        }
+
+        ModUsagePromptData? data = PrepareModUsagePromptData();
+        if (data is null || data.Candidates.Count == 0)
+        {
+            _modUsagePromptData = null;
+            UpdateModUsagePromptIndicator(false);
             _gameSessionMonitor?.RefreshPromptState();
-            return;
+            return Task.CompletedTask;
         }
 
-        var candidates = new List<ModUsageVoteCandidateViewModel>();
-        int skippedCount = 0;
+        ModUsagePromptData? previousData = _modUsagePromptData;
+        _modUsagePromptData = data;
+        UpdateModUsagePromptIndicator(true);
 
-        foreach (KeyValuePair<string, int> entry in usageCounts.OrderByDescending(pair => pair.Value))
-        {
-            ModListItemViewModel? mod = _viewModel.FindInstalledModById(entry.Key);
-            if (mod is null || !mod.CanSubmitUserReport)
-            {
-                skippedCount++;
-                continue;
-            }
+        bool shouldLogSkipped = data.SkippedCount > 0
+            && (previousData is null
+                || previousData.SkippedCount != data.SkippedCount
+                || previousData.Candidates.Count != data.Candidates.Count);
 
-            candidates.Add(new ModUsageVoteCandidateViewModel(mod, entry.Value));
-        }
-
-        if (candidates.Count == 0)
-        {
-            _userConfiguration.ResetModUsageTracking();
-            _gameSessionMonitor?.RefreshPromptState();
-            if (skippedCount > 0)
-            {
-                StatusLogService.AppendStatus("No mods were eligible for automatic \"No issues\" votes.", false);
-            }
-            return;
-        }
-
-        if (skippedCount > 0)
+        if (shouldLogSkipped)
         {
             StatusLogService.AppendStatus(
                 string.Format(
                     CultureInfo.CurrentCulture,
                     "Skipped {0} mod(s) that cannot receive automatic votes.",
-                    skippedCount),
+                    data.SkippedCount),
                 false);
         }
 
-        var dialog = new ModUsageNoIssuesDialog(candidates)
-        {
-            Owner = this
-        };
-
-        _ = dialog.ShowDialog();
-        _hasShownModUsagePromptThisSession = true;
-
-        IReadOnlyList<string> candidateModIds = candidates
-            .Select(candidate => candidate.ModId)
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(id => id.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        if (dialog.Result == ModUsageNoIssuesDialogResult.DisableTracking)
-        {
-            _userConfiguration.DisableModUsageTracking();
-            _userConfiguration.ResetModUsageCounts(candidateModIds);
-            _gameSessionMonitor?.RefreshPromptState();
-            StopGameSessionMonitor();
-            return;
-        }
-
-        if (dialog.Result != ModUsageNoIssuesDialogResult.SubmitVotes)
-        {
-            _userConfiguration.ResetModUsageCounts(candidateModIds);
-            _gameSessionMonitor?.RefreshPromptState();
-            return;
-        }
-
-        IReadOnlyList<ModUsageVoteCandidateViewModel> selected = dialog.SelectedCandidates;
-        if (selected.Count == 0)
-        {
-            _gameSessionMonitor?.RefreshPromptState();
-            return;
-        }
-
-        if (!EnsureUserReportVotingConsent())
-        {
-            _gameSessionMonitor?.RefreshPromptState();
-            return;
-        }
-
-        _viewModel.EnableUserReportFetching();
-
-        var successfulIds = new List<string>();
-        var errors = new List<string>();
-
-        using IDisposable? busyScope = _viewModel.EnterBusyScope();
-        foreach (ModUsageVoteCandidateViewModel candidate in selected)
-        {
-            try
-            {
-                await _viewModel
-                    .SubmitUserReportVoteAsync(candidate.Mod, ModVersionVoteOption.NoIssuesSoFar, null)
-                    .ConfigureAwait(true);
-                if (!string.IsNullOrWhiteSpace(candidate.ModId))
-                {
-                    successfulIds.Add(candidate.ModId);
-                }
-            }
-            catch (InternetAccessDisabledException ex)
-            {
-                errors.Add(ex.Message);
-                break;
-            }
-            catch (Exception ex)
-            {
-                errors.Add(string.Format(
-                    CultureInfo.CurrentCulture,
-                    "{0}: {1}",
-                    candidate.DisplayLabel,
-                    ex.Message));
-            }
-        }
-
-        if (successfulIds.Count > 0)
-        {
-            _userConfiguration.CompleteModUsageVotes(successfulIds);
-            StatusLogService.AppendStatus(
-                string.Format(
-                    CultureInfo.CurrentCulture,
-                    "Submitted \"No issues\" votes for {0} mod(s).",
-                    successfulIds.Count),
-                false);
-        }
-
-        _userConfiguration.ResetModUsageCounts(candidateModIds);
-        _gameSessionMonitor?.RefreshPromptState();
-
-        if (errors.Count > 0)
-        {
-            string message = string.Join(Environment.NewLine, errors.Distinct(StringComparer.OrdinalIgnoreCase));
-            WpfMessageBox.Show(
-                this,
-                "Some votes could not be submitted:" + Environment.NewLine + message,
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-        }
-        else if (successfulIds.Count > 0)
-        {
-            WpfMessageBox.Show(
-                this,
-                "Thanks! Your \"No issues\" votes were submitted.",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
+        return Task.CompletedTask;
     }
 
+    private ModUsagePromptData? PrepareModUsagePromptData()
+    {
+        if (_viewModel is null || !_userConfiguration.IsModUsageTrackingEnabled)
+        {
+            return null;
+        }
+
+        IReadOnlyDictionary<ModUsageTrackingKey, int> usageCounts = _userConfiguration.GetPendingModUsageCounts();
+        if (usageCounts.Count == 0)
+        {
+            _userConfiguration.ResetModUsageTracking();
+            return null;
+        }
+
+        string? installedGameVersion = _viewModel.InstalledGameVersion;
+        if (string.IsNullOrWhiteSpace(installedGameVersion))
+        {
+            _userConfiguration.ResetModUsageTracking();
+            return null;
+        }
+
+        installedGameVersion = installedGameVersion.Trim();
+
+        var candidates = new List<ModUsageVoteCandidateViewModel>();
+        var candidateKeys = new List<ModUsageTrackingKey>();
+        var keysToClear = new List<ModUsageTrackingKey>();
+        int skippedCount = 0;
+
+        foreach (KeyValuePair<ModUsageTrackingKey, int> entry in usageCounts.OrderByDescending(pair => pair.Value))
+        {
+            ModUsageTrackingKey key = entry.Key;
+            if (!key.IsValid)
+            {
+                keysToClear.Add(key);
+                continue;
+            }
+
+            ModListItemViewModel? mod = _viewModel.FindInstalledModById(key.ModId);
+            if (mod is null)
+            {
+                keysToClear.Add(key);
+                skippedCount++;
+                continue;
+            }
+
+            if (!mod.CanSubmitUserReport)
+            {
+                keysToClear.Add(key);
+                skippedCount++;
+                continue;
+            }
+
+            string? modVersion = mod.Version;
+            if (string.IsNullOrWhiteSpace(modVersion)
+                || !string.Equals(modVersion.Trim(), key.ModVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                keysToClear.Add(key);
+                skippedCount++;
+                continue;
+            }
+
+            if (!string.Equals(installedGameVersion, key.GameVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                keysToClear.Add(key);
+                skippedCount++;
+                continue;
+            }
+
+            if (mod.UserVoteOption.HasValue)
+            {
+                keysToClear.Add(key);
+                continue;
+            }
+
+            candidates.Add(new ModUsageVoteCandidateViewModel(mod, entry.Value, key));
+            candidateKeys.Add(key);
+        }
+
+        if (keysToClear.Count > 0)
+        {
+            _userConfiguration.ResetModUsageCounts(keysToClear);
+        }
+
+        if (candidates.Count == 0)
+        {
+            if (skippedCount > 0)
+            {
+                StatusLogService.AppendStatus("No mods were eligible for automatic \"No issues\" votes.", false);
+            }
+
+            if (_userConfiguration.GetPendingModUsageCounts().Count == 0)
+            {
+                _userConfiguration.ResetModUsageTracking();
+            }
+
+            return null;
+        }
+
+        return new ModUsagePromptData(candidates, candidateKeys, skippedCount);
+    }
+
+    private void UpdateModUsagePromptIndicator(bool isVisible)
+    {
+        if (ModUsagePromptTextBlock is null)
+        {
+            return;
+        }
+
+        ModUsagePromptTextBlock.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async Task ShowModUsagePromptDialogAsync()
+    {
+        if (_viewModel is null || !_userConfiguration.IsModUsageTrackingEnabled)
+        {
+            return;
+        }
+
+        if (_isModUsageDialogOpen)
+        {
+            return;
+        }
+
+        ModUsagePromptData? data = _modUsagePromptData ?? PrepareModUsagePromptData();
+        if (data is null || data.Candidates.Count == 0)
+        {
+            _modUsagePromptData = null;
+            UpdateModUsagePromptIndicator(false);
+            _gameSessionMonitor?.RefreshPromptState();
+            return;
+        }
+
+        _modUsagePromptData = data;
+        _isModUsageDialogOpen = true;
+
+        try
+        {
+            var dialog = new ModUsageNoIssuesDialog(data.Candidates)
+            {
+                Owner = this
+            };
+
+            _ = dialog.ShowDialog();
+
+            IReadOnlyList<ModUsageTrackingKey> candidateKeys = data.CandidateKeys;
+
+            if (dialog.Result == ModUsageNoIssuesDialogResult.DisableTracking)
+            {
+                _userConfiguration.DisableModUsageTracking();
+                _userConfiguration.ResetModUsageCounts(candidateKeys);
+                _gameSessionMonitor?.RefreshPromptState();
+                StopGameSessionMonitor();
+                return;
+            }
+
+            if (dialog.Result != ModUsageNoIssuesDialogResult.SubmitVotes)
+            {
+                _userConfiguration.ResetModUsageCounts(candidateKeys);
+                _gameSessionMonitor?.RefreshPromptState();
+                return;
+            }
+
+            IReadOnlyList<ModUsageVoteCandidateViewModel> selected = dialog.SelectedCandidates;
+            if (selected.Count == 0)
+            {
+                _userConfiguration.ResetModUsageCounts(candidateKeys);
+                _gameSessionMonitor?.RefreshPromptState();
+                return;
+            }
+
+            _viewModel.EnableUserReportFetching();
+
+            var successfulKeys = new List<ModUsageTrackingKey>();
+            var errors = new List<string>();
+
+            using IDisposable? busyScope = _viewModel.EnterBusyScope();
+            foreach (ModUsageVoteCandidateViewModel candidate in selected)
+            {
+                try
+                {
+                    await _viewModel
+                        .SubmitUserReportVoteAsync(candidate.Mod, ModVersionVoteOption.NoIssuesSoFar, null)
+                        .ConfigureAwait(true);
+
+                    successfulKeys.Add(candidate.TrackingKey);
+                }
+                catch (InternetAccessDisabledException ex)
+                {
+                    errors.Add(ex.Message);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(string.Format(
+                        CultureInfo.CurrentCulture,
+                        "{0}: {1}",
+                        candidate.DisplayLabel,
+                        ex.Message));
+                }
+            }
+
+            if (successfulKeys.Count > 0)
+            {
+                _userConfiguration.CompleteModUsageVotes(successfulKeys);
+                StatusLogService.AppendStatus(
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        "Submitted \"No issues\" votes for {0} mod(s).",
+                        successfulKeys.Count),
+                    false);
+            }
+
+            _userConfiguration.ResetModUsageCounts(candidateKeys);
+            _gameSessionMonitor?.RefreshPromptState();
+
+            if (errors.Count > 0)
+            {
+                string message = string.Join(Environment.NewLine, errors.Distinct(StringComparer.OrdinalIgnoreCase));
+                WpfMessageBox.Show(
+                    this,
+                    "Some votes could not be submitted:" + Environment.NewLine + message,
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            else if (successfulKeys.Count > 0)
+            {
+                WpfMessageBox.Show(
+                    this,
+                    "Thanks! Your \"No issues\" votes were submitted.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+        }
+        finally
+        {
+            _isModUsageDialogOpen = false;
+            _modUsagePromptData = null;
+            await TryShowModUsagePromptAsync().ConfigureAwait(true);
+        }
+    }
     private Task EnsureInstalledModsCachedAsync(MainViewModel viewModel, bool ignoreUserSetting = false)
     {
         if (viewModel is null || (!_userConfiguration.CacheAllVersionsLocally && !ignoreUserSetting))
@@ -2564,7 +2710,7 @@ public partial class MainWindow : Window
                 logsDirectory,
                 Dispatcher,
                 _userConfiguration,
-                () => _viewModel.GetActiveModIdsSnapshot());
+                () => _viewModel.GetActiveModUsageSnapshot());
             _gameSessionMonitor.PromptRequired += GameSessionMonitor_OnPromptRequired;
             _gameSessionMonitor.RefreshPromptState();
 
@@ -5494,6 +5640,16 @@ public partial class MainWindow : Window
     {
         e.Handled = true;
         OpenManagerModDatabasePage();
+    }
+
+    private async void ModUsagePromptLink_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (e is not null)
+        {
+            e.Handled = true;
+        }
+
+        await ShowModUsagePromptDialogAsync().ConfigureAwait(true);
     }
 
     private void OpenManagerModDatabasePage()
