@@ -298,30 +298,45 @@ public sealed class ModUpdateService
     private static void InstallToFile(ModUpdateDescriptor descriptor, string downloadPath)
     {
         string targetPath = descriptor.TargetPath;
+        string existingPath = string.IsNullOrWhiteSpace(descriptor.ExistingPath)
+            ? targetPath
+            : descriptor.ExistingPath!;
+
         string? directory = Path.GetDirectoryName(targetPath);
         if (!string.IsNullOrWhiteSpace(directory))
         {
             Directory.CreateDirectory(directory);
         }
 
-        string backupPath = CreateUniquePath(targetPath, ".immbackup");
+        string backupPath = CreateUniquePath(existingPath, ".immbackup");
         string? cachedBackupPath = null;
 
-        if (File.Exists(targetPath))
+        if (File.Exists(existingPath))
         {
             if (File.Exists(backupPath))
             {
                 File.Delete(backupPath);
             }
 
-            File.Move(targetPath, backupPath);
+            File.Move(existingPath, backupPath);
 
             cachedBackupPath = TryMoveBackupToCache(descriptor, backupPath);
         }
 
         try
         {
+            if (File.Exists(targetPath))
+            {
+                File.Delete(targetPath);
+            }
+
             File.Copy(downloadPath, targetPath, true);
+
+            if (!string.Equals(existingPath, targetPath, StringComparison.OrdinalIgnoreCase))
+            {
+                TryDelete(existingPath);
+            }
+
             if (cachedBackupPath is null)
             {
                 TryDelete(backupPath);
@@ -329,39 +344,37 @@ public sealed class ModUpdateService
         }
         catch (Exception)
         {
-            if (File.Exists(targetPath))
+            TryDelete(targetPath);
+
+            if (!string.Equals(existingPath, targetPath, StringComparison.OrdinalIgnoreCase))
             {
-                File.Delete(targetPath);
+                TryDelete(existingPath);
             }
 
             if (cachedBackupPath is not null && File.Exists(cachedBackupPath))
             {
                 try
                 {
-                    File.Copy(cachedBackupPath, targetPath, true);
+                    File.Copy(cachedBackupPath, existingPath, true);
                 }
                 catch (Exception copyEx) when (copyEx is IOException or UnauthorizedAccessException or NotSupportedException)
                 {
                     Trace.TraceWarning("Failed to restore mod from cache {0}: {1}", cachedBackupPath, copyEx.Message);
                     try
                     {
-                        File.Move(cachedBackupPath, targetPath);
+                        File.Move(cachedBackupPath, existingPath);
                         cachedBackupPath = null;
                     }
                     catch (Exception moveEx) when (moveEx is IOException or UnauthorizedAccessException or NotSupportedException)
                     {
-                        Trace.TraceWarning("Failed to move cached mod back to target {0}: {1}", cachedBackupPath, moveEx.Message);
+                        Trace.TraceWarning("Failed to move cached mod back to {0}: {1}", existingPath, moveEx.Message);
                     }
                 }
             }
             else if (File.Exists(backupPath))
             {
-                if (File.Exists(targetPath))
-                {
-                    File.Delete(targetPath);
-                }
-
-                File.Move(backupPath, targetPath);
+                TryDelete(existingPath);
+                File.Move(backupPath, existingPath);
             }
 
             throw;
@@ -400,7 +413,13 @@ public sealed class ModUpdateService
             return null;
         }
 
-        string? targetFileName = Path.GetFileName(descriptor.TargetPath);
+        string? targetFileName = descriptor.ExistingPath is not null
+            ? Path.GetFileName(descriptor.ExistingPath)
+            : null;
+        if (string.IsNullOrWhiteSpace(targetFileName))
+        {
+            targetFileName = Path.GetFileName(descriptor.TargetPath);
+        }
         if (string.IsNullOrWhiteSpace(targetFileName))
         {
             targetFileName = descriptor.ReleaseFileName;
@@ -668,7 +687,10 @@ public sealed record ModUpdateDescriptor(
     bool TargetIsDirectory,
     string? ReleaseFileName,
     string? ReleaseVersion,
-    string? InstalledVersion);
+    string? InstalledVersion)
+{
+    public string? ExistingPath { get; init; }
+}
 
 public sealed record ModUpdateResult(bool Success, string? ErrorMessage);
 
