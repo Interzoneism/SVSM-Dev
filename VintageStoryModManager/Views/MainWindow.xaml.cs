@@ -1193,7 +1193,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        List<string> logLines;
+        List<ExperimentalModDebugLogLine> logLines;
         IDisposable? busyScope = _viewModel?.EnterBusyScope();
         try
         {
@@ -1205,7 +1205,8 @@ public partial class MainWindow : Window
         }
         if (logLines.Count == 0)
         {
-            logLines.Add($"No log entries referencing '{modId}' were found in client-debug, client-main, server-debug, or server-main logs.");
+            logLines.Add(ExperimentalModDebugLogLine.FromPlainText(
+                $"No log entries referencing '{modId}' were found in client-debug, client-main, server-debug, or server-main logs."));
         }
 
         var dialog = new ExperimentalModDebugDialog(modId, logLines)
@@ -1295,10 +1296,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        List<string> logLines;
+        List<ExperimentalModDebugLogLine> logLines;
         IDisposable? busyScope = _viewModel.EnterBusyScope();
         try
         {
+            await Task.Yield();
             logLines = await Task.Run(() => CollectInstalledModDebugLines(logsDirectory, modIdentifiers)).ConfigureAwait(true);
         }
         finally
@@ -1307,7 +1309,8 @@ public partial class MainWindow : Window
         }
         if (logLines.Count == 0)
         {
-            logLines.Add("No log entries referencing the installed mods were found in client-debug, client-main, server-debug, or server-main logs.");
+            logLines.Add(ExperimentalModDebugLogLine.FromPlainText(
+                "No log entries referencing the installed mods were found in client-debug, client-main, server-debug, or server-main logs."));
         }
 
         var dialog = new ExperimentalModDebugDialog(
@@ -1321,9 +1324,9 @@ public partial class MainWindow : Window
         _ = dialog.ShowDialog();
     }
 
-    private static List<string> CollectExperimentalModDebugLines(string logsDirectory, string modId)
+    private static List<ExperimentalModDebugLogLine> CollectExperimentalModDebugLines(string logsDirectory, string modId)
     {
-        var logLines = new List<string>();
+        var logLines = new List<ExperimentalModDebugLogLine>();
         foreach (string filePath in GetExperimentalModDebugFilePaths(logsDirectory))
         {
             AppendExperimentalModDebugLines(logLines, filePath, modId);
@@ -1332,11 +1335,11 @@ public partial class MainWindow : Window
         return logLines;
     }
 
-    private static List<string> CollectInstalledModDebugLines(
+    private static List<ExperimentalModDebugLogLine> CollectInstalledModDebugLines(
         string logsDirectory,
         IReadOnlyList<InstalledModLogIdentifier> modIdentifiers)
     {
-        var logLines = new List<string>();
+        var logLines = new List<ExperimentalModDebugLogLine>();
         if (modIdentifiers.Count == 0)
         {
             return logLines;
@@ -1389,7 +1392,10 @@ public partial class MainWindow : Window
         return filePaths;
     }
 
-    private static void AppendExperimentalModDebugLines(List<string> logLines, string filePath, string modId)
+    private static void AppendExperimentalModDebugLines(
+        List<ExperimentalModDebugLogLine> logLines,
+        string filePath,
+        string modId)
     {
         try
         {
@@ -1419,7 +1425,7 @@ public partial class MainWindow : Window
     }
 
     private static void AppendInstalledModDebugLines(
-        List<string> logLines,
+        List<ExperimentalModDebugLogLine> logLines,
         string filePath,
         IReadOnlyList<InstalledModLogIdentifier> modIdentifiers)
     {
@@ -1455,7 +1461,7 @@ public partial class MainWindow : Window
     }
 
     private static void AppendExperimentalModDebugFileSection(
-        List<string> logLines,
+        List<ExperimentalModDebugLogLine> logLines,
         string fileName,
         List<string> matchedLines)
     {
@@ -1470,8 +1476,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        logLines.Add($"**{fileName}**");
-        logLines.AddRange(processedLines);
+        logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
+        foreach (string line in processedLines)
+        {
+            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line));
+        }
     }
 
     private static bool ShouldIgnoreExperimentalModDebugLine(string line)

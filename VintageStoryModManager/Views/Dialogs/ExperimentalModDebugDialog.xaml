@@ -44,9 +44,24 @@
                                   AlternationCount="2">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Margin="4"
-                                        Background="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex), Converter={StaticResource AlternationIndexToBrushConverter}}">
-                                    <TextBox Text="{Binding Mode=OneWay}"
+                                <Border Margin="4">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background">
+                                                <Setter.Value>
+                                                    <Binding RelativeSource="{RelativeSource AncestorType=ContentPresenter}"
+                                                             Path="(ItemsControl.AlternationIndex)"
+                                                             Converter="{StaticResource AlternationIndexToBrushConverter}" />
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                                                    <Setter Property="Background" Value="Red" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBox Text="{Binding Text}"
                                              FontFamily="Consolas"
                                              TextWrapping="Wrap"
                                              Foreground="{DynamicResource Brush.Text.Primary}"
