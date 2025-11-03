@@ -66,10 +66,10 @@ public static class DevConfig
     public static int DefaultModDatabaseSearchResultLimit { get; } = 30;
     public static int DefaultModDatabaseNewModsRecentMonths { get; } = 3;
     public static int MaxModDatabaseNewModsRecentMonths { get; } = 24;
-    public static int GameSessionVoteThreshold { get; } = 5;
+    public static int GameSessionVoteThreshold { get; } = 3;
 
     // Game session monitoring.
-    public static TimeSpan MinimumSessionDuration { get; } = TimeSpan.FromMinutes(20);
+    public static TimeSpan MinimumSessionDuration { get; } = TimeSpan.FromMinutes(1);
 
     // Vintage Story game version metadata.
     public static string GameVersionsEndpoint { get; } = "https://mods.vintagestory.at/api/gameversions";
@@ -106,7 +106,7 @@ public static class DevConfig
         "https://mods.vintagestory.at/api/mods?sort=createddesc&limit={0}";
     public static string ModDatabasePageBaseUrl { get; } = "https://mods.vintagestory.at/show/mod/";
     public static int ModDatabaseMaxConcurrentMetadataRequests { get; } = 4;
-    public static int ModDatabaseMinimumTotalDownloadsForTrending { get; } = 1000;
+    public static int ModDatabaseMinimumTotalDownloadsForTrending { get; } = 500;
     public static int ModDatabaseDefaultNewModsMonths { get; } = 3;
     public static int ModDatabaseMaxNewModsMonths { get; } = 24;
     public static double ModDatabaseMinimumIntervalDays { get; } = 1d / 24d;

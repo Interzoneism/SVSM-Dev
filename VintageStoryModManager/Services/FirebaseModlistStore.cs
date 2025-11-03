@@ -100,6 +100,47 @@ namespace SimpleVsManager.Cloud
             }
         }
 
+        /// <summary>
+        /// Registers the player identity in the admin registry for troubleshooting purposes.
+        /// This is called automatically during save operations.
+        /// </summary>
+        private async Task RegisterPlayerIdentityAsync((string Uid, string Name) identity, string firebaseUid, CancellationToken ct)
+        {
+            try
+            {
+                var sendResult = await SendWithAuthRetryAsync(session =>
+                {
+                    string adminUrl = BuildAuthenticatedUrl(session.IdToken, null, "adminRegistry", session.UserId);
+
+                    var registryEntry = new
+                    {
+                        playerUid = identity.Uid,
+                        playerName = identity.Name,
+                        lastUpdated = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture)
+                    };
+
+                    string payload = JsonSerializer.Serialize(registryEntry, JsonOpts);
+                    var request = new HttpRequestMessage(HttpMethod.Put, adminUrl)
+                    {
+                        Content = new StringContent(payload, Encoding.UTF8, "application/json")
+                    };
+                    return HttpClient.SendAsync(request, ct);
+                }, ct).ConfigureAwait(false);
+
+                using (sendResult.Response)
+                {
+                    // Silently ignore failures - this is a best-effort logging mechanism
+                    if (!sendResult.Response.IsSuccessStatusCode)
+                    {
+                        // Don't throw - we don't want to block saves if admin registry fails
+                    }
+                }
+            }
+            catch
+            {
+                // Silently ignore - admin registry is optional
+            }
+        }
         private static string GenerateEntryId() => Guid.NewGuid().ToString("n");
 
         // Ensure uploader fields are present and correct
@@ -187,6 +228,9 @@ namespace SimpleVsManager.Cloud
             {
                 await EnsureOk(saveResult.Response, "Save (user + registry)").ConfigureAwait(false);
             }
+
+            // Register player identity in admin registry (best-effort, non-blocking)
+            await RegisterPlayerIdentityAsync(identity, saveResult.Session.UserId, ct).ConfigureAwait(false);
         }
 
 

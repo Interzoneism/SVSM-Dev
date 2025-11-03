@@ -426,7 +426,7 @@ public sealed class GameSessionMonitor : IDisposable
             StatusLogService.AppendStatus(
                 string.Format(
                     CultureInfo.CurrentCulture,
-                    "Game session ended after {0:F1} minutes (source: {1}); below 20 minute threshold.",
+                    "Game session ended after {0:F1} minutes (source: {1}); below {2:F0} minute threshold.",
                     duration.TotalMinutes,
                     source),
                 false);

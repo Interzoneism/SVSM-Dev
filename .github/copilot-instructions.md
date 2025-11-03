@@ -1,0 +1,2 @@
+This is a manager for Vintage Story mods.
+The folders "VSFOLDER", "VS_1.21_assets" and "VS_1.21_Decompiled" are not part of this repos code. They are reference code and should not be searched or referenced unless explicitly mentioned.
