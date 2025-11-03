@@ -25,6 +25,9 @@ public partial class ExperimentalModDebugDialog : Window
         ArgumentException.ThrowIfNullOrWhiteSpace(emptyMessage);
         ArgumentNullException.ThrowIfNull(logLines);
 
+        // Initialize ModId to null to prevent crashes when accessing it
+        ModId = null;
+
         InitializeComponent();
 
         HeaderText = headerText;
@@ -34,7 +37,7 @@ public partial class ExperimentalModDebugDialog : Window
         DataContext = this;
     }
 
-    public string? ModId { get; }
+    public string? ModId { get; private set; }
 
     public IReadOnlyList<ExperimentalModDebugLogLine> LogLines { get; }
 

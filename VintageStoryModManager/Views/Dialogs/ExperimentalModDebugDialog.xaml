@@ -61,7 +61,7 @@
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <TextBox Text="{Binding Text}"
+                                    <TextBox Text="{Binding Text, Mode=OneWay}"
                                              FontFamily="Consolas"
                                              TextWrapping="Wrap"
                                              Foreground="{DynamicResource Brush.Text.Primary}"
