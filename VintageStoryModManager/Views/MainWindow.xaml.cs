@@ -4641,6 +4641,7 @@ public partial class MainWindow : Window
 
             string targetPath;
             bool targetIsDirectory;
+            string? existingPath = null;
 
             if (installedMod != null)
             {
@@ -4650,10 +4651,20 @@ public partial class MainWindow : Window
                 }
 
                 targetIsDirectory = Directory.Exists(targetPath);
-                bool targetIsFile = File.Exists(targetPath);
-                if (!targetIsDirectory && !targetIsFile && installedMod.SourceKind == ModSourceKind.Folder)
+                if (!targetIsDirectory && !File.Exists(targetPath) && installedMod.SourceKind == ModSourceKind.Folder)
                 {
                     targetIsDirectory = true;
+                }
+
+                if (!targetIsDirectory)
+                {
+                    if (!TryGetUpdateTargetPath(installedMod, release, targetPath, out string resolvedPath, out string? targetError))
+                    {
+                        return (false, targetError ?? "The mod path could not be determined.");
+                    }
+
+                    existingPath = targetPath;
+                    targetPath = resolvedPath;
                 }
             }
             else
@@ -4676,7 +4687,10 @@ public partial class MainWindow : Window
                 targetIsDirectory,
                 release.FileName,
                 release.Version,
-                installedMod?.Version);
+                installedMod?.Version)
+            {
+                ExistingPath = existingPath
+            };
 
             var progress = new Progress<ModUpdateProgress>(p =>
                 _viewModel?.ReportStatus($"{dependency.ModId}: {p.Message}"));
@@ -6853,6 +6867,59 @@ public partial class MainWindow : Window
 
         string candidatePath = Path.Combine(modsDirectory, sanitizedFileName);
         fullPath = EnsureUniqueFilePath(candidatePath);
+        return true;
+    }
+
+    private bool TryGetUpdateTargetPath(
+        ModListItemViewModel mod,
+        ModReleaseInfo release,
+        string existingPath,
+        out string fullPath,
+        out string? errorMessage)
+    {
+        fullPath = string.Empty;
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(existingPath))
+        {
+            errorMessage = "The mod path could not be determined.";
+            return false;
+        }
+
+        string? directory;
+        try
+        {
+            directory = Path.GetDirectoryName(existingPath);
+        }
+        catch (Exception ex) when (ex is ArgumentException or PathTooLongException)
+        {
+            errorMessage = $"The mod path is invalid:{Environment.NewLine}{ex.Message}";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            errorMessage = "The mod path could not be determined.";
+            return false;
+        }
+
+        string defaultName = string.IsNullOrWhiteSpace(mod.ModId) ? "mod" : mod.ModId;
+        string versionPart = string.IsNullOrWhiteSpace(release.Version) ? "latest" : release.Version!;
+        string fallbackFileName = $"{defaultName}-{versionPart}.zip";
+
+        string? releaseFileName = release.FileName;
+        if (!string.IsNullOrWhiteSpace(releaseFileName))
+        {
+            releaseFileName = Path.GetFileName(releaseFileName);
+        }
+
+        string sanitizedFileName = SanitizeFileName(releaseFileName, fallbackFileName);
+        if (string.IsNullOrWhiteSpace(Path.GetExtension(sanitizedFileName)))
+        {
+            sanitizedFileName += ".zip";
+        }
+
+        fullPath = Path.Combine(directory, sanitizedFileName);
         return true;
     }
 
@@ -11237,22 +11304,43 @@ public partial class MainWindow : Window
                 }
 
                 bool targetIsDirectory = Directory.Exists(modPath);
-                bool targetIsFile = File.Exists(modPath);
 
-                if (!targetIsDirectory && !targetIsFile && mod.SourceKind == ModSourceKind.Folder)
+                if (!targetIsDirectory && !File.Exists(modPath) && mod.SourceKind == ModSourceKind.Folder)
                 {
                     targetIsDirectory = true;
+                }
+
+                string targetPath = modPath;
+                string? existingPath = null;
+
+                if (!targetIsDirectory)
+                {
+                    if (!TryGetUpdateTargetPath(mod, release, modPath, out string resolvedPath, out string? targetError))
+                    {
+                        string failureMessage = string.IsNullOrWhiteSpace(targetError)
+                            ? "The mod location could not be determined."
+                            : targetError!;
+                        results.Add(ModUpdateOperationResult.Failure(mod, failureMessage));
+                        requiresRefresh = true;
+                        continue;
+                    }
+
+                    targetPath = resolvedPath;
+                    existingPath = modPath;
                 }
 
                 var descriptor = new ModUpdateDescriptor(
                     mod.ModId,
                     mod.DisplayName,
                     release.DownloadUri,
-                    modPath,
+                    targetPath,
                     targetIsDirectory,
                     release.FileName,
                     release.Version,
-                    mod.Version);
+                    mod.Version)
+                {
+                    ExistingPath = existingPath
+                };
 
                 var progress = new Progress<ModUpdateProgress>(p =>
                     _viewModel.ReportStatus($"{mod.DisplayName}: {p.Message}"));
