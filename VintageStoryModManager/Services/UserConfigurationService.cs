@@ -115,6 +115,7 @@ public sealed class UserConfigurationService
     private bool _hasVersionMismatch;
     private int _longRunningSessionCount;
     private bool _hasPendingModUsagePrompt;
+    private bool _isModUsageTrackingDisabled;
 
     public UserConfigurationService()
     {
@@ -199,7 +200,10 @@ public sealed class UserConfigurationService
 
     public string? CloudUploaderName => _cloudUploaderName;
 
-    public bool HasPendingModUsagePrompt => _hasPendingModUsagePrompt && _modUsageSessionCounts.Count > 0;
+    public bool HasPendingModUsagePrompt => !_isModUsageTrackingDisabled && _hasPendingModUsagePrompt
+        && _modUsageSessionCounts.Count > 0;
+
+    public bool IsModUsageTrackingEnabled => !_isModUsageTrackingDisabled;
 
     public IReadOnlyDictionary<string, string> GetThemePaletteColors()
     {
@@ -208,11 +212,21 @@ public sealed class UserConfigurationService
 
     public IReadOnlyDictionary<string, int> GetPendingModUsageCounts()
     {
+        if (_isModUsageTrackingDisabled)
+        {
+            return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        }
+
         return new Dictionary<string, int>(_modUsageSessionCounts, StringComparer.OrdinalIgnoreCase);
     }
 
     public bool RecordLongRunningSession(IReadOnlyList<string>? activeModIds)
     {
+        if (_isModUsageTrackingDisabled)
+        {
+            return false;
+        }
+
         bool wasPending = HasPendingModUsagePrompt;
 
         if (activeModIds is not null && activeModIds.Count > 0)
@@ -261,6 +275,71 @@ public sealed class UserConfigurationService
 
         bool isPending = HasPendingModUsagePrompt;
         return !wasPending && isPending;
+    }
+
+    public void DisableModUsageTracking()
+    {
+        if (_isModUsageTrackingDisabled)
+        {
+            return;
+        }
+
+        _isModUsageTrackingDisabled = true;
+        bool hadTrackingState = _longRunningSessionCount != 0
+            || _modUsageSessionCounts.Count > 0
+            || _hasPendingModUsagePrompt;
+        ResetModUsageTracking();
+        if (!hadTrackingState)
+        {
+            Save();
+        }
+    }
+
+    public void ResetModUsageCounts(IEnumerable<string>? modIds)
+    {
+        if (modIds is null)
+        {
+            return;
+        }
+
+        bool changed = false;
+
+        foreach (string modId in modIds)
+        {
+            if (string.IsNullOrWhiteSpace(modId))
+            {
+                continue;
+            }
+
+            if (_modUsageSessionCounts.Remove(modId.Trim()))
+            {
+                changed = true;
+            }
+        }
+
+        if (_modUsageSessionCounts.Count == 0)
+        {
+            if (_longRunningSessionCount != 0 || _hasPendingModUsagePrompt)
+            {
+                _longRunningSessionCount = 0;
+                _hasPendingModUsagePrompt = false;
+                changed = true;
+            }
+        }
+        else
+        {
+            bool shouldPrompt = _longRunningSessionCount >= GameSessionVoteThreshold;
+            if (_hasPendingModUsagePrompt != shouldPrompt)
+            {
+                _hasPendingModUsagePrompt = shouldPrompt;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            Save();
+        }
     }
 
     public void CompleteModUsageVotes(IEnumerable<string>? completedModIds)
@@ -944,6 +1023,7 @@ public sealed class UserConfigurationService
             _useModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? true;
             _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? true;
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
+            _isModUsageTrackingDisabled = obj["modUsageTrackingDisabled"]?.GetValue<bool?>() ?? false;
             _enableDebugLogging = obj["enableDebugLogging"]?.GetValue<bool?>() ?? false;
             _suppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePrompt = obj["suppressRefreshCachePrompt"]?.GetValue<bool?>() ?? false;
@@ -1007,6 +1087,12 @@ public sealed class UserConfigurationService
             _customShortcutPath = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
             _cloudUploaderName = NormalizeUploaderName(GetOptionalString(obj["cloudUploaderName"]));
             LoadModUsageTracking(obj["modUsageTracking"]);
+            if (_isModUsageTrackingDisabled)
+            {
+                _modUsageSessionCounts.Clear();
+                _longRunningSessionCount = 0;
+                _hasPendingModUsagePrompt = false;
+            }
 
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -1048,6 +1134,7 @@ public sealed class UserConfigurationService
             _modUsageSessionCounts.Clear();
             _longRunningSessionCount = 0;
             _hasPendingModUsagePrompt = false;
+            _isModUsageTrackingDisabled = false;
         }
 
         LoadPersistentModConfigPaths();
@@ -1082,6 +1169,7 @@ public sealed class UserConfigurationService
                 ["useModDbDesignView"] = _useModDbDesignView,
                 ["cacheAllVersionsLocally"] = _cacheAllVersionsLocally,
                 ["disableInternetAccess"] = _disableInternetAccess,
+                ["modUsageTrackingDisabled"] = _isModUsageTrackingDisabled,
                 ["enableDebugLogging"] = _enableDebugLogging,
                 ["suppressModlistSavePrompt"] = _suppressModlistSavePrompt,
                 ["suppressRefreshCachePrompt"] = _suppressRefreshCachePrompt,
