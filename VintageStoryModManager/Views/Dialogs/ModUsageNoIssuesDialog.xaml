@@ -23,18 +23,15 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Margin="0,0,0,12"
+                   Margin="12,0,0,12"
                    FontSize="18"
                    FontWeight="Bold"
-                   Text="Give these mods a &quot;No issues&quot; vote?" />
+                   Text="Help your fellow Survivalists out!" />
 
         <TextBlock Grid.Row="1"
-                   Margin="0,0,0,16"
+                   Margin="12,0,0,16"
                    TextWrapping="Wrap"
-                   Foreground="{DynamicResource Brush.Text.Subtle}">
-            Uncheck any mods that you do not want to vote for yet. A vote will be
-            submitted with the "No issues" option for every checked mod.
-        </TextBlock>
+                   Foreground="{DynamicResource Brush.Text.Subtle}"><Run Text="You have used these mods for a while now, would you consider marking them as &quot;No issues so far&quot;?"/><LineBreak/><Run Text="It's anonymous and might help other players. You can change your vote in the Installed mods tab."/><LineBreak/><Run Text="It only applies to this specific mod version and the currently installed Vintage Story version."/></TextBlock>
 
         <ListView x:Name="ModListView"
                   Grid.Row="2"
