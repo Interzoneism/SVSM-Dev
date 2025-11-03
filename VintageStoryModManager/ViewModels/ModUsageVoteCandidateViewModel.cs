@@ -1,18 +1,23 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 
+using VintageStoryModManager.Services;
+
 namespace VintageStoryModManager.ViewModels;
 
 public sealed class ModUsageVoteCandidateViewModel : ObservableObject
 {
-    public ModUsageVoteCandidateViewModel(ModListItemViewModel mod, int usageCount)
+    public ModUsageVoteCandidateViewModel(ModListItemViewModel mod, int usageCount, ModUsageTrackingKey trackingKey)
     {
         Mod = mod ?? throw new ArgumentNullException(nameof(mod));
         UsageCount = usageCount < 0 ? 0 : usageCount;
+        TrackingKey = trackingKey;
         _isSelected = true;
     }
 
     public ModListItemViewModel Mod { get; }
+
+    public ModUsageTrackingKey TrackingKey { get; }
 
     public string ModId => Mod.ModId ?? string.Empty;
 
