@@ -1476,6 +1476,11 @@ public partial class MainWindow : Window
 
     private static bool ShouldIgnoreExperimentalModDebugLine(string line)
     {
+        if (IsPatchFileLine(line))
+        {
+            return true;
+        }
+
         foreach (string phrase in ExperimentalModDebugIgnoredLinePhrases)
         {
             if (line.IndexOf(phrase, StringComparison.OrdinalIgnoreCase) >= 0)
@@ -1485,6 +1490,29 @@ public partial class MainWindow : Window
         }
 
         return false;
+    }
+
+    private static bool IsPatchFileLine(string line)
+    {
+        if (string.IsNullOrEmpty(line))
+        {
+            return false;
+        }
+
+        string trimmed = line.TrimStart();
+        int patchIndex = trimmed.IndexOf("Patch file", StringComparison.OrdinalIgnoreCase);
+        if (patchIndex < 0)
+        {
+            return false;
+        }
+
+        string beforePatch = trimmed[..patchIndex].TrimEnd();
+        if (beforePatch.Length == 0)
+        {
+            return true;
+        }
+
+        return beforePatch[^1] == ']';
     }
 
     private static List<string> SummarizePatchMissingLines(List<string> matchedLines)
