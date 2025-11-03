@@ -6,6 +6,13 @@ using VintageStoryModManager.ViewModels;
 
 namespace VintageStoryModManager.Views.Dialogs;
 
+public enum ModUsageNoIssuesDialogResult
+{
+    RemindLater,
+    SubmitVotes,
+    DisableTracking
+}
+
 public partial class ModUsageNoIssuesDialog : Window
 {
     private readonly List<ModUsageVoteCandidateViewModel> _candidates;
@@ -28,6 +35,8 @@ public partial class ModUsageNoIssuesDialog : Window
 
     public IReadOnlyList<ModUsageVoteCandidateViewModel> SelectedCandidates => _selectedCandidates;
 
+    public ModUsageNoIssuesDialogResult Result { get; private set; } = ModUsageNoIssuesDialogResult.RemindLater;
+
     private void SubmitButton_OnClick(object sender, RoutedEventArgs e)
     {
         List<ModUsageVoteCandidateViewModel> selected = _candidates.Where(candidate => candidate.IsSelected).ToList();
@@ -38,11 +47,21 @@ public partial class ModUsageNoIssuesDialog : Window
         }
 
         _selectedCandidates = selected;
+        Result = ModUsageNoIssuesDialogResult.SubmitVotes;
         DialogResult = true;
     }
 
-    private void CancelButton_OnClick(object sender, RoutedEventArgs e)
+    private void RemindMeLaterButton_OnClick(object sender, RoutedEventArgs e)
     {
+        _selectedCandidates = Array.Empty<ModUsageVoteCandidateViewModel>();
+        Result = ModUsageNoIssuesDialogResult.RemindLater;
         DialogResult = false;
+    }
+
+    private void NeverAskAgainButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        _selectedCandidates = Array.Empty<ModUsageVoteCandidateViewModel>();
+        Result = ModUsageNoIssuesDialogResult.DisableTracking;
+        DialogResult = true;
     }
 }
