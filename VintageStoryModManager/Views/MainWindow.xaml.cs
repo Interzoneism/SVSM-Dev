@@ -505,7 +505,7 @@ public partial class MainWindow : Window
         _userConfiguration.SetMigrationCheckCompleted();
     }
 
-    private async Task PerformMigrationAsync()
+    private Task PerformMigrationAsync()
     {
         // Create and show a blocking dialog
         var stackPanel = new StackPanel();
@@ -572,6 +572,8 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
+
+        return Task.CompletedTask;
     }
 
     private Task TryShowModUsagePromptAsync()
