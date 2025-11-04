@@ -1799,7 +1799,7 @@ public partial class MainWindow : Window
                 string modId = patchMatch.Groups["mod"].Value;
                 if (!string.IsNullOrEmpty(modId))
                 {
-                    string summaryKey = $"Patch_in_{modId.Trim()}";
+                    string summaryKey = $"__PATCH_MOD__{modId.Trim()}";
                     AddOrIncrementSummary(summarized, lineSummaries, line, summaryKey);
                     continue;
                 }
@@ -1819,7 +1819,7 @@ public partial class MainWindow : Window
             if (matchedPrefix != null)
             {
                 // Create a summary key based on the prefix
-                string summaryKey = $"Prefix_{matchedPrefix}";
+                string summaryKey = $"__PREFIX__{matchedPrefix}";
                 AddOrIncrementSummary(summarized, lineSummaries, line, summaryKey);
                 continue;
             }
