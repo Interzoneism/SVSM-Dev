@@ -434,8 +434,9 @@ public sealed class GameSessionMonitor : IDisposable
                 int minute = int.Parse(vsMatch.Groups[5].Value, CultureInfo.InvariantCulture);
                 int second = int.Parse(vsMatch.Groups[6].Value, CultureInfo.InvariantCulture);
 
-                var dateTime = new DateTime(year, month, day, hour, minute, second, DateTimeKind.Local);
-                timestamp = new DateTimeOffset(dateTime);
+                var dateTime = new DateTime(year, month, day, hour, minute, second, DateTimeKind.Unspecified);
+                TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(dateTime);
+                timestamp = new DateTimeOffset(dateTime, offset);
                 return true;
             }
             catch (ArgumentOutOfRangeException)
