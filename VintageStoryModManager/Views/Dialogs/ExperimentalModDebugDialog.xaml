@@ -12,13 +12,21 @@
         WindowStyle="SingleBorderWindow"
         Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
     <Window.Resources>
-        <converters:AlternationIndexToBrushConverter x:Key="AlternationIndexToBrushConverter" />
+        <Style x:Key="ErrorRowStyle" TargetType="DataGridRow">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                    <Setter Property="Background" Value="Red" />
+                    <Setter Property="Foreground" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="24"
           Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
           TextElement.Foreground="{DynamicResource Brush.Text.Primary}">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
@@ -30,52 +38,79 @@
                    TextWrapping="Wrap"
                    Text="{Binding HeaderText}" />
 
-        <Border Grid.Row="1"
+        <CheckBox Grid.Row="1"
+                  Margin="0,12,0,0"
+                  Content="Show only highlighted errors"
+                  IsChecked="{Binding ShowOnlyHighlighted, Mode=TwoWay}" />
+
+        <Border Grid.Row="2"
                 Margin="0,16,0,16"
                 Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                 BorderBrush="{DynamicResource Brush.Border.Default}"
                 BorderThickness="1">
             <Grid>
-                <ScrollViewer
-                                
-                                VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding LogLines}"
-                                  AlternationCount="2">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Margin="4">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Background">
-                                                <Setter.Value>
-                                                    <Binding RelativeSource="{RelativeSource AncestorType=ContentPresenter}"
-                                                             Path="(ItemsControl.AlternationIndex)"
-                                                             Converter="{StaticResource AlternationIndexToBrushConverter}" />
-                                                </Setter.Value>
-                                            </Setter>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
-                                                    <Setter Property="Background" Value="Red" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <TextBox Text="{Binding Text, Mode=OneWay}"
-                                             FontFamily="Consolas"
-                                             TextWrapping="Wrap"
-                                             Foreground="{DynamicResource Brush.Text.Primary}"
-                                             Background="Transparent"
-                                             BorderThickness="0"
-                                             IsReadOnly="True"
-                                             IsReadOnlyCaretVisible="False"
-                                             Cursor="Arrow" />
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <ScrollViewer.Style>
-                        <Style TargetType="ScrollViewer">
+                <DataGrid ItemsSource="{Binding FilteredLogLines}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          IsReadOnly="True"
+                          EnableRowVirtualization="True"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          ScrollViewer.CanContentScroll="True"
+                          GridLinesVisibility="None"
+                          SelectionUnit="FullRow"
+                          SelectionMode="Single"
+                          RowHeaderWidth="0"
+                          BorderThickness="0"
+                          MinColumnWidth="20"
+                          Foreground="{DynamicResource Brush.Text.Primary}"
+                          RowStyle="{StaticResource ErrorRowStyle}"
+                          RowBackground="{DynamicResource Brush.Button.Primary.Background.Normal}"
+                          HorizontalGridLinesBrush="Transparent"
+                          VerticalGridLinesBrush="Transparent"
+                          HeadersVisibility="Column"
+                          FontSize="15"
+                          Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                          BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
+                    <DataGrid.Resources>
+                        <Style TargetType="{x:Type DataGridColumnHeader}">
+                            <Setter Property="Background" Value="{DynamicResource Brush.DataGrid.Header.Background}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
+                            <Setter Property="BorderThickness" Value="1,0,0,1" />
+                            <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+                            <Setter Property="Padding" Value="12,10" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                        </Style>
+                    </DataGrid.Resources>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Line" 
+                                            Binding="{Binding Text, Mode=OneWay}" 
+                                            Width="*"
+                                            MinWidth="200">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                    <Setter Property="FontFamily" Value="Consolas" />
+                                    <Setter Property="Padding" Value="8,6" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="Mod" 
+                                            Binding="{Binding ModName, Mode=OneWay}" 
+                                            Width="200"
+                                            MinWidth="100">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                    <Setter Property="Padding" Value="8,6" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                    <DataGrid.Style>
+                        <Style TargetType="{x:Type DataGrid}">
                             <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding HasLogLines}" Value="False">
@@ -83,8 +118,8 @@
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </ScrollViewer.Style>
-                </ScrollViewer>
+                    </DataGrid.Style>
+                </DataGrid>
 
                 <TextBlock HorizontalAlignment="Center"
                            VerticalAlignment="Center"
@@ -106,7 +141,7 @@
             </Grid>
         </Border>
 
-        <StackPanel Grid.Row="2"
+        <StackPanel Grid.Row="3"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
             <Button Width="100"

@@ -14,17 +14,20 @@ public sealed class ExperimentalModDebugLogLine
         "missing"
     };
 
-    private ExperimentalModDebugLogLine(string text, bool isHighlighted)
+    private ExperimentalModDebugLogLine(string text, bool isHighlighted, string? modName = null)
     {
         Text = text;
         IsHighlighted = isHighlighted;
+        ModName = modName;
     }
 
     public string Text { get; }
 
     public bool IsHighlighted { get; }
 
-    public static ExperimentalModDebugLogLine FromLogEntry(string rawText)
+    public string? ModName { get; }
+
+    public static ExperimentalModDebugLogLine FromLogEntry(string rawText, string? modName = null)
     {
         ArgumentNullException.ThrowIfNull(rawText);
 
@@ -33,13 +36,13 @@ public sealed class ExperimentalModDebugLogLine
             : rawText;
 
         bool isHighlighted = ContainsHighlightKeyword(rawText);
-        return new ExperimentalModDebugLogLine(text, isHighlighted);
+        return new ExperimentalModDebugLogLine(text, isHighlighted, modName);
     }
 
-    public static ExperimentalModDebugLogLine FromPlainText(string text)
+    public static ExperimentalModDebugLogLine FromPlainText(string text, string? modName = null)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return new ExperimentalModDebugLogLine(text, false);
+        return new ExperimentalModDebugLogLine(text, false, modName);
     }
 
     private static bool ContainsHighlightKeyword(string text)

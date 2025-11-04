@@ -1702,7 +1702,7 @@ public partial class MainWindow : Window
                 }
             }
 
-            AppendExperimentalModDebugFileSection(logLines, fileName, matchedLines);
+            AppendExperimentalModDebugFileSectionWithModId(logLines, fileName, matchedLines, modId);
         }
         catch (IOException)
         {
@@ -1720,7 +1720,7 @@ public partial class MainWindow : Window
         try
         {
             string fileName = Path.GetFileName(filePath);
-            var matchedLines = new List<string>();
+            var matchedLines = new List<(string Line, string ModName)>();
             foreach (string line in File.ReadLines(filePath))
             {
                 if (ShouldIgnoreExperimentalModDebugLine(line))
@@ -1732,13 +1732,13 @@ public partial class MainWindow : Window
                 {
                     if (line.IndexOf(identifier.SearchValue, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        matchedLines.Add(line);
+                        matchedLines.Add((line, identifier.DisplayLabel));
                         break;
                     }
                 }
             }
 
-            AppendExperimentalModDebugFileSection(logLines, fileName, matchedLines);
+            AppendExperimentalModDebugFileSectionWithMods(logLines, fileName, matchedLines);
         }
         catch (IOException)
         {
@@ -1768,6 +1768,63 @@ public partial class MainWindow : Window
         foreach (string line in processedLines)
         {
             logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line));
+        }
+    }
+
+    private static void AppendExperimentalModDebugFileSectionWithModId(
+        List<ExperimentalModDebugLogLine> logLines,
+        string fileName,
+        List<string> matchedLines,
+        string modId)
+    {
+        if (matchedLines.Count == 0)
+        {
+            return;
+        }
+
+        List<string> processedLines = SummarizePatchMissingLines(matchedLines);
+        if (processedLines.Count == 0)
+        {
+            return;
+        }
+
+        logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
+        foreach (string line in processedLines)
+        {
+            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modId));
+        }
+    }
+
+    private static void AppendExperimentalModDebugFileSectionWithMods(
+        List<ExperimentalModDebugLogLine> logLines,
+        string fileName,
+        List<(string Line, string ModName)> matchedLines)
+    {
+        if (matchedLines.Count == 0)
+        {
+            return;
+        }
+
+        var linesToProcess = matchedLines.Select(x => x.Line).ToList();
+        List<string> processedLines = SummarizePatchMissingLines(linesToProcess);
+        if (processedLines.Count == 0)
+        {
+            return;
+        }
+
+        logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
+        
+        // Create a mapping from original lines to mod names
+        var lineToModMap = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (line, modName) in matchedLines)
+        {
+            lineToModMap.TryAdd(line, modName);
+        }
+        
+        foreach (string line in processedLines)
+        {
+            string? modName = lineToModMap.TryGetValue(line, out string? foundModName) ? foundModName : null;
+            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modName));
         }
     }
 
