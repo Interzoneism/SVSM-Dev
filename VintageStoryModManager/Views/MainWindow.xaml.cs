@@ -1815,10 +1815,13 @@ public partial class MainWindow : Window
         logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
         
         // Create a mapping from original lines to mod names
-        var lineToModMap = new Dictionary<string, string>(StringComparer.Ordinal);
+        // Using case-insensitive comparison for consistency with other parts of the codebase
+        var lineToModMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (line, modName) in matchedLines)
         {
-            lineToModMap.TryAdd(line, modName);
+            // Use indexer to overwrite if duplicate - the last mod name wins
+            // This handles edge cases where same log line appears for multiple mods
+            lineToModMap[line] = modName;
         }
         
         foreach (string line in processedLines)
