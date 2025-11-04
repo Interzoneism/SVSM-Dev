@@ -80,7 +80,7 @@ public sealed class UserConfigurationService
     private readonly Dictionary<string, bool> _installedColumnVisibility = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _bulkUpdateModExclusions = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _skippedModVersions = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, int> _modUsageSessionCounts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<ModUsageTrackingKey, int> _modUsageSessionCounts = new();
     private string? _previousConfigurationVersion;
     private string? _previousModManagerVersion;
     private string? _selectedPresetName;
@@ -210,18 +210,20 @@ public sealed class UserConfigurationService
         return new Dictionary<string, string>(_themePaletteColors, StringComparer.OrdinalIgnoreCase);
     }
 
-    public IReadOnlyDictionary<string, int> GetPendingModUsageCounts()
+    public IReadOnlyDictionary<ModUsageTrackingKey, int> GetPendingModUsageCounts()
     {
         if (_isModUsageTrackingDisabled)
         {
-            return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            return new Dictionary<ModUsageTrackingKey, int>();
         }
 
-        return new Dictionary<string, int>(_modUsageSessionCounts, StringComparer.OrdinalIgnoreCase);
+        return new Dictionary<ModUsageTrackingKey, int>(_modUsageSessionCounts);
     }
 
-    public bool RecordLongRunningSession(IReadOnlyList<string>? activeModIds)
+    public bool RecordLongRunningSession(IReadOnlyList<ModUsageTrackingEntry>? activeMods, out bool recordedUsage)
     {
+        recordedUsage = false;
+
         if (_isModUsageTrackingDisabled)
         {
             return false;
@@ -229,30 +231,33 @@ public sealed class UserConfigurationService
 
         bool wasPending = HasPendingModUsagePrompt;
 
-        if (activeModIds is not null && activeModIds.Count > 0)
+        if (activeMods is not null && activeMods.Count > 0)
         {
-            var distinct = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (string modId in activeModIds)
+            foreach (ModUsageTrackingEntry entry in activeMods)
             {
-                if (string.IsNullOrWhiteSpace(modId))
+                if (string.IsNullOrEmpty(entry.ModId)
+                    || string.IsNullOrEmpty(entry.ModVersion)
+                    || string.IsNullOrEmpty(entry.GameVersion))
                 {
                     continue;
                 }
 
-                string trimmed = modId.Trim();
-                if (!distinct.Add(trimmed))
+                if (!entry.CanSubmitVote || entry.HasUserVote)
                 {
                     continue;
                 }
 
-                if (_modUsageSessionCounts.TryGetValue(trimmed, out int existing))
+                var key = new ModUsageTrackingKey(entry.ModId, entry.ModVersion, entry.GameVersion);
+                if (_modUsageSessionCounts.TryGetValue(key, out int existing))
                 {
-                    _modUsageSessionCounts[trimmed] = existing >= int.MaxValue - 1 ? int.MaxValue : existing + 1;
+                    _modUsageSessionCounts[key] = existing >= int.MaxValue - 1 ? int.MaxValue : existing + 1;
                 }
                 else
                 {
-                    _modUsageSessionCounts[trimmed] = 1;
+                    _modUsageSessionCounts[key] = 1;
                 }
+
+                recordedUsage = true;
             }
         }
 
@@ -295,23 +300,23 @@ public sealed class UserConfigurationService
         }
     }
 
-    public void ResetModUsageCounts(IEnumerable<string>? modIds)
+    public void ResetModUsageCounts(IEnumerable<ModUsageTrackingKey>? keys)
     {
-        if (modIds is null)
+        if (keys is null)
         {
             return;
         }
 
         bool changed = false;
 
-        foreach (string modId in modIds)
+        foreach (ModUsageTrackingKey key in keys)
         {
-            if (string.IsNullOrWhiteSpace(modId))
+            if (!key.IsValid)
             {
                 continue;
             }
 
-            if (_modUsageSessionCounts.Remove(modId.Trim()))
+            if (_modUsageSessionCounts.Remove(key))
             {
                 changed = true;
             }
@@ -342,21 +347,20 @@ public sealed class UserConfigurationService
         }
     }
 
-    public void CompleteModUsageVotes(IEnumerable<string>? completedModIds)
+    public void CompleteModUsageVotes(IEnumerable<ModUsageTrackingKey>? completedKeys)
     {
         bool changed = false;
 
-        if (completedModIds is not null)
+        if (completedKeys is not null)
         {
-            foreach (string modId in completedModIds)
+            foreach (ModUsageTrackingKey key in completedKeys)
             {
-                if (string.IsNullOrWhiteSpace(modId))
+                if (!key.IsValid)
                 {
                     continue;
                 }
 
-                string trimmed = modId.Trim();
-                if (_modUsageSessionCounts.Remove(trimmed))
+                if (_modUsageSessionCounts.Remove(key))
                 {
                     changed = true;
                 }
@@ -1420,16 +1424,25 @@ public sealed class UserConfigurationService
 
     private JsonObject BuildModUsageTrackingJson()
     {
-        var counts = new JsonObject();
+        var counts = new JsonArray();
 
-        foreach (var pair in _modUsageSessionCounts.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        foreach (var pair in _modUsageSessionCounts
+            .OrderBy(entry => entry.Key.ModId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(entry => entry.Key.ModVersion, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(entry => entry.Key.GameVersion, StringComparer.OrdinalIgnoreCase))
         {
-            if (string.IsNullOrWhiteSpace(pair.Key) || pair.Value <= 0)
+            if (!pair.Key.IsValid || pair.Value <= 0)
             {
                 continue;
             }
 
-            counts[pair.Key] = pair.Value;
+            counts.Add(new JsonObject
+            {
+                ["modId"] = pair.Key.ModId,
+                ["modVersion"] = pair.Key.ModVersion,
+                ["gameVersion"] = pair.Key.GameVersion,
+                ["count"] = pair.Value
+            });
         }
 
         return new JsonObject
@@ -1693,9 +1706,43 @@ public sealed class UserConfigurationService
         _longRunningSessionCount = storedCount.HasValue && storedCount.Value > 0 ? storedCount.Value : 0;
         _hasPendingModUsagePrompt = obj["pendingPrompt"]?.GetValue<bool?>() ?? false;
 
-        if (obj["modCounts"] is JsonObject modCounts)
+        JsonNode? countsNode = obj["modCounts"];
+
+        if (countsNode is JsonArray array)
         {
-            foreach ((string? key, JsonNode? value) in modCounts)
+            foreach (JsonNode? item in array)
+            {
+                if (item is not JsonObject entry)
+                {
+                    continue;
+                }
+
+                string? modId = GetOptionalString(entry["modId"]);
+                string? modVersion = GetOptionalString(entry["modVersion"]);
+                string? gameVersion = GetOptionalString(entry["gameVersion"]);
+                int? usageCount = entry["count"]?.GetValue<int?>();
+
+                if (string.IsNullOrWhiteSpace(modId)
+                    || string.IsNullOrWhiteSpace(modVersion)
+                    || string.IsNullOrWhiteSpace(gameVersion)
+                    || !usageCount.HasValue
+                    || usageCount.Value <= 0)
+                {
+                    continue;
+                }
+
+                var key = new ModUsageTrackingKey(modId, modVersion, gameVersion);
+                if (!key.IsValid)
+                {
+                    continue;
+                }
+
+                _modUsageSessionCounts[key] = usageCount.Value;
+            }
+        }
+        else if (countsNode is JsonObject legacyCounts)
+        {
+            foreach ((string? key, JsonNode? value) in legacyCounts)
             {
                 if (string.IsNullOrWhiteSpace(key) || value is null)
                 {
@@ -1708,7 +1755,13 @@ public sealed class UserConfigurationService
                     continue;
                 }
 
-                _modUsageSessionCounts[key.Trim()] = usageCount.Value;
+                string? normalizedId = NormalizeModId(key);
+                if (normalizedId is null)
+                {
+                    continue;
+                }
+
+                _hasPendingSave = true;
             }
         }
 
