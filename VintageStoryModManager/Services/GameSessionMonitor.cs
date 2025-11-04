@@ -37,15 +37,12 @@ public sealed class GameSessionMonitor : IDisposable
 
     private static readonly string[] ClientStartMarkers =
     {
-        "received level finalize",
-        "game launch can proceed"
+        "Received level finalize"
     };
 
     private static readonly string[] ClientEndMarkers =
     {
-        "destroying game session",
-        "Exiting current game",
-        "stopping single player server"
+        "Exiting current game"
     };
 
     private static readonly string[] ServerEndMarkers =
