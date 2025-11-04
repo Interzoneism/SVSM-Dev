@@ -119,7 +119,11 @@ internal static class ConfigurationMigrationService
 
             return true;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        catch (Exception ex) when (ex is IOException 
+            or UnauthorizedAccessException 
+            or NotSupportedException 
+            or DirectoryNotFoundException 
+            or PathTooLongException)
         {
             return false;
         }
@@ -143,7 +147,14 @@ internal static class ConfigurationMigrationService
             // Don't overwrite if file already exists in destination
             if (!File.Exists(targetPath))
             {
-                file.CopyTo(targetPath, overwrite: false);
+                try
+                {
+                    file.CopyTo(targetPath, overwrite: false);
+                }
+                catch (IOException)
+                {
+                    // Skip files that fail to copy (might be locked or inaccessible)
+                }
             }
         }
 

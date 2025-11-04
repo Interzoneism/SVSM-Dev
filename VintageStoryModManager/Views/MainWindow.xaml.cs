@@ -533,7 +533,8 @@ public partial class MainWindow : Window
                 migrationSuccess = ConfigurationMigrationService.PerformMigration();
             }).ConfigureAwait(true);
 
-            progressWindow.Close();
+            // Close on UI thread
+            progressWindow.Dispatcher.Invoke(() => progressWindow.Close());
         };
 
         progressWindow.ShowDialog();

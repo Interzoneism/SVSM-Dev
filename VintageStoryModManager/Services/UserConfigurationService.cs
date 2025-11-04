@@ -2186,31 +2186,31 @@ public sealed class UserConfigurationService
         string? localAppData = GetFolder(Environment.SpecialFolder.LocalApplicationData);
         if (!string.IsNullOrWhiteSpace(localAppData))
         {
-            return Path.Combine(localAppData!, "Simple VS Manager");
+            return Path.Combine(localAppData, "Simple VS Manager");
         }
 
         string? appData = GetFolder(Environment.SpecialFolder.ApplicationData);
         if (!string.IsNullOrWhiteSpace(appData))
         {
-            return Path.Combine(appData!, "Simple VS Manager");
+            return Path.Combine(appData, "Simple VS Manager");
         }
 
         string? documents = GetFolder(Environment.SpecialFolder.MyDocuments);
         if (!string.IsNullOrWhiteSpace(documents))
         {
-            return Path.Combine(documents!, "Simple VS Manager");
+            return Path.Combine(documents, "Simple VS Manager");
         }
 
         string? personal = GetFolder(Environment.SpecialFolder.Personal);
         if (!string.IsNullOrWhiteSpace(personal))
         {
-            return Path.Combine(personal!, "Simple VS Manager");
+            return Path.Combine(personal, "Simple VS Manager");
         }
 
         string? userProfile = GetFolder(Environment.SpecialFolder.UserProfile);
         if (!string.IsNullOrWhiteSpace(userProfile))
         {
-            return Path.Combine(userProfile!, ".simple-vs-manager");
+            return Path.Combine(userProfile, ".simple-vs-manager");
         }
 
         return Path.Combine(AppContext.BaseDirectory, "Simple VS Manager");
