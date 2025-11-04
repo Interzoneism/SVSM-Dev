@@ -421,6 +421,34 @@ public sealed class GameSessionMonitor : IDisposable
             }
         }
 
+        // Try Vintage Story log format: DD.MM.YYYY HH:MM:SS
+        Match vsMatch = Regex.Match(trimmed, @"^(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})");
+        if (vsMatch.Success)
+        {
+            try
+            {
+                int day = int.Parse(vsMatch.Groups[1].Value, CultureInfo.InvariantCulture);
+                int month = int.Parse(vsMatch.Groups[2].Value, CultureInfo.InvariantCulture);
+                int year = int.Parse(vsMatch.Groups[3].Value, CultureInfo.InvariantCulture);
+                int hour = int.Parse(vsMatch.Groups[4].Value, CultureInfo.InvariantCulture);
+                int minute = int.Parse(vsMatch.Groups[5].Value, CultureInfo.InvariantCulture);
+                int second = int.Parse(vsMatch.Groups[6].Value, CultureInfo.InvariantCulture);
+
+                var dateTime = new DateTime(year, month, day, hour, minute, second, DateTimeKind.Local);
+                timestamp = new DateTimeOffset(dateTime);
+                return true;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // Invalid date/time values
+            }
+            catch (FormatException)
+            {
+                // Failed to parse numbers
+            }
+        }
+
+        // Try ISO 8601 format: YYYY-MM-DDTHH:MM:SS
         Match match = Regex.Match(trimmed, @"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})");
         if (match.Success && DateTimeOffset.TryParse(match.Value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out timestamp))
         {
