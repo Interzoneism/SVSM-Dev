@@ -10,7 +10,8 @@ public sealed class ExperimentalModDebugLogLine
     {
         "error",
         "warning",
-        "fault",
+        "exception",
+        "failed ",
         "missing"
     };
 
