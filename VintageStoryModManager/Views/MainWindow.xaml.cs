@@ -92,7 +92,13 @@ public partial class MainWindow : Window
         "Instantiate mod systems for ",
         "Starting system:",
         "Mods, sorted by dependency:",
-        "External Origins in load order:",
+        "External Origins in load order:"
+    };
+
+    // Patterns for summarizing repetitive log lines
+    private static readonly string[] SummarizableLinePrefixes =
+    {
+        "Patch file",
         "Lang key not found:",
         "[Config lib] Values patched:",
         "Loading sound file, game may stutter",
@@ -1763,11 +1769,6 @@ public partial class MainWindow : Window
 
     private static bool ShouldIgnoreExperimentalModDebugLine(string line)
     {
-        if (IsPatchFileLine(line))
-        {
-            return true;
-        }
-
         foreach (string phrase in ExperimentalModDebugIgnoredLinePhrases)
         {
             if (line.IndexOf(phrase, StringComparison.OrdinalIgnoreCase) >= 0)
@@ -1779,29 +1780,6 @@ public partial class MainWindow : Window
         return false;
     }
 
-    private static bool IsPatchFileLine(string line)
-    {
-        if (string.IsNullOrEmpty(line))
-        {
-            return false;
-        }
-
-        string trimmed = line.TrimStart();
-        int patchIndex = trimmed.IndexOf("Patch file", StringComparison.OrdinalIgnoreCase);
-        if (patchIndex < 0)
-        {
-            return false;
-        }
-
-        string beforePatch = trimmed[..patchIndex].TrimEnd();
-        if (beforePatch.Length == 0)
-        {
-            return true;
-        }
-
-        return beforePatch[^1] == ']';
-    }
-
     private static List<string> SummarizePatchMissingLines(List<string> matchedLines)
     {
         if (matchedLines.Count == 0)
@@ -1810,42 +1788,48 @@ public partial class MainWindow : Window
         }
 
         var summarized = new List<string>(matchedLines.Count);
-        var modSummary = new Dictionary<string, (int Index, int HiddenCount)>(StringComparer.OrdinalIgnoreCase);
+        var lineSummaries = new Dictionary<string, (int Index, int HiddenCount)>(StringComparer.OrdinalIgnoreCase);
 
         foreach (string line in matchedLines)
         {
-            Match match = PatchAssetMissingRegex.Match(line);
-            if (!match.Success)
+            // Try to match "Patch X in [mod]" pattern
+            Match patchMatch = PatchAssetMissingRegex.Match(line);
+            if (patchMatch.Success)
             {
-                summarized.Add(line);
+                string modId = patchMatch.Groups["mod"].Value;
+                if (!string.IsNullOrEmpty(modId))
+                {
+                    string summaryKey = $"Patch_in_{modId.Trim()}";
+                    AddOrIncrementSummary(summarized, lineSummaries, line, summaryKey);
+                    continue;
+                }
+            }
+
+            // Try to match summarizable prefixes
+            string? matchedPrefix = null;
+            foreach (string prefix in SummarizableLinePrefixes)
+            {
+                if (line.IndexOf(prefix, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    matchedPrefix = prefix;
+                    break;
+                }
+            }
+
+            if (matchedPrefix != null)
+            {
+                // Create a summary key based on the prefix
+                string summaryKey = $"Prefix_{matchedPrefix}";
+                AddOrIncrementSummary(summarized, lineSummaries, line, summaryKey);
                 continue;
             }
 
-            string modId = match.Groups["mod"].Value;
-            if (string.IsNullOrEmpty(modId))
-            {
-                summarized.Add(line);
-                continue;
-            }
-
-            string summaryKey = CreatePatchMissingSummaryKey(modId);
-            if (string.IsNullOrEmpty(summaryKey))
-            {
-                summarized.Add(line);
-                continue;
-            }
-
-            if (modSummary.TryGetValue(summaryKey, out var entry))
-            {
-                modSummary[summaryKey] = (entry.Index, entry.HiddenCount + 1);
-                continue;
-            }
-
-            modSummary[summaryKey] = (summarized.Count, 0);
+            // No pattern matched, add line as-is
             summarized.Add(line);
         }
 
-        foreach ((int Index, int HiddenCount) value in modSummary.Values)
+        // Append hidden count to summarized lines
+        foreach ((int Index, int HiddenCount) value in lineSummaries.Values)
         {
             if (value.HiddenCount <= 0)
             {
@@ -1862,15 +1846,21 @@ public partial class MainWindow : Window
         return summarized;
     }
 
-    private static string CreatePatchMissingSummaryKey(string modId)
+    private static void AddOrIncrementSummary(
+        List<string> summarized,
+        Dictionary<string, (int Index, int HiddenCount)> summaries,
+        string line,
+        string summaryKey)
     {
-        string trimmedModId = modId.Trim();
-        if (string.IsNullOrEmpty(trimmedModId))
+        if (summaries.TryGetValue(summaryKey, out var entry))
         {
-            return string.Empty;
+            summaries[summaryKey] = (entry.Index, entry.HiddenCount + 1);
         }
-
-        return trimmedModId;
+        else
+        {
+            summaries[summaryKey] = (summarized.Count, 0);
+            summarized.Add(line);
+        }
     }
 
     private void InitializeViewModel()
