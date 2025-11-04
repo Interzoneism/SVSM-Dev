@@ -12,7 +12,17 @@ internal static class ModCacheLocator
 {
     public static string? GetManagerDataDirectory()
     {
-        string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        }
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        }
+
         if (string.IsNullOrWhiteSpace(path))
         {
             path = Environment.GetFolderPath(Environment.SpecialFolder.Personal);

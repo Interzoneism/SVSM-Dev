@@ -116,6 +116,7 @@ public sealed class UserConfigurationService
     private int _longRunningSessionCount;
     private bool _hasPendingModUsagePrompt;
     private bool _isModUsageTrackingDisabled;
+    private bool _migrationCheckCompleted;
 
     public UserConfigurationService()
     {
@@ -204,6 +205,19 @@ public sealed class UserConfigurationService
         && _modUsageSessionCounts.Count > 0;
 
     public bool IsModUsageTrackingEnabled => !_isModUsageTrackingDisabled;
+
+    public bool MigrationCheckCompleted => _migrationCheckCompleted;
+
+    public void SetMigrationCheckCompleted()
+    {
+        if (_migrationCheckCompleted)
+        {
+            return;
+        }
+
+        _migrationCheckCompleted = true;
+        Save();
+    }
 
     public IReadOnlyDictionary<string, string> GetThemePaletteColors()
     {
@@ -1090,6 +1104,7 @@ public sealed class UserConfigurationService
             _selectedPresetName = NormalizePresetName(GetOptionalString(obj["selectedPreset"]));
             _customShortcutPath = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
             _cloudUploaderName = NormalizeUploaderName(GetOptionalString(obj["cloudUploaderName"]));
+            _migrationCheckCompleted = obj["migrationCheckCompleted"]?.GetValue<bool?>() ?? false;
             LoadModUsageTracking(obj["modUsageTracking"]);
             if (_isModUsageTrackingDisabled)
             {
@@ -1139,6 +1154,7 @@ public sealed class UserConfigurationService
             _longRunningSessionCount = 0;
             _hasPendingModUsagePrompt = false;
             _isModUsageTrackingDisabled = false;
+            _migrationCheckCompleted = false;
         }
 
         LoadPersistentModConfigPaths();
@@ -1202,7 +1218,8 @@ public sealed class UserConfigurationService
                 ["customThemePalette"] = BuildCustomThemePaletteJson(),
                 ["selectedPreset"] = _selectedPresetName,
                 ["customShortcutPath"] = _customShortcutPath,
-                ["cloudUploaderName"] = _cloudUploaderName
+                ["cloudUploaderName"] = _cloudUploaderName,
+                ["migrationCheckCompleted"] = _migrationCheckCompleted
             };
 
             var options = new JsonSerializerOptions
@@ -2166,28 +2183,34 @@ public sealed class UserConfigurationService
 
     private static string GetPreferredConfigurationDirectory()
     {
-        string? documents = GetFolder(Environment.SpecialFolder.MyDocuments);
-        if (!string.IsNullOrWhiteSpace(documents))
+        string? localAppData = GetFolder(Environment.SpecialFolder.LocalApplicationData);
+        if (!string.IsNullOrWhiteSpace(localAppData))
         {
-            return Path.Combine(documents!, "Simple VS Manager");
-        }
-
-        string? personal = GetFolder(Environment.SpecialFolder.Personal);
-        if (!string.IsNullOrWhiteSpace(personal))
-        {
-            return Path.Combine(personal!, "Simple VS Manager");
+            return Path.Combine(localAppData, "Simple VS Manager");
         }
 
         string? appData = GetFolder(Environment.SpecialFolder.ApplicationData);
         if (!string.IsNullOrWhiteSpace(appData))
         {
-            return Path.Combine(appData!, "Simple VS Manager");
+            return Path.Combine(appData, "Simple VS Manager");
+        }
+
+        string? documents = GetFolder(Environment.SpecialFolder.MyDocuments);
+        if (!string.IsNullOrWhiteSpace(documents))
+        {
+            return Path.Combine(documents, "Simple VS Manager");
+        }
+
+        string? personal = GetFolder(Environment.SpecialFolder.Personal);
+        if (!string.IsNullOrWhiteSpace(personal))
+        {
+            return Path.Combine(personal, "Simple VS Manager");
         }
 
         string? userProfile = GetFolder(Environment.SpecialFolder.UserProfile);
         if (!string.IsNullOrWhiteSpace(userProfile))
         {
-            return Path.Combine(userProfile!, ".simple-vs-manager");
+            return Path.Combine(userProfile, ".simple-vs-manager");
         }
 
         return Path.Combine(AppContext.BaseDirectory, "Simple VS Manager");
