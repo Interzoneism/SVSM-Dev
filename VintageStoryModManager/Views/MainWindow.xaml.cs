@@ -6041,6 +6041,121 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ClearAllCachesMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        const string confirmationMessage =
+            "This will delete all cache folders used by Simple VS Manager:\n\n" +
+            "• Cached Mods\n" +
+            "• Mod Database Cache\n" +
+            "• Mod Metadata\n" +
+            "• Modlists (Cloud Cache)\n\n" +
+            "Your settings and installed mods will NOT be affected.\n\n" +
+            "This is useful when experiencing problems with the mod database or cached data.\n\n" +
+            "Continue?";
+
+        MessageBoxResult confirmation = WpfMessageBox.Show(
+            this,
+            confirmationMessage,
+            "Simple VS Manager",
+            MessageBoxButton.OKCancel,
+            MessageBoxImage.Question);
+
+        if (confirmation != MessageBoxResult.OK)
+        {
+            return;
+        }
+
+        try
+        {
+            var deletedFolders = new List<string>();
+            var failedFolders = new List<string>();
+
+            // Get manager data directory
+            string? managerDataDir = ModCacheLocator.GetManagerDataDirectory();
+            if (string.IsNullOrWhiteSpace(managerDataDir))
+            {
+                WpfMessageBox.Show(
+                    this,
+                    "Could not locate the Simple VS Manager data directory.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            // Define cache folders to delete
+            var cacheFolders = new[]
+            {
+                ("Cached Mods", Path.Combine(managerDataDir, "Cached Mods")),
+                ("Mod Database Cache", Path.Combine(managerDataDir, "Mod Database Cache")),
+                ("Mod Metadata", Path.Combine(managerDataDir, "Mod Metadata")),
+                ("Modlists (Cloud Cache)", Path.Combine(managerDataDir, "Modlists (Cloud Cache)"))
+            };
+
+            // Delete each cache folder
+            foreach (var (name, path) in cacheFolders)
+            {
+                try
+                {
+                    if (Directory.Exists(path))
+                    {
+                        Directory.Delete(path, recursive: true);
+                        deletedFolders.Add(name);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failedFolders.Add($"{name}: {ex.Message}");
+                }
+            }
+
+            // Show results
+            var messageBuilder = new StringBuilder();
+
+            if (deletedFolders.Count > 0)
+            {
+                messageBuilder.AppendLine("Successfully deleted the following cache folders:");
+                foreach (string folder in deletedFolders)
+                {
+                    messageBuilder.AppendLine($"• {folder}");
+                }
+            }
+            else if (failedFolders.Count == 0)
+            {
+                messageBuilder.AppendLine("No cache folders were found to delete.");
+            }
+
+            if (failedFolders.Count > 0)
+            {
+                if (messageBuilder.Length > 0)
+                {
+                    messageBuilder.AppendLine();
+                }
+                messageBuilder.AppendLine("Failed to delete the following cache folders:");
+                foreach (string error in failedFolders)
+                {
+                    messageBuilder.AppendLine($"• {error}");
+                }
+            }
+
+            WpfMessageBox.Show(
+                this,
+                messageBuilder.ToString(),
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                failedFolders.Count > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                this,
+                $"An error occurred while clearing caches:\n\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
     private async void DeleteAllManagerFilesMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         const string confirmationMessage =
