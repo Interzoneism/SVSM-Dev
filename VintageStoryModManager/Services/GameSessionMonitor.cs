@@ -41,6 +41,10 @@ public sealed class GameSessionMonitor : IDisposable
 
     private static readonly TimeSpan MinimumSessionDuration = DevConfig.MinimumSessionDuration;
 
+    private static readonly Regex VintageStoryTimestampRegex = new(@"^(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})", RegexOptions.Compiled);
+
+    private static readonly Regex Iso8601TimestampRegex = new(@"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})", RegexOptions.Compiled);
+
     private static readonly string[] ClientStartMarkers =
     {
         "Received level finalize"
@@ -422,7 +426,7 @@ public sealed class GameSessionMonitor : IDisposable
         }
 
         // Try Vintage Story log format: DD.MM.YYYY HH:MM:SS
-        Match vsMatch = Regex.Match(trimmed, @"^(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})");
+        Match vsMatch = VintageStoryTimestampRegex.Match(trimmed);
         if (vsMatch.Success)
         {
             try
@@ -450,7 +454,7 @@ public sealed class GameSessionMonitor : IDisposable
         }
 
         // Try ISO 8601 format: YYYY-MM-DDTHH:MM:SS
-        Match match = Regex.Match(trimmed, @"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})");
+        Match match = Iso8601TimestampRegex.Match(trimmed);
         if (match.Success && DateTimeOffset.TryParse(match.Value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out timestamp))
         {
             return true;
