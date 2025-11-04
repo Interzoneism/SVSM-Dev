@@ -775,7 +775,7 @@ namespace SimpleVsManager.Cloud
 
         /// <summary>
         /// Sanitizes a player UID to be compatible with Firebase Realtime Database path restrictions.
-        /// Firebase keys cannot contain: . $ # [ ] / and ASCII control characters (0-31, 127).
+        /// Firebase keys cannot contain: . $ # [ ] / and ASCII control characters (0-31 and 127).
         /// We replace these with underscores to maintain readability while ensuring compatibility.
         /// </summary>
         private static string SanitizePlayerUidForFirebase(string playerUid)
@@ -789,6 +789,7 @@ namespace SimpleVsManager.Cloud
             foreach (char c in playerUid)
             {
                 // Replace Firebase-incompatible characters with underscore
+                // Forbidden: . $ # [ ] / and control characters (0-31, 127)
                 if (c == '.' || c == '$' || c == '#' || c == '[' || c == ']' || c == '/' || c < 32 || c == 127)
                 {
                     sb.Append('_');
