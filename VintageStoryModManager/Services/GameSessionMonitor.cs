@@ -41,6 +41,10 @@ public sealed class GameSessionMonitor : IDisposable
 
     private static readonly TimeSpan MinimumSessionDuration = DevConfig.MinimumSessionDuration;
 
+    private static readonly Regex VintageStoryTimestampRegex = new(@"^(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})", RegexOptions.Compiled);
+
+    private static readonly Regex Iso8601TimestampRegex = new(@"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})", RegexOptions.Compiled);
+
     private static readonly string[] ClientStartMarkers =
     {
         "Received level finalize"
@@ -421,7 +425,36 @@ public sealed class GameSessionMonitor : IDisposable
             }
         }
 
-        Match match = Regex.Match(trimmed, @"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})");
+        // Try Vintage Story log format: DD.MM.YYYY HH:MM:SS
+        Match vsMatch = VintageStoryTimestampRegex.Match(trimmed);
+        if (vsMatch.Success)
+        {
+            try
+            {
+                int day = int.Parse(vsMatch.Groups[1].Value, CultureInfo.InvariantCulture);
+                int month = int.Parse(vsMatch.Groups[2].Value, CultureInfo.InvariantCulture);
+                int year = int.Parse(vsMatch.Groups[3].Value, CultureInfo.InvariantCulture);
+                int hour = int.Parse(vsMatch.Groups[4].Value, CultureInfo.InvariantCulture);
+                int minute = int.Parse(vsMatch.Groups[5].Value, CultureInfo.InvariantCulture);
+                int second = int.Parse(vsMatch.Groups[6].Value, CultureInfo.InvariantCulture);
+
+                var dateTime = new DateTime(year, month, day, hour, minute, second, DateTimeKind.Unspecified);
+                TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(dateTime);
+                timestamp = new DateTimeOffset(dateTime, offset);
+                return true;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // Invalid date/time values
+            }
+            catch (FormatException)
+            {
+                // Failed to parse numbers
+            }
+        }
+
+        // Try ISO 8601 format: YYYY-MM-DDTHH:MM:SS
+        Match match = Iso8601TimestampRegex.Match(trimmed);
         if (match.Success && DateTimeOffset.TryParse(match.Value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out timestamp))
         {
             return true;
