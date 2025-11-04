@@ -87,6 +87,7 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Line" 
                                             Binding="{Binding Text, Mode=OneWay}" 
+                                            SortMemberPath="Text"
                                             Width="*"
                                             MinWidth="200">
                             <DataGridTextColumn.ElementStyle>
@@ -99,6 +100,7 @@
                         </DataGridTextColumn>
                         <DataGridTextColumn Header="Mod" 
                                             Binding="{Binding ModName, Mode=OneWay}" 
+                                            SortMemberPath="ModName"
                                             Width="200"
                                             MinWidth="100">
                             <DataGridTextColumn.ElementStyle>
