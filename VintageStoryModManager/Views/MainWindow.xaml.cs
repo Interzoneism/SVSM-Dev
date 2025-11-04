@@ -6042,7 +6042,7 @@ public partial class MainWindow : Window
     private async void DeleteAllManagerFilesMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         const string confirmationMessage =
-            "This will move every file Simple VS Manager created to the Recycle Bin, including its Documents folder, any ModData backups, AppData entries, cached mods, presets, and Firebase authentication tokens.\n\n" +
+            "This will move every file Simple VS Manager created to the Recycle Bin, including its AppData/Simple VS Manager folder, any ModData backups, cached mods, presets, and Firebase authentication tokens.\n\n" +
             "You can restore them from the Recycle Bin if needed. Continue?";
 
         MessageBoxResult confirmation = WpfMessageBox.Show(

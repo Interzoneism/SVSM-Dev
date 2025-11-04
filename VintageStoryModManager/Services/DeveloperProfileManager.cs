@@ -16,7 +16,7 @@ public static class DeveloperProfileManager
     /// <summary>
     /// Enables the developer identity switching helpers. Set to false before publishing.
     /// </summary>
-    public static bool DevDebug { get; set; } = true;
+    public static bool DevDebug { get; set; } = false;
 
     private static readonly DeveloperProfileDefinition[] FakeProfiles =
     {

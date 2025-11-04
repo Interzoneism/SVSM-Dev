@@ -12,6 +12,7 @@ public sealed class ExperimentalModDebugLogLine
         "warning",
         "exception",
         "failed ",
+        "aborting",
         "missing"
     };
 
