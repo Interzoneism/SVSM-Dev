@@ -66,10 +66,10 @@ public static class DevConfig
     public static int DefaultModDatabaseSearchResultLimit { get; } = 30;
     public static int DefaultModDatabaseNewModsRecentMonths { get; } = 3;
     public static int MaxModDatabaseNewModsRecentMonths { get; } = 24;
-    public static int GameSessionVoteThreshold { get; } = 3;
+    public static int GameSessionVoteThreshold { get; } = 5;
 
     // Game session monitoring.
-    public static TimeSpan MinimumSessionDuration { get; } = TimeSpan.FromMinutes(1);
+    public static TimeSpan MinimumSessionDuration { get; } = TimeSpan.FromMinutes(30);
 
     // Vintage Story game version metadata.
     public static string GameVersionsEndpoint { get; } = "https://mods.vintagestory.at/api/gameversions";
