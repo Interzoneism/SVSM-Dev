@@ -721,8 +721,9 @@ namespace SimpleVsManager.Cloud
                     }
                     else if (property.NameEquals("uploaderId"))
                     {
-                        // Use the original UID for uploaderId - this is stored in JSON, not used as a Firebase path
-                        writer.WriteString("uploaderId", identity.OriginalUid);
+                        // Use the sanitized UID for uploaderId to match the /owners/{sanitizedUid} path
+                        // The Firebase security rules validate uploaderId against the owners path
+                        writer.WriteString("uploaderId", identity.SanitizedUid);
                         hasUploaderId = true;
                     }
                     else
@@ -743,8 +744,9 @@ namespace SimpleVsManager.Cloud
 
                 if (!hasUploaderId)
                 {
-                    // Use the original UID for uploaderId - this is stored in JSON, not used as a Firebase path
-                    writer.WriteString("uploaderId", identity.OriginalUid);
+                    // Use the sanitized UID for uploaderId to match the /owners/{sanitizedUid} path
+                    // The Firebase security rules validate uploaderId against the owners path
+                    writer.WriteString("uploaderId", identity.SanitizedUid);
                 }
 
                 writer.WriteEndObject();
