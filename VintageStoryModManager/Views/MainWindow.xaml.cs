@@ -105,6 +105,10 @@ public partial class MainWindow : Window
         "[Config lib] Patched"
     };
 
+    // Summary key prefixes to avoid collisions between different summary types
+    private const string SummaryKeyPatchModPrefix = "__PATCH_MOD__";
+    private const string SummaryKeyLinePrefix = "__PREFIX__";
+
     private static readonly Regex PatchAssetMissingRegex = new(
         @"\bPatch \d+ in (?<mod>[^:\r\n]+)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
@@ -1799,7 +1803,7 @@ public partial class MainWindow : Window
                 string modId = patchMatch.Groups["mod"].Value;
                 if (!string.IsNullOrEmpty(modId))
                 {
-                    string summaryKey = $"__PATCH_MOD__{modId.Trim()}";
+                    string summaryKey = $"{SummaryKeyPatchModPrefix}{modId.Trim()}";
                     AddOrIncrementSummary(summarized, lineSummaries, line, summaryKey);
                     continue;
                 }
@@ -1819,7 +1823,7 @@ public partial class MainWindow : Window
             if (matchedPrefix != null)
             {
                 // Create a summary key based on the prefix
-                string summaryKey = $"__PREFIX__{matchedPrefix}";
+                string summaryKey = $"{SummaryKeyLinePrefix}{matchedPrefix}";
                 AddOrIncrementSummary(summarized, lineSummaries, line, summaryKey);
                 continue;
             }
