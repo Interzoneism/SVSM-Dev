@@ -92,7 +92,11 @@ public partial class MainWindow : Window
         "Instantiate mod systems for ",
         "Starting system:",
         "Mods, sorted by dependency:",
-        "External Origins in load order:"
+        "External Origins in load order:",
+        "Lang key not found:",
+        "[Config lib] Values patched:",
+        "Loading sound file, game may stutter",
+        "[Config lib] Patched"
     };
 
     private static readonly Regex PatchAssetMissingRegex = new(
