@@ -1826,7 +1826,7 @@ public partial class MainWindow : Window
         
         foreach (string line in processedLines)
         {
-            string? modName = lineToModMap.TryGetValue(line, out string? foundModName) ? foundModName : null;
+            lineToModMap.TryGetValue(line, out string? modName);
             logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modName));
         }
     }

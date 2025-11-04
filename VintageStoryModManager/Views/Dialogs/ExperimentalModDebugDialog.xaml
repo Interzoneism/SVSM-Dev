@@ -1,7 +1,6 @@
 <Window x:Class="VintageStoryModManager.Views.Dialogs.ExperimentalModDebugDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:converters="clr-namespace:VintageStoryModManager.Converters"
         Title="Experimental Mod Debugging"
         Width="1200"
         Height="600"
