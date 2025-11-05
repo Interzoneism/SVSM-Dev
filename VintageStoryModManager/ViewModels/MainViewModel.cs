@@ -4672,15 +4672,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 continue;
             }
 
-            // Check compatibility based on user setting
-            bool isCompatible = _configuration.RequireExactVsVersionMatch
-                ? VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, _installedGameVersion)
-                : (VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, _installedGameVersion)
-                   || VersionStringUtility.MatchesFirstThreeDigits(dependency.Version, _installedGameVersion));
-
-            if (!isCompatible)
+            // Always check that minimum version requirement is satisfied
+            if (!VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, _installedGameVersion))
             {
                 return false;
+            }
+
+            // When exact version match is required, also check that first 3 parts match
+            if (_configuration.RequireExactVsVersionMatch)
+            {
+                if (!VersionStringUtility.MatchesFirstThreeDigits(dependency.Version, _installedGameVersion))
+                {
+                    return false;
+                }
             }
         }
 

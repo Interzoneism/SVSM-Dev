@@ -1719,16 +1719,18 @@ public sealed class ModListItemViewModel : ObservableObject
 
             if (requireExact)
             {
-                // Exact match: Compare only major.minor (first two digits)
-                if (requiredMajor == installedMajor && requiredMinor == installedMinor)
+                // Exact mode: Strict - compare first three version parts (major.minor.patch)
+                // Differences in patch version should cause a warning
+                if (VersionStringUtility.MatchesFirstThreeDigits(normalized, installedVersion))
                 {
                     return false;
                 }
             }
             else
             {
-                // Relaxed match: Compare first three digits
-                if (VersionStringUtility.MatchesFirstThreeDigits(normalized, installedVersion))
+                // Relaxed mode (default): Lenient - only compare major.minor (first two parts)
+                // Ignore patch version differences
+                if (requiredMajor == installedMajor && requiredMinor == installedMinor)
                 {
                     return false;
                 }
