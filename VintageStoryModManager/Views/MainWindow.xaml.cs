@@ -1711,9 +1711,11 @@ public partial class MainWindow : Window
         try
         {
             string fileName = Path.GetFileName(filePath);
-            var matchedLines = new List<string>();
+            var matchedLines = new List<(string Line, int LineNumber)>();
+            int lineNumber = 0;
             foreach (string line in File.ReadLines(filePath))
             {
+                lineNumber++;
                 if (ShouldIgnoreExperimentalModDebugLine(line))
                 {
                     continue;
@@ -1721,11 +1723,11 @@ public partial class MainWindow : Window
 
                 if (line.IndexOf(modId, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    matchedLines.Add(line);
+                    matchedLines.Add((line, lineNumber));
                 }
             }
 
-            AppendExperimentalModDebugFileSectionWithModId(logLines, fileName, matchedLines, modId);
+            AppendExperimentalModDebugFileSectionWithModId(logLines, filePath, fileName, matchedLines, modId);
         }
         catch (IOException)
         {
@@ -1743,9 +1745,11 @@ public partial class MainWindow : Window
         try
         {
             string fileName = Path.GetFileName(filePath);
-            var matchedLines = new List<(string Line, string ModName)>();
+            var matchedLines = new List<(string Line, string ModName, int LineNumber)>();
+            int lineNumber = 0;
             foreach (string line in File.ReadLines(filePath))
             {
+                lineNumber++;
                 if (ShouldIgnoreExperimentalModDebugLine(line))
                 {
                     continue;
@@ -1755,13 +1759,13 @@ public partial class MainWindow : Window
                 {
                     if (line.IndexOf(identifier.SearchValue, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        matchedLines.Add((line, identifier.DisplayLabel));
+                        matchedLines.Add((line, identifier.DisplayLabel, lineNumber));
                         break;
                     }
                 }
             }
 
-            AppendExperimentalModDebugFileSectionWithMods(logLines, fileName, matchedLines);
+            AppendExperimentalModDebugFileSectionWithMods(logLines, filePath, fileName, matchedLines);
         }
         catch (IOException)
         {
@@ -1796,32 +1800,10 @@ public partial class MainWindow : Window
 
     private static void AppendExperimentalModDebugFileSectionWithModId(
         List<ExperimentalModDebugLogLine> logLines,
+        string filePath,
         string fileName,
-        List<string> matchedLines,
+        List<(string Line, int LineNumber)> matchedLines,
         string modId)
-    {
-        if (matchedLines.Count == 0)
-        {
-            return;
-        }
-
-        List<string> processedLines = SummarizePatchMissingLines(matchedLines);
-        if (processedLines.Count == 0)
-        {
-            return;
-        }
-
-        logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
-        foreach (string line in processedLines)
-        {
-            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modId));
-        }
-    }
-
-    private static void AppendExperimentalModDebugFileSectionWithMods(
-        List<ExperimentalModDebugLogLine> logLines,
-        string fileName,
-        List<(string Line, string ModName)> matchedLines)
     {
         if (matchedLines.Count == 0)
         {
@@ -1837,20 +1819,58 @@ public partial class MainWindow : Window
 
         logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
         
-        // Create a mapping from original lines to mod names
+        // Create a mapping from original lines to line numbers
+        var lineToNumberMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (line, lineNumber) in matchedLines)
+        {
+            // Use indexer to overwrite if duplicate - the last line number wins
+            lineToNumberMap[line] = lineNumber;
+        }
+        
+        foreach (string line in processedLines)
+        {
+            lineToNumberMap.TryGetValue(line, out int lineNumber);
+            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modId, filePath, lineNumber));
+        }
+    }
+
+    private static void AppendExperimentalModDebugFileSectionWithMods(
+        List<ExperimentalModDebugLogLine> logLines,
+        string filePath,
+        string fileName,
+        List<(string Line, string ModName, int LineNumber)> matchedLines)
+    {
+        if (matchedLines.Count == 0)
+        {
+            return;
+        }
+
+        var linesToProcess = matchedLines.Select(x => x.Line).ToList();
+        List<string> processedLines = SummarizePatchMissingLines(linesToProcess);
+        if (processedLines.Count == 0)
+        {
+            return;
+        }
+
+        logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
+        
+        // Create mappings from original lines to mod names and line numbers
         // Using case-insensitive comparison for consistency with other parts of the codebase
         var lineToModMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (line, modName) in matchedLines)
+        var lineToNumberMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (line, modName, lineNumber) in matchedLines)
         {
-            // Use indexer to overwrite if duplicate - the last mod name wins
+            // Use indexer to overwrite if duplicate - the last value wins
             // This handles edge cases where same log line appears for multiple mods
             lineToModMap[line] = modName;
+            lineToNumberMap[line] = lineNumber;
         }
         
         foreach (string line in processedLines)
         {
             lineToModMap.TryGetValue(line, out string? modName);
-            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modName));
+            lineToNumberMap.TryGetValue(line, out int lineNumber);
+            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modName, filePath, lineNumber));
         }
     }
 

@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace VintageStoryModManager.Views.Dialogs;
 
@@ -93,5 +97,90 @@ public partial class ExperimentalModDebugDialog : Window, INotifyPropertyChanged
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
     {
         DialogResult = true;
+    }
+
+    private void DataGrid_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not DataGrid dataGrid)
+        {
+            return;
+        }
+
+        if (dataGrid.SelectedItem is not ExperimentalModDebugLogLine selectedLine)
+        {
+            return;
+        }
+
+        // Check if the line has a file path and line number
+        if (string.IsNullOrWhiteSpace(selectedLine.FilePath) || selectedLine.LineNumber <= 0)
+        {
+            return;
+        }
+
+        // Verify the file exists
+        if (!File.Exists(selectedLine.FilePath))
+        {
+            System.Windows.MessageBox.Show(
+                $"The log file could not be found:\n\n{selectedLine.FilePath}",
+                "File Not Found",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        OpenFileAtLine(selectedLine.FilePath, selectedLine.LineNumber);
+    }
+
+    private static void OpenFileAtLine(string filePath, int lineNumber)
+    {
+        // Try to open with common text editors that support line navigation
+        // VS Code, Notepad++, Sublime Text, and others support similar command-line arguments
+        
+        var editorAttempts = new List<(string executable, string arguments)>
+        {
+            // VS Code - most common modern editor
+            ("code", $"-g \"{filePath}\":{lineNumber}"),
+            
+            // Notepad++ - popular on Windows
+            ("notepad++", $"\"{filePath}\" -n{lineNumber}"),
+            
+            // Sublime Text
+            ("subl", $"\"{filePath}\":{lineNumber}"),
+            
+            // Vim/GVim
+            ("gvim", $"+{lineNumber} \"{filePath}\""),
+            
+            // Fallback to default text editor without line navigation
+            (string.Empty, $"\"{filePath}\"")
+        };
+
+        foreach (var (executable, arguments) in editorAttempts)
+        {
+            try
+            {
+                var startInfo = new ProcessStartInfo();
+                
+                if (string.IsNullOrEmpty(executable))
+                {
+                    // Use default application
+                    startInfo.FileName = filePath;
+                    startInfo.UseShellExecute = true;
+                }
+                else
+                {
+                    startInfo.FileName = executable;
+                    startInfo.Arguments = arguments;
+                    startInfo.UseShellExecute = false;
+                }
+
+                Process.Start(startInfo);
+                return; // Success - don't try other editors
+            }
+            catch (Exception)
+            {
+                // Try next editor
+                continue;
+            }
+        }
     }
 }
