@@ -8533,22 +8533,19 @@ public partial class MainWindow : Window
 
             var slots = await GetCloudModlistSlotsAsync(store, includeEmptySlots: true, captureContent: false);
             string trimmedModlistName = modlistName.Trim();
-            string? trimmedVersion = NormalizeCloudVersion(version);
 
             CloudModlistSlot? replacementSlot = null;
             string? slotKey = null;
 
             CloudModlistSlot? matchingSlot = slots.FirstOrDefault(slot =>
                 slot.IsOccupied
-                && string.Equals((slot.Name ?? string.Empty).Trim(), trimmedModlistName, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(NormalizeCloudVersion(slot.Version), trimmedVersion, StringComparison.OrdinalIgnoreCase));
+                && string.Equals((slot.Name ?? string.Empty).Trim(), trimmedModlistName, StringComparison.OrdinalIgnoreCase));
 
             if (matchingSlot is not null)
             {
                 string slotLabel = FormatCloudSlotLabel(matchingSlot.SlotKey);
-                string versionSuffix = trimmedVersion is null ? string.Empty : $" (v{trimmedVersion})";
                 MessageBoxResult replaceExisting = WpfMessageBox.Show(
-                    $"A cloud modlist named \"{trimmedModlistName}\"{versionSuffix} already exists in {slotLabel}. Do you want to replace it?",
+                    $"A cloud modlist named \"{trimmedModlistName}\" already exists in {slotLabel}. Do you want to replace it?",
                     "Simple VS Manager",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
