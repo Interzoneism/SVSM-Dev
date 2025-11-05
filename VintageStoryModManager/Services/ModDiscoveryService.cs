@@ -201,29 +201,32 @@ public sealed class ModDiscoveryService
             return null;
         }
 
+        ModEntry? modEntry = null;
+
         if (Directory.Exists(fullPath))
         {
-            return TryLoadFromDirectory(new DirectoryInfo(fullPath));
+            modEntry = TryLoadFromDirectory(new DirectoryInfo(fullPath));
+        }
+        else if (File.Exists(fullPath))
+        {
+            var fileInfo = new FileInfo(fullPath);
+            if (string.Equals(fileInfo.Extension, ".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                modEntry = TryLoadFromZip(fileInfo);
+            }
+            else if (string.Equals(fileInfo.Extension, ".cs", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(fileInfo.Extension, ".dll", StringComparison.OrdinalIgnoreCase))
+            {
+                modEntry = CreateUnsupportedCodeModEntry(fileInfo);
+            }
         }
 
-        if (!File.Exists(fullPath))
+        if (modEntry != null && IsBaseGameMod(modEntry.ModId))
         {
             return null;
         }
 
-        var fileInfo = new FileInfo(fullPath);
-        if (string.Equals(fileInfo.Extension, ".zip", StringComparison.OrdinalIgnoreCase))
-        {
-            return TryLoadFromZip(fileInfo);
-        }
-
-        if (string.Equals(fileInfo.Extension, ".cs", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(fileInfo.Extension, ".dll", StringComparison.OrdinalIgnoreCase))
-        {
-            return CreateUnsupportedCodeModEntry(fileInfo);
-        }
-
-        return null;
+        return modEntry;
     }
 
     private List<(int Order, FileSystemInfo Entry)> CollectModSources()
@@ -270,18 +273,28 @@ public sealed class ModDiscoveryService
 
     private ModEntry? ProcessEntry(FileSystemInfo entry)
     {
-        switch (entry)
+        ModEntry? modEntry = entry switch
         {
-            case DirectoryInfo directory:
-                return TryLoadFromDirectory(directory);
-            case FileInfo file when string.Equals(file.Extension, ".zip", StringComparison.OrdinalIgnoreCase):
-                return TryLoadFromZip(file);
-            case FileInfo file when string.Equals(file.Extension, ".cs", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(file.Extension, ".dll", StringComparison.OrdinalIgnoreCase):
-                return CreateUnsupportedCodeModEntry(file);
-            default:
-                return null;
+            DirectoryInfo directory => TryLoadFromDirectory(directory),
+            FileInfo file when string.Equals(file.Extension, ".zip", StringComparison.OrdinalIgnoreCase) => TryLoadFromZip(file),
+            FileInfo file when string.Equals(file.Extension, ".cs", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(file.Extension, ".dll", StringComparison.OrdinalIgnoreCase) => CreateUnsupportedCodeModEntry(file),
+            _ => null
+        };
+
+        if (modEntry != null && IsBaseGameMod(modEntry.ModId))
+        {
+            return null;
         }
+
+        return modEntry;
+    }
+
+    private static bool IsBaseGameMod(string modId)
+    {
+        return string.Equals(modId, "VSCreativeMod", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(modId, "VSEssentials", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(modId, "VSSurvivalMod", StringComparison.OrdinalIgnoreCase);
     }
 
     public void ApplyLoadStatuses(IList<ModEntry> mods)
