@@ -2708,7 +2708,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 ModEntry entry = entries[i].Entry;
                 ModDatabaseInfo? cachedInfo = await _databaseService
-                    .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion, cancellationToken)
+                    .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion, _configuration.RequireExactVsVersionMatch, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (cachedInfo is null)
@@ -2739,7 +2739,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     cancellationToken)
                 .ConfigureAwait(false);
 
-            await _databaseService.PopulateModDatabaseInfoAsync(entries.Select(item => item.Entry), _installedGameVersion, cancellationToken)
+            await _databaseService.PopulateModDatabaseInfoAsync(entries.Select(item => item.Entry), _installedGameVersion, _configuration.RequireExactVsVersionMatch, cancellationToken)
                 .ConfigureAwait(false);
 
             if (cancellationToken.IsCancellationRequested)
@@ -3829,7 +3829,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         try
         {
             ModDatabaseInfo? cachedInfo = await _databaseService
-                .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion)
+                .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion, _configuration.RequireExactVsVersionMatch)
                 .ConfigureAwait(false);
 
             cacheHit = cachedInfo != null;
@@ -3859,7 +3859,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             try
             {
                 info = await _databaseService
-                    .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion)
+                    .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion, _configuration.RequireExactVsVersionMatch)
                     .ConfigureAwait(false);
             }
             catch (Exception)
@@ -3940,7 +3940,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (cachedInfo is null)
         {
             cachedInfo = await _databaseService
-                .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion)
+                .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, _installedGameVersion, _configuration.RequireExactVsVersionMatch)
                 .ConfigureAwait(false);
         }
 
