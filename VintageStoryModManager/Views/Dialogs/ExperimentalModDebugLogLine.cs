@@ -16,11 +16,13 @@ public sealed class ExperimentalModDebugLogLine
         "missing"
     };
 
-    private ExperimentalModDebugLogLine(string text, bool isHighlighted, string? modName = null)
+    private ExperimentalModDebugLogLine(string text, bool isHighlighted, string? modName = null, string? filePath = null, int lineNumber = 0)
     {
         Text = text;
         IsHighlighted = isHighlighted;
         ModName = modName;
+        FilePath = filePath;
+        LineNumber = lineNumber;
     }
 
     public string Text { get; }
@@ -29,7 +31,11 @@ public sealed class ExperimentalModDebugLogLine
 
     public string? ModName { get; }
 
-    public static ExperimentalModDebugLogLine FromLogEntry(string rawText, string? modName = null)
+    public string? FilePath { get; }
+
+    public int LineNumber { get; }
+
+    public static ExperimentalModDebugLogLine FromLogEntry(string rawText, string? modName = null, string? filePath = null, int lineNumber = 0)
     {
         ArgumentNullException.ThrowIfNull(rawText);
 
@@ -38,13 +44,13 @@ public sealed class ExperimentalModDebugLogLine
             : rawText;
 
         bool isHighlighted = ContainsHighlightKeyword(rawText);
-        return new ExperimentalModDebugLogLine(text, isHighlighted, modName);
+        return new ExperimentalModDebugLogLine(text, isHighlighted, modName, filePath, lineNumber);
     }
 
-    public static ExperimentalModDebugLogLine FromPlainText(string text, string? modName = null)
+    public static ExperimentalModDebugLogLine FromPlainText(string text, string? modName = null, string? filePath = null, int lineNumber = 0)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return new ExperimentalModDebugLogLine(text, false, modName);
+        return new ExperimentalModDebugLogLine(text, false, modName, filePath, lineNumber);
     }
 
     private static bool ContainsHighlightKeyword(string text)

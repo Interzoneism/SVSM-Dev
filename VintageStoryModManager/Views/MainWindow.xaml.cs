@@ -1711,9 +1711,11 @@ public partial class MainWindow : Window
         try
         {
             string fileName = Path.GetFileName(filePath);
-            var matchedLines = new List<string>();
+            var matchedLines = new List<(string Line, int LineNumber)>();
+            int lineNumber = 0;
             foreach (string line in File.ReadLines(filePath))
             {
+                lineNumber++;
                 if (ShouldIgnoreExperimentalModDebugLine(line))
                 {
                     continue;
@@ -1721,11 +1723,11 @@ public partial class MainWindow : Window
 
                 if (line.IndexOf(modId, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    matchedLines.Add(line);
+                    matchedLines.Add((line, lineNumber));
                 }
             }
 
-            AppendExperimentalModDebugFileSectionWithModId(logLines, fileName, matchedLines, modId);
+            AppendExperimentalModDebugFileSectionWithModId(logLines, filePath, fileName, matchedLines, modId);
         }
         catch (IOException)
         {
@@ -1743,9 +1745,11 @@ public partial class MainWindow : Window
         try
         {
             string fileName = Path.GetFileName(filePath);
-            var matchedLines = new List<(string Line, string ModName)>();
+            var matchedLines = new List<(string Line, string ModName, int LineNumber)>();
+            int lineNumber = 0;
             foreach (string line in File.ReadLines(filePath))
             {
+                lineNumber++;
                 if (ShouldIgnoreExperimentalModDebugLine(line))
                 {
                     continue;
@@ -1755,13 +1759,13 @@ public partial class MainWindow : Window
                 {
                     if (line.IndexOf(identifier.SearchValue, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        matchedLines.Add((line, identifier.DisplayLabel));
+                        matchedLines.Add((line, identifier.DisplayLabel, lineNumber));
                         break;
                     }
                 }
             }
 
-            AppendExperimentalModDebugFileSectionWithMods(logLines, fileName, matchedLines);
+            AppendExperimentalModDebugFileSectionWithMods(logLines, filePath, fileName, matchedLines);
         }
         catch (IOException)
         {
@@ -1796,32 +1800,10 @@ public partial class MainWindow : Window
 
     private static void AppendExperimentalModDebugFileSectionWithModId(
         List<ExperimentalModDebugLogLine> logLines,
+        string filePath,
         string fileName,
-        List<string> matchedLines,
+        List<(string Line, int LineNumber)> matchedLines,
         string modId)
-    {
-        if (matchedLines.Count == 0)
-        {
-            return;
-        }
-
-        List<string> processedLines = SummarizePatchMissingLines(matchedLines);
-        if (processedLines.Count == 0)
-        {
-            return;
-        }
-
-        logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
-        foreach (string line in processedLines)
-        {
-            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modId));
-        }
-    }
-
-    private static void AppendExperimentalModDebugFileSectionWithMods(
-        List<ExperimentalModDebugLogLine> logLines,
-        string fileName,
-        List<(string Line, string ModName)> matchedLines)
     {
         if (matchedLines.Count == 0)
         {
@@ -1837,20 +1819,75 @@ public partial class MainWindow : Window
 
         logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
         
-        // Create a mapping from original lines to mod names
-        // Using case-insensitive comparison for consistency with other parts of the codebase
-        var lineToModMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (line, modName) in matchedLines)
+        // Create a list of tuples to track line numbers alongside the lines
+        // This preserves the association even when there are duplicate lines
+        var lineWithNumbers = new List<(string Line, int LineNumber)>();
+        for (int i = 0; i < linesToProcess.Count; i++)
         {
-            // Use indexer to overwrite if duplicate - the last mod name wins
-            // This handles edge cases where same log line appears for multiple mods
-            lineToModMap[line] = modName;
+            lineWithNumbers.Add((linesToProcess[i], matchedLines[i].LineNumber));
         }
         
-        foreach (string line in processedLines)
+        foreach (string processedLine in processedLines)
         {
-            lineToModMap.TryGetValue(line, out string? modName);
-            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modName));
+            // Try to find the first matching original line and use its line number
+            int lineNumber = 0;
+            foreach (var (line, num) in lineWithNumbers)
+            {
+                if (string.Equals(line, processedLine, StringComparison.OrdinalIgnoreCase))
+                {
+                    lineNumber = num;
+                    break;
+                }
+            }
+            
+            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(processedLine, modId, filePath, lineNumber));
+        }
+    }
+
+    private static void AppendExperimentalModDebugFileSectionWithMods(
+        List<ExperimentalModDebugLogLine> logLines,
+        string filePath,
+        string fileName,
+        List<(string Line, string ModName, int LineNumber)> matchedLines)
+    {
+        if (matchedLines.Count == 0)
+        {
+            return;
+        }
+
+        var linesToProcess = matchedLines.Select(x => x.Line).ToList();
+        List<string> processedLines = SummarizePatchMissingLines(linesToProcess);
+        if (processedLines.Count == 0)
+        {
+            return;
+        }
+
+        logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
+        
+        // Create lists to track mod names and line numbers alongside the lines
+        // This preserves the association even when there are duplicate lines
+        var lineWithModAndNumber = new List<(string Line, string ModName, int LineNumber)>();
+        for (int i = 0; i < linesToProcess.Count; i++)
+        {
+            lineWithModAndNumber.Add((linesToProcess[i], matchedLines[i].ModName, matchedLines[i].LineNumber));
+        }
+        
+        foreach (string processedLine in processedLines)
+        {
+            // Try to find the first matching original line and use its metadata
+            string? modName = null;
+            int lineNumber = 0;
+            foreach (var (line, mod, num) in lineWithModAndNumber)
+            {
+                if (string.Equals(line, processedLine, StringComparison.OrdinalIgnoreCase))
+                {
+                    modName = mod;
+                    lineNumber = num;
+                    break;
+                }
+            }
+            
+            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(processedLine, modName, filePath, lineNumber));
         }
     }
 
@@ -8533,22 +8570,19 @@ public partial class MainWindow : Window
 
             var slots = await GetCloudModlistSlotsAsync(store, includeEmptySlots: true, captureContent: false);
             string trimmedModlistName = modlistName.Trim();
-            string? trimmedVersion = NormalizeCloudVersion(version);
 
             CloudModlistSlot? replacementSlot = null;
             string? slotKey = null;
 
             CloudModlistSlot? matchingSlot = slots.FirstOrDefault(slot =>
                 slot.IsOccupied
-                && string.Equals((slot.Name ?? string.Empty).Trim(), trimmedModlistName, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(NormalizeCloudVersion(slot.Version), trimmedVersion, StringComparison.OrdinalIgnoreCase));
+                && string.Equals((slot.Name ?? string.Empty).Trim(), trimmedModlistName, StringComparison.OrdinalIgnoreCase));
 
             if (matchingSlot is not null)
             {
                 string slotLabel = FormatCloudSlotLabel(matchingSlot.SlotKey);
-                string versionSuffix = trimmedVersion is null ? string.Empty : $" (v{trimmedVersion})";
                 MessageBoxResult replaceExisting = WpfMessageBox.Show(
-                    $"A cloud modlist named \"{trimmedModlistName}\"{versionSuffix} already exists in {slotLabel}. Do you want to replace it?",
+                    $"A cloud modlist named \"{trimmedModlistName}\" already exists in {slotLabel}. Do you want to replace it?",
                     "Simple VS Manager",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);

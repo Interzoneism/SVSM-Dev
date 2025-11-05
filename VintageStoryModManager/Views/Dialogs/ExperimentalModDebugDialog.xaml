@@ -82,7 +82,8 @@
                           HeadersVisibility="Column"
                           FontSize="15"
                           Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                          BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
+                          BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                          MouseDoubleClick="DataGrid_OnMouseDoubleClick">
                     <DataGrid.Resources>
                         <Style TargetType="{x:Type DataGridColumnHeader}">
                             <Setter Property="Background" Value="{DynamicResource Brush.DataGrid.Header.Background}" />
