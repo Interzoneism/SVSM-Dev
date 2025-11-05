@@ -498,11 +498,7 @@ public sealed class FirebaseAnonymousAuthenticator
             if (File.Exists(backupPath))
             {
                 // Backup exists, just update the config flag
-                if (config is not null)
-                {
-                    config.EnablePersistence();
-                    config.SetFirebaseAuthBackupCreated();
-                }
+                MarkBackupCreated(config);
                 return;
             }
 
@@ -517,11 +513,7 @@ public sealed class FirebaseAnonymousAuthenticator
             File.Copy(_stateFilePath, backupPath, overwrite: false);
 
             // Mark backup as created in configuration
-            if (config is not null)
-            {
-                config.EnablePersistence();
-                config.SetFirebaseAuthBackupCreated();
-            }
+            MarkBackupCreated(config);
         }
         catch (IOException)
         {
@@ -538,6 +530,15 @@ public sealed class FirebaseAnonymousAuthenticator
         catch (NotSupportedException)
         {
             // Silently ignore backup failures
+        }
+    }
+
+    private static void MarkBackupCreated(UserConfigurationService? config)
+    {
+        if (config is not null)
+        {
+            config.EnablePersistence();
+            config.SetFirebaseAuthBackupCreated();
         }
     }
 
