@@ -454,6 +454,9 @@ public sealed class FirebaseAnonymousAuthenticator
 
             string json = JsonSerializer.Serialize(model, JsonOptions);
             File.WriteAllText(_stateFilePath, json);
+
+            // Try to create a backup after successfully saving the auth file
+            TryCreateBackup();
         }
         catch (IOException)
         {
@@ -463,6 +466,111 @@ public sealed class FirebaseAnonymousAuthenticator
         }
         catch (SecurityException)
         {
+        }
+    }
+
+    private void TryCreateBackup()
+    {
+        try
+        {
+            // Check if the original auth file exists
+            if (!File.Exists(_stateFilePath))
+            {
+                return;
+            }
+
+            // Try to get user configuration to check if backup has been created
+            UserConfigurationService? config = TryGetUserConfiguration();
+            if (config is not null && config.FirebaseAuthBackupCreated)
+            {
+                // Backup flag is already set, no need to check further
+                return;
+            }
+
+            // Determine backup path: AppData/Local/SVSM Backup/firebase-auth.json
+            string? backupPath = GetBackupFilePath();
+            if (string.IsNullOrWhiteSpace(backupPath))
+            {
+                return;
+            }
+
+            // If backup file already exists, don't overwrite it
+            if (File.Exists(backupPath))
+            {
+                // Backup exists, just update the config flag
+                MarkBackupCreated(config);
+                return;
+            }
+
+            // Create backup directory if it doesn't exist
+            string? backupDirectory = Path.GetDirectoryName(backupPath);
+            if (!string.IsNullOrWhiteSpace(backupDirectory))
+            {
+                Directory.CreateDirectory(backupDirectory);
+            }
+
+            // Copy the auth file to backup location
+            File.Copy(_stateFilePath, backupPath, overwrite: false);
+
+            // Mark backup as created in configuration
+            MarkBackupCreated(config);
+        }
+        catch (IOException)
+        {
+            // Silently ignore backup failures
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Silently ignore backup failures
+        }
+        catch (SecurityException)
+        {
+            // Silently ignore backup failures
+        }
+        catch (NotSupportedException)
+        {
+            // Silently ignore backup failures
+        }
+    }
+
+    private static void MarkBackupCreated(UserConfigurationService? config)
+    {
+        if (config is not null)
+        {
+            config.EnablePersistence();
+            config.SetFirebaseAuthBackupCreated();
+        }
+    }
+
+    private static UserConfigurationService? TryGetUserConfiguration()
+    {
+        try
+        {
+            // Create a new instance to read the current configuration
+            return new UserConfigurationService();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? GetBackupFilePath()
+    {
+        try
+        {
+            string? localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (string.IsNullOrWhiteSpace(localAppData))
+            {
+                return null;
+            }
+
+            string backupDirectory = Path.Combine(localAppData, DevConfig.FirebaseAuthBackupDirectoryName);
+            return Path.Combine(backupDirectory, StateFileName);
+        }
+        catch
+        {
+            return null;
         }
     }
 
