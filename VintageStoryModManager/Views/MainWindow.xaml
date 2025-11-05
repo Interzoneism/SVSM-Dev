@@ -14,7 +14,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
         Title="Simple VS Manager"
-        Height="798" Width="1272"
+        Height="801" Width="1401"
         MinWidth="1200" MinHeight="775" WindowStartupLocation="CenterScreen"
         PreviewKeyDown="MainWindow_OnPreviewKeyDown" Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
 
@@ -2341,8 +2341,7 @@
             <Button Grid.Row="1"
                     Content="Load more pages"
                     Command="{Binding LoadMoreModDatabaseResultsCommand}"
-                    HorizontalAlignment="Left"
-                    Margin="518,0,0,10"
+                    Margin="546,0,570,10"
                     Background="Transparent"
                     BorderBrush="Transparent"
                     BorderThickness="0"
@@ -2350,7 +2349,7 @@
                     Foreground="{DynamicResource Brush.Accent.Primary}"
                     Cursor="Hand"
                     FontSize="14"
-                    FontWeight="SemiBold" Width="124" Height="25" VerticalAlignment="Bottom">
+                    FontWeight="SemiBold" Height="25" VerticalAlignment="Bottom">
                 <Button.Style>
                     <Style TargetType="{x:Type Button}">
                         <Setter Property="Visibility" Value="Collapsed" />
