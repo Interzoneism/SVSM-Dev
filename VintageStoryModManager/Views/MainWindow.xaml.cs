@@ -36,8 +36,6 @@ using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
 using VintageStoryModManager.Views.Dialogs;
-using static System.Net.WebRequestMethods;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using CloudModConfigOption = VintageStoryModManager.Views.Dialogs.CloudModlistDetailsDialog.CloudModConfigOption;
 using FileRecycleOption = Microsoft.VisualBasic.FileIO.RecycleOption;
 using FileSystem = Microsoft.VisualBasic.FileIO.FileSystem;
