@@ -1,49 +1,53 @@
+using CommunityToolkit.Mvvm.Input;
+using Microsoft.VisualBasic;
+using ModernWpf.Controls;
+using SimpleVsManager.Cloud;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Navigation;
-
-using System.Windows.Threading;
-
-using System.Windows.Controls.Primitives;
 using System.Windows.Media;
-using System.Windows.Data;
-using ModernWpf.Controls;
-using CommunityToolkit.Mvvm.Input;
-using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
-using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
-
-using SimpleVsManager.Cloud;
+using System.Windows.Media.Media3D;
+using System.Windows.Media.TextFormatting;
+using System.Windows.Navigation;
+using System.Windows.Threading;
+using System.Xml;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
 using VintageStoryModManager.Views.Dialogs;
-using WinForms = System.Windows.Forms;
-using WpfButton = System.Windows.Controls.Button;
-using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
-using WpfToolTip = System.Windows.Controls.ToolTip;
+using static System.Net.WebRequestMethods;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using CloudModConfigOption = VintageStoryModManager.Views.Dialogs.CloudModlistDetailsDialog.CloudModConfigOption;
 using FileRecycleOption = Microsoft.VisualBasic.FileIO.RecycleOption;
 using FileSystem = Microsoft.VisualBasic.FileIO.FileSystem;
 using FileUIOption = Microsoft.VisualBasic.FileIO.UIOption;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
+using WinForms = System.Windows.Forms;
+using WpfButton = System.Windows.Controls.Button;
+using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
+using WpfToolTip = System.Windows.Controls.ToolTip;
 
 namespace VintageStoryModManager.Views;
 
@@ -102,7 +106,11 @@ public partial class MainWindow : Window
         "Lang key not found:",
         "[Config lib] Values patched:",
         "Loading sound file, game may stutter",
-        "[Config lib] Patched"
+        "[Config lib] Patched",
+        "Block must have a unique code",
+        "Failed resolving a blocks blockdrop or smeltedstack",
+        "Missing mapping for texture code"
+
     };
 
     // Summary key prefixes to avoid collisions between different summary types
