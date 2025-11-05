@@ -118,6 +118,7 @@ public sealed class UserConfigurationService
     private bool _isModUsageTrackingDisabled;
     private bool _migrationCheckCompleted;
     private bool _requireExactVsVersionMatch;
+    private bool _firebaseAuthBackupCreated;
 
     public UserConfigurationService()
     {
@@ -211,6 +212,8 @@ public sealed class UserConfigurationService
 
     public bool RequireExactVsVersionMatch => _requireExactVsVersionMatch;
 
+    public bool FirebaseAuthBackupCreated => _firebaseAuthBackupCreated;
+
     public void SetMigrationCheckCompleted()
     {
         if (_migrationCheckCompleted)
@@ -219,6 +222,17 @@ public sealed class UserConfigurationService
         }
 
         _migrationCheckCompleted = true;
+        Save();
+    }
+
+    public void SetFirebaseAuthBackupCreated()
+    {
+        if (_firebaseAuthBackupCreated)
+        {
+            return;
+        }
+
+        _firebaseAuthBackupCreated = true;
         Save();
     }
 
@@ -1120,6 +1134,7 @@ public sealed class UserConfigurationService
             _customShortcutPath = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
             _cloudUploaderName = NormalizeUploaderName(GetOptionalString(obj["cloudUploaderName"]));
             _migrationCheckCompleted = obj["migrationCheckCompleted"]?.GetValue<bool?>() ?? false;
+            _firebaseAuthBackupCreated = obj["firebaseAuthBackupCreated"]?.GetValue<bool?>() ?? false;
             LoadModUsageTracking(obj["modUsageTracking"]);
             if (_isModUsageTrackingDisabled)
             {
@@ -1171,6 +1186,7 @@ public sealed class UserConfigurationService
             _hasPendingModUsagePrompt = false;
             _isModUsageTrackingDisabled = false;
             _migrationCheckCompleted = false;
+            _firebaseAuthBackupCreated = false;
         }
 
         LoadPersistentModConfigPaths();
@@ -1236,7 +1252,8 @@ public sealed class UserConfigurationService
                 ["selectedPreset"] = _selectedPresetName,
                 ["customShortcutPath"] = _customShortcutPath,
                 ["cloudUploaderName"] = _cloudUploaderName,
-                ["migrationCheckCompleted"] = _migrationCheckCompleted
+                ["migrationCheckCompleted"] = _migrationCheckCompleted,
+                ["firebaseAuthBackupCreated"] = _firebaseAuthBackupCreated
             };
 
             var options = new JsonSerializerOptions
