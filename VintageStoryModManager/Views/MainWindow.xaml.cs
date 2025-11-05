@@ -4982,7 +4982,7 @@ public partial class MainWindow : Window
         try
         {
             ModDatabaseInfo? info = await _modDatabaseService
-                .TryLoadDatabaseInfoAsync(dependency.ModId, installedMod?.Version, _viewModel?.InstalledGameVersion)
+                .TryLoadDatabaseInfoAsync(dependency.ModId, installedMod?.Version, _viewModel?.InstalledGameVersion, _userConfiguration.RequireExactVsVersionMatch)
                 .ConfigureAwait(true);
 
             if (info is null)
@@ -5553,7 +5553,7 @@ public partial class MainWindow : Window
                 ? (mod.ModId ?? "Unknown mod")
                 : mod.DisplayName!;
 
-            CompatibilityEvaluation evaluation = EvaluateCompatibility(mod, targetVersion, displayName);
+            CompatibilityEvaluation evaluation = EvaluateCompatibility(mod, targetVersion, displayName, _userConfiguration.RequireExactVsVersionMatch);
             if (evaluation.IsCompatible)
             {
                 continue;
@@ -5579,7 +5579,8 @@ public partial class MainWindow : Window
     private static CompatibilityEvaluation EvaluateCompatibility(
         ModListItemViewModel mod,
         string targetVersion,
-        string displayName)
+        string displayName,
+        bool requireExactMatch)
     {
         string installedVersion = string.IsNullOrWhiteSpace(mod.Version)
             ? "Unknown"
@@ -5597,11 +5598,11 @@ public partial class MainWindow : Window
             .ToList();
 
         ModReleaseInfo? compatibleRelease = releases
-            .FirstOrDefault(release => ReleaseSupportsVersion(release, targetVersion));
+            .FirstOrDefault(release => ReleaseSupportsVersion(release, targetVersion, requireExactMatch));
 
         if (installedRelease != null)
         {
-            if (ReleaseSupportsVersion(installedRelease, targetVersion))
+            if (ReleaseSupportsVersion(installedRelease, targetVersion, requireExactMatch))
             {
                 return CompatibilityEvaluation.Compatible;
             }
@@ -5658,7 +5659,7 @@ public partial class MainWindow : Window
         return CompatibilityEvaluation.Unknown(unknownMessage);
     }
 
-    private static bool ReleaseSupportsVersion(ModReleaseInfo release, string targetVersion)
+    private static bool ReleaseSupportsVersion(ModReleaseInfo release, string targetVersion, bool requireExactMatch)
     {
         if (release.GameVersionTags is not { Count: > 0 })
         {
@@ -5672,13 +5673,7 @@ public partial class MainWindow : Window
                 continue;
             }
 
-            string trimmed = tag.Trim();
-            if (string.Equals(trimmed, targetVersion, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            if (VersionStringUtility.MatchesVersionOrPrefix(trimmed, targetVersion))
+            if (VersionStringUtility.SupportsVersion(tag, targetVersion, requireExactMatch))
             {
                 return true;
             }
@@ -7987,7 +7982,7 @@ public partial class MainWindow : Window
         string? desiredVersion = string.IsNullOrWhiteSpace(state.Version) ? null : state.Version!.Trim();
 
         ModDatabaseInfo? info = await _modDatabaseService
-            .TryLoadDatabaseInfoAsync(modId, desiredVersion, installedGameVersion)
+            .TryLoadDatabaseInfoAsync(modId, desiredVersion, installedGameVersion, _userConfiguration.RequireExactVsVersionMatch)
             .ConfigureAwait(true);
 
         if (info is null)
@@ -9940,8 +9935,9 @@ public partial class MainWindow : Window
 
         try
         {
+            // Use relaxed mode for manager updates to allow more flexible compatibility
             ModDatabaseInfo? info = await _modDatabaseService
-                .TryLoadDatabaseInfoAsync(ManagerModDatabaseModId, currentVersion, null)
+                .TryLoadDatabaseInfoAsync(ManagerModDatabaseModId, currentVersion, null, requireExactVersionMatch: false)
                 .ConfigureAwait(true);
 
             bool hasUpdate = info?.LatestVersion is string latestVersion
@@ -10767,7 +10763,7 @@ public partial class MainWindow : Window
         }
 
         ModDatabaseInfo? info = await _modDatabaseService
-            .TryLoadDatabaseInfoAsync(modId, desiredVersion, _viewModel.InstalledGameVersion)
+            .TryLoadDatabaseInfoAsync(modId, desiredVersion, _viewModel.InstalledGameVersion, _userConfiguration.RequireExactVsVersionMatch)
             .ConfigureAwait(true);
 
         if (info is null)

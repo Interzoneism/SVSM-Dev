@@ -53,6 +53,7 @@ internal sealed class ModDatabaseCacheService
         string? normalizedGameVersion,
         string? installedModVersion,
         bool allowExpiredEntryRefresh,
+        bool requireExactVersionMatch,
         CancellationToken cancellationToken)
     {
         string? cachePath = GetCacheFilePath(modId, normalizedGameVersion);
@@ -83,13 +84,13 @@ internal sealed class ModDatabaseCacheService
 
                 if (!canRefreshExpiredEntry)
                 {
-                    return ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion);
+                    return ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion, requireExactVersionMatch);
                 }
 
                 return null;
             }
 
-            return ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion);
+            return ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion, requireExactVersionMatch);
         }
         catch (OperationCanceledException)
         {
@@ -302,7 +303,8 @@ internal sealed class ModDatabaseCacheService
     private static ModDatabaseInfo? ConvertToDatabaseInfo(
         CachedModDatabaseInfo cached,
         string? normalizedGameVersion,
-        string? installedModVersion)
+        string? installedModVersion,
+        bool requireExactVersionMatch)
     {
         string? normalizedInstalledVersion = NormalizeModVersion(installedModVersion);
 
@@ -311,7 +313,7 @@ internal sealed class ModDatabaseCacheService
             normalizedInstalledVersion,
             out string? cachedTagsVersion);
 
-        IReadOnlyList<ModReleaseInfo> releases = BuildReleases(cached.Releases, normalizedGameVersion);
+        IReadOnlyList<ModReleaseInfo> releases = BuildReleases(cached.Releases, normalizedGameVersion, requireExactVersionMatch);
 
         ModReleaseInfo? latestRelease = releases.Count > 0 ? releases[0] : null;
         ModReleaseInfo? latestCompatibleRelease = releases.FirstOrDefault(r => r.IsCompatibleWithInstalledGame);
@@ -380,7 +382,8 @@ internal sealed class ModDatabaseCacheService
 
     private static IReadOnlyList<ModReleaseInfo> BuildReleases(
         IReadOnlyList<CachedModRelease>? cachedReleases,
-        string? normalizedGameVersion)
+        string? normalizedGameVersion,
+        bool requireExactVersionMatch)
     {
         if (cachedReleases is null || cachedReleases.Count == 0)
         {
@@ -403,7 +406,7 @@ internal sealed class ModDatabaseCacheService
             {
                 foreach (string tag in release.GameVersionTags)
                 {
-                    if (VersionStringUtility.MatchesVersionOrPrefix(tag, normalizedGameVersion))
+                    if (VersionStringUtility.SupportsVersion(tag, normalizedGameVersion, requireExactVersionMatch))
                     {
                         isCompatible = true;
                         break;
