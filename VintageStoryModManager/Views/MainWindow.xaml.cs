@@ -9935,8 +9935,9 @@ public partial class MainWindow : Window
 
         try
         {
+            // Use relaxed mode for manager updates to allow more flexible compatibility
             ModDatabaseInfo? info = await _modDatabaseService
-                .TryLoadDatabaseInfoAsync(ManagerModDatabaseModId, currentVersion, null, false)
+                .TryLoadDatabaseInfoAsync(ManagerModDatabaseModId, currentVersion, null, requireExactVersionMatch: false)
                 .ConfigureAwait(true);
 
             bool hasUpdate = info?.LatestVersion is string latestVersion

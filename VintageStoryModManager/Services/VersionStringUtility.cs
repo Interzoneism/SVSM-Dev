@@ -242,13 +242,14 @@ internal static class VersionStringUtility
     }
 
     /// <summary>
-    /// Checks if a candidate version tag supports a target version in relaxed mode.
+    /// Checks if a candidate version tag supports a target version.
+    /// In exact mode, only exact matches or prefix matches are allowed (e.g., "1.21" or "1.21.5" match "1.21.5", but "1.21.0" does not).
     /// In relaxed mode, versions with the same major.minor version are considered compatible
     /// regardless of patch version (e.g., 1.21.0 is compatible with 1.21.5).
     /// </summary>
     /// <param name="candidateTag">The version tag from mod metadata (e.g., "1.21.0" or "1.21")</param>
     /// <param name="targetVersion">The target game version to check against (e.g., "1.21.5")</param>
-    /// <param name="requireExactMatch">If true, uses strict matching; if false, uses relaxed matching</param>
+    /// <param name="requireExactMatch">If true, uses exact/prefix matching; if false, uses relaxed matching</param>
     /// <returns>True if the candidate tag supports the target version</returns>
     public static bool SupportsVersion(string? candidateTag, string? targetVersion, bool requireExactMatch)
     {
