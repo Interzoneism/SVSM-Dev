@@ -4672,13 +4672,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 continue;
             }
 
-            // Always check that minimum version requirement is satisfied
+            // Check if the installed game version satisfies the dependency's minimum version requirement
+            // (e.g., if mod requires 1.21.0 and user has 1.21.4, that's OK as 1.21.4 >= 1.21.0)
             if (!VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, _installedGameVersion))
             {
                 return false;
             }
 
-            // When exact version match is required, also check that first 3 parts match
+            // When exact version match is required, also verify first 3 version parts match
+            // (e.g., with exact mode, 1.21.3 won't be compatible with 1.21.4 even though 1.21.4 >= 1.21.3)
             if (_configuration.RequireExactVsVersionMatch)
             {
                 if (!VersionStringUtility.MatchesFirstThreeDigits(dependency.Version, _installedGameVersion))

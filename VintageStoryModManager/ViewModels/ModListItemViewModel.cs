@@ -1720,7 +1720,7 @@ public sealed class ModListItemViewModel : ObservableObject
             if (requireExact)
             {
                 // Exact mode: Strict - compare first three version parts (major.minor.patch)
-                // Differences in patch version should cause a warning
+                // Return false (no warning) if first 3 parts match exactly
                 if (VersionStringUtility.MatchesFirstThreeDigits(normalized, installedVersion))
                 {
                     return false;
@@ -1729,7 +1729,7 @@ public sealed class ModListItemViewModel : ObservableObject
             else
             {
                 // Relaxed mode (default): Lenient - only compare major.minor (first two parts)
-                // Ignore patch version differences
+                // Return false (no warning) if major.minor match, ignoring patch version differences
                 if (requiredMajor == installedMajor && requiredMinor == installedMinor)
                 {
                     return false;
