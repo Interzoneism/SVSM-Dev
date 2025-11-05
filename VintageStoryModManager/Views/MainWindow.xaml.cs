@@ -1819,18 +1819,28 @@ public partial class MainWindow : Window
 
         logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
         
-        // Create a mapping from original lines to line numbers
-        var lineToNumberMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (line, lineNumber) in matchedLines)
+        // Create a list of tuples to track line numbers alongside the lines
+        // This preserves the association even when there are duplicate lines
+        var lineWithNumbers = new List<(string Line, int LineNumber)>();
+        for (int i = 0; i < linesToProcess.Count; i++)
         {
-            // Use indexer to overwrite if duplicate - the last line number wins
-            lineToNumberMap[line] = lineNumber;
+            lineWithNumbers.Add((linesToProcess[i], matchedLines[i].LineNumber));
         }
         
-        foreach (string line in processedLines)
+        foreach (string processedLine in processedLines)
         {
-            lineToNumberMap.TryGetValue(line, out int lineNumber);
-            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modId, filePath, lineNumber));
+            // Try to find the first matching original line and use its line number
+            int lineNumber = 0;
+            foreach (var (line, num) in lineWithNumbers)
+            {
+                if (string.Equals(line, processedLine, StringComparison.OrdinalIgnoreCase))
+                {
+                    lineNumber = num;
+                    break;
+                }
+            }
+            
+            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(processedLine, modId, filePath, lineNumber));
         }
     }
 
@@ -1854,23 +1864,30 @@ public partial class MainWindow : Window
 
         logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
         
-        // Create mappings from original lines to mod names and line numbers
-        // Using case-insensitive comparison for consistency with other parts of the codebase
-        var lineToModMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var lineToNumberMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (line, modName, lineNumber) in matchedLines)
+        // Create lists to track mod names and line numbers alongside the lines
+        // This preserves the association even when there are duplicate lines
+        var lineWithModAndNumber = new List<(string Line, string ModName, int LineNumber)>();
+        for (int i = 0; i < linesToProcess.Count; i++)
         {
-            // Use indexer to overwrite if duplicate - the last value wins
-            // This handles edge cases where same log line appears for multiple mods
-            lineToModMap[line] = modName;
-            lineToNumberMap[line] = lineNumber;
+            lineWithModAndNumber.Add((linesToProcess[i], matchedLines[i].ModName, matchedLines[i].LineNumber));
         }
         
-        foreach (string line in processedLines)
+        foreach (string processedLine in processedLines)
         {
-            lineToModMap.TryGetValue(line, out string? modName);
-            lineToNumberMap.TryGetValue(line, out int lineNumber);
-            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modName, filePath, lineNumber));
+            // Try to find the first matching original line and use its metadata
+            string? modName = null;
+            int lineNumber = 0;
+            foreach (var (line, mod, num) in lineWithModAndNumber)
+            {
+                if (string.Equals(line, processedLine, StringComparison.OrdinalIgnoreCase))
+                {
+                    modName = mod;
+                    lineNumber = num;
+                    break;
+                }
+            }
+            
+            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(processedLine, modName, filePath, lineNumber));
         }
     }
 

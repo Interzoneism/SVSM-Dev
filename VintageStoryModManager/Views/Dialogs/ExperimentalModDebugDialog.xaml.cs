@@ -133,6 +133,23 @@ public partial class ExperimentalModDebugDialog : Window, INotifyPropertyChanged
 
     private static void OpenFileAtLine(string filePath, int lineNumber)
     {
+        // Validate file path to prevent security issues
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            return;
+        }
+
+        // Ensure the file path is absolute and doesn't contain potentially malicious patterns
+        try
+        {
+            filePath = Path.GetFullPath(filePath);
+        }
+        catch (Exception)
+        {
+            // Invalid path
+            return;
+        }
+
         // Try to open with common text editors that support line navigation
         // VS Code, Notepad++, Sublime Text, and others support similar command-line arguments
         
@@ -176,9 +193,20 @@ public partial class ExperimentalModDebugDialog : Window, INotifyPropertyChanged
                 Process.Start(startInfo);
                 return; // Success - don't try other editors
             }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                // Editor not found or not installed - try next one
+                continue;
+            }
+            catch (FileNotFoundException)
+            {
+                // Editor executable not found - try next one
+                continue;
+            }
             catch (Exception)
             {
-                // Try next editor
+                // Unexpected error with this editor - try next one
+                // We silently continue to try other editors rather than showing an error
                 continue;
             }
         }
