@@ -35,6 +35,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly string? _description;
     private readonly string? _metadataError;
     private readonly Func<string?, string?, bool>? _shouldSkipVersion;
+    private readonly Func<bool>? _requireExactVersionMatch;
     private string? _loadError;
     private IReadOnlyList<ModDependencyInfo> _missingDependencies;
     private bool _dependencyHasErrors;
@@ -93,12 +94,14 @@ public sealed class ModListItemViewModel : ObservableObject
         Func<ModListItemViewModel, bool, Task<ActivationResult>> activationHandler,
         string? installedGameVersion = null,
         bool isInstalled = false,
-        Func<string?, string?, bool>? shouldSkipVersion = null)
+        Func<string?, string?, bool>? shouldSkipVersion = null,
+        Func<bool>? requireExactVersionMatch = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
         _activationHandler = activationHandler ?? throw new ArgumentNullException(nameof(activationHandler));
         _installedGameVersion = installedGameVersion;
         _shouldSkipVersion = shouldSkipVersion;
+        _requireExactVersionMatch = requireExactVersionMatch;
 
         ModId = entry.ModId;
         DisplayName = string.IsNullOrWhiteSpace(entry.Name) ? entry.ModId : entry.Name;
@@ -1629,7 +1632,8 @@ public sealed class ModListItemViewModel : ObservableObject
         string? normalizedInstalled = VersionStringUtility.Normalize(installedGameVersion);
         IReadOnlyList<(string Normalized, string Original)> requiredVersions = BuildRequiredVersionCandidates();
 
-        if (TryCreateVersionWarning(requiredVersions, normalizedInstalled, out string? message))
+        bool requireExact = _requireExactVersionMatch?.Invoke() ?? false;
+        if (TryCreateVersionWarning(requiredVersions, normalizedInstalled, requireExact, out string? message))
         {
             _versionWarningMessage = message;
         }
@@ -1689,7 +1693,7 @@ public sealed class ModListItemViewModel : ObservableObject
         return string.Concat(baseText, Environment.NewLine, Environment.NewLine, _versionWarningMessage);
     }
 
-    private static bool TryCreateVersionWarning(IReadOnlyCollection<(string Normalized, string Original)> requiredVersions, string? installedVersion, out string? message)
+    private static bool TryCreateVersionWarning(IReadOnlyCollection<(string Normalized, string Original)> requiredVersions, string? installedVersion, bool requireExact, out string? message)
     {
         message = null;
 
@@ -1712,9 +1716,22 @@ public sealed class ModListItemViewModel : ObservableObject
             }
 
             hasComparable = true;
-            if (requiredMajor == installedMajor && requiredMinor == installedMinor)
+
+            if (requireExact)
             {
-                return false;
+                // Exact match: Compare only major.minor (first two digits)
+                if (requiredMajor == installedMajor && requiredMinor == installedMinor)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // Relaxed match: Compare first three digits
+                if (VersionStringUtility.MatchesFirstThreeDigits(normalized, installedVersion))
+                {
+                    return false;
+                }
             }
         }
 

@@ -202,6 +202,41 @@ internal static class VersionStringUtility
         return true;
     }
 
+    public static bool MatchesFirstThreeDigits(string? version1, string? version2)
+    {
+        if (string.IsNullOrWhiteSpace(version1) || string.IsNullOrWhiteSpace(version2))
+        {
+            return false;
+        }
+
+        string? normalized1 = Normalize(version1);
+        string? normalized2 = Normalize(version2);
+
+        if (normalized1 is null || normalized2 is null)
+        {
+            return false;
+        }
+
+        if (!TryParseVersionParts(normalized1, out var parts1)
+            || !TryParseVersionParts(normalized2, out var parts2))
+        {
+            return false;
+        }
+
+        // Compare first three digits only
+        int compareLength = Math.Min(3, Math.Min(parts1.Length, parts2.Length));
+        for (int i = 0; i < compareLength; i++)
+        {
+            if (parts1[i] != parts2[i])
+            {
+                return false;
+            }
+        }
+
+        // If one version has fewer than 3 parts but we matched all available parts, that's a match
+        return true;
+    }
+
     private static bool TryParseVersionParts(string normalizedVersion, out int[] parts)
     {
         string[] tokens = normalizedVersion.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

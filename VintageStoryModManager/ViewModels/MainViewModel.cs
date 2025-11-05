@@ -1469,7 +1469,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ApplyActivationChangeAsync,
             _installedGameVersion,
             true,
-            _configuration.ShouldSkipModVersion);
+            _configuration.ShouldSkipModVersion,
+            () => _configuration.RequireExactVsVersionMatch);
     }
 
     private async Task UpdateModsStateSnapshotAsync()
@@ -3401,7 +3402,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private ModListItemViewModel CreateSearchResultViewModel(ModEntry entry, bool isInstalled)
     {
-        return new ModListItemViewModel(entry, false, "Mod Database", RejectActivationChangeAsync, _installedGameVersion, isInstalled);
+        return new ModListItemViewModel(entry, false, "Mod Database", RejectActivationChangeAsync, _installedGameVersion, isInstalled, null, () => _configuration.RequireExactVsVersionMatch);
     }
 
     private static string? BuildSearchResultDescription(ModDatabaseSearchResult result)
@@ -4671,7 +4672,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 continue;
             }
 
-            if (!VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, _installedGameVersion))
+            // Check compatibility based on user setting
+            bool isCompatible = _configuration.RequireExactVsVersionMatch
+                ? VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, _installedGameVersion)
+                : (VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, _installedGameVersion)
+                   || VersionStringUtility.MatchesFirstThreeDigits(dependency.Version, _installedGameVersion));
+
+            if (!isCompatible)
             {
                 return false;
             }

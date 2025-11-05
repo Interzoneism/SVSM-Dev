@@ -454,6 +454,12 @@
                               Height="35"
                               Click="UpdateAllModsMenuItem_OnClick" />
                     <MenuItem Header="Check mods compatibility" Height="35" Click="CheckModsCompatibilityMenuItem_OnClick" />
+                    <MenuItem x:Name="RequireExactVsVersionMenuItem"
+                              Header="Require exact VS version for compatibility checks"
+                              Height="35"
+                              IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
+                              Click="RequireExactVsVersionMenuItem_OnClick" />
                     <MenuItem x:Name="CacheAllVersionsMenuItem"
                               Header="Cache all versions locally"
                               Height="35"

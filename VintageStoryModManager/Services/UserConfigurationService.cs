@@ -117,6 +117,7 @@ public sealed class UserConfigurationService
     private bool _hasPendingModUsagePrompt;
     private bool _isModUsageTrackingDisabled;
     private bool _migrationCheckCompleted;
+    private bool _requireExactVsVersionMatch;
 
     public UserConfigurationService()
     {
@@ -207,6 +208,8 @@ public sealed class UserConfigurationService
     public bool IsModUsageTrackingEnabled => !_isModUsageTrackingDisabled;
 
     public bool MigrationCheckCompleted => _migrationCheckCompleted;
+
+    public bool RequireExactVsVersionMatch => _requireExactVsVersionMatch;
 
     public void SetMigrationCheckCompleted()
     {
@@ -917,6 +920,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetRequireExactVsVersionMatch(bool requireExact)
+    {
+        if (_requireExactVsVersionMatch == requireExact)
+        {
+            return;
+        }
+
+        _requireExactVsVersionMatch = requireExact;
+        Save();
+    }
+
     public bool IsModExcludedFromBulkUpdates(string? modId)
     {
         string? normalized = NormalizeModId(modId);
@@ -1084,6 +1098,7 @@ public sealed class UserConfigurationService
             _modDatabaseAutoLoadMode = ParseModDatabaseAutoLoadMode(GetOptionalString(obj["modDatabaseAutoLoadMode"]));
             _excludeInstalledModDatabaseResults = obj["excludeInstalledModDatabaseResults"]?.GetValue<bool?>() ?? false;
             _onlyShowCompatibleModDatabaseResults = obj["onlyShowCompatibleModDatabaseResults"]?.GetValue<bool?>() ?? false;
+            _requireExactVsVersionMatch = obj["requireExactVsVersionMatch"]?.GetValue<bool?>() ?? false;
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             _modInfoPanelLeft = NormalizeModInfoCoordinate(obj["modInfoPanelLeft"]?.GetValue<double?>());
@@ -1142,6 +1157,7 @@ public sealed class UserConfigurationService
             _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
             _excludeInstalledModDatabaseResults = false;
             _onlyShowCompatibleModDatabaseResults = false;
+            _requireExactVsVersionMatch = false;
             _windowWidth = null;
             _windowHeight = null;
             _modInfoPanelLeft = null;
@@ -1204,6 +1220,7 @@ public sealed class UserConfigurationService
                 ["modDatabaseAutoLoadMode"] = _modDatabaseAutoLoadMode.ToString(),
                 ["excludeInstalledModDatabaseResults"] = _excludeInstalledModDatabaseResults,
                 ["onlyShowCompatibleModDatabaseResults"] = _onlyShowCompatibleModDatabaseResults,
+                ["requireExactVsVersionMatch"] = _requireExactVsVersionMatch,
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["modInfoPanelLeft"] = _modInfoPanelLeft,
