@@ -628,13 +628,15 @@
                               Header="Version: --"
                               Padding="12,6"
                               IsEnabled="False"
-                              Focusable="False" />
+                              Focusable="False"
+                              Opacity="0.75"/>
                     <MenuItem x:Name="GameVersionMenuItem"
                               Header="Vintage Story: --"
                               Padding="12,6"
                               IsEnabled="False"
                               Focusable="False"
-                              Visibility="Collapsed" />
+                              Visibility="Collapsed"
+                              Opacity="0.75"/>
                     <MenuItem Header="Open manager config folder"
                               Padding="12,6"
                               Click="ManagerDataFolderMenuItem_OnClick" />

@@ -19,6 +19,16 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <!-- Ensure cells also turn red; some themes paint cell backgrounds over the row -->
+        <Style x:Key="ErrorCellStyle" TargetType="{x:Type DataGridCell}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                    <Setter Property="Background" Value="Red" />
+                    <Setter Property="Foreground" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="24"
@@ -65,6 +75,7 @@
                           MinColumnWidth="20"
                           Foreground="{DynamicResource Brush.Text.Primary}"
                           RowStyle="{StaticResource ErrorRowStyle}"
+                          CellStyle="{StaticResource ErrorCellStyle}"
                           RowBackground="{DynamicResource Brush.Button.Primary.Background.Normal}"
                           HorizontalGridLinesBrush="Transparent"
                           VerticalGridLinesBrush="Transparent"
