@@ -223,9 +223,14 @@ internal static class VersionStringUtility
             return false;
         }
 
-        // Compare first three digits only
-        int compareLength = Math.Min(3, Math.Min(parts1.Length, parts2.Length));
-        for (int i = 0; i < compareLength; i++)
+        // Both versions must have at least 3 parts for exact comparison
+        if (parts1.Length < 3 || parts2.Length < 3)
+        {
+            return false;
+        }
+
+        // Compare first three parts exactly
+        for (int i = 0; i < 3; i++)
         {
             if (parts1[i] != parts2[i])
             {
@@ -233,7 +238,6 @@ internal static class VersionStringUtility
             }
         }
 
-        // If one version has fewer than 3 parts but we matched all available parts, that's a match
         return true;
     }
 
