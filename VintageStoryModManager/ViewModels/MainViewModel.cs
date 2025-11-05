@@ -1469,7 +1469,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ApplyActivationChangeAsync,
             _installedGameVersion,
             true,
-            _configuration.ShouldSkipModVersion);
+            _configuration.ShouldSkipModVersion,
+            () => _configuration.RequireExactVsVersionMatch);
     }
 
     private async Task UpdateModsStateSnapshotAsync()
@@ -3401,7 +3402,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private ModListItemViewModel CreateSearchResultViewModel(ModEntry entry, bool isInstalled)
     {
-        return new ModListItemViewModel(entry, false, "Mod Database", RejectActivationChangeAsync, _installedGameVersion, isInstalled);
+        return new ModListItemViewModel(entry, false, "Mod Database", RejectActivationChangeAsync, _installedGameVersion, isInstalled, null, () => _configuration.RequireExactVsVersionMatch);
     }
 
     private static string? BuildSearchResultDescription(ModDatabaseSearchResult result)
@@ -4671,9 +4672,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 continue;
             }
 
+            // Check if the installed game version satisfies the dependency's minimum version requirement
+            // (e.g., if mod requires 1.21.0 and user has 1.21.4, that's OK as 1.21.4 >= 1.21.0)
             if (!VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, _installedGameVersion))
             {
                 return false;
+            }
+
+            // When exact version match is required, also verify first 3 version parts match
+            // (e.g., with exact mode, 1.21.3 won't be compatible with 1.21.4 even though 1.21.4 >= 1.21.3)
+            if (_configuration.RequireExactVsVersionMatch)
+            {
+                if (!VersionStringUtility.MatchesFirstThreeDigits(dependency.Version, _installedGameVersion))
+                {
+                    return false;
+                }
             }
         }
 
