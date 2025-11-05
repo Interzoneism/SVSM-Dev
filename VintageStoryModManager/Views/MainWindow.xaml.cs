@@ -1810,8 +1810,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var linesToProcess = matchedLines.Select(x => x.Line).ToList();
-        List<string> processedLines = SummarizePatchMissingLines(linesToProcess);
+        List<(string Line, int LineNumber)> processedLines = SummarizePatchMissingLinesWithLineNumbers(matchedLines);
         if (processedLines.Count == 0)
         {
             return;
@@ -1819,28 +1818,9 @@ public partial class MainWindow : Window
 
         logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
         
-        // Create a list of tuples to track line numbers alongside the lines
-        // This preserves the association even when there are duplicate lines
-        var lineWithNumbers = new List<(string Line, int LineNumber)>();
-        for (int i = 0; i < linesToProcess.Count; i++)
+        foreach (var (line, lineNumber) in processedLines)
         {
-            lineWithNumbers.Add((linesToProcess[i], matchedLines[i].LineNumber));
-        }
-        
-        foreach (string processedLine in processedLines)
-        {
-            // Try to find the first matching original line and use its line number
-            int lineNumber = 0;
-            foreach (var (line, num) in lineWithNumbers)
-            {
-                if (string.Equals(line, processedLine, StringComparison.OrdinalIgnoreCase))
-                {
-                    lineNumber = num;
-                    break;
-                }
-            }
-            
-            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(processedLine, modId, filePath, lineNumber));
+            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modId, filePath, lineNumber));
         }
     }
 
@@ -1855,8 +1835,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var linesToProcess = matchedLines.Select(x => x.Line).ToList();
-        List<string> processedLines = SummarizePatchMissingLines(linesToProcess);
+        List<(string Line, string ModName, int LineNumber)> processedLines = SummarizePatchMissingLinesWithModAndLineNumbers(matchedLines);
         if (processedLines.Count == 0)
         {
             return;
@@ -1864,30 +1843,9 @@ public partial class MainWindow : Window
 
         logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
         
-        // Create lists to track mod names and line numbers alongside the lines
-        // This preserves the association even when there are duplicate lines
-        var lineWithModAndNumber = new List<(string Line, string ModName, int LineNumber)>();
-        for (int i = 0; i < linesToProcess.Count; i++)
+        foreach (var (line, modName, lineNumber) in processedLines)
         {
-            lineWithModAndNumber.Add((linesToProcess[i], matchedLines[i].ModName, matchedLines[i].LineNumber));
-        }
-        
-        foreach (string processedLine in processedLines)
-        {
-            // Try to find the first matching original line and use its metadata
-            string? modName = null;
-            int lineNumber = 0;
-            foreach (var (line, mod, num) in lineWithModAndNumber)
-            {
-                if (string.Equals(line, processedLine, StringComparison.OrdinalIgnoreCase))
-                {
-                    modName = mod;
-                    lineNumber = num;
-                    break;
-                }
-            }
-            
-            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(processedLine, modName, filePath, lineNumber));
+            logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modName, filePath, lineNumber));
         }
     }
 
@@ -1970,6 +1928,74 @@ public partial class MainWindow : Window
         return summarized;
     }
 
+    private static List<(string Line, int LineNumber)> SummarizePatchMissingLinesWithLineNumbers(
+        List<(string Line, int LineNumber)> matchedLines)
+    {
+        if (matchedLines.Count == 0)
+        {
+            return matchedLines;
+        }
+
+        var summarized = new List<(string Line, int LineNumber)>(matchedLines.Count);
+        var lineSummaries = new Dictionary<string, (int Index, int HiddenCount)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (line, lineNumber) in matchedLines)
+        {
+            // Try to match "Patch X in [mod]" pattern
+            Match patchMatch = PatchAssetMissingRegex.Match(line);
+            if (patchMatch.Success)
+            {
+                string modId = patchMatch.Groups["mod"].Value;
+                if (!string.IsNullOrEmpty(modId))
+                {
+                    string summaryKey = $"{SummaryKeyPatchModPrefix}{modId.Trim()}";
+                    AddOrIncrementSummaryWithLineNumber(summarized, lineSummaries, line, lineNumber, summaryKey);
+                    continue;
+                }
+            }
+
+            // Try to match summarizable prefixes
+            string? matchedPrefix = null;
+            foreach (string prefix in SummarizableLinePrefixes)
+            {
+                if (line.IndexOf(prefix, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    matchedPrefix = prefix;
+                    break;
+                }
+            }
+
+            if (matchedPrefix != null)
+            {
+                // Create a summary key based on the prefix
+                string summaryKey = $"{SummaryKeyLinePrefix}{matchedPrefix}";
+                AddOrIncrementSummaryWithLineNumber(summarized, lineSummaries, line, lineNumber, summaryKey);
+                continue;
+            }
+
+            // No pattern matched, add line as-is with its line number
+            summarized.Add((line, lineNumber));
+        }
+
+        // Append hidden count to summarized lines
+        foreach ((int Index, int HiddenCount) value in lineSummaries.Values)
+        {
+            if (value.HiddenCount <= 0)
+            {
+                continue;
+            }
+
+            int index = value.Index;
+            if (index >= 0 && index < summarized.Count)
+            {
+                var (line, lineNumber) = summarized[index];
+                summarized[index] = ($"{line} ({value.HiddenCount} similar lines hidden...)", lineNumber);
+            }
+        }
+
+        return summarized;
+    }
+
     private static void AddOrIncrementSummary(
         List<string> summarized,
         Dictionary<string, (int Index, int HiddenCount)> summaries,
@@ -1984,6 +2010,111 @@ public partial class MainWindow : Window
         {
             summaries[summaryKey] = (summarized.Count, 0);
             summarized.Add(line);
+        }
+    }
+
+    private static void AddOrIncrementSummaryWithLineNumber(
+        List<(string Line, int LineNumber)> summarized,
+        Dictionary<string, (int Index, int HiddenCount)> summaries,
+        string line,
+        int lineNumber,
+        string summaryKey)
+    {
+        if (summaries.TryGetValue(summaryKey, out var entry))
+        {
+            summaries[summaryKey] = (entry.Index, entry.HiddenCount + 1);
+        }
+        else
+        {
+            summaries[summaryKey] = (summarized.Count, 0);
+            summarized.Add((line, lineNumber));
+        }
+    }
+
+    private static List<(string Line, string ModName, int LineNumber)> SummarizePatchMissingLinesWithModAndLineNumbers(
+        List<(string Line, string ModName, int LineNumber)> matchedLines)
+    {
+        if (matchedLines.Count == 0)
+        {
+            return matchedLines;
+        }
+
+        var summarized = new List<(string Line, string ModName, int LineNumber)>(matchedLines.Count);
+        var lineSummaries = new Dictionary<string, (int Index, int HiddenCount)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (line, modName, lineNumber) in matchedLines)
+        {
+            // Try to match "Patch X in [mod]" pattern
+            Match patchMatch = PatchAssetMissingRegex.Match(line);
+            if (patchMatch.Success)
+            {
+                string modId = patchMatch.Groups["mod"].Value;
+                if (!string.IsNullOrEmpty(modId))
+                {
+                    string summaryKey = $"{SummaryKeyPatchModPrefix}{modId.Trim()}";
+                    AddOrIncrementSummaryWithModAndLineNumber(summarized, lineSummaries, line, modName, lineNumber, summaryKey);
+                    continue;
+                }
+            }
+
+            // Try to match summarizable prefixes
+            string? matchedPrefix = null;
+            foreach (string prefix in SummarizableLinePrefixes)
+            {
+                if (line.IndexOf(prefix, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    matchedPrefix = prefix;
+                    break;
+                }
+            }
+
+            if (matchedPrefix != null)
+            {
+                // Create a summary key based on the prefix
+                string summaryKey = $"{SummaryKeyLinePrefix}{matchedPrefix}";
+                AddOrIncrementSummaryWithModAndLineNumber(summarized, lineSummaries, line, modName, lineNumber, summaryKey);
+                continue;
+            }
+
+            // No pattern matched, add line as-is with its mod name and line number
+            summarized.Add((line, modName, lineNumber));
+        }
+
+        // Append hidden count to summarized lines
+        foreach ((int Index, int HiddenCount) value in lineSummaries.Values)
+        {
+            if (value.HiddenCount <= 0)
+            {
+                continue;
+            }
+
+            int index = value.Index;
+            if (index >= 0 && index < summarized.Count)
+            {
+                var (line, modName, lineNumber) = summarized[index];
+                summarized[index] = ($"{line} ({value.HiddenCount} similar lines hidden...)", modName, lineNumber);
+            }
+        }
+
+        return summarized;
+    }
+
+    private static void AddOrIncrementSummaryWithModAndLineNumber(
+        List<(string Line, string ModName, int LineNumber)> summarized,
+        Dictionary<string, (int Index, int HiddenCount)> summaries,
+        string line,
+        string modName,
+        int lineNumber,
+        string summaryKey)
+    {
+        if (summaries.TryGetValue(summaryKey, out var entry))
+        {
+            summaries[summaryKey] = (entry.Index, entry.HiddenCount + 1);
+        }
+        else
+        {
+            summaries[summaryKey] = (summarized.Count, 0);
+            summarized.Add((line, modName, lineNumber));
         }
     }
 
