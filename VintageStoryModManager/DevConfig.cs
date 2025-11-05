@@ -80,6 +80,7 @@ public static class DevConfig
     public static string FirebaseDeleteEndpoint { get; } = "https://identitytoolkit.googleapis.com/v1/accounts:delete";
     public static string FirebaseAuthStateFileName { get; } = "firebase-auth.json";
     public static string FirebaseDefaultApiKey { get; } = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
+    public static string FirebaseAuthBackupDirectoryName { get; } = "SVSM Backup";
 
     // User configuration defaults.
     public static string ConfigurationFileName { get; } = "SimpleVSManagerConfiguration.json";
