@@ -715,6 +715,75 @@ public sealed class FirebaseAnonymousAuthenticator
         return value.Substring(0, length) + "...";
     }
 
+    /// <summary>
+    /// Checks if Firebase auth backup should be created and attempts to create it on app startup.
+    /// This ensures the firebase-auth.json file is backed up to AppData/Local/SVSM Backup/ if it exists
+    /// and hasn't been backed up yet.
+    /// </summary>
+    /// <param name="config">User configuration service to check and update backup status.</param>
+    public static void EnsureStartupBackup(UserConfigurationService? config)
+    {
+        try
+        {
+            // If config is null or backup already created, nothing to do
+            if (config is null || config.FirebaseAuthBackupCreated)
+            {
+                return;
+            }
+
+            // Get the path to the main firebase-auth.json file
+            string stateFilePath = GetStateFilePath();
+            if (string.IsNullOrWhiteSpace(stateFilePath) || !File.Exists(stateFilePath))
+            {
+                // No auth file exists, nothing to backup
+                return;
+            }
+
+            // Get the backup file path
+            string? backupPath = GetBackupFilePath();
+            if (string.IsNullOrWhiteSpace(backupPath))
+            {
+                return;
+            }
+
+            // If backup file already exists, just mark it as created
+            if (File.Exists(backupPath))
+            {
+                MarkBackupCreated(config);
+                return;
+            }
+
+            // Create backup directory if it doesn't exist
+            string? backupDirectory = Path.GetDirectoryName(backupPath);
+            if (!string.IsNullOrWhiteSpace(backupDirectory))
+            {
+                Directory.CreateDirectory(backupDirectory);
+            }
+
+            // Copy the auth file to backup location
+            File.Copy(stateFilePath, backupPath, overwrite: false);
+
+            // Mark backup as created in configuration
+            MarkBackupCreated(config);
+        }
+        catch (IOException)
+        {
+            // Silently ignore backup failures
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Silently ignore backup failures
+        }
+        catch (SecurityException)
+        {
+            // Silently ignore backup failures
+        }
+        catch (NotSupportedException)
+        {
+            // Silently ignore backup failures
+        }
+    }
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
