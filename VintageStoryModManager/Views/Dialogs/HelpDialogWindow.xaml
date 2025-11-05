@@ -1,15 +1,15 @@
-<Window x:Class="VintageStoryModManager.Views.Dialogs.GuideDialogWindow"
+<Window x:Class="VintageStoryModManager.Views.Dialogs.HelpDialogWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Simple VS Manager Guide"
-        Width="720"
+        Title="Simple VS Manager Help"
+        Width="739"
         MinWidth="640"
         SizeToContent="Height"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         WindowStyle="SingleBorderWindow"
-        Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
+        Background="{DynamicResource Brush.Window.Shell.Background.Solid}" Height="342">
     <Grid Margin="24"
           Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
           TextElement.Foreground="{DynamicResource Brush.Text.Primary}">
@@ -26,64 +26,52 @@
             <StackPanel>
                 <TextBlock FontSize="20"
                            FontWeight="Bold"
-                           Text="Simple VS Manager info" />
+                           Text="Help" />
 
                 <TextBlock Margin="0,12,0,0"
                            TextWrapping="Wrap"
                            FontSize="15">
-                    <Run Text="• The manager saves automatic backups before big actions. Restore them from" />
-                    <Bold>File &gt; Restore backup point</Bold>
-                    <Run Text="whenever you need to roll back." />
+                    <Run Text="If you are experiencing any errors or problems, start with running &quot;Clear all caches&quot; in the Help menu." />
                 </TextBlock>
 
                 <TextBlock Margin="0,12,0,0"
                            TextWrapping="Wrap"
                            FontSize="15">
-                    <Run Text="• Use" />
-                    <Bold>File &gt; Set Custom Vintage Story Shortcut</Bold>
-                    <Run Text="to launch the game with any command-line arguments stored on that shortcut." />
+                    <Run Text="Another thing you can try is to save your installed mods as a local Modlist, delete all your mods, and load the Modlist to reinstall them." />
                 </TextBlock>
 
                 <TextBlock Margin="0,12,0,0"
                            TextWrapping="Wrap"
                            FontSize="15">
-                    <Run Text="• Switch off" />
-                    <Bold>View &gt; ModDB Design</Bold>
-                    <Run Text="to get the tag-sorting list view while browsing the Mod DB." />
-                </TextBlock>
-
-                <TextBlock Margin="0,12,0,0"
-                           TextWrapping="Wrap"
-                           FontSize="15">
-                    <Run Text="• Want more Mod DB results? Edit"/>
-                    <Bold>modDatabaseSearchResultLimit</Bold>
-                    <Run Text="(default 30) in " />
-                    <Bold>SimpleVSManagerConfiguration.json</Bold>
-                    <Run Text="inside the" />
-                    <Hyperlink x:Name="ConfigurationFileHyperlink"
-                               RequestNavigate="OnHyperlinkRequestNavigate"
-                               Foreground="{DynamicResource Brush.Text.Emphasis}">
-                        <Run Text="Simple VS Manager folder"/>
+                    <Run Text="If you are having issues with the online Modlists or the Voting function, make sure the firebase-auth.json file is inside the"/>
+                    <Hyperlink x:Name="FirebaseFileHyperlink"
+                       RequestNavigate="OnFirebaseHyperlinkRequestNavigate"
+                       Foreground="{DynamicResource Brush.Text.Emphasis}">
+                       <Run Text="Simple VS Manager folder"/>
                     </Hyperlink>
-                    <Run Text="." />
+                    <Run Text="- if it's missing or if still not working you can copy the backup from" />
+                    <Hyperlink x:Name="BackupLink"
+                       RequestNavigate="OnBackupHyperlinkRequestNavigate"
+                       Foreground="{DynamicResource Brush.Text.Emphasis}">
+                       <Run Text="AppData/Local/SVSM Backup"/>
+                    </Hyperlink>
+                    <Run Text="and replace the firebase-auth.json file." />
+
                 </TextBlock>
 
                 <TextBlock Margin="0,12,0,0"
                            TextWrapping="Wrap"
                            FontSize="15">
-                    <Run Text="• All manager data lives under the" />
-                    <Hyperlink x:Name="ManagerFolderHyperlink"
-                               RequestNavigate="OnHyperlinkRequestNavigate"
-                               Foreground="{DynamicResource Brush.Text.Emphasis}">
-                        <Run Text="Simple VS Manager folder" />
+                    <Run Text="Always update to the latest manager version."/>
+                    <LineBreak/>
+                    <Run Text="Make sure to read the description and check out the latest comments on the"/>
+                    <Hyperlink x:Name="ModDBlink"
+                       RequestNavigate="OnModDBlinkNavigate"
+                       Foreground="{DynamicResource Brush.Text.Emphasis}">
+                       <Run Text="managers Mod DB page"/>
                     </Hyperlink>
-                    <Run Text="- configs, caches, and presets." />
                 </TextBlock>
-                <TextBlock Margin="0,12,0,0"
-                           TextWrapping="Wrap"
-                           FontSize="15"><Run Text="• " /><Run Text=" "/><Bold><Run Text="Mods &gt; Cache all versions locally"/></Bold><Run Text=" "/><Run Text="is on by default so downloads stay ready. Most mods are small, so the" /><Run Text=" "/><Hyperlink x:Name="CachedModsHyperlink"
-                               RequestNavigate="OnHyperlinkRequestNavigate"
-                               Foreground="{DynamicResource Brush.Text.Emphasis}"><Run Text="Cached Mods folder" /></Hyperlink><Run Text=" "/><Run Text="saves re-download time." /></TextBlock>
+
             </StackPanel>
         </ScrollViewer>
 
@@ -94,7 +82,7 @@
             <Button Width="100"
                     IsDefault="True"
                     Content="Close"
-                    Click="OnCloseButtonClick" />
+                    Click="OnHelpCloseButtonClick" />
         </StackPanel>
     </Grid>
 </Window>

@@ -3,26 +3,37 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Documents;
-using System.Windows.Media;
 using System.Windows.Navigation;
-using VintageStoryModManager.Services;
+using VintageStoryModManager; // For DevConfig
+using VintageStoryModManager.Services; // For InternetAccessManager
 
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 
 namespace VintageStoryModManager.Views.Dialogs;
 
-public partial class GuideDialogWindow : Window
+public partial class HelpDialogWindow : Window
 {
-    public GuideDialogWindow(string managerDirectory, string? cachedModsDirectory, string configurationFilePath)
+
+    public HelpDialogWindow(string managerDirectory, string? cachedModsDirectory)
     {
         InitializeComponent();
 
-        ConfigureHyperlink(ManagerFolderHyperlink, managerDirectory, ensureDirectory: true);
-        ConfigureHyperlink(CachedModsHyperlink, cachedModsDirectory, ensureDirectory: true);
-        ConfigureHyperlink(ConfigurationFileHyperlink, Path.GetDirectoryName(configurationFilePath), ensureDirectory: true);
+        ConfigureCachedModsHyperlink(ModDBlink, cachedModsDirectory, ensureDirectory: true);
+        ConfigureFirebaseHyperlink(FirebaseFileHyperlink, managerDirectory, ensureDirectory: true);
+        ConfigureHyperlinkCommon(BackupLink, DevConfig.FirebaseBackupDirectory, ensureDirectory: true);
     }
 
-    private void ConfigureHyperlink(Hyperlink hyperlink, string? path, bool ensureDirectory)
+    private void ConfigureCachedModsHyperlink(Hyperlink hyperlink, string? path, bool ensureDirectory)
+    {
+        ConfigureHyperlinkCommon(hyperlink, path, ensureDirectory);
+    }
+
+    private void ConfigureFirebaseHyperlink(Hyperlink hyperlink, string? path, bool ensureDirectory)
+    {
+        ConfigureHyperlinkCommon(hyperlink, path, ensureDirectory);
+    }
+
+    private void ConfigureHyperlinkCommon(Hyperlink hyperlink, string? path, bool ensureDirectory)
     {
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -57,7 +68,57 @@ public partial class GuideDialogWindow : Window
         return Uri.TryCreate(path, UriKind.Absolute, out Uri? uri) ? uri : null;
     }
 
-    private void OnHyperlinkRequestNavigate(object sender, RequestNavigateEventArgs e)
+    private void OnFirebaseHyperlinkRequestNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        HandleHyperlinkNavigation(sender, e);
+    }
+
+    private void OnBackupHyperlinkRequestNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        HandleHyperlinkNavigation(sender, e);
+    }
+
+    private void OnCachedModsHyperlinkRequestNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        HandleHyperlinkNavigation(sender, e);
+    }
+
+    // NEW: Open the manager's Mod DB page exactly like the Help menu item.
+    private void OnModDBlinkNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        e.Handled = true;
+
+        string url = DevConfig.ManagerModDatabaseUrl;
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            WpfMessageBox.Show(this,
+                "Internet access is disabled. Enable Internet Access in the File menu to open web links.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(this,
+                $"Failed to open the web page:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void HandleHyperlinkNavigation(object sender, RequestNavigateEventArgs e)
     {
         e.Handled = true;
 
@@ -111,7 +172,7 @@ public partial class GuideDialogWindow : Window
         return null;
     }
 
-    private void OnCloseButtonClick(object sender, RoutedEventArgs e)
+    private void OnHelpCloseButtonClick(object sender, RoutedEventArgs e)
     {
         DialogResult = true;
     }

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace VintageStoryModManager;
 
@@ -43,6 +44,26 @@ public static class DevConfig
     // Firebase mod list storage.
     public static string FirebaseModlistDefaultDbUrl { get; } =
         "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
+
+    // Cloud/Firebase backups location (AppData/Local/SVSM Backup/)
+    public static string FirebaseBackupDirectory
+    {
+        get
+        {
+            string? local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (string.IsNullOrWhiteSpace(local))
+            {
+                local = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            }
+
+            if (string.IsNullOrWhiteSpace(local))
+            {
+                return Path.Combine(AppContext.BaseDirectory, "SVSM Backup");
+            }
+
+            return Path.Combine(local, "SVSM Backup");
+        }
+    }
 
     // Status log display.
     public static string StatusTimestampFormat { get; } = "yyyy-MM-dd HH:mm:ss.fff";

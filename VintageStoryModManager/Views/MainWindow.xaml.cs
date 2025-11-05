@@ -5804,7 +5804,18 @@ public partial class MainWindow : Window
     {
         OpenManagerModDatabasePage();
     }
+    private void HelpMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        string managerDirectory = _userConfiguration.GetConfigurationDirectory();
+        string? cachedModsDirectory = ModCacheLocator.GetCachedModsDirectory();
 
+        var dialog = new HelpDialogWindow(managerDirectory, cachedModsDirectory)
+        {
+            Owner = this
+        };
+
+        _ = dialog.ShowDialog();
+    }
     private void GuideMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         string managerDirectory = _userConfiguration.GetConfigurationDirectory();
