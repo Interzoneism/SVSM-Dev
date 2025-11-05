@@ -391,6 +391,9 @@ public partial class MainWindow : Window
 
         _userConfiguration.EnablePersistence();
 
+        // Ensure firebase-auth.json is backed up if it exists and hasn't been backed up yet
+        FirebaseAnonymousAuthenticator.EnsureStartupBackup(_userConfiguration);
+
         await CheckAndPromptMigrationAsync().ConfigureAwait(true);
 
         await PromptCacheRefreshIfNeededAsync().ConfigureAwait(true);
