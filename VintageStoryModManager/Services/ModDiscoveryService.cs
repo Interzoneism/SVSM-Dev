@@ -292,6 +292,11 @@ public sealed class ModDiscoveryService
 
     private static bool IsBaseGameMod(string modId)
     {
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            return false;
+        }
+
         return string.Equals(modId, "VSCreativeMod", StringComparison.OrdinalIgnoreCase)
             || string.Equals(modId, "VSEssentials", StringComparison.OrdinalIgnoreCase)
             || string.Equals(modId, "VSSurvivalMod", StringComparison.OrdinalIgnoreCase);
