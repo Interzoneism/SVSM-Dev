@@ -1941,7 +1941,7 @@
                     </Border>
 
                     <TextBlock Grid.Row="1"
-                               Text="No cloud modlists have been uploaded yet."
+                               Text="Loading modlists..."
                                FontSize="16"
                                Foreground="{DynamicResource Brush.Text.Primary}"
                                HorizontalAlignment="Center"
