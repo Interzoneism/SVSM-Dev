@@ -2211,6 +2211,14 @@ public partial class MainWindow : Window
                     _viewModel.OnlyShowCompatibleModDatabaseResults);
             }
         }
+        else if (e.PropertyName == nameof(MainViewModel.SelectedModDatabaseFetchLimit))
+        {
+            if (_viewModel != null)
+            {
+                _userConfiguration.SetModDatabaseSearchResultLimit(
+                    _viewModel.SelectedModDatabaseFetchLimit);
+            }
+        }
         else if (e.PropertyName == nameof(MainViewModel.SearchModDatabase))
         {
             if (_viewModel != null)
