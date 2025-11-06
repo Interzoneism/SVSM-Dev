@@ -1800,6 +1800,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             mod.PropertyChanged += OnSearchResultPropertyChanged;
         }
 
+        if (mod.CanSubmitUserReport)
+        {
+            QueueUserReportRefresh(mod);
+        }
+
         QueueLatestReleaseUserReportRefresh(mod);
     }
 
@@ -1848,12 +1853,26 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void OnSearchResultPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (!string.Equals(e.PropertyName, nameof(ModListItemViewModel.DatabaseTags), StringComparison.Ordinal))
+        if (sender is not ModListItemViewModel mod)
         {
             return;
         }
 
-        ScheduleModDatabaseTagRefresh();
+        if (string.Equals(e.PropertyName, nameof(ModListItemViewModel.DatabaseTags), StringComparison.Ordinal))
+        {
+            ScheduleModDatabaseTagRefresh();
+            return;
+        }
+
+        if (string.Equals(e.PropertyName, nameof(ModListItemViewModel.UserReportModVersion), StringComparison.Ordinal))
+        {
+            if (mod.CanSubmitUserReport)
+            {
+                QueueUserReportRefresh(mod);
+            }
+
+            return;
+        }
     }
 
     private void QueueLatestReleaseUserReportRefresh(ModListItemViewModel mod)
@@ -1976,6 +1995,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         foreach (ModListItemViewModel mod in _searchResultSubscriptions)
         {
+            if (mod.CanSubmitUserReport)
+            {
+                QueueUserReportRefresh(mod);
+            }
+
             QueueLatestReleaseUserReportRefresh(mod);
         }
     }
@@ -1998,7 +2022,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return null;
         }
 
-        if (string.IsNullOrWhiteSpace(_installedGameVersion) || string.IsNullOrWhiteSpace(mod.Version))
+        if (string.IsNullOrWhiteSpace(_installedGameVersion) || string.IsNullOrWhiteSpace(mod.UserReportModVersion))
         {
             await InvokeOnDispatcherAsync(
                     () => mod.SetUserReportUnavailable("User reports require a known Vintage Story and mod version."),
@@ -2021,10 +2045,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             ModVersionVoteSummary summary = option.HasValue
                 ? await _voteService
-                    .SubmitVoteAsync(mod.ModId, mod.Version!, _installedGameVersion!, option.Value, comment, cancellationToken)
+                    .SubmitVoteAsync(
+                        mod.ModId,
+                        mod.UserReportModVersion!,
+                        _installedGameVersion!,
+                        option.Value,
+                        comment,
+                        cancellationToken)
                     .ConfigureAwait(false)
                 : await _voteService
-                    .RemoveVoteAsync(mod.ModId, mod.Version!, _installedGameVersion!, cancellationToken)
+                    .RemoveVoteAsync(mod.ModId, mod.UserReportModVersion!, _installedGameVersion!, cancellationToken)
                     .ConfigureAwait(false);
 
             await InvokeOnDispatcherAsync(
@@ -2060,7 +2090,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return null;
         }
 
-        if (string.IsNullOrWhiteSpace(_installedGameVersion) || string.IsNullOrWhiteSpace(mod.Version))
+        if (string.IsNullOrWhiteSpace(_installedGameVersion) || string.IsNullOrWhiteSpace(mod.UserReportModVersion))
         {
             await InvokeOnDispatcherAsync(
                     () => mod.SetUserReportUnavailable("User reports require a known Vintage Story and mod version."),
@@ -2083,7 +2113,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         try
         {
             ModVersionVoteSummary summary = await _voteService
-                .GetVoteSummaryAsync(mod.ModId, mod.Version!, _installedGameVersion!, cancellationToken)
+                .GetVoteSummaryAsync(mod.ModId, mod.UserReportModVersion!, _installedGameVersion!, cancellationToken)
                 .ConfigureAwait(false);
 
             await InvokeOnDispatcherAsync(

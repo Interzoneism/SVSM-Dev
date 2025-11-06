@@ -78,6 +78,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _modDatabaseSide;
     private ModVersionVoteSummary? _userReportSummary;
     private string _userReportDisplay = "—";
+    private string? _userReportModVersion;
     private string? _userReportTooltip;
     private bool _isUserReportLoading;
     private bool _userReportHasError;
@@ -150,6 +151,10 @@ public sealed class ModListItemViewModel : ObservableObject
             ?? databaseInfo?.LatestVersion
             ?? _latestCompatibleRelease?.Version
             ?? databaseInfo?.LatestCompatibleVersion;
+        string? initialUserReportVersion = !string.IsNullOrWhiteSpace(entry.Version)
+            ? entry.Version
+            : SelectPreferredUserReportVersion(_latestRelease, _latestCompatibleRelease, databaseInfo);
+        SetUserReportVersion(initialUserReportVersion, reinitializeState: false);
         _loadError = entry.LoadError;
 
         IsInstalled = isInstalled;
@@ -194,7 +199,7 @@ public sealed class ModListItemViewModel : ObservableObject
         UpdateNewerReleaseChangelogs();
         UpdateStatusFromErrors();
         UpdateTooltip();
-        InitializeUserReportState(_installedGameVersion, Version);
+        InitializeUserReportState(_installedGameVersion, _userReportModVersion);
         _searchIndex = BuildSearchIndex(entry, location);
     }
 
@@ -427,6 +432,8 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public ModVersionVoteSummary? UserReportSummary => _userReportSummary;
 
+    public string? UserReportModVersion => _userReportModVersion;
+
     public ModVersionVoteCounts UserReportCounts => _userReportSummary?.Counts ?? ModVersionVoteCounts.Empty;
 
     public ModVersionVoteOption? UserVoteOption => _userReportSummary?.UserVote;
@@ -455,7 +462,45 @@ public sealed class ModListItemViewModel : ObservableObject
         private set => SetProperty(ref _userReportHasError, value);
     }
 
-    public bool CanSubmitUserReport => !string.IsNullOrWhiteSpace(_installedGameVersion) && !string.IsNullOrWhiteSpace(Version);
+    public bool CanSubmitUserReport => !string.IsNullOrWhiteSpace(_installedGameVersion)
+        && !string.IsNullOrWhiteSpace(_userReportModVersion);
+
+    private bool SetUserReportVersion(string? version, bool reinitializeState)
+    {
+        string? normalized = NormalizeVersion(version);
+        if (string.Equals(_userReportModVersion, normalized, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        _userReportModVersion = normalized;
+        OnPropertyChanged(nameof(UserReportModVersion));
+        OnPropertyChanged(nameof(CanSubmitUserReport));
+
+        if (reinitializeState)
+        {
+            InitializeUserReportState(_installedGameVersion, _userReportModVersion);
+        }
+
+        return true;
+    }
+
+    private static string? NormalizeVersion(string? value)
+    {
+        string? trimmed = value?.Trim();
+        return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
+    }
+
+    private static string? SelectPreferredUserReportVersion(
+        ModReleaseInfo? latestRelease,
+        ModReleaseInfo? latestCompatibleRelease,
+        ModDatabaseInfo? databaseInfo)
+    {
+        return latestRelease?.Version
+            ?? databaseInfo?.LatestVersion
+            ?? latestCompatibleRelease?.Version
+            ?? databaseInfo?.LatestCompatibleVersion;
+    }
 
     private void InitializeUserReportState(string? installedGameVersion, string? modVersion)
     {
@@ -992,6 +1037,15 @@ public sealed class ModListItemViewModel : ObservableObject
         ModReleaseInfo? latestRelease = info.LatestRelease;
         ModReleaseInfo? latestCompatibleRelease = info.LatestCompatibleRelease;
         IReadOnlyList<ModReleaseInfo> releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
+
+        if (string.IsNullOrWhiteSpace(Version))
+        {
+            string? preferredUserReportVersion = SelectPreferredUserReportVersion(
+                latestRelease,
+                latestCompatibleRelease,
+                info);
+            SetUserReportVersion(preferredUserReportVersion, reinitializeState: true);
+        }
 
         string? latestReleaseVersion = latestRelease?.Version;
         if (!string.Equals(_latestReleaseUserReportVersion, latestReleaseVersion, StringComparison.OrdinalIgnoreCase))
