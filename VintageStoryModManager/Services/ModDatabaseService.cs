@@ -21,6 +21,7 @@ public sealed class ModDatabaseService
     private static readonly string SearchEndpointFormat = DevConfig.ModDatabaseSearchEndpointFormat;
     private static readonly string MostDownloadedEndpointFormat = DevConfig.ModDatabaseMostDownloadedEndpointFormat;
     private static readonly string RecentlyCreatedEndpointFormat = DevConfig.ModDatabaseRecentlyCreatedEndpointFormat;
+    private static readonly string RecentlyUpdatedEndpointFormat = DevConfig.ModDatabaseRecentlyUpdatedEndpointFormat;
     private static readonly string ModPageBaseUrl = DevConfig.ModDatabasePageBaseUrl;
     private static readonly int MaxConcurrentMetadataRequests = DevConfig.ModDatabaseMaxConcurrentMetadataRequests;
     private static readonly int MinimumTotalDownloadsForTrending = DevConfig.ModDatabaseMinimumTotalDownloadsForTrending;
@@ -463,31 +464,20 @@ public sealed class ModDatabaseService
         int requestLimit = CalculateRequestLimit(maxResults);
         string requestUri = string.Format(
             CultureInfo.InvariantCulture,
-            MostDownloadedEndpointFormat,
+            RecentlyUpdatedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        IReadOnlyList<ModDatabaseSearchResult> candidates = await QueryModsAsync(
+        return await QueryModsAsync(
                 requestUri,
-                requestLimit,
+                maxResults,
                 Array.Empty<string>(),
                 requireTokenMatch: false,
-                results => results
-                    .OrderByDescending(candidate => candidate.Downloads)
+                candidates => candidates
+                    .Where(candidate => candidate.LastReleasedUtc.HasValue)
+                    .OrderByDescending(candidate => candidate.LastReleasedUtc!.Value)
                     .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
                 cancellationToken)
             .ConfigureAwait(false);
-
-        if (candidates.Count == 0)
-        {
-            return Array.Empty<ModDatabaseSearchResult>();
-        }
-
-        return candidates
-            .Where(candidate => candidate.LastReleasedUtc.HasValue)
-            .OrderByDescending(candidate => candidate.LastReleasedUtc!.Value)
-            .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
-            .Take(maxResults)
-            .ToArray();
     }
 
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetRecentlyAddedModsAsync(
@@ -548,6 +538,50 @@ public sealed class ModDatabaseService
                     .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
                 cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetRandomModsAsync(
+        int maxResults,
+        CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
+        // Fetch a larger pool to randomize from
+        int requestLimit = CalculateRequestLimit(maxResults * 10);
+        string requestUri = string.Format(
+            CultureInfo.InvariantCulture,
+            MostDownloadedEndpointFormat,
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        IReadOnlyList<ModDatabaseSearchResult> candidates = await QueryModsAsync(
+                requestUri,
+                requestLimit,
+                Array.Empty<string>(),
+                requireTokenMatch: false,
+                results => results,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (candidates.Count == 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        // Shuffle the results using Fisher-Yates algorithm
+        var random = new Random(Guid.NewGuid().GetHashCode());
+        var shuffled = candidates.ToArray();
+        for (int i = shuffled.Length - 1; i > 0; i--)
+        {
+            int j = random.Next(i + 1);
+            (shuffled[i], shuffled[j]) = (shuffled[j], shuffled[i]);
+        }
+
+        return shuffled.Take(maxResults).ToArray();
     }
 
     private static bool WasCreatedOnOrAfter(ModDatabaseSearchResult candidate, DateTime thresholdUtc)

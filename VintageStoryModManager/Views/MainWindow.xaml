@@ -759,7 +759,7 @@
                         IsChecked="{Binding IsDownloadsLastTenDaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="0,20,516,2" HorizontalAlignment="Right" Width="90" VerticalContentAlignment="Center" Grid.RowSpan="2" />
                     <RadioButton Content="Added last 30 days"
                         GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsDownloadsLastTenDaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="101,20,0,2" HorizontalAlignment="Left" Width="122" VerticalContentAlignment="Center" Grid.RowSpan="2" />
+                        IsChecked="{Binding IsAddedLast30DaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="101,20,0,2" HorizontalAlignment="Left" Width="122" VerticalContentAlignment="Center" Grid.RowSpan="2" />
                     <RadioButton Content="Recently added"
                         GroupName="ModDatabaseAutoLoadMode"
                         IsChecked="{Binding IsRecentlyAddedMode, Mode=TwoWay}" MinWidth="115" ClickMode="Press" HorizontalAlignment="Center" Width="115" VerticalContentAlignment="Center" Margin="0,-2,0,2" />
@@ -771,7 +771,7 @@
                         IsChecked="{Binding IsMostTrendingMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="369,-2,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" />
                     <RadioButton Content="Random"
                         GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsMostTrendingMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="369,20,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" Grid.RowSpan="2" />
+                        IsChecked="{Binding IsRandomMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="369,20,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" Grid.RowSpan="2" />
                 </Grid>
 
                 <StackPanel Grid.Column="1" 
