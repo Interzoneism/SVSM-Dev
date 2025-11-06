@@ -14,7 +14,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
         Title="Simple VS Manager"
-        Height="801" Width="1401"
+        Height="614" Width="1048"
         MinWidth="1200" MinHeight="775" WindowStartupLocation="CenterScreen"
         PreviewKeyDown="MainWindow_OnPreviewKeyDown" Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
 
@@ -699,7 +699,7 @@
 
         </Grid>
         <Grid x:Name="MIDDLE" Grid.Row="1"
-              Margin="16,10,16,10">
+              Margin="16,34,16,10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -736,51 +736,44 @@
                             FontSize="16"
                             Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="5,0,0,0" />
                 </StackPanel>
-
-                <StackPanel Grid.Column="1"
-                            Orientation="Horizontal" Margin="16,44,231,97" Grid.ColumnSpan="2">
-                    <StackPanel.Style>
-                        <Style TargetType="{x:Type StackPanel}">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                        <Condition Binding="{Binding SearchText}" Value="" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </MultiDataTrigger>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                        <Condition Binding="{Binding SearchText}" Value="{x:Null}" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
-                    <TextBlock Text="Most downloads:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <Grid Grid.Column="1" Margin="10,0,0,96" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="617" Height="44" VerticalAlignment="Bottom" >
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Rectangle Grid.RowSpan="2" Stroke="{DynamicResource Brush.ModGrid.Background.Solid}" Margin="0,-4,139,0" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Window.Shell.Border}" HorizontalAlignment="Right" Width="235"/>
+                    <Rectangle Stroke="{DynamicResource Brush.ModGrid.Background.Solid}" Margin="3,-27,0,18" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Menu.Item.Background.Hover}" HorizontalAlignment="Left" Width="73" Grid.RowSpan="2"/>
+                    <Rectangle Grid.RowSpan="2" Stroke="{DynamicResource Brush.ModGrid.Background.Solid}" Margin="0,-4,379,0" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Menu.Item.Background.Hover}" HorizontalAlignment="Right" Width="235"/>
+                    <Label Content="Downloads"
+                           Foreground="{DynamicResource Brush.Text.Primary}" Margin="0,-22,546,22" Padding="0,0,0,0" HorizontalAlignment="Right" Width="61" />
                     <RadioButton Content="All time"
-                                 GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" Width="65" MinWidth="65" ClickMode="Press"
+                        GroupName="ModDatabaseAutoLoadMode"
+                        IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" MinWidth="65" ClickMode="Press"
+                                 Margin="0,-2,541,2" HorizontalAlignment="Right" Width="65" VerticalContentAlignment="Center"
                                  />
                     <RadioButton Content="Last 30 days"
-                                 GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" Margin="0,0,8,0" Width="90" MinWidth="90" ClickMode="Press" />
+                        GroupName="ModDatabaseAutoLoadMode"
+                        IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="0,-2,426,2" HorizontalAlignment="Right" Width="90" VerticalContentAlignment="Center" />
                     <RadioButton Content="Last 10 days"
-                                 GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsDownloadsLastTenDaysMode, Mode=TwoWay}" Margin="0,0,16,0" Width="90" MinWidth="90" ClickMode="Press" />
-                    <RadioButton Content="Recently updated"
-                                 GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsRecentlyUpdatedMode, Mode=TwoWay}" Margin="0,0,8,0" Width="120" MinWidth="120" ClickMode="Press" />
+                        GroupName="ModDatabaseAutoLoadMode"
+                        IsChecked="{Binding IsDownloadsLastTenDaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="0,20,516,2" HorizontalAlignment="Right" Width="90" VerticalContentAlignment="Center" Grid.RowSpan="2" />
+                    <RadioButton Content="Added last 30 days"
+                        GroupName="ModDatabaseAutoLoadMode"
+                        IsChecked="{Binding IsDownloadsLastTenDaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="101,20,0,2" HorizontalAlignment="Left" Width="122" VerticalContentAlignment="Center" Grid.RowSpan="2" />
                     <RadioButton Content="Recently added"
-                                 GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsRecentlyAddedMode, Mode=TwoWay}" Margin="0,0,8,0" Width="115" MinWidth="115" ClickMode="Press" />
+                        GroupName="ModDatabaseAutoLoadMode"
+                        IsChecked="{Binding IsRecentlyAddedMode, Mode=TwoWay}" MinWidth="115" ClickMode="Press" HorizontalAlignment="Center" Width="115" VerticalContentAlignment="Center" Margin="0,-2,0,2" />
+                    <RadioButton Content="Recently updated"
+                        GroupName="ModDatabaseAutoLoadMode"
+                        IsChecked="{Binding IsRecentlyUpdatedMode, Mode=TwoWay}" MinWidth="120" ClickMode="Press" Margin="251,20,0,2" HorizontalAlignment="Left" Width="120" VerticalContentAlignment="Center" Grid.RowSpan="2" />
                     <RadioButton Content="Most trending"
-                                 GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsMostTrendingMode, Mode=TwoWay}" Margin="0,0,0,0" Width="100" MinWidth="100" ClickMode="Press" />
-                </StackPanel>
+                        GroupName="ModDatabaseAutoLoadMode"
+                        IsChecked="{Binding IsMostTrendingMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="369,-2,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" />
+                    <RadioButton Content="Random"
+                        GroupName="ModDatabaseAutoLoadMode"
+                        IsChecked="{Binding IsMostTrendingMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="369,20,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" Grid.RowSpan="2" />
+                </Grid>
+
                 <StackPanel Grid.Column="1" 
                     Orientation="Horizontal"
                     VerticalAlignment="Top" Height="24" Margin="16,20,230,0">
@@ -805,9 +798,6 @@
                             </Style.Triggers>
                         </Style>
                     </StackPanel.Style>
-                    <Label Content="Sort by most downloads..."
-                           Width="146"
-                           Foreground="{DynamicResource Brush.Text.Primary}" Height="26" />
                 </StackPanel>
                 <Grid Grid.Column="2"
                     HorizontalAlignment="Right"
