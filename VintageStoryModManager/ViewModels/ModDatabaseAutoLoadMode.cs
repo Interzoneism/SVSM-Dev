@@ -11,5 +11,7 @@ public enum ModDatabaseAutoLoadMode
     DownloadsNewModsRecentMonths,
     RecentlyUpdated,
     RecentlyAdded,
-    MostTrending
+    MostTrending,
+    AddedLast30Days,
+    Random
 }

@@ -126,6 +126,8 @@ public static class DevConfig
         "https://mods.vintagestory.at/api/mods?sort=downloadsdesc&limit={0}";
     public static string ModDatabaseRecentlyCreatedEndpointFormat { get; } =
         "https://mods.vintagestory.at/api/mods?sort=createddesc&limit={0}";
+    public static string ModDatabaseRecentlyUpdatedEndpointFormat { get; } =
+        "https://mods.vintagestory.at/api/mods?sort=updateddesc&limit={0}";
     public static string ModDatabasePageBaseUrl { get; } = "https://mods.vintagestory.at/show/mod/";
     public static int ModDatabaseMaxConcurrentMetadataRequests { get; } = 4;
     public static int ModDatabaseMinimumTotalDownloadsForTrending { get; } = 500;

@@ -548,6 +548,30 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public bool IsAddedLast30DaysMode
+    {
+        get => _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.AddedLast30Days;
+        set
+        {
+            if (value)
+            {
+                SetAutoLoadMode(ModDatabaseAutoLoadMode.AddedLast30Days);
+            }
+        }
+    }
+
+    public bool IsRandomMode
+    {
+        get => _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.Random;
+        set
+        {
+            if (value)
+            {
+                SetAutoLoadMode(ModDatabaseAutoLoadMode.Random);
+            }
+        }
+    }
+
     public ModDatabaseAutoLoadMode ModDatabaseAutoLoadMode => _modDatabaseAutoLoadMode;
 
     public string DownloadsNewModsRecentMonthsLabel =>
@@ -661,6 +685,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsRecentlyUpdatedMode));
         OnPropertyChanged(nameof(IsRecentlyAddedMode));
         OnPropertyChanged(nameof(IsMostTrendingMode));
+        OnPropertyChanged(nameof(IsAddedLast30DaysMode));
+        OnPropertyChanged(nameof(IsRandomMode));
         OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
         OnPropertyChanged(nameof(DownloadsColumnHeader));
 
@@ -2600,6 +2626,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                                     queryLimit,
                                     cancellationToken)
                                 .ConfigureAwait(false),
+                        ModDatabaseAutoLoadMode.AddedLast30Days =>
+                            await _databaseService
+                                .GetMostDownloadedNewModsAsync(
+                                    1,
+                                    queryLimit,
+                                    cancellationToken)
+                                .ConfigureAwait(false),
                         ModDatabaseAutoLoadMode.RecentlyUpdated =>
                             await _databaseService
                                 .GetRecentlyUpdatedModsAsync(queryLimit, cancellationToken)
@@ -2611,6 +2644,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         ModDatabaseAutoLoadMode.MostTrending =>
                             await _databaseService
                                 .GetMostTrendingModsAsync(queryLimit, cancellationToken)
+                                .ConfigureAwait(false),
+                        ModDatabaseAutoLoadMode.Random =>
+                            await _databaseService
+                                .GetRandomModsAsync(queryLimit, cancellationToken)
                                 .ConfigureAwait(false),
                         _ => await _databaseService
                             .GetMostDownloadedModsAsync(queryLimit, cancellationToken)
