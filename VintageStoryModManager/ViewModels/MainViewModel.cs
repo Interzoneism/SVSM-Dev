@@ -554,10 +554,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         $"Created {BuildRecentMonthsPhrase()}";
 
     public bool IsShowingRecentDownloadMetric => SearchModDatabase && !HasSearchText
-        && _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays;
+        && (_modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays
+            || _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastTenDays);
 
-    public string DownloadsColumnHeader => IsShowingRecentDownloadMetric
-        ? "Downloads (30 days)"
+    public string DownloadsColumnHeader => SearchModDatabase && !HasSearchText
+        ? _modDatabaseAutoLoadMode switch
+        {
+            ModDatabaseAutoLoadMode.DownloadsLastThirtyDays => "Downloads (30 days)",
+            ModDatabaseAutoLoadMode.DownloadsLastTenDays => "Downloads (10 days)",
+            _ => "Downloads"
+        }
         : "Downloads";
 
     private void SetViewSection(ViewSection section)
@@ -3273,8 +3279,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
                 "No mods with downloads in the last 30 days were found.",
+            ModDatabaseAutoLoadMode.DownloadsLastTenDays =>
+                "No mods with downloads in the last 10 days were found.",
             ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
                 $"No mods created in the {BuildRecentMonthsPhrase()} were found.",
+            ModDatabaseAutoLoadMode.RecentlyUpdated =>
+                "No recently updated mods were found.",
+            ModDatabaseAutoLoadMode.RecentlyAdded =>
+                "No recently added mods were found.",
+            ModDatabaseAutoLoadMode.MostTrending =>
+                "No trending mods were found.",
             _ => "No mods found in the mod database."
         };
     }
@@ -3292,8 +3306,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
                     "load the most downloaded mods from the last 30 days",
+                ModDatabaseAutoLoadMode.DownloadsLastTenDays =>
+                    "load the most downloaded mods from the last 10 days",
                 ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
                     $"load the most downloaded new mods {BuildRecentMonthsPhrase()}",
+                ModDatabaseAutoLoadMode.RecentlyUpdated =>
+                    "load recently updated mods",
+                ModDatabaseAutoLoadMode.RecentlyAdded =>
+                    "load recently added mods",
+                ModDatabaseAutoLoadMode.MostTrending =>
+                    "load most trending mods",
                 _ => "load the most downloaded mods from the mod database"
             };
         }
