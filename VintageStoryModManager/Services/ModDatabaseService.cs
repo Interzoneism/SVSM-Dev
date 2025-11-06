@@ -503,9 +503,15 @@ public sealed class ModDatabaseService
                 Array.Empty<string>(),
                 requireTokenMatch: false,
                 candidates => candidates
-                    .Where(candidate => candidate.CreatedUtc.HasValue)
-                    .OrderByDescending(candidate => candidate.CreatedUtc!.Value)
-                    .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
+                    .Select(candidate => new
+                    {
+                        Candidate = candidate,
+                        SortKey = candidate.CreatedUtc ?? candidate.LastReleasedUtc
+                    })
+                    .Where(item => item.SortKey.HasValue)
+                    .OrderByDescending(item => item.SortKey!.Value)
+                    .ThenBy(item => item.Candidate.Name, StringComparer.OrdinalIgnoreCase)
+                    .Select(item => item.Candidate),
                 cancellationToken)
             .ConfigureAwait(false);
     }
