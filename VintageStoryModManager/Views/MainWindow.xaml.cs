@@ -1817,7 +1817,7 @@ public partial class MainWindow : Window
         }
 
         logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
-        
+
         foreach (var (line, lineNumber) in processedLines)
         {
             logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modId, filePath, lineNumber));
@@ -1842,7 +1842,7 @@ public partial class MainWindow : Window
         }
 
         logLines.Add(ExperimentalModDebugLogLine.FromPlainText($"**{fileName}**"));
-        
+
         foreach (var (line, modName, lineNumber) in processedLines)
         {
             logLines.Add(ExperimentalModDebugLogLine.FromLogEntry(line, modName, filePath, lineNumber));
@@ -5486,7 +5486,7 @@ public partial class MainWindow : Window
 
         _isFullRefreshInProgress = true;
         bool cachesCleared = false;
-        
+
         try
         {
             if (!TrySaveAutomaticModlist(requestedModlistName, out savedModlistName, out savedModlistPath))
