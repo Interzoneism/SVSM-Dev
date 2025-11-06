@@ -362,7 +362,7 @@ public partial class MainWindow : Window
         SetColumnVisibility(DownloadsColumn, InstalledModsColumn.Downloads, isSearching);
         SetColumnVisibility(AuthorsColumn, InstalledModsColumn.Authors, true);
         SetColumnVisibility(TagsColumn, InstalledModsColumn.Tags, true);
-        SetColumnVisibility(UserReportsColumn, InstalledModsColumn.UserReports, !isSearching);
+        SetColumnVisibility(UserReportsColumn, InstalledModsColumn.UserReports, true);
         SetColumnVisibility(StatusColumn, InstalledModsColumn.Status, !isSearching);
         SetColumnVisibility(SideColumn, InstalledModsColumn.Side, true);
     }
