@@ -1559,17 +1559,22 @@
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Button 
-                                                    Content="{Binding UserReportDisplay}"
-                                                    ToolTip="{Binding UserReportTooltip}"
                                                     Click="UserReportsButton_OnClick"
-                                                    IsEnabled="{Binding CanSubmitUserReport}"
                                                     HorizontalAlignment="Stretch" ClipToBounds="True">
                                                 <Button.Style>
                                                     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource IMM.UserReportButtonStyle}">
                                                         <Setter Property="HorizontalAlignment" Value="Stretch" />
                                                         <Setter Property="HorizontalContentAlignment" Value="Center" />
                                                         <Setter Property="Padding" Value="4,0" />
+                                                        <Setter Property="Content" Value="{Binding UserReportDisplay}" />
+                                                        <Setter Property="ToolTip" Value="{Binding UserReportTooltip}" />
+                                                        <Setter Property="IsEnabled" Value="{Binding CanSubmitUserReport}" />
                                                         <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsInstalled}" Value="False">
+                                                                <Setter Property="Content" Value="{Binding LatestReleaseUserReportDisplay}" />
+                                                                <Setter Property="ToolTip" Value="{Binding LatestReleaseUserReportTooltip}" />
+                                                                <Setter Property="IsEnabled" Value="{Binding HasLatestReleaseUserReport}" />
+                                                            </DataTrigger>
                                                             <DataTrigger Binding="{Binding IsUserReportLoading}" Value="True">
                                                                 <Setter Property="Cursor" Value="Wait" />
                                                             </DataTrigger>

@@ -2031,6 +2031,60 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public async Task<ModVersionVoteSummary?> SubmitLatestReleaseUserReportVoteAsync(
+        ModListItemViewModel mod,
+        ModVersionVoteOption? option,
+        string? comment,
+        CancellationToken cancellationToken = default)
+    {
+        if (mod is null)
+        {
+            return null;
+        }
+
+        string? latestVersion = mod.LatestRelease?.Version;
+        if (string.IsNullOrWhiteSpace(_installedGameVersion) || string.IsNullOrWhiteSpace(latestVersion))
+        {
+            return null;
+        }
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            throw new InternetAccessDisabledException(
+                "Internet access is disabled. Enable it in the File menu to submit your vote.");
+        }
+
+        try
+        {
+            ModVersionVoteSummary summary = option.HasValue
+                ? await _voteService
+                    .SubmitVoteAsync(mod.ModId, latestVersion!, _installedGameVersion!, option.Value, comment, cancellationToken)
+                    .ConfigureAwait(false)
+                : await _voteService
+                    .RemoveVoteAsync(mod.ModId, latestVersion!, _installedGameVersion!, cancellationToken)
+                    .ConfigureAwait(false);
+
+            await InvokeOnDispatcherAsync(
+                    () => mod.ApplyLatestReleaseUserReportSummary(summary),
+                    cancellationToken,
+                    DispatcherPriority.Background)
+                .ConfigureAwait(false);
+
+            return summary;
+        }
+        catch (InternetAccessDisabledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            StatusLogService.AppendStatus(
+                string.Format(CultureInfo.CurrentCulture, "Failed to submit user report for {0}: {1}", mod.DisplayName, ex.Message),
+                true);
+            throw;
+        }
+    }
+
     private async Task<ModVersionVoteSummary?> RefreshUserReportAsync(
         ModListItemViewModel mod,
         bool suppressErrors,

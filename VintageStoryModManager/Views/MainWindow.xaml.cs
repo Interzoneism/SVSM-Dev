@@ -4118,6 +4118,75 @@ public partial class MainWindow : Window
             return;
         }
 
+        // For ModDB entries (not installed), show user reports for the latest release
+        if (!mod.IsInstalled)
+        {
+            if (!mod.HasLatestReleaseUserReport)
+            {
+                WpfMessageBox.Show(
+                    "User reports are unavailable for this mod.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            if (!EnsureUserReportVotingConsent())
+            {
+                return;
+            }
+
+            _viewModel.EnableUserReportFetching();
+
+            try
+            {
+                ModVersionVoteSummary? summary = await _viewModel
+                    .RefreshLatestReleaseUserReportAsync(mod)
+                    .ConfigureAwait(true);
+
+                summary ??= mod.LatestReleaseUserReportSummary;
+
+                if (summary is null)
+                {
+                    string version = mod.LatestRelease?.Version ?? string.Empty;
+                    summary = new ModVersionVoteSummary(
+                        mod.ModId,
+                        version,
+                        _viewModel.InstalledGameVersion,
+                        ModVersionVoteCounts.Empty,
+                        ModVersionVoteComments.Empty,
+                        null,
+                        null);
+                }
+
+                var dialog = new ModVoteDialog(
+                    mod,
+                    summary,
+                    (option, comment) => _viewModel.SubmitLatestReleaseUserReportVoteAsync(mod, option, comment));
+
+                dialog.Owner = this;
+                dialog.ShowDialog();
+            }
+            catch (InternetAccessDisabledException ex)
+            {
+                WpfMessageBox.Show(
+                    ex.Message,
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show(
+                    $"Failed to load user reports:\n{ex.Message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            return;
+        }
+
+        // For installed mods, show user reports for the installed version
         if (!mod.CanSubmitUserReport)
         {
             WpfMessageBox.Show(
