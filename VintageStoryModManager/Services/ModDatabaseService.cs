@@ -503,8 +503,7 @@ public sealed class ModDatabaseService
                 Array.Empty<string>(),
                 requireTokenMatch: false,
                 candidates => candidates
-                    .Where(candidate => candidate.CreatedUtc.HasValue)
-                    .OrderByDescending(candidate => candidate.CreatedUtc!.Value)
+                    .OrderByDescending(candidate => candidate.CreatedUtc ?? DateTime.MinValue)
                     .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
                 cancellationToken)
             .ConfigureAwait(false);

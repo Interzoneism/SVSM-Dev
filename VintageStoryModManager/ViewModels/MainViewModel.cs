@@ -57,6 +57,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly UserConfigurationService _configuration;
     private readonly int _modDatabaseSearchResultLimit;
     private int _modDatabaseCurrentResultLimit;
+    private int _selectedModDatabaseFetchLimit;
+    private readonly ObservableCollection<int> _modDatabaseFetchLimitOptions;
     private readonly ObservableCollection<SortOption> _sortOptions;
     private readonly string? _installedGameVersion;
     private readonly object _modsStateLock = new();
@@ -141,6 +143,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _databaseService = new ModDatabaseService();
         _modDatabaseSearchResultLimit = Math.Clamp(modDatabaseSearchResultLimit, 1, MaxModDatabaseResultLimit);
         _modDatabaseCurrentResultLimit = _modDatabaseSearchResultLimit;
+        _modDatabaseFetchLimitOptions = new ObservableCollection<int> { 30, 60, 120, 200 };
+        _selectedModDatabaseFetchLimit = _modDatabaseSearchResultLimit;
         _newModsRecentMonths = Math.Clamp(newModsRecentMonths <= 0 ? 1 : newModsRecentMonths, 1, MaxNewModsRecentMonths);
         _modDatabaseAutoLoadMode = NormalizeModDatabaseAutoLoadMode(initialModDatabaseAutoLoadMode);
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion(gameDirectory);
@@ -152,6 +156,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         CloudModlistsView = CollectionViewSource.GetDefaultView(_cloudModlists);
         InstalledTagFilters = new ReadOnlyObservableCollection<TagFilterOptionViewModel>(_installedTagFilters);
         ModDatabaseTagFilters = new ReadOnlyObservableCollection<TagFilterOptionViewModel>(_modDatabaseTagFilters);
+        ModDatabaseFetchLimitOptions = new ReadOnlyObservableCollection<int>(_modDatabaseFetchLimitOptions);
         _mods.CollectionChanged += OnModsCollectionChanged;
         _searchResults.CollectionChanged += OnSearchResultsCollectionChanged;
         _sortOptions = new ObservableCollection<SortOption>(CreateSortOptions());
@@ -205,6 +210,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public ReadOnlyObservableCollection<TagFilterOptionViewModel> InstalledTagFilters { get; }
 
     public ReadOnlyObservableCollection<TagFilterOptionViewModel> ModDatabaseTagFilters { get; }
+
+    public ReadOnlyObservableCollection<int> ModDatabaseFetchLimitOptions { get; }
+
+    public int SelectedModDatabaseFetchLimit
+    {
+        get => _selectedModDatabaseFetchLimit;
+        set
+        {
+            if (SetProperty(ref _selectedModDatabaseFetchLimit, value))
+            {
+                OnModDatabaseFetchLimitChanged();
+            }
+        }
+    }
 
     public ICollectionView CurrentModsView => _viewSection switch
     {
@@ -2533,7 +2552,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ResetModDatabaseResultLimit()
     {
-        _modDatabaseCurrentResultLimit = Math.Clamp(_modDatabaseSearchResultLimit, 1, MaxModDatabaseResultLimit);
+        _modDatabaseCurrentResultLimit = Math.Clamp(_selectedModDatabaseFetchLimit, 1, MaxModDatabaseResultLimit);
+    }
+
+    private void OnModDatabaseFetchLimitChanged()
+    {
+        if (SearchModDatabase && !HasSearchText)
+        {
+            ClearSearchResults();
+            TriggerModDatabaseSearch();
+        }
     }
 
     private void LoadMoreModDatabaseResults()
@@ -2545,7 +2573,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         _hasRequestedAdditionalModDatabaseResults = true;
 
-        int increment = Math.Max(_modDatabaseSearchResultLimit, 1);
+        int increment = Math.Max(_selectedModDatabaseFetchLimit, 1);
         int nextLimit = _modDatabaseCurrentResultLimit;
         long candidateLimit = (long)_modDatabaseCurrentResultLimit + increment;
         if (candidateLimit >= MaxModDatabaseResultLimit)
