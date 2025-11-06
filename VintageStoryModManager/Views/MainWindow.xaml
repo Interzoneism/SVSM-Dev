@@ -736,7 +736,7 @@
                             FontSize="16"
                             Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="5,0,0,0" />
                 </StackPanel>
-                <Grid Grid.Column="1" Margin="10,0,0,96" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="617" Height="44" VerticalAlignment="Bottom" >
+                <Grid x:Name="ModDB_radiobuttons" Grid.Column="1" Margin="10,0,0,96" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="617" Height="44" VerticalAlignment="Bottom" >
                     <Grid.RowDefinitions>
                         <RowDefinition />
                         <RowDefinition />
