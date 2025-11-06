@@ -573,7 +573,7 @@ public sealed class ModDatabaseService
         }
 
         // Shuffle the results using Fisher-Yates algorithm
-        var random = new Random();
+        var random = new Random(Guid.NewGuid().GetHashCode());
         var shuffled = candidates.ToArray();
         for (int i = shuffled.Length - 1; i > 0; i--)
         {
