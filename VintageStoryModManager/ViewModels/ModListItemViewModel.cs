@@ -1811,40 +1811,22 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private static int? CalculateDownloadsLastThirtyDaysFromReleases(IReadOnlyList<ModReleaseInfo> releases)
     {
-        if (releases.Count == 0)
-        {
-            return null;
-        }
-
-        DateTime threshold = DateTime.UtcNow.AddDays(-30);
-        int total = 0;
-        bool hasData = false;
-
-        foreach (var release in releases)
-        {
-            if (release?.CreatedUtc is not { } createdUtc || createdUtc < threshold)
-            {
-                continue;
-            }
-
-            if (release.Downloads.HasValue)
-            {
-                hasData = true;
-                total += Math.Max(0, release.Downloads.Value);
-            }
-        }
-
-        return hasData ? total : null;
+        return CalculateRecentDownloadsFromReleases(releases, 30);
     }
 
     private static int? CalculateDownloadsLastTenDaysFromReleases(IReadOnlyList<ModReleaseInfo> releases)
+    {
+        return CalculateRecentDownloadsFromReleases(releases, 10);
+    }
+
+    private static int? CalculateRecentDownloadsFromReleases(IReadOnlyList<ModReleaseInfo> releases, int days)
     {
         if (releases.Count == 0)
         {
             return null;
         }
 
-        DateTime threshold = DateTime.UtcNow.AddDays(-10);
+        DateTime threshold = DateTime.UtcNow.AddDays(-days);
         int total = 0;
         bool hasData = false;
 
