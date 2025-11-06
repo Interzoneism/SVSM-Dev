@@ -41,11 +41,38 @@ public sealed class DownloadMetricDisplayConverter : IMultiValueConverter
             return "—";
         }
 
+        if (useRecent && mode.HasValue)
+        {
+            switch (mode.Value)
+            {
+                case ModDatabaseAutoLoadMode.DownloadsLastTenDays:
+                    return FormatRecentMetric(selected, " (10 days)");
+                case ModDatabaseAutoLoadMode.DownloadsLastThirtyDays:
+                    return FormatRecentMetric(selected, " (30 days)");
+            }
+        }
+
         return selected;
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object? parameter, CultureInfo culture)
     {
         throw new NotSupportedException();
+    }
+
+    private static string FormatRecentMetric(string value, string suffix)
+    {
+        string trimmed = value.Trim();
+
+        string approxValue = trimmed.StartsWith("≈", StringComparison.Ordinal)
+            ? trimmed
+            : $"≈{trimmed}";
+
+        if (approxValue.EndsWith(suffix, StringComparison.Ordinal))
+        {
+            return approxValue;
+        }
+
+        return approxValue + suffix;
     }
 }
