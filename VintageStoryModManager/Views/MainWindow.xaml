@@ -1312,20 +1312,24 @@
                                             <Setter Property="ToolTip">
                                                 <Setter.Value>
                                                     <ToolTip MaxHeight="600"
-                                                 Padding="0">
+                                                             MaxWidth="300"
+                                                             Padding="0">
                                                         <Border MaxHeight="600"
+                                                                MaxWidth="300"
                                                     ClipToBounds="True">
                                                             <ItemsControl ItemsSource="{Binding NewerReleaseChangelogs}">
                                                                 <ItemsControl.ItemTemplate>
                                                                     <DataTemplate>
-                                                                        <StackPanel Margin="0,0,0,12">
+                                                                        <StackPanel Margin="0,0,0,12"
+                                                                                    MaxWidth="300">
                                                                             <TextBlock Text="{Binding Version}"
                                                                                FontWeight="Bold"
                                                                                Margin="0,0,0,4"
                                                                                Foreground="{DynamicResource Brush.ToolTip.Text}" />
                                                                             <TextBlock Text="{Binding Changelog}"
                                                                                TextWrapping="Wrap"
-                                                                               Foreground="{DynamicResource Brush.ToolTip.Text}" />
+                                                                               Foreground="{DynamicResource Brush.ToolTip.Text}"
+                                                                               MaxWidth="300" />
                                                                         </StackPanel>
                                                                     </DataTemplate>
                                                                 </ItemsControl.ItemTemplate>
