@@ -699,8 +699,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         : $"{ActiveMods} active of {TotalMods} mods";
 
     public string UpdateAllButtonLabel => UpdatableModsCount == 0
-        ? "Update All"
-        : $"Update All ({UpdatableModsCount})";
+        ? "Manage Updates"
+        : $"Manage Updates ({UpdatableModsCount})";
 
     public string UpdateAllModsMenuHeader => UpdatableModsCount == 0
         ? "_Update All Mods"
