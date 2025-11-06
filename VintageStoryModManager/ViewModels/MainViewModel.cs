@@ -500,16 +500,70 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public bool IsDownloadsLastTenDaysMode
+    {
+        get => _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastTenDays;
+        set
+        {
+            if (value)
+            {
+                SetAutoLoadMode(ModDatabaseAutoLoadMode.DownloadsLastTenDays);
+            }
+        }
+    }
+
+    public bool IsRecentlyUpdatedMode
+    {
+        get => _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.RecentlyUpdated;
+        set
+        {
+            if (value)
+            {
+                SetAutoLoadMode(ModDatabaseAutoLoadMode.RecentlyUpdated);
+            }
+        }
+    }
+
+    public bool IsRecentlyAddedMode
+    {
+        get => _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.RecentlyAdded;
+        set
+        {
+            if (value)
+            {
+                SetAutoLoadMode(ModDatabaseAutoLoadMode.RecentlyAdded);
+            }
+        }
+    }
+
+    public bool IsMostTrendingMode
+    {
+        get => _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.MostTrending;
+        set
+        {
+            if (value)
+            {
+                SetAutoLoadMode(ModDatabaseAutoLoadMode.MostTrending);
+            }
+        }
+    }
+
     public ModDatabaseAutoLoadMode ModDatabaseAutoLoadMode => _modDatabaseAutoLoadMode;
 
     public string DownloadsNewModsRecentMonthsLabel =>
         $"Created {BuildRecentMonthsPhrase()}";
 
     public bool IsShowingRecentDownloadMetric => SearchModDatabase && !HasSearchText
-        && _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays;
+        && (_modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastThirtyDays
+            || _modDatabaseAutoLoadMode == ModDatabaseAutoLoadMode.DownloadsLastTenDays);
 
-    public string DownloadsColumnHeader => IsShowingRecentDownloadMetric
-        ? "Downloads (30 days)"
+    public string DownloadsColumnHeader => SearchModDatabase && !HasSearchText
+        ? _modDatabaseAutoLoadMode switch
+        {
+            ModDatabaseAutoLoadMode.DownloadsLastThirtyDays => "Downloads (30 days)",
+            ModDatabaseAutoLoadMode.DownloadsLastTenDays => "Downloads (10 days)",
+            _ => "Downloads"
+        }
         : "Downloads";
 
     private void SetViewSection(ViewSection section)
@@ -602,7 +656,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ModDatabaseAutoLoadMode));
         OnPropertyChanged(nameof(IsTotalDownloadsMode));
         OnPropertyChanged(nameof(IsDownloadsLastThirtyDaysMode));
+        OnPropertyChanged(nameof(IsDownloadsLastTenDaysMode));
         OnPropertyChanged(nameof(IsDownloadsNewModsRecentMonthsMode));
+        OnPropertyChanged(nameof(IsRecentlyUpdatedMode));
+        OnPropertyChanged(nameof(IsRecentlyAddedMode));
+        OnPropertyChanged(nameof(IsMostTrendingMode));
         OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
         OnPropertyChanged(nameof(DownloadsColumnHeader));
 
@@ -2431,8 +2489,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             statusMessage = _modDatabaseAutoLoadMode switch
             {
                 ModDatabaseAutoLoadMode.DownloadsLastThirtyDays => "Loading top mods from the last 30 days...",
+                ModDatabaseAutoLoadMode.DownloadsLastTenDays => "Loading top mods from the last 10 days...",
                 ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
                     $"Loading most downloaded newly created mods {BuildRecentMonthsPhrase()}...",
+                ModDatabaseAutoLoadMode.RecentlyUpdated => "Loading recently updated mods...",
+                ModDatabaseAutoLoadMode.RecentlyAdded => "Loading recently added mods...",
+                ModDatabaseAutoLoadMode.MostTrending => "Loading most trending mods...",
                 _ => "Loading most downloaded mods..."
             };
         }
@@ -2527,12 +2589,28 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                             await _databaseService
                                 .GetMostDownloadedModsLastThirtyDaysAsync(queryLimit, cancellationToken)
                                 .ConfigureAwait(false),
+                        ModDatabaseAutoLoadMode.DownloadsLastTenDays =>
+                            await _databaseService
+                                .GetMostDownloadedModsLastTenDaysAsync(queryLimit, cancellationToken)
+                                .ConfigureAwait(false),
                         ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
                             await _databaseService
                                 .GetMostDownloadedNewModsAsync(
                                     _newModsRecentMonths,
                                     queryLimit,
                                     cancellationToken)
+                                .ConfigureAwait(false),
+                        ModDatabaseAutoLoadMode.RecentlyUpdated =>
+                            await _databaseService
+                                .GetRecentlyUpdatedModsAsync(queryLimit, cancellationToken)
+                                .ConfigureAwait(false),
+                        ModDatabaseAutoLoadMode.RecentlyAdded =>
+                            await _databaseService
+                                .GetRecentlyAddedModsAsync(queryLimit, cancellationToken)
+                                .ConfigureAwait(false),
+                        ModDatabaseAutoLoadMode.MostTrending =>
+                            await _databaseService
+                                .GetMostTrendingModsAsync(queryLimit, cancellationToken)
                                 .ConfigureAwait(false),
                         _ => await _databaseService
                             .GetMostDownloadedModsAsync(queryLimit, cancellationToken)
@@ -3201,8 +3279,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
                 "No mods with downloads in the last 30 days were found.",
+            ModDatabaseAutoLoadMode.DownloadsLastTenDays =>
+                "No mods with downloads in the last 10 days were found.",
             ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
                 $"No mods created in the {BuildRecentMonthsPhrase()} were found.",
+            ModDatabaseAutoLoadMode.RecentlyUpdated =>
+                "No recently updated mods were found.",
+            ModDatabaseAutoLoadMode.RecentlyAdded =>
+                "No recently added mods were found.",
+            ModDatabaseAutoLoadMode.MostTrending =>
+                "No trending mods were found.",
             _ => "No mods found in the mod database."
         };
     }
@@ -3220,8 +3306,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
                     "load the most downloaded mods from the last 30 days",
+                ModDatabaseAutoLoadMode.DownloadsLastTenDays =>
+                    "load the most downloaded mods from the last 10 days",
                 ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
                     $"load the most downloaded new mods {BuildRecentMonthsPhrase()}",
+                ModDatabaseAutoLoadMode.RecentlyUpdated =>
+                    "load recently updated mods",
+                ModDatabaseAutoLoadMode.RecentlyAdded =>
+                    "load recently added mods",
+                ModDatabaseAutoLoadMode.MostTrending =>
+                    "load most trending mods",
                 _ => "load the most downloaded mods from the mod database"
             };
         }
