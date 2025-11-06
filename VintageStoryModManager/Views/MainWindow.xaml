@@ -760,16 +760,26 @@
                             </Style.Triggers>
                         </Style>
                     </StackPanel.Style>
+                    <TextBlock Text="Most downloads:" VerticalAlignment="Center" Margin="0,0,8,0" />
                     <RadioButton Content="All time"
                                  GroupName="ModDatabaseAutoLoadMode"
                                  IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" Width="65" MinWidth="65" ClickMode="Press"
                                  />
                     <RadioButton Content="Last 30 days"
                                  GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" Margin="0,0,0,0" Width="90" MinWidth="90" ClickMode="Press" />
-                    <RadioButton Content="{Binding DownloadsNewModsRecentMonthsLabel}"
+                                 IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" Margin="0,0,8,0" Width="90" MinWidth="90" ClickMode="Press" />
+                    <RadioButton Content="Last 10 days"
                                  GroupName="ModDatabaseAutoLoadMode"
-                                 IsChecked="{Binding IsDownloadsNewModsRecentMonthsMode, Mode=TwoWay}" Margin="0,0,0,0" Width="309" ClickMode="Press" />
+                                 IsChecked="{Binding IsDownloadsLastTenDaysMode, Mode=TwoWay}" Margin="0,0,16,0" Width="90" MinWidth="90" ClickMode="Press" />
+                    <RadioButton Content="Recently updated"
+                                 GroupName="ModDatabaseAutoLoadMode"
+                                 IsChecked="{Binding IsRecentlyUpdatedMode, Mode=TwoWay}" Margin="0,0,8,0" Width="120" MinWidth="120" ClickMode="Press" />
+                    <RadioButton Content="Recently added"
+                                 GroupName="ModDatabaseAutoLoadMode"
+                                 IsChecked="{Binding IsRecentlyAddedMode, Mode=TwoWay}" Margin="0,0,8,0" Width="115" MinWidth="115" ClickMode="Press" />
+                    <RadioButton Content="Most trending"
+                                 GroupName="ModDatabaseAutoLoadMode"
+                                 IsChecked="{Binding IsMostTrendingMode, Mode=TwoWay}" Margin="0,0,0,0" Width="100" MinWidth="100" ClickMode="Press" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" 
                     Orientation="Horizontal"
