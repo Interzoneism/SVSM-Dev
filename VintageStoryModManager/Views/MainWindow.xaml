@@ -739,7 +739,7 @@
                 <Grid x:Name="ModDB_radiobuttons" Grid.Column="1" Margin="10,0,0,96" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="617" Height="44" VerticalAlignment="Bottom" >
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -751,11 +751,21 @@
                         <RowDefinition />
                         <RowDefinition />
                     </Grid.RowDefinitions>
-                    <Rectangle Grid.RowSpan="2" Stroke="{DynamicResource Brush.ModGrid.Background.Solid}" Margin="0,-4,139,0" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Window.Shell.Border}" HorizontalAlignment="Right" Width="235"/>
-                    <Rectangle Stroke="{DynamicResource Brush.ModGrid.Background.Solid}" Margin="3,-27,0,18" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Menu.Item.Background.Hover}" HorizontalAlignment="Left" Width="73" Grid.RowSpan="2"/>
-                    <Rectangle Grid.RowSpan="2" Stroke="{DynamicResource Brush.ModGrid.Background.Solid}" Margin="0,-4,379,0" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Menu.Item.Background.Hover}" HorizontalAlignment="Right" Width="235"/>
-                    <Label Content="Downloads"
-                           Foreground="{DynamicResource Brush.Text.Primary}" Margin="0,-22,546,22" Padding="0,0,0,0" HorizontalAlignment="Right" Width="61" />
+                    <Button x:Name="BrowseDownloadsButton"
+                        Content="Downloads"
+                        Command="{Binding ShowCloudModlistsCommand}"
+                        Click="ModlistsTabButton_OnClick"
+                        FontSize="12"
+                        FontWeight="Regular"
+                        Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="3,-21,542,23" Padding="0,0,0,0" UseLayoutRounding="False" />
+                    <Button x:Name="BrowseActivityButton"
+                        Content="Activity"
+                        Command="{Binding ShowCloudModlistsCommand}"
+                        Click="ModlistsTabButton_OnClick"
+                        FontSize="12"
+                        FontWeight="Regular"
+                        Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="80,-21,465,23" Padding="0,0,0,0" UseLayoutRounding="False" />
+                    <Rectangle Grid.RowSpan="2" Margin="0,-4,379,0" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Menu.Item.Background.Hover}" HorizontalAlignment="Right" Width="235"/>
                     <RadioButton Content="All time"
                         GroupName="ModDatabaseAutoLoadMode"
                         IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" MinWidth="65" ClickMode="Press"
@@ -770,19 +780,20 @@
                     <RadioButton Content="Added last 30 days"
                         GroupName="ModDatabaseAutoLoadMode"
                         IsChecked="{Binding IsAddedLast30DaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="101,20,0,2" HorizontalAlignment="Left" Width="122" VerticalContentAlignment="Center" Grid.RowSpan="2" />
+                    <Rectangle Grid.RowSpan="2" Margin="0,-4,379,0" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Window.Shell.Border}" HorizontalAlignment="Right" Width="235"/>
                     <RadioButton Content="Recently added"
                         GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsRecentlyAddedMode, Mode=TwoWay}" MinWidth="115" ClickMode="Press" HorizontalAlignment="Center" Width="115" VerticalContentAlignment="Center" Margin="0,-2,0,2" />
+                        IsChecked="{Binding IsRecentlyAddedMode, Mode=TwoWay}" MinWidth="115" ClickMode="Press" HorizontalAlignment="Left" Width="115" VerticalContentAlignment="Center" Margin="11,-2,0,2" />
                     <RadioButton Content="Recently updated"
                         GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsRecentlyUpdatedMode, Mode=TwoWay}" MinWidth="120" ClickMode="Press" Margin="251,20,0,2" HorizontalAlignment="Left" Width="120" VerticalContentAlignment="Center" Grid.RowSpan="2" />
+                        IsChecked="{Binding IsRecentlyUpdatedMode, Mode=TwoWay}" MinWidth="120" ClickMode="Press" Margin="11,20,0,2" HorizontalAlignment="Left" Width="120" VerticalContentAlignment="Center" Grid.RowSpan="2" />
                     <RadioButton Content="Most trending"
                         GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsMostTrendingMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="369,-2,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" />
+                        IsChecked="{Binding IsMostTrendingMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="129,-2,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" />
                     <RadioButton Content="Random"
                         GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsRandomMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="369,20,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" Grid.RowSpan="2" />
-                    
+                        IsChecked="{Binding IsRandomMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="129,20,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" Grid.RowSpan="2" />
+
                     <StackPanel Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
                         <TextBlock Text="Results per page:" 
                                    FontSize="11"
