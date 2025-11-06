@@ -48,6 +48,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private int? _databaseDownloads;
     private int? _databaseComments;
     private int? _databaseRecentDownloads;
+    private int? _databaseTenDayDownloads;
     private string? _modDatabaseAssetId;
     private string? _modDatabasePageUrl;
     private Uri? _modDatabasePageUri;
@@ -131,6 +132,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _databaseDownloads = databaseInfo?.Downloads;
         _databaseComments = databaseInfo?.Comments;
         _databaseRecentDownloads = databaseInfo?.DownloadsLastThirtyDays;
+        _databaseTenDayDownloads = databaseInfo?.DownloadsLastTenDays;
         _modDatabaseLogoUrl = databaseInfo?.LogoUrl;
         _modDatabaseLogo = CreateModDatabaseLogoImage();
         LogDebug($"Initial database logo creation result: {_modDatabaseLogo is not null}. Source URL: '{FormatValue(_modDatabaseLogoUrl)}'.");
@@ -139,6 +141,10 @@ public sealed class ModListItemViewModel : ObservableObject
         if (_databaseRecentDownloads is null)
         {
             _databaseRecentDownloads = CalculateDownloadsLastThirtyDaysFromReleases(_releases);
+        }
+        if (_databaseTenDayDownloads is null)
+        {
+            _databaseTenDayDownloads = CalculateDownloadsLastTenDaysFromReleases(_releases);
         }
         _latestDatabaseVersion = _latestRelease?.Version
             ?? databaseInfo?.LatestVersion
@@ -259,6 +265,10 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public string RecentDownloadsDisplay => _databaseRecentDownloads.HasValue
         ? _databaseRecentDownloads.Value.ToString("N0", CultureInfo.CurrentCulture)
+        : "—";
+
+    public string TenDayDownloadsDisplay => _databaseTenDayDownloads.HasValue
+        ? _databaseTenDayDownloads.Value.ToString("N0", CultureInfo.CurrentCulture)
         : "—";
 
     public int ModDatabaseRecentDownloadsSortKey => _databaseRecentDownloads ?? 0;
@@ -1784,6 +1794,13 @@ public sealed class ModListItemViewModel : ObservableObject
             OnPropertyChanged(nameof(ModDatabaseRecentDownloadsSortKey));
         }
 
+        int? tenDayDownloads = info?.DownloadsLastTenDays ?? CalculateDownloadsLastTenDaysFromReleases(releases);
+        if (_databaseTenDayDownloads != tenDayDownloads)
+        {
+            _databaseTenDayDownloads = tenDayDownloads;
+            OnPropertyChanged(nameof(TenDayDownloadsDisplay));
+        }
+
         DateTime? lastUpdated = DetermineLastUpdated(info, releases);
         if (_modDatabaseLastUpdatedUtc != lastUpdated)
         {
@@ -1794,12 +1811,22 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private static int? CalculateDownloadsLastThirtyDaysFromReleases(IReadOnlyList<ModReleaseInfo> releases)
     {
+        return CalculateRecentDownloadsFromReleases(releases, 30);
+    }
+
+    private static int? CalculateDownloadsLastTenDaysFromReleases(IReadOnlyList<ModReleaseInfo> releases)
+    {
+        return CalculateRecentDownloadsFromReleases(releases, 10);
+    }
+
+    private static int? CalculateRecentDownloadsFromReleases(IReadOnlyList<ModReleaseInfo> releases, int days)
+    {
         if (releases.Count == 0)
         {
             return null;
         }
 
-        DateTime threshold = DateTime.UtcNow.AddDays(-30);
+        DateTime threshold = DateTime.UtcNow.AddDays(-days);
         int total = 0;
         bool hasData = false;
 

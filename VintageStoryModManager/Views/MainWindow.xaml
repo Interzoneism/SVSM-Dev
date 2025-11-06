@@ -782,6 +782,22 @@
                     <RadioButton Content="Random"
                         GroupName="ModDatabaseAutoLoadMode"
                         IsChecked="{Binding IsRandomMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="369,20,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" Grid.RowSpan="2" />
+                    
+                    <StackPanel Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <TextBlock Text="Results per page:" 
+                                   FontSize="11"
+                                   Foreground="{DynamicResource Brush.Text.Primary}" 
+                                   Margin="0,0,0,2"
+                                   HorizontalAlignment="Center"/>
+                        <ComboBox ItemsSource="{Binding ModDatabaseFetchLimitOptions}"
+                                  SelectedItem="{Binding SelectedModDatabaseFetchLimit, Mode=TwoWay}"
+                                  Width="80"
+                                  Height="26"
+                                  FontSize="13"
+                                  VerticalContentAlignment="Center"
+                                  Background="{DynamicResource Brush.ComboBox.Background.Normal}"
+                                  BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}"/>
+                    </StackPanel>
                 </Grid>
 
                 <StackPanel Grid.Column="1" 
@@ -1354,6 +1370,8 @@
                                             <Binding Path="DataContext.IsShowingRecentDownloadMetric" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
                                             <Binding Path="DownloadsDisplay" />
                                             <Binding Path="RecentDownloadsDisplay" />
+                                            <Binding Path="TenDayDownloadsDisplay" />
+                                            <Binding Path="DataContext.ModDatabaseAutoLoadMode" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
                                         </MultiBinding>
                                     </DataGridTextColumn.Binding>
                                     <DataGridTextColumn.ElementStyle>
@@ -2302,6 +2320,8 @@
                                                             <Binding Path="DataContext.IsShowingRecentDownloadMetric" RelativeSource="{RelativeSource AncestorType=ListView}" />
                                                             <Binding Path="DownloadsDisplay" />
                                                             <Binding Path="RecentDownloadsDisplay" />
+                                                            <Binding Path="TenDayDownloadsDisplay" />
+                                                            <Binding Path="DataContext.ModDatabaseAutoLoadMode" RelativeSource="{RelativeSource AncestorType=ListView}" />
                                                         </MultiBinding>
                                                     </TextBlock.Text>
                                                 </TextBlock>

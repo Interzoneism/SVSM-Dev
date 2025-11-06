@@ -503,8 +503,7 @@ public sealed class ModDatabaseService
                 Array.Empty<string>(),
                 requireTokenMatch: false,
                 candidates => candidates
-                    .Where(candidate => candidate.CreatedUtc.HasValue)
-                    .OrderByDescending(candidate => candidate.CreatedUtc!.Value)
+                    .OrderByDescending(candidate => candidate.CreatedUtc ?? DateTime.MinValue)
                     .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
                 cancellationToken)
             .ConfigureAwait(false);
@@ -955,75 +954,15 @@ public sealed class ModDatabaseService
 
     private static int? CalculateDownloadsLastThirtyDays(IReadOnlyList<ModReleaseInfo> releases)
     {
-        if (releases.Count == 0)
-        {
-            return null;
-        }
-
-        DateTime now = DateTime.UtcNow;
-        DateTime windowStart = now.AddDays(-30);
-
-        ModReleaseInfo[] relevantReleases = releases
-            .Where(release => release?.CreatedUtc.HasValue == true && release.Downloads.HasValue)
-            .OrderByDescending(release => release!.CreatedUtc!.Value)
-            .ToArray();
-
-        if (relevantReleases.Length == 0)
-        {
-            return null;
-        }
-
-        double minimumIntervalDays = DevConfig.ModDatabaseMinimumIntervalDays; // Default: one hour.
-
-        double estimatedDownloads = 0;
-        DateTime intervalEnd = now;
-
-        foreach (var release in relevantReleases)
-        {
-            if (intervalEnd <= windowStart)
-            {
-                break;
-            }
-
-            DateTime releaseDate = release.CreatedUtc!.Value;
-            if (releaseDate > intervalEnd)
-            {
-                releaseDate = intervalEnd;
-            }
-
-            double intervalLengthDays = (intervalEnd - releaseDate).TotalDays;
-            if (intervalLengthDays <= 0)
-            {
-                intervalEnd = releaseDate;
-                continue;
-            }
-
-            double dailyDownloads = Math.Max(release.Downloads!.Value, 0) / Math.Max(intervalLengthDays, minimumIntervalDays);
-
-            DateTime effectiveStart = releaseDate < windowStart ? windowStart : releaseDate;
-            double effectiveIntervalDays = (intervalEnd - effectiveStart).TotalDays;
-            if (effectiveIntervalDays > 0)
-            {
-                estimatedDownloads += dailyDownloads * effectiveIntervalDays;
-            }
-
-            intervalEnd = releaseDate;
-
-            if (releaseDate <= windowStart)
-            {
-                break;
-            }
-        }
-
-        if (estimatedDownloads <= 0)
-        {
-            return 0;
-        }
-
-        return (int)Math.Round(estimatedDownloads, MidpointRounding.AwayFromZero);
+        return CalculateDownloadsForPeriod(releases, 30);
     }
 
     private static int? CalculateDownloadsLastTenDays(IReadOnlyList<ModReleaseInfo> releases)
+    {
+        return CalculateDownloadsForPeriod(releases, 10);
+    }
+
+    private static int? CalculateDownloadsForPeriod(IReadOnlyList<ModReleaseInfo> releases, int days)
     {
         if (releases.Count == 0)
         {
@@ -1031,7 +970,7 @@ public sealed class ModDatabaseService
         }
 
         DateTime now = DateTime.UtcNow;
-        DateTime windowStart = now.AddDays(-10);
+        DateTime windowStart = now.AddDays(-days);
 
         ModReleaseInfo[] relevantReleases = releases
             .Where(release => release?.CreatedUtc.HasValue == true && release.Downloads.HasValue)
