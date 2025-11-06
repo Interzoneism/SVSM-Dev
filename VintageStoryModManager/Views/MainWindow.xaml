@@ -757,57 +757,64 @@
                         Click="ModlistsTabButton_OnClick"
                         FontSize="12"
                         FontWeight="Regular"
-                        Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="3,-21,542,23" Padding="0,0,0,0" UseLayoutRounding="False" />
+                        Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="3,-17,542,19" Padding="0,0,0,0" UseLayoutRounding="False" />
                     <Button x:Name="BrowseActivityButton"
                         Content="Activity"
                         Command="{Binding ShowCloudModlistsCommand}"
                         Click="ModlistsTabButton_OnClick"
                         FontSize="12"
                         FontWeight="Regular"
-                        Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="80,-21,465,23" Padding="0,0,0,0" UseLayoutRounding="False" />
-                    <Rectangle Grid.RowSpan="2" Margin="0,-4,379,0" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Menu.Item.Background.Hover}" HorizontalAlignment="Right" Width="235"/>
-                    <RadioButton Content="All time"
-                        GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" MinWidth="65" ClickMode="Press"
-                                 Margin="0,-2,541,2" HorizontalAlignment="Right" Width="65" VerticalContentAlignment="Center"
+                        Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="80,-17,465,19" Padding="0,0,0,0" UseLayoutRounding="False" />
+                    <Border x:Name="DownloadsBorder" HorizontalAlignment="Right" Grid.RowSpan="2">
+                        <Grid>
+                            <Rectangle Margin="0,0,379,-4" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Menu.Item.Background.Hover}" HorizontalAlignment="Right" Width="235"/>
+                            <RadioButton Content="All time"
+                                GroupName="ModDatabaseAutoLoadMode"
+                                IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" MinWidth="65" ClickMode="Press"
+                                Margin="0,2,541,20" HorizontalAlignment="Right" Width="65" VerticalContentAlignment="Center"
                                  />
-                    <RadioButton Content="Last 30 days"
-                        GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="0,-2,426,2" HorizontalAlignment="Right" Width="90" VerticalContentAlignment="Center" />
-                    <RadioButton Content="Last 10 days"
-                        GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsDownloadsLastTenDaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="0,20,516,2" HorizontalAlignment="Right" Width="90" VerticalContentAlignment="Center" Grid.RowSpan="2" />
-                    <RadioButton Content="Added last 30 days"
-                        GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsAddedLast30DaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="101,20,0,2" HorizontalAlignment="Left" Width="122" VerticalContentAlignment="Center" Grid.RowSpan="2" />
-                    <Rectangle Grid.RowSpan="2" Margin="0,-4,379,0" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Window.Shell.Border}" HorizontalAlignment="Right" Width="235"/>
-                    <RadioButton Content="Recently added"
-                        GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsRecentlyAddedMode, Mode=TwoWay}" MinWidth="115" ClickMode="Press" HorizontalAlignment="Left" Width="115" VerticalContentAlignment="Center" Margin="11,-2,0,2" />
-                    <RadioButton Content="Recently updated"
-                        GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsRecentlyUpdatedMode, Mode=TwoWay}" MinWidth="120" ClickMode="Press" Margin="11,20,0,2" HorizontalAlignment="Left" Width="120" VerticalContentAlignment="Center" Grid.RowSpan="2" />
-                    <RadioButton Content="Most trending"
-                        GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsMostTrendingMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="129,-2,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" />
-                    <RadioButton Content="Random"
-                        GroupName="ModDatabaseAutoLoadMode"
-                        IsChecked="{Binding IsRandomMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="129,20,0,2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" Grid.RowSpan="2" />
+                            <RadioButton Content="Last 30 days"
+                                GroupName="ModDatabaseAutoLoadMode"
+                                IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="0,2,426,20" HorizontalAlignment="Right" Width="90" VerticalContentAlignment="Center" />
+                            <RadioButton Content="Last 10 days"
+                                GroupName="ModDatabaseAutoLoadMode"
+                                IsChecked="{Binding IsDownloadsLastTenDaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="0,24,516,-2" HorizontalAlignment="Right" Width="90" VerticalContentAlignment="Center" />
+                            <RadioButton Content="Added last 30 days"
+                                GroupName="ModDatabaseAutoLoadMode"
+                                IsChecked="{Binding IsAddedLast30DaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="98,24,0,-2" HorizontalAlignment="Left" Width="122" VerticalContentAlignment="Center" />
+                        </Grid>
+                    </Border>
+                    <Border x:Name="ActivityBorder" HorizontalAlignment="Right" Grid.RowSpan="2">
+                        <Grid>
+                            <Rectangle Margin="0,0,379,-4" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Menu.Item.Background.Hover}" HorizontalAlignment="Right" Width="235"/>
+                            <RadioButton Content="Recently added"
+                                GroupName="ModDatabaseAutoLoadMode"
+                                IsChecked="{Binding IsRecentlyAddedMode, Mode=TwoWay}" MinWidth="115" ClickMode="Press" HorizontalAlignment="Left" Width="115" VerticalContentAlignment="Center" Margin="8,2,0,20" />
+                            <RadioButton Content="Recently updated"
+                                GroupName="ModDatabaseAutoLoadMode"
+                                IsChecked="{Binding IsRecentlyUpdatedMode, Mode=TwoWay}" MinWidth="120" ClickMode="Press" Margin="8,24,0,-2" HorizontalAlignment="Left" Width="120" VerticalContentAlignment="Center" />
+                            <RadioButton Content="Most trending"
+                                GroupName="ModDatabaseAutoLoadMode"
+                                IsChecked="{Binding IsMostTrendingMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="126,2,0,20" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" />
+                            <RadioButton Content="Random"
+                                GroupName="ModDatabaseAutoLoadMode"
+                                IsChecked="{Binding IsRandomMode, Mode=TwoWay}" MinWidth="100" ClickMode="Press" Margin="126,24,0,-2" HorizontalAlignment="Left" Width="100" VerticalContentAlignment="Center" />
 
-                    <StackPanel Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,283,0" Height="46" Width="90">
                         <TextBlock Text="Results per page:" 
                                    FontSize="11"
-                                   Foreground="{DynamicResource Brush.Text.Primary}" 
-                                   Margin="0,0,0,2"
-                                   HorizontalAlignment="Center"/>
+                                   Foreground="{DynamicResource Brush.Text.Primary}"/>
                         <ComboBox ItemsSource="{Binding ModDatabaseFetchLimitOptions}"
                                   SelectedItem="{Binding SelectedModDatabaseFetchLimit, Mode=TwoWay}"
-                                  Width="80"
-                                  Height="26"
+                                  Width="88"
+                                  Height="24"
                                   FontSize="13"
                                   VerticalContentAlignment="Center"
                                   Background="{DynamicResource Brush.ComboBox.Background.Normal}"
-                                  BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}"/>
+                                  BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}" Padding="0,0,0,0" HorizontalAlignment="Left"/>
                     </StackPanel>
                 </Grid>
 
