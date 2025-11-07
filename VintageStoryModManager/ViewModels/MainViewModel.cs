@@ -63,6 +63,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly string? _installedGameVersion;
     private readonly object _modsStateLock = new();
     private readonly ModDirectoryWatcher _modsWatcher;
+    private readonly ClientSettingsWatcher _clientSettingsWatcher;
     private readonly int _newModsRecentMonths;
 
     private SortOption? _selectedSortOption;
@@ -154,6 +155,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         UpdateLastSelectedSortModes(_modDatabaseAutoLoadMode);
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion(gameDirectory);
         _modsWatcher = new ModDirectoryWatcher(_discoveryService);
+        _clientSettingsWatcher = new ClientSettingsWatcher(_settingsStore.SettingsPath);
 
         ModsView = CollectionViewSource.GetDefaultView(_mods);
         ModsView.Filter = FilterMod;
@@ -1594,6 +1596,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public async Task<bool> CheckForModStateChangesAsync()
     {
+        _clientSettingsWatcher.EnsureWatcher();
+        if (_clientSettingsWatcher.TryConsumePendingChanges())
+        {
+            bool success = await ApplyClientSettingsChangesAsync().ConfigureAwait(true);
+            if (!success)
+            {
+                _clientSettingsWatcher.SignalPendingChange();
+            }
+        }
+
         _modsWatcher.EnsureWatchers();
 
         if (_modsWatcher.HasPendingChanges)
@@ -1628,6 +1640,47 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         return false;
+    }
+
+    private async Task<bool> ApplyClientSettingsChangesAsync()
+    {
+        string? localError = null;
+        bool reloadSuccess = await Task.Run(() => _settingsStore.TryReload(out localError)).ConfigureAwait(true);
+
+        if (!reloadSuccess)
+        {
+            if (!string.IsNullOrWhiteSpace(localError))
+            {
+                await InvokeOnDispatcherAsync(
+                    () => SetStatus($"Failed to reload client settings: {localError}", true),
+                    CancellationToken.None).ConfigureAwait(true);
+            }
+
+            return false;
+        }
+
+        await InvokeOnDispatcherAsync(() =>
+        {
+            bool changed = false;
+
+            foreach (var mod in _mods)
+            {
+                bool shouldBeActive = !_settingsStore.IsDisabled(mod.ModId, mod.Version);
+                if (mod.IsActive != shouldBeActive)
+                {
+                    mod.SetIsActiveSilently(shouldBeActive);
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                UpdateActiveCount();
+                ReapplyActiveSortIfNeeded();
+            }
+        }, CancellationToken.None).ConfigureAwait(true);
+
+        return true;
     }
 
     private ModListItemViewModel CreateModViewModel(ModEntry entry)
@@ -4851,6 +4904,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _installedTagFilters.Clear();
         _modDatabaseTagFilters.Clear();
 
+        _clientSettingsWatcher.Dispose();
         _modDetailsBusyScope?.Dispose();
         _modDetailsBusyScope = null;
     }
