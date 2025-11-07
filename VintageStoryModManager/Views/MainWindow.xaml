@@ -771,16 +771,16 @@
                         Click="BrowseDownloadsButton_OnClick"
                         FontSize="12"
                         FontWeight="Regular"
-                        Style="{StaticResource IMM.ModDatabaseDownloadsTabButtonStyle}" Margin="3,-17,542,19" Padding="0,0,0,0" UseLayoutRounding="False" />
+                        Style="{StaticResource IMM.ModDatabaseDownloadsTabButtonStyle}" Margin="3,-17,542,19" Padding="0,0,0,0" UseLayoutRounding="False" Background="{DynamicResource Brush.Button.Primary.Background.Hover}" />
                     <Button x:Name="BrowseActivityButton"
                         Content="Activity"
                         Click="BrowseActivityButton_OnClick"
                         FontSize="12"
                         FontWeight="Regular"
-                        Style="{StaticResource IMM.ModDatabaseActivityTabButtonStyle}" Margin="80,-17,465,19" Padding="0,0,0,0" UseLayoutRounding="False" />
+                        Style="{StaticResource IMM.ModDatabaseActivityTabButtonStyle}" Margin="80,-17,465,19" Padding="0,0,0,0" UseLayoutRounding="False" Background="{DynamicResource Brush.Button.Primary.Background.Hover}" />
                     <Border x:Name="DownloadsBorder" HorizontalAlignment="Right" Grid.RowSpan="2" Visibility="{Binding IsModDatabaseDownloadsTabSelected, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
                         <Grid>
-                            <Rectangle Margin="0,0,379,-4" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Menu.Item.Background.Hover}" HorizontalAlignment="Right" Width="235"/>
+                            <Rectangle Margin="0,0,379,-4" RadiusX="4" RadiusY="4" StrokeThickness="2" HorizontalAlignment="Right" Width="235" Fill="{DynamicResource Brush.Button.Primary.Background.Hover}"/>
                             <RadioButton Content="All time"
                                 GroupName="ModDatabaseAutoLoadMode"
                                 IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" MinWidth="65" ClickMode="Press"
@@ -799,7 +799,7 @@
                     </Border>
                     <Border x:Name="ActivityBorder" HorizontalAlignment="Right" Grid.RowSpan="2" Visibility="{Binding IsModDatabaseActivityTabSelected, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
                         <Grid>
-                            <Rectangle Margin="0,0,379,-4" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Menu.Item.Background.Hover}" HorizontalAlignment="Right" Width="235"/>
+                            <Rectangle Margin="0,0,379,-4" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Button.Primary.Background.Hover}" HorizontalAlignment="Right" Width="235"/>
                             <RadioButton Content="Recently added"
                                 GroupName="ModDatabaseAutoLoadMode"
                                 IsChecked="{Binding IsRecentlyAddedMode, Mode=TwoWay}" MinWidth="115" ClickMode="Press" HorizontalAlignment="Left" Width="115" VerticalContentAlignment="Center" Margin="8,2,0,20" />
@@ -827,7 +827,7 @@
                                   FontSize="13"
                                   VerticalContentAlignment="Center"
                                   Background="{DynamicResource Brush.ComboBox.Background.Normal}"
-                                  BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}" Padding="0,0,0,0" HorizontalAlignment="Left"/>
+                                  BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}" Padding="6,0,0,0" HorizontalAlignment="Left"/>
                     </StackPanel>
                 </Grid>
 
