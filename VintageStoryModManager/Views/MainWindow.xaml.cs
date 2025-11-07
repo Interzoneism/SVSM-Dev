@@ -2211,6 +2211,14 @@ public partial class MainWindow : Window
                     _viewModel.OnlyShowCompatibleModDatabaseResults);
             }
         }
+        else if (e.PropertyName == nameof(MainViewModel.SelectedModDatabaseFetchLimit))
+        {
+            if (_viewModel != null)
+            {
+                _userConfiguration.SetModDatabaseSearchResultLimit(
+                    _viewModel.SelectedModDatabaseFetchLimit);
+            }
+        }
         else if (e.PropertyName == nameof(MainViewModel.SearchModDatabase))
         {
             if (_viewModel != null)
@@ -8855,6 +8863,34 @@ public partial class MainWindow : Window
         }
 
         return builder.ToString();
+    }
+
+    private void BrowseDownloadsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        IRelayCommand command = viewModel.ShowDownloadsSortingOptionsCommand;
+        if (command.CanExecute(null))
+        {
+            command.Execute(null);
+        }
+    }
+
+    private void BrowseActivityButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        IRelayCommand command = viewModel.ShowActivitySortingOptionsCommand;
+        if (command.CanExecute(null))
+        {
+            command.Execute(null);
+        }
     }
 
     private void ModlistsTabButton_OnClick(object sender, RoutedEventArgs e)

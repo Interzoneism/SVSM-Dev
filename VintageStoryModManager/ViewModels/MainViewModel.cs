@@ -88,7 +88,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly RelayCommand _showModDatabaseCommand;
     private readonly RelayCommand _showCloudModlistsCommand;
     private readonly RelayCommand _loadMoreModDatabaseResultsCommand;
+    private readonly RelayCommand _showDownloadsSortingOptionsCommand;
+    private readonly RelayCommand _showActivitySortingOptionsCommand;
     private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
+    private ModDatabaseAutoLoadMode _lastDownloadsAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
+    private ModDatabaseAutoLoadMode _lastActivityAutoLoadMode = ModDatabaseAutoLoadMode.RecentlyAdded;
     private readonly object _busyStateLock = new();
     private int _busyOperationCount;
     private bool _hasActiveBusyScope;
@@ -147,6 +151,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _selectedModDatabaseFetchLimit = _modDatabaseSearchResultLimit;
         _newModsRecentMonths = Math.Clamp(newModsRecentMonths <= 0 ? 1 : newModsRecentMonths, 1, MaxNewModsRecentMonths);
         _modDatabaseAutoLoadMode = NormalizeModDatabaseAutoLoadMode(initialModDatabaseAutoLoadMode);
+        UpdateLastSelectedSortModes(_modDatabaseAutoLoadMode);
         _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion(gameDirectory);
         _modsWatcher = new ModDirectoryWatcher(_discoveryService);
 
@@ -178,6 +183,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _showCloudModlistsCommand = new RelayCommand(
             () => SetViewSection(ViewSection.CloudModlists),
             () => !InternetAccessManager.IsInternetAccessDisabled);
+        _showDownloadsSortingOptionsCommand = new RelayCommand(ShowDownloadsSortingOptions);
+        _showActivitySortingOptionsCommand = new RelayCommand(ShowActivitySortingOptions);
         _loadMoreModDatabaseResultsCommand = new RelayCommand(
             LoadMoreModDatabaseResults,
             () => SearchModDatabase
@@ -187,6 +194,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ShowInstalledModsCommand = _showInstalledModsCommand;
         ShowModDatabaseCommand = _showModDatabaseCommand;
         ShowCloudModlistsCommand = _showCloudModlistsCommand;
+        ShowDownloadsSortingOptionsCommand = _showDownloadsSortingOptionsCommand;
+        ShowActivitySortingOptionsCommand = _showActivitySortingOptionsCommand;
         LoadMoreModDatabaseResultsCommand = _loadMoreModDatabaseResultsCommand;
 
         RefreshCommand = new AsyncRelayCommand(LoadModsAsync);
@@ -421,6 +430,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public IRelayCommand ShowCloudModlistsCommand { get; }
 
+    public IRelayCommand ShowDownloadsSortingOptionsCommand { get; }
+
+    public IRelayCommand ShowActivitySortingOptionsCommand { get; }
+
     public IRelayCommand LoadMoreModDatabaseResultsCommand { get; }
 
     public bool IsViewingCloudModlists => _viewSection == ViewSection.CloudModlists;
@@ -482,6 +495,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
         }
     }
+
+    public bool IsModDatabaseDownloadsTabSelected => IsDownloadsAutoLoadMode(_modDatabaseAutoLoadMode);
+
+    public bool IsModDatabaseActivityTabSelected => IsActivityAutoLoadMode(_modDatabaseAutoLoadMode);
 
     public bool IsTotalDownloadsMode
     {
@@ -696,6 +713,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         _modDatabaseAutoLoadMode = mode;
+        UpdateLastSelectedSortModes(_modDatabaseAutoLoadMode);
         OnPropertyChanged(nameof(ModDatabaseAutoLoadMode));
         OnPropertyChanged(nameof(IsTotalDownloadsMode));
         OnPropertyChanged(nameof(IsDownloadsLastThirtyDaysMode));
@@ -706,6 +724,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsMostTrendingMode));
         OnPropertyChanged(nameof(IsAddedLast30DaysMode));
         OnPropertyChanged(nameof(IsRandomMode));
+        OnPropertyChanged(nameof(IsModDatabaseDownloadsTabSelected));
+        OnPropertyChanged(nameof(IsModDatabaseActivityTabSelected));
         OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
         OnPropertyChanged(nameof(DownloadsColumnHeader));
 
@@ -714,6 +734,55 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ClearSearchResults();
             TriggerModDatabaseSearch();
         }
+    }
+
+    private static bool IsDownloadsAutoLoadMode(ModDatabaseAutoLoadMode mode)
+    {
+        return mode is ModDatabaseAutoLoadMode.TotalDownloads
+            or ModDatabaseAutoLoadMode.DownloadsLastThirtyDays
+            or ModDatabaseAutoLoadMode.DownloadsLastTenDays
+            or ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths
+            or ModDatabaseAutoLoadMode.AddedLast30Days;
+    }
+
+    private static bool IsActivityAutoLoadMode(ModDatabaseAutoLoadMode mode)
+    {
+        return mode is ModDatabaseAutoLoadMode.RecentlyUpdated
+            or ModDatabaseAutoLoadMode.RecentlyAdded
+            or ModDatabaseAutoLoadMode.MostTrending
+            or ModDatabaseAutoLoadMode.Random;
+    }
+
+    private void UpdateLastSelectedSortModes(ModDatabaseAutoLoadMode mode)
+    {
+        if (IsDownloadsAutoLoadMode(mode))
+        {
+            _lastDownloadsAutoLoadMode = mode;
+        }
+        else if (IsActivityAutoLoadMode(mode))
+        {
+            _lastActivityAutoLoadMode = mode;
+        }
+    }
+
+    private void ShowDownloadsSortingOptions()
+    {
+        if (IsDownloadsAutoLoadMode(_modDatabaseAutoLoadMode))
+        {
+            return;
+        }
+
+        SetAutoLoadMode(_lastDownloadsAutoLoadMode);
+    }
+
+    private void ShowActivitySortingOptions()
+    {
+        if (IsActivityAutoLoadMode(_modDatabaseAutoLoadMode))
+        {
+            return;
+        }
+
+        SetAutoLoadMode(_lastActivityAutoLoadMode);
     }
 
     private static ModDatabaseAutoLoadMode NormalizeModDatabaseAutoLoadMode(ModDatabaseAutoLoadMode mode)
