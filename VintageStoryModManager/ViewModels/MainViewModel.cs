@@ -1729,16 +1729,26 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public async Task<bool> CheckForModStateChangesAsync()
     {
         _clientSettingsWatcher.EnsureWatcher();
+        bool clientSettingsTriggeredRefresh = false;
         if (_clientSettingsWatcher.TryConsumePendingChanges())
         {
-            bool success = await ApplyClientSettingsChangesAsync().ConfigureAwait(true);
-            if (!success)
+            var result = await ApplyClientSettingsChangesAsync().ConfigureAwait(true);
+            if (!result.success)
             {
                 _clientSettingsWatcher.SignalPendingChange();
+            }
+            else if (result.modStatesChanged)
+            {
+                clientSettingsTriggeredRefresh = true;
             }
         }
 
         _modsWatcher.EnsureWatchers();
+
+        if (clientSettingsTriggeredRefresh)
+        {
+            return true;
+        }
 
         if (_modsWatcher.HasPendingChanges)
         {
@@ -1774,7 +1784,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return false;
     }
 
-    private async Task<bool> ApplyClientSettingsChangesAsync()
+    private async Task<(bool success, bool modStatesChanged)> ApplyClientSettingsChangesAsync()
     {
         string? localError = null;
         bool reloadSuccess = await Task.Run(() => _settingsStore.TryReload(out localError)).ConfigureAwait(true);
@@ -1788,31 +1798,30 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     CancellationToken.None).ConfigureAwait(true);
             }
 
-            return false;
+            return (false, false);
         }
 
+        bool modStatesChanged = false;
         await InvokeOnDispatcherAsync(() =>
         {
-            bool changed = false;
-
             foreach (var mod in _mods)
             {
                 bool shouldBeActive = !_settingsStore.IsDisabled(mod.ModId, mod.Version);
                 if (mod.IsActive != shouldBeActive)
                 {
                     mod.SetIsActiveSilently(shouldBeActive);
-                    changed = true;
+                    modStatesChanged = true;
                 }
             }
 
-            if (changed)
+            if (modStatesChanged)
             {
                 UpdateActiveCount();
                 ReapplyActiveSortIfNeeded();
             }
         }, CancellationToken.None).ConfigureAwait(true);
 
-        return true;
+        return (true, modStatesChanged);
     }
 
     private ModListItemViewModel CreateModViewModel(ModEntry entry)
