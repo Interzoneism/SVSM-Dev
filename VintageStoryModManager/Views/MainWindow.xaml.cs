@@ -8865,6 +8865,34 @@ public partial class MainWindow : Window
         return builder.ToString();
     }
 
+    private void BrowseDownloadsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        IRelayCommand command = viewModel.ShowDownloadsSortingOptionsCommand;
+        if (command.CanExecute(null))
+        {
+            command.Execute(null);
+        }
+    }
+
+    private void BrowseActivityButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        IRelayCommand command = viewModel.ShowActivitySortingOptionsCommand;
+        if (command.CanExecute(null))
+        {
+            command.Execute(null);
+        }
+    }
+
     private void ModlistsTabButton_OnClick(object sender, RoutedEventArgs e)
     {
         Dispatcher.InvokeAsync(() =>
