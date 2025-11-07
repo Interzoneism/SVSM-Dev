@@ -717,29 +717,26 @@
                     <Button Content="Installed Mods"
                             Command="{Binding ShowInstalledModsCommand}"
                             Width="138"
-                            Height="40"
                             FontSize="16"
-                            Style="{StaticResource IMM.InstalledTabButtonStyle}" />
+                            Style="{StaticResource IMM.InstalledTabButtonStyle}" MinHeight="40" />
                     <Button x:Name="ModDatabaseTabButton"
                             Content="Mod DB"
                             Command="{Binding ShowModDatabaseCommand}"
                             Width="138"
-                            Height="40"
                             FontSize="16"
-                            Style="{StaticResource IMM.ModDatabaseTabButtonStyle}" Margin="5,0,0,0" />
+                            Style="{StaticResource IMM.ModDatabaseTabButtonStyle}" Margin="5,0,0,0" MinHeight="40" />
                     <Button x:Name="ModlistsTabButton"
                             Content="Modlists"
                             Command="{Binding ShowCloudModlistsCommand}"
                             Click="ModlistsTabButton_OnClick"
                             Width="138"
-                            Height="40"
                             FontSize="16"
-                            Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="5,0,0,0" />
+                            Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="5,0,0,0" MinHeight="40" />
                 </StackPanel>
                 <Grid x:Name="ModDB_radiobuttons" Grid.Column="1" Margin="10,0,0,96" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="617" Height="44" VerticalAlignment="Bottom" >
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Visible" />
+                            <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -757,14 +754,14 @@
                         Click="ModlistsTabButton_OnClick"
                         FontSize="12"
                         FontWeight="Regular"
-                        Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="3,-17,542,19" Padding="0,0,0,0" UseLayoutRounding="False" />
+                        Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="3,-17,542,19" Padding="0,0,0,0" UseLayoutRounding="False" MinHeight="20" />
                     <Button x:Name="BrowseActivityButton"
                         Content="Activity"
                         Command="{Binding ShowCloudModlistsCommand}"
                         Click="ModlistsTabButton_OnClick"
                         FontSize="12"
                         FontWeight="Regular"
-                        Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="80,-17,465,19" Padding="0,0,0,0" UseLayoutRounding="False" />
+                        Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="80,-17,465,19" Padding="0,0,0,0" UseLayoutRounding="False" MinHeight="20" />
                     <Border x:Name="DownloadsBorder" HorizontalAlignment="Right" Grid.RowSpan="2">
                         <Grid>
                             <Rectangle Margin="0,0,379,-4" RadiusX="4" RadiusY="4" StrokeThickness="2" Fill="{DynamicResource Brush.Menu.Item.Background.Hover}" HorizontalAlignment="Right" Width="235"/>
@@ -803,7 +800,7 @@
                         </Grid>
                     </Border>
 
-                    <StackPanel Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,283,0" Height="46" Width="90">
+                    <StackPanel Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,278,0" Height="46" Width="90">
                         <TextBlock Text="Results per page:" 
                                    FontSize="11"
                                    Foreground="{DynamicResource Brush.Text.Primary}"/>
@@ -924,12 +921,11 @@
                         <StackPanel Orientation="Horizontal" Margin="0,28,5,0" VerticalAlignment="Top" Height="32" HorizontalAlignment="Right">
                             <Button Content="Refresh"
                                 Width="65"
-                                Height="32"
                                 Margin="0,0,10,0"
                                 ToolTip="Quickly refreshes the current view using cached data if no changes are detected on the online mod page."
                                 Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                                 BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
+                                Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" MinHeight="32">
                                 <Button.Style>
                                     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                         <Setter Property="Visibility" Value="Collapsed" />
@@ -945,11 +941,10 @@
                             <Button x:Name="RebuildButton"
                                 Content="Rebuild"
                                 Width="65"
-                                Height="32"
                                 ToolTip="Deletes all mod info cache and fetches fresh data online. Slower but ensures everything is reindexed."
                                 Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                                 BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                Click="RebuildButton_OnClick">
+                                Click="RebuildButton_OnClick" MinHeight="32">
                                 <Button.Style>
                                     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                         <Setter Property="Visibility" Value="Collapsed" />
@@ -2493,37 +2488,32 @@
                         Width="125"
                         Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                             BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                            Click="UpdateAllModsMenuItem_OnClick"
-                            Height="32" Padding="6,6,6,6" />
+                            Click="UpdateAllModsMenuItem_OnClick" Padding="6,6,6,6" MinHeight="32" />
                 <Button Content="Open Logs Folder"
                             Margin="0,0,4,0"
                             Width="125"
                             Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                             BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                            Click="OpenLogsFolderButton_OnClick"
-                            Height="32" Padding="6,6,6,6" />
+                            Click="OpenLogsFolderButton_OnClick" Padding="6,6,6,6" MinHeight="32" />
                 <Button Content="Open Config Folder"
                             Margin="0,0,4,0"
                             Width="125"
                             Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                             BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                            Click="OpenConfigFolderButton_OnClick"
-                            Height="32" Padding="6,6,6,6" />
+                            Click="OpenConfigFolderButton_OnClick" Padding="6,6,6,6" MinHeight="32" />
                 <Button Content="Open Mods Folder"
                             Margin="0,0,4,0"
                             Width="125"
                             Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                             BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                            Click="OpenModFolderButton_OnClick"
-                            Height="32" Padding="6,6,6,6" />
+                            Click="OpenModFolderButton_OnClick" Padding="6,6,6,6" MinHeight="32" />
                 <Button x:Name="LaunchGameButton"
                         Content="Launch Vintage Story"
                         Width="150"
                         Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                         BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                             Click="LaunchGameButton_OnClick"
-                            Height="32"
-                            FontWeight="Bold" />
+                            FontWeight="Bold" MinHeight="32" />
             </StackPanel>
             <ui:ProgressRing
                         HorizontalAlignment="Left"
@@ -2595,7 +2585,7 @@
                 Click="ModDatabasePageButton_OnClick"
                 ToolTip="{Binding ModDatabasePageUrlDisplay}"
                 VerticalContentAlignment="Center"
-                Content="Mod Page" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.Column="1" Margin="0,45,0,0" />
+                Content="Mod Page" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.Column="1" Margin="0,45,0,0" MinHeight="32" />
                     <Button x:Name="SelectedModEditConfigButton"
                 Padding="12,6"
                 Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
@@ -2604,14 +2594,14 @@
                 IsEnabled="False"
                 Click="EditConfigButton_OnClick"
                 VerticalContentAlignment="Stretch"
-                Content="Edit Config" Height="30" Width="92" HorizontalContentAlignment="Stretch" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0" Grid.Column="1" />
+                Content="Edit Config" Width="92" HorizontalContentAlignment="Stretch" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0" Grid.Column="1" MinHeight="32" />
                     <Button x:Name="SelectedModDeleteButton"
                 Padding="12,6"
                 Background="{DynamicResource Brush.Status.Error}"
                 BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                 Visibility="Visible"
                 IsEnabled="False"
-                Click="DeleteModButton_OnClick" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,80,0,0" Grid.Column="1">
+                Click="DeleteModButton_OnClick" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,80,0,0" Grid.Column="1" MinHeight="32">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="ToolTip" Value="{Binding DisplayName, StringFormat=Delete \{0\}}"/>
@@ -2634,7 +2624,7 @@
                         Visibility="Collapsed"
                         IsEnabled="False"
                         Click="FixModButton_OnClick"
-                        ToolTip="Resolve dependency issues" Height="30" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,115,0,0" Grid.Column="1">
+                        ToolTip="Resolve dependency issues" Width="92" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,115,0,0" Grid.Column="1" MinHeight="32">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="Background" Value="{DynamicResource Brush.Status.Error}" />
@@ -2683,14 +2673,13 @@
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="InstallModButton_OnClick"
-                ToolTip="{Binding InstallButtonToolTip}" Height="30" Width="90" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0" Grid.Column="1">
+                ToolTip="{Binding InstallButtonToolTip}" Width="90" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0" Grid.Column="1" MinHeight="32">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="Install" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                     <ComboBox x:Name="SelectedModVersionComboBox"
                 Width="166"
-                Height="30"
                 Padding="12,6"
                 Background="{DynamicResource Brush.ComboBox.Background.Normal}"
                 BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}"
@@ -2701,7 +2690,7 @@
                 SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
                 SelectionChanged="SelectedModVersionComboBox_OnSelectionChanged"
                 DropDownOpened="SelectedModVersionComboBox_OnDropDownOpened"
-                VerticalAlignment="Top" HorizontalAlignment="Left" Margin="17,155,0,0">
+                VerticalAlignment="Top" HorizontalAlignment="Left" Margin="17,155,0,0" MinHeight="32">
                         <ComboBox.Resources>
                             <DataTemplate x:Key="SelectedModVersionTemplate" DataType="{x:Type viewModels:ModVersionOptionViewModel}">
                                 <StackPanel Orientation="Horizontal">
@@ -2753,7 +2742,7 @@
                 Visibility="Visible"
                 IsEnabled="False"
                 Click="UpdateModButton_OnClick"
-                ToolTip="{Binding UpdateButtonToolTip}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="116" Margin="198,155,0,0" Height="30" Grid.ColumnSpan="2">
+                ToolTip="{Binding UpdateButtonToolTip}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="116" Margin="198,155,0,0" Grid.ColumnSpan="2" MinHeight="32">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Width="90" ><Run Text="Update to latest"/><LineBreak/><Run/></TextBlock>
                         </StackPanel>
