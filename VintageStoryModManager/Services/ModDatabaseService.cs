@@ -497,23 +497,43 @@ public sealed class ModDatabaseService
             RecentlyCreatedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        return await QueryModsAsync(
+        IReadOnlyList<ModDatabaseSearchResult> candidates = await QueryModsAsync(
                 requestUri,
-                maxResults,
+                requestLimit,
                 Array.Empty<string>(),
                 requireTokenMatch: false,
-                candidates => candidates
-                    .Select(candidate => new
-                    {
-                        Candidate = candidate,
-                        SortKey = candidate.CreatedUtc ?? candidate.LastReleasedUtc
-                    })
-                    .Where(item => item.SortKey.HasValue)
-                    .OrderByDescending(item => item.SortKey!.Value)
-                    .ThenBy(item => item.Candidate.Name, StringComparer.OrdinalIgnoreCase)
-                    .Select(item => item.Candidate),
+                results => results,
                 cancellationToken)
             .ConfigureAwait(false);
+
+        if (candidates.Count == 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        IReadOnlyList<ModDatabaseSearchResult> enriched = await EnrichWithLatestReleaseDownloadsAsync(
+                candidates,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (enriched.Count == 0)
+        {
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+
+        return enriched
+            .Select((candidate, index) => new
+            {
+                Candidate = candidate,
+                Index = index,
+                SortKey = candidate.CreatedUtc ?? candidate.LastReleasedUtc
+            })
+            .OrderByDescending(item => item.SortKey ?? DateTime.MinValue)
+            .ThenBy(item => item.Candidate.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Index)
+            .Select(item => item.Candidate)
+            .Take(maxResults)
+            .ToArray();
     }
 
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostTrendingModsAsync(
