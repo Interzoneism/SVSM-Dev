@@ -771,13 +771,13 @@
                     </Grid.RowDefinitions>
                     <Button x:Name="BrowseDownloadsButton"
                         Content="Downloads"
-                        Command="{Binding ShowDownloadsSortingOptionsCommand}"
+                        Click="BrowseDownloadsButton_OnClick"
                         FontSize="12"
                         FontWeight="Regular"
                         Style="{StaticResource IMM.ModDatabaseDownloadsTabButtonStyle}" Margin="3,-17,542,19" Padding="0,0,0,0" UseLayoutRounding="False" />
                     <Button x:Name="BrowseActivityButton"
                         Content="Activity"
-                        Command="{Binding ShowActivitySortingOptionsCommand}"
+                        Click="BrowseActivityButton_OnClick"
                         FontSize="12"
                         FontWeight="Regular"
                         Style="{StaticResource IMM.ModDatabaseActivityTabButtonStyle}" Margin="80,-17,465,19" Padding="0,0,0,0" UseLayoutRounding="False" />
