@@ -9865,20 +9865,6 @@ public partial class MainWindow : Window
             Multiselect = false
         };
 
-        dialog.FileOk += (_, args) =>
-        {
-            if (IsPathWithinDirectory(modListDirectory, dialog.FileName))
-            {
-                return;
-            }
-
-            WpfMessageBox.Show("Please select a modlist from the Modlists folder.",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            args.Cancel = true;
-        };
-
         bool? dialogResult = dialog.ShowDialog(this);
         if (dialogResult != true)
         {
