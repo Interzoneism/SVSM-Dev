@@ -681,6 +681,12 @@
                     <MenuItem Header="Clear all caches"
                               Padding="12,6"
                               Click="ClearAllCachesMenuItem_OnClick" />
+                    <MenuItem x:Name="EnableServerOptionsMenuItem"
+                              Header="Enable server options"
+                              Padding="12,6"
+                              IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
+                              Click="EnableServerOptionsMenuItem_OnClick" />
                     <MenuItem Header="Delete all Simple VS Manager files (Uninstall)"
                               Padding="12,6"
                               Click="DeleteAllManagerFilesMenuItem_OnClick" />
@@ -2631,6 +2637,23 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
                             <TextBlock Text="Delete" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text.Primary}" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="SelectedModCopyForServerButton"
+                Padding="12,6"
+                Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
+                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                Visibility="Collapsed"
+                IsEnabled="False"
+                Click="SelectedModCopyForServerButton_OnClick"
+                Width="92"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Margin="0,150,0,0"
+                Grid.Column="1"
+                MinHeight="32">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Copy for Server" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                     <Button x:Name="SelectedModFixButton"
