@@ -94,6 +94,7 @@ public sealed class UserConfigurationService
     private bool _cacheAllVersionsLocally = true;
     private bool _disableInternetAccess;
     private bool _enableDebugLogging;
+    private bool _enableServerOptions;
     private bool _suppressModlistSavePrompt;
     private bool _suppressRefreshCachePrompt;
     private string? _suppressRefreshCachePromptVersion;
@@ -159,6 +160,8 @@ public sealed class UserConfigurationService
     public bool DisableInternetAccess => _disableInternetAccess;
 
     public bool EnableDebugLogging => _enableDebugLogging;
+
+    public bool EnableServerOptions => _enableServerOptions;
 
     public bool SuppressModlistSavePrompt => _suppressModlistSavePrompt;
 
@@ -699,6 +702,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetEnableServerOptions(bool enableServerOptions)
+    {
+        if (_enableServerOptions == enableServerOptions)
+        {
+            return;
+        }
+
+        _enableServerOptions = enableServerOptions;
+        Save();
+    }
+
     public void SetModlistAutoLoadBehavior(ModlistAutoLoadBehavior behavior)
     {
         if (_modlistAutoLoadBehavior == behavior)
@@ -1084,6 +1098,7 @@ public sealed class UserConfigurationService
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _isModUsageTrackingDisabled = obj["modUsageTrackingDisabled"]?.GetValue<bool?>() ?? false;
             _enableDebugLogging = obj["enableDebugLogging"]?.GetValue<bool?>() ?? false;
+            _enableServerOptions = obj["enableServerOptions"]?.GetValue<bool?>() ?? false;
             _suppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePrompt = obj["suppressRefreshCachePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePromptVersion = NormalizeVersion(
@@ -1173,6 +1188,7 @@ public sealed class UserConfigurationService
             _cacheAllVersionsLocally = true;
             _disableInternetAccess = false;
             _enableDebugLogging = false;
+            _enableServerOptions = false;
             _suppressModlistSavePrompt = false;
             _suppressRefreshCachePrompt = false;
             _suppressRefreshCachePromptVersion = null;
@@ -1236,6 +1252,7 @@ public sealed class UserConfigurationService
                 ["disableInternetAccess"] = _disableInternetAccess,
                 ["modUsageTrackingDisabled"] = _isModUsageTrackingDisabled,
                 ["enableDebugLogging"] = _enableDebugLogging,
+                ["enableServerOptions"] = _enableServerOptions,
                 ["suppressModlistSavePrompt"] = _suppressModlistSavePrompt,
                 ["suppressRefreshCachePrompt"] = _suppressRefreshCachePrompt,
                 ["suppressRefreshCachePromptVersion"] = _suppressRefreshCachePromptVersion,

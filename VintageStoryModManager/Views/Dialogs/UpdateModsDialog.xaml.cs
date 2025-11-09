@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Runtime.InteropServices;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
+using WinFormsClipboard = System.Windows.Forms.Clipboard;
 
 namespace VintageStoryModManager.Views.Dialogs;
 
@@ -37,7 +39,7 @@ public partial class UpdateModsDialog : Window
                     releaseOverrides.TryGetValue(mod, out overrideRelease);
                 }
 
-                return new UpdateModSelectionViewModel(mod, isSelected, overrideRelease);
+                return new UpdateModSelectionViewModel(mod, isSelected, overrideRelease, _configuration.EnableServerOptions);
             })
             .ToList();
 
@@ -88,6 +90,34 @@ public partial class UpdateModsDialog : Window
 
         selection.Mod.RefreshSkippedUpdateState();
         RemoveMod(selection);
+    }
+
+    private void CopyServerCommandButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button { DataContext: UpdateModSelectionViewModel selection })
+        {
+            return;
+        }
+
+        string? command = selection.LatestInstallCommand;
+        if (string.IsNullOrWhiteSpace(command))
+        {
+            return;
+        }
+
+        try
+        {
+            WinFormsClipboard.SetDataObject(command, true, 10, 100);
+        }
+        catch (ExternalException)
+        {
+            WpfMessageBox.Show(
+                this,
+                "Failed to copy the server install command. Please try again.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     protected override void OnClosed(EventArgs e)
