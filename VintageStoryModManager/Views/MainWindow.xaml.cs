@@ -36,6 +36,7 @@ using System.Xml;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using UglyToad.PdfPig;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
@@ -9858,7 +9859,7 @@ public partial class MainWindow : Window
         var dialog = new OpenFileDialog
         {
             Title = "Load Modlist",
-            Filter = "Modlist files (*.json)|*.json|All files (*.*)|*.*",
+            Filter = "Modlist files (*.json;*.pdf)|*.json;*.pdf|JSON files (*.json)|*.json|PDF files (*.pdf)|*.pdf|All files (*.*)|*.*",
             DefaultExt = ".json",
             InitialDirectory = modListDirectory,
             Multiselect = false
@@ -9925,14 +9926,19 @@ public partial class MainWindow : Window
         preset = null;
         errorMessage = null;
 
+        if (!File.Exists(filePath))
+        {
+            errorMessage = "The selected file could not be found.";
+            return false;
+        }
+
+        if (string.Equals(Path.GetExtension(filePath), ".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            return TryLoadPresetFromPdf(filePath, fallbackName, options, out preset, out errorMessage);
+        }
+
         try
         {
-            if (!File.Exists(filePath))
-            {
-                errorMessage = "The selected file could not be found.";
-                return false;
-            }
-
             var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -9954,6 +9960,151 @@ public partial class MainWindow : Window
             errorMessage = ex.Message;
             return false;
         }
+    }
+
+    private bool TryLoadPresetFromPdf(string filePath, string fallbackName, PresetLoadOptions options, out ModPreset? preset, out string? errorMessage)
+    {
+        preset = null;
+        errorMessage = null;
+
+        try
+        {
+            using PdfDocument document = PdfDocument.Open(filePath);
+            var textBuilder = new StringBuilder();
+
+            foreach (var page in document.GetPages())
+            {
+                var pageBuilder = new StringBuilder();
+
+                foreach (var letter in page.Letters)
+                {
+                    string value = letter.Value;
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        continue;
+                    }
+
+                    if (value == "\r")
+                    {
+                        continue;
+                    }
+
+                    pageBuilder.Append(value);
+                }
+
+                string pageText = pageBuilder.ToString();
+                if (string.IsNullOrWhiteSpace(pageText))
+                {
+                    continue;
+                }
+
+                if (textBuilder.Length > 0)
+                {
+                    textBuilder.Append('\n');
+                }
+
+                textBuilder.Append(pageText);
+            }
+
+            string pdfText = textBuilder.ToString();
+            if (string.IsNullOrWhiteSpace(pdfText))
+            {
+                errorMessage = "The PDF did not contain any readable text.";
+                return false;
+            }
+
+            if (!TryExtractPdfModlistJson(pdfText, out string? json, out string? extractionError))
+            {
+                errorMessage = extractionError;
+                return false;
+            }
+
+            string snapshotName = GetSnapshotNameFromFilePath(filePath, fallbackName);
+            return TryLoadPresetFromJson(json!, fallbackName, options, out preset, out errorMessage, snapshotName);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            errorMessage = ex.Message;
+            return false;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            return false;
+        }
+    }
+
+    private static bool TryExtractPdfModlistJson(string pdfText, out string? json, out string? errorMessage)
+    {
+        json = null;
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(pdfText))
+        {
+            errorMessage = "The PDF did not contain any modlist data.";
+            return false;
+        }
+
+        int startIndex = pdfText.IndexOf("###", StringComparison.Ordinal);
+        if (startIndex < 0)
+        {
+            errorMessage = "The PDF did not contain a modlist section.";
+            return false;
+        }
+
+        startIndex += 3;
+        int endIndex = pdfText.IndexOf("###", startIndex, StringComparison.Ordinal);
+        if (endIndex < 0)
+        {
+            errorMessage = "The PDF did not contain the end of the modlist section.";
+            return false;
+        }
+
+        if (endIndex <= startIndex)
+        {
+            errorMessage = "The PDF did not contain any modlist data.";
+            return false;
+        }
+
+        string rawContent = pdfText.Substring(startIndex, endIndex - startIndex);
+        string normalized = NormalizePdfModlistJson(rawContent);
+
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            errorMessage = "The PDF did not contain any modlist data.";
+            return false;
+        }
+
+        json = normalized;
+        return true;
+    }
+
+    private static string NormalizePdfModlistJson(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return string.Empty;
+        }
+
+        string sanitized = content
+            .Replace('\r', '\n')
+            .Replace("\0", string.Empty)
+            .Replace("\u00A0", " ");
+
+        var builder = new StringBuilder();
+        string[] lines = sanitized.Split('\n');
+
+        foreach (string line in lines)
+        {
+            if (builder.Length > 0)
+            {
+                builder.Append('\n');
+            }
+
+            builder.Append(line.TrimEnd());
+        }
+
+        return builder.ToString().Trim();
     }
 
     private bool TryLoadPresetFromJson(
