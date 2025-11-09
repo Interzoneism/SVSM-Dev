@@ -8995,7 +8995,15 @@ public partial class MainWindow : Window
                     column.Spacing(12);
 
                     column.Item().Text(normalizedListName).FontSize(32).Bold();
-                    column.Item().Text("Generated with Simple VS Manager - download from the Vintage Story ModDB or Github to easily load this modlist!").FontSize(14);
+                    column.Item().Text(text =>
+                    {
+                        text.DefaultTextStyle(style => style.FontSize(14));
+                        text.Span("Generated with Simple VS Manager - download from the ");
+                        text.Span("Vintage Story ModDB").Hyperlink(ManagerModDatabaseUrl);
+                        text.Span(" or ");
+                        text.Span("Github").Hyperlink("https://github.com/Interzoneism/Simple-Mod-Manager");
+                        text.Span(" to easily load this modlist!");
+                    });
                     column.Item().Text($"For Vintage Story {gameVersion}").FontSize(14);
                     column.Item().Text($"Made by {uploaderName}").FontSize(14);
 
