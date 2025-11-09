@@ -8999,11 +8999,13 @@ public partial class MainWindow : Window
                     column.Item().Text(text =>
                     {
                         text.DefaultTextStyle(style => style.FontSize(10));
-                        text.Span("Generated with Simple VS Manager - download from the ");
+                        text.Span("Generated with Simple VS Manager.");
+                        text.EmptyLine();
+                        text.Span("Download the app from the"); 
                         text.Hyperlink("Vintage Story ModDB", "https://mods.vintagestory.at/simplevsmanager").FontColor(QuestPDF.Helpers.Colors.Blue.Medium); 
                         text.Span(" or ");
                         text.Hyperlink("Github", "https://github.com/Interzoneism/Simple-Mod-Manager").FontColor(QuestPDF.Helpers.Colors.Blue.Medium); 
-                        text.Span(" to easily load this modlist!");
+                        text.Span(" to easily load this pdf as a modlist!");
                     });
                     column.Item().Text($"For Vintage Story {gameVersion}").FontSize(14);
                     column.Item().Text($"Modlist by {uploaderName}").FontSize(14);
@@ -9042,7 +9044,7 @@ public partial class MainWindow : Window
                         string version = string.IsNullOrWhiteSpace(mod.Version) ? string.Empty : mod.Version.Trim();
                         string modLine = string.IsNullOrEmpty(version) ? title : $"{title} {version}";
 
-                        column.Item().Text(modLine).FontSize(12);
+                        column.Item().Text(modLine).FontSize(10);
                     }
 
                     column.Item().Text("###").FontSize(12);
