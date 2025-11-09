@@ -2,21 +2,25 @@ using System;
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 using VintageStoryModManager.Models;
+using VintageStoryModManager.Services;
 
 namespace VintageStoryModManager.ViewModels;
 
 public sealed partial class UpdateModSelectionViewModel : ObservableObject
 {
     private readonly ModReleaseInfo? _overrideRelease;
+    private readonly bool _isServerOptionsEnabled;
 
     public UpdateModSelectionViewModel(
         ModListItemViewModel mod,
         bool isSelected,
-        ModReleaseInfo? overrideRelease)
+        ModReleaseInfo? overrideRelease,
+        bool isServerOptionsEnabled)
     {
         Mod = mod ?? throw new ArgumentNullException(nameof(mod));
         _overrideRelease = overrideRelease;
         _isSelected = isSelected;
+        _isServerOptionsEnabled = isServerOptionsEnabled;
     }
 
     public ModListItemViewModel Mod { get; }
@@ -39,6 +43,16 @@ public sealed partial class UpdateModSelectionViewModel : ObservableObject
     public string? TargetUpdateVersion => _overrideRelease?.Version ?? Mod.LatestRelease?.Version;
 
     public bool CanSkip => !string.IsNullOrWhiteSpace(TargetUpdateVersion);
+
+    private string? LatestServerInstallVersion => Mod.LatestRelease?.Version ?? _overrideRelease?.Version ?? Mod.Version;
+
+    public bool ShowServerInstallCommand => _isServerOptionsEnabled
+        && !string.IsNullOrWhiteSpace(Mod.ModId)
+        && !string.IsNullOrWhiteSpace(LatestServerInstallVersion);
+
+    public string? LatestInstallCommand => ShowServerInstallCommand
+        ? ServerCommandBuilder.TryBuildInstallCommand(Mod.ModId, LatestServerInstallVersion)
+        : null;
 
     public string VersionSummary
     {

@@ -14,6 +14,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -261,6 +262,7 @@ public partial class MainWindow : Window
         DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         StatusLogService.IsLoggingEnabled = _userConfiguration.EnableDebugLogging;
+        UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
 
         UpdateThemeMenuSelection(_userConfiguration.ColorTheme);
 
@@ -1424,6 +1426,18 @@ public partial class MainWindow : Window
 
         string? uploader = UsernameTextbox?.Text;
         SetUsernameDisplay(uploader);
+    }
+
+    private void EnableServerOptionsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return;
+        }
+
+        _userConfiguration.SetEnableServerOptions(menuItem.IsChecked);
+        bool isEnabled = _userConfiguration.EnableServerOptions;
+        UpdateServerOptionsState(isEnabled);
     }
 
     private void CacheAllVersionsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -4565,6 +4579,36 @@ public partial class MainWindow : Window
         }
 
         e.Handled = true;
+    }
+
+    private void SelectedModCopyForServerButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfButton { DataContext: ModListItemViewModel mod })
+        {
+            return;
+        }
+
+        string? command = ServerCommandBuilder.TryBuildInstallCommand(mod.ModId, mod.Version);
+        if (string.IsNullOrWhiteSpace(command))
+        {
+            return;
+        }
+
+        try
+        {
+            WinForms.Clipboard.SetDataObject(command, true, 10, 100);
+            StatusLogService.AppendStatus($"Copied server install command for {mod.DisplayName}.", false);
+        }
+        catch (ExternalException ex)
+        {
+            StatusLogService.AppendStatus($"Failed to copy server install command for {mod.DisplayName}: {ex.Message}", true);
+            WpfMessageBox.Show(
+                this,
+                "Failed to copy the server install command. Please try again.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private void EditConfigButton_OnClick(object sender, RoutedEventArgs e)
@@ -11678,20 +11722,40 @@ public partial class MainWindow : Window
 
         PropertyChangedEventHandler handler = (_, args) =>
         {
-            if (string.IsNullOrEmpty(args.PropertyName)
+            bool shouldRefreshFixButton = string.IsNullOrEmpty(args.PropertyName)
                 || args.PropertyName == nameof(ModListItemViewModel.CanFixDependencyIssues)
                 || args.PropertyName == nameof(ModListItemViewModel.HasDependencyIssues)
                 || args.PropertyName == nameof(ModListItemViewModel.MissingDependencies)
-                || args.PropertyName == nameof(ModListItemViewModel.DependencyHasErrors))
+                || args.PropertyName == nameof(ModListItemViewModel.DependencyHasErrors);
+
+            bool shouldRefreshCopyButton = string.IsNullOrEmpty(args.PropertyName)
+                || args.PropertyName == nameof(ModListItemViewModel.Version);
+
+            if (!shouldRefreshFixButton && !shouldRefreshCopyButton)
             {
-                if (Dispatcher.CheckAccess())
+                return;
+            }
+
+            void RefreshButtons()
+            {
+                if (shouldRefreshFixButton)
                 {
                     RefreshSelectedModFixButton(mod);
                 }
-                else
+
+                if (shouldRefreshCopyButton)
                 {
-                    Dispatcher.Invoke(() => RefreshSelectedModFixButton(mod));
+                    RefreshSelectedModCopyForServerButton(mod);
                 }
+            }
+
+            if (Dispatcher.CheckAccess())
+            {
+                RefreshButtons();
+            }
+            else
+            {
+                Dispatcher.Invoke(RefreshButtons);
             }
         };
 
@@ -11721,6 +11785,19 @@ public partial class MainWindow : Window
         }
     }
 
+    private void RefreshSelectedModCopyForServerButton(ModListItemViewModel mod)
+    {
+        if (_viewModel?.SearchModDatabase == true)
+        {
+            return;
+        }
+
+        if (_selectedMods.Count == 1 && ReferenceEquals(_selectedMods[0], mod))
+        {
+            UpdateSelectedModCopyForServerButton(mod);
+        }
+    }
+
     private void UpdateSelectedModButtons()
     {
         int selectionCount = _selectedMods.Count;
@@ -11734,6 +11811,7 @@ public partial class MainWindow : Window
             UpdateSelectedModButton(SelectedModUpdateButton, null, requireModDatabaseLink: false, requireUpdate: true);
             UpdateSelectedModEditConfigButton(null);
             UpdateSelectedModFixButton(null);
+            UpdateSelectedModCopyForServerButton(null);
 
             if (SelectedModDeleteButton is not null)
             {
@@ -11751,6 +11829,7 @@ public partial class MainWindow : Window
             UpdateSelectedModButton(SelectedModDeleteButton, null, requireModDatabaseLink: false);
             UpdateSelectedModInstallButton(singleSelection);
             UpdateSelectedModFixButton(null);
+            UpdateSelectedModCopyForServerButton(null);
         }
         else
         {
@@ -11760,9 +11839,21 @@ public partial class MainWindow : Window
             UpdateSelectedModEditConfigButton(singleSelection);
             UpdateSelectedModButton(SelectedModDeleteButton, singleSelection, requireModDatabaseLink: false);
             UpdateSelectedModFixButton(singleSelection);
+            UpdateSelectedModCopyForServerButton(singleSelection);
         }
 
         _viewModel?.SetSelectedMod(singleSelection, selectionCount);
+    }
+
+    private void UpdateServerOptionsState(bool isEnabled)
+    {
+        if (EnableServerOptionsMenuItem is not null)
+        {
+            EnableServerOptionsMenuItem.IsChecked = isEnabled;
+        }
+
+        ModListItemViewModel? singleSelection = _selectedMods.Count == 1 ? _selectedMods[0] : null;
+        UpdateSelectedModCopyForServerButton(isEnabled ? singleSelection : null);
     }
 
     private void UpdateSelectedModInstallButton(ModListItemViewModel? mod)
@@ -11803,6 +11894,35 @@ public partial class MainWindow : Window
         SelectedModFixButton.DataContext = mod;
         SelectedModFixButton.Visibility = Visibility.Visible;
         SelectedModFixButton.IsEnabled = true;
+    }
+
+    private void UpdateSelectedModCopyForServerButton(ModListItemViewModel? mod)
+    {
+        if (SelectedModCopyForServerButton is null)
+        {
+            return;
+        }
+
+        if (!_userConfiguration.EnableServerOptions || mod is null)
+        {
+            SelectedModCopyForServerButton.DataContext = null;
+            SelectedModCopyForServerButton.Visibility = Visibility.Collapsed;
+            SelectedModCopyForServerButton.IsEnabled = false;
+            return;
+        }
+
+        string? command = ServerCommandBuilder.TryBuildInstallCommand(mod.ModId, mod.Version);
+        if (string.IsNullOrWhiteSpace(command))
+        {
+            SelectedModCopyForServerButton.DataContext = null;
+            SelectedModCopyForServerButton.Visibility = Visibility.Collapsed;
+            SelectedModCopyForServerButton.IsEnabled = false;
+            return;
+        }
+
+        SelectedModCopyForServerButton.DataContext = mod;
+        SelectedModCopyForServerButton.Visibility = Visibility.Visible;
+        SelectedModCopyForServerButton.IsEnabled = true;
     }
 
     private static void UpdateSelectedModButton(WpfButton? button, ModListItemViewModel? mod, bool requireModDatabaseLink, bool requireUpdate = false)
