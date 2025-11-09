@@ -9000,9 +9000,9 @@ public partial class MainWindow : Window
                     {
                         text.DefaultTextStyle(style => style.FontSize(14));
                         text.Span("Generated with Simple VS Manager - download from the ");
-                        text.Hyperlink(ManagerModDatabaseUrl, "Vintage Story ModDB");
+                        text.Hyperlink("Vintage Story ModDB", "https://mods.vintagestory.at/simplevsmanager"); 
                         text.Span(" or ");
-                        text.Hyperlink("https://github.com/Interzoneism/Simple-Mod-Manager", "Github");
+                        text.Hyperlink("Github", "https://github.com/Interzoneism/Simple-Mod-Manager"); 
                         text.Span(" to easily load this modlist!");
                     });
                     column.Item().Text($"For Vintage Story {gameVersion}").FontSize(14);
