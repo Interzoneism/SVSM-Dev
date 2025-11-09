@@ -1443,6 +1443,36 @@ public partial class MainWindow : Window
         _userConfiguration.SetEnableServerOptions(menuItem.IsChecked);
         bool isEnabled = _userConfiguration.EnableServerOptions;
         UpdateServerOptionsState(isEnabled);
+
+        if (isEnabled)
+        {
+            if (!ModDbProxyService.TryEnsureRunning(out string? errorMessage))
+            {
+                string message = "Failed to start the mod database compatibility proxy.";
+                if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    message += $"\n{errorMessage}";
+                }
+
+                StatusLogService.AppendStatus(message, true);
+                WpfMessageBox.Show(
+                    this,
+                    message,
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            else
+            {
+                StatusLogService.AppendStatus(
+                    $"Mod database proxy running at {ModDbProxyService.ProxyBaseAddress}",
+                    false);
+            }
+        }
+        else
+        {
+            ModDbProxyService.Stop();
+        }
     }
 
     private void GenerateServerInstallMacroMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -1484,6 +1514,32 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
+        }
+
+        bool proxyAlreadyRunning = ModDbProxyService.IsRunning;
+        if (!ModDbProxyService.TryEnsureRunning(out string? proxyError))
+        {
+            string errorMessage = "Unable to start the mod database compatibility proxy required for server installs.";
+            if (!string.IsNullOrWhiteSpace(proxyError))
+            {
+                errorMessage += $"\n{proxyError}";
+            }
+
+            StatusLogService.AppendStatus(errorMessage, true);
+            WpfMessageBox.Show(
+                this,
+                errorMessage,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        if (!proxyAlreadyRunning)
+        {
+            StatusLogService.AppendStatus(
+                $"Mod database proxy running at {ModDbProxyService.ProxyBaseAddress}",
+                false);
         }
 
         string macroName = ServerMacroGenerator.CreateDefaultMacroName();
@@ -1585,6 +1641,14 @@ public partial class MainWindow : Window
                 "Place this file in your server's config directory as servermacros.json (or merge it with your existing macros) and run {0} to install {1} mods.",
                 command,
                 generationResult.CommandCount));
+
+        messageBuilder.AppendLine();
+        messageBuilder.AppendLine(
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "Set the server's ModDbUrl in serverconfig.json to {0} while running the macro so that the compatibility proxy can normalize game version tags.",
+                ModDbProxyService.ProxyBaseAddress));
+        messageBuilder.AppendLine("Keep Simple VS Manager running to keep the proxy available during installation.");
 
         if (commandCopied)
         {
@@ -12282,6 +12346,22 @@ public partial class MainWindow : Window
         if (EnableServerOptionsMenuItem is not null)
         {
             EnableServerOptionsMenuItem.IsChecked = isEnabled;
+        }
+
+        if (isEnabled && !ModDbProxyService.IsRunning)
+        {
+            if (ModDbProxyService.TryEnsureRunning(out string? proxyError))
+            {
+                StatusLogService.AppendStatus(
+                    $"Mod database proxy running at {ModDbProxyService.ProxyBaseAddress}",
+                    false);
+            }
+            else if (!string.IsNullOrWhiteSpace(proxyError))
+            {
+                StatusLogService.AppendStatus(
+                    $"Failed to start mod database proxy: {proxyError}",
+                    true);
+            }
         }
 
         ModListItemViewModel? singleSelection = _selectedMods.Count == 1 ? _selectedMods[0] : null;
