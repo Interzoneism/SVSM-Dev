@@ -5,7 +5,7 @@ namespace VintageStoryModManager.Services;
 
 public static class ServerCommandBuilder
 {
-    private const string CommandTemplate = "./moddb install {0}@{1}";
+    private const string CommandTemplate = "/moddb install {0}@{1}";
 
     public static string? TryBuildInstallCommand(string? modId, string? version)
     {
