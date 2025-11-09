@@ -9029,7 +9029,6 @@ public partial class MainWindow : Window
                     });
 
                     column.Item().Text("###").FontSize(12);
-
                     foreach (ModListItemViewModel mod in mods)
                     {
                         if (mod is null)
