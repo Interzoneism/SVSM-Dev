@@ -47,6 +47,7 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.61" />
+    <PackageReference Include="QuestPDF" Version="2024.3.0" />
   </ItemGroup>
 
   <ItemGroup>

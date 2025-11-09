@@ -33,6 +33,9 @@ using System.Windows.Media.TextFormatting;
 using System.Windows.Navigation;
 using System.Windows.Threading;
 using System.Xml;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
@@ -115,6 +118,8 @@ public partial class MainWindow : Window
     // Summary key prefixes to avoid collisions between different summary types
     private const string SummaryKeyPatchModPrefix = "__PATCH_MOD__";
     private const string SummaryKeyLinePrefix = "__PREFIX__";
+
+    private static bool _isQuestPdfLicenseInitialized;
 
     private static readonly Regex PatchAssetMissingRegex = new(
         @"\bPatch \d+ in (?<mod>[^:\r\n]+)",
@@ -522,7 +527,7 @@ public partial class MainWindow : Window
     {
         // Create and show a blocking dialog
         var stackPanel = new StackPanel();
-        stackPanel.VerticalAlignment = VerticalAlignment.Center;
+        stackPanel.VerticalAlignment = System.Windows.VerticalAlignment.Center;
         stackPanel.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
 
         var textBlock = new TextBlock();
@@ -5994,6 +5999,98 @@ public partial class MainWindow : Window
         await RefreshDeleteCachedModsMenuHeaderAsync();
     }
 
+    private void SaveInstalledModsPdfMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel is null)
+        {
+            WpfMessageBox.Show(
+                "Mods are still loading. Please try again once loading is complete.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        IReadOnlyList<ModListItemViewModel> mods = _viewModel.GetInstalledModsSnapshot();
+        if (mods.Count == 0)
+        {
+            WpfMessageBox.Show(
+                "No installed mods were found to include in the PDF.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var metadataDialog = new SaveInstalledModsDialog(BuildCloudModlistName())
+        {
+            Owner = this
+        };
+
+        bool? metadataResult = metadataDialog.ShowDialog();
+        if (metadataResult != true)
+        {
+            return;
+        }
+
+        string listName = metadataDialog.ListName;
+        string? description = metadataDialog.Description;
+        string? configDescription = metadataDialog.ConfigDescription;
+
+        var saveFileDialog = new SaveFileDialog
+        {
+            Title = "Save Modlist PDF",
+            DefaultExt = ".pdf",
+            Filter = "PDF files (*.pdf)|*.pdf",
+            AddExtension = true,
+            FileName = BuildPdfFileName(listName)
+        };
+
+        bool? saveResult = saveFileDialog.ShowDialog(this);
+        if (saveResult != true)
+        {
+            return;
+        }
+
+        string filePath = saveFileDialog.FileName;
+
+        try
+        {
+            GenerateInstalledModsPdf(
+                filePath,
+                listName,
+                description,
+                configDescription,
+                GetUploaderNameForPdf(),
+                _viewModel.InstalledGameVersion,
+                mods);
+
+            _viewModel.ReportStatus($"Saved installed mods PDF to \"{filePath}\".");
+
+            WpfMessageBox.Show(
+                "Saved installed mods PDF successfully.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or PathTooLongException)
+        {
+            WpfMessageBox.Show(
+                $"Failed to save the PDF:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to generate the PDF:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
     private void ManagerDataFolderMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         string? directory = GetManagerDataDirectory();
@@ -8655,6 +8752,181 @@ public partial class MainWindow : Window
     private static string BuildCloudModlistName()
     {
         return $"Modlist {DateTime.Now:yyyy-MM-dd HH:mm}";
+    }
+
+    private static string BuildPdfFileName(string listName)
+    {
+        if (string.IsNullOrWhiteSpace(listName))
+        {
+            return "Installed Mods";
+        }
+
+        char[] invalidCharacters = Path.GetInvalidFileNameChars();
+        var builder = new StringBuilder(listName.Length);
+
+        foreach (char character in listName.Trim())
+        {
+            builder.Append(Array.IndexOf(invalidCharacters, character) >= 0 ? '_' : character);
+        }
+
+        string sanitized = builder.ToString().Trim();
+        if (string.IsNullOrWhiteSpace(sanitized))
+        {
+            return "Installed Mods";
+        }
+
+        if (sanitized.Length > 120)
+        {
+            sanitized = sanitized[..120];
+        }
+
+        return sanitized;
+    }
+
+    private static void EnsureQuestPdfLicense()
+    {
+        if (_isQuestPdfLicenseInitialized)
+        {
+            return;
+        }
+
+        QuestPDF.Settings.License = LicenseType.Community;
+        _isQuestPdfLicenseInitialized = true;
+    }
+
+    private static string[] GetLines(string content)
+    {
+        if (string.IsNullOrEmpty(content))
+        {
+            return Array.Empty<string>();
+        }
+
+        string normalized = content.ReplaceLineEndings("\n");
+        return normalized.Split('\n');
+    }
+
+    private static void GenerateInstalledModsPdf(
+        string filePath,
+        string listName,
+        string? description,
+        string? configDescription,
+        string uploaderName,
+        string? installedGameVersion,
+        IReadOnlyList<ModListItemViewModel> mods)
+    {
+        EnsureQuestPdfLicense();
+
+        string normalizedListName = string.IsNullOrWhiteSpace(listName) ? "Installed Mods" : listName.Trim();
+        string normalizedDescription = description?.Trim() ?? string.Empty;
+        string normalizedConfigDescription = configDescription?.Trim() ?? string.Empty;
+        string gameVersion = string.IsNullOrWhiteSpace(installedGameVersion) ? "Unknown" : installedGameVersion.Trim();
+
+        Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(40);
+                page.PageColor(QuestPDF.Helpers.Colors.White);
+                page.DefaultTextStyle(style => style.FontSize(12));
+
+                page.Content().Column(column =>
+                {
+                    column.Spacing(12);
+
+                    column.Item().Text(normalizedListName).FontSize(32).Bold();
+                    column.Item().Text("Generated with Simple VS Manager - download from the Vintage Story ModDB or Github to easily load this modlist!").FontSize(14);
+                    column.Item().Text($"For Vintage Story {gameVersion}").FontSize(14);
+                    column.Item().Text($"Made by {uploaderName}").FontSize(14);
+
+                    column.Item().Text(text =>
+                    {
+                        text.DefaultTextStyle(style => style.FontSize(14));
+
+                        if (string.IsNullOrEmpty(normalizedDescription))
+                        {
+                            text.Line("Description: ");
+                            return;
+                        }
+
+                        string[] descriptionLines = GetLines(normalizedDescription);
+                        text.Line($"Description: {descriptionLines[0]}");
+
+                        for (int index = 1; index < descriptionLines.Length; index++)
+                        {
+                            text.Line(descriptionLines[index]);
+                        }
+                    });
+
+                    column.Item().Text("###").FontSize(12);
+
+                    foreach (ModListItemViewModel mod in mods)
+                    {
+                        if (mod is null)
+                        {
+                            continue;
+                        }
+
+                        string title = string.IsNullOrWhiteSpace(mod.DisplayName)
+                            ? (string.IsNullOrWhiteSpace(mod.ModId) ? "Unknown Mod" : mod.ModId.Trim())
+                            : mod.DisplayName.Trim();
+
+                        string version = string.IsNullOrWhiteSpace(mod.Version) ? string.Empty : mod.Version.Trim();
+                        string modLine = string.IsNullOrEmpty(version) ? title : $"{title} {version}";
+
+                        column.Item().Text(modLine).FontSize(12);
+                    }
+
+                    column.Item().Text("###").FontSize(12);
+
+                    if (!string.IsNullOrEmpty(normalizedConfigDescription))
+                    {
+                        column.Item().Text("Config settings:").FontSize(12).Bold();
+
+                        column.Item().Text(text =>
+                        {
+                            text.DefaultTextStyle(style => style.FontSize(12));
+
+                            foreach (string line in GetLines(normalizedConfigDescription))
+                            {
+                                text.Line(line);
+                            }
+                        });
+                    }
+                });
+            });
+        }).GeneratePdf(filePath);
+    }
+
+    private string GetUploaderNameForPdf()
+    {
+        string? configuredName = _userConfiguration?.CloudUploaderName;
+        if (!string.IsNullOrWhiteSpace(configuredName))
+        {
+            return configuredName.Trim();
+        }
+
+        string? playerName = _viewModel?.PlayerName;
+        if (!string.IsNullOrWhiteSpace(playerName))
+        {
+            return playerName.Trim();
+        }
+
+        string? suffixSource = _viewModel?.PlayerUid ?? _cloudModlistStore?.CurrentUserId;
+        if (!string.IsNullOrWhiteSpace(suffixSource))
+        {
+            string trimmed = suffixSource.Trim();
+            string suffix = trimmed.Length <= 4 ? trimmed : trimmed[^4..];
+
+            if (string.IsNullOrWhiteSpace(suffix))
+            {
+                suffix = "0000";
+            }
+
+            return $"Anonymous{suffix}";
+        }
+
+        return "Anonymous";
     }
 
     private string DetermineUploaderName(FirebaseModlistStore store)

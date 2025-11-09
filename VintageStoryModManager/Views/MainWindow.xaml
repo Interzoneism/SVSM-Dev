@@ -472,6 +472,7 @@
                               Height="35"
                               Click="UpdateAllModsMenuItem_OnClick" />
                     <MenuItem Header="Check mods compatibility" Height="35" Click="CheckModsCompatibilityMenuItem_OnClick" />
+                    <MenuItem Header="Save installed mods as a PDF..." Height="35" Click="SaveInstalledModsPdfMenuItem_OnClick" />
                     <MenuItem x:Name="RequireExactVsVersionMenuItem"
                               Header="Require exact VS version for compatibility checks"
                               Height="35"
