@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 
@@ -13,6 +14,7 @@ namespace VintageStoryModManager.Services;
 public static class ServerMacroGenerator
 {
     private const string DefaultPrivilege = "controlserver";
+    private const int MaxCommandsPerMacro = 25;
 
     /// <summary>
     /// Creates a default macro name using the current UTC timestamp.
@@ -61,17 +63,41 @@ public static class ServerMacroGenerator
             return ServerMacroGenerationResult.Empty;
         }
 
-        var macro = new ServerMacroExport
-        {
-            Name = normalizedMacroName,
-            Privilege = string.IsNullOrWhiteSpace(privilege) ? DefaultPrivilege : privilege.Trim(),
-            Commands = string.Join('\n', commands),
-            Description = description,
-            CreatedByPlayerUid = string.Empty,
-            Syntax = string.Empty
-        };
+        var macroExports = new List<ServerMacroExport>();
+        var macroNames = new List<string>();
+        string normalizedPrivilege = string.IsNullOrWhiteSpace(privilege) ? DefaultPrivilege : privilege.Trim();
 
-        string json = JsonSerializer.Serialize(new[] { macro }, new JsonSerializerOptions
+        int commandIndex = 0;
+        int macroIndex = 1;
+        while (commandIndex < commands.Count)
+        {
+            int count = Math.Min(MaxCommandsPerMacro, commands.Count - commandIndex);
+            string currentMacroName = macroIndex == 1
+                ? normalizedMacroName
+                : NormalizeMacroName($"{normalizedMacroName}-{macroIndex}");
+
+            string commandsText = string.Join('\n', commands.Skip(commandIndex).Take(count));
+            if (!commandsText.EndsWith('\n'))
+            {
+                commandsText += '\n';
+            }
+
+            macroExports.Add(new ServerMacroExport
+            {
+                Name = currentMacroName,
+                Privilege = normalizedPrivilege,
+                Commands = commandsText,
+                Description = description,
+                CreatedByPlayerUid = string.Empty,
+                Syntax = string.Empty
+            });
+
+            macroNames.Add(currentMacroName);
+            commandIndex += count;
+            macroIndex++;
+        }
+
+        string json = JsonSerializer.Serialize(macroExports, new JsonSerializerOptions
         {
             WriteIndented = true
         });
@@ -84,7 +110,12 @@ public static class ServerMacroGenerator
 
         File.WriteAllText(filePath, json, Encoding.UTF8);
 
-        return new ServerMacroGenerationResult(normalizedMacroName, commands.Count);
+        string[] macroNamesArray = macroNames.ToArray();
+        string[] commandList = macroNamesArray
+            .Select(name => string.IsNullOrEmpty(name) ? string.Empty : "/" + name)
+            .ToArray();
+
+        return new ServerMacroGenerationResult(macroNamesArray, commandList, commands.Count);
     }
 
     private static string NormalizeMacroName(string macroName)
@@ -130,20 +161,30 @@ public static class ServerMacroGenerator
 
     public readonly struct ServerMacroGenerationResult
     {
-        public static readonly ServerMacroGenerationResult Empty = new(string.Empty, 0);
+        public static readonly ServerMacroGenerationResult Empty = new(Array.Empty<string>(), Array.Empty<string>(), 0);
 
-        public ServerMacroGenerationResult(string macroName, int commandCount)
+        public ServerMacroGenerationResult(
+            IReadOnlyList<string> macroNames,
+            IReadOnlyList<string> commands,
+            int commandCount)
         {
-            MacroName = macroName ?? string.Empty;
+            MacroNames = macroNames ?? Array.Empty<string>();
+            Commands = commands ?? Array.Empty<string>();
             CommandCount = commandCount < 0 ? 0 : commandCount;
         }
 
-        public string MacroName { get; }
+        public IReadOnlyList<string> MacroNames { get; }
 
         public int CommandCount { get; }
 
-        public string Command => string.IsNullOrEmpty(MacroName) ? string.Empty : "/" + MacroName;
+        public IReadOnlyList<string> Commands { get; }
 
-        public bool HasMacro => CommandCount > 0 && !string.IsNullOrEmpty(MacroName);
+        public int MacroCount => MacroNames.Count;
+
+        public string MacroName => MacroNames.Count > 0 ? MacroNames[0] : string.Empty;
+
+        public string Command => Commands.Count > 0 ? Commands[0] : string.Empty;
+
+        public bool HasMacro => CommandCount > 0 && MacroNames.Count > 0;
     }
 }

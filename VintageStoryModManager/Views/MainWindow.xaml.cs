@@ -1560,42 +1560,82 @@ public partial class MainWindow : Window
             return;
         }
 
-        string command = generationResult.Command;
+        IReadOnlyList<string> commands = generationResult.Commands;
+        string? commandsText = commands.Count > 0
+            ? string.Join(Environment.NewLine, commands)
+            : null;
+
         bool commandCopied = false;
-        try
+        if (!string.IsNullOrWhiteSpace(commandsText))
         {
-            WinForms.Clipboard.SetText(command);
-            commandCopied = true;
-        }
-        catch (ExternalException)
-        {
-            // Ignore clipboard errors; the command will still be shown to the user.
+            try
+            {
+                WinForms.Clipboard.SetText(commandsText);
+                commandCopied = true;
+            }
+            catch (ExternalException)
+            {
+                // Ignore clipboard errors; the commands will still be shown to the user.
+            }
         }
 
-        StatusLogService.AppendStatus(
-            $"Created server macro '{generationResult.MacroName}' with {generationResult.CommandCount} install commands.",
-            false);
+        string statusMessage = generationResult.MacroCount == 1
+            ? $"Created server macro '{generationResult.MacroName}' with {generationResult.CommandCount} install commands."
+            : $"Created {generationResult.MacroCount} server macros with {generationResult.CommandCount} install commands.";
+        StatusLogService.AppendStatus(statusMessage, false);
 
         var messageBuilder = new StringBuilder();
         messageBuilder.AppendLine("Saved server macro file:");
         messageBuilder.AppendLine(targetPath);
         messageBuilder.AppendLine();
-        messageBuilder.AppendLine(
-            string.Format(
-                CultureInfo.InvariantCulture,
-                "Place this file in your server's config directory as servermacros.json (or merge it with your existing macros) and run {0} to install {1} mods.",
-                command,
-                generationResult.CommandCount));
+        if (commands.Count == 1)
+        {
+            messageBuilder.AppendLine(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Place this file in your server's config directory as servermacros.json (or merge it with your existing macros) and run {0} to install {1} mods.",
+                    commands[0],
+                    generationResult.CommandCount));
+        }
+        else
+        {
+            messageBuilder.AppendLine(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Place this file in your server's config directory as servermacros.json (or merge it with your existing macros). Run each command below in order to install {0} mods.",
+                    generationResult.CommandCount));
+        }
+
+        if (commands.Count > 0)
+        {
+            messageBuilder.AppendLine();
+            foreach (string command in commands)
+            {
+                if (!string.IsNullOrWhiteSpace(command))
+                {
+                    messageBuilder.AppendLine(command);
+                }
+            }
+        }
 
         if (commandCopied)
         {
             messageBuilder.AppendLine();
-            messageBuilder.Append("The command was copied to your clipboard.");
+            messageBuilder.Append("The command");
+            if (commands.Count != 1)
+            {
+                messageBuilder.Append("s");
+            }
+            messageBuilder.Append(" were copied to your clipboard.");
         }
         else
         {
             messageBuilder.AppendLine();
-            messageBuilder.Append("Copy this command before running it.");
+            messageBuilder.Append("Copy ");
+            messageBuilder.Append(commands.Count == 1 ? "this command" : "these commands");
+            messageBuilder.Append(" before running ");
+            messageBuilder.Append(commands.Count == 1 ? "it" : "them");
+            messageBuilder.Append('.');
         }
 
         WpfMessageBox.Show(
