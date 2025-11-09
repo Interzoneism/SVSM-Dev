@@ -673,9 +673,6 @@
                               Padding="12,6"
                               Visibility="Collapsed" />
                     <Separator />
-                    <MenuItem Header="Generate server install macro for installed mods"
-                              Padding="12,6"
-                              Click="GenerateServerInstallMacroMenuItem_OnClick" />
                     <MenuItem Header="Debug: Show all game log lines referencing the selected mod."
                               Padding="12,6"
                               Click="ExperimentalModDebuggingMenuItem_OnClick" />
