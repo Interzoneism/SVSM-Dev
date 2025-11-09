@@ -8998,15 +8998,15 @@ public partial class MainWindow : Window
                     column.Item().Text(normalizedListName).FontSize(32).Bold();
                     column.Item().Text(text =>
                     {
-                        text.DefaultTextStyle(style => style.FontSize(14));
+                        text.DefaultTextStyle(style => style.FontSize(10));
                         text.Span("Generated with Simple VS Manager - download from the ");
-                        text.Hyperlink("Vintage Story ModDB", "https://mods.vintagestory.at/simplevsmanager"); 
+                        text.Hyperlink("Vintage Story ModDB", "https://mods.vintagestory.at/simplevsmanager").FontColor(QuestPDF.Helpers.Colors.Blue.Medium); 
                         text.Span(" or ");
-                        text.Hyperlink("Github", "https://github.com/Interzoneism/Simple-Mod-Manager"); 
+                        text.Hyperlink("Github", "https://github.com/Interzoneism/Simple-Mod-Manager").FontColor(QuestPDF.Helpers.Colors.Blue.Medium); 
                         text.Span(" to easily load this modlist!");
                     });
                     column.Item().Text($"For Vintage Story {gameVersion}").FontSize(14);
-                    column.Item().Text($"Made by {uploaderName}").FontSize(14);
+                    column.Item().Text($"Modlist by {uploaderName}").FontSize(14);
 
                     column.Item().Text(text =>
                     {
@@ -9014,7 +9014,6 @@ public partial class MainWindow : Window
 
                         if (string.IsNullOrEmpty(normalizedDescription))
                         {
-                            text.Line("Description: ");
                             return;
                         }
 
