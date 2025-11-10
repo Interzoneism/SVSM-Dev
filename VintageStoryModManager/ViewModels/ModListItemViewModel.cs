@@ -878,9 +878,11 @@ public sealed class ModListItemViewModel : ObservableObject
         get
         {
             string? preferredSide = GetPreferredSide();
-            return string.IsNullOrWhiteSpace(preferredSide) ? "—" : preferredSide!;
+            return string.IsNullOrWhiteSpace(preferredSide) ? "—" : GetCapitalizedSide(preferredSide)!;
         }
     }
+
+    public string? SideSortValue => GetCapitalizedSide(GetPreferredSide());
 
     public bool? RequiredOnClient { get; }
 
@@ -1018,6 +1020,7 @@ public sealed class ModListItemViewModel : ObservableObject
         if (!string.Equals(previousSide, updatedSide, StringComparison.Ordinal))
         {
             OnPropertyChanged(nameof(SideDisplay));
+            OnPropertyChanged(nameof(SideSortValue));
         }
 
         IReadOnlyList<string> tags = info.Tags ?? Array.Empty<string>();
@@ -2093,6 +2096,28 @@ public sealed class ModListItemViewModel : ObservableObject
             "universal" or "all" or "any" => "both",
             _ => trimmed
         };
+    }
+
+    private static string? GetCapitalizedSide(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        string trimmed = value.Trim();
+        if (trimmed.Length == 0)
+        {
+            return null;
+        }
+
+        if (trimmed.Length == 1)
+        {
+            return char.ToUpperInvariant(trimmed[0]).ToString(CultureInfo.InvariantCulture);
+        }
+
+        string firstCharacter = char.ToUpperInvariant(trimmed[0]).ToString(CultureInfo.InvariantCulture);
+        return string.Concat(firstCharacter, trimmed.Substring(1));
     }
 
     private static string NormalizeSearchText(string value)
