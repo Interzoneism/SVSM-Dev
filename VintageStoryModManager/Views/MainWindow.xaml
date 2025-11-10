@@ -459,12 +459,6 @@
                               SubmenuOpened="RestoreBackupMenuItem_OnSubmenuOpened">
                         <MenuItem Header="Loading..." IsEnabled="False" />
                     </MenuItem>
-                    <MenuItem x:Name="DisableInternetAccessMenuItem"
-                              Header="_Disable Internet Access"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              Click="DisableInternetAccessMenuItem_OnClick" />
                     <Separator  />
                     <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
                 </MenuItem>
@@ -661,6 +655,7 @@
                               Focusable="False"
                               Visibility="Collapsed"
                               Opacity="0.75"/>
+                    <Separator />
                     <MenuItem Header="Open manager config folder"
                               Padding="12,6"
                               Click="ManagerDataFolderMenuItem_OnClick" />
@@ -678,13 +673,19 @@
                               Padding="12,6"
                               Visibility="Collapsed" />
                     <Separator />
+                    <MenuItem x:Name="DisableInternetAccessMenuItem"
+                              Header="_Disable Internet Access"
+                              Height="35"
+                              IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
+                              Click="DisableInternetAccessMenuItem_OnClick" />
                     <MenuItem Header="Debug: Show all game log lines referencing the selected mod."
                               Padding="12,6"
                               Click="ExperimentalModDebuggingMenuItem_OnClick" />
                     <MenuItem Header="Debug: Show all game log lines found referencing any installed mod"
                               Padding="12,6"
                               Click="ExperimentalAllModsDebuggingMenuItem_OnClick" />
-                    <MenuItem Header="Clear all manager caches (Will NOT delete your mods, configs, modlists etc)"
+                    <MenuItem Header="Clear temporary cache (Safe to use, nothing important is removed)"
                               Padding="12,6"
                               Click="ClearAllCachesMenuItem_OnClick" />
                     <MenuItem x:Name="EnableServerOptionsMenuItem"
