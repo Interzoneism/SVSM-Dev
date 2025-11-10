@@ -9018,10 +9018,10 @@ public partial class MainWindow : Window
                         text.DefaultTextStyle(style => style.FontSize(10));
                         text.Span("Generated with Simple VS Manager.");
                         text.EmptyLine();
-                        text.Span("Download the app from the"); 
-                        text.Hyperlink("Vintage Story ModDB", "https://mods.vintagestory.at/simplevsmanager").FontColor(QuestPDF.Helpers.Colors.Blue.Medium); 
+                        text.Span("Download the app from the ");
+                        text.Hyperlink("Vintage Story ModDB", "https://mods.vintagestory.at/simplevsmanager").FontColor(QuestPDF.Helpers.Colors.Blue.Medium);
                         text.Span(" or ");
-                        text.Hyperlink("Github", "https://github.com/Interzoneism/Simple-Mod-Manager").FontColor(QuestPDF.Helpers.Colors.Blue.Medium); 
+                        text.Hyperlink("Github", "https://github.com/Interzoneism/Simple-Mod-Manager").FontColor(QuestPDF.Helpers.Colors.Blue.Medium);
                         text.Span(" to easily load this pdf as a modlist!");
                     });
                     column.Item().Text($"For Vintage Story {gameVersion}").FontSize(14);
@@ -9045,68 +9045,33 @@ public partial class MainWindow : Window
                         }
                     });
 
-                    column.Item().Text("###").FontSize(12);
-
-                    column.Item().Text(text =>
-                    {
-                        text.DefaultTextStyle(style => style.FontSize(6));
-                        text.Span(encodedModlist);
-                    });
-                    column.Item().Text("###").FontSize(12);
-
                     column.Item().Text("Mods in this list:").FontSize(12).Bold();
                     foreach (ModListItemViewModel mod in mods)
                     {
-                        modColumn.Spacing(0);
-
-                        foreach (ModListItemViewModel mod in mods)
+                        if (mod is null)
                         {
-                            if (mod is null)
-                            {
-                                continue;
-                            }
-
-                            string title = string.IsNullOrWhiteSpace(mod.DisplayName)
-                                ? (string.IsNullOrWhiteSpace(mod.ModId) ? "Unknown Mod" : mod.ModId.Trim())
-                                : mod.DisplayName.Trim();
-
-                            string version = string.IsNullOrWhiteSpace(mod.Version) ? string.Empty : mod.Version.Trim();
-                            string modLine = string.IsNullOrEmpty(version) ? title : $"{title} {version}";
-                            string? modDatabaseUrl = string.IsNullOrWhiteSpace(mod.ModDatabasePageUrl)
-                                ? null
-                                : mod.ModDatabasePageUrl.Trim();
-
-                            modColumn.Item().Text(text =>
-                            {
-                                text.DefaultTextStyle(style => style.FontSize(10));
-
-                                if (!string.IsNullOrEmpty(modDatabaseUrl))
-                                {
-                                    text.Hyperlink(modLine, modDatabaseUrl)
-                                        .FontColor(QuestPDF.Helpers.Colors.Blue.Medium);
-                                }
-                                else
-                                {
-                                    text.Span(modLine);
-                                }
-                            });
+                            continue;
                         }
-                    });
 
-                    if (!string.IsNullOrEmpty(normalizedConfigDescription))
-                    {
-                        column.Item().Text("Config settings:").FontSize(12).Bold();
+                        string title = string.IsNullOrWhiteSpace(mod.DisplayName)
+                            ? (string.IsNullOrWhiteSpace(mod.ModId) ? "Unknown Mod" : mod.ModId.Trim())
+                            : mod.DisplayName.Trim();
 
-                        column.Item().Text(text =>
-                        {
-                            text.DefaultTextStyle(style => style.FontSize(12));
+                        string version = string.IsNullOrWhiteSpace(mod.Version) ? string.Empty : mod.Version.Trim();
+                        string modLine = string.IsNullOrEmpty(version) ? title : $"{title} {version}";
 
-                            foreach (string line in GetLines(normalizedConfigDescription))
-                            {
-                                text.Line(line);
-                            }
-                        });
+                        column.Item().Text(modLine).FontSize(10);
                     }
+
+                    column.Item().Text("###").FontSize(1);
+                    column.Item().Text(text =>
+                    {
+                        text.DefaultTextStyle(style => style.FontSize(1));
+                        text.Span(encodedModlist);
+                    });
+                    column.Item().Text("###").FontSize(1);
+
+
                 });
             });
         }).GeneratePdf(filePath);
