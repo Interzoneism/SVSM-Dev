@@ -2558,7 +2558,7 @@
                     LostMouseCapture="ModInfoBorder_OnLostMouseCapture">
                 <Border.Style>
                     <Style TargetType="{x:Type Border}">
-                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Setter Property="Visibility" Value="Visible" />
                         <Setter Property="IsHitTestVisible" Value="False" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding HasSelectedMods}" Value="True">
@@ -2644,15 +2644,15 @@
                 Padding="12,6"
                 Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                 BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                Visibility="Collapsed"
+                Visibility="Visible"
                 IsEnabled="False"
                 Click="SelectedModCopyForServerButton_OnClick"
-                Width="92"
+                Width="120"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Margin="0,150,0,0"
                 Grid.Column="1"
-                MinHeight="32">
+                MinHeight="32" MinWidth="92">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="Copy for Server" VerticalAlignment="Center" />
                         </StackPanel>
@@ -2664,7 +2664,7 @@
                         Visibility="Collapsed"
                         IsEnabled="False"
                         Click="FixModButton_OnClick"
-                        ToolTip="Resolve dependency issues" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,115,0,0" Grid.Column="1" MinHeight="32" MinWidth="92">
+                        ToolTip="Resolve dependency issues" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,115,0,0" Grid.Column="1" MinHeight="32" MinWidth="92" d:IsHidden="True">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="Background" Value="{DynamicResource Brush.Status.Error}" />

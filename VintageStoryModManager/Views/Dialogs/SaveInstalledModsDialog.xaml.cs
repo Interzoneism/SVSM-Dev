@@ -44,8 +44,6 @@ public partial class SaveInstalledModsDialog : Window
 
     public string? Description => NormalizeOptionalText(DescriptionTextBox.Text);
 
-    public string? ConfigDescription => NormalizeOptionalText(ConfigDescriptionTextBox.Text);
-
     public bool IncludeConfigurations => IncludeConfigsCheckBox?.IsChecked == true;
 
     public IReadOnlyList<ModConfigOption> GetSelectedConfigOptions()

@@ -72,37 +72,6 @@
                  SelectionTextBrush="{DynamicResource Brush.Dialog.TextBox.SelectionForeground}"
                  CaretBrush="{DynamicResource Brush.Dialog.TextBox.Caret}" />
 
-        <TextBlock Grid.Row="3"
-                   Grid.Column="0"
-                   Grid.ColumnSpan="2"
-                   Margin="0,0,0,6"
-                   Text="Config description:" />
-        <TextBox x:Name="ConfigDescriptionTextBox"
-                 Grid.Row="4"
-                 Grid.Column="0"
-                 Grid.ColumnSpan="2"
-                 MinHeight="100"
-                 TextWrapping="Wrap"
-                 AcceptsReturn="True"
-                 VerticalScrollBarVisibility="Auto"
-                 Background="{DynamicResource Brush.Dialog.TextBox.Background}"
-                 BorderBrush="{DynamicResource Brush.Dialog.TextBox.Border}"
-                 SelectionBrush="{DynamicResource Brush.Dialog.TextBox.SelectionBackground}"
-                 SelectionTextBrush="{DynamicResource Brush.Dialog.TextBox.SelectionForeground}"
-                 CaretBrush="{DynamicResource Brush.Dialog.TextBox.Caret}"
-                 IsEnabled="False">
-            <TextBox.Style>
-                <Style TargetType="TextBox">
-                    <Setter Property="IsEnabled" Value="False" />
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsChecked, ElementName=IncludeConfigsCheckBox}" Value="True">
-                            <Setter Property="IsEnabled" Value="True" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </TextBox.Style>
-        </TextBox>
-
         <CheckBox x:Name="IncludeConfigsCheckBox"
                   Grid.Row="5"
                   Grid.Column="0"

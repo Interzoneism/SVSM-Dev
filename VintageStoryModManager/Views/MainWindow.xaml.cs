@@ -6197,7 +6197,6 @@ public partial class MainWindow : Window
 
         string listName = metadataDialog.ListName;
         string? description = metadataDialog.Description;
-        string? configDescription = metadataDialog.ConfigDescription;
         bool includeConfigurations = metadataDialog.IncludeConfigurations;
 
         Dictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
@@ -6271,7 +6270,6 @@ public partial class MainWindow : Window
                 filePath,
                 listName,
                 description,
-                configDescription,
                 GetUploaderNameForPdf(),
                 _viewModel.InstalledGameVersion,
                 mods,
@@ -9021,7 +9019,6 @@ public partial class MainWindow : Window
         string filePath,
         string listName,
         string? description,
-        string? configDescription,
         string uploaderName,
         string? installedGameVersion,
         IReadOnlyList<ModListItemViewModel> mods,
@@ -9031,7 +9028,6 @@ public partial class MainWindow : Window
 
         string normalizedListName = string.IsNullOrWhiteSpace(listName) ? "Installed Mods" : listName.Trim();
         string normalizedDescription = description?.Trim() ?? string.Empty;
-        string normalizedConfigDescription = configDescription?.Trim() ?? string.Empty;
         string gameVersion = string.IsNullOrWhiteSpace(installedGameVersion) ? "Unknown" : installedGameVersion.Trim();
         var jsonOptions = new JsonSerializerOptions
         {
@@ -9071,7 +9067,7 @@ public partial class MainWindow : Window
 
                     column.Item().Text(text =>
                     {
-                        text.DefaultTextStyle(style => style.FontSize(14));
+                        text.DefaultTextStyle(style => style.FontSize(12));
 
                         if (string.IsNullOrEmpty(normalizedDescription))
                         {
