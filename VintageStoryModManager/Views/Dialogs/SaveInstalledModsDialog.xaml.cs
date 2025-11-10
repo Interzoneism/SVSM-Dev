@@ -13,7 +13,10 @@ public partial class SaveInstalledModsDialog : Window
     private bool _isUpdatingConfigSelection;
     private bool _isUpdatingSelectAllCheckBox;
 
-    public SaveInstalledModsDialog(string? defaultListName = null, IEnumerable<ModConfigOption>? configOptions = null)
+    public SaveInstalledModsDialog(
+        string? defaultListName = null,
+        IEnumerable<ModConfigOption>? configOptions = null,
+        string? defaultCreatedBy = null)
     {
         ConfigOptions = new ObservableCollection<ModConfigOption>(
             (configOptions ?? Array.Empty<ModConfigOption>())
@@ -32,6 +35,15 @@ public partial class SaveInstalledModsDialog : Window
             NameTextBox.Text = defaultListName.Trim();
         }
 
+        if (!string.IsNullOrWhiteSpace(defaultCreatedBy))
+        {
+            CreatedByTextBox.Text = defaultCreatedBy.Trim();
+        }
+        else if (!string.IsNullOrWhiteSpace(Environment.UserName))
+        {
+            CreatedByTextBox.Text = Environment.UserName.Trim();
+        }
+
         UpdateConfirmButtonState();
         UpdateSelectAllState();
     }
@@ -43,6 +55,8 @@ public partial class SaveInstalledModsDialog : Window
     public string ListName => NameTextBox.Text.Trim();
 
     public string? Description => NormalizeOptionalText(DescriptionTextBox.Text);
+
+    public string? CreatedBy => NormalizeOptionalText(CreatedByTextBox.Text);
 
     public bool IncludeConfigurations => IncludeConfigsCheckBox?.IsChecked == true;
 
