@@ -16,7 +16,12 @@
         Title="Simple VS Manager"
         Height="614" Width="1048"
         MinWidth="1200" MinHeight="775" WindowStartupLocation="CenterScreen"
-        PreviewKeyDown="MainWindow_OnPreviewKeyDown" Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
+        PreviewKeyDown="MainWindow_OnPreviewKeyDown"
+        AllowDrop="True"
+        PreviewDragEnter="MainWindow_OnPreviewDragEnter"
+        PreviewDragOver="MainWindow_OnPreviewDragOver"
+        PreviewDrop="MainWindow_OnPreviewDrop"
+        Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
 
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenTrueConverter" />
