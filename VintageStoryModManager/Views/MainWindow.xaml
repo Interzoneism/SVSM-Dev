@@ -1643,7 +1643,7 @@
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn x:Name="SideColumn" Header="Side"
                                     Binding="{Binding SideDisplay, Mode=OneWay}"
-                                    SortMemberPath="Side"
+                                    SortMemberPath="SideSortValue"
                                     Width="90"
                                     MinWidth="80"
                                     IsReadOnly="True">
