@@ -311,6 +311,11 @@ public partial class MainWindow : Window
         UpdateCloudModlistControlsEnabledState();
     }
 
+    public void ReportStatus(string message, bool isError = false)
+    {
+        _viewModel?.ReportStatus(message, isError);
+    }
+
     private void InitializeColumnVisibilityMenu()
     {
         RegisterColumnMenuItem(ActiveColumnMenuItem, InstalledModsColumn.Active);
@@ -4762,11 +4767,14 @@ public partial class MainWindow : Window
         try
         {
             WinForms.Clipboard.SetDataObject(command, true, 10, 100);
-            StatusLogService.AppendStatus($"Copied server install command for {mod.DisplayName}.", false);
+            string trimmedCommand = command.Trim();
+            string statusMessage = $"Copied {trimmedCommand}";
+            _viewModel?.ReportStatus(statusMessage);
         }
         catch (ExternalException ex)
         {
-            StatusLogService.AppendStatus($"Failed to copy server install command for {mod.DisplayName}: {ex.Message}", true);
+            string errorMessage = $"Failed to copy server install command for {mod.DisplayName}: {ex.Message}";
+            _viewModel?.ReportStatus(errorMessage, true);
             WpfMessageBox.Show(
                 this,
                 "Failed to copy the server install command. Please try again.",

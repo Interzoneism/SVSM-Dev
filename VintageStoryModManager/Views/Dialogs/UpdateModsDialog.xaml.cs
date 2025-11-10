@@ -6,6 +6,7 @@ using System.Windows;
 using System.Runtime.InteropServices;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
+using VintageStoryModManager.Views;
 using VintageStoryModManager.ViewModels;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 using WinFormsClipboard = System.Windows.Forms.Clipboard;
@@ -108,6 +109,16 @@ public partial class UpdateModsDialog : Window
         try
         {
             WinFormsClipboard.SetDataObject(command, true, 10, 100);
+            string trimmedCommand = command.Trim();
+            string statusMessage = $"Copied {trimmedCommand}";
+            if (Owner is MainWindow mainWindow)
+            {
+                mainWindow.ReportStatus(statusMessage);
+            }
+            else
+            {
+                StatusLogService.AppendStatus(statusMessage, false);
+            }
         }
         catch (ExternalException)
         {
