@@ -6263,39 +6263,7 @@ public partial class MainWindow : Window
         if (includeConfigurations)
         {
             IReadOnlyList<ModConfigOption> selectedConfigOptions = metadataDialog.GetSelectedConfigOptions();
-            if (selectedConfigOptions.Count > 0)
-            {
-                includedConfigurations = new Dictionary<string, ModConfigurationSnapshot>(StringComparer.OrdinalIgnoreCase);
-                var readErrors = new List<string>();
-
-                foreach (ModConfigOption option in selectedConfigOptions)
-                {
-                    try
-                    {
-                        string content = File.ReadAllText(option.ConfigPath);
-                        string fileName = GetSafeConfigFileName(Path.GetFileName(option.ConfigPath), option.ModId);
-                        includedConfigurations[option.ModId] = new ModConfigurationSnapshot(fileName, content);
-                    }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or PathTooLongException)
-                    {
-                        readErrors.Add($"{option.DisplayName}: {ex.Message}");
-                    }
-                }
-
-                if (readErrors.Count > 0)
-                {
-                    WpfMessageBox.Show(
-                        "Some configuration files could not be included:\n" + string.Join("\n", readErrors),
-                        "Simple VS Manager",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
-
-                if (includedConfigurations.Count == 0)
-                {
-                    includedConfigurations = null;
-                }
-            }
+            includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
         }
 
         var saveFileDialog = new SaveFileDialog
@@ -8157,7 +8125,8 @@ public partial class MainWindow : Window
         Action<string>? onSuccess,
         string failureContext,
         bool includeModVersions,
-        bool exclusive)
+        bool exclusive,
+        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations = null)
     {
         if (_viewModel is null)
         {
@@ -8207,7 +8176,7 @@ public partial class MainWindow : Window
             filePath = Path.Combine(directory, entryName + ".json");
         }
 
-        var serializable = BuildSerializablePreset(entryName, includeModVersions, exclusive);
+        var serializable = BuildSerializablePreset(entryName, includeModVersions, exclusive, includedConfigurations);
 
         try
         {
@@ -8393,11 +8362,32 @@ public partial class MainWindow : Window
             },
             "preset",
             includeModVersions: false,
-            exclusive: false);
+            exclusive: false,
+            includedConfigurations: null);
     }
 
     private bool TrySaveModlist()
     {
+        List<ModConfigOption> configOptions = BuildModConfigOptions();
+        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
+
+        if (configOptions.Count > 0)
+        {
+            var configDialog = new ModConfigSelectionDialog(configOptions)
+            {
+                Owner = this
+            };
+
+            bool? dialogResult = configDialog.ShowDialog();
+            if (dialogResult != true)
+            {
+                return false;
+            }
+
+            IReadOnlyList<ModConfigOption> selectedConfigOptions = configDialog.GetSelectedOptions();
+            includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
+        }
+
         string modListDirectory = EnsureModListDirectory();
         return TrySaveSnapshot(
             modListDirectory,
@@ -8409,7 +8399,8 @@ public partial class MainWindow : Window
             onSuccess: name => _viewModel?.ReportStatus($"Saved modlist \"{name}\"."),
             failureContext: "modlist",
             includeModVersions: true,
-            exclusive: true);
+            exclusive: true,
+            includedConfigurations: includedConfigurations);
     }
 
     private bool TrySaveAutomaticModlist(string requestedName, out string savedName, out string filePath)
@@ -9275,39 +9266,7 @@ public partial class MainWindow : Window
 
             Dictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
             IReadOnlyList<ModConfigOption> selectedConfigOptions = detailsDialog.GetSelectedConfigOptions();
-            if (selectedConfigOptions.Count > 0)
-            {
-                includedConfigurations = new Dictionary<string, ModConfigurationSnapshot>(StringComparer.OrdinalIgnoreCase);
-                var readErrors = new List<string>();
-
-                foreach (ModConfigOption option in selectedConfigOptions)
-                {
-                    try
-                    {
-                        string content = File.ReadAllText(option.ConfigPath);
-                        string fileName = GetSafeConfigFileName(Path.GetFileName(option.ConfigPath), option.ModId);
-                        includedConfigurations[option.ModId] = new ModConfigurationSnapshot(fileName, content);
-                    }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or PathTooLongException)
-                    {
-                        readErrors.Add($"{option.DisplayName}: {ex.Message}");
-                    }
-                }
-
-                if (readErrors.Count > 0)
-                {
-                    WpfMessageBox.Show(
-                        "Some configuration files could not be included:\n" + string.Join("\n", readErrors),
-                        "Simple VS Manager",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
-
-                if (includedConfigurations.Count == 0)
-                {
-                    includedConfigurations = null;
-                }
-            }
+            includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
 
             if (!TryBuildCurrentModlistJson(modlistName, description, version, uploader, includedConfigurations, out string json))
             {
@@ -9420,6 +9379,47 @@ public partial class MainWindow : Window
 
         options.Sort((left, right) => string.Compare(left.DisplayName, right.DisplayName, StringComparison.OrdinalIgnoreCase));
         return options;
+    }
+
+    private Dictionary<string, ModConfigurationSnapshot>? TryReadModConfigurations(IReadOnlyList<ModConfigOption> selectedConfigOptions)
+    {
+        if (selectedConfigOptions is null || selectedConfigOptions.Count == 0)
+        {
+            return null;
+        }
+
+        var includedConfigurations = new Dictionary<string, ModConfigurationSnapshot>(StringComparer.OrdinalIgnoreCase);
+        var readErrors = new List<string>();
+
+        foreach (ModConfigOption option in selectedConfigOptions)
+        {
+            if (option is null)
+            {
+                continue;
+            }
+
+            try
+            {
+                string content = File.ReadAllText(option.ConfigPath);
+                string fileName = GetSafeConfigFileName(Path.GetFileName(option.ConfigPath), option.ModId);
+                includedConfigurations[option.ModId] = new ModConfigurationSnapshot(fileName, content);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                readErrors.Add($"{option.DisplayName}: {ex.Message}");
+            }
+        }
+
+        if (readErrors.Count > 0)
+        {
+            WpfMessageBox.Show(
+                "Some configuration files could not be included:\n" + string.Join("\n", readErrors),
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+
+        return includedConfigurations.Count == 0 ? null : includedConfigurations;
     }
 
     private static string GetSafeConfigFileName(string? candidate, string? modId)
