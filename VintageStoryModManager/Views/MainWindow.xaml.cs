@@ -9048,7 +9048,7 @@ public partial class MainWindow : Window
 
                 page.Content().Column(column =>
                 {
-                    column.Spacing(12);
+                    column.Spacing(6);
 
                     column.Item().Text(normalizedListName).FontSize(32).Bold();
                     column.Item().Text(text =>
@@ -9064,20 +9064,18 @@ public partial class MainWindow : Window
                     });
                     column.Item().Text($"For Vintage Story {gameVersion}").FontSize(14);
                     column.Item().Text($"Modlist by {uploaderName}").FontSize(14);
-
                     column.Item().Text(text =>
                     {
-                        text.DefaultTextStyle(style => style.FontSize(12));
-
+                        text.DefaultTextStyle(style => style.FontSize(10));
+                        text.DefaultTextStyle(style => style.Italic(true));
                         if (string.IsNullOrEmpty(normalizedDescription))
                         {
                             return;
                         }
 
                         string[] descriptionLines = GetLines(normalizedDescription);
-                        text.Line($"Description: {descriptionLines[0]}");
 
-                        for (int index = 1; index < descriptionLines.Length; index++)
+                        for (int index = 0; index < descriptionLines.Length; index++)
                         {
                             text.Line(descriptionLines[index]);
                         }

@@ -71,7 +71,7 @@
                                                 HorizontalAlignment="Right"
                                                 VerticalAlignment="Center"
                                                 Width="140">
-                                        <Button Content="Skip"
+                                        <Button Content="Exclude version"
                                                 HorizontalAlignment="Stretch"
                                                 IsEnabled="{Binding CanSkip}"
                                                 Click="SkipVersionButton_OnClick" />
