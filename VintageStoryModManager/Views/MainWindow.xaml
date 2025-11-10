@@ -2558,7 +2558,7 @@
                     LostMouseCapture="ModInfoBorder_OnLostMouseCapture">
                 <Border.Style>
                     <Style TargetType="{x:Type Border}">
-                        <Setter Property="Visibility" Value="Visible" />
+                        <Setter Property="Visibility" Value="Collapsed" />
                         <Setter Property="IsHitTestVisible" Value="False" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding HasSelectedMods}" Value="True">
