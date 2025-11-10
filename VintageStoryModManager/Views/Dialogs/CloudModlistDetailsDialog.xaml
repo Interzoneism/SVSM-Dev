@@ -1,6 +1,7 @@
 <Window x:Class="VintageStoryModManager.Views.Dialogs.CloudModlistDetailsDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dialogs="clr-namespace:VintageStoryModManager.Views.Dialogs"
         Title="Cloud Modlist Details"
         SizeToContent="WidthAndHeight"
         MinWidth="720"
@@ -124,7 +125,7 @@
                         </Style>
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate DataType="{x:Type dialogs:ModConfigOption}">
                             <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       ToolTip="{Binding ConfigPath}"
                                       Margin="0"

@@ -41,7 +41,6 @@ using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
 using VintageStoryModManager.Views.Dialogs;
-using CloudModConfigOption = VintageStoryModManager.Views.Dialogs.CloudModlistDetailsDialog.CloudModConfigOption;
 using FileRecycleOption = Microsoft.VisualBasic.FileIO.RecycleOption;
 using FileSystem = Microsoft.VisualBasic.FileIO.FileSystem;
 using FileUIOption = Microsoft.VisualBasic.FileIO.UIOption;
@@ -6183,7 +6182,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        var metadataDialog = new SaveInstalledModsDialog(BuildCloudModlistName())
+        List<ModConfigOption> configOptions = BuildModConfigOptions();
+
+        var metadataDialog = new SaveInstalledModsDialog(BuildCloudModlistName(), configOptions)
         {
             Owner = this
         };
@@ -6197,6 +6198,46 @@ public partial class MainWindow : Window
         string listName = metadataDialog.ListName;
         string? description = metadataDialog.Description;
         string? configDescription = metadataDialog.ConfigDescription;
+        bool includeConfigurations = metadataDialog.IncludeConfigurations;
+
+        Dictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
+        if (includeConfigurations)
+        {
+            IReadOnlyList<ModConfigOption> selectedConfigOptions = metadataDialog.GetSelectedConfigOptions();
+            if (selectedConfigOptions.Count > 0)
+            {
+                includedConfigurations = new Dictionary<string, ModConfigurationSnapshot>(StringComparer.OrdinalIgnoreCase);
+                var readErrors = new List<string>();
+
+                foreach (ModConfigOption option in selectedConfigOptions)
+                {
+                    try
+                    {
+                        string content = File.ReadAllText(option.ConfigPath);
+                        string fileName = GetSafeConfigFileName(Path.GetFileName(option.ConfigPath), option.ModId);
+                        includedConfigurations[option.ModId] = new ModConfigurationSnapshot(fileName, content);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or PathTooLongException)
+                    {
+                        readErrors.Add($"{option.DisplayName}: {ex.Message}");
+                    }
+                }
+
+                if (readErrors.Count > 0)
+                {
+                    WpfMessageBox.Show(
+                        "Some configuration files could not be included:\n" + string.Join("\n", readErrors),
+                        "Simple VS Manager",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+
+                if (includedConfigurations.Count == 0)
+                {
+                    includedConfigurations = null;
+                }
+            }
+        }
 
         var saveFileDialog = new SaveFileDialog
         {
@@ -6221,7 +6262,8 @@ public partial class MainWindow : Window
         SerializablePreset serializable = BuildSerializablePreset(
             presetName,
             includeModVersions: true,
-            exclusive: true);
+            exclusive: true,
+            includedConfigurations);
 
         try
         {
@@ -9169,7 +9211,7 @@ public partial class MainWindow : Window
         return ExecuteCloudOperationAsync(async store =>
         {
             string suggestedName = BuildCloudModlistName();
-            List<CloudModConfigOption> configOptions = BuildCloudModConfigOptions();
+            List<ModConfigOption> configOptions = BuildModConfigOptions();
             var detailsDialog = new CloudModlistDetailsDialog(this, suggestedName, configOptions);
             bool? dialogResult = detailsDialog.ShowDialog();
             if (dialogResult != true)
@@ -9184,13 +9226,13 @@ public partial class MainWindow : Window
             string? version = detailsDialog.ModlistVersion;
 
             Dictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
-            IReadOnlyList<CloudModConfigOption> selectedConfigOptions = detailsDialog.GetSelectedConfigOptions();
+            IReadOnlyList<ModConfigOption> selectedConfigOptions = detailsDialog.GetSelectedConfigOptions();
             if (selectedConfigOptions.Count > 0)
             {
                 includedConfigurations = new Dictionary<string, ModConfigurationSnapshot>(StringComparer.OrdinalIgnoreCase);
                 var readErrors = new List<string>();
 
-                foreach (CloudModConfigOption option in selectedConfigOptions)
+                foreach (ModConfigOption option in selectedConfigOptions)
                 {
                     try
                     {
@@ -9295,9 +9337,9 @@ public partial class MainWindow : Window
         return string.IsNullOrWhiteSpace(version) ? null : version.Trim();
     }
 
-    private List<CloudModConfigOption> BuildCloudModConfigOptions()
+    private List<ModConfigOption> BuildModConfigOptions()
     {
-        var options = new List<CloudModConfigOption>();
+        var options = new List<ModConfigOption>();
 
         if (_viewModel is null)
         {
@@ -9324,7 +9366,7 @@ public partial class MainWindow : Window
                 && !string.IsNullOrWhiteSpace(path)
                 && File.Exists(path))
             {
-                options.Add(new CloudModConfigOption(normalizedId, mod.DisplayName, path, isSelected: false));
+                options.Add(new ModConfigOption(normalizedId, mod.DisplayName, path, isSelected: false));
             }
         }
 

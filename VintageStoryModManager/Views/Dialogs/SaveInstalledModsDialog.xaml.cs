@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -5,9 +10,22 @@ namespace VintageStoryModManager.Views.Dialogs;
 
 public partial class SaveInstalledModsDialog : Window
 {
-    public SaveInstalledModsDialog(string? defaultListName = null)
+    private bool _isUpdatingConfigSelection;
+    private bool _isUpdatingSelectAllCheckBox;
+
+    public SaveInstalledModsDialog(string? defaultListName = null, IEnumerable<ModConfigOption>? configOptions = null)
     {
+        ConfigOptions = new ObservableCollection<ModConfigOption>(
+            (configOptions ?? Array.Empty<ModConfigOption>())
+                .Where(option => option is not null)
+                .OrderBy(option => option.DisplayName, StringComparer.OrdinalIgnoreCase));
+
         InitializeComponent();
+
+        foreach (var option in ConfigOptions)
+        {
+            option.PropertyChanged += ConfigOption_OnPropertyChanged;
+        }
 
         if (!string.IsNullOrWhiteSpace(defaultListName))
         {
@@ -15,13 +33,30 @@ public partial class SaveInstalledModsDialog : Window
         }
 
         UpdateConfirmButtonState();
+        UpdateSelectAllState();
     }
+
+    public ObservableCollection<ModConfigOption> ConfigOptions { get; }
+
+    public bool HasConfigOptions => ConfigOptions.Count > 0;
 
     public string ListName => NameTextBox.Text.Trim();
 
     public string? Description => NormalizeOptionalText(DescriptionTextBox.Text);
 
     public string? ConfigDescription => NormalizeOptionalText(ConfigDescriptionTextBox.Text);
+
+    public bool IncludeConfigurations => IncludeConfigsCheckBox?.IsChecked == true;
+
+    public IReadOnlyList<ModConfigOption> GetSelectedConfigOptions()
+    {
+        if (!IncludeConfigurations)
+        {
+            return Array.Empty<ModConfigOption>();
+        }
+
+        return ConfigOptions.Where(option => option.IsSelected).ToList();
+    }
 
     private static string? NormalizeOptionalText(string? text)
     {
@@ -33,6 +68,7 @@ public partial class SaveInstalledModsDialog : Window
         UpdateConfirmButtonState();
         NameTextBox.Focus();
         NameTextBox.SelectAll();
+        UpdateSelectAllState();
     }
 
     private void NameTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
@@ -59,5 +95,83 @@ public partial class SaveInstalledModsDialog : Window
 
         DialogResult = true;
         Close();
+    }
+
+    private void IncludeConfigsCheckBox_OnChecked(object sender, RoutedEventArgs e)
+    {
+        if (IncludeConfigsCheckBox.IsChecked != true)
+        {
+            _isUpdatingConfigSelection = true;
+            foreach (var option in ConfigOptions)
+            {
+                option.IsSelected = false;
+            }
+
+            _isUpdatingConfigSelection = false;
+        }
+
+        UpdateSelectAllState();
+    }
+
+    private void SelectAllCheckBox_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_isUpdatingSelectAllCheckBox)
+        {
+            return;
+        }
+
+        bool shouldSelect = SelectAllCheckBox.IsChecked == true;
+
+        _isUpdatingConfigSelection = true;
+        foreach (var option in ConfigOptions)
+        {
+            option.IsSelected = shouldSelect;
+        }
+
+        _isUpdatingConfigSelection = false;
+        UpdateSelectAllState();
+    }
+
+    private void ConfigOption_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (!string.Equals(e.PropertyName, nameof(ModConfigOption.IsSelected), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (_isUpdatingConfigSelection)
+        {
+            return;
+        }
+
+        UpdateSelectAllState();
+    }
+
+    private void UpdateSelectAllState()
+    {
+        if (SelectAllCheckBox is null)
+        {
+            return;
+        }
+
+        if (!IncludeConfigurations || !HasConfigOptions)
+        {
+            _isUpdatingSelectAllCheckBox = true;
+            SelectAllCheckBox.IsChecked = false;
+            _isUpdatingSelectAllCheckBox = false;
+            return;
+        }
+
+        int selectedCount = ConfigOptions.Count(option => option.IsSelected);
+        int totalCount = ConfigOptions.Count;
+
+        _isUpdatingSelectAllCheckBox = true;
+        SelectAllCheckBox.IsChecked = selectedCount switch
+        {
+            0 => false,
+            _ when selectedCount == totalCount => true,
+            _ => null
+        };
+        _isUpdatingSelectAllCheckBox = false;
     }
 }
