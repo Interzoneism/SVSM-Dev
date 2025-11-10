@@ -6215,6 +6215,14 @@ public partial class MainWindow : Window
 
         string filePath = saveFileDialog.FileName;
 
+        string presetName = string.IsNullOrWhiteSpace(listName)
+            ? "Installed Mods"
+            : listName.Trim();
+        SerializablePreset serializable = BuildSerializablePreset(
+            presetName,
+            includeModVersions: true,
+            exclusive: true);
+
         try
         {
             GenerateInstalledModsPdf(
@@ -6224,7 +6232,8 @@ public partial class MainWindow : Window
                 configDescription,
                 GetUploaderNameForPdf(),
                 _viewModel.InstalledGameVersion,
-                mods);
+                mods,
+                serializable);
 
             _viewModel.ReportStatus($"Saved installed mods PDF to \"{filePath}\".");
 
@@ -8973,7 +8982,8 @@ public partial class MainWindow : Window
         string? configDescription,
         string uploaderName,
         string? installedGameVersion,
-        IReadOnlyList<ModListItemViewModel> mods)
+        IReadOnlyList<ModListItemViewModel> mods,
+        SerializablePreset serializable)
     {
         EnsureQuestPdfLicense();
 
@@ -8981,6 +8991,13 @@ public partial class MainWindow : Window
         string normalizedDescription = description?.Trim() ?? string.Empty;
         string normalizedConfigDescription = configDescription?.Trim() ?? string.Empty;
         string gameVersion = string.IsNullOrWhiteSpace(installedGameVersion) ? "Unknown" : installedGameVersion.Trim();
+        var jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+        string serializedModlist = JsonSerializer.Serialize(serializable, jsonOptions);
+        string encodedModlist = Convert.ToBase64String(Encoding.UTF8.GetBytes(serializedModlist));
 
         Document.Create(container =>
         {
@@ -9029,7 +9046,16 @@ public partial class MainWindow : Window
                     });
 
                     column.Item().Text("###").FontSize(12);
-                    column.Item().Column(modColumn =>
+
+                    column.Item().Text(text =>
+                    {
+                        text.DefaultTextStyle(style => style.FontSize(6));
+                        text.Span(encodedModlist);
+                    });
+                    column.Item().Text("###").FontSize(12);
+
+                    column.Item().Text("Mods in this list:").FontSize(12).Bold();
+                    foreach (ModListItemViewModel mod in mods)
                     {
                         modColumn.Spacing(0);
 
@@ -9066,8 +9092,6 @@ public partial class MainWindow : Window
                             });
                         }
                     });
-
-                    column.Item().Text("###").FontSize(12);
 
                     if (!string.IsNullOrEmpty(normalizedConfigDescription))
                     {
@@ -10082,8 +10106,20 @@ public partial class MainWindow : Window
             return false;
         }
 
-        json = normalized;
-        return true;
+        if (IsProbableJson(normalized))
+        {
+            json = normalized;
+            return true;
+        }
+
+        if (TryDecodeBase64Modlist(normalized, out string? decoded))
+        {
+            json = decoded;
+            return true;
+        }
+
+        errorMessage = "The PDF modlist data was not in a recognized format.";
+        return false;
     }
 
     private static string NormalizePdfModlistJson(string content)
@@ -10112,6 +10148,88 @@ public partial class MainWindow : Window
         }
 
         return builder.ToString().Trim();
+    }
+
+    private static bool IsProbableJson(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return false;
+        }
+
+        foreach (char ch in content)
+        {
+            if (char.IsWhiteSpace(ch))
+            {
+                continue;
+            }
+
+            return ch == '{' || ch == '[';
+        }
+
+        return false;
+    }
+
+    private static bool TryDecodeBase64Modlist(string content, out string? decoded)
+    {
+        decoded = null;
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return false;
+        }
+
+        string compact = RemoveWhitespace(content);
+        if (compact.Length == 0 || compact.Length % 4 != 0)
+        {
+            return false;
+        }
+
+        foreach (char ch in compact)
+        {
+            if (!IsBase64Character(ch))
+            {
+                return false;
+            }
+        }
+
+        byte[] buffer = new byte[compact.Length];
+        if (!Convert.TryFromBase64String(compact, buffer, out int bytesWritten))
+        {
+            return false;
+        }
+
+        decoded = Encoding.UTF8.GetString(buffer, 0, bytesWritten);
+        return !string.IsNullOrWhiteSpace(decoded);
+    }
+
+    private static bool IsBase64Character(char ch)
+    {
+        return ch is >= 'A' and <= 'Z'
+            || ch is >= 'a' and <= 'z'
+            || ch is >= '0' and <= '9'
+            || ch is '+'
+            || ch is '/'
+            || ch is '=';
+    }
+
+    private static string RemoveWhitespace(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return string.Empty;
+        }
+
+        var builder = new StringBuilder(content.Length);
+        foreach (char ch in content)
+        {
+            if (!char.IsWhiteSpace(ch))
+            {
+                builder.Append(ch);
+            }
+        }
+
+        return builder.ToString();
     }
 
     private bool TryLoadPresetFromJson(
