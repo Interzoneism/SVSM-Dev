@@ -6184,7 +6184,10 @@ public partial class MainWindow : Window
 
         List<ModConfigOption> configOptions = BuildModConfigOptions();
 
-        var metadataDialog = new SaveInstalledModsDialog(BuildCloudModlistName(), configOptions)
+        var metadataDialog = new SaveInstalledModsDialog(
+            BuildCloudModlistName(),
+            configOptions,
+            GetUploaderNameForPdf())
         {
             Owner = this
         };
@@ -6198,6 +6201,11 @@ public partial class MainWindow : Window
         string listName = metadataDialog.ListName;
         string? description = metadataDialog.Description;
         bool includeConfigurations = metadataDialog.IncludeConfigurations;
+        string uploaderName = metadataDialog.CreatedBy ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(uploaderName))
+        {
+            uploaderName = GetUploaderNameForPdf();
+        }
 
         Dictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
         if (includeConfigurations)
@@ -6270,7 +6278,7 @@ public partial class MainWindow : Window
                 filePath,
                 listName,
                 description,
-                GetUploaderNameForPdf(),
+                uploaderName,
                 _viewModel.InstalledGameVersion,
                 mods,
                 serializable);
