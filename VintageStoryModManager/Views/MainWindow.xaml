@@ -477,7 +477,6 @@
                               Height="35"
                               Click="UpdateAllModsMenuItem_OnClick" />
                     <MenuItem Header="Check mods compatibility" Height="35" Click="CheckModsCompatibilityMenuItem_OnClick" />
-                    <MenuItem Header="Save installed mods as a PDF..." Height="35" Click="SaveInstalledModsPdfMenuItem_OnClick" />
                     <MenuItem x:Name="RequireExactVsVersionMenuItem"
                               Header="Require exact VS version for compatibility checks"
                               Height="35"
@@ -495,7 +494,11 @@
                               Height="35"
                               Click="DeleteCachedModsMenuItem_OnClick" />
                 </MenuItem>
-                <MenuItem x:Name="PresetsAndModlistsMenuItem" Header="_Presets and Modlists" Height="35">
+                <MenuItem x:Name="PresetsAndModlistsMenuItem" Header="_Save &amp; Load" Height="35">
+                    <MenuItem Header="Save _Modlist as an importable PDF..." Height="35" Click="SaveInstalledModsPdfMenuItem_OnClick" />
+                    <MenuItem Header="Save _Modlist..." Height="35" Click="SaveModlistMenuItem_OnClick" />
+                    <MenuItem Header="Load _Modlist..." Height="35" Click="LoadModlistMenuItem_OnClick" />
+                    <Separator />
                     <MenuItem Header="_Save Preset..." Height="35" Click="SavePresetMenuItem_OnClick" />
                     <MenuItem x:Name="LoadPresetMenuItem"
                               Header="_Load Preset"
@@ -506,9 +509,6 @@
                                   Height="35"
                                   Click="LoadPresetMenuItem_OnClick" />
                     </MenuItem>
-                    <Separator />
-                    <MenuItem Header="Save Local _Modlist..." Height="35" Click="SaveModlistMenuItem_OnClick" />
-                    <MenuItem Header="Load Local _Modlist..." Height="35" Click="LoadModlistMenuItem_OnClick" />
                     <Separator />
                     <MenuItem x:Name="AlwaysClearModlistsMenuItem"
                               Header="Always clear mods before loading Modlist"
