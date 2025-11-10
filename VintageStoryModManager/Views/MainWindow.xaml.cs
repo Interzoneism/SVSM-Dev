@@ -37,6 +37,8 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using UglyToad.PdfPig;
+using VintageStoryModManager.Core.Models;
+using VintageStoryModManager.Core.Services;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
@@ -309,6 +311,11 @@ public partial class MainWindow : Window
         InternetAccessManager.InternetAccessChanged += InternetAccessManager_OnInternetAccessChanged;
 
         UpdateCloudModlistControlsEnabledState();
+    }
+
+    public void ReportStatus(string message, bool isError = false)
+    {
+        _viewModel?.ReportStatus(message, isError);
     }
 
     private void InitializeColumnVisibilityMenu()
@@ -4762,11 +4769,14 @@ public partial class MainWindow : Window
         try
         {
             WinForms.Clipboard.SetDataObject(command, true, 10, 100);
-            StatusLogService.AppendStatus($"Copied server install command for {mod.DisplayName}.", false);
+            string trimmedCommand = command.Trim();
+            string statusMessage = $"Copied {trimmedCommand}";
+            _viewModel?.ReportStatus(statusMessage);
         }
         catch (ExternalException ex)
         {
-            StatusLogService.AppendStatus($"Failed to copy server install command for {mod.DisplayName}: {ex.Message}", true);
+            string errorMessage = $"Failed to copy server install command for {mod.DisplayName}: {ex.Message}";
+            _viewModel?.ReportStatus(errorMessage, true);
             WpfMessageBox.Show(
                 this,
                 "Failed to copy the server install command. Please try again.",
@@ -6184,7 +6194,10 @@ public partial class MainWindow : Window
 
         List<ModConfigOption> configOptions = BuildModConfigOptions();
 
-        var metadataDialog = new SaveInstalledModsDialog(BuildCloudModlistName(), configOptions)
+        var metadataDialog = new SaveInstalledModsDialog(
+            BuildCloudModlistName(),
+            configOptions,
+            GetUploaderNameForPdf())
         {
             Owner = this
         };
@@ -6198,6 +6211,11 @@ public partial class MainWindow : Window
         string listName = metadataDialog.ListName;
         string? description = metadataDialog.Description;
         bool includeConfigurations = metadataDialog.IncludeConfigurations;
+        string uploaderName = metadataDialog.CreatedBy ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(uploaderName))
+        {
+            uploaderName = GetUploaderNameForPdf();
+        }
 
         Dictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
         if (includeConfigurations)
@@ -6270,7 +6288,7 @@ public partial class MainWindow : Window
                 filePath,
                 listName,
                 description,
-                GetUploaderNameForPdf(),
+                uploaderName,
                 _viewModel.InstalledGameVersion,
                 mods,
                 serializable);
@@ -9029,13 +9047,7 @@ public partial class MainWindow : Window
         string normalizedListName = string.IsNullOrWhiteSpace(listName) ? "Installed Mods" : listName.Trim();
         string normalizedDescription = description?.Trim() ?? string.Empty;
         string gameVersion = string.IsNullOrWhiteSpace(installedGameVersion) ? "Unknown" : installedGameVersion.Trim();
-        var jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
-        string serializedModlist = JsonSerializer.Serialize(serializable, jsonOptions);
-        string encodedModlist = Convert.ToBase64String(Encoding.UTF8.GetBytes(serializedModlist));
+        string encodedModlist = PdfModlistSerializer.SerializeToBase64(serializable);
 
         Document.Create(container =>
         {
@@ -10087,21 +10099,20 @@ public partial class MainWindow : Window
 
         try
         {
-            var jsonOptions = new JsonSerializerOptions
+            string json;
+            using (FileStream stream = File.OpenRead(filePath))
+            using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
             {
-                PropertyNameCaseInsensitive = true
-            };
+                json = reader.ReadToEnd();
+            }
 
-            using FileStream stream = File.OpenRead(filePath);
-            SerializablePreset? data = JsonSerializer.Deserialize<SerializablePreset>(stream, jsonOptions);
-            if (data is null)
+            if (!PdfModlistSerializer.TryDeserializeFromJson(json, out SerializablePreset? data, out errorMessage))
             {
-                errorMessage = "The selected file was empty.";
                 return false;
             }
 
             string snapshotName = GetSnapshotNameFromFilePath(filePath, fallbackName);
-            return TryBuildPresetFromSerializable(data, fallbackName, options, out preset, out errorMessage, snapshotName);
+            return TryBuildPresetFromSerializable(data!, fallbackName, options, out preset, out errorMessage, snapshotName);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -10161,7 +10172,7 @@ public partial class MainWindow : Window
                 return false;
             }
 
-            if (!TryExtractPdfModlistJson(pdfText, out string? json, out string? extractionError))
+            if (!PdfModlistSerializer.TryExtractModlistJson(pdfText, out string? json, out string? extractionError))
             {
                 errorMessage = extractionError;
                 return false;
@@ -10182,173 +10193,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private static bool TryExtractPdfModlistJson(string pdfText, out string? json, out string? errorMessage)
-    {
-        json = null;
-        errorMessage = null;
-
-        if (string.IsNullOrWhiteSpace(pdfText))
-        {
-            errorMessage = "The PDF did not contain any modlist data.";
-            return false;
-        }
-
-        int startIndex = pdfText.IndexOf("###", StringComparison.Ordinal);
-        if (startIndex < 0)
-        {
-            errorMessage = "The PDF did not contain a modlist section.";
-            return false;
-        }
-
-        startIndex += 3;
-        int endIndex = pdfText.IndexOf("###", startIndex, StringComparison.Ordinal);
-        if (endIndex < 0)
-        {
-            errorMessage = "The PDF did not contain the end of the modlist section.";
-            return false;
-        }
-
-        if (endIndex <= startIndex)
-        {
-            errorMessage = "The PDF did not contain any modlist data.";
-            return false;
-        }
-
-        string rawContent = pdfText.Substring(startIndex, endIndex - startIndex);
-        string normalized = NormalizePdfModlistJson(rawContent);
-
-        if (string.IsNullOrWhiteSpace(normalized))
-        {
-            errorMessage = "The PDF did not contain any modlist data.";
-            return false;
-        }
-
-        if (IsProbableJson(normalized))
-        {
-            json = normalized;
-            return true;
-        }
-
-        if (TryDecodeBase64Modlist(normalized, out string? decoded))
-        {
-            json = decoded;
-            return true;
-        }
-
-        errorMessage = "The PDF modlist data was not in a recognized format.";
-        return false;
-    }
-
-    private static string NormalizePdfModlistJson(string content)
-    {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return string.Empty;
-        }
-
-        string sanitized = content
-            .Replace('\r', '\n')
-            .Replace("\0", string.Empty)
-            .Replace("\u00A0", " ");
-
-        var builder = new StringBuilder();
-        string[] lines = sanitized.Split('\n');
-
-        foreach (string line in lines)
-        {
-            if (builder.Length > 0)
-            {
-                builder.Append('\n');
-            }
-
-            builder.Append(line.TrimEnd());
-        }
-
-        return builder.ToString().Trim();
-    }
-
-    private static bool IsProbableJson(string content)
-    {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return false;
-        }
-
-        foreach (char ch in content)
-        {
-            if (char.IsWhiteSpace(ch))
-            {
-                continue;
-            }
-
-            return ch == '{' || ch == '[';
-        }
-
-        return false;
-    }
-
-    private static bool TryDecodeBase64Modlist(string content, out string? decoded)
-    {
-        decoded = null;
-
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return false;
-        }
-
-        string compact = RemoveWhitespace(content);
-        if (compact.Length == 0 || compact.Length % 4 != 0)
-        {
-            return false;
-        }
-
-        foreach (char ch in compact)
-        {
-            if (!IsBase64Character(ch))
-            {
-                return false;
-            }
-        }
-
-        byte[] buffer = new byte[compact.Length];
-        if (!Convert.TryFromBase64String(compact, buffer, out int bytesWritten))
-        {
-            return false;
-        }
-
-        decoded = Encoding.UTF8.GetString(buffer, 0, bytesWritten);
-        return !string.IsNullOrWhiteSpace(decoded);
-    }
-
-    private static bool IsBase64Character(char ch)
-    {
-        return ch is >= 'A' and <= 'Z'
-            || ch is >= 'a' and <= 'z'
-            || ch is >= '0' and <= '9'
-            || ch is '+'
-            || ch is '/'
-            || ch is '=';
-    }
-
-    private static string RemoveWhitespace(string content)
-    {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return string.Empty;
-        }
-
-        var builder = new StringBuilder(content.Length);
-        foreach (char ch in content)
-        {
-            if (!char.IsWhiteSpace(ch))
-            {
-                builder.Append(ch);
-            }
-        }
-
-        return builder.ToString();
-    }
-
     private bool TryLoadPresetFromJson(
         string json,
         string fallbackName,
@@ -10366,27 +10210,12 @@ public partial class MainWindow : Window
             return false;
         }
 
-        try
+        if (!PdfModlistSerializer.TryDeserializeFromJson(json, out SerializablePreset? data, out errorMessage))
         {
-            var jsonOptions = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            SerializablePreset? data = JsonSerializer.Deserialize<SerializablePreset>(json, jsonOptions);
-            if (data is null)
-            {
-                errorMessage = "The selected file was empty.";
-                return false;
-            }
-
-            return TryBuildPresetFromSerializable(data, fallbackName, options, out preset, out errorMessage, sourceName);
-        }
-        catch (JsonException ex)
-        {
-            errorMessage = ex.Message;
             return false;
         }
+
+        return TryBuildPresetFromSerializable(data!, fallbackName, options, out preset, out errorMessage, sourceName);
     }
 
     private bool TryBuildPresetFromSerializable(
@@ -11389,28 +11218,6 @@ public partial class MainWindow : Window
     }
 
     private sealed record ModConfigurationSnapshot(string FileName, string Content);
-
-    private sealed class SerializablePreset
-    {
-        public string? Name { get; set; }
-        public string? Description { get; set; }
-        public string? Version { get; set; }
-        public string? Uploader { get; set; }
-        public List<string>? DisabledEntries { get; set; }
-        public List<SerializablePresetModState>? Mods { get; set; }
-        public bool? IncludeModStatus { get; set; }
-        public bool? IncludeModVersions { get; set; }
-        public bool? Exclusive { get; set; }
-    }
-
-    private sealed class SerializablePresetModState
-    {
-        public string? ModId { get; set; }
-        public string? Version { get; set; }
-        public bool? IsActive { get; set; }
-        public string? ConfigurationFileName { get; set; }
-        public string? ConfigurationContent { get; set; }
-    }
 
     private async Task ApplyPresetAsync(ModPreset preset, bool importConfigurations = true)
     {
