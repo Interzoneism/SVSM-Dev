@@ -529,7 +529,7 @@
                               IsCheckable="True"
                               Style="{StaticResource ToggleMenuItemStyle}"
                               IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
-                    <MenuItem Header="_ModDB Design"
+                    <MenuItem Header="_Use ModDB design"
                               Height="35"
                               IsCheckable="True"
                               Style="{StaticResource ToggleMenuItemStyle}"
