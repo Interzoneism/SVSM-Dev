@@ -685,6 +685,12 @@
                               IsCheckable="True"
                               Style="{StaticResource ToggleMenuItemStyle}"
                               Click="DisableInternetAccessMenuItem_OnClick" />
+                    <MenuItem x:Name="EnableServerOptionsMenuItem"
+                              Header="Enable server options"
+                              Padding="12,6"
+                              IsCheckable="True"
+                              Style="{StaticResource ToggleMenuItemStyle}"
+                              Click="EnableServerOptionsMenuItem_OnClick" />
                     <MenuItem Header="Debug: Show all game log lines referencing the selected mod."
                               Padding="12,6"
                               Click="ExperimentalModDebuggingMenuItem_OnClick" />
@@ -694,12 +700,6 @@
                     <MenuItem Header="Clear temporary cache (Safe to use, nothing important is removed)"
                               Padding="12,6"
                               Click="ClearAllCachesMenuItem_OnClick" />
-                    <MenuItem x:Name="EnableServerOptionsMenuItem"
-                              Header="Enable server options"
-                              Padding="12,6"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              Click="EnableServerOptionsMenuItem_OnClick" />
                     <MenuItem Header="Delete all Simple VS Manager files (Uninstall)"
                               Padding="12,6"
                               Click="DeleteAllManagerFilesMenuItem_OnClick" />
