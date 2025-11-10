@@ -92,6 +92,8 @@ public sealed class UserConfigurationService
     private bool _excludeInstalledModDatabaseResults;
     private bool _onlyShowCompatibleModDatabaseResults;
     private bool _cacheAllVersionsLocally = true;
+    private bool _disableAutoRefresh;
+    private bool _disableAutoRefreshWarningAcknowledged;
     private bool _disableInternetAccess;
     private bool _enableDebugLogging;
     private bool _enableServerOptions;
@@ -156,6 +158,10 @@ public sealed class UserConfigurationService
     public bool ExcludeInstalledModDatabaseResults => _excludeInstalledModDatabaseResults;
 
     public bool OnlyShowCompatibleModDatabaseResults => _onlyShowCompatibleModDatabaseResults;
+
+    public bool DisableAutoRefresh => _disableAutoRefresh;
+
+    public bool DisableAutoRefreshWarningAcknowledged => _disableAutoRefreshWarningAcknowledged;
 
     public bool DisableInternetAccess => _disableInternetAccess;
 
@@ -884,6 +890,28 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetDisableAutoRefresh(bool disable)
+    {
+        if (_disableAutoRefresh == disable)
+        {
+            return;
+        }
+
+        _disableAutoRefresh = disable;
+        Save();
+    }
+
+    public void SetDisableAutoRefreshWarningAcknowledged(bool acknowledged)
+    {
+        if (_disableAutoRefreshWarningAcknowledged == acknowledged)
+        {
+            return;
+        }
+
+        _disableAutoRefreshWarningAcknowledged = acknowledged;
+        Save();
+    }
+
     public void SetDisableInternetAccess(bool disable)
     {
         if (_disableInternetAccess == disable)
@@ -1095,6 +1123,9 @@ public sealed class UserConfigurationService
             _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
             _useModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? true;
             _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? true;
+            _disableAutoRefresh = obj["disableAutoRefresh"]?.GetValue<bool?>() ?? false;
+            _disableAutoRefreshWarningAcknowledged =
+                obj["disableAutoRefreshWarningAcknowledged"]?.GetValue<bool?>() ?? false;
             _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _isModUsageTrackingDisabled = obj["modUsageTrackingDisabled"]?.GetValue<bool?>() ?? false;
             _enableDebugLogging = obj["enableDebugLogging"]?.GetValue<bool?>() ?? false;
@@ -1186,6 +1217,8 @@ public sealed class UserConfigurationService
             _isCompactView = false;
             _useModDbDesignView = true;
             _cacheAllVersionsLocally = true;
+            _disableAutoRefresh = false;
+            _disableAutoRefreshWarningAcknowledged = false;
             _disableInternetAccess = false;
             _enableDebugLogging = false;
             _enableServerOptions = false;
@@ -1249,6 +1282,8 @@ public sealed class UserConfigurationService
                 ["isCompactView"] = _isCompactView,
                 ["useModDbDesignView"] = _useModDbDesignView,
                 ["cacheAllVersionsLocally"] = _cacheAllVersionsLocally,
+                ["disableAutoRefresh"] = _disableAutoRefresh,
+                ["disableAutoRefreshWarningAcknowledged"] = _disableAutoRefreshWarningAcknowledged,
                 ["disableInternetAccess"] = _disableInternetAccess,
                 ["modUsageTrackingDisabled"] = _isModUsageTrackingDisabled,
                 ["enableDebugLogging"] = _enableDebugLogging,

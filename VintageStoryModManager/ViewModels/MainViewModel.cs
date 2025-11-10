@@ -128,6 +128,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private bool _onlyShowCompatibleModDatabaseResults;
     private bool _hasEnabledUserReportFetching;
+    private bool _isAutoRefreshDisabled;
+    private bool _isModDetailsRefreshForced;
+    private bool _allowModDetailsRefresh = true;
 
     public MainViewModel(
         string dataDirectory,
@@ -176,6 +179,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _excludeInstalledModDatabaseResults = excludeInstalledModDatabaseResults;
         _onlyShowCompatibleModDatabaseResults = onlyShowCompatibleModDatabaseResults;
         _hasEnabledUserReportFetching = FirebaseAnonymousAuthenticator.HasPersistedState();
+        _isAutoRefreshDisabled = configuration.DisableAutoRefresh;
+        _allowModDetailsRefresh = !_isAutoRefreshDisabled;
 
         _clearSearchCommand = new RelayCommand(() => SearchText = string.Empty, () => HasSearchText);
         ClearSearchCommand = _clearSearchCommand;
@@ -1292,10 +1297,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
         }
 
-        if (_modEntriesBySourcePath.Count > 0)
+        if (_allowModDetailsRefresh && _modEntriesBySourcePath.Count > 0)
         {
             QueueDatabaseInfoRefresh(_modEntriesBySourcePath.Values.ToArray());
         }
+    }
+
+    internal void SetAutoRefreshDisabled(bool disabled)
+    {
+        _isAutoRefreshDisabled = disabled;
+        _allowModDetailsRefresh = !_isAutoRefreshDisabled;
+    }
+
+    internal void ForceNextRefreshToLoadDetails()
+    {
+        _isModDetailsRefreshForced = true;
     }
 
     internal void SetSelectedMod(ModListItemViewModel? mod, int selectionCount)
@@ -1543,7 +1559,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         ApplyPartialUpdates(reloadResults, previousSelection);
 
-        if (refreshedEntries.Count > 0)
+        if (_allowModDetailsRefresh && refreshedEntries.Count > 0)
         {
             QueueDatabaseInfoRefresh(refreshedEntries);
         }
@@ -1561,6 +1577,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             return;
         }
+
+        bool forcedRefresh = _isModDetailsRefreshForced;
+        _isModDetailsRefreshForced = false;
+        bool previousAllowDetails = _allowModDetailsRefresh;
+        _allowModDetailsRefresh = !_isAutoRefreshDisabled || forcedRefresh;
 
         IsLoadingMods = true;
         using var busyScope = BeginBusyScope();
@@ -1617,7 +1638,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 ApplyPartialUpdates(reloadResults, previousSelection);
 
-                if (updatedEntries.Count > 0)
+                if (_allowModDetailsRefresh && updatedEntries.Count > 0)
                 {
                     QueueDatabaseInfoRefresh(updatedEntries);
                 }
@@ -1636,6 +1657,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         finally
         {
             IsLoadingMods = false;
+            _allowModDetailsRefresh = previousAllowDetails;
         }
     }
 
@@ -1717,7 +1739,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 SelectedMod = null;
             }
 
-            if (entries.Count > 0)
+            if (_allowModDetailsRefresh && entries.Count > 0)
             {
                 QueueDatabaseInfoRefresh(entries);
             }
@@ -2030,7 +2052,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             mod.PropertyChanged += OnInstalledModPropertyChanged;
         }
 
-        QueueUserReportRefresh(mod);
+        if (_allowModDetailsRefresh)
+        {
+            QueueUserReportRefresh(mod);
+        }
     }
 
     private void DetachInstalledMod(ModListItemViewModel mod)
@@ -2251,9 +2276,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         _hasEnabledUserReportFetching = true;
 
-        foreach (ModListItemViewModel mod in _installedModSubscriptions)
+        if (_allowModDetailsRefresh)
         {
-            QueueUserReportRefresh(mod);
+            foreach (ModListItemViewModel mod in _installedModSubscriptions)
+            {
+                QueueUserReportRefresh(mod);
+            }
         }
 
         foreach (ModListItemViewModel mod in _searchResultSubscriptions)
@@ -4217,6 +4245,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private void QueueDatabaseInfoRefresh(IEnumerable<ModEntry> entries)
     {
         if (entries is null)
+        {
+            return;
+        }
+
+        if (!_allowModDetailsRefresh)
         {
             return;
         }
