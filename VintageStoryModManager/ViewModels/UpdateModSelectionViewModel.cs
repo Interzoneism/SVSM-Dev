@@ -80,5 +80,8 @@ public sealed partial class UpdateModSelectionViewModel : ObservableObject
         : $"Changelogs ({ChangelogCount})";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowExcludeVersionButton))]
     private bool _isSelected;
+
+    public bool ShowExcludeVersionButton => !IsSelected && CanSkip;
 }
