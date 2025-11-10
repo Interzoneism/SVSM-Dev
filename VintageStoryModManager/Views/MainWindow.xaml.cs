@@ -266,6 +266,7 @@ public partial class MainWindow : Window
         ApplyStoredWindowDimensions();
         CacheAllVersionsMenuItem.IsChecked = _userConfiguration.CacheAllVersionsLocally;
         RequireExactVsVersionMenuItem.IsChecked = _userConfiguration.RequireExactVsVersionMatch;
+        DisableAutoRefreshMenuItem.IsChecked = _userConfiguration.DisableAutoRefresh;
         DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         StatusLogService.IsLoggingEnabled = _userConfiguration.EnableDebugLogging;
@@ -1167,6 +1168,40 @@ public partial class MainWindow : Window
         }
 
         return false;
+    }
+
+    private void DisableAutoRefreshMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return;
+        }
+
+        bool disable = menuItem.IsChecked;
+
+        if (disable && !_userConfiguration.DisableAutoRefreshWarningAcknowledged)
+        {
+            string message = "This will disable automatic refresh functions such as update checks, loading of tags and other mod details, user reports and other similar functions." +
+                Environment.NewLine + Environment.NewLine +
+                "This will decrease loading times on start for example. Use the \"Refresh\" button to choose when you want to fetch details from cache and/or Mod DB. This dialog will not be shown again.";
+
+            MessageBoxResult confirmation = WpfMessageBox.Show(
+                message,
+                "Simple VS Manager",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirmation != MessageBoxResult.Yes)
+            {
+                menuItem.IsChecked = false;
+                return;
+            }
+
+            _userConfiguration.SetDisableAutoRefreshWarningAcknowledged(true);
+        }
+
+        _userConfiguration.SetDisableAutoRefresh(disable);
+        _viewModel?.SetAutoRefreshDisabled(disable);
     }
 
     private void DisableInternetAccessMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -2765,7 +2800,7 @@ public partial class MainWindow : Window
 
         try
         {
-            await RefreshModsAsync().ConfigureAwait(true);
+            await RefreshModsAsync(allowModDetailsRefresh: true).ConfigureAwait(true);
         }
         catch (Exception ex)
         {
@@ -2804,7 +2839,7 @@ public partial class MainWindow : Window
         {
             try
             {
-                await RefreshModsAsync().ConfigureAwait(true);
+                await RefreshModsAsync(allowModDetailsRefresh: true).ConfigureAwait(true);
             }
             catch (Exception ex)
             {
@@ -3752,7 +3787,9 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task RefreshModsAsync(IReadOnlyCollection<string>? autoAssignModIds = null)
+    private async Task RefreshModsAsync(
+        IReadOnlyCollection<string>? autoAssignModIds = null,
+        bool allowModDetailsRefresh = false)
     {
         if (_viewModel?.RefreshCommand == null)
         {
@@ -3788,6 +3825,11 @@ public partial class MainWindow : Window
             {
                 anchorSourcePath = anchor.SourcePath;
             }
+        }
+
+        if (allowModDetailsRefresh)
+        {
+            _viewModel.ForceNextRefreshToLoadDetails();
         }
 
         await _viewModel.RefreshCommand.ExecuteAsync(null);
@@ -7136,7 +7178,7 @@ public partial class MainWindow : Window
 
         try
         {
-            await RefreshModsAsync().ConfigureAwait(true);
+            await RefreshModsAsync(allowModDetailsRefresh: true).ConfigureAwait(true);
         }
         catch (Exception ex)
         {
@@ -11547,7 +11589,7 @@ public partial class MainWindow : Window
 
             if (installedAnyMods)
             {
-                await RefreshModsAsync(installedModIds).ConfigureAwait(true);
+                await RefreshModsAsync(installedModIds, allowModDetailsRefresh: true).ConfigureAwait(true);
             }
         }
 
@@ -11851,7 +11893,7 @@ public partial class MainWindow : Window
 
         if (removedCount > 0)
         {
-            await RefreshModsAsync().ConfigureAwait(true);
+            await RefreshModsAsync(allowModDetailsRefresh: true).ConfigureAwait(true);
 
             string status = removedCount == 1
                 ? "Removed 1 mod not in the preset."
