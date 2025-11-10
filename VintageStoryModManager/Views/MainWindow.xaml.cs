@@ -6292,6 +6292,8 @@ public partial class MainWindow : Window
             exclusive: true,
             includedConfigurations);
 
+        SerializableConfigList? serializableConfigList = BuildSerializableConfigList(includedConfigurations);
+
         try
         {
             GenerateInstalledModsPdf(
@@ -6301,7 +6303,8 @@ public partial class MainWindow : Window
                 uploaderName,
                 _viewModel.InstalledGameVersion,
                 mods,
-                serializable);
+                serializable,
+                serializableConfigList);
 
             _viewModel.ReportStatus($"Saved installed mods PDF to \"{filePath}\".");
 
@@ -8265,6 +8268,56 @@ public partial class MainWindow : Window
         };
     }
 
+    private static SerializableConfigList? BuildSerializableConfigList(
+        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations)
+    {
+        if (includedConfigurations is null || includedConfigurations.Count == 0)
+        {
+            return null;
+        }
+
+        var configurations = new List<SerializableModConfiguration>(includedConfigurations.Count);
+
+        foreach (KeyValuePair<string, ModConfigurationSnapshot> pair in includedConfigurations)
+        {
+            if (pair.Key is null || pair.Value is null)
+            {
+                continue;
+            }
+
+            string trimmedId = pair.Key.Trim();
+            if (string.IsNullOrWhiteSpace(trimmedId))
+            {
+                continue;
+            }
+
+            string? fileName = string.IsNullOrWhiteSpace(pair.Value.FileName)
+                ? null
+                : pair.Value.FileName.Trim();
+
+            string content = pair.Value.Content ?? string.Empty;
+
+            configurations.Add(new SerializableModConfiguration
+            {
+                ModId = trimmedId,
+                FileName = fileName,
+                Content = content
+            });
+        }
+
+        if (configurations.Count == 0)
+        {
+            return null;
+        }
+
+        configurations.Sort((left, right) => string.Compare(left?.ModId, right?.ModId, StringComparison.OrdinalIgnoreCase));
+
+        return new SerializableConfigList
+        {
+            Configurations = configurations
+        };
+    }
+
     private async Task<(bool Success, int RemovedCount)> DeleteAllInstalledModsForRebuildAsync()
     {
         if (_viewModel?.ModsView is null)
@@ -9073,7 +9126,8 @@ public partial class MainWindow : Window
         string uploaderName,
         string? installedGameVersion,
         IReadOnlyList<ModListItemViewModel> mods,
-        SerializablePreset serializable)
+        SerializablePreset serializable,
+        SerializableConfigList? configList)
     {
         EnsureQuestPdfLicense();
 
@@ -9081,6 +9135,7 @@ public partial class MainWindow : Window
         string normalizedDescription = description?.Trim() ?? string.Empty;
         string gameVersion = string.IsNullOrWhiteSpace(installedGameVersion) ? "Unknown" : installedGameVersion.Trim();
         string encodedModlist = PdfModlistSerializer.SerializeToBase64(serializable);
+        string? encodedConfigList = configList is null ? null : PdfModlistSerializer.SerializeConfigListToBase64(configList);
 
         Document.Create(container =>
         {
@@ -9172,6 +9227,17 @@ public partial class MainWindow : Window
                         text.Span(encodedModlist);
                     });
                     column.Item().Text("###").FontSize(1);
+
+                    if (!string.IsNullOrWhiteSpace(encodedConfigList))
+                    {
+                        column.Item().Text("@@@").FontSize(1);
+                        column.Item().Text(text =>
+                        {
+                            text.DefaultTextStyle(style => style.FontSize(1));
+                            text.Span(encodedConfigList);
+                        });
+                        column.Item().Text("@@@").FontSize(1);
+                    }
 
 
                 });
@@ -10220,8 +10286,14 @@ public partial class MainWindow : Window
                 return false;
             }
 
+            if (!PdfModlistSerializer.TryExtractConfigJson(pdfText, out string? configJson, out string? configExtractionError))
+            {
+                errorMessage = configExtractionError;
+                return false;
+            }
+
             string snapshotName = GetSnapshotNameFromFilePath(filePath, fallbackName);
-            return TryLoadPresetFromJson(json!, fallbackName, options, out preset, out errorMessage, snapshotName);
+            return TryLoadPresetFromJson(json!, fallbackName, options, out preset, out errorMessage, snapshotName, configJson);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
@@ -10241,7 +10313,8 @@ public partial class MainWindow : Window
         PresetLoadOptions options,
         out ModPreset? preset,
         out string? errorMessage,
-        string? sourceName = null)
+        string? sourceName = null,
+        string? configJson = null)
     {
         preset = null;
         errorMessage = null;
@@ -10257,7 +10330,22 @@ public partial class MainWindow : Window
             return false;
         }
 
-        return TryBuildPresetFromSerializable(data!, fallbackName, options, out preset, out errorMessage, sourceName);
+        SerializablePreset serializable = data!;
+
+        if (!string.IsNullOrWhiteSpace(configJson))
+        {
+            if (!PdfModlistSerializer.TryDeserializeConfigListFromJson(configJson, out SerializableConfigList? configList, out string? configError))
+            {
+                errorMessage = string.IsNullOrWhiteSpace(configError)
+                    ? "The PDF configuration data could not be read."
+                    : configError;
+                return false;
+            }
+
+            ApplyConfigListToPreset(serializable, configList);
+        }
+
+        return TryBuildPresetFromSerializable(serializable, fallbackName, options, out preset, out errorMessage, sourceName);
     }
 
     private bool TryBuildPresetFromSerializable(
@@ -10331,6 +10419,70 @@ public partial class MainWindow : Window
 
         preset = new ModPreset(name, disabledEntries, modStates, includeStatus, includeVersions, exclusive);
         return true;
+    }
+
+    private static void ApplyConfigListToPreset(SerializablePreset preset, SerializableConfigList? configList)
+    {
+        if (preset is null || configList?.Configurations is null || configList.Configurations.Count == 0)
+        {
+            return;
+        }
+
+        if (preset.Mods is null)
+        {
+            preset.Mods = new List<SerializablePresetModState>();
+        }
+
+        var configurationLookup = new Dictionary<string, SerializableModConfiguration>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (SerializableModConfiguration configuration in configList.Configurations)
+        {
+            if (configuration is null || string.IsNullOrWhiteSpace(configuration.ModId) || configuration.Content is null)
+            {
+                continue;
+            }
+
+            string trimmedId = configuration.ModId.Trim();
+            if (string.IsNullOrWhiteSpace(trimmedId))
+            {
+                continue;
+            }
+
+            configurationLookup[trimmedId] = configuration;
+        }
+
+        if (configurationLookup.Count == 0)
+        {
+            return;
+        }
+
+        foreach (SerializablePresetModState mod in preset.Mods)
+        {
+            if (mod is null || string.IsNullOrWhiteSpace(mod.ModId))
+            {
+                continue;
+            }
+
+            string trimmedId = mod.ModId.Trim();
+            if (!configurationLookup.TryGetValue(trimmedId, out SerializableModConfiguration? configuration))
+            {
+                continue;
+            }
+
+            string? fileName = string.IsNullOrWhiteSpace(configuration.FileName)
+                ? null
+                : configuration.FileName.Trim();
+
+            if (string.IsNullOrWhiteSpace(mod.ConfigurationFileName) && fileName is not null)
+            {
+                mod.ConfigurationFileName = fileName;
+            }
+
+            if (string.IsNullOrEmpty(mod.ConfigurationContent))
+            {
+                mod.ConfigurationContent = configuration.Content ?? string.Empty;
+            }
+        }
     }
 
     private async Task ExecuteCloudOperationAsync(Func<FirebaseModlistStore, Task> operation, string actionDescription)

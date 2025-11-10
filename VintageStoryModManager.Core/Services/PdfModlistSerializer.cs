@@ -12,6 +12,9 @@ namespace VintageStoryModManager.Core.Services;
 /// </summary>
 public static class PdfModlistSerializer
 {
+    private const string ModlistDelimiter = "###";
+    private const string ConfigDelimiter = "@@@";
+
     private static readonly JsonSerializerOptions SerializationOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -28,6 +31,14 @@ public static class PdfModlistSerializer
         ArgumentNullException.ThrowIfNull(preset);
 
         string serialized = JsonSerializer.Serialize(preset, SerializationOptions);
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(serialized));
+    }
+
+    public static string SerializeConfigListToBase64(SerializableConfigList configList)
+    {
+        ArgumentNullException.ThrowIfNull(configList);
+
+        string serialized = JsonSerializer.Serialize(configList, SerializationOptions);
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(serialized));
     }
 
@@ -61,61 +72,79 @@ public static class PdfModlistSerializer
         return true;
     }
 
-    public static bool TryExtractModlistJson(string pdfText, out string? json, out string? errorMessage)
+    public static bool TryDeserializeConfigListFromJson(string json, out SerializableConfigList? configList, out string? errorMessage)
     {
-        json = null;
+        configList = null;
         errorMessage = null;
 
-        if (string.IsNullOrWhiteSpace(pdfText))
+        if (string.IsNullOrWhiteSpace(json))
         {
-            errorMessage = "The PDF did not contain any modlist data.";
+            errorMessage = "The selected file was empty.";
             return false;
         }
 
-        int startIndex = pdfText.IndexOf("###", StringComparison.Ordinal);
-        if (startIndex < 0)
+        try
         {
-            errorMessage = "The PDF did not contain a modlist section.";
+            configList = JsonSerializer.Deserialize<SerializableConfigList>(json, DeserializationOptions);
+        }
+        catch (JsonException ex)
+        {
+            errorMessage = ex.Message;
             return false;
         }
 
-        startIndex += 3;
-        int endIndex = pdfText.IndexOf("###", startIndex, StringComparison.Ordinal);
-        if (endIndex < 0)
+        if (configList is null)
         {
-            errorMessage = "The PDF did not contain the end of the modlist section.";
+            errorMessage = "The selected file was empty.";
             return false;
         }
 
-        if (endIndex <= startIndex)
+        return true;
+    }
+
+    public static bool TryExtractModlistJson(string pdfText, out string? json, out string? errorMessage)
+    {
+        if (!TryExtractSection(
+                pdfText,
+                ModlistDelimiter,
+                required: true,
+                "The PDF did not contain a modlist section.",
+                "The PDF did not contain the end of the modlist section.",
+                "The PDF did not contain any modlist data.",
+                out string? normalized,
+                out errorMessage))
         {
-            errorMessage = "The PDF did not contain any modlist data.";
+            json = null;
             return false;
         }
 
-        string rawContent = pdfText.Substring(startIndex, endIndex - startIndex);
-        string normalized = NormalizePayload(rawContent);
+        return TryConvertPayloadToJson(normalized!, out json, out errorMessage, "The PDF modlist data was not in a recognized format.");
+    }
 
-        if (string.IsNullOrWhiteSpace(normalized))
+    public static bool TryExtractConfigJson(string pdfText, out string? json, out string? errorMessage)
+    {
+        if (!TryExtractSection(
+                pdfText,
+                ConfigDelimiter,
+                required: false,
+                "The PDF did not contain a configuration section.",
+                "The PDF did not contain the end of the configuration section.",
+                "The PDF did not contain any configuration data.",
+                out string? normalized,
+                out errorMessage))
         {
-            errorMessage = "The PDF did not contain any modlist data.";
+            json = null;
             return false;
         }
 
-        if (IsProbableJson(normalized))
+        if (normalized is null)
         {
-            json = normalized;
+            json = null;
+            errorMessage = null;
             return true;
         }
 
-        if (TryDecodeBase64(normalized, out string? decoded))
-        {
-            json = decoded;
-            return true;
-        }
-
-        errorMessage = "The PDF modlist data was not in a recognized format.";
-        return false;
+        return TryConvertPayloadToJson(normalized, out json, out errorMessage, "The PDF configuration data was not in a recognized format.");
     }
 
     public static string NormalizePayload(string content)
@@ -145,6 +174,94 @@ public static class PdfModlistSerializer
         }
 
         return builder.ToString().Trim();
+    }
+
+    private static bool TryExtractSection(
+        string pdfText,
+        string delimiter,
+        bool required,
+        string missingSectionMessage,
+        string missingEndMessage,
+        string missingDataMessage,
+        out string? normalized,
+        out string? errorMessage)
+    {
+        normalized = null;
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(pdfText))
+        {
+            if (required)
+            {
+                errorMessage = missingDataMessage;
+                return false;
+            }
+
+            return true;
+        }
+
+        int startIndex = pdfText.IndexOf(delimiter, StringComparison.Ordinal);
+        if (startIndex < 0)
+        {
+            if (required)
+            {
+                errorMessage = missingSectionMessage;
+                return false;
+            }
+
+            return true;
+        }
+
+        startIndex += delimiter.Length;
+        int endIndex = pdfText.IndexOf(delimiter, startIndex, StringComparison.Ordinal);
+        if (endIndex < 0)
+        {
+            errorMessage = missingEndMessage;
+            return false;
+        }
+
+        if (endIndex <= startIndex)
+        {
+            errorMessage = missingDataMessage;
+            return false;
+        }
+
+        string rawContent = pdfText.Substring(startIndex, endIndex - startIndex);
+        string normalizedContent = NormalizePayload(rawContent);
+
+        if (string.IsNullOrWhiteSpace(normalizedContent))
+        {
+            errorMessage = missingDataMessage;
+            return false;
+        }
+
+        normalized = normalizedContent;
+        return true;
+    }
+
+    private static bool TryConvertPayloadToJson(
+        string normalized,
+        out string? json,
+        out string? errorMessage,
+        string formatErrorMessage)
+    {
+        json = null;
+        errorMessage = null;
+
+        if (IsProbableJson(normalized))
+        {
+            json = normalized;
+            return true;
+        }
+
+        if (TryDecodeBase64(normalized, out string? decoded))
+        {
+            json = decoded;
+            return true;
+        }
+
+        errorMessage = formatErrorMessage;
+        return false;
     }
 
     private static bool IsProbableJson(string content)
