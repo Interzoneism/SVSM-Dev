@@ -9944,6 +9944,26 @@ public partial class MainWindow : Window
             return;
         }
 
+        await LoadModlistFromFileAsync(dialog.FileName).ConfigureAwait(true);
+    }
+
+    private async Task LoadModlistFromFileAsync(string filePath)
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        {
+            WpfMessageBox.Show(
+                "The selected file could not be found.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
         ModlistLoadMode? loadMode = PromptModlistLoadMode();
         if (loadMode is not ModlistLoadMode mode)
         {
@@ -9959,12 +9979,16 @@ public partial class MainWindow : Window
 
         PresetLoadOptions loadOptions = GetModlistLoadOptions(mode);
 
-        if (!TryLoadPresetFromFile(dialog.FileName, "Modlist", loadOptions, out ModPreset? preset, out string? errorMessage))
+        if (!TryLoadPresetFromFile(filePath, "Modlist", loadOptions, out ModPreset? preset, out string? errorMessage))
         {
-            string message = string.IsNullOrWhiteSpace(errorMessage)
-                ? "The selected file is not a valid modlist."
-                : errorMessage!;
-            WpfMessageBox.Show($"Failed to load the modlist:\n{message}",
+            string message = "The file is not a valid SVSM modlist.";
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                message += $"\n{errorMessage}";
+            }
+
+            WpfMessageBox.Show(
+                message,
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -9978,6 +10002,77 @@ public partial class MainWindow : Window
             ? $"Loaded modlist \"{loadedModlist.Name}\"."
             : $"Added mods from modlist \"{loadedModlist.Name}\".";
         _viewModel?.ReportStatus(status);
+    }
+
+    private void MainWindow_OnPreviewDragEnter(object sender, System.Windows.DragEventArgs e)
+    {
+        HandleModlistDragEvent(e);
+    }
+
+    private void MainWindow_OnPreviewDragOver(object sender, System.Windows.DragEventArgs e)
+    {
+        HandleModlistDragEvent(e);
+    }
+
+    private async void MainWindow_OnPreviewDrop(object sender, System.Windows.DragEventArgs e)
+    {
+        if (!TryGetDroppedModlistFile(e, out string? filePath))
+        {
+            e.Effects = System.Windows.DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
+        e.Handled = true;
+        e.Effects = System.Windows.DragDropEffects.Copy;
+
+        await LoadModlistFromFileAsync(filePath!).ConfigureAwait(true);
+    }
+
+    private void HandleModlistDragEvent(System.Windows.DragEventArgs e)
+    {
+        e.Handled = true;
+
+        if (TryGetDroppedModlistFile(e, out _))
+        {
+            e.Effects = System.Windows.DragDropEffects.Copy;
+            return;
+        }
+
+        e.Effects = System.Windows.DragDropEffects.None;
+    }
+
+    private static bool TryGetDroppedModlistFile(System.Windows.DragEventArgs e, out string? filePath)
+    {
+        filePath = null;
+
+        if (!e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
+        {
+            return false;
+        }
+
+        if (e.Data.GetData(System.Windows.DataFormats.FileDrop) is not string[] files || files.Length == 0)
+        {
+            return false;
+        }
+
+        foreach (string candidate in files)
+        {
+            if (HasSupportedModlistExtension(candidate))
+            {
+                filePath = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasSupportedModlistExtension(string filePath)
+    {
+        string extension = Path.GetExtension(filePath);
+        return string.Equals(extension, ".json", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(extension, ".pdf", StringComparison.OrdinalIgnoreCase);
     }
 
     private bool TryLoadPresetFromFile(string filePath, string fallbackName, PresetLoadOptions options, out ModPreset? preset, out string? errorMessage)
