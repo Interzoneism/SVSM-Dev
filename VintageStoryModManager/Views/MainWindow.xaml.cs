@@ -9046,6 +9046,7 @@ public partial class MainWindow : Window
                     });
 
                     column.Item().Text("###").FontSize(12);
+
                     column.Item().Text(text =>
                     {
                         text.DefaultTextStyle(style => style.FontSize(6));
@@ -9056,20 +9057,41 @@ public partial class MainWindow : Window
                     column.Item().Text("Mods in this list:").FontSize(12).Bold();
                     foreach (ModListItemViewModel mod in mods)
                     {
-                        if (mod is null)
+                        modColumn.Spacing(0);
+
+                        foreach (ModListItemViewModel mod in mods)
                         {
-                            continue;
+                            if (mod is null)
+                            {
+                                continue;
+                            }
+
+                            string title = string.IsNullOrWhiteSpace(mod.DisplayName)
+                                ? (string.IsNullOrWhiteSpace(mod.ModId) ? "Unknown Mod" : mod.ModId.Trim())
+                                : mod.DisplayName.Trim();
+
+                            string version = string.IsNullOrWhiteSpace(mod.Version) ? string.Empty : mod.Version.Trim();
+                            string modLine = string.IsNullOrEmpty(version) ? title : $"{title} {version}";
+                            string? modDatabaseUrl = string.IsNullOrWhiteSpace(mod.ModDatabasePageUrl)
+                                ? null
+                                : mod.ModDatabasePageUrl.Trim();
+
+                            modColumn.Item().Text(text =>
+                            {
+                                text.DefaultTextStyle(style => style.FontSize(10));
+
+                                if (!string.IsNullOrEmpty(modDatabaseUrl))
+                                {
+                                    text.Hyperlink(modLine, modDatabaseUrl)
+                                        .FontColor(QuestPDF.Helpers.Colors.Blue.Medium);
+                                }
+                                else
+                                {
+                                    text.Span(modLine);
+                                }
+                            });
                         }
-
-                        string title = string.IsNullOrWhiteSpace(mod.DisplayName)
-                            ? (string.IsNullOrWhiteSpace(mod.ModId) ? "Unknown Mod" : mod.ModId.Trim())
-                            : mod.DisplayName.Trim();
-
-                        string version = string.IsNullOrWhiteSpace(mod.Version) ? string.Empty : mod.Version.Trim();
-                        string modLine = string.IsNullOrEmpty(version) ? title : $"{title} {version}";
-
-                        column.Item().Text(modLine).FontSize(10);
-                    }
+                    });
 
                     if (!string.IsNullOrEmpty(normalizedConfigDescription))
                     {
@@ -9886,20 +9908,6 @@ public partial class MainWindow : Window
             DefaultExt = ".json",
             InitialDirectory = modListDirectory,
             Multiselect = false
-        };
-
-        dialog.FileOk += (_, args) =>
-        {
-            if (IsPathWithinDirectory(modListDirectory, dialog.FileName))
-            {
-                return;
-            }
-
-            WpfMessageBox.Show("Please select a modlist from the Modlists folder.",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            args.Cancel = true;
         };
 
         bool? dialogResult = dialog.ShowDialog(this);
