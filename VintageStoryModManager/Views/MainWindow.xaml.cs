@@ -13352,7 +13352,6 @@ public partial class MainWindow : Window
         }
 
         _isWindowActive = true;
-        _viewModel?.TriggerLightweightModUpdateCheck();
     }
 
     protected override void OnDeactivated(EventArgs e)
