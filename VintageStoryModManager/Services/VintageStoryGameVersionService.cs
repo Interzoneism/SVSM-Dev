@@ -15,7 +15,7 @@ public static class VintageStoryGameVersionService
 {
     private static readonly string GameVersionsEndpoint = DevConfig.GameVersionsEndpoint;
 
-    private static readonly HttpClient HttpClient = InternetTrafficTracker.CreateHttpClient("VintageStoryGameVersionService");
+    private static readonly HttpClient HttpClient = new();
 
     /// <summary>
     /// Gets the latest Vintage Story release version that is publicly available.

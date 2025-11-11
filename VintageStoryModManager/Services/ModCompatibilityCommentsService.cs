@@ -18,7 +18,13 @@ public sealed class ModCompatibilityCommentsService
     private static readonly string ModApiUrlTemplate = DevConfig.ModCompatibilityApiUrlTemplate;
     private static readonly string ModPageUrlTemplate = DevConfig.ModCompatibilityPageUrlTemplate;
 
-    private static readonly HttpClient HttpClient = CreateHttpClient();
+    private static readonly HttpClient HttpClient = new(new HttpClientHandler
+    {
+        AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
+    })
+    {
+        Timeout = TimeSpan.FromSeconds(30)
+    };
 
     private static readonly Regex VersionRegex = new(
         "\\b1\\.\\d{1,2}(\\.\\d{1,2})?(-rc\\.\\d+|-pre(\\.\\d+)?)?\\b",
@@ -62,19 +68,6 @@ public sealed class ModCompatibilityCommentsService
         "won't",
         "wont"
     };
-
-    private static HttpClient CreateHttpClient()
-    {
-        var client = InternetTrafficTracker.CreateHttpClient(
-            "ModCompatibilityComments",
-            new HttpClientHandler
-            {
-                AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
-            });
-
-        client.Timeout = TimeSpan.FromSeconds(30);
-        return client;
-    }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

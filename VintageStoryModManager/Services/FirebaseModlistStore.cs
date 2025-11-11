@@ -20,7 +20,7 @@ namespace SimpleVsManager.Cloud
     /// </summary>
     public sealed class FirebaseModlistStore
     {
-        private static readonly HttpClient HttpClient = InternetTrafficTracker.CreateHttpClient("FirebaseModlistStore");
+        private static readonly HttpClient HttpClient = new();
 
         private readonly string _dbUrl;
         private readonly FirebaseAnonymousAuthenticator _authenticator;
