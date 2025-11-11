@@ -1680,10 +1680,22 @@ public partial class MainWindow : Window
             return;
         }
 
+        bool wasEnabled = StatusLogService.IsLoggingEnabled;
         _userConfiguration.SetEnableDebugLogging(menuItem.IsChecked);
         bool isEnabled = _userConfiguration.EnableDebugLogging;
         menuItem.IsChecked = isEnabled;
         StatusLogService.IsLoggingEnabled = isEnabled;
+
+        if (isEnabled && !wasEnabled)
+        {
+            string logPath = StatusLogService.GetLogFilePath();
+            StatusLogService.AppendStatus($"Debug logging enabled. Writing entries to {logPath}", false);
+            WpfMessageBox.Show(
+                $"Debug logging is now enabled.\n\nNetwork traffic entries, including per-process usage, will be recorded to:\n{logPath}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
     }
 
     private async void ExperimentalModDebuggingMenuItem_OnClick(object sender, RoutedEventArgs e)
