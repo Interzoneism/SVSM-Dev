@@ -28,7 +28,7 @@ public sealed class ModDatabaseService
     private static readonly int DefaultNewModsMonths = DevConfig.ModDatabaseDefaultNewModsMonths;
     private static readonly int MaxNewModsMonths = DevConfig.ModDatabaseMaxNewModsMonths;
 
-    private static readonly HttpClient HttpClient = new();
+    private static readonly HttpClient HttpClient = InternetTrafficTracker.CreateHttpClient("ModDatabaseService");
     private static readonly ModDatabaseCacheService CacheService = new();
 
     private static readonly Regex HtmlBreakRegex = new(

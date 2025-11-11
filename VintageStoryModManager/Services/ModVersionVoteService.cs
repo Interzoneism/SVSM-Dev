@@ -22,7 +22,7 @@ public sealed class ModVersionVoteService
 
     private static readonly string VotesRootPath = DevConfig.ModVersionVoteRootPath;
 
-    private static readonly HttpClient HttpClient = new();
+    private static readonly HttpClient HttpClient = InternetTrafficTracker.CreateHttpClient("ModVersionVoteService");
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {

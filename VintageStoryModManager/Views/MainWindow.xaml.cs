@@ -74,10 +74,14 @@ public partial class MainWindow : Window
     private static readonly string CloudModListCacheDirectoryName = DevConfig.CloudModListCacheDirectoryName;
     private static readonly string BackupDirectoryName = DevConfig.BackupDirectoryName;
     private static readonly int AutomaticConfigMaxWordDistance = DevConfig.AutomaticConfigMaxWordDistance;
-    private static readonly HttpClient ConnectivityTestHttpClient = new()
+    private static readonly HttpClient ConnectivityTestHttpClient = CreateConnectivityTestClient();
+
+    private static HttpClient CreateConnectivityTestClient()
     {
-        Timeout = TimeSpan.FromSeconds(10)
-    };
+        var client = InternetTrafficTracker.CreateHttpClient("ConnectivityTest");
+        client.Timeout = TimeSpan.FromSeconds(10);
+        return client;
+    }
 
     private static readonly string[] ExperimentalModDebugLogPrefixes =
     {
@@ -1676,10 +1680,22 @@ public partial class MainWindow : Window
             return;
         }
 
+        bool wasEnabled = StatusLogService.IsLoggingEnabled;
         _userConfiguration.SetEnableDebugLogging(menuItem.IsChecked);
         bool isEnabled = _userConfiguration.EnableDebugLogging;
         menuItem.IsChecked = isEnabled;
         StatusLogService.IsLoggingEnabled = isEnabled;
+
+        if (isEnabled && !wasEnabled)
+        {
+            string logPath = StatusLogService.GetLogFilePath();
+            StatusLogService.AppendStatus($"Debug logging enabled. Writing entries to {logPath}", false);
+            WpfMessageBox.Show(
+                $"Debug logging is now enabled.\n\nNetwork traffic entries, including per-process usage, will be recorded to:\n{logPath}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
     }
 
     private async void ExperimentalModDebuggingMenuItem_OnClick(object sender, RoutedEventArgs e)

@@ -26,6 +26,15 @@ public static class StatusLogService
         set => _isLoggingEnabled = value;
     }
 
+    /// <summary>
+    /// Gets the absolute path where status log entries are written.
+    /// </summary>
+    public static string GetLogFilePath()
+    {
+        EnsureLogDirectory();
+        return LogFilePath;
+    }
+
     private static string InitializeLogFilePath()
     {
         try
