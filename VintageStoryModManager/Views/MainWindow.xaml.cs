@@ -74,10 +74,14 @@ public partial class MainWindow : Window
     private static readonly string CloudModListCacheDirectoryName = DevConfig.CloudModListCacheDirectoryName;
     private static readonly string BackupDirectoryName = DevConfig.BackupDirectoryName;
     private static readonly int AutomaticConfigMaxWordDistance = DevConfig.AutomaticConfigMaxWordDistance;
-    private static readonly HttpClient ConnectivityTestHttpClient = new()
+    private static readonly HttpClient ConnectivityTestHttpClient = CreateConnectivityTestClient();
+
+    private static HttpClient CreateConnectivityTestClient()
     {
-        Timeout = TimeSpan.FromSeconds(10)
-    };
+        var client = InternetTrafficTracker.CreateHttpClient("ConnectivityTest");
+        client.Timeout = TimeSpan.FromSeconds(10);
+        return client;
+    }
 
     private static readonly string[] ExperimentalModDebugLogPrefixes =
     {
