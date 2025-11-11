@@ -16,7 +16,7 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public sealed class ModUpdateService
 {
-    private static readonly HttpClient HttpClient = InternetTrafficTracker.CreateHttpClient("ModUpdateService");
+    private static readonly HttpClient HttpClient = new();
 
     private sealed record DownloadResult(string Path, bool IsTemporary, string? CachePath, bool IsCacheHit);
 

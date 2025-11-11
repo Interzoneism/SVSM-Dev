@@ -25,7 +25,7 @@ namespace VintageStoryModManager.ViewModels;
 /// </summary>
 public sealed class ModListItemViewModel : ObservableObject
 {
-    private static readonly HttpClient HttpClient = InternetTrafficTracker.CreateHttpClient("ModListItemViewModel");
+    private static readonly HttpClient HttpClient = new();
 
     private readonly Func<ModListItemViewModel, bool, Task<ActivationResult>> _activationHandler;
     private readonly IReadOnlyList<ModDependencyInfo> _dependencies;
