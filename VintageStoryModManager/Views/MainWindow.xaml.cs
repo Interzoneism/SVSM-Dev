@@ -6236,6 +6236,20 @@ public partial class MainWindow : Window
 
         List<ModConfigOption> configOptions = BuildModConfigOptions();
 
+        if (configOptions.Count > 0)
+        {
+            var configDialog = new ModConfigSelectionDialog(configOptions)
+            {
+                Owner = this
+            };
+
+            bool? configResult = configDialog.ShowDialog();
+            if (configResult != true)
+            {
+                return;
+            }
+        }
+
         var metadataDialog = new SaveInstalledModsDialog(
             BuildCloudModlistName(),
             configOptions,
@@ -8243,7 +8257,7 @@ public partial class MainWindow : Window
                     serializableState.ConfigurationFileName = snapshot.FileName;
                     serializableState.ConfigurationContent = snapshot.Content;
                 }
-                else if (!string.IsNullOrWhiteSpace(state.ConfigurationContent))
+                else if (state.ConfigurationContent is not null)
                 {
                     serializableState.ConfigurationFileName = GetSafeConfigFileName(state.ConfigurationFileName, normalizedId);
                     serializableState.ConfigurationContent = state.ConfigurationContent;
@@ -10404,9 +10418,7 @@ public partial class MainWindow : Window
                 string? configurationFileName = string.IsNullOrWhiteSpace(mod.ConfigurationFileName)
                     ? null
                     : mod.ConfigurationFileName!.Trim();
-                string? configurationContent = string.IsNullOrWhiteSpace(mod.ConfigurationContent)
-                    ? null
-                    : mod.ConfigurationContent;
+                string? configurationContent = mod.ConfigurationContent;
 
                 modStates.Add(new ModPresetModState(modId, version, mod.IsActive, configurationFileName, configurationContent));
             }
@@ -11475,7 +11487,7 @@ public partial class MainWindow : Window
         {
             if (state is null
                 || string.IsNullOrWhiteSpace(state.ModId)
-                || string.IsNullOrWhiteSpace(state.ConfigurationContent))
+                || state.ConfigurationContent is null)
             {
                 continue;
             }

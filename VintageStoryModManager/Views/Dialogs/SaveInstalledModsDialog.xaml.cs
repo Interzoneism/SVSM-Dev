@@ -44,17 +44,6 @@ public partial class SaveInstalledModsDialog : Window
             option.PropertyChanged += ConfigOption_OnPropertyChanged;
         }
 
-        if (ConfigOptions.Count > 0)
-        {
-            _isUpdatingConfigSelection = true;
-            foreach (var option in ConfigOptions)
-            {
-                option.IsSelected = true;
-            }
-
-            _isUpdatingConfigSelection = false;
-        }
-
         UpdateConfirmButtonState();
         UpdateSelectAllState();
     }
