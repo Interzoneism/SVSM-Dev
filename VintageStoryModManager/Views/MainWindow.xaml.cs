@@ -37,6 +37,7 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using UglyToad.PdfPig;
+using UglyToad.PdfPig.Content;
 using VintageStoryModManager.Core.Models;
 using VintageStoryModManager.Core.Services;
 using VintageStoryModManager.Models;
@@ -9167,6 +9168,18 @@ public partial class MainWindow : Window
         string gameVersion = string.IsNullOrWhiteSpace(installedGameVersion) ? "Unknown" : installedGameVersion.Trim();
         string encodedModlist = PdfModlistSerializer.SerializeToBase64(serializable);
         string? encodedConfigList = configList is null ? null : PdfModlistSerializer.SerializeConfigListToBase64(configList);
+        string modlistMetadataValue = PdfModlistSerializer.CreateModlistMetadataValue(encodedModlist);
+        string configMetadataValue = PdfModlistSerializer.CreateConfigMetadataValue(encodedConfigList);
+
+        var metadata = new DocumentMetadata
+        {
+            Title = normalizedListName,
+            Author = uploaderName,
+            Subject = modlistMetadataValue,
+            Keywords = configMetadataValue,
+            Creator = "Simple VS Manager",
+            Producer = "Simple VS Manager"
+        };
 
         Document.Create(container =>
         {
@@ -9251,29 +9264,9 @@ public partial class MainWindow : Window
                         }
                     });
 
-                    column.Item().Text("###").FontSize(1);
-                    column.Item().Text(text =>
-                    {
-                        text.DefaultTextStyle(style => style.FontSize(1));
-                        text.Span(encodedModlist);
-                    });
-                    column.Item().Text("###").FontSize(1);
-
-                    if (!string.IsNullOrWhiteSpace(encodedConfigList))
-                    {
-                        column.Item().Text("@@@").FontSize(1);
-                        column.Item().Text(text =>
-                        {
-                            text.DefaultTextStyle(style => style.FontSize(1));
-                            text.Span(encodedConfigList);
-                        });
-                        column.Item().Text("@@@").FontSize(1);
-                    }
-
-
                 });
             });
-        }).GeneratePdf(filePath);
+        }).WithMetadata(metadata).GeneratePdf(filePath);
     }
 
     private string GetUploaderNameForPdf()
@@ -10268,59 +10261,94 @@ public partial class MainWindow : Window
         try
         {
             using PdfDocument document = PdfDocument.Open(filePath);
-            var textBuilder = new StringBuilder();
+            string? json = null;
+            string? configJson = null;
 
-            foreach (var page in document.GetPages())
+            DocumentInformation? information = document.Information;
+            bool hasModlistMetadata = PdfModlistSerializer.TryExtractModlistJsonFromMetadata(
+                information?.Subject,
+                out json,
+                out string? modlistMetadataError);
+            if (!hasModlistMetadata && modlistMetadataError is not null)
             {
-                var pageBuilder = new StringBuilder();
+                errorMessage = modlistMetadataError;
+                return false;
+            }
 
-                foreach (var letter in page.Letters)
+            bool hasConfigMetadata = PdfModlistSerializer.TryExtractConfigJsonFromMetadata(
+                information?.Keywords,
+                out configJson,
+                out string? configMetadataError);
+            if (!hasConfigMetadata && configMetadataError is not null)
+            {
+                errorMessage = configMetadataError;
+                return false;
+            }
+
+            string? pdfText = null;
+
+            if (!hasModlistMetadata || !hasConfigMetadata)
+            {
+                var textBuilder = new StringBuilder();
+
+                foreach (var page in document.GetPages())
                 {
-                    string value = letter.Value;
-                    if (string.IsNullOrEmpty(value))
+                    var pageBuilder = new StringBuilder();
+
+                    foreach (var letter in page.Letters)
+                    {
+                        string value = letter.Value;
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            continue;
+                        }
+
+                        if (value == "\r")
+                        {
+                            continue;
+                        }
+
+                        pageBuilder.Append(value);
+                    }
+
+                    string pageText = pageBuilder.ToString();
+                    if (string.IsNullOrWhiteSpace(pageText))
                     {
                         continue;
                     }
 
-                    if (value == "\r")
+                    if (textBuilder.Length > 0)
                     {
-                        continue;
+                        textBuilder.Append('\n');
                     }
 
-                    pageBuilder.Append(value);
+                    textBuilder.Append(pageText);
                 }
 
-                string pageText = pageBuilder.ToString();
-                if (string.IsNullOrWhiteSpace(pageText))
+                pdfText = textBuilder.ToString();
+                if (string.IsNullOrWhiteSpace(pdfText))
                 {
-                    continue;
+                    errorMessage = "The PDF did not contain any readable text.";
+                    return false;
                 }
+            }
 
-                if (textBuilder.Length > 0)
+            if (!hasModlistMetadata)
+            {
+                if (!PdfModlistSerializer.TryExtractModlistJson(pdfText!, out json, out string? extractionError))
                 {
-                    textBuilder.Append('\n');
+                    errorMessage = extractionError;
+                    return false;
                 }
-
-                textBuilder.Append(pageText);
             }
 
-            string pdfText = textBuilder.ToString();
-            if (string.IsNullOrWhiteSpace(pdfText))
+            if (!hasConfigMetadata)
             {
-                errorMessage = "The PDF did not contain any readable text.";
-                return false;
-            }
-
-            if (!PdfModlistSerializer.TryExtractModlistJson(pdfText, out string? json, out string? extractionError))
-            {
-                errorMessage = extractionError;
-                return false;
-            }
-
-            if (!PdfModlistSerializer.TryExtractConfigJson(pdfText, out string? configJson, out string? configExtractionError))
-            {
-                errorMessage = configExtractionError;
-                return false;
+                if (!PdfModlistSerializer.TryExtractConfigJson(pdfText!, out configJson, out string? configExtractionError))
+                {
+                    errorMessage = configExtractionError;
+                    return false;
+                }
             }
 
             string snapshotName = GetSnapshotNameFromFilePath(filePath, fallbackName);

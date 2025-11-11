@@ -43,6 +43,41 @@ public sealed class PdfModlistSerializerTests
     }
 
     [Fact]
+    public void TryExtractModlistJsonFromMetadata_ReadsEncodedPayload()
+    {
+        var preset = new SerializablePreset
+        {
+            Name = "Test Modlist",
+            IncludeModStatus = true,
+            Mods = new List<SerializablePresetModState>
+            {
+                new()
+                {
+                    ModId = "examplemod",
+                    IsActive = true,
+                    ConfigurationFileName = "example.json",
+                    ConfigurationContent = "{\"setting\":42}"
+                }
+            }
+        };
+
+        string payload = PdfModlistSerializer.SerializeToBase64(preset);
+        string metadataValue = PdfModlistSerializer.CreateModlistMetadataValue(payload);
+
+        Assert.True(
+            PdfModlistSerializer.TryExtractModlistJsonFromMetadata(metadataValue, out string? json, out string? error),
+            error);
+
+        Assert.True(
+            PdfModlistSerializer.TryDeserializeFromJson(json!, out SerializablePreset? roundTrip, out string? deserializeError),
+            deserializeError);
+
+        SerializablePresetModState modState = Assert.Single(roundTrip!.Mods!);
+        Assert.Equal("example.json", modState.ConfigurationFileName);
+        Assert.Equal("{\"setting\":42}", modState.ConfigurationContent);
+    }
+
+    [Fact]
     public void SerializeConfigListToBase64_RoundTripsConfigurationEntries()
     {
         var configList = new SerializableConfigList
@@ -73,6 +108,51 @@ public sealed class PdfModlistSerializerTests
         Assert.Equal("examplemod", configuration.ModId);
         Assert.Equal("example.json", configuration.FileName);
         Assert.Equal("{\"setting\":42}", configuration.Content);
+    }
+
+    [Fact]
+    public void TryExtractConfigJsonFromMetadata_ReadsEncodedPayload()
+    {
+        var configList = new SerializableConfigList
+        {
+            Configurations = new List<SerializableModConfiguration>
+            {
+                new()
+                {
+                    ModId = "examplemod",
+                    FileName = "example.json",
+                    Content = "{\"setting\":42}"
+                }
+            }
+        };
+
+        string payload = PdfModlistSerializer.SerializeConfigListToBase64(configList);
+        string metadataValue = PdfModlistSerializer.CreateConfigMetadataValue(payload);
+
+        Assert.True(
+            PdfModlistSerializer.TryExtractConfigJsonFromMetadata(metadataValue, out string? json, out string? error),
+            error);
+
+        Assert.True(
+            PdfModlistSerializer.TryDeserializeConfigListFromJson(json!, out SerializableConfigList? roundTrip, out string? deserializeError),
+            deserializeError);
+
+        SerializableModConfiguration configuration = Assert.Single(roundTrip!.Configurations!);
+        Assert.Equal("examplemod", configuration.ModId);
+        Assert.Equal("example.json", configuration.FileName);
+        Assert.Equal("{\"setting\":42}", configuration.Content);
+    }
+
+    [Fact]
+    public void TryExtractConfigJsonFromMetadata_HandlesMissingConfigurations()
+    {
+        string metadataValue = PdfModlistSerializer.CreateConfigMetadataValue(null);
+
+        Assert.True(
+            PdfModlistSerializer.TryExtractConfigJsonFromMetadata(metadataValue, out string? json, out string? error));
+
+        Assert.Null(json);
+        Assert.Null(error);
     }
 
     [Fact]
