@@ -14,6 +14,10 @@ public static class PdfModlistSerializer
 {
     private const string ModlistDelimiter = "###";
     private const string ConfigDelimiter = "@@@";
+    private const string MetadataPrefix = "SVSM:";
+    private const string ModlistMetadataPrefix = MetadataPrefix + "MODLIST:";
+    private const string ConfigMetadataPrefix = MetadataPrefix + "CONFIG:";
+    private const string ConfigMetadataMissingValue = "NONE";
 
     private static readonly JsonSerializerOptions SerializationOptions = new()
     {
@@ -40,6 +44,22 @@ public static class PdfModlistSerializer
 
         string serialized = JsonSerializer.Serialize(configList, SerializationOptions);
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(serialized));
+    }
+
+    public static string CreateModlistMetadataValue(string encodedModlist)
+    {
+        ArgumentNullException.ThrowIfNull(encodedModlist);
+
+        return ModlistMetadataPrefix + encodedModlist;
+    }
+
+    public static string CreateConfigMetadataValue(string? encodedConfigList)
+    {
+        string payload = string.IsNullOrWhiteSpace(encodedConfigList)
+            ? ConfigMetadataMissingValue
+            : encodedConfigList!;
+
+        return ConfigMetadataPrefix + payload;
     }
 
     public static bool TryDeserializeFromJson(string json, out SerializablePreset? preset, out string? errorMessage)
@@ -121,6 +141,39 @@ public static class PdfModlistSerializer
         return TryConvertPayloadToJson(normalized!, out json, out errorMessage, "The PDF modlist data was not in a recognized format.");
     }
 
+    public static bool TryExtractModlistJsonFromMetadata(string? metadataValue, out string? json, out string? errorMessage)
+    {
+        json = null;
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(metadataValue))
+        {
+            return false;
+        }
+
+        string trimmed = metadataValue.Trim();
+        if (!trimmed.StartsWith(ModlistMetadataPrefix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        string payload = trimmed[ModlistMetadataPrefix.Length..];
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            errorMessage = "The PDF modlist metadata did not contain any modlist data.";
+            return false;
+        }
+
+        string normalizedPayload = NormalizePayload(payload);
+        if (string.IsNullOrWhiteSpace(normalizedPayload))
+        {
+            errorMessage = "The PDF modlist metadata did not contain any modlist data.";
+            return false;
+        }
+
+        return TryConvertPayloadToJson(normalizedPayload, out json, out errorMessage, "The PDF modlist metadata was not in a recognized format.");
+    }
+
     public static bool TryExtractConfigJson(string pdfText, out string? json, out string? errorMessage)
     {
         if (!TryExtractSection(
@@ -145,6 +198,44 @@ public static class PdfModlistSerializer
         }
 
         return TryConvertPayloadToJson(normalized, out json, out errorMessage, "The PDF configuration data was not in a recognized format.");
+    }
+
+    public static bool TryExtractConfigJsonFromMetadata(string? metadataValue, out string? json, out string? errorMessage)
+    {
+        json = null;
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(metadataValue))
+        {
+            return false;
+        }
+
+        string trimmed = metadataValue.Trim();
+        if (!trimmed.StartsWith(ConfigMetadataPrefix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        string payload = trimmed[ConfigMetadataPrefix.Length..];
+        if (string.Equals(payload, ConfigMetadataMissingValue, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            errorMessage = "The PDF configuration metadata did not contain any configuration data.";
+            return false;
+        }
+
+        string normalizedPayload = NormalizePayload(payload);
+        if (string.IsNullOrWhiteSpace(normalizedPayload))
+        {
+            errorMessage = "The PDF configuration metadata did not contain any configuration data.";
+            return false;
+        }
+
+        return TryConvertPayloadToJson(normalizedPayload, out json, out errorMessage, "The PDF configuration metadata was not in a recognized format.");
     }
 
     public static string NormalizePayload(string content)
