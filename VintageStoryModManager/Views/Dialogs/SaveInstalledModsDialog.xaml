@@ -12,9 +12,6 @@
         ShowInTaskbar="False"
         Loaded="Window_OnLoaded"
         Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
-    <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-    </Window.Resources>
     <Grid Margin="20"
           Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
           TextElement.Foreground="{DynamicResource Brush.Text.Primary}">
@@ -88,16 +85,14 @@
                  SelectionTextBrush="{DynamicResource Brush.Dialog.TextBox.SelectionForeground}"
                  CaretBrush="{DynamicResource Brush.Dialog.TextBox.Caret}" />
 
-        <CheckBox x:Name="IncludeConfigsCheckBox"
-                  Grid.Row="5"
-                  Grid.Column="0"
-                  Grid.ColumnSpan="2"
-                  Margin="0,12,0,0"
-                  Content="Include configuration files"
-                  Checked="IncludeConfigsCheckBox_OnChecked"
-                  Unchecked="IncludeConfigsCheckBox_OnChecked">
-            <CheckBox.Style>
-                <Style TargetType="CheckBox">
+        <StackPanel Grid.Row="5"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    Margin="0,8,0,4"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Left">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
                     <Setter Property="Visibility" Value="Collapsed" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
@@ -105,29 +100,17 @@
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
-            </CheckBox.Style>
-        </CheckBox>
-
-        <StackPanel Grid.Row="6"
-                    Grid.Column="0"
-                    Grid.ColumnSpan="2"
-                    Margin="0,8,0,4"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Left">
-            <TextBlock Text="Include Configurations"
+            </StackPanel.Style>
+            <TextBlock Text="Configurations to include"
                        FontWeight="SemiBold"
                        Visibility="Collapsed">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Setter Property="Visibility" Value="Collapsed" />
                         <Style.Triggers>
-                            <MultiDataTrigger>
-                                <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
-                                    <Condition Binding="{Binding IsChecked, ElementName=IncludeConfigsCheckBox}" Value="True" />
-                                </MultiDataTrigger.Conditions>
+                            <DataTrigger Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                 <Setter Property="Visibility" Value="Visible" />
-                            </MultiDataTrigger>
+                            </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </TextBlock.Style>
@@ -144,14 +127,10 @@
                         <Setter Property="Visibility" Value="Collapsed" />
                         <Setter Property="IsEnabled" Value="False" />
                         <Style.Triggers>
-                            <MultiDataTrigger>
-                                <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
-                                    <Condition Binding="{Binding IsChecked, ElementName=IncludeConfigsCheckBox}" Value="True" />
-                                </MultiDataTrigger.Conditions>
+                            <DataTrigger Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                 <Setter Property="Visibility" Value="Visible" />
                                 <Setter Property="IsEnabled" Value="True" />
-                            </MultiDataTrigger>
+                            </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </CheckBox.Style>
@@ -165,7 +144,7 @@
             </CheckBox>
         </StackPanel>
 
-        <Border Grid.Row="7"
+        <Border Grid.Row="6"
                 Grid.Column="0"
                 Grid.ColumnSpan="2"
                 BorderThickness="1"
@@ -177,13 +156,9 @@
                 <Style TargetType="Border">
                     <Setter Property="Visibility" Value="Collapsed" />
                     <Style.Triggers>
-                        <MultiDataTrigger>
-                            <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
-                                <Condition Binding="{Binding IsChecked, ElementName=IncludeConfigsCheckBox}" Value="True" />
-                            </MultiDataTrigger.Conditions>
+                        <DataTrigger Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                             <Setter Property="Visibility" Value="Visible" />
-                        </MultiDataTrigger>
+                        </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </Border.Style>
@@ -222,7 +197,7 @@
             </ListBox>
         </Border>
 
-        <TextBlock Grid.Row="8"
+        <TextBlock Grid.Row="7"
                    Grid.Column="0"
                    Grid.ColumnSpan="2"
                    Margin="0,8,0,0"
@@ -234,19 +209,15 @@
                 <Style TargetType="TextBlock">
                     <Setter Property="Visibility" Value="Collapsed" />
                     <Style.Triggers>
-                        <MultiDataTrigger>
-                            <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}" Value="False" />
-                                <Condition Binding="{Binding IsChecked, ElementName=IncludeConfigsCheckBox}" Value="True" />
-                            </MultiDataTrigger.Conditions>
+                        <DataTrigger Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
                             <Setter Property="Visibility" Value="Visible" />
-                        </MultiDataTrigger>
+                        </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </TextBlock.Style>
         </TextBlock>
 
-        <StackPanel Grid.Row="9"
+        <StackPanel Grid.Row="8"
                     Grid.Column="0"
                     Grid.ColumnSpan="2"
                     Orientation="Horizontal"

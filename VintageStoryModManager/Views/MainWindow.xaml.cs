@@ -6252,19 +6252,14 @@ public partial class MainWindow : Window
 
         string listName = metadataDialog.ListName;
         string? description = metadataDialog.Description;
-        bool includeConfigurations = metadataDialog.IncludeConfigurations;
         string uploaderName = metadataDialog.CreatedBy ?? string.Empty;
         if (string.IsNullOrWhiteSpace(uploaderName))
         {
             uploaderName = GetUploaderNameForPdf();
         }
 
-        Dictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
-        if (includeConfigurations)
-        {
-            IReadOnlyList<ModConfigOption> selectedConfigOptions = metadataDialog.GetSelectedConfigOptions();
-            includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
-        }
+        IReadOnlyList<ModConfigOption> selectedConfigOptions = metadataDialog.GetSelectedConfigOptions();
+        Dictionary<string, ModConfigurationSnapshot>? includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
 
         var saveFileDialog = new SaveFileDialog
         {
@@ -9439,7 +9434,7 @@ public partial class MainWindow : Window
                 && !string.IsNullOrWhiteSpace(path)
                 && File.Exists(path))
             {
-                options.Add(new ModConfigOption(normalizedId, mod.DisplayName, path, isSelected: false));
+                options.Add(new ModConfigOption(normalizedId, mod.DisplayName, path, isSelected: true));
             }
         }
 
