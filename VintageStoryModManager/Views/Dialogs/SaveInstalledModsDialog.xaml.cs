@@ -25,11 +25,6 @@ public partial class SaveInstalledModsDialog : Window
 
         InitializeComponent();
 
-        foreach (var option in ConfigOptions)
-        {
-            option.PropertyChanged += ConfigOption_OnPropertyChanged;
-        }
-
         if (!string.IsNullOrWhiteSpace(defaultListName))
         {
             NameTextBox.Text = defaultListName.Trim();
@@ -42,6 +37,22 @@ public partial class SaveInstalledModsDialog : Window
         else if (!string.IsNullOrWhiteSpace(Environment.UserName))
         {
             CreatedByTextBox.Text = Environment.UserName.Trim();
+        }
+
+        foreach (var option in ConfigOptions)
+        {
+            option.PropertyChanged += ConfigOption_OnPropertyChanged;
+        }
+
+        if (ConfigOptions.Count > 0)
+        {
+            _isUpdatingConfigSelection = true;
+            foreach (var option in ConfigOptions)
+            {
+                option.IsSelected = true;
+            }
+
+            _isUpdatingConfigSelection = false;
         }
 
         UpdateConfirmButtonState();
@@ -58,15 +69,8 @@ public partial class SaveInstalledModsDialog : Window
 
     public string? CreatedBy => NormalizeOptionalText(CreatedByTextBox.Text);
 
-    public bool IncludeConfigurations => IncludeConfigsCheckBox?.IsChecked == true;
-
     public IReadOnlyList<ModConfigOption> GetSelectedConfigOptions()
     {
-        if (!IncludeConfigurations)
-        {
-            return Array.Empty<ModConfigOption>();
-        }
-
         return ConfigOptions.Where(option => option.IsSelected).ToList();
     }
 
@@ -107,22 +111,6 @@ public partial class SaveInstalledModsDialog : Window
 
         DialogResult = true;
         Close();
-    }
-
-    private void IncludeConfigsCheckBox_OnChecked(object sender, RoutedEventArgs e)
-    {
-        if (IncludeConfigsCheckBox.IsChecked != true)
-        {
-            _isUpdatingConfigSelection = true;
-            foreach (var option in ConfigOptions)
-            {
-                option.IsSelected = false;
-            }
-
-            _isUpdatingConfigSelection = false;
-        }
-
-        UpdateSelectAllState();
     }
 
     private void SelectAllCheckBox_OnClick(object sender, RoutedEventArgs e)
@@ -166,7 +154,7 @@ public partial class SaveInstalledModsDialog : Window
             return;
         }
 
-        if (!IncludeConfigurations || !HasConfigOptions)
+        if (!HasConfigOptions)
         {
             _isUpdatingSelectAllCheckBox = true;
             SelectAllCheckBox.IsChecked = false;
