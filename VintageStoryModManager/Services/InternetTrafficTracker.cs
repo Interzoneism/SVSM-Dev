@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
@@ -15,10 +14,6 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public static class InternetTrafficTracker
 {
-    private const int MaxRecentEvents = 512;
-    private static readonly object RecentEventsLock = new();
-    private static readonly Queue<InternetTrafficEventArgs> RecentEventsQueue = new();
-
     /// <summary>
     /// Raised whenever an HTTP request completes (successfully or unsuccessfully).
     /// </summary>
@@ -42,37 +37,11 @@ public static class InternetTrafficTracker
         return new HttpClient(new TrackingHandler(processName.Trim(), handler), disposeHandler: true);
     }
 
-    /// <summary>
-    /// Returns a snapshot of the most recent HTTP activity recorded by the tracker.
-    /// </summary>
-    public static IReadOnlyList<InternetTrafficEventArgs> GetRecentEvents()
-    {
-        lock (RecentEventsLock)
-        {
-            return RecentEventsQueue.ToArray();
-        }
-    }
-
-    /// <summary>
-    /// Gets the status log file path that includes the recorded network entries.
-    /// </summary>
-    public static string GetStatusLogFilePath() => StatusLogService.GetLogFilePath();
-
     internal static void RecordEvent(InternetTrafficEventArgs args)
     {
         if (args is null)
         {
             return;
-        }
-
-        lock (RecentEventsLock)
-        {
-            if (RecentEventsQueue.Count >= MaxRecentEvents)
-            {
-                RecentEventsQueue.Dequeue();
-            }
-
-            RecentEventsQueue.Enqueue(args);
         }
 
         var builder = new StringBuilder();
