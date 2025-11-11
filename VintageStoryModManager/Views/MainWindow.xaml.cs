@@ -348,6 +348,7 @@ public partial class MainWindow : Window
             menuItem.IsChecked = storedVisibility;
         }
         _installedColumnVisibilityPreferences[column] = menuItem.IsChecked;
+        NotifyViewModelOfInstalledColumnVisibility(column, menuItem.IsChecked);
         menuItem.Checked += InstalledModsColumnMenuItem_OnChecked;
         menuItem.Unchecked += InstalledModsColumnMenuItem_OnChecked;
     }
@@ -361,6 +362,7 @@ public partial class MainWindow : Window
 
         _installedColumnVisibilityPreferences[column] = menuItem.IsChecked;
         _userConfiguration.SetInstalledColumnVisibility(column.ToString(), menuItem.IsChecked);
+        NotifyViewModelOfInstalledColumnVisibility(column, menuItem.IsChecked);
         UpdateColumnVisibility();
     }
 
@@ -397,6 +399,24 @@ public partial class MainWindow : Window
         column.Visibility = isPreferredVisible && isContextuallyVisible
             ? Visibility.Visible
             : Visibility.Collapsed;
+    }
+
+    private void NotifyViewModelOfInstalledColumnVisibility(InstalledModsColumn column, bool isVisible)
+    {
+        _viewModel?.SetInstalledColumnVisibility(column.ToString(), isVisible);
+    }
+
+    private void ApplyColumnVisibilityPreferencesToViewModel()
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        foreach (KeyValuePair<InstalledModsColumn, bool> pair in _installedColumnVisibilityPreferences)
+        {
+            NotifyViewModelOfInstalledColumnVisibility(pair.Key, pair.Value);
+        }
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -2370,6 +2390,7 @@ public partial class MainWindow : Window
         AttachToModsView(_viewModel.CurrentModsView);
         RestoreSortPreference();
         UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
+        ApplyColumnVisibilityPreferencesToViewModel();
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -4038,6 +4059,7 @@ public partial class MainWindow : Window
                 onlyShowCompatibleModDatabaseResults: _userConfiguration.OnlyShowCompatibleModDatabaseResults);
             newViewModel.PropertyChanged += ViewModelOnPropertyChanged;
             _viewModel = newViewModel;
+            ApplyColumnVisibilityPreferencesToViewModel();
             UpdateGameVersionMenuItem(newViewModel.InstalledGameVersion);
             DataContext = newViewModel;
             ApplyPlayerIdentityToUiAndCloudStore();

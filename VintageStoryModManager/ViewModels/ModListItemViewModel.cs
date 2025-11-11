@@ -1182,6 +1182,18 @@ public sealed class ModListItemViewModel : ObservableObject
         UpdateTooltip();
     }
 
+    public void ClearDatabaseTags()
+    {
+        if (_databaseTags.Count == 0)
+        {
+            return;
+        }
+
+        _databaseTags = Array.Empty<string>();
+        OnPropertyChanged(nameof(DatabaseTags));
+        OnPropertyChanged(nameof(DatabaseTagsDisplay));
+    }
+
     public void RefreshSkippedUpdateState()
     {
         bool previousHasUpdate = _hasUpdate;

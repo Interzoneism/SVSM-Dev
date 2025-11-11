@@ -37,6 +37,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
     private static readonly int InstalledModsIncrementalBatchSize = DevConfig.InstalledModsIncrementalBatchSize;
     private static readonly int MaxModDatabaseResultLimit = DevConfig.MaxModDatabaseResultLimit;
+    private const string TagsColumnName = "Tags";
+    private const string UserReportsColumnName = "UserReports";
 
     private enum ViewSection
     {
@@ -131,6 +133,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _isAutoRefreshDisabled;
     private bool _isModDetailsRefreshForced;
     private bool _allowModDetailsRefresh = true;
+    private bool _isTagsColumnVisible = true;
+    private readonly HashSet<string> _suppressedTagEntries = new(StringComparer.OrdinalIgnoreCase);
+    private bool _areUserReportsVisible = true;
 
     public MainViewModel(
         string dataDirectory,
@@ -326,6 +331,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     }
 
     public string TagsColumnHeader => HasSelectedTags ? "Tags (*)" : "Tags";
+
+    public void SetInstalledColumnVisibility(string columnName, bool isVisible)
+    {
+        if (string.IsNullOrWhiteSpace(columnName))
+        {
+            return;
+        }
+
+        if (string.Equals(columnName, TagsColumnName, StringComparison.OrdinalIgnoreCase))
+        {
+            SetTagsColumnVisibility(isVisible);
+        }
+        else if (string.Equals(columnName, UserReportsColumnName, StringComparison.OrdinalIgnoreCase))
+        {
+            SetUserReportsColumnVisibility(isVisible);
+        }
+    }
 
     public bool ExcludeInstalledModDatabaseResults
     {
@@ -2170,6 +2192,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
+        if (!_areUserReportsVisible)
+        {
+            return;
+        }
+
         _ = RefreshLatestReleaseUserReportAsync(mod, suppressErrors: true, CancellationToken.None);
     }
 
@@ -2264,11 +2291,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
+        if (!_areUserReportsVisible)
+        {
+            return;
+        }
+
         _ = RefreshUserReportAsync(mod, suppressErrors: true, CancellationToken.None);
     }
 
     public void EnableUserReportFetching()
     {
+        if (!_areUserReportsVisible)
+        {
+            return;
+        }
+
         if (_hasEnabledUserReportFetching)
         {
             return;
@@ -2445,8 +2482,66 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void SetTagsColumnVisibility(bool isVisible)
+    {
+        if (_isTagsColumnVisible == isVisible)
+        {
+            return;
+        }
+
+        _isTagsColumnVisible = isVisible;
+
+        if (!isVisible)
+        {
+            foreach (ModListItemViewModel mod in _mods)
+            {
+                mod.ClearDatabaseTags();
+            }
+
+            foreach (ModListItemViewModel mod in _searchResults)
+            {
+                mod.ClearDatabaseTags();
+            }
+
+            return;
+        }
+
+        ScheduleInstalledTagFilterRefresh();
+        ScheduleModDatabaseTagRefresh();
+        if (_allowModDetailsRefresh && _modEntriesBySourcePath.Count > 0)
+        {
+            QueueDatabaseInfoRefresh(_modEntriesBySourcePath.Values.ToArray());
+        }
+    }
+
+    private void SetUserReportsColumnVisibility(bool isVisible)
+    {
+        if (_areUserReportsVisible == isVisible)
+        {
+            return;
+        }
+
+        _areUserReportsVisible = isVisible;
+
+        if (!isVisible)
+        {
+            _hasEnabledUserReportFetching = false;
+            return;
+        }
+
+        if (_allowModDetailsRefresh)
+        {
+            EnableUserReportFetching();
+        }
+    }
+
     private void ScheduleInstalledTagFilterRefresh()
     {
+        if (!_isTagsColumnVisible)
+        {
+            return;
+        }
+
         if (_isInstalledTagRefreshPending)
         {
             return;
@@ -2492,6 +2587,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ScheduleModDatabaseTagRefresh()
     {
+        if (!_isTagsColumnVisible)
+        {
+            return;
+        }
+
         if (_isModDatabaseTagRefreshPending)
         {
             return;
@@ -2538,12 +2638,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ResetInstalledTagFilters(IEnumerable<string> tags)
     {
+        if (!_isTagsColumnVisible)
+        {
+            return;
+        }
+
         List<string> normalized = NormalizeAndSortTags(tags.Concat(_selectedInstalledTags));
         ApplyInstalledTagFilters(normalized);
     }
 
     private void ApplyInstalledTagFilters(IReadOnlyList<string> normalized)
     {
+        if (!_isTagsColumnVisible)
+        {
+            return;
+        }
+
         _suppressInstalledTagFilterSelectionChanges = true;
         try
         {
@@ -2575,12 +2685,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ResetModDatabaseTagFilters(IEnumerable<string> tags)
     {
+        if (!_isTagsColumnVisible)
+        {
+            return;
+        }
+
         List<string> normalized = NormalizeAndSortTags(tags.Concat(_selectedModDatabaseTags));
         ApplyModDatabaseTagFilters(normalized);
     }
 
     private void ApplyModDatabaseTagFilters(IReadOnlyList<string> normalized)
     {
+        if (!_isTagsColumnVisible)
+        {
+            return;
+        }
+
         _suppressModDatabaseTagFilterSelectionChanges = true;
         try
         {
@@ -2611,12 +2731,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ApplyModDatabaseAvailableTags(IEnumerable<string> tags)
     {
+        if (!_isTagsColumnVisible)
+        {
+            return;
+        }
+
         List<string> normalized = NormalizeAndSortTags(tags.Concat(_selectedModDatabaseTags));
         ApplyNormalizedModDatabaseAvailableTags(normalized);
     }
 
     private void ApplyNormalizedModDatabaseAvailableTags(IReadOnlyList<string> normalized)
     {
+        if (!_isTagsColumnVisible)
+        {
+            return;
+        }
+
         if (TagListsEqual(_modDatabaseAvailableTags, normalized))
         {
             return;
@@ -2628,6 +2758,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void UpdateModDatabaseAvailableTagsFromViewModels()
     {
+        if (!_isTagsColumnVisible)
+        {
+            return;
+        }
+
         ApplyModDatabaseAvailableTags(_modDatabaseAvailableTags.Concat(EnumerateModTags(_searchResults)));
     }
 
@@ -4291,14 +4426,46 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         });
     }
 
-    private static bool NeedsDatabaseRefresh(ModEntry entry)
+    private bool NeedsDatabaseRefresh(ModEntry entry)
     {
         if (entry is null)
         {
             return false;
         }
 
+        if (_isTagsColumnVisible
+            && TryGetTagSuppressionKey(entry, out string? key)
+            && key != null
+            && _suppressedTagEntries.Contains(key))
+        {
+            return true;
+        }
+
         return entry.DatabaseInfo == null || entry.DatabaseInfo.IsOfflineOnly;
+    }
+
+    private static bool TryGetTagSuppressionKey(ModEntry entry, out string? key)
+    {
+        key = null;
+
+        if (entry is null)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(entry.SourcePath))
+        {
+            key = entry.SourcePath;
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(entry.ModId))
+        {
+            key = entry.ModId;
+            return true;
+        }
+
+        return false;
     }
 
     private async Task RefreshDatabaseInfoAsync(ModEntry entry, SemaphoreSlim limiter)
@@ -4447,6 +4614,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
+        ModDatabaseInfo preparedInfo = PrepareDatabaseInfoForVisibility(entry, info);
+
         try
         {
             await InvokeOnDispatcherAsync(
@@ -4458,11 +4627,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                             return;
                         }
 
-                        currentEntry.UpdateDatabaseInfo(info);
+                        currentEntry.UpdateDatabaseInfo(preparedInfo);
 
                         if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
                         {
-                            viewModel.UpdateDatabaseInfo(info, loadLogoImmediately);
+                            viewModel.UpdateDatabaseInfo(preparedInfo, loadLogoImmediately);
                             QueueLatestReleaseUserReportRefresh(viewModel);
                         }
                     },
@@ -4478,6 +4647,54 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             // Ignore dispatcher failures to keep refresh resilient.
         }
+    }
+
+    private ModDatabaseInfo PrepareDatabaseInfoForVisibility(ModEntry entry, ModDatabaseInfo info)
+    {
+        if (!_isTagsColumnVisible)
+        {
+            if (TryGetTagSuppressionKey(entry, out string? key) && key != null)
+            {
+                _suppressedTagEntries.Add(key);
+            }
+
+            return CreateInfoWithoutTags(info);
+        }
+
+        if (TryGetTagSuppressionKey(entry, out string? visibleKey) && visibleKey != null)
+        {
+            _suppressedTagEntries.Remove(visibleKey);
+        }
+
+        return info;
+    }
+
+    private static ModDatabaseInfo CreateInfoWithoutTags(ModDatabaseInfo source)
+    {
+        return new ModDatabaseInfo
+        {
+            Tags = Array.Empty<string>(),
+            CachedTagsVersion = null,
+            AssetId = source.AssetId,
+            ModPageUrl = source.ModPageUrl,
+            LatestCompatibleVersion = source.LatestCompatibleVersion,
+            LatestVersion = source.LatestVersion,
+            RequiredGameVersions = source.RequiredGameVersions,
+            Downloads = source.Downloads,
+            Comments = source.Comments,
+            Follows = source.Follows,
+            TrendingPoints = source.TrendingPoints,
+            LogoUrl = source.LogoUrl,
+            DownloadsLastThirtyDays = source.DownloadsLastThirtyDays,
+            DownloadsLastTenDays = source.DownloadsLastTenDays,
+            LastReleasedUtc = source.LastReleasedUtc,
+            CreatedUtc = source.CreatedUtc,
+            LatestRelease = source.LatestRelease,
+            LatestCompatibleRelease = source.LatestCompatibleRelease,
+            Releases = source.Releases,
+            IsOfflineOnly = source.IsOfflineOnly,
+            Side = source.Side
+        };
     }
 
     private ModDatabaseInfo? CreateOfflineDatabaseInfo(ModEntry entry)
