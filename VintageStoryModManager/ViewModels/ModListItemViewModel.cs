@@ -114,6 +114,9 @@ public sealed class ModListItemViewModel : ObservableObject
         SourcePath = entry.SourcePath;
         Location = location;
         SourceKind = entry.SourceKind;
+        StableSortKey = string.IsNullOrWhiteSpace(SourcePath)
+            ? string.Join("\u0001", ModId, Location, Version ?? string.Empty)
+            : SourcePath;
         _authors = entry.Authors;
         _contributors = entry.Contributors;
         var databaseInfo = entry.DatabaseInfo;
@@ -862,6 +865,8 @@ public sealed class ModListItemViewModel : ObservableObject
     public string SourcePath { get; }
 
     public string Location { get; }
+
+    public string StableSortKey { get; }
 
     public ModSourceKind SourceKind { get; }
 
