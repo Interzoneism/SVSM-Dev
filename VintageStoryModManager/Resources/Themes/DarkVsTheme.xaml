@@ -311,11 +311,11 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Separator}">
                     <Grid Height="8"
-                          Background="{DynamicResource Brush.Menu.Background}"
+                          Background="{DynamicResource Brush.Border.Default}"
                           SnapsToDevicePixels="True">
-                        <Border Height="1"
+                        <Border Height="2"
                                 VerticalAlignment="Center"
-                                Background="{DynamicResource Brush.Border.Default}" />
+                                Background="{DynamicResource Brush.Menu.Background}" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
