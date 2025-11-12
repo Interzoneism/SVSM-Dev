@@ -1729,7 +1729,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private async Task PerformFullReloadAsync(string? previousSelection)
     {
-        var entries = new List<ModEntry>();
         Dictionary<string, ModEntry> previousEntries = new(StringComparer.OrdinalIgnoreCase);
 
         await InvokeOnDispatcherAsync(() =>
@@ -1738,43 +1737,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 previousEntries[pair.Key] = pair.Value;
             }
-
-            _modEntriesBySourcePath.Clear();
-            _modViewModelsBySourcePath.Clear();
-            _mods.Clear();
-            SelectedMod = null;
-            TotalMods = 0;
         }, CancellationToken.None).ConfigureAwait(true);
 
-        await foreach (var batch in _discoveryService.LoadModsIncrementallyAsync(InstalledModsIncrementalBatchSize))
+        IReadOnlyList<ModEntry> discoveredEntries = await Task
+            .Run(() => _discoveryService.LoadMods())
+            .ConfigureAwait(true);
+
+        var entries = discoveredEntries.Count == 0
+            ? new List<ModEntry>()
+            : new List<ModEntry>(discoveredEntries);
+
+        foreach (ModEntry entry in entries)
         {
-            if (batch.Count == 0)
+            ResetCalculatedModState(entry);
+            if (previousEntries.TryGetValue(entry.SourcePath, out ModEntry? previous))
             {
-                continue;
+                CopyTransientModState(previous, entry);
             }
-
-            entries.AddRange(batch);
-
-            await InvokeOnDispatcherAsync(() =>
-            {
-                foreach (var entry in batch)
-                {
-                    ResetCalculatedModState(entry);
-                    if (previousEntries.TryGetValue(entry.SourcePath, out var previous))
-                    {
-                        CopyTransientModState(previous, entry);
-                    }
-
-                    _modEntriesBySourcePath[entry.SourcePath] = entry;
-                    var viewModel = CreateModViewModel(entry);
-                    _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
-                    _mods.Add(viewModel);
-                }
-
-                TotalMods = _mods.Count;
-            }, CancellationToken.None).ConfigureAwait(true);
-
-            await Task.Yield();
         }
 
         if (entries.Count > 0)
@@ -1784,13 +1763,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         await InvokeOnDispatcherAsync(() =>
         {
-            foreach (var entry in entries)
+            _modEntriesBySourcePath.Clear();
+            _modViewModelsBySourcePath.Clear();
+            _mods.Clear();
+
+            foreach (ModEntry entry in entries)
             {
-                if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
-                {
-                    viewModel.UpdateLoadError(entry.LoadError);
-                    viewModel.UpdateDependencyIssues(entry.DependencyHasErrors, entry.MissingDependencies);
-                }
+                _modEntriesBySourcePath[entry.SourcePath] = entry;
+                var viewModel = CreateModViewModel(entry);
+                _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
+                _mods.Add(viewModel);
             }
 
             TotalMods = _mods.Count;
