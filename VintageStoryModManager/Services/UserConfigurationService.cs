@@ -71,6 +71,7 @@ public sealed class UserConfigurationService
     private static readonly int MaxModDatabaseNewModsRecentMonths = DevConfig.MaxModDatabaseNewModsRecentMonths;
     private static readonly int GameSessionVoteThreshold = DevConfig.GameSessionVoteThreshold;
     private const string DefaultGameProfileName = "Default";
+    public const string DefaultProfileName = DefaultGameProfileName;
 
     private sealed class GameProfileState
     {
@@ -274,6 +275,13 @@ public sealed class UserConfigurationService
             .ToArray();
     }
 
+    public bool IsDefaultGameProfile(string? name)
+    {
+        string? normalized = NormalizeGameProfileName(name);
+        return normalized is not null
+            && string.Equals(normalized, DefaultGameProfileName, StringComparison.OrdinalIgnoreCase);
+    }
+
     public bool TryCreateGameProfile(string? name, bool copyFromActive, out string? normalizedName, out string? errorMessage)
     {
         normalizedName = NormalizeGameProfileName(name);
@@ -329,6 +337,77 @@ public sealed class UserConfigurationService
 
         _activeGameProfile = profile;
         Save();
+        return true;
+    }
+
+    public bool TryDeleteGameProfiles(
+        IReadOnlyCollection<string> profileNames,
+        out string? errorMessage,
+        out bool activeProfileChanged)
+    {
+        activeProfileChanged = false;
+
+        if (profileNames is null || profileNames.Count == 0)
+        {
+            errorMessage = "Select at least one profile to delete.";
+            return false;
+        }
+
+        var normalizedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string profileName in profileNames)
+        {
+            if (profileName is null)
+            {
+                continue;
+            }
+
+            string? normalized = NormalizeGameProfileName(profileName);
+            if (normalized is null)
+            {
+                continue;
+            }
+
+            if (string.Equals(normalized, DefaultGameProfileName, StringComparison.OrdinalIgnoreCase))
+            {
+                errorMessage = "The Default profile cannot be deleted.";
+                return false;
+            }
+
+            normalizedNames.Add(normalized);
+        }
+
+        if (normalizedNames.Count == 0)
+        {
+            errorMessage = "Select at least one profile to delete.";
+            return false;
+        }
+
+        bool removedAny = false;
+
+        foreach (string name in normalizedNames)
+        {
+            if (_gameProfiles.Remove(name))
+            {
+                removedAny = true;
+            }
+        }
+
+        if (!removedAny)
+        {
+            errorMessage = "No matching game profiles were found.";
+            return false;
+        }
+
+        if (normalizedNames.Contains(_activeGameProfile.Name))
+        {
+            GameProfileState defaultProfile = EnsureProfile(DefaultGameProfileName);
+            _activeGameProfile = defaultProfile;
+            activeProfileChanged = true;
+        }
+
+        Save();
+        errorMessage = null;
         return true;
     }
 
@@ -1473,10 +1552,15 @@ public sealed class UserConfigurationService
             }
             else
             {
-                if (!_gameProfiles.TryGetValue(DefaultGameProfileName, out defaultProfile))
+                if (!_gameProfiles.TryGetValue(DefaultGameProfileName, out GameProfileState? existingDefault)
+                    || existingDefault is null)
                 {
                     defaultProfile = new GameProfileState(DefaultGameProfileName);
                     _gameProfiles[defaultProfile.Name] = defaultProfile;
+                }
+                else
+                {
+                    defaultProfile = existingDefault;
                 }
     
                 defaultProfile.DataDirectory ??= rootDataDirectory;
