@@ -467,17 +467,17 @@
                                   Height="35"
                                   Click="DeleteGameProfileMenuItem_OnClick" />
                     </MenuItem>
+                    <MenuItem Header="Restore backup point"
+                              Height="35"
+                              SubmenuOpened="RestoreBackupMenuItem_OnSubmenuOpened">
+                        <MenuItem Header="Loading..." IsEnabled="False" />
+                    </MenuItem>
                     <MenuItem x:Name="DisableAutoRefreshMenuItem"
                               Header="_Disable auto-refresh"
                               Height="35"
                               IsCheckable="True"
                               Style="{StaticResource ToggleMenuItemStyle}"
                               Click="DisableAutoRefreshMenuItem_OnClick" />
-                    <MenuItem Header="Restore backup point"
-                              Height="35"
-                              SubmenuOpened="RestoreBackupMenuItem_OnSubmenuOpened">
-                        <MenuItem Header="Loading..." IsEnabled="False" />
-                    </MenuItem>
                     <Separator  />
                     <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
                 </MenuItem>

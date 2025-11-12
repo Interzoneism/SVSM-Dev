@@ -60,6 +60,14 @@
                         <Bold>Game Profiles</Bold>
                         <Run Text=" is used to manage different Vintage Story installs - create a new profile and set the Data and Game directory paths to another Vintage Story installation. The custom shortcut is also custom for each Game Profile.  " />
                     </TextBlock>
+
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Restore backup point</Bold>
+                        <Run Text=" lists the automatic JSON snapshots the manager creates before major actions. Pick one to restore your mods (and optionally their configuration files) to that state." />
+                    </TextBlock>
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
@@ -67,13 +75,6 @@
                         <Run Text=" stops automatic checks that fetch mod tags, user reports, and update data. With it enabled, use " />
                         <Bold>Mods &gt; Refresh Mods</Bold>
                         <Run Text=" to update information manually." />
-                    </TextBlock>
-
-                    <TextBlock Margin="0,8,0,0"
-                               TextWrapping="Wrap"
-                               FontSize="12">
-                        <Bold>Restore backup point</Bold>
-                        <Run Text=" lists the automatic JSON snapshots the manager creates before major actions. Pick one to restore your mods (and optionally their configuration files) to that state." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
