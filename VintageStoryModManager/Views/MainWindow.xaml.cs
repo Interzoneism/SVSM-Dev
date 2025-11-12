@@ -398,7 +398,14 @@ public partial class MainWindow : Window
     private void SetColumnVisibility(DataGridColumn? column, DataGridColumn? modDbColumn, InstalledModsColumn columnKey, bool isContextuallyVisible)
     {
         SetColumnVisibility(column, columnKey, isContextuallyVisible);
-        SetColumnVisibility(modDbColumn, columnKey, isContextuallyVisible);
+
+        if (modDbColumn == null)
+        {
+            return;
+        }
+
+        // Keep all Mod DB columns visible regardless of the column visibility menu preferences.
+        modDbColumn.Visibility = Visibility.Visible;
     }
 
     private void SetColumnVisibility(DataGridColumn? column, InstalledModsColumn columnKey, bool isContextuallyVisible)
