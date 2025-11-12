@@ -72,6 +72,16 @@ public sealed class UserConfigurationService
     private static readonly int GameSessionVoteThreshold = DevConfig.GameSessionVoteThreshold;
     private const string DefaultGameProfileName = "Default";
     public const string DefaultProfileName = DefaultGameProfileName;
+    private static readonly string[] RedundantRootProfilePropertyNames =
+    {
+        "dataDirectory",
+        "gameDirectory",
+        "bulkUpdateModExclusions",
+        "skippedModVersions",
+        "modConfigPaths",
+        "modUsageTracking",
+        "customShortcutPath"
+    };
 
     private sealed class GameProfileState
     {
@@ -1714,6 +1724,8 @@ public sealed class UserConfigurationService
                 ["gameProfiles"] = BuildGameProfilesJson()
             };
 
+            RemoveRedundantRootProfileValues(obj);
+
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true
@@ -1725,6 +1737,20 @@ public sealed class UserConfigurationService
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // Persisting the configuration is a best-effort attempt. Ignore failures silently.
+        }
+    }
+
+    private void RemoveRedundantRootProfileValues(JsonObject root)
+    {
+        if (root["gameProfiles"] is not JsonObject profiles
+            || !profiles.ContainsKey(DefaultGameProfileName))
+        {
+            return;
+        }
+
+        foreach (string propertyName in RedundantRootProfilePropertyNames)
+        {
+            root.Remove(propertyName);
         }
     }
 
