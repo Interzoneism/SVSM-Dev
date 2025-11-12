@@ -306,17 +306,83 @@ public sealed class ModDiscoveryService
 
     public void ApplyLoadStatuses(IList<ModEntry> mods)
     {
+        ApplyLoadStatusesInternal(mods, mods, null);
+    }
+
+    public IReadOnlyCollection<ModEntry> ApplyLoadStatusesIncremental(
+        IList<ModEntry> mods,
+        ICollection<ModEntry>? changedMods,
+        ICollection<string>? removedModIds = null)
+    {
+        return ApplyLoadStatusesInternal(mods, changedMods, removedModIds);
+    }
+
+    private IReadOnlyCollection<ModEntry> ApplyLoadStatusesInternal(
+        IList<ModEntry> mods,
+        ICollection<ModEntry>? changedMods,
+        ICollection<string>? removedModIds)
+    {
         if (mods == null || mods.Count == 0)
         {
-            return;
+            return Array.Empty<ModEntry>();
+        }
+
+        bool hasChanges = (changedMods != null && changedMods.Count > 0)
+            || (removedModIds != null && removedModIds.Count > 0);
+
+        if (!hasChanges)
+        {
+            changedMods = mods;
+        }
+
+        var modsById = new Dictionary<string, List<ModEntry>>(StringComparer.OrdinalIgnoreCase);
+        var dependentsById = new Dictionary<string, HashSet<ModEntry>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var mod in mods)
+        {
+            if (!string.IsNullOrWhiteSpace(mod.ModId))
+            {
+                if (!modsById.TryGetValue(mod.ModId, out var list))
+                {
+                    list = new List<ModEntry>();
+                    modsById[mod.ModId] = list;
+                }
+
+                list.Add(mod);
+            }
+
+            if (mod.Dependencies.Count == 0)
+            {
+                continue;
+            }
+
+            foreach (var dependency in mod.Dependencies)
+            {
+                if (dependency.IsGameOrCoreDependency || string.IsNullOrWhiteSpace(dependency.ModId))
+                {
+                    continue;
+                }
+
+                if (!dependentsById.TryGetValue(dependency.ModId, out var dependents))
+                {
+                    dependents = new HashSet<ModEntry>();
+                    dependentsById[dependency.ModId] = dependents;
+                }
+
+                dependents.Add(mod);
+            }
+        }
+
+        if (modsById.Count == 0)
+        {
+            return Array.Empty<ModEntry>();
         }
 
         var availableMods = new Dictionary<string, ModEntry>(StringComparer.OrdinalIgnoreCase);
-        foreach (var group in mods.Where(mod => !string.IsNullOrWhiteSpace(mod.ModId))
-            .GroupBy(mod => mod.ModId, StringComparer.OrdinalIgnoreCase))
+        foreach (var pair in modsById)
         {
             ModEntry? primary = null;
-            foreach (var candidate in group)
+            foreach (var candidate in pair.Value)
             {
                 if (primary == null && !candidate.HasErrors)
                 {
@@ -324,11 +390,131 @@ public sealed class ModDiscoveryService
                 }
             }
 
-            primary ??= group.First();
-            availableMods[primary.ModId] = primary;
+            primary ??= pair.Value[0];
+            availableMods[pair.Key] = primary;
+        }
 
-            foreach (var candidate in group)
+        var affected = new HashSet<ModEntry>();
+
+        if (changedMods != null)
+        {
+            foreach (var mod in changedMods)
             {
+                if (mod == null || string.IsNullOrWhiteSpace(mod.ModId))
+                {
+                    continue;
+                }
+
+                if (!modsById.TryGetValue(mod.ModId, out var sameId))
+                {
+                    continue;
+                }
+
+                foreach (var entry in sameId)
+                {
+                    affected.Add(entry);
+                }
+            }
+        }
+
+        if (removedModIds is { Count: > 0 })
+        {
+            foreach (string modId in removedModIds)
+            {
+                if (string.IsNullOrWhiteSpace(modId))
+                {
+                    continue;
+                }
+
+                if (!modsById.TryGetValue(modId, out var sameId))
+                {
+                    continue;
+                }
+
+                foreach (var entry in sameId)
+                {
+                    affected.Add(entry);
+                }
+            }
+        }
+
+        var queue = new Queue<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (changedMods != null)
+        {
+            foreach (var mod in changedMods)
+            {
+                if (!string.IsNullOrWhiteSpace(mod?.ModId))
+                {
+                    queue.Enqueue(mod.ModId);
+                }
+            }
+        }
+
+        if (removedModIds is { Count: > 0 })
+        {
+            foreach (string modId in removedModIds)
+            {
+                if (!string.IsNullOrWhiteSpace(modId))
+                {
+                    queue.Enqueue(modId);
+                }
+            }
+        }
+
+        while (queue.Count > 0)
+        {
+            string currentId = queue.Dequeue();
+            if (!seen.Add(currentId))
+            {
+                continue;
+            }
+
+            if (!dependentsById.TryGetValue(currentId, out var dependents))
+            {
+                continue;
+            }
+
+            foreach (var dependent in dependents)
+            {
+                if (affected.Add(dependent) && !string.IsNullOrWhiteSpace(dependent.ModId))
+                {
+                    queue.Enqueue(dependent.ModId);
+
+                    if (modsById.TryGetValue(dependent.ModId, out var sameId))
+                    {
+                        foreach (var entry in sameId)
+                        {
+                            affected.Add(entry);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (affected.Count == 0)
+        {
+            return Array.Empty<ModEntry>();
+        }
+
+        foreach (var mod in affected)
+        {
+            mod.LoadError = null;
+            mod.DependencyHasErrors = false;
+            mod.MissingDependencies = Array.Empty<ModDependencyInfo>();
+        }
+
+        foreach (var pair in modsById)
+        {
+            ModEntry primary = availableMods[pair.Key];
+            foreach (var candidate in pair.Value)
+            {
+                if (!affected.Contains(candidate))
+                {
+                    continue;
+                }
+
                 if (!ReferenceEquals(candidate, primary))
                 {
                     candidate.LoadError = GeneralLoadErrorMessage;
@@ -336,12 +522,9 @@ public sealed class ModDiscoveryService
             }
         }
 
-        foreach (var mod in mods)
+        foreach (var mod in affected)
         {
-            mod.MissingDependencies = Array.Empty<ModDependencyInfo>();
-            mod.DependencyHasErrors = false;
-
-            if (mod.HasErrors || mod.HasLoadError || mod.Dependencies.Count == 0)
+            if (mod.HasErrors || mod.Dependencies.Count == 0)
             {
                 continue;
             }
@@ -388,6 +571,8 @@ public sealed class ModDiscoveryService
                 mod.LoadError = BuildMissingDependencyMessage(missing);
             }
         }
+
+        return affected.ToArray();
     }
 
     private static string BuildMissingDependencyMessage(IReadOnlyList<ModDependencyInfo> dependencies)

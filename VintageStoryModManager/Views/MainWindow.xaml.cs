@@ -1180,7 +1180,7 @@ public partial class MainWindow : Window
                 break;
             }
 
-            if (source is System.Windows.Controls.Primitives.ButtonBase || source is Selector || source is System.Windows.Controls.Primitives.TextBoxBase || source is Hyperlink || source is Slider || source is System.Windows.Controls.Primitives.ScrollBar)
+            if (source is System.Windows.Controls.Primitives.ButtonBase || source is Selector || source is System.Windows.Controls.Primitives.TextBoxBase || source is System.Windows.Documents.Hyperlink || source is Slider || source is System.Windows.Controls.Primitives.ScrollBar)
             {
                 return true;
             }
