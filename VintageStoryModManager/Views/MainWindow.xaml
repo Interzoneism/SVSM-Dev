@@ -454,6 +454,15 @@
                     <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
                     <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
                     <MenuItem Header="Set Custom Vintage Story Shortcut" Height="35" Click="SetCustomShortcutMenuItem_OnClick" />
+                    <MenuItem x:Name="GameProfilesMenuItem"
+                              Header="Game Profiles"
+                              Height="35"
+                              SubmenuOpened="GameProfilesMenuItem_OnSubmenuOpened">
+                        <MenuItem x:Name="CreateGameProfileMenuItem"
+                                  Header="Create new..."
+                                  Height="35"
+                                  Click="CreateGameProfileMenuItem_OnClick" />
+                    </MenuItem>
                     <MenuItem x:Name="DisableAutoRefreshMenuItem"
                               Header="_Disable auto-refresh"
                               Height="35"

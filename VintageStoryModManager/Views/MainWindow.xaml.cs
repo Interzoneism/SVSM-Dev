@@ -74,7 +74,6 @@ public partial class MainWindow : Window
     private static readonly string PresetDirectoryName = DevConfig.PresetDirectoryName;
     private static readonly string ModListDirectoryName = DevConfig.ModListDirectoryName;
     private static readonly string CloudModListCacheDirectoryName = DevConfig.CloudModListCacheDirectoryName;
-    private static readonly string BackupDirectoryName = DevConfig.BackupDirectoryName;
     private static readonly int AutomaticConfigMaxWordDistance = DevConfig.AutomaticConfigMaxWordDistance;
     private static readonly HttpClient ConnectivityTestHttpClient = new()
     {
@@ -204,6 +203,7 @@ public partial class MainWindow : Window
 
     private readonly UserConfigurationService _userConfiguration;
     private readonly List<MenuItem> _developerProfileMenuItems = new();
+    private readonly List<MenuItem> _gameProfileMenuItems = new();
     private MainViewModel? _viewModel;
     private string? _dataDirectory;
     private string? _gameDirectory;
@@ -299,6 +299,7 @@ public partial class MainWindow : Window
 
         TryInitializePaths();
         RefreshDeveloperProfilesMenuEntries();
+        UpdateGameProfileMenuChecks();
 
         UpdateGameVersionMenuItem(VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory));
 
@@ -7384,6 +7385,74 @@ public partial class MainWindow : Window
         return builder.ToString();
     }
 
+    private async Task OnActiveGameProfileChangedAsync()
+    {
+        TryInitializePaths();
+        RefreshDeveloperProfilesMenuEntries();
+        UpdateGameVersionMenuItem(VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory));
+        await ReloadViewModelAsync();
+    }
+
+    private void GameProfilesMenuItem_OnSubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        RefreshGameProfileMenuItems();
+        UpdateGameProfileMenuChecks();
+    }
+
+    private async void CreateGameProfileMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new GameProfileDialog(this);
+        bool? result = dialog.ShowDialog();
+        if (result != true)
+        {
+            return;
+        }
+
+        string profileName = dialog.ProfileName;
+        bool copyCurrent = dialog.CopyFromCurrentProfile;
+
+        if (!_userConfiguration.TryCreateGameProfile(profileName, copyCurrent, out string? normalizedName, out string? errorMessage))
+        {
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                WpfMessageBox.Show(errorMessage, "Simple VS Manager", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
+            return;
+        }
+
+        if (normalizedName is not null)
+        {
+            _userConfiguration.TrySetActiveGameProfile(normalizedName);
+        }
+
+        await OnActiveGameProfileChangedAsync().ConfigureAwait(true);
+        RefreshGameProfileMenuItems();
+        UpdateGameProfileMenuChecks();
+    }
+
+    private async void GameProfileMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not string profileName)
+        {
+            return;
+        }
+
+        if (string.Equals(profileName, _userConfiguration.ActiveGameProfileName, StringComparison.OrdinalIgnoreCase))
+        {
+            menuItem.IsChecked = true;
+            return;
+        }
+
+        if (!_userConfiguration.TrySetActiveGameProfile(profileName))
+        {
+            return;
+        }
+
+        await OnActiveGameProfileChangedAsync().ConfigureAwait(true);
+        UpdateGameProfileMenuChecks();
+    }
+
     private async void SelectDataFolderMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         string? selected = PromptForDirectory(
@@ -7476,6 +7545,61 @@ public partial class MainWindow : Window
 
         DeveloperProfilesMenuItem.Visibility = Visibility.Visible;
         UpdateDeveloperProfileMenuChecks();
+    }
+
+    private void RefreshGameProfileMenuItems()
+    {
+        if (GameProfilesMenuItem is null || CreateGameProfileMenuItem is null)
+        {
+            return;
+        }
+
+        foreach (MenuItem item in _gameProfileMenuItems)
+        {
+            item.Click -= GameProfileMenuItem_OnClick;
+        }
+
+        _gameProfileMenuItems.Clear();
+
+        GameProfilesMenuItem.Items.Clear();
+        GameProfilesMenuItem.Items.Add(CreateGameProfileMenuItem);
+
+        IReadOnlyList<string> profiles = _userConfiguration.GetGameProfileNames();
+        if (profiles.Count > 0)
+        {
+            GameProfilesMenuItem.Items.Add(new Separator());
+        }
+
+        string activeName = _userConfiguration.ActiveGameProfileName;
+
+        foreach (string profileName in profiles)
+        {
+            var menuItem = new MenuItem
+            {
+                Header = profileName,
+                Tag = profileName,
+                IsCheckable = true,
+                Height = 35,
+                IsChecked = string.Equals(profileName, activeName, StringComparison.OrdinalIgnoreCase)
+            };
+
+            menuItem.Click += GameProfileMenuItem_OnClick;
+            GameProfilesMenuItem.Items.Add(menuItem);
+            _gameProfileMenuItems.Add(menuItem);
+        }
+    }
+
+    private void UpdateGameProfileMenuChecks()
+    {
+        string activeName = _userConfiguration.ActiveGameProfileName;
+
+        foreach (MenuItem item in _gameProfileMenuItems)
+        {
+            if (item.Tag is string profileName)
+            {
+                item.IsChecked = string.Equals(profileName, activeName, StringComparison.OrdinalIgnoreCase);
+            }
+        }
     }
 
     private void UpdateDeveloperProfileMenuChecks()
@@ -11409,7 +11533,8 @@ public partial class MainWindow : Window
     private string EnsureBackupDirectory()
     {
         string baseDirectory = _userConfiguration.GetConfigurationDirectory();
-        string backupDirectory = Path.Combine(baseDirectory, BackupDirectoryName);
+        string backupDirectoryName = _userConfiguration.GetActiveGameProfileBackupDirectoryName();
+        string backupDirectory = Path.Combine(baseDirectory, backupDirectoryName);
         Directory.CreateDirectory(backupDirectory);
         return backupDirectory;
     }
