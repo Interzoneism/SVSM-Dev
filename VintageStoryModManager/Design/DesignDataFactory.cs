@@ -134,6 +134,7 @@ internal static class DesignDataFactory
         {
             ModId = modId,
             Name = name,
+            ManifestName = name,
             Version = version,
             NetworkVersion = networkVersion,
             Website = website,

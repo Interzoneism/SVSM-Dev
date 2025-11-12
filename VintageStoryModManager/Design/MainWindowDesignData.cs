@@ -27,8 +27,8 @@ public sealed class MainWindowDesignData
 
         _sortOptions = new ObservableCollection<SortOption>
         {
-            new SortOption("Active (Active → Inactive)", (nameof(ModListItemViewModel.ActiveSortOrder), ListSortDirection.Ascending), (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending)),
-            new SortOption("Name", (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending)),
+            new SortOption("Active (Active → Inactive)", (nameof(ModListItemViewModel.ActiveSortOrder), ListSortDirection.Ascending), (nameof(ModListItemViewModel.NameSortKey), ListSortDirection.Ascending)),
+            new SortOption("Name", (nameof(ModListItemViewModel.NameSortKey), ListSortDirection.Ascending)),
             new SortOption("Version", (nameof(ModListItemViewModel.VersionDisplay), ListSortDirection.Ascending))
         };
         SortOptions = new ReadOnlyObservableCollection<SortOption>(_sortOptions);
