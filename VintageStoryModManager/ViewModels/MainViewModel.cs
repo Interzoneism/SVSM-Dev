@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -2911,9 +2910,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         DispatcherPriority.ContextIdle)
                     .ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.WriteLine($"Failed to refresh installed mod tags: {ex}");
+                // Swallow unexpected exceptions for resilience.
             }
             finally
             {
@@ -2962,9 +2961,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         DispatcherPriority.ContextIdle)
                     .ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Debug.WriteLine($"Failed to refresh mod database tags: {ex}");
+                // Swallow unexpected exceptions for resilience.
             }
             finally
             {
