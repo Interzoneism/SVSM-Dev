@@ -6,7 +6,7 @@
         Height="220"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="{DynamicResource Brush.Dialog.Background}"
+        Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
         Loaded="Window_OnLoaded">
     <Grid Margin="24">
         <Grid.RowDefinitions>
