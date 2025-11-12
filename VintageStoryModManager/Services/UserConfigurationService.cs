@@ -29,6 +29,10 @@ public sealed class UserConfigurationService
         : StringComparison.Ordinal;
     private static readonly string CurrentModManagerVersion = ResolveCurrentVersion();
     private static readonly string CurrentConfigurationVersion = CurrentModManagerVersion;
+    private const string ModConfigPathHistoryVersionPropertyName = "version";
+    private const string ModConfigPathHistoryEntriesPropertyName = "modConfigPaths";
+    private const string ModConfigPathHistoryDirectoryPropertyName = "directoryPath";
+    private const string ModConfigPathHistoryFileNamePropertyName = "fileName";
     private static readonly IReadOnlyDictionary<string, string> VintageStoryPaletteColors =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -2602,6 +2606,8 @@ public sealed class UserConfigurationService
     {
         _storedModConfigPaths.Clear();
 
+        bool conversionNeeded = false;
+
         try
         {
             if (!File.Exists(_modConfigPathsPath))
@@ -2616,23 +2622,71 @@ public sealed class UserConfigurationService
                 return;
             }
 
+            string currentVersion = NormalizeVersion(_modManagerVersion) ?? _modManagerVersion;
+            string? storedVersion = NormalizeVersion(GetOptionalString(obj[ModConfigPathHistoryVersionPropertyName]));
+            conversionNeeded = string.IsNullOrWhiteSpace(storedVersion)
+                || !string.Equals(storedVersion, currentVersion, StringComparison.Ordinal);
+
+            JsonObject? entriesObj = obj[ModConfigPathHistoryEntriesPropertyName] as JsonObject;
+            bool usingLegacyRootEntries = entriesObj is null;
+            entriesObj ??= obj;
+
             string? modConfigDirectory = GetActiveModConfigDirectory();
 
-            foreach ((string key, JsonNode? value) in obj)
+            foreach ((string key, JsonNode? value) in entriesObj)
             {
+                if (usingLegacyRootEntries
+                    && string.Equals(key, ModConfigPathHistoryVersionPropertyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 if (string.IsNullOrWhiteSpace(key) || value is not JsonObject entryObj)
                 {
                     continue;
                 }
 
+                string? directoryValue = GetOptionalString(entryObj[ModConfigPathHistoryDirectoryPropertyName]);
+                string? fileNameValue = GetOptionalString(entryObj[ModConfigPathHistoryFileNamePropertyName]);
+
                 string? relativeDirectory = NormalizeStoredModConfigDirectory(
-                    GetOptionalString(entryObj["directoryPath"]),
+                    directoryValue,
                     modConfigDirectory);
-                string? fileName = NormalizeStoredModConfigFileName(GetOptionalString(entryObj["fileName"]));
+                string? fileName = NormalizeStoredModConfigFileName(fileNameValue);
 
                 if (relativeDirectory is null || fileName is null)
                 {
                     continue;
+                }
+
+                if (!conversionNeeded)
+                {
+                    string trimmedDirectory = string.IsNullOrWhiteSpace(directoryValue)
+                        ? string.Empty
+                        : directoryValue!.Trim();
+
+                    if (Path.IsPathRooted(trimmedDirectory))
+                    {
+                        conversionNeeded = true;
+                    }
+                    else
+                    {
+                        string? sanitizedDirectory = NormalizeRelativeModConfigDirectory(trimmedDirectory);
+                        if (sanitizedDirectory is null
+                            || !string.Equals(sanitizedDirectory, relativeDirectory, PathComparison))
+                        {
+                            conversionNeeded = true;
+                        }
+                    }
+
+                    if (!conversionNeeded && !string.IsNullOrWhiteSpace(fileNameValue))
+                    {
+                        string trimmedFileName = fileNameValue!.Trim();
+                        if (!string.Equals(trimmedFileName, fileName, PathComparison))
+                        {
+                            conversionNeeded = true;
+                        }
+                    }
                 }
 
                 string trimmedId = key.Trim();
@@ -2656,6 +2710,12 @@ public sealed class UserConfigurationService
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException)
         {
             _storedModConfigPaths.Clear();
+            conversionNeeded = false;
+        }
+
+        if (conversionNeeded)
+        {
+            SaveModConfigPathHistory();
         }
     }
 
@@ -2771,18 +2831,28 @@ public sealed class UserConfigurationService
             string directory = Path.GetDirectoryName(_modConfigPathsPath)!;
             Directory.CreateDirectory(directory);
 
-            var root = new JsonObject();
+            string version = NormalizeVersion(_modManagerVersion) ?? _modManagerVersion;
+
+            var entries = new JsonObject();
 
             foreach (var pair in _storedModConfigPaths.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
             {
                 var entry = pair.Value;
-                root[pair.Key] = new JsonObject
+                entries[pair.Key] = new JsonObject
                 {
                     ["directoryPath"] = entry.RelativeDirectoryPath,
                     ["fileName"] = entry.FileName,
                     ["configName"] = entry.ConfigName
+                    [ModConfigPathHistoryDirectoryPropertyName] = entry.RelativeDirectoryPath,
+                    [ModConfigPathHistoryFileNamePropertyName] = entry.FileName
                 };
             }
+
+            var root = new JsonObject
+            {
+                [ModConfigPathHistoryVersionPropertyName] = version,
+                [ModConfigPathHistoryEntriesPropertyName] = entries
+            };
 
             var options = new JsonSerializerOptions
             {
