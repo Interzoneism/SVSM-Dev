@@ -70,17 +70,44 @@ public sealed class UserConfigurationService
     private static readonly int DefaultModDatabaseNewModsRecentMonths = DevConfig.DefaultModDatabaseNewModsRecentMonths;
     private static readonly int MaxModDatabaseNewModsRecentMonths = DevConfig.MaxModDatabaseNewModsRecentMonths;
     private static readonly int GameSessionVoteThreshold = DevConfig.GameSessionVoteThreshold;
+    private const string DefaultGameProfileName = "Default";
+
+    private sealed class GameProfileState
+    {
+        public GameProfileState(string name)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
+
+        public string? DataDirectory { get; set; }
+
+        public string? GameDirectory { get; set; }
+
+        public string? CustomShortcutPath { get; set; }
+
+        public Dictionary<string, string> ModConfigPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public Dictionary<string, bool> BulkUpdateModExclusions { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public Dictionary<string, string> SkippedModVersions { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public Dictionary<ModUsageTrackingKey, int> ModUsageSessionCounts { get; } = new();
+
+        public int LongRunningSessionCount { get; set; }
+
+        public bool HasPendingModUsagePrompt { get; set; }
+    }
 
     private readonly string _configurationPath;
     private readonly string _modConfigPathsPath;
-    private readonly Dictionary<string, string> _modConfigPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, GameProfileState> _gameProfiles = new(StringComparer.OrdinalIgnoreCase);
+    private GameProfileState _activeGameProfile = new(DefaultGameProfileName);
     private readonly Dictionary<string, ModConfigPathEntry> _storedModConfigPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _themePaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _customThemePaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _installedColumnVisibility = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, bool> _bulkUpdateModExclusions = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, string> _skippedModVersions = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<ModUsageTrackingKey, int> _modUsageSessionCounts = new();
     private string? _previousConfigurationVersion;
     private string? _previousModManagerVersion;
     private string? _selectedPresetName;
@@ -109,15 +136,12 @@ public sealed class UserConfigurationService
     private double? _windowHeight;
     private double? _modInfoPanelLeft;
     private double? _modInfoPanelTop;
-    private string? _customShortcutPath;
     private string? _cloudUploaderName;
     private bool _isPersistenceEnabled;
     private bool _hasPendingSave;
     private bool _hasPendingModConfigPathSave;
     private ColorTheme _colorTheme = ColorTheme.VintageStory;
     private bool _hasVersionMismatch;
-    private int _longRunningSessionCount;
-    private bool _hasPendingModUsagePrompt;
     private bool _isModUsageTrackingDisabled;
     private bool _migrationCheckCompleted;
     private bool _requireExactVsVersionMatch;
@@ -133,9 +157,9 @@ public sealed class UserConfigurationService
         _hasPendingModConfigPathSave = false;
     }
 
-    public string? DataDirectory { get; private set; }
+    public string? DataDirectory => _activeGameProfile.DataDirectory;
 
-    public string? GameDirectory { get; private set; }
+    public string? GameDirectory => _activeGameProfile.GameDirectory;
 
     public string ConfigurationVersion => _configurationVersion;
 
@@ -208,14 +232,240 @@ public sealed class UserConfigurationService
 
     public double? ModInfoPanelTop => _modInfoPanelTop;
 
-    public string? CustomShortcutPath => _customShortcutPath;
+    public string? CustomShortcutPath => _activeGameProfile.CustomShortcutPath;
 
     public string? CloudUploaderName => _cloudUploaderName;
 
-    public bool HasPendingModUsagePrompt => !_isModUsageTrackingDisabled && _hasPendingModUsagePrompt
-        && _modUsageSessionCounts.Count > 0;
+    public bool HasPendingModUsagePrompt => !_isModUsageTrackingDisabled
+        && _activeGameProfile.HasPendingModUsagePrompt
+        && _activeGameProfile.ModUsageSessionCounts.Count > 0;
 
     public bool IsModUsageTrackingEnabled => !_isModUsageTrackingDisabled;
+
+    public string ActiveGameProfileName => _activeGameProfile.Name;
+
+    private GameProfileState ActiveProfile => _activeGameProfile;
+
+    private Dictionary<string, string> ActiveModConfigPaths => ActiveProfile.ModConfigPaths;
+
+    private Dictionary<string, bool> ActiveBulkUpdateModExclusions => ActiveProfile.BulkUpdateModExclusions;
+
+    private Dictionary<string, string> ActiveSkippedModVersions => ActiveProfile.SkippedModVersions;
+
+    private Dictionary<ModUsageTrackingKey, int> ActiveModUsageSessionCounts => ActiveProfile.ModUsageSessionCounts;
+
+    private int ActiveLongRunningSessionCount
+    {
+        get => ActiveProfile.LongRunningSessionCount;
+        set => ActiveProfile.LongRunningSessionCount = value;
+    }
+
+    private bool ActiveHasPendingModUsagePrompt
+    {
+        get => ActiveProfile.HasPendingModUsagePrompt;
+        set => ActiveProfile.HasPendingModUsagePrompt = value;
+    }
+
+    public IReadOnlyList<string> GetGameProfileNames()
+    {
+        return _gameProfiles.Keys
+            .OrderBy(name => string.Equals(name, DefaultGameProfileName, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    public bool TryCreateGameProfile(string? name, bool copyFromActive, out string? normalizedName, out string? errorMessage)
+    {
+        normalizedName = NormalizeGameProfileName(name);
+
+        if (normalizedName is null)
+        {
+            errorMessage = "Enter a profile name.";
+            return false;
+        }
+
+        if (string.Equals(normalizedName, DefaultGameProfileName, StringComparison.OrdinalIgnoreCase))
+        {
+            errorMessage = "The Default profile already exists.";
+            return false;
+        }
+
+        if (_gameProfiles.ContainsKey(normalizedName))
+        {
+            errorMessage = "A profile with that name already exists.";
+            return false;
+        }
+
+        GameProfileState profile = new(normalizedName);
+        _gameProfiles[normalizedName] = profile;
+
+        if (copyFromActive)
+        {
+            CopyProfileData(ActiveProfile, profile);
+        }
+
+        Save();
+        errorMessage = null;
+        return true;
+    }
+
+    public bool TrySetActiveGameProfile(string? name)
+    {
+        string? normalized = NormalizeGameProfileName(name);
+        if (normalized is null)
+        {
+            return false;
+        }
+
+        if (!_gameProfiles.TryGetValue(normalized, out GameProfileState? profile))
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(_activeGameProfile, profile))
+        {
+            return true;
+        }
+
+        _activeGameProfile = profile;
+        Save();
+        return true;
+    }
+
+    public string GetActiveGameProfileBackupDirectoryName()
+    {
+        return BuildBackupDirectoryName(_activeGameProfile.Name);
+    }
+
+    private void CopyProfileData(GameProfileState source, GameProfileState destination)
+    {
+        destination.DataDirectory = source.DataDirectory;
+        destination.GameDirectory = source.GameDirectory;
+        destination.CustomShortcutPath = source.CustomShortcutPath;
+        destination.ModConfigPaths.Clear();
+        foreach (var pair in source.ModConfigPaths)
+        {
+            destination.ModConfigPaths[pair.Key] = pair.Value;
+        }
+
+        destination.BulkUpdateModExclusions.Clear();
+        foreach (var pair in source.BulkUpdateModExclusions)
+        {
+            destination.BulkUpdateModExclusions[pair.Key] = pair.Value;
+        }
+
+        destination.SkippedModVersions.Clear();
+        foreach (var pair in source.SkippedModVersions)
+        {
+            destination.SkippedModVersions[pair.Key] = pair.Value;
+        }
+
+        destination.ModUsageSessionCounts.Clear();
+        foreach (var pair in source.ModUsageSessionCounts)
+        {
+            destination.ModUsageSessionCounts[pair.Key] = pair.Value;
+        }
+
+        destination.LongRunningSessionCount = source.LongRunningSessionCount;
+        destination.HasPendingModUsagePrompt = source.HasPendingModUsagePrompt;
+    }
+
+    private GameProfileState EnsureProfile(string name)
+    {
+        if (_gameProfiles.TryGetValue(name, out GameProfileState? profile))
+        {
+            return profile;
+        }
+
+        profile = new GameProfileState(name);
+        _gameProfiles[name] = profile;
+        return profile;
+    }
+
+    private static string? NormalizeGameProfileName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        string normalized = name.Trim();
+        if (normalized.Length > 128)
+        {
+            normalized = normalized[..128];
+        }
+
+        return normalized.Length == 0 ? null : normalized;
+    }
+
+    private static string BuildBackupDirectoryName(string profileName)
+    {
+        string sanitized = new(profileName
+            .Where(ch => !Path.GetInvalidFileNameChars().Contains(ch))
+            .ToArray());
+
+        if (string.IsNullOrWhiteSpace(sanitized))
+        {
+            sanitized = DefaultGameProfileName;
+        }
+
+        return $"{DevConfig.BackupDirectoryName}_{sanitized}";
+    }
+
+    private void LoadGameProfile(GameProfileState profile, JsonObject obj)
+    {
+        string? dataDirectory = NormalizePath(GetOptionalString(obj["dataDirectory"]));
+        if (dataDirectory is not null)
+        {
+            profile.DataDirectory = dataDirectory;
+        }
+
+        string? gameDirectory = NormalizePath(GetOptionalString(obj["gameDirectory"]));
+        if (gameDirectory is not null)
+        {
+            profile.GameDirectory = gameDirectory;
+        }
+
+        string? shortcut = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
+        if (shortcut is not null)
+        {
+            profile.CustomShortcutPath = shortcut;
+        }
+
+        LoadBulkUpdateModExclusions(obj["bulkUpdateModExclusions"], profile.BulkUpdateModExclusions);
+        LoadSkippedModVersions(obj["skippedModVersions"], profile.SkippedModVersions);
+        LoadModConfigPaths(obj["modConfigPaths"], profile.ModConfigPaths);
+        LoadModUsageTracking(obj["modUsageTracking"], profile);
+    }
+
+    private void ApplyLegacyProfileData(JsonObject root, GameProfileState profile)
+    {
+        string? shortcut = NormalizePath(GetOptionalString(root["customShortcutPath"]));
+        if (profile.CustomShortcutPath is null)
+        {
+            profile.CustomShortcutPath = shortcut;
+        }
+
+        if (profile.BulkUpdateModExclusions.Count == 0)
+        {
+            LoadBulkUpdateModExclusions(root["bulkUpdateModExclusions"], profile.BulkUpdateModExclusions);
+        }
+
+        if (profile.SkippedModVersions.Count == 0)
+        {
+            LoadSkippedModVersions(root["skippedModVersions"], profile.SkippedModVersions);
+        }
+
+        if (profile.ModConfigPaths.Count == 0)
+        {
+            LoadModConfigPaths(root["modConfigPaths"], profile.ModConfigPaths);
+        }
+
+        if (profile.ModUsageSessionCounts.Count == 0)
+        {
+            LoadModUsageTracking(root["modUsageTracking"], profile);
+        }
+    }
 
     public bool MigrationCheckCompleted => _migrationCheckCompleted;
 
@@ -257,7 +507,7 @@ public sealed class UserConfigurationService
             return new Dictionary<ModUsageTrackingKey, int>();
         }
 
-        return new Dictionary<ModUsageTrackingKey, int>(_modUsageSessionCounts);
+        return new Dictionary<ModUsageTrackingKey, int>(ActiveModUsageSessionCounts);
     }
 
     public bool RecordLongRunningSession(IReadOnlyList<ModUsageTrackingEntry>? activeMods, out bool recordedUsage)
@@ -288,32 +538,32 @@ public sealed class UserConfigurationService
                 }
 
                 var key = new ModUsageTrackingKey(entry.ModId, entry.ModVersion, entry.GameVersion);
-                if (_modUsageSessionCounts.TryGetValue(key, out int existing))
+                if (ActiveModUsageSessionCounts.TryGetValue(key, out int existing))
                 {
-                    _modUsageSessionCounts[key] = existing >= int.MaxValue - 1 ? int.MaxValue : existing + 1;
+                    ActiveModUsageSessionCounts[key] = existing >= int.MaxValue - 1 ? int.MaxValue : existing + 1;
                 }
                 else
                 {
-                    _modUsageSessionCounts[key] = 1;
+                    ActiveModUsageSessionCounts[key] = 1;
                 }
 
                 recordedUsage = true;
             }
         }
 
-        if (_longRunningSessionCount < int.MaxValue)
+        if (ActiveLongRunningSessionCount < int.MaxValue)
         {
-            _longRunningSessionCount++;
+            ActiveLongRunningSessionCount++;
         }
 
-        if (_longRunningSessionCount > GameSessionVoteThreshold)
+        if (ActiveLongRunningSessionCount > GameSessionVoteThreshold)
         {
-            _longRunningSessionCount = GameSessionVoteThreshold;
+            ActiveLongRunningSessionCount = GameSessionVoteThreshold;
         }
 
-        if (_longRunningSessionCount >= GameSessionVoteThreshold && _modUsageSessionCounts.Count > 0)
+        if (ActiveLongRunningSessionCount >= GameSessionVoteThreshold && ActiveModUsageSessionCounts.Count > 0)
         {
-            _hasPendingModUsagePrompt = true;
+            ActiveHasPendingModUsagePrompt = true;
         }
 
         Save();
@@ -330,9 +580,9 @@ public sealed class UserConfigurationService
         }
 
         _isModUsageTrackingDisabled = true;
-        bool hadTrackingState = _longRunningSessionCount != 0
-            || _modUsageSessionCounts.Count > 0
-            || _hasPendingModUsagePrompt;
+        bool hadTrackingState = ActiveLongRunningSessionCount != 0
+            || ActiveModUsageSessionCounts.Count > 0
+            || ActiveHasPendingModUsagePrompt;
         ResetModUsageTracking();
         if (!hadTrackingState)
         {
@@ -356,27 +606,27 @@ public sealed class UserConfigurationService
                 continue;
             }
 
-            if (_modUsageSessionCounts.Remove(key))
+            if (ActiveModUsageSessionCounts.Remove(key))
             {
                 changed = true;
             }
         }
 
-        if (_modUsageSessionCounts.Count == 0)
+        if (ActiveModUsageSessionCounts.Count == 0)
         {
-            if (_longRunningSessionCount != 0 || _hasPendingModUsagePrompt)
+            if (ActiveLongRunningSessionCount != 0 || ActiveHasPendingModUsagePrompt)
             {
-                _longRunningSessionCount = 0;
-                _hasPendingModUsagePrompt = false;
+                ActiveLongRunningSessionCount = 0;
+                ActiveHasPendingModUsagePrompt = false;
                 changed = true;
             }
         }
         else
         {
-            bool shouldPrompt = _longRunningSessionCount >= GameSessionVoteThreshold;
-            if (_hasPendingModUsagePrompt != shouldPrompt)
+            bool shouldPrompt = ActiveLongRunningSessionCount >= GameSessionVoteThreshold;
+            if (ActiveHasPendingModUsagePrompt != shouldPrompt)
             {
-                _hasPendingModUsagePrompt = shouldPrompt;
+                ActiveHasPendingModUsagePrompt = shouldPrompt;
                 changed = true;
             }
         }
@@ -400,28 +650,28 @@ public sealed class UserConfigurationService
                     continue;
                 }
 
-                if (_modUsageSessionCounts.Remove(key))
+                if (ActiveModUsageSessionCounts.Remove(key))
                 {
                     changed = true;
                 }
             }
         }
 
-        if (_modUsageSessionCounts.Count == 0)
+        if (ActiveModUsageSessionCounts.Count == 0)
         {
-            if (_longRunningSessionCount != 0 || _hasPendingModUsagePrompt)
+            if (ActiveLongRunningSessionCount != 0 || ActiveHasPendingModUsagePrompt)
             {
-                _longRunningSessionCount = 0;
-                _hasPendingModUsagePrompt = false;
+                ActiveLongRunningSessionCount = 0;
+                ActiveHasPendingModUsagePrompt = false;
                 changed = true;
             }
         }
         else
         {
-            _hasPendingModUsagePrompt = true;
-            if (_longRunningSessionCount < GameSessionVoteThreshold)
+            ActiveHasPendingModUsagePrompt = true;
+            if (ActiveLongRunningSessionCount < GameSessionVoteThreshold)
             {
-                _longRunningSessionCount = GameSessionVoteThreshold;
+                ActiveLongRunningSessionCount = GameSessionVoteThreshold;
                 changed = true;
             }
         }
@@ -434,14 +684,14 @@ public sealed class UserConfigurationService
 
     public void ResetModUsageTracking()
     {
-        if (_longRunningSessionCount == 0 && _modUsageSessionCounts.Count == 0 && !_hasPendingModUsagePrompt)
+        if (ActiveLongRunningSessionCount == 0 && ActiveModUsageSessionCounts.Count == 0 && !ActiveHasPendingModUsagePrompt)
         {
             return;
         }
 
-        _longRunningSessionCount = 0;
-        _modUsageSessionCounts.Clear();
-        _hasPendingModUsagePrompt = false;
+        ActiveLongRunningSessionCount = 0;
+        ActiveModUsageSessionCounts.Clear();
+        ActiveHasPendingModUsagePrompt = false;
         Save();
     }
 
@@ -586,7 +836,7 @@ public sealed class UserConfigurationService
         }
 
         string key = modId.Trim();
-        if (_modConfigPaths.TryGetValue(key, out path))
+        if (ActiveModConfigPaths.TryGetValue(key, out path))
         {
             return true;
         }
@@ -597,7 +847,7 @@ public sealed class UserConfigurationService
             if (!string.IsNullOrWhiteSpace(combined))
             {
                 string combinedPath = combined!;
-                _modConfigPaths[key] = combinedPath;
+                ActiveModConfigPaths[key] = combinedPath;
                 path = combinedPath;
                 return true;
             }
@@ -621,7 +871,7 @@ public sealed class UserConfigurationService
         }
 
         string key = modId.Trim();
-        _modConfigPaths[key] = normalized;
+        ActiveModConfigPaths[key] = normalized;
         UpdatePersistentModConfigPath(key, normalized);
         Save();
     }
@@ -634,7 +884,7 @@ public sealed class UserConfigurationService
         }
 
         string key = modId.Trim();
-        bool removed = _modConfigPaths.Remove(key);
+        bool removed = ActiveModConfigPaths.Remove(key);
         bool historyChanged = false;
 
         if (!preserveHistory)
@@ -830,35 +1080,35 @@ public sealed class UserConfigurationService
 
     public void SetDataDirectory(string path)
     {
-        DataDirectory = NormalizePath(path);
+        _activeGameProfile.DataDirectory = NormalizePath(path);
         Save();
     }
 
     public void ClearDataDirectory()
     {
-        if (DataDirectory is null)
+        if (_activeGameProfile.DataDirectory is null)
         {
             return;
         }
 
-        DataDirectory = null;
+        _activeGameProfile.DataDirectory = null;
         Save();
     }
 
     public void SetGameDirectory(string path)
     {
-        GameDirectory = NormalizePath(path);
+        _activeGameProfile.GameDirectory = NormalizePath(path);
         Save();
     }
 
     public void ClearGameDirectory()
     {
-        if (GameDirectory is null)
+        if (_activeGameProfile.GameDirectory is null)
         {
             return;
         }
 
-        GameDirectory = null;
+        _activeGameProfile.GameDirectory = null;
         Save();
     }
 
@@ -870,23 +1120,23 @@ public sealed class UserConfigurationService
             throw new ArgumentException("The shortcut path is invalid.", nameof(path));
         }
 
-        if (string.Equals(_customShortcutPath, normalized, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(ActiveProfile.CustomShortcutPath, normalized, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
-        _customShortcutPath = normalized;
+        ActiveProfile.CustomShortcutPath = normalized;
         Save();
     }
 
     public void ClearCustomShortcutPath()
     {
-        if (_customShortcutPath is null)
+        if (ActiveProfile.CustomShortcutPath is null)
         {
             return;
         }
 
-        _customShortcutPath = null;
+        ActiveProfile.CustomShortcutPath = null;
         Save();
     }
 
@@ -1008,7 +1258,7 @@ public sealed class UserConfigurationService
             return false;
         }
 
-        return _bulkUpdateModExclusions.TryGetValue(normalized, out bool isExcluded) && isExcluded;
+        return ActiveBulkUpdateModExclusions.TryGetValue(normalized, out bool isExcluded) && isExcluded;
     }
 
     public void SetModExcludedFromBulkUpdates(string? modId, bool isExcluded)
@@ -1021,17 +1271,17 @@ public sealed class UserConfigurationService
 
         if (isExcluded)
         {
-            if (_bulkUpdateModExclusions.TryGetValue(normalized, out bool current) && current)
+            if (ActiveBulkUpdateModExclusions.TryGetValue(normalized, out bool current) && current)
             {
                 return;
             }
 
-            _bulkUpdateModExclusions[normalized] = true;
+            ActiveBulkUpdateModExclusions[normalized] = true;
             Save();
             return;
         }
 
-        if (!_bulkUpdateModExclusions.Remove(normalized))
+        if (!ActiveBulkUpdateModExclusions.Remove(normalized))
         {
             return;
         }
@@ -1053,13 +1303,13 @@ public sealed class UserConfigurationService
             return;
         }
 
-        if (_skippedModVersions.TryGetValue(normalizedId, out string? current)
+        if (ActiveSkippedModVersions.TryGetValue(normalizedId, out string? current)
             && string.Equals(current, normalizedVersion, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
-        _skippedModVersions[normalizedId] = normalizedVersion;
+        ActiveSkippedModVersions[normalizedId] = normalizedVersion;
         Save();
     }
 
@@ -1071,7 +1321,7 @@ public sealed class UserConfigurationService
             return false;
         }
 
-        if (!_skippedModVersions.TryGetValue(normalizedId, out string? storedVersion))
+        if (!ActiveSkippedModVersions.TryGetValue(normalizedId, out string? storedVersion))
         {
             return false;
         }
@@ -1080,7 +1330,7 @@ public sealed class UserConfigurationService
         if (normalizedVersion is null
             || !string.Equals(storedVersion, normalizedVersion, StringComparison.OrdinalIgnoreCase))
         {
-            if (_skippedModVersions.Remove(normalizedId))
+            if (ActiveSkippedModVersions.Remove(normalizedId))
             {
                 Save();
             }
@@ -1090,36 +1340,41 @@ public sealed class UserConfigurationService
         return string.Equals(storedVersion, normalizedVersion, StringComparison.OrdinalIgnoreCase);
     }
 
+
     private void Load()
     {
-        _modConfigPaths.Clear();
-        _bulkUpdateModExclusions.Clear();
-        _skippedModVersions.Clear();
+        _gameProfiles.Clear();
+        GameProfileState defaultProfile = new(DefaultGameProfileName);
+        _gameProfiles[defaultProfile.Name] = defaultProfile;
+        _activeGameProfile = defaultProfile;
         ResetCustomThemePaletteToDefaults();
         _colorTheme = ColorTheme.VintageStory;
         ResetThemePaletteToDefaults();
         _selectedPresetName = null;
-
+    
         try
         {
             if (!File.Exists(_configurationPath))
             {
                 return;
             }
-
+    
             using FileStream stream = File.OpenRead(_configurationPath);
             JsonNode? node = JsonNode.Parse(stream);
             if (node is not JsonObject obj)
             {
                 return;
             }
-
+    
             string? originalConfigurationVersion = NormalizeVersion(GetOptionalString(obj["configurationVersion"]));
             string? originalModManagerVersion = NormalizeVersion(GetOptionalString(obj["modManagerVersion"]));
             InitializeVersionMetadata(originalConfigurationVersion, originalModManagerVersion);
-
-            DataDirectory = NormalizePath(GetOptionalString(obj["dataDirectory"]));
-            GameDirectory = NormalizePath(GetOptionalString(obj["gameDirectory"]));
+    
+            string? rootDataDirectory = NormalizePath(GetOptionalString(obj["dataDirectory"]));
+            string? rootGameDirectory = NormalizePath(GetOptionalString(obj["gameDirectory"]));
+            defaultProfile.DataDirectory = rootDataDirectory;
+            defaultProfile.GameDirectory = rootGameDirectory;
+    
             _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
             _useModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? true;
             _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? true;
@@ -1146,6 +1401,7 @@ public sealed class UserConfigurationService
             {
                 _suppressRefreshCachePromptVersion = null;
             }
+    
             string? colorThemeValue = GetOptionalString(obj["colorTheme"]);
             bool? legacyDarkVsMode = obj["useDarkVsMode"]?.GetValue<bool?>();
             if (!string.IsNullOrWhiteSpace(colorThemeValue)
@@ -1160,6 +1416,7 @@ public sealed class UserConfigurationService
                     : ColorTheme.VintageStory;
                 _hasPendingSave = true;
             }
+    
             bool hasCustomPalette = LoadCustomThemePalette(obj["customThemePalette"]);
             ResetThemePaletteToDefaults();
             _modlistAutoLoadBehavior = ParseModlistAutoLoadBehavior(GetOptionalString(obj["modlistAutoLoadBehavior"]));
@@ -1176,9 +1433,7 @@ public sealed class UserConfigurationService
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             _modInfoPanelLeft = NormalizeModInfoCoordinate(obj["modInfoPanelLeft"]?.GetValue<double?>());
             _modInfoPanelTop = NormalizeModInfoCoordinate(obj["modInfoPanelTop"]?.GetValue<double?>());
-            LoadBulkUpdateModExclusions(obj["bulkUpdateModExclusions"]);
-            LoadSkippedModVersions(obj["skippedModVersions"]);
-            LoadModConfigPaths(obj["modConfigPaths"]);
+    
             LoadInstalledColumnVisibility(obj["installedColumnVisibility"]);
             LoadThemePalette(obj["themePalette"] ?? obj["darkVsPalette"]);
             if (_colorTheme == ColorTheme.Custom)
@@ -1189,26 +1444,83 @@ public sealed class UserConfigurationService
                     _hasPendingSave = true;
                 }
             }
+    
             _selectedPresetName = NormalizePresetName(GetOptionalString(obj["selectedPreset"]));
-            _customShortcutPath = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
             _cloudUploaderName = NormalizeUploaderName(GetOptionalString(obj["cloudUploaderName"]));
             _migrationCheckCompleted = obj["migrationCheckCompleted"]?.GetValue<bool?>() ?? false;
             _firebaseAuthBackupCreated = obj["firebaseAuthBackupCreated"]?.GetValue<bool?>() ?? false;
-            LoadModUsageTracking(obj["modUsageTracking"]);
+    
+            bool profilesFound = false;
+            if (obj["gameProfiles"] is JsonObject profilesObj)
+            {
+                profilesFound = true;
+                foreach ((string key, JsonNode? value) in profilesObj)
+                {
+                    string? normalizedName = NormalizeGameProfileName(key);
+                    if (normalizedName is null || value is not JsonObject profileObj)
+                    {
+                        continue;
+                    }
+    
+                    GameProfileState profile = EnsureProfile(normalizedName);
+                    LoadGameProfile(profile, profileObj);
+                }
+            }
+    
+            if (!profilesFound)
+            {
+                ApplyLegacyProfileData(obj, defaultProfile);
+            }
+            else
+            {
+                if (!_gameProfiles.TryGetValue(DefaultGameProfileName, out defaultProfile))
+                {
+                    defaultProfile = new GameProfileState(DefaultGameProfileName);
+                    _gameProfiles[defaultProfile.Name] = defaultProfile;
+                }
+    
+                defaultProfile.DataDirectory ??= rootDataDirectory;
+                defaultProfile.GameDirectory ??= rootGameDirectory;
+                ApplyLegacyProfileData(obj, defaultProfile);
+            }
+    
+            string? rootShortcut = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
+            foreach (GameProfileState profile in _gameProfiles.Values)
+            {
+                profile.DataDirectory ??= rootDataDirectory;
+                profile.GameDirectory ??= rootGameDirectory;
+                if (profile.CustomShortcutPath is null)
+                {
+                    profile.CustomShortcutPath = rootShortcut;
+                }
+            }
+    
+            string? activeName = NormalizeGameProfileName(GetOptionalString(obj["activeGameProfile"]));
+            if (activeName is not null && _gameProfiles.TryGetValue(activeName, out GameProfileState? activeProfile))
+            {
+                _activeGameProfile = activeProfile;
+            }
+            else
+            {
+                _activeGameProfile = defaultProfile;
+            }
+    
             if (_isModUsageTrackingDisabled)
             {
-                _modUsageSessionCounts.Clear();
-                _longRunningSessionCount = 0;
-                _hasPendingModUsagePrompt = false;
+                foreach (GameProfileState profile in _gameProfiles.Values)
+                {
+                    profile.ModUsageSessionCounts.Clear();
+                    profile.LongRunningSessionCount = 0;
+                    profile.HasPendingModUsagePrompt = false;
+                }
             }
-
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
-            DataDirectory = null;
-            GameDirectory = null;
-            _modConfigPaths.Clear();
-            _skippedModVersions.Clear();
+            _gameProfiles.Clear();
+            GameProfileState resetProfile = new(DefaultGameProfileName);
+            _gameProfiles[resetProfile.Name] = resetProfile;
+            _activeGameProfile = resetProfile;
             _colorTheme = ColorTheme.VintageStory;
             ResetCustomThemePaletteToDefaults();
             ResetThemePaletteToDefaults();
@@ -1239,18 +1551,13 @@ public sealed class UserConfigurationService
             _windowHeight = null;
             _modInfoPanelLeft = null;
             _modInfoPanelTop = null;
-            _customShortcutPath = null;
             _cloudUploaderName = null;
             _installedColumnVisibility.Clear();
-            _bulkUpdateModExclusions.Clear();
-            _modUsageSessionCounts.Clear();
-            _longRunningSessionCount = 0;
-            _hasPendingModUsagePrompt = false;
             _isModUsageTrackingDisabled = false;
             _migrationCheckCompleted = false;
             _firebaseAuthBackupCreated = false;
         }
-
+    
         LoadPersistentModConfigPaths();
     }
 
@@ -1279,6 +1586,7 @@ public sealed class UserConfigurationService
                 ["modManagerVersion"] = _modManagerVersion,
                 ["dataDirectory"] = DataDirectory,
                 ["gameDirectory"] = GameDirectory,
+                ["activeGameProfile"] = _activeGameProfile.Name,
                 ["isCompactView"] = _isCompactView,
                 ["useModDbDesignView"] = _useModDbDesignView,
                 ["cacheAllVersionsLocally"] = _cacheAllVersionsLocally,
@@ -1306,19 +1614,20 @@ public sealed class UserConfigurationService
                 ["windowHeight"] = _windowHeight,
                 ["modInfoPanelLeft"] = _modInfoPanelLeft,
                 ["modInfoPanelTop"] = _modInfoPanelTop,
-                ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(),
-                ["skippedModVersions"] = BuildSkippedModVersionsJson(),
-                ["modConfigPaths"] = BuildModConfigPathsJson(),
+                ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(_activeGameProfile.BulkUpdateModExclusions),
+                ["skippedModVersions"] = BuildSkippedModVersionsJson(_activeGameProfile.SkippedModVersions),
+                ["modConfigPaths"] = BuildModConfigPathsJson(_activeGameProfile.ModConfigPaths),
                 ["installedColumnVisibility"] = BuildInstalledColumnVisibilityJson(),
-                ["modUsageTracking"] = BuildModUsageTrackingJson(),
+                ["modUsageTracking"] = BuildModUsageTrackingJson(_activeGameProfile),
                 ["themePalette"] = BuildThemePaletteJson(),
                 ["darkVsPalette"] = BuildThemePaletteJson(),
                 ["customThemePalette"] = BuildCustomThemePaletteJson(),
                 ["selectedPreset"] = _selectedPresetName,
-                ["customShortcutPath"] = _customShortcutPath,
+                ["customShortcutPath"] = _activeGameProfile.CustomShortcutPath,
                 ["cloudUploaderName"] = _cloudUploaderName,
                 ["migrationCheckCompleted"] = _migrationCheckCompleted,
-                ["firebaseAuthBackupCreated"] = _firebaseAuthBackupCreated
+                ["firebaseAuthBackupCreated"] = _firebaseAuthBackupCreated,
+                ["gameProfiles"] = BuildGameProfilesJson()
             };
 
             var options = new JsonSerializerOptions
@@ -1475,11 +1784,11 @@ public sealed class UserConfigurationService
         return Path.Combine(preferredDirectory, fileName);
     }
 
-    private JsonObject BuildModConfigPathsJson()
+    private static JsonObject BuildModConfigPathsJson(IReadOnlyDictionary<string, string> source)
     {
         var result = new JsonObject();
 
-        foreach (var pair in _modConfigPaths.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        foreach (var pair in source.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
             result[pair.Key] = pair.Value;
         }
@@ -1504,11 +1813,11 @@ public sealed class UserConfigurationService
         return result;
     }
 
-    private JsonObject BuildBulkUpdateModExclusionsJson()
+    private static JsonObject BuildBulkUpdateModExclusionsJson(IReadOnlyDictionary<string, bool> source)
     {
         var result = new JsonObject();
 
-        foreach (var pair in _bulkUpdateModExclusions.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        foreach (var pair in source.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
             if (string.IsNullOrWhiteSpace(pair.Key) || !pair.Value)
             {
@@ -1521,11 +1830,11 @@ public sealed class UserConfigurationService
         return result;
     }
 
-    private JsonObject BuildSkippedModVersionsJson()
+    private static JsonObject BuildSkippedModVersionsJson(IReadOnlyDictionary<string, string> source)
     {
         var result = new JsonObject();
 
-        foreach (var pair in _skippedModVersions.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        foreach (var pair in source.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
             if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
             {
@@ -1538,11 +1847,11 @@ public sealed class UserConfigurationService
         return result;
     }
 
-    private JsonObject BuildModUsageTrackingJson()
+    private static JsonObject BuildModUsageTrackingJson(GameProfileState profile)
     {
         var counts = new JsonArray();
 
-        foreach (var pair in _modUsageSessionCounts
+        foreach (var pair in profile.ModUsageSessionCounts
             .OrderBy(entry => entry.Key.ModId, StringComparer.OrdinalIgnoreCase)
             .ThenBy(entry => entry.Key.ModVersion, StringComparer.OrdinalIgnoreCase)
             .ThenBy(entry => entry.Key.GameVersion, StringComparer.OrdinalIgnoreCase))
@@ -1563,8 +1872,8 @@ public sealed class UserConfigurationService
 
         return new JsonObject
         {
-            ["longSessionCount"] = _longRunningSessionCount,
-            ["pendingPrompt"] = _hasPendingModUsagePrompt && counts.Count > 0,
+            ["longSessionCount"] = profile.LongRunningSessionCount,
+            ["pendingPrompt"] = profile.HasPendingModUsagePrompt && counts.Count > 0,
             ["modCounts"] = counts
         };
     }
@@ -1580,6 +1889,30 @@ public sealed class UserConfigurationService
     private JsonObject BuildCustomThemePaletteJson()
     {
         return BuildPaletteJson(_customThemePaletteColors, GetDefaultPalette(ColorTheme.Custom));
+    }
+
+    private JsonObject BuildGameProfilesJson()
+    {
+        var result = new JsonObject();
+
+        foreach (GameProfileState profile in _gameProfiles.Values
+                     .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            var profileObject = new JsonObject
+            {
+                ["dataDirectory"] = profile.DataDirectory,
+                ["gameDirectory"] = profile.GameDirectory,
+                ["customShortcutPath"] = profile.CustomShortcutPath,
+                ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(profile.BulkUpdateModExclusions),
+                ["skippedModVersions"] = BuildSkippedModVersionsJson(profile.SkippedModVersions),
+                ["modConfigPaths"] = BuildModConfigPathsJson(profile.ModConfigPaths),
+                ["modUsageTracking"] = BuildModUsageTrackingJson(profile)
+            };
+
+            result[profile.Name] = profileObject;
+        }
+
+        return result;
     }
 
     private static JsonObject BuildPaletteJson(
@@ -1611,9 +1944,9 @@ public sealed class UserConfigurationService
         return result;
     }
 
-    private void LoadBulkUpdateModExclusions(JsonNode? node)
+    private void LoadBulkUpdateModExclusions(JsonNode? node, Dictionary<string, bool> target)
     {
-        _bulkUpdateModExclusions.Clear();
+        target.Clear();
 
         if (node is not JsonObject obj)
         {
@@ -1638,12 +1971,12 @@ public sealed class UserConfigurationService
                 continue;
             }
 
-            if (_bulkUpdateModExclusions.ContainsKey(normalized))
+            if (target.ContainsKey(normalized))
             {
                 continue;
             }
 
-            _bulkUpdateModExclusions[normalized] = true;
+            target[normalized] = true;
         }
 
         if (requiresSave)
@@ -1652,9 +1985,9 @@ public sealed class UserConfigurationService
         }
     }
 
-    private void LoadSkippedModVersions(JsonNode? node)
+    private void LoadSkippedModVersions(JsonNode? node, Dictionary<string, string> target)
     {
-        _skippedModVersions.Clear();
+        target.Clear();
 
         if (node is not JsonObject obj)
         {
@@ -1679,12 +2012,12 @@ public sealed class UserConfigurationService
                 continue;
             }
 
-            if (_skippedModVersions.ContainsKey(normalizedId))
+            if (target.ContainsKey(normalizedId))
             {
                 continue;
             }
 
-            _skippedModVersions[normalizedId] = version;
+            target[normalizedId] = version;
         }
 
         if (requiresSave)
@@ -1693,9 +2026,9 @@ public sealed class UserConfigurationService
         }
     }
 
-    private void LoadModConfigPaths(JsonNode? node)
+    private void LoadModConfigPaths(JsonNode? node, Dictionary<string, string> target)
     {
-        _modConfigPaths.Clear();
+        target.Clear();
 
         if (node is not JsonObject obj)
         {
@@ -1717,7 +2050,7 @@ public sealed class UserConfigurationService
                 continue;
             }
 
-            _modConfigPaths[modId.Trim()] = normalized;
+            target[modId.Trim()] = normalized;
         }
     }
 
@@ -1807,11 +2140,11 @@ public sealed class UserConfigurationService
         }
     }
 
-    private void LoadModUsageTracking(JsonNode? node)
+    private void LoadModUsageTracking(JsonNode? node, GameProfileState profile)
     {
-        _longRunningSessionCount = 0;
-        _hasPendingModUsagePrompt = false;
-        _modUsageSessionCounts.Clear();
+        profile.LongRunningSessionCount = 0;
+        profile.HasPendingModUsagePrompt = false;
+        profile.ModUsageSessionCounts.Clear();
 
         if (node is not JsonObject obj)
         {
@@ -1819,8 +2152,8 @@ public sealed class UserConfigurationService
         }
 
         int? storedCount = obj["longSessionCount"]?.GetValue<int?>();
-        _longRunningSessionCount = storedCount.HasValue && storedCount.Value > 0 ? storedCount.Value : 0;
-        _hasPendingModUsagePrompt = obj["pendingPrompt"]?.GetValue<bool?>() ?? false;
+        profile.LongRunningSessionCount = storedCount.HasValue && storedCount.Value > 0 ? storedCount.Value : 0;
+        profile.HasPendingModUsagePrompt = obj["pendingPrompt"]?.GetValue<bool?>() ?? false;
 
         JsonNode? countsNode = obj["modCounts"];
 
@@ -1853,7 +2186,7 @@ public sealed class UserConfigurationService
                     continue;
                 }
 
-                _modUsageSessionCounts[key] = usageCount.Value;
+                profile.ModUsageSessionCounts[key] = usageCount.Value;
             }
         }
         else if (countsNode is JsonObject legacyCounts)
@@ -1881,14 +2214,14 @@ public sealed class UserConfigurationService
             }
         }
 
-        if (_modUsageSessionCounts.Count == 0)
+        if (profile.ModUsageSessionCounts.Count == 0)
         {
-            _longRunningSessionCount = 0;
-            _hasPendingModUsagePrompt = false;
+            profile.LongRunningSessionCount = 0;
+            profile.HasPendingModUsagePrompt = false;
         }
-        else if (_longRunningSessionCount >= GameSessionVoteThreshold)
+        else if (profile.LongRunningSessionCount >= GameSessionVoteThreshold)
         {
-            _hasPendingModUsagePrompt = true;
+            profile.HasPendingModUsagePrompt = true;
         }
     }
 
@@ -2129,7 +2462,7 @@ public sealed class UserConfigurationService
                     string? combinedPath = BuildFullConfigPath(entry);
                     if (!string.IsNullOrWhiteSpace(combinedPath))
                     {
-                        _modConfigPaths[key] = combinedPath;
+                        ActiveModConfigPaths[key] = combinedPath;
                     }
                 }
             }
