@@ -246,7 +246,6 @@ public partial class MainWindow : Window
     private string? _recentLocalModBackupDirectory;
     private List<string>? _recentLocalModBackupModNames;
     private readonly Dictionary<InstalledModsColumn, bool> _installedColumnVisibilityPreferences = new();
-    private bool _isSearchingModDatabase;
     private bool _isDraggingModInfoPanel;
     private System.Windows.Point _modInfoDragOffset;
     private GameSessionMonitor? _gameSessionMonitor;
@@ -341,8 +340,6 @@ public partial class MainWindow : Window
         RegisterColumnMenuItem(UserReportsColumnMenuItem, InstalledModsColumn.UserReports);
         RegisterColumnMenuItem(StatusColumnMenuItem, InstalledModsColumn.Status);
         RegisterColumnMenuItem(SideColumnMenuItem, InstalledModsColumn.Side);
-
-        UpdateColumnVisibility();
     }
 
     private void RegisterColumnMenuItem(MenuItem? menuItem, InstalledModsColumn column)
@@ -359,6 +356,7 @@ public partial class MainWindow : Window
         }
         _installedColumnVisibilityPreferences[column] = menuItem.IsChecked;
         NotifyViewModelOfInstalledColumnVisibility(column, menuItem.IsChecked);
+        ApplyInstalledColumnVisibility(column, menuItem.IsChecked);
         menuItem.Checked += InstalledModsColumnMenuItem_OnChecked;
         menuItem.Unchecked += InstalledModsColumnMenuItem_OnChecked;
     }
@@ -373,59 +371,32 @@ public partial class MainWindow : Window
         _installedColumnVisibilityPreferences[column] = menuItem.IsChecked;
         _userConfiguration.SetInstalledColumnVisibility(column.ToString(), menuItem.IsChecked);
         NotifyViewModelOfInstalledColumnVisibility(column, menuItem.IsChecked);
-        UpdateColumnVisibility();
+        ApplyInstalledColumnVisibility(column, menuItem.IsChecked);
     }
 
-    private void UpdateColumnVisibility()
+    private void ApplyInstalledColumnVisibility(InstalledModsColumn columnKey, bool isVisible)
     {
-        bool isSearching = _isSearchingModDatabase;
-        bool isCompactView = _viewModel?.IsCompactView == true;
-
-        SetColumnVisibility(ActiveColumn, null, InstalledModsColumn.Active, !isSearching);
-        SetColumnVisibility(IconColumn, null, InstalledModsColumn.Icon, !isSearching && !isCompactView);
-        SetColumnVisibility(NameColumn, ModDbNameColumn, InstalledModsColumn.Name, true);
-        SetColumnVisibility(null, ModDbInstalledColumn, InstalledModsColumn.Installed, isSearching);
-        SetColumnVisibility(VersionColumn, null, InstalledModsColumn.Version, !isSearching);
-        SetColumnVisibility(LatestVersionColumn, ModDbLatestVersionColumn, InstalledModsColumn.LatestVersion, true);
-        SetColumnVisibility(null, ModDbDownloadsColumn, InstalledModsColumn.Downloads, isSearching);
-        SetColumnVisibility(AuthorsColumn, ModDbAuthorsColumn, InstalledModsColumn.Authors, true);
-        SetColumnVisibility(TagsColumn, ModDbTagsColumn, InstalledModsColumn.Tags, true);
-        SetColumnVisibility(UserReportsColumn, ModDbUserReportsColumn, InstalledModsColumn.UserReports, true);
-        SetColumnVisibility(StatusColumn, null, InstalledModsColumn.Status, !isSearching);
-        SetColumnVisibility(SideColumn, ModDbSideColumn, InstalledModsColumn.Side, true);
-    }
-
-    private void SetColumnVisibility(DataGridColumn? column, DataGridColumn? modDbColumn, InstalledModsColumn columnKey, bool isContextuallyVisible)
-    {
-        if (column != null)
+        DataGridColumn? column = columnKey switch
         {
-            SetColumnVisibility(column, columnKey, isContextuallyVisible);
-        }
-        
+            InstalledModsColumn.Active => ActiveColumn,
+            InstalledModsColumn.Icon => IconColumn,
+            InstalledModsColumn.Name => NameColumn,
+            InstalledModsColumn.Version => VersionColumn,
+            InstalledModsColumn.LatestVersion => LatestVersionColumn,
+            InstalledModsColumn.Authors => AuthorsColumn,
+            InstalledModsColumn.Tags => TagsColumn,
+            InstalledModsColumn.UserReports => UserReportsColumn,
+            InstalledModsColumn.Status => StatusColumn,
+            InstalledModsColumn.Side => SideColumn,
+            _ => null
+        };
 
-        if (modDbColumn == null)
-        {
-            return;
-        }
-
-        // Keep all Mod DB columns visible regardless of the column visibility menu preferences.
-        modDbColumn.Visibility = Visibility.Visible;
-    }
-
-    private void SetColumnVisibility(DataGridColumn? column, InstalledModsColumn columnKey, bool isContextuallyVisible)
-    {
         if (column == null)
         {
             return;
         }
 
-        bool isPreferredVisible = _installedColumnVisibilityPreferences.TryGetValue(columnKey, out bool preference)
-            ? preference
-            : true;
-
-        column.Visibility = isPreferredVisible && isContextuallyVisible
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        column.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void NotifyViewModelOfInstalledColumnVisibility(InstalledModsColumn column, bool isVisible)
@@ -2447,7 +2418,6 @@ public partial class MainWindow : Window
         ApplyPlayerIdentityToUiAndCloudStore();
         _cloudModlistsLoaded = false;
         _selectedCloudModlist = null;
-        ApplyCompactViewState(_viewModel.IsCompactView);
         UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
         AttachToModsView(_viewModel.CurrentModsView);
         RestoreSortPreference();
@@ -2475,14 +2445,6 @@ public partial class MainWindow : Window
             if (_viewModel != null)
             {
                 _userConfiguration.SetCompactViewMode(_viewModel.IsCompactView);
-
-                Dispatcher.InvokeAsync(() =>
-                {
-                    if (_viewModel != null)
-                    {
-                        ApplyCompactViewState(_viewModel.IsCompactView);
-                    }
-                }, DispatcherPriority.Background);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.UseModDbDesignView))
@@ -2602,15 +2564,8 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ApplyCompactViewState(bool isCompactView)
-    {
-        UpdateColumnVisibility();
-    }
-
     private void UpdateSearchColumnVisibility(bool isSearchingModDatabase)
     {
-        _isSearchingModDatabase = isSearchingModDatabase;
-        UpdateColumnVisibility();
         UpdateSearchSortingBehavior(isSearchingModDatabase);
     }
 
