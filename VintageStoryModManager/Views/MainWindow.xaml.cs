@@ -299,6 +299,7 @@ public partial class MainWindow : Window
         TryInitializePaths();
         RefreshDeveloperProfilesMenuEntries();
         UpdateGameProfileMenuChecks();
+        UpdateActiveGameProfileDisplay();
 
         UpdateGameVersionMenuItem(VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory));
 
@@ -7379,6 +7380,7 @@ public partial class MainWindow : Window
         RefreshDeveloperProfilesMenuEntries();
         UpdateGameVersionMenuItem(VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory));
         await ReloadViewModelAsync();
+        UpdateActiveGameProfileDisplay();
     }
 
     private void GameProfilesMenuItem_OnSubmenuOpened(object sender, RoutedEventArgs e)
@@ -7626,6 +7628,8 @@ public partial class MainWindow : Window
             GameProfilesMenuItem.Items.Add(menuItem);
             _gameProfileMenuItems.Add(menuItem);
         }
+
+        UpdateActiveGameProfileDisplay();
     }
 
     private void UpdateGameProfileMenuChecks()
@@ -7639,6 +7643,31 @@ public partial class MainWindow : Window
                 item.IsChecked = string.Equals(profileName, activeName, StringComparison.OrdinalIgnoreCase);
             }
         }
+    }
+
+    private void UpdateActiveGameProfileDisplay()
+    {
+        if (ActiveGameProfileTextBlock is null)
+        {
+            return;
+        }
+
+        IReadOnlyList<string> profiles = _userConfiguration.GetGameProfileNames();
+        bool hasAdditionalProfiles = profiles.Any(name => !_userConfiguration.IsDefaultGameProfile(name));
+        if (!hasAdditionalProfiles)
+        {
+            ActiveGameProfileTextBlock.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        string activeName = _userConfiguration.ActiveGameProfileName;
+        if (string.IsNullOrWhiteSpace(activeName))
+        {
+            activeName = UserConfigurationService.DefaultProfileName;
+        }
+
+        ActiveGameProfileTextBlock.Text = $"Profile: {activeName}";
+        ActiveGameProfileTextBlock.Visibility = Visibility.Visible;
     }
 
     private void UpdateDeveloperProfileMenuChecks()

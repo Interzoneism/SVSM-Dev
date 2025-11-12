@@ -753,6 +753,18 @@
 
 
         </Grid>
+
+        <TextBlock x:Name="ActiveGameProfileTextBlock"
+                   Grid.Row="1"
+                   Margin="16,8,0,0"
+                   FontSize="14"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource Brush.Text.Primary}"
+                   Text="Profile: Default"
+                   Visibility="Collapsed"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top" />
+
         <Grid x:Name="MIDDLE" Grid.Row="1"
               Margin="16,34,16,10">
             <Grid.RowDefinitions>
