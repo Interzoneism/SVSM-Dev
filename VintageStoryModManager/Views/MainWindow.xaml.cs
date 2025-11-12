@@ -1482,9 +1482,49 @@ public partial class MainWindow : Window
         _userConfiguration.SetCloudUploaderName(sanitized);
     }
 
+    private string ResolveUploaderName(string? fallbackUserId = null)
+    {
+        string? playerName = _viewModel?.PlayerName;
+        if (!string.IsNullOrWhiteSpace(playerName))
+        {
+            return playerName.Trim();
+        }
+
+        string? suffixSource = _viewModel?.PlayerUid;
+        if (string.IsNullOrWhiteSpace(suffixSource))
+        {
+            suffixSource = fallbackUserId;
+        }
+
+        if (string.IsNullOrWhiteSpace(suffixSource))
+        {
+            suffixSource = _cloudModlistStore?.CurrentUserId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(suffixSource))
+        {
+            string trimmedId = suffixSource.Trim();
+            if (!string.IsNullOrWhiteSpace(trimmedId))
+            {
+                string suffix = trimmedId.Length <= 4
+                    ? trimmedId
+                    : trimmedId.Substring(trimmedId.Length - 4, 4);
+
+                if (string.IsNullOrWhiteSpace(suffix))
+                {
+                    suffix = "0000";
+                }
+
+                return $"Anonymous{suffix}";
+            }
+        }
+
+        return "Anonymous0000";
+    }
+
     private void ApplyPlayerIdentityToUiAndCloudStore()
     {
-        SetUsernameDisplay(_viewModel?.PlayerName);
+        SetUsernameDisplay(ResolveUploaderName());
 
         if (_cloudModlistStore is not null)
         {
@@ -1509,7 +1549,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        string? uploader = UsernameTextbox?.Text;
+        string uploader = ResolveUploaderName(_cloudModlistStore?.CurrentUserId);
         SetUsernameDisplay(uploader);
     }
 
@@ -9545,15 +9585,7 @@ public partial class MainWindow : Window
         string? suffixSource = _viewModel?.PlayerUid ?? _cloudModlistStore?.CurrentUserId;
         if (!string.IsNullOrWhiteSpace(suffixSource))
         {
-            string trimmed = suffixSource.Trim();
-            string suffix = trimmed.Length <= 4 ? trimmed : trimmed[^4..];
-
-            if (string.IsNullOrWhiteSpace(suffix))
-            {
-                suffix = "0000";
-            }
-
-            return $"Anonymous{suffix}";
+            return ResolveUploaderName(suffixSource);
         }
 
         return "Anonymous";
@@ -9561,32 +9593,9 @@ public partial class MainWindow : Window
 
     private string DetermineUploaderName(FirebaseModlistStore store)
     {
-        string? playerName = _viewModel?.PlayerName;
-        if (!string.IsNullOrWhiteSpace(playerName))
-        {
-            string trimmed = playerName.Trim();
-            SetUsernameDisplay(trimmed);
-            return trimmed;
-        }
-
-        string? suffixSource = _viewModel?.PlayerUid;
-        if (string.IsNullOrWhiteSpace(suffixSource))
-        {
-            suffixSource = store?.CurrentUserId;
-        }
-
-        string suffix = "0000";
-        if (!string.IsNullOrWhiteSpace(suffixSource))
-        {
-            string trimmedId = suffixSource.Trim();
-            suffix = trimmedId.Length <= 4
-                ? trimmedId
-                : trimmedId.Substring(trimmedId.Length - 4, 4);
-        }
-
-        string fallback = $"Anonymous{suffix}";
-        SetUsernameDisplay(fallback);
-        return fallback;
+        string uploader = ResolveUploaderName(store?.CurrentUserId);
+        SetUsernameDisplay(uploader);
+        return uploader;
     }
 
     private void SaveModlistMenuItem_OnClick(object sender, RoutedEventArgs e)
