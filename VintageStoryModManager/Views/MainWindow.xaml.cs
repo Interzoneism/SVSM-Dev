@@ -3403,7 +3403,8 @@ public partial class MainWindow : Window
                     continue;
                 }
 
-                _userConfiguration.SetModConfigPath(match.ModId, match.ConfigPath);
+                string configName = Path.GetFileName(match.ConfigPath);
+                _userConfiguration.SetModConfigPath(match.ModId, match.ConfigPath, configName);
                 string displayName = displayNames.TryGetValue(match.ModId, out string? value)
                     ? value
                     : match.ModId;
@@ -4903,7 +4904,8 @@ public partial class MainWindow : Window
                     return;
                 }
 
-                _userConfiguration.SetModConfigPath(mod.ModId, configPath);
+                string configName = Path.GetFileName(configPath);
+                _userConfiguration.SetModConfigPath(mod.ModId, configPath, configName);
                 UpdateSelectedModEditConfigButton(mod);
             }
         }
@@ -4931,7 +4933,8 @@ public partial class MainWindow : Window
                 {
                     try
                     {
-                        _userConfiguration.SetModConfigPath(mod.ModId, editorViewModel.FilePath);
+                        string newConfigName = Path.GetFileName(editorViewModel.FilePath);
+                        _userConfiguration.SetModConfigPath(mod.ModId, editorViewModel.FilePath, newConfigName);
                         UpdateSelectedModEditConfigButton(mod);
                     }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
@@ -11959,7 +11962,7 @@ public partial class MainWindow : Window
             try
             {
                 await File.WriteAllTextAsync(targetPath, config.Content).ConfigureAwait(true);
-                _userConfiguration.SetModConfigPath(config.ModId, targetPath);
+                _userConfiguration.SetModConfigPath(config.ModId, targetPath, uniqueFileName);
                 importedCount++;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or PathTooLongException)
