@@ -457,12 +457,6 @@ public sealed class UserConfigurationService
         destination.DataDirectory = source.DataDirectory;
         destination.GameDirectory = source.GameDirectory;
         destination.CustomShortcutPath = source.CustomShortcutPath;
-        destination.ModConfigPaths.Clear();
-        foreach (var pair in source.ModConfigPaths)
-        {
-            destination.ModConfigPaths[pair.Key] = pair.Value;
-        }
-
         destination.BulkUpdateModExclusions.Clear();
         foreach (var pair in source.BulkUpdateModExclusions)
         {
