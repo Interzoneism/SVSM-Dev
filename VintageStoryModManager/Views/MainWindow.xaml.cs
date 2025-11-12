@@ -6636,7 +6636,8 @@ public partial class MainWindow : Window
 
                 builder.AppendLine();
                 builder.Append("    ");
-                builder.AppendLine(result.ConfigPath);
+                string? configFileName = Path.GetFileName(result.ConfigPath);
+                builder.AppendLine(string.IsNullOrEmpty(configFileName) ? result.ConfigPath : configFileName);
             }
 
             WpfMessageBox.Show(
