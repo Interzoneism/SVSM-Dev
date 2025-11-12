@@ -1241,6 +1241,7 @@ public sealed class UserConfigurationService
     public void SetDataDirectory(string path)
     {
         _activeGameProfile.DataDirectory = NormalizePath(path);
+        EnsureModConfigDirectoryExists(_activeGameProfile.DataDirectory);
         RefreshActiveModConfigPathsFromHistory();
         Save();
     }
@@ -2961,6 +2962,29 @@ public sealed class UserConfigurationService
     private string? GetActiveModConfigDirectory()
     {
         return GetModConfigDirectory(ActiveProfile.DataDirectory);
+    }
+
+    private static void EnsureModConfigDirectoryExists(string? dataDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(dataDirectory))
+        {
+            return;
+        }
+
+        try
+        {
+            string combined = Path.Combine(dataDirectory, ModConfigDirectoryName);
+            Directory.CreateDirectory(combined);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+        catch (NotSupportedException)
+        {
+        }
     }
 
     private static string? GetModConfigDirectory(string? dataDirectory)
