@@ -394,12 +394,14 @@ public sealed class UserConfigurationService
         }
 
         bool removedAny = false;
+        var removedProfiles = new List<string>();
 
         foreach (string name in normalizedNames)
         {
             if (_gameProfiles.Remove(name))
             {
                 removedAny = true;
+                removedProfiles.Add(name);
             }
         }
 
@@ -417,6 +419,7 @@ public sealed class UserConfigurationService
         }
 
         Save();
+        DeleteProfileBackupDirectories(removedProfiles);
         errorMessage = null;
         return true;
     }
@@ -424,6 +427,29 @@ public sealed class UserConfigurationService
     public string GetActiveGameProfileBackupDirectoryName()
     {
         return BuildBackupDirectoryName(_activeGameProfile.Name);
+    }
+
+    private void DeleteProfileBackupDirectories(IEnumerable<string> profileNames)
+    {
+        if (profileNames is null)
+        {
+            return;
+        }
+
+        string baseDirectory = GetConfigurationDirectory();
+
+        foreach (string profileName in profileNames)
+        {
+            if (string.IsNullOrWhiteSpace(profileName))
+            {
+                continue;
+            }
+
+            string directoryName = BuildBackupDirectoryName(profileName);
+            string directoryPath = Path.Combine(baseDirectory, directoryName);
+
+            TryDeleteDirectory(directoryPath);
+        }
     }
 
     private void CopyProfileData(GameProfileState source, GameProfileState destination)
@@ -499,6 +525,28 @@ public sealed class UserConfigurationService
         }
 
         return $"{DevConfig.BackupDirectoryName}_{sanitized}";
+    }
+
+    private static void TryDeleteDirectory(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, recursive: true);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 
     private void LoadGameProfile(GameProfileState profile, JsonObject obj)
