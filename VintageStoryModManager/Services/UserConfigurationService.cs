@@ -585,7 +585,6 @@ public sealed class UserConfigurationService
 
         LoadBulkUpdateModExclusions(obj["bulkUpdateModExclusions"], profile.BulkUpdateModExclusions);
         LoadSkippedModVersions(obj["skippedModVersions"], profile.SkippedModVersions);
-        LoadModConfigPaths(obj["modConfigPaths"], profile.ModConfigPaths);
         LoadModUsageTracking(obj["modUsageTracking"], profile);
     }
 
@@ -605,11 +604,6 @@ public sealed class UserConfigurationService
         if (profile.SkippedModVersions.Count == 0)
         {
             LoadSkippedModVersions(root["skippedModVersions"], profile.SkippedModVersions);
-        }
-
-        if (profile.ModConfigPaths.Count == 0)
-        {
-            LoadModConfigPaths(root["modConfigPaths"], profile.ModConfigPaths);
         }
 
         if (profile.ModUsageSessionCounts.Count == 0)
@@ -1789,7 +1783,6 @@ public sealed class UserConfigurationService
                 ["modInfoPanelTop"] = _modInfoPanelTop,
                 ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(_activeGameProfile.BulkUpdateModExclusions),
                 ["skippedModVersions"] = BuildSkippedModVersionsJson(_activeGameProfile.SkippedModVersions),
-                ["modConfigPaths"] = BuildModConfigPathsJson(_activeGameProfile.ModConfigPaths),
                 ["installedColumnVisibility"] = BuildInstalledColumnVisibilityJson(),
                 ["modUsageTracking"] = BuildModUsageTrackingJson(_activeGameProfile),
                 ["themePalette"] = BuildThemePaletteJson(),
@@ -1973,18 +1966,6 @@ public sealed class UserConfigurationService
         return Path.Combine(preferredDirectory, fileName);
     }
 
-    private static JsonObject BuildModConfigPathsJson(IReadOnlyDictionary<string, string> source)
-    {
-        var result = new JsonObject();
-
-        foreach (var pair in source.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
-        {
-            result[pair.Key] = pair.Value;
-        }
-
-        return result;
-    }
-
     private JsonObject BuildInstalledColumnVisibilityJson()
     {
         var result = new JsonObject();
@@ -2094,7 +2075,6 @@ public sealed class UserConfigurationService
                 ["customShortcutPath"] = profile.CustomShortcutPath,
                 ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(profile.BulkUpdateModExclusions),
                 ["skippedModVersions"] = BuildSkippedModVersionsJson(profile.SkippedModVersions),
-                ["modConfigPaths"] = BuildModConfigPathsJson(profile.ModConfigPaths),
                 ["modUsageTracking"] = BuildModUsageTrackingJson(profile)
             };
 
@@ -2212,34 +2192,6 @@ public sealed class UserConfigurationService
         if (requiresSave)
         {
             _hasPendingSave = true;
-        }
-    }
-
-    private void LoadModConfigPaths(JsonNode? node, Dictionary<string, string> target)
-    {
-        target.Clear();
-
-        if (node is not JsonObject obj)
-        {
-            return;
-        }
-
-        foreach (var pair in obj)
-        {
-            string modId = pair.Key;
-            if (string.IsNullOrWhiteSpace(modId))
-            {
-                continue;
-            }
-
-            string? path = GetOptionalString(pair.Value);
-            string? normalized = NormalizePath(path);
-            if (string.IsNullOrWhiteSpace(normalized))
-            {
-                continue;
-            }
-
-            target[modId.Trim()] = normalized;
         }
     }
 
@@ -2808,12 +2760,12 @@ public sealed class UserConfigurationService
 
     private void RefreshActiveModConfigPathsFromHistory()
     {
+        ActiveModConfigPaths.Clear();
+
         if (_storedModConfigPaths.Count == 0)
         {
             return;
         }
-
-        bool updated = false;
 
         foreach (var pair in _storedModConfigPaths)
         {
@@ -2823,17 +2775,7 @@ public sealed class UserConfigurationService
                 continue;
             }
 
-            if (!ActiveModConfigPaths.TryGetValue(pair.Key, out string? existing)
-                || !string.Equals(existing, combined, PathComparison))
-            {
-                ActiveModConfigPaths[pair.Key] = combined!;
-                updated = true;
-            }
-        }
-
-        if (updated)
-        {
-            _hasPendingSave = true;
+            ActiveModConfigPaths[pair.Key] = combined!;
         }
     }
 
