@@ -1618,7 +1618,13 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                     <DataGridTemplateColumn.CellStyle>
                                         <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                            <Setter Property="ToolTip" Value="{Binding StatusDetails}" />
+                                            <Setter Property="ToolTip">
+                                                <Setter.Value>
+                                                    <ToolTip MaxWidth="300">
+                                                        <TextBlock Text="{Binding StatusDetails}" TextWrapping="Wrap" />
+                                                    </ToolTip>
+                                                </Setter.Value>
+                                            </Setter>
                                         </Style>
                                     </DataGridTemplateColumn.CellStyle>
                                 </DataGridTemplateColumn>

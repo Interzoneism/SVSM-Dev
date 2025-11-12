@@ -1821,36 +1821,8 @@ public sealed class ModListItemViewModel : ObservableObject
             return false;
         }
 
-        string displayVersions = FormatRequiredVersions(requiredVersions.Select(pair => pair.Original));
-        message = $"The mod asks for Vintage Story version {displayVersions} but you have {installedVersion}, it might be incompatible";
+        message = "This mod isn't marked as compatible with your Vintage Story version, but might work anyway. Check user reports column or read the comments on the Mod DB page for more info.";
         return true;
-    }
-
-    private static string FormatRequiredVersions(IEnumerable<string> versions)
-    {
-        string[] filtered = versions
-            .Where(version => !string.IsNullOrWhiteSpace(version))
-            .Select(version => version.Trim())
-            .Where(version => version.Length > 0)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        if (filtered.Length == 0)
-        {
-            return "—";
-        }
-
-        if (filtered.Length == 1)
-        {
-            return filtered[0];
-        }
-
-        if (filtered.Length == 2)
-        {
-            return string.Join(" or ", filtered);
-        }
-
-        return string.Join(", ", filtered.Take(filtered.Length - 1)) + " or " + filtered[^1];
     }
 
     private void UpdateModDatabaseMetrics(ModDatabaseInfo info, IReadOnlyList<ModReleaseInfo> releases)
