@@ -1267,6 +1267,7 @@
                                                    FontFamily="Segoe UI"
                                                    FontSize="12"
                                                    FontWeight="Normal"
+                                                   MaxWidth="300"
                                                    Foreground="{DynamicResource Brush.ToolTip.Text}"
                                                    TextWrapping="Wrap" />
                                                     </ToolTipService.ToolTip>
@@ -1292,6 +1293,7 @@
                                                    FontFamily="Segoe UI"
                                                    FontSize="12"
                                                    FontWeight="Normal"
+                                                   MaxWidth="300"
                                                    Foreground="{DynamicResource Brush.ToolTip.Text}"
                                                    TextWrapping="Wrap" />
                                                     </Setter.Value>
@@ -1931,6 +1933,7 @@
                                                    FontFamily="Segoe UI"
                                                    FontSize="12"
                                                    FontWeight="Normal"
+                                                   MaxWidth="300"
                                                    Foreground="{DynamicResource Brush.ToolTip.Text}"
                                                    TextWrapping="Wrap" />
                                                     </ToolTipService.ToolTip>
@@ -1956,6 +1959,7 @@
                                                    FontFamily="Segoe UI"
                                                    FontSize="12"
                                                    FontWeight="Normal"
+                                                   MaxWidth="300"
                                                    Foreground="{DynamicResource Brush.ToolTip.Text}"
                                                    TextWrapping="Wrap" />
                                                     </Setter.Value>
