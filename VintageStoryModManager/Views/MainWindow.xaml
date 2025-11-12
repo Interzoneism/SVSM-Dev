@@ -1276,7 +1276,7 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTextColumn x:Name="NameColumn" Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="220" SortMemberPath="DisplayName" IsReadOnly="True">
+                                    <DataGridTextColumn x:Name="NameColumn" Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="220" SortMemberPath="NameSortKey" IsReadOnly="True">
                                         <DataGridTextColumn.ElementStyle>
                                             <Style TargetType="{x:Type TextBlock}">
                                                 <Setter Property="FontFamily" Value="Segoe UI" />
@@ -1942,7 +1942,7 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTextColumn x:Name="ModDbNameColumn" Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="220" SortMemberPath="DisplayName" IsReadOnly="True">
+                                    <DataGridTextColumn x:Name="ModDbNameColumn" Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="220" SortMemberPath="NameSortKey" IsReadOnly="True">
                                         <DataGridTextColumn.ElementStyle>
                                             <Style TargetType="{x:Type TextBlock}">
                                                 <Setter Property="FontFamily" Value="Segoe UI" />

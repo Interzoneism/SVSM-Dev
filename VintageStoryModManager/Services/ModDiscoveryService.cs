@@ -1018,6 +1018,7 @@ public sealed class ModDiscoveryService
         {
             ModId = id,
             Name = Path.GetFileNameWithoutExtension(file.Name),
+            ManifestName = null,
             Version = null,
             NetworkVersion = null,
             Description = "This code mod is not packaged with a modinfo.json file. Pack the mod into a zip or folder with modinfo.json so it can be managed.",
@@ -1042,6 +1043,7 @@ public sealed class ModDiscoveryService
         {
             ModId = info.ModId,
             Name = info.Name,
+            ManifestName = info.ManifestName,
             Version = info.Version,
             NetworkVersion = info.NetworkVersion,
             Description = info.Description,
@@ -1067,6 +1069,7 @@ public sealed class ModDiscoveryService
         {
             ModId = ToModId(name),
             Name = name,
+            ManifestName = null,
             Version = null,
             NetworkVersion = null,
             Description = null,
@@ -1088,10 +1091,13 @@ public sealed class ModDiscoveryService
     private static RawModInfo ParseModInfo(JsonElement root, string fallbackName)
     {
         string modId = GetString(root, "modid") ?? GetString(root, "modID") ?? string.Empty;
-        string name = GetString(root, "name") ?? fallbackName;
+        fallbackName = string.IsNullOrWhiteSpace(fallbackName) ? string.Empty : fallbackName.Trim();
+        string? manifestName = GetString(root, "name");
+        manifestName = string.IsNullOrWhiteSpace(manifestName) ? null : manifestName.Trim();
+        string? nameCandidate = manifestName ?? fallbackName;
         if (string.IsNullOrWhiteSpace(modId))
         {
-            modId = ToModId(name);
+            modId = ToModId(nameCandidate);
         }
 
         string? version = GetString(root, "version");
@@ -1101,10 +1107,13 @@ public sealed class ModDiscoveryService
         var contributors = GetStringList(root, "contributors");
         var dependencies = GetDependencies(root);
 
+        string displayName = string.IsNullOrWhiteSpace(nameCandidate) ? modId : nameCandidate;
+
         return new RawModInfo
         {
             ModId = modId,
-            Name = string.IsNullOrWhiteSpace(name) ? modId : name,
+            Name = displayName,
+            ManifestName = manifestName,
             Version = string.IsNullOrWhiteSpace(version) ? null : version,
             NetworkVersion = GetString(root, "networkversion") ?? GetString(root, "networkVersion"),
             Description = GetString(root, "description"),
@@ -1690,6 +1699,7 @@ public sealed class ModDiscoveryService
     {
         public required string ModId { get; init; }
         public required string Name { get; init; }
+        public string? ManifestName { get; init; }
         public string? Version { get; init; }
         public string? NetworkVersion { get; init; }
         public string? Description { get; init; }

@@ -2474,7 +2474,14 @@ public sealed class UserConfigurationService
             return null;
         }
 
-        return sortMemberPath.Trim();
+        string trimmed = sortMemberPath.Trim();
+
+        if (string.Equals(trimmed, nameof(ModListItemViewModel.DisplayName), StringComparison.OrdinalIgnoreCase))
+        {
+            return nameof(ModListItemViewModel.NameSortKey);
+        }
+
+        return trimmed;
     }
 
     private static string? NormalizeInstalledColumnKey(string? columnName)

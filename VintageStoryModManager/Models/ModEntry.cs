@@ -12,6 +12,8 @@ public sealed class ModEntry
 
     public required string Name { get; init; }
 
+    public string? ManifestName { get; init; }
+
     public string? Version { get; init; }
 
     public string? NetworkVersion { get; init; }
