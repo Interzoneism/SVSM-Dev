@@ -11959,7 +11959,7 @@ public partial class MainWindow : Window
             try
             {
                 await File.WriteAllTextAsync(targetPath, config.Content).ConfigureAwait(true);
-                _userConfiguration.SetModConfigPath(config.ModId, targetPath);
+                _userConfiguration.SetModConfigPath(config.ModId, targetPath, config.FileName);
                 importedCount++;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or PathTooLongException)
