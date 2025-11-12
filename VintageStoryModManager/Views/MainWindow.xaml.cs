@@ -1180,7 +1180,7 @@ public partial class MainWindow : Window
                 break;
             }
 
-            if (source is System.Windows.Controls.Primitives.ButtonBase || source is Selector || source is System.Windows.Controls.Primitives.TextBoxBase || source is Hyperlink || source is Slider || source is System.Windows.Controls.Primitives.ScrollBar)
+            if (source is System.Windows.Controls.Primitives.ButtonBase || source is Selector || source is System.Windows.Controls.Primitives.TextBoxBase || source is System.Windows.Documents.Hyperlink || source is Slider || source is System.Windows.Controls.Primitives.ScrollBar)
             {
                 return true;
             }
@@ -3250,7 +3250,6 @@ public partial class MainWindow : Window
 
         if (initialized)
         {
-            await AutoAssignMissingModConfigPathsAsync(viewModel);
             StartModsWatcher();
             StartGameSessionMonitor();
             await TryShowModUsagePromptAsync().ConfigureAwait(true);
@@ -3355,16 +3354,19 @@ public partial class MainWindow : Window
         _ = Dispatcher.BeginInvoke(DispatcherPriority.Background, new Func<Task>(TryShowModUsagePromptAsync));
     }
 
-    private Task AutoAssignMissingModConfigPathsAsync(MainViewModel viewModel)
+    private Task<IReadOnlyList<(string ModId, string DisplayName, string ConfigPath)>> ScanForModConfigFilesAsync(
+        MainViewModel viewModel)
     {
-        return AutoAssignMissingModConfigPathsAsync(viewModel, (IReadOnlyCollection<string>?)null);
+        return ScanForModConfigFilesAsync(viewModel, (IReadOnlyCollection<string>?)null);
     }
 
-    private async Task AutoAssignMissingModConfigPathsAsync(MainViewModel viewModel, IReadOnlyCollection<string>? modIds)
+    private async Task<IReadOnlyList<(string ModId, string DisplayName, string ConfigPath)>> ScanForModConfigFilesAsync(
+        MainViewModel viewModel,
+        IReadOnlyCollection<string>? modIds)
     {
         if (viewModel is null)
         {
-            return;
+            return Array.Empty<(string ModId, string DisplayName, string ConfigPath)>();
         }
 
         IReadOnlyList<ModListItemViewModel> candidateMods;
@@ -3398,22 +3400,28 @@ public partial class MainWindow : Window
 
             if (mods.Count == 0)
             {
-                return;
+                return Array.Empty<(string ModId, string DisplayName, string ConfigPath)>();
             }
 
             candidateMods = mods;
         }
 
-        await AutoAssignMissingModConfigPathsAsync(viewModel, candidateMods).ConfigureAwait(true);
+        if (candidateMods.Count == 0)
+        {
+            return Array.Empty<(string ModId, string DisplayName, string ConfigPath)>();
+        }
+
+        return await ScanForModConfigFilesAsync(viewModel, candidateMods).ConfigureAwait(true);
     }
 
-    private async Task AutoAssignMissingModConfigPathsAsync(
+    private async Task<IReadOnlyList<(string ModId, string DisplayName, string ConfigPath)>> ScanForModConfigFilesAsync(
         MainViewModel viewModel,
         IReadOnlyList<ModListItemViewModel> candidateMods)
     {
+        var assigned = new List<(string ModId, string DisplayName, string ConfigPath)>();
         if (string.IsNullOrWhiteSpace(_dataDirectory) || candidateMods.Count == 0)
         {
-            return;
+            return assigned;
         }
 
         try
@@ -3421,10 +3429,11 @@ public partial class MainWindow : Window
             string configDirectory = Path.Combine(_dataDirectory, "ModConfig");
             if (!Directory.Exists(configDirectory))
             {
-                return;
+                return assigned;
             }
 
             var missingMods = new List<(string ModId, string DisplayName)>();
+            var displayNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (ModListItemViewModel mod in candidateMods)
             {
@@ -3451,28 +3460,31 @@ public partial class MainWindow : Window
                     continue;
                 }
 
-                missingMods.Add((trimmedId, mod.DisplayName));
+                string displayName = string.IsNullOrWhiteSpace(mod.DisplayName)
+                    ? trimmedId
+                    : mod.DisplayName!.Trim();
+                missingMods.Add((trimmedId, displayName));
+                displayNames[trimmedId] = displayName;
             }
 
             if (missingMods.Count == 0)
             {
-                return;
+                return assigned;
             }
 
             string[] configFiles = Directory.GetFiles(configDirectory, "*.json", SearchOption.TopDirectoryOnly);
             if (configFiles.Length == 0)
             {
-                return;
+                return assigned;
             }
 
             List<(string ModId, string ConfigPath)> matches =
                 await Task.Run(() => FindConfigMatches(missingMods, configFiles)).ConfigureAwait(true);
             if (matches.Count == 0)
             {
-                return;
+                return assigned;
             }
 
-            bool assignedAny = false;
             foreach ((string ModId, string ConfigPath) match in matches)
             {
                 try
@@ -3492,18 +3504,24 @@ public partial class MainWindow : Window
                 }
 
                 _userConfiguration.SetModConfigPath(match.ModId, match.ConfigPath);
-                assignedAny = true;
+                string displayName = displayNames.TryGetValue(match.ModId, out string? value)
+                    ? value
+                    : match.ModId;
+                assigned.Add((match.ModId, displayName, match.ConfigPath));
             }
 
-            if (assignedAny)
+            if (assigned.Count > 0)
             {
                 UpdateSelectedModEditConfigButton(viewModel.SelectedMod);
             }
         }
         catch (Exception ex)
         {
-            StatusLogService.AppendStatus($"Failed to automatically locate mod configuration files: {ex.Message}", true);
+            StatusLogService.AppendStatus($"Failed to scan for mod configuration files: {ex.Message}", true);
+            throw;
         }
+
+        return assigned;
     }
 
     private static List<(string ModId, string ConfigPath)> FindConfigMatches(
@@ -3809,9 +3827,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task RefreshModsAsync(
-        IReadOnlyCollection<string>? autoAssignModIds = null,
-        bool allowModDetailsRefresh = false)
+    private async Task RefreshModsAsync(bool allowModDetailsRefresh = false)
     {
         if (_viewModel?.RefreshCommand == null)
         {
@@ -3859,11 +3875,6 @@ public partial class MainWindow : Window
         if (selectedSourcePaths is { Count: > 0 })
         {
             RestoreSelectionFromSourcePaths(selectedSourcePaths, anchorSourcePath);
-        }
-
-        if (_viewModel is { } viewModel)
-        {
-            await AutoAssignMissingModConfigPathsAsync(viewModel, autoAssignModIds).ConfigureAwait(true);
         }
 
         if (scrollViewer != null && targetOffset.HasValue)
@@ -5406,12 +5417,7 @@ public partial class MainWindow : Window
             string versionText = string.IsNullOrWhiteSpace(release.Version) ? string.Empty : $" {release.Version}";
             _viewModel?.ReportStatus($"Installed {mod.DisplayName}{versionText}.");
 
-            string? installedModId = string.IsNullOrWhiteSpace(mod.ModId) ? null : mod.ModId.Trim();
-            IReadOnlyCollection<string>? autoAssignTargets = installedModId is null
-                ? null
-                : new[] { installedModId };
-
-            await RefreshModsAsync(autoAssignTargets).ConfigureAwait(true);
+            await RefreshModsAsync().ConfigureAwait(true);
 
             if (mod.IsSelected)
             {
@@ -6422,6 +6428,102 @@ public partial class MainWindow : Window
         };
 
         _ = dialog.ShowDialog();
+    }
+
+    private async void ScanForModConfigsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel is null)
+        {
+            WpfMessageBox.Show(
+                "Mods have not been loaded yet. Load mods before scanning for configuration files.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (_viewModel.IsBusy)
+        {
+            WpfMessageBox.Show(
+                "Please wait for the current operation to finish before scanning for configuration files.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_dataDirectory))
+        {
+            WpfMessageBox.Show(
+                "The Vintage Story data directory is not set, so mod configuration files cannot be located.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        string configDirectory = Path.Combine(_dataDirectory, "ModConfig");
+        if (!Directory.Exists(configDirectory))
+        {
+            WpfMessageBox.Show(
+                $"No mod configuration directory was found at:\n{configDirectory}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            IReadOnlyList<(string ModId, string DisplayName, string ConfigPath)> results =
+                await ScanForModConfigFilesAsync(_viewModel).ConfigureAwait(true);
+
+            if (results.Count == 0)
+            {
+                _viewModel.ReportStatus("No missing mod configuration files were found.");
+                WpfMessageBox.Show(
+                    "No missing mod configuration files were found.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            _viewModel.ReportStatus($"Assigned configuration files for {results.Count} mod(s).");
+
+            var builder = new StringBuilder();
+            builder.AppendLine("Assigned configuration files for the following mods:");
+            foreach ((string ModId, string DisplayName, string ConfigPath) result in results
+                .OrderBy(r => r.DisplayName, StringComparer.CurrentCultureIgnoreCase))
+            {
+                builder.Append(" • ");
+                builder.Append(result.DisplayName);
+                if (!string.Equals(result.DisplayName, result.ModId, StringComparison.OrdinalIgnoreCase))
+                {
+                    builder.Append(" (");
+                    builder.Append(result.ModId);
+                    builder.Append(')');
+                }
+
+                builder.AppendLine();
+                builder.Append("    ");
+                builder.AppendLine(result.ConfigPath);
+            }
+
+            WpfMessageBox.Show(
+                builder.ToString(),
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to scan for mod configuration files:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private void ManagerUpdateLink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
@@ -11748,7 +11850,6 @@ public partial class MainWindow : Window
         }
 
         bool installedAnyMods = false;
-        List<string>? installedModIds = null;
         if (installCandidates.Count > 0)
         {
             foreach (var candidate in installCandidates)
@@ -11757,11 +11858,6 @@ public partial class MainWindow : Window
                 if (installResult.Success)
                 {
                     installedAnyMods = true;
-                    if (!string.IsNullOrWhiteSpace(candidate.ModId))
-                    {
-                        installedModIds ??= new List<string>();
-                        installedModIds.Add(candidate.ModId!.Trim());
-                    }
                     continue;
                 }
 
@@ -11798,7 +11894,7 @@ public partial class MainWindow : Window
 
             if (installedAnyMods)
             {
-                await RefreshModsAsync(installedModIds, allowModDetailsRefresh: true).ConfigureAwait(true);
+                await RefreshModsAsync(allowModDetailsRefresh: true).ConfigureAwait(true);
             }
         }
 
