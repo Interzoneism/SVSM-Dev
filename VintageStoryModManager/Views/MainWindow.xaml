@@ -674,9 +674,6 @@
                     <MenuItem Header="Help!"
                               Padding="12,6"
                               Click="HelpMenuItem_OnClick" />
-                    <MenuItem Header="Scan for mod config files"
-                              Padding="12,6"
-                              Click="ScanForModConfigsMenuItem_OnClick" />
                     <MenuItem x:Name="DeveloperProfilesMenuItem"
                               Header="Developer Profiles"
                               Padding="12,6"
@@ -694,15 +691,20 @@
                               IsCheckable="True"
                               Style="{StaticResource ToggleMenuItemStyle}"
                               Click="EnableServerOptionsMenuItem_OnClick" />
+                    <MenuItem Header="Scan for mod config files"
+                              Padding="12,6"
+                              Click="ScanForModConfigsMenuItem_OnClick" />
+                    <MenuItem Header="Clear temporary cache (Safe to use, nothing important is removed)"
+                              Padding="12,6"
+                              Click="ClearAllCachesMenuItem_OnClick" />
+                    <Separator />
                     <MenuItem Header="Debug: Show all game log lines referencing the selected mod."
                               Padding="12,6"
                               Click="ExperimentalModDebuggingMenuItem_OnClick" />
                     <MenuItem Header="Debug: Show all game log lines found referencing any installed mod"
                               Padding="12,6"
                               Click="ExperimentalAllModsDebuggingMenuItem_OnClick" />
-                    <MenuItem Header="Clear temporary cache (Safe to use, nothing important is removed)"
-                              Padding="12,6"
-                              Click="ClearAllCachesMenuItem_OnClick" />
+                    <Separator />
                     <MenuItem Header="Delete all Simple VS Manager files (Uninstall)"
                               Padding="12,6"
                               Click="DeleteAllManagerFilesMenuItem_OnClick" />
