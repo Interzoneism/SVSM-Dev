@@ -712,7 +712,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             case ViewSection.InstalledMods:
                 SelectedMod = null;
                 SelectedSortOption?.Apply(ModsView);
-                ModsView.Refresh();
                 SetStatus("Showing installed mods.", false);
                 break;
             case ViewSection.CloudModlists:

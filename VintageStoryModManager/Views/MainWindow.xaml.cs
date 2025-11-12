@@ -2806,7 +2806,6 @@ public partial class MainWindow : Window
 
         ModsDataGrid.CanUserSortColumns = true;
         RestoreCachedSortState();
-        Dispatcher.BeginInvoke(new Action(EnsureModsViewSortStateIsApplied), DispatcherPriority.Background);
     }
 
     private void CacheCurrentSortState()
@@ -3270,33 +3269,6 @@ public partial class MainWindow : Window
         {
             column.SortDirection = null;
         }
-    }
-
-    private void EnsureModsViewSortStateIsApplied()
-    {
-        if (_viewModel is null || _viewModel.SearchModDatabase || ModsDataGrid is null)
-        {
-            return;
-        }
-
-        ICollectionView view = _viewModel.ModsView;
-
-        if (view.SortDescriptions.Count == 0)
-        {
-            _viewModel.SelectedSortOption?.Apply(view);
-        }
-
-        if (view.SortDescriptions.Count > 0)
-        {
-            SortDescription sort = view.SortDescriptions[0];
-            UpdateColumnSortVisuals(sort.PropertyName, sort.Direction);
-        }
-        else
-        {
-            ClearColumnSortIndicators();
-        }
-
-        view.Refresh();
     }
 
     private async Task InitializeViewModelAsync(MainViewModel viewModel)
