@@ -14,7 +14,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
         Title="Simple VS Manager"
-        Height="614" Width="1048"
+        Height="870" Width="1285"
         MinWidth="1200" MinHeight="775" WindowStartupLocation="CenterScreen"
         PreviewKeyDown="MainWindow_OnPreviewKeyDown"
         AllowDrop="True"
@@ -804,19 +804,19 @@
                         Style="{StaticResource IMM.ModDatabaseActivityTabButtonStyle}" Margin="80,-17,465,19" Padding="0,0,0,0" UseLayoutRounding="False" Background="{DynamicResource Brush.Button.Primary.Background.Hover}" />
                     <Border x:Name="DownloadsBorder" HorizontalAlignment="Right" Grid.RowSpan="2" Visibility="{Binding IsModDatabaseDownloadsTabSelected, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
                         <Grid>
-                                                    <Rectangle Margin="0,0,379,-4" RadiusX="4" RadiusY="4" StrokeThickness="2" HorizontalAlignment="Right" Width="235" Fill="{DynamicResource Brush.Button.Primary.Background.Hover}"/>
-                                                    <RadioButton Content="All time"
+                            <Rectangle Margin="0,0,379,-4" RadiusX="4" RadiusY="4" StrokeThickness="2" HorizontalAlignment="Right" Width="235" Fill="{DynamicResource Brush.Button.Primary.Background.Hover}"/>
+                            <RadioButton Content="All time"
                                                         GroupName="ModDatabaseAutoLoadMode"
                                                         IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" MinWidth="65" ClickMode="Press"
                                                         Margin="0,2,541,20" HorizontalAlignment="Right" Width="65" VerticalContentAlignment="Center"
                                                          />
-                                                    <RadioButton Content="Last 30 days"
+                            <RadioButton Content="Last 30 days"
                                                         GroupName="ModDatabaseAutoLoadMode"
                                                         IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="0,2,426,20" HorizontalAlignment="Right" Width="90" VerticalContentAlignment="Center" />
-                                                    <RadioButton Content="Last 10 days"
+                            <RadioButton Content="Last 10 days"
                                                         GroupName="ModDatabaseAutoLoadMode"
                                                         IsChecked="{Binding IsDownloadsLastTenDaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="0,24,516,-2" HorizontalAlignment="Right" Width="90" VerticalContentAlignment="Center" />
-                                                    <RadioButton Content="Added last 30 days"
+                            <RadioButton Content="Added last 30 days"
                                                         GroupName="ModDatabaseAutoLoadMode"
                                                         IsChecked="{Binding IsAddedLast30DaysMode, Mode=TwoWay}" MinWidth="90" ClickMode="Press" Margin="98,24,0,-2" HorizontalAlignment="Left" Width="122" VerticalContentAlignment="Center" />
                         </Grid>
@@ -2217,7 +2217,7 @@
                                     </DataGridTextColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
-</Grid>
+                        </Grid>
                     </Border>
                 </Border>
                 <TextBlock Grid.Row="1"
@@ -2554,7 +2554,7 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Border Margin="0,0,0,10" Grid.Row="1" Width="614" Background="{DynamicResource Brush.ModCard.Background.Active}" CornerRadius="10,10,10,10" Visibility="Visible" HorizontalAlignment="Center" Height="151" VerticalAlignment="Bottom">
+                    <Border Margin="10,0,10,10" Grid.Row="1" Background="{DynamicResource Brush.ModCard.Background.Active}" CornerRadius="10,10,10,10" Visibility="Visible" Height="151" VerticalAlignment="Bottom">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2"/>
                         </Border.Effect>
@@ -2567,7 +2567,7 @@
                                 MinWidth="195"
                                 IsEnabled="False"
                                 Visibility="Visible"
-                                Click="InstallCloudModlistButton_OnClick" Margin="224,109,0,0" Height="32" Width="170" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                                Click="InstallCloudModlistButton_OnClick" Margin="200,109,0,0" Height="32" Width="170" HorizontalAlignment="Left" VerticalAlignment="Top" />
                             <Button x:Name="SaveCloudModlistButton"
                                 Content="Save Modlist (Cloud)"
                                 Padding="12,6"
@@ -2584,28 +2584,9 @@
                                 Content="Refresh"
                                 Padding="12,6"
                                 MinWidth="100"
-                                Click="RefreshCloudModlistsButton_OnClick" Margin="476,109,0,0" Height="32" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                            <TextBox x:Name="UsernameTextbox"
-                                     HorizontalAlignment="Left"
-                                     Margin="10,28,0,0"
-                                     TextWrapping="Wrap"
-                                     Text=""
-                                     VerticalAlignment="Top"
-                                     Width="170"
-                                     IsReadOnly="True"
-                                     IsTabStop="False"
-                                     Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                     BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                     Foreground="{DynamicResource Brush.Text.Primary}"
-                                     ToolTip="Change your player name in Vintage Story to update this username."/>
-                            <TextBlock HorizontalAlignment="Left"
-                                       Margin="10,10,0,0"
-                                       TextWrapping="Wrap"
-                                       Text="Username:"
-                                       VerticalAlignment="Top"
-                                       Foreground="{DynamicResource Brush.Text.Primary}"/>
-                            <Border HorizontalAlignment="Left" Height="88" Margin="224,10,0,0"  Padding="10" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource Brush.ModCard.Background.Active}">
-                                <Grid>
+                                Click="RefreshCloudModlistsButton_OnClick" Margin="10,22,0,0" Height="32" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                            <Border HorizontalAlignment="Left" Height="88" Margin="200,10,0,0"  Padding="10" VerticalAlignment="Top" CornerRadius="5,5,5,5" Background="{DynamicResource Brush.ModCard.Background.Active}" Width="942">
+                                <Grid Margin="-10,-10,-10,-10">
                                     <TextBlock x:Name="SelectedModlistDescription"
                                                HorizontalAlignment="Left"
                                                Margin="0,16,0,0"
@@ -2613,7 +2594,7 @@
                                                Text=""
                                                VerticalAlignment="Top"
                                                Height="72"
-                                               Width="352"
+                                               Width="932"
                                                Foreground="{DynamicResource Brush.Text.Primary}"/>
                                     <TextBlock x:Name="SelectedModlistTitle" HorizontalAlignment="Left" TextWrapping="Wrap" Text="" VerticalAlignment="Top" FontWeight="Bold"/>
                                 </Grid>
@@ -3199,7 +3180,7 @@
                 Click="SelectedModCopyForServerButton_OnClick"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
-                Margin="0,150,0,0"
+                Margin="0,117,0,0"
                 Grid.Column="1"
                 MinHeight="32" MinWidth="92"
                 VerticalContentAlignment="Center"
@@ -3219,7 +3200,7 @@
                                 <Setter Property="BorderBrush" Value="{DynamicResource Brush.Text.Primary}" />
                                 <Setter Property="Template">
                                     <Setter.Value>
-                                        <ControlTemplate TargetType="Button">
+                                        <ControlTemplate TargetType="{x:Type Button}">
                                             <Border x:Name="Root"
                                                 Background="{TemplateBinding Background}"
                                                 BorderBrush="{TemplateBinding BorderBrush}"

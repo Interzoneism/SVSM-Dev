@@ -1479,11 +1479,6 @@ public partial class MainWindow : Window
     {
         string? sanitized = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
 
-        if (UsernameTextbox is not null)
-        {
-            UsernameTextbox.Text = sanitized ?? string.Empty;
-        }
-
         _userConfiguration.SetCloudUploaderName(sanitized);
     }
 
