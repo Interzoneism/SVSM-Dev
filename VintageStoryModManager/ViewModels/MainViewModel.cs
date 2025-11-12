@@ -692,6 +692,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         _viewSection = section;
 
+        if (!string.IsNullOrEmpty(_searchText))
+        {
+            SearchText = string.Empty;
+        }
+
         CanLoadMoreModDatabaseResults = false;
 
         if (section != ViewSection.ModDatabase)
