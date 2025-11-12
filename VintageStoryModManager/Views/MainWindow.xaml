@@ -681,7 +681,7 @@
                     <MenuItem Header="Open _Mod DB page for the manager"
                               Padding="12,6"
                               Click="ManagerModDbPageMenuItem_OnClick" />
-                    <MenuItem Header="_Additonal Info"
+                    <MenuItem Header="Menu Guide"
                               Padding="12,6"
                               Click="GuideMenuItem_OnClick" />
                     <MenuItem Header="Help!"

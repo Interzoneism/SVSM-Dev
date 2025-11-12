@@ -57,6 +57,12 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
+                        <Bold>Game Profiles</Bold>
+                        <Run Text=" is used to manage different Vintage Story installs - create a new profile and set the Data and Game directory paths to another Vintage Story installation. The custom shortcut is also custom for each Game Profile.  " />
+                    </TextBlock>
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
                         <Bold>Disable auto-refresh</Bold>
                         <Run Text=" stops automatic checks that fetch mod tags, user reports, and update data. With it enabled, use " />
                         <Bold>Mods &gt; Refresh Mods</Bold>
@@ -250,7 +256,7 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
-                        <Bold>Additional Info</Bold>
+                        <Bold>Menu Guide</Bold>
                         <Run Text=" reopens this guide." />
                     </TextBlock>
 
