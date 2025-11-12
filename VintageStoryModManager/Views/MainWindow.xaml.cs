@@ -3130,11 +3130,6 @@ public partial class MainWindow : Window
             };
         }
 
-        if (!sorts.Any(s => string.Equals(s.Property, nameof(ModListItemViewModel.StableSortKey), StringComparison.OrdinalIgnoreCase)))
-        {
-            sorts.Add((nameof(ModListItemViewModel.StableSortKey), ListSortDirection.Ascending));
-        }
-
         return sorts.ToArray();
     }
 
