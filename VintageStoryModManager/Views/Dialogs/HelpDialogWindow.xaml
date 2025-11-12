@@ -31,7 +31,7 @@
                 <TextBlock Margin="0,12,0,0"
                            TextWrapping="Wrap"
                            FontSize="15">
-                    <Run Text="If you are experiencing any errors or problems, start with running &quot;Clear all caches&quot; in the Help menu." />
+                    <Run Text="If you are experiencing any errors or problems, start with running &quot;Clear temporary cache&quot; in the Help menu." />
                 </TextBlock>
 
                 <TextBlock Margin="0,12,0,0"
