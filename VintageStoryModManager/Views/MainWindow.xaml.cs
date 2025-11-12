@@ -7431,6 +7431,47 @@ public partial class MainWindow : Window
         UpdateGameProfileMenuChecks();
     }
 
+    private async void DeleteGameProfileMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        IReadOnlyList<string> profiles = _userConfiguration.GetGameProfileNames();
+        if (profiles.Count == 0)
+        {
+            return;
+        }
+
+        string activeProfile = _userConfiguration.ActiveGameProfileName;
+        var dialog = new DeleteGameProfilesDialog(profiles, activeProfile);
+        bool? result = dialog.ShowDialog();
+        if (result != true)
+        {
+            return;
+        }
+
+        IReadOnlyList<string> selectedProfiles = dialog.SelectedProfileNames;
+        if (selectedProfiles.Count == 0)
+        {
+            return;
+        }
+
+        if (!_userConfiguration.TryDeleteGameProfiles(selectedProfiles, out string? errorMessage, out bool activeProfileChanged))
+        {
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                WpfMessageBox.Show(errorMessage, "Simple VS Manager", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
+            return;
+        }
+
+        if (activeProfileChanged)
+        {
+            await OnActiveGameProfileChangedAsync().ConfigureAwait(true);
+        }
+
+        RefreshGameProfileMenuItems();
+        UpdateGameProfileMenuChecks();
+    }
+
     private async void GameProfileMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menuItem || menuItem.Tag is not string profileName)
@@ -7564,7 +7605,17 @@ public partial class MainWindow : Window
         GameProfilesMenuItem.Items.Clear();
         GameProfilesMenuItem.Items.Add(CreateGameProfileMenuItem);
 
+        if (DeleteGameProfileMenuItem is not null)
+        {
+            GameProfilesMenuItem.Items.Add(DeleteGameProfileMenuItem);
+        }
+
         IReadOnlyList<string> profiles = _userConfiguration.GetGameProfileNames();
+        if (DeleteGameProfileMenuItem is not null)
+        {
+            DeleteGameProfileMenuItem.IsEnabled = profiles.Any(name => !_userConfiguration.IsDefaultGameProfile(name));
+        }
+
         if (profiles.Count > 0)
         {
             GameProfilesMenuItem.Items.Add(new Separator());

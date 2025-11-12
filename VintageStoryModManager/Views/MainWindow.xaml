@@ -462,6 +462,10 @@
                                   Header="Create new..."
                                   Height="35"
                                   Click="CreateGameProfileMenuItem_OnClick" />
+                        <MenuItem x:Name="DeleteGameProfileMenuItem"
+                                  Header="Delete profile..."
+                                  Height="35"
+                                  Click="DeleteGameProfileMenuItem_OnClick" />
                     </MenuItem>
                     <MenuItem x:Name="DisableAutoRefreshMenuItem"
                               Header="_Disable auto-refresh"
