@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using CommunityToolkit.Mvvm.ComponentModel;
+using YamlDotNet.Serialization;
 
 namespace VintageStoryModManager.ViewModels;
 
@@ -13,6 +15,7 @@ public sealed class ModConfigEditorViewModel : ObservableObject
 {
     private string _filePath;
     private JsonNode? _rootNode;
+    private ModConfigFormat _format;
 
     public ModConfigEditorViewModel(string modDisplayName, string filePath)
     {
@@ -61,31 +64,29 @@ public sealed class ModConfigEditorViewModel : ObservableObject
             node.ApplyChanges();
         }
 
-        var options = new JsonSerializerOptions
+        string content = _format switch
         {
-            WriteIndented = true
+            ModConfigFormat.Json => SerializeJson(_rootNode),
+            ModConfigFormat.Yaml => SerializeYaml(_rootNode),
+            _ => throw new InvalidOperationException("Unsupported configuration format.")
         };
 
-        string json = _rootNode is null ? "null" : _rootNode.ToJsonString(options);
-        File.WriteAllText(_filePath, json);
+        File.WriteAllText(_filePath, content);
     }
 
     public void ReplaceConfigurationFile(string filePath)
     {
         string normalizedPath = NormalizePath(filePath);
+        _format = DetermineFormat(normalizedPath);
 
-        JsonNode? node;
-        using (FileStream stream = File.OpenRead(normalizedPath))
+        JsonNode? node = _format switch
         {
-            node = JsonNode.Parse(stream);
-        }
+            ModConfigFormat.Json => LoadJsonNode(normalizedPath),
+            ModConfigFormat.Yaml => LoadYamlNode(normalizedPath),
+            _ => null
+        };
 
-        if (node is null)
-        {
-            node = new JsonObject();
-        }
-
-        _rootNode = node;
+        _rootNode = node ?? new JsonObject();
         RootNodes = new ObservableCollection<ModConfigNodeViewModel>(CreateRootNodes(_rootNode));
         FilePath = normalizedPath;
         OnPropertyChanged(nameof(RootNodes));
@@ -94,6 +95,179 @@ public sealed class ModConfigEditorViewModel : ObservableObject
     private void LoadConfiguration()
     {
         ReplaceConfigurationFile(_filePath);
+    }
+
+    private static ModConfigFormat DetermineFormat(string filePath)
+    {
+        string extension = Path.GetExtension(filePath);
+        if (extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".yml", StringComparison.OrdinalIgnoreCase))
+        {
+            return ModConfigFormat.Yaml;
+        }
+
+        return ModConfigFormat.Json;
+    }
+
+    private static JsonNode? LoadJsonNode(string path)
+    {
+        using FileStream stream = File.OpenRead(path);
+        return JsonNode.Parse(stream);
+    }
+
+    private static JsonNode? LoadYamlNode(string path)
+    {
+        var deserializer = new DeserializerBuilder().Build();
+        using var reader = new StreamReader(path);
+        object? yamlObject = deserializer.Deserialize(reader);
+        return ConvertYamlToJsonNode(yamlObject);
+    }
+
+    private static JsonNode? ConvertYamlToJsonNode(object? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (value is IDictionary dictionary)
+        {
+            var obj = new JsonObject();
+            foreach (DictionaryEntry entry in dictionary)
+            {
+                string key = entry.Key?.ToString() ?? string.Empty;
+                obj[key] = ConvertYamlToJsonNode(entry.Value);
+            }
+
+            return obj;
+        }
+
+        if (value is IEnumerable enumerable and not string)
+        {
+            var array = new JsonArray();
+            foreach (object? item in enumerable)
+            {
+                array.Add(ConvertYamlToJsonNode(item));
+            }
+
+            return array;
+        }
+
+        return ConvertToJsonValue(value);
+    }
+
+    private static JsonNode ConvertToJsonValue(object value)
+    {
+        return value switch
+        {
+            bool boolValue => JsonValue.Create(boolValue)!,
+            string stringValue => JsonValue.Create(stringValue)!,
+            sbyte sbyteValue => JsonValue.Create(sbyteValue)!,
+            byte byteValue => JsonValue.Create(byteValue)!,
+            short shortValue => JsonValue.Create(shortValue)!,
+            ushort ushortValue => JsonValue.Create(ushortValue)!,
+            int intValue => JsonValue.Create(intValue)!,
+            uint uintValue => JsonValue.Create(uintValue)!,
+            long longValue => JsonValue.Create(longValue)!,
+            ulong ulongValue => JsonValue.Create(ulongValue)!,
+            float floatValue => JsonValue.Create(floatValue)!,
+            double doubleValue => JsonValue.Create(doubleValue)!,
+            decimal decimalValue => JsonValue.Create(decimalValue)!,
+            _ => JsonValue.Create(value.ToString() ?? string.Empty)!
+        };
+    }
+
+    private static string SerializeJson(JsonNode? node)
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
+
+        return node is null ? "null" : node.ToJsonString(options);
+    }
+
+    private static string SerializeYaml(JsonNode? node)
+    {
+        object? yamlObject = ConvertJsonNodeToYamlObject(node);
+        var serializer = new SerializerBuilder().Build();
+        using var writer = new StringWriter();
+        serializer.Serialize(writer, yamlObject);
+        return writer.ToString();
+    }
+
+    private static object? ConvertJsonNodeToYamlObject(JsonNode? node)
+    {
+        switch (node)
+        {
+            case null:
+                return null;
+            case JsonObject obj:
+            {
+                var dictionary = new Dictionary<string, object?>(StringComparer.Ordinal);
+                foreach (KeyValuePair<string, JsonNode?> pair in obj)
+                {
+                    dictionary[pair.Key] = ConvertJsonNodeToYamlObject(pair.Value);
+                }
+
+                return dictionary;
+            }
+            case JsonArray array:
+            {
+                var list = new List<object?>(array.Count);
+                foreach (JsonNode? item in array)
+                {
+                    list.Add(ConvertJsonNodeToYamlObject(item));
+                }
+
+                return list;
+            }
+            case JsonValue value:
+                return ConvertJsonValueToPrimitive(value);
+            default:
+                return null;
+        }
+    }
+
+    private static object? ConvertJsonValueToPrimitive(JsonValue value)
+    {
+        string json = value.ToJsonString();
+        if (string.Equals(json, "null", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (value.TryGetValue<bool>(out bool boolResult))
+        {
+            return boolResult;
+        }
+
+        if (value.TryGetValue<long>(out long longResult))
+        {
+            return longResult;
+        }
+
+        if (value.TryGetValue<ulong>(out ulong ulongResult))
+        {
+            return ulongResult;
+        }
+
+        if (value.TryGetValue<decimal>(out decimal decimalResult))
+        {
+            return decimalResult;
+        }
+
+        if (value.TryGetValue<double>(out double doubleResult))
+        {
+            return doubleResult;
+        }
+
+        if (value.TryGetValue<string>(out string? stringResult))
+        {
+            return stringResult;
+        }
+
+        return json;
     }
 
     private static string NormalizePath(string filePath)
@@ -168,5 +342,11 @@ public sealed class ModConfigEditorViewModel : ObservableObject
     private ModConfigNodeViewModel CreateValueNode(string name, JsonNode? node, Action<JsonNode?> setter, string? displayName)
     {
         return new ModConfigValueNodeViewModel(name, node, setter, displayName);
+    }
+
+    private enum ModConfigFormat
+    {
+        Json,
+        Yaml
     }
 }

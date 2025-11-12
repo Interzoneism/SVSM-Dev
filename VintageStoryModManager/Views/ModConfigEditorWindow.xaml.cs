@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using VintageStoryModManager.ViewModels;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
+using YamlDotNet.Core;
 
 namespace VintageStoryModManager.Views;
 
@@ -81,7 +82,7 @@ public partial class ModConfigEditorWindow : Window
             viewModel.Save();
             DialogResult = true;
         }
-        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException or JsonException or YamlException)
         {
             WpfMessageBox.Show(this,
                 $"Failed to save the configuration:\n{ex.Message}",
@@ -108,7 +109,7 @@ public partial class ModConfigEditorWindow : Window
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Title = "Select configuration file",
-            Filter = "Config files (*.json)|*.json|All files (*.*)|*.*",
+            Filter = "Config files (*.json;*.yaml;*.yml)|*.json;*.yaml;*.yml|All files (*.*)|*.*",
             CheckFileExists = true,
             Multiselect = false
         };
@@ -142,7 +143,7 @@ public partial class ModConfigEditorWindow : Window
             viewModel.ReplaceConfigurationFile(dialog.FileName);
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(EnsureFilePathDoesNotOverlapButtons));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or PathTooLongException or NotSupportedException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or YamlException or ArgumentException or PathTooLongException or NotSupportedException)
         {
             WpfMessageBox.Show(this,
                 $"Failed to open the configuration file:\n{ex.Message}",

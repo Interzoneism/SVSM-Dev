@@ -53,6 +53,7 @@ using WinForms = System.Windows.Forms;
 using WpfButton = System.Windows.Controls.Button;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 using WpfToolTip = System.Windows.Controls.ToolTip;
+using YamlDotNet.Core;
 
 namespace VintageStoryModManager.Views;
 
@@ -102,6 +103,13 @@ public partial class MainWindow : Window
         "Starting system:",
         "Mods, sorted by dependency:",
         "External Origins in load order:"
+    };
+
+    private static readonly string[] SupportedConfigExtensions =
+    {
+        ".json",
+        ".yaml",
+        ".yml"
     };
 
     // Patterns for summarizing repetitive log lines
@@ -3479,7 +3487,7 @@ public partial class MainWindow : Window
                 return assigned;
             }
 
-            string[] configFiles = Directory.GetFiles(configDirectory, "*.json", SearchOption.TopDirectoryOnly);
+            string[] configFiles = GetSupportedConfigFiles(configDirectory);
             if (configFiles.Length == 0)
             {
                 return assigned;
@@ -4172,7 +4180,7 @@ public partial class MainWindow : Window
         using var dialog = new WinForms.OpenFileDialog
         {
             Title = $"Select config file for {mod.DisplayName}",
-            Filter = "Config files (*.json)|*.json|All files (*.*)|*.*",
+            Filter = "Config files (*.json;*.yaml;*.yml)|*.json;*.yaml;*.yml|All files (*.*)|*.*",
             CheckFileExists = true,
             Multiselect = false,
             RestoreDirectory = true
@@ -4954,7 +4962,7 @@ public partial class MainWindow : Window
                 _viewModel?.ReportStatus($"Saved config for {mod.DisplayName}.");
             }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or YamlException)
         {
             WpfMessageBox.Show($"Failed to open the configuration file:\n{ex.Message}",
                 "Simple VS Manager",
@@ -9641,36 +9649,78 @@ public partial class MainWindow : Window
         return includedConfigurations.Count == 0 ? null : includedConfigurations;
     }
 
+    private static string[] GetSupportedConfigFiles(string directory)
+    {
+        return Directory
+            .EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly)
+            .Where(file => IsSupportedConfigExtension(Path.GetExtension(file)))
+            .ToArray();
+    }
+
+    private static bool IsSupportedConfigExtension(string? extension)
+    {
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            return false;
+        }
+
+        foreach (string supported in SupportedConfigExtensions)
+        {
+            if (extension.Equals(supported, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static string GetSafeConfigFileName(string? candidate, string? modId)
     {
-        string sanitizedModId = SanitizeForFileName(string.IsNullOrWhiteSpace(modId) ? "modconfig" : modId!.Trim());
+        string sanitizedModId = SanitizeForFileName(string.IsNullOrWhiteSpace(modId) ? "modconfig" : modId!.Trim()).Trim();
         if (string.IsNullOrWhiteSpace(sanitizedModId))
         {
             sanitizedModId = "modconfig";
         }
 
         string? trimmedCandidate = string.IsNullOrWhiteSpace(candidate) ? null : candidate.Trim();
-        string fileName = string.IsNullOrWhiteSpace(trimmedCandidate)
-            ? sanitizedModId + ".json"
-            : Path.GetFileName(trimmedCandidate);
+        string extension = ResolveConfigExtension(trimmedCandidate);
+        string baseName;
 
-        if (string.IsNullOrWhiteSpace(fileName))
+        if (string.IsNullOrWhiteSpace(trimmedCandidate))
         {
-            fileName = sanitizedModId + ".json";
+            baseName = sanitizedModId;
+        }
+        else
+        {
+            string candidateFileName = Path.GetFileName(trimmedCandidate);
+            string? candidateBase = string.IsNullOrWhiteSpace(candidateFileName)
+                ? null
+                : Path.GetFileNameWithoutExtension(candidateFileName);
+            baseName = string.IsNullOrWhiteSpace(candidateBase) ? sanitizedModId : candidateBase!;
         }
 
-        string sanitizedFileName = SanitizeForFileName(fileName);
-        if (string.IsNullOrWhiteSpace(sanitizedFileName))
+        string sanitizedBase = SanitizeForFileName(baseName).Trim();
+        if (string.IsNullOrWhiteSpace(sanitizedBase))
         {
-            sanitizedFileName = sanitizedModId + ".json";
+            sanitizedBase = sanitizedModId;
         }
 
-        if (!sanitizedFileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+        return sanitizedBase + extension;
+    }
+
+    private static string ResolveConfigExtension(string? candidate)
+    {
+        if (!string.IsNullOrWhiteSpace(candidate))
         {
-            sanitizedFileName += ".json";
+            string extension = Path.GetExtension(candidate);
+            if (IsSupportedConfigExtension(extension))
+            {
+                return extension;
+            }
         }
 
-        return sanitizedFileName;
+        return ".json";
     }
 
     private static string SanitizeForFileName(string? value)
