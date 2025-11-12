@@ -4054,6 +4054,8 @@ public partial class MainWindow : Window
                 gameDirectory: _gameDirectory,
                 excludeInstalledModDatabaseResults: _userConfiguration.ExcludeInstalledModDatabaseResults,
                 onlyShowCompatibleModDatabaseResults: _userConfiguration.OnlyShowCompatibleModDatabaseResults);
+            newViewModel.IsCompactView = _userConfiguration.IsCompactView;
+            newViewModel.UseModDbDesignView = _userConfiguration.UseModDbDesignView;
             newViewModel.PropertyChanged += ViewModelOnPropertyChanged;
             _viewModel = newViewModel;
             ApplyColumnVisibilityPreferencesToViewModel();
