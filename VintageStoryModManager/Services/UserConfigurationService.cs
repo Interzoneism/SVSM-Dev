@@ -498,6 +498,11 @@ public sealed class UserConfigurationService
             sanitized = DefaultGameProfileName;
         }
 
+        if (string.Equals(sanitized, DefaultGameProfileName, StringComparison.OrdinalIgnoreCase))
+        {
+            return DevConfig.BackupDirectoryName;
+        }
+
         return $"{DevConfig.BackupDirectoryName}_{sanitized}";
     }
 
