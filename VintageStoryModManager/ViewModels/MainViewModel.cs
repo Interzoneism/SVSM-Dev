@@ -1525,9 +1525,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (_modEntriesBySourcePath.Count > 0)
         {
             var allEntries = new List<ModEntry>(_modEntriesBySourcePath.Values);
-            await Task.Run(() => _discoveryService.ApplyLoadStatuses(allEntries)).ConfigureAwait(true);
+            var recalculationSeed = new List<ModEntry>();
 
-            foreach (var entry in allEntries)
+            foreach (string path in candidates)
+            {
+                if (_modEntriesBySourcePath.TryGetValue(path, out var entry) && entry != null)
+                {
+                    recalculationSeed.Add(entry);
+                }
+            }
+
+            IReadOnlyCollection<ModEntry> impacted = recalculationSeed.Count == 0
+                ? Array.Empty<ModEntry>()
+                : await Task
+                    .Run(() => _discoveryService.ApplyLoadStatusesIncremental(allEntries, recalculationSeed))
+                    .ConfigureAwait(true);
+
+            foreach (var entry in impacted)
             {
                 if (entry is null || string.IsNullOrWhiteSpace(entry.SourcePath))
                 {
@@ -1557,6 +1571,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             .ConfigureAwait(true);
 
         var refreshedEntries = new List<ModEntry>(reloadResults.Count);
+        var updatedEntriesForStatus = new List<ModEntry>(reloadResults.Count);
+        HashSet<string>? removedModIds = null;
 
         foreach (var pair in reloadResults)
         {
@@ -1566,17 +1582,31 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (entry == null)
             {
                 _modEntriesBySourcePath.Remove(path);
+                if (existingEntriesSnapshot.TryGetValue(path, out var previous))
+                {
+                    removedModIds ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    if (!string.IsNullOrWhiteSpace(previous.ModId))
+                    {
+                        removedModIds.Add(previous.ModId);
+                    }
+                }
                 continue;
             }
 
             _modEntriesBySourcePath[path] = entry;
             refreshedEntries.Add(entry);
+            updatedEntriesForStatus.Add(entry);
         }
 
         if (_modEntriesBySourcePath.Count > 0)
         {
-            var updatedEntries = new List<ModEntry>(_modEntriesBySourcePath.Values);
-            await Task.Run(() => _discoveryService.ApplyLoadStatuses(updatedEntries)).ConfigureAwait(true);
+            var updatedEntriesSnapshot = new List<ModEntry>(_modEntriesBySourcePath.Values);
+            _ = await Task
+                .Run(() => _discoveryService.ApplyLoadStatusesIncremental(
+                    updatedEntriesSnapshot,
+                    updatedEntriesForStatus,
+                    removedModIds))
+                .ConfigureAwait(true);
         }
 
         ApplyPartialUpdates(reloadResults, previousSelection);
@@ -1634,35 +1664,43 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 Dictionary<string, ModEntry> existingEntriesSnapshot = new(_modEntriesBySourcePath, StringComparer.OrdinalIgnoreCase);
                 var reloadResults = await Task.Run(() => LoadChangedModEntries(changeSet.Paths, existingEntriesSnapshot));
 
+                var updatedEntriesForStatus = new List<ModEntry>(reloadResults.Count);
+                HashSet<string>? removedModIds = null;
+
                 foreach (var pair in reloadResults)
                 {
-                    if (pair.Value == null)
+                    string path = pair.Key;
+                    ModEntry? entry = pair.Value;
+
+                    if (entry == null)
                     {
-                        _modEntriesBySourcePath.Remove(pair.Key);
+                        _modEntriesBySourcePath.Remove(path);
+                        if (existingEntriesSnapshot.TryGetValue(path, out var previous))
+                        {
+                            removedModIds ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                            if (!string.IsNullOrWhiteSpace(previous.ModId))
+                            {
+                                removedModIds.Add(previous.ModId);
+                            }
+                        }
                     }
                     else
                     {
-                        _modEntriesBySourcePath[pair.Key] = pair.Value;
-                    }
-                }
-
-                var updatedEntries = new List<ModEntry>();
-                foreach (var entry in reloadResults.Values)
-                {
-                    if (entry != null)
-                    {
-                        updatedEntries.Add(entry);
+                        _modEntriesBySourcePath[path] = entry;
+                        updatedEntriesForStatus.Add(entry);
                     }
                 }
 
                 var allEntries = new List<ModEntry>(_modEntriesBySourcePath.Values);
-                await Task.Run(() => _discoveryService.ApplyLoadStatuses(allEntries)).ConfigureAwait(true);
+                _ = await Task
+                    .Run(() => _discoveryService.ApplyLoadStatusesIncremental(allEntries, updatedEntriesForStatus, removedModIds))
+                    .ConfigureAwait(true);
 
                 ApplyPartialUpdates(reloadResults, previousSelection);
 
-                if (_allowModDetailsRefresh && updatedEntries.Count > 0)
+                if (_allowModDetailsRefresh && updatedEntriesForStatus.Count > 0)
                 {
-                    QueueDatabaseInfoRefresh(updatedEntries);
+                    QueueDatabaseInfoRefresh(updatedEntriesForStatus);
                 }
             }
 
