@@ -31,6 +31,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 {
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
     private static readonly TimeSpan BusyStateReleaseDelay = TimeSpan.FromMilliseconds(600);
+    private static readonly TimeSpan FastCheckInterval = TimeSpan.FromMinutes(2);
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
     private const string NoCompatibleModDatabaseResultsStatusMessage = "No compatible mods found in the mod database.";
     private const string UserReportsLoadingStatusMessage = "Loading user reports...";
@@ -74,6 +75,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly int _newModsRecentMonths;
     private volatile bool _hasPendingFastCheck;
     private int _isFastCheckRunning;
+    private readonly object _fastCheckTimerLock = new();
+    private System.Threading.Timer? _fastCheckTimer;
     private readonly SemaphoreSlim _userReportRefreshLimiter = new(MaxConcurrentUserReportRefreshes, MaxConcurrentUserReportRefreshes);
     private readonly object _userReportOperationLock = new();
 
@@ -224,6 +227,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         SetStatus("Ready.", false);
 
         InternetAccessManager.InternetAccessChanged += OnInternetAccessChanged;
+
+        ResetFastCheckTimer();
     }
 
     public string DataDirectory { get; }
@@ -738,6 +743,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public void FastCheck()
     {
+        ResetFastCheckTimer();
+
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
             return;
@@ -769,7 +776,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 if (updateCandidates.Count > 0)
                 {
-                    QueueDatabaseInfoRefresh(updateCandidates);
+                    QueueDatabaseInfoRefresh(updateCandidates, forceRefresh: true);
                 }
 
                 await CheckForVoteChangesAsync(CancellationToken.None).ConfigureAwait(false);
@@ -788,6 +795,38 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 FastCheck();
             }
         }
+    }
+
+    private void ResetFastCheckTimer()
+    {
+        if (_disposed || _isAutoRefreshDisabled)
+        {
+            return;
+        }
+
+        lock (_fastCheckTimerLock)
+        {
+            _fastCheckTimer ??= new System.Threading.Timer(OnFastCheckTimerElapsed, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            _fastCheckTimer.Change(FastCheckInterval, Timeout.InfiniteTimeSpan);
+        }
+    }
+
+    private void StopFastCheckTimer()
+    {
+        lock (_fastCheckTimerLock)
+        {
+            _fastCheckTimer?.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        }
+    }
+
+    private void OnFastCheckTimerElapsed(object? state)
+    {
+        if (_disposed || _isAutoRefreshDisabled)
+        {
+            return;
+        }
+
+        FastCheck();
     }
 
     private async Task<IReadOnlyList<ModEntry>> CheckForNewModReleasesAsync(CancellationToken cancellationToken)
@@ -1522,6 +1561,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         _isAutoRefreshDisabled = disabled;
         _allowModDetailsRefresh = !_isAutoRefreshDisabled;
+
+        if (disabled)
+        {
+            StopFastCheckTimer();
+        }
+        else
+        {
+            ResetFastCheckTimer();
+        }
     }
 
     internal void ForceNextRefreshToLoadDetails()
@@ -4705,14 +4753,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         SetStatus($"Applied changes to mods ({summary}).", false);
     }
 
-    private void QueueDatabaseInfoRefresh(IEnumerable<ModEntry> entries)
+    private void QueueDatabaseInfoRefresh(IEnumerable<ModEntry> entries, bool forceRefresh = false)
     {
         if (entries is null)
         {
             return;
         }
 
-        if (!_allowModDetailsRefresh)
+        if (!_allowModDetailsRefresh && !forceRefresh)
         {
             return;
         }
@@ -4720,7 +4768,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ModEntry[] pending = entries
             .Where(entry => entry != null
                 && !string.IsNullOrWhiteSpace(entry.ModId)
-                && NeedsDatabaseRefresh(entry))
+                && (forceRefresh || NeedsDatabaseRefresh(entry)))
             .ToArray();
 
         if (pending.Length == 0)
@@ -5622,6 +5670,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         _installedTagFilters.Clear();
         _modDatabaseTagFilters.Clear();
+
+        lock (_fastCheckTimerLock)
+        {
+            _fastCheckTimer?.Dispose();
+            _fastCheckTimer = null;
+        }
 
         _clientSettingsWatcher.Dispose();
         _modDetailsBusyScope?.Dispose();
