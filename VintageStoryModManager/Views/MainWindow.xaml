@@ -1815,7 +1815,7 @@
                                             </Style>
                                         </DataGridTextColumn.CellStyle>
                                     </DataGridTextColumn>
-                                    <DataGridTemplateColumn x:Name="ModDbInstalledColumn" Header="Installed" Width="85" IsReadOnly="True" Visibility="Collapsed">
+                                    <DataGridTemplateColumn x:Name="ModDbInstalledColumn" Header="Installed" Width="85" IsReadOnly="True">
                                         <DataGridTemplateColumn.CellStyle>
                                             <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                                 <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -1835,7 +1835,7 @@
                                                             <Setter Property="Visibility" Value="Collapsed" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsInstalled}" Value="True">
-                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                    <Setter Property="Visibility" Value="Visible" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
@@ -1885,7 +1885,6 @@
                                                 <EventSetter Event="FrameworkElement.ToolTipClosing" Handler="LatestVersionTextBlock_OnToolTipClosing" />
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding ShouldHighlightLatestVersion}" Value="True">
-                                                        <Setter Property="Background" Value="{DynamicResource Brush.Accent.Primary}" />
                                                         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding HasNewerReleaseChangelogs}" Value="False">
