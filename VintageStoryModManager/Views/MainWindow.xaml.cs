@@ -276,7 +276,6 @@ public partial class MainWindow : Window
         DisableAutoRefreshMenuItem.IsChecked = _userConfiguration.DisableAutoRefresh;
         DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
-        StatusLogService.IsLoggingEnabled = _userConfiguration.EnableDebugLogging;
         UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
 
         UpdateThemeMenuSelection(_userConfiguration.ColorTheme);
@@ -1719,19 +1718,6 @@ public partial class MainWindow : Window
 
         _userConfiguration.SetRequireExactVsVersionMatch(menuItem.IsChecked);
         menuItem.IsChecked = _userConfiguration.RequireExactVsVersionMatch;
-    }
-
-    private void EnableDebugLoggingMenuItem_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem)
-        {
-            return;
-        }
-
-        _userConfiguration.SetEnableDebugLogging(menuItem.IsChecked);
-        bool isEnabled = _userConfiguration.EnableDebugLogging;
-        menuItem.IsChecked = isEnabled;
-        StatusLogService.IsLoggingEnabled = isEnabled;
     }
 
     private async void ExperimentalModDebuggingMenuItem_OnClick(object sender, RoutedEventArgs e)
