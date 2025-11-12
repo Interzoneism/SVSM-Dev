@@ -2457,13 +2457,13 @@ public partial class MainWindow : Window
         {
             if (_viewModel != null)
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.InvokeAsync(() =>
                 {
                     if (_viewModel != null)
                     {
                         UpdateSortPreferenceFromSelectedOption(!_suppressSortPreferenceSave);
                     }
-                });
+                }, DispatcherPriority.Background);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.IsCompactView))
@@ -2472,13 +2472,13 @@ public partial class MainWindow : Window
             {
                 _userConfiguration.SetCompactViewMode(_viewModel.IsCompactView);
 
-                Dispatcher.Invoke(() =>
+                Dispatcher.InvokeAsync(() =>
                 {
                     if (_viewModel != null)
                     {
                         ApplyCompactViewState(_viewModel.IsCompactView);
                     }
-                });
+                }, DispatcherPriority.Background);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.UseModDbDesignView))
@@ -2487,11 +2487,11 @@ public partial class MainWindow : Window
             {
                 _userConfiguration.SetModDbDesignViewMode(_viewModel.UseModDbDesignView);
 
-                Dispatcher.Invoke(() =>
+                Dispatcher.InvokeAsync(() =>
                 {
                     _modsScrollViewer = null;
                     _modDatabaseCardsScrollViewer = null;
-                });
+                }, DispatcherPriority.Background);
 
                 Dispatcher.InvokeAsync(UpdateLoadMoreScrollThresholdState, DispatcherPriority.Background);
             }
@@ -2524,7 +2524,7 @@ public partial class MainWindow : Window
         {
             if (_viewModel != null)
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.InvokeAsync(() =>
                 {
                     if (_viewModel != null)
                     {
@@ -2532,7 +2532,7 @@ public partial class MainWindow : Window
                         _modsScrollViewer = null;
                         _modDatabaseCardsScrollViewer = null;
                     }
-                });
+                }, DispatcherPriority.Background);
 
                 Dispatcher.InvokeAsync(UpdateLoadMoreScrollThresholdState, DispatcherPriority.Background);
             }
@@ -2548,40 +2548,40 @@ public partial class MainWindow : Window
         {
             if (_viewModel != null)
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.InvokeAsync(() =>
                 {
                     if (_viewModel != null)
                     {
                         HandleCloudModlistsVisibilityChanged(_viewModel.IsViewingCloudModlists);
                     }
-                });
+                }, DispatcherPriority.Background);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.IsLoadMoreModDatabaseButtonVisible))
         {
-            Dispatcher.Invoke(UpdateLoadMoreScrollThresholdState);
+            Dispatcher.InvokeAsync(UpdateLoadMoreScrollThresholdState, DispatcherPriority.Background);
         }
         else if (e.PropertyName == nameof(MainViewModel.CurrentModsView))
         {
             if (_viewModel != null)
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.InvokeAsync(() =>
                 {
                     if (_viewModel != null)
                     {
                         AttachToModsView(_viewModel.CurrentModsView);
                     }
-                });
+                }, DispatcherPriority.Background);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.IsLoadingMods)
                  || e.PropertyName == nameof(MainViewModel.IsLoadingModDetails))
         {
-            Dispatcher.Invoke(() =>
+            Dispatcher.InvokeAsync(() =>
             {
                 RefreshHoverOverlayState();
                 ScheduleRefreshAfterModlistLoadIfReady();
-            });
+            }, DispatcherPriority.Background);
         }
         else if (e.PropertyName == nameof(MainViewModel.StatusMessage))
         {
@@ -2594,7 +2594,7 @@ public partial class MainWindow : Window
                 }, DispatcherPriority.Background);
             }
 
-            Dispatcher.Invoke(ScheduleRefreshAfterModlistLoadIfReady);
+            Dispatcher.InvokeAsync(ScheduleRefreshAfterModlistLoadIfReady, DispatcherPriority.Background);
         }
     }
 
