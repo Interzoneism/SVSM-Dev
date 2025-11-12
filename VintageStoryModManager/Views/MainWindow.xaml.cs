@@ -221,6 +221,7 @@ public partial class MainWindow : Window
     private bool _refreshAfterModlistLoadPending;
     private bool _isRefreshingAfterModlistLoad;
     private ScrollViewer? _modsScrollViewer;
+    private DataGrid? _modsScrollViewerSource;
     private ScrollViewer? _modDatabaseCardsScrollViewer;
     private bool _suppressSortPreferenceSave;
     private string? _cachedSortMemberPath;
@@ -372,18 +373,24 @@ public partial class MainWindow : Window
         bool isSearching = _isSearchingModDatabase;
         bool isCompactView = _viewModel?.IsCompactView == true;
 
-        SetColumnVisibility(ActiveColumn, InstalledModsColumn.Active, !isSearching);
-        SetColumnVisibility(IconColumn, InstalledModsColumn.Icon, !isSearching && !isCompactView);
-        SetColumnVisibility(NameColumn, InstalledModsColumn.Name, true);
-        SetColumnVisibility(InstalledColumn, InstalledModsColumn.Installed, isSearching);
-        SetColumnVisibility(VersionColumn, InstalledModsColumn.Version, !isSearching);
-        SetColumnVisibility(LatestVersionColumn, InstalledModsColumn.LatestVersion, true);
-        SetColumnVisibility(DownloadsColumn, InstalledModsColumn.Downloads, isSearching);
-        SetColumnVisibility(AuthorsColumn, InstalledModsColumn.Authors, true);
-        SetColumnVisibility(TagsColumn, InstalledModsColumn.Tags, true);
-        SetColumnVisibility(UserReportsColumn, InstalledModsColumn.UserReports, true);
-        SetColumnVisibility(StatusColumn, InstalledModsColumn.Status, !isSearching);
-        SetColumnVisibility(SideColumn, InstalledModsColumn.Side, true);
+        SetColumnVisibility(ActiveColumn, ModDbActiveColumn, InstalledModsColumn.Active, !isSearching);
+        SetColumnVisibility(IconColumn, ModDbIconColumn, InstalledModsColumn.Icon, !isSearching && !isCompactView);
+        SetColumnVisibility(NameColumn, ModDbNameColumn, InstalledModsColumn.Name, true);
+        SetColumnVisibility(InstalledColumn, ModDbInstalledColumn, InstalledModsColumn.Installed, isSearching);
+        SetColumnVisibility(VersionColumn, ModDbVersionColumn, InstalledModsColumn.Version, !isSearching);
+        SetColumnVisibility(LatestVersionColumn, ModDbLatestVersionColumn, InstalledModsColumn.LatestVersion, true);
+        SetColumnVisibility(DownloadsColumn, ModDbDownloadsColumn, InstalledModsColumn.Downloads, isSearching);
+        SetColumnVisibility(AuthorsColumn, ModDbAuthorsColumn, InstalledModsColumn.Authors, true);
+        SetColumnVisibility(TagsColumn, ModDbTagsColumn, InstalledModsColumn.Tags, true);
+        SetColumnVisibility(UserReportsColumn, ModDbUserReportsColumn, InstalledModsColumn.UserReports, true);
+        SetColumnVisibility(StatusColumn, ModDbStatusColumn, InstalledModsColumn.Status, !isSearching);
+        SetColumnVisibility(SideColumn, ModDbSideColumn, InstalledModsColumn.Side, true);
+    }
+
+    private void SetColumnVisibility(DataGridColumn? column, DataGridColumn? modDbColumn, InstalledModsColumn columnKey, bool isContextuallyVisible)
+    {
+        SetColumnVisibility(column, columnKey, isContextuallyVisible);
+        SetColumnVisibility(modDbColumn, columnKey, isContextuallyVisible);
     }
 
     private void SetColumnVisibility(DataGridColumn? column, InstalledModsColumn columnKey, bool isContextuallyVisible)
@@ -4732,6 +4739,7 @@ public partial class MainWindow : Window
     private void RefreshHoverOverlayState()
     {
         RefreshRowHoverOverlays(ModsDataGrid);
+        RefreshRowHoverOverlays(ModDbDataGrid);
         RefreshRowHoverOverlays(CloudModlistsDataGrid);
     }
 
@@ -7015,7 +7023,26 @@ public partial class MainWindow : Window
 
         if (ModsDataGrid != null)
         {
-            ModsDataGrid.IsEnabled = isEnabled;
+            if (isEnabled)
+            {
+                ModsDataGrid.ClearValue(IsEnabledProperty);
+            }
+            else
+            {
+                ModsDataGrid.IsEnabled = false;
+            }
+        }
+
+        if (ModDbDataGrid != null)
+        {
+            if (isEnabled)
+            {
+                ModDbDataGrid.ClearValue(IsEnabledProperty);
+            }
+            else
+            {
+                ModDbDataGrid.IsEnabled = false;
+            }
         }
 
         if (ModDatabaseCardsListView != null)
@@ -12323,7 +12350,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        ScrollViewer? scrollViewer = ReferenceEquals(dependencyObject, ModsDataGrid)
+        bool isModListGrid = ReferenceEquals(dependencyObject, ModsDataGrid)
+            || ReferenceEquals(dependencyObject, ModDbDataGrid);
+
+        ScrollViewer? scrollViewer = isModListGrid
             ? GetModsScrollViewer()
             : ReferenceEquals(dependencyObject, ModDatabaseCardsListView)
                 ? GetModsScrollViewer()
@@ -12427,6 +12457,7 @@ public partial class MainWindow : Window
         }
 
         _modsScrollViewer = null;
+        _modsScrollViewerSource = null;
         _modDatabaseCardsScrollViewer = null;
 
         if (modsView is INotifyCollectionChanged notify)
@@ -13003,17 +13034,22 @@ public partial class MainWindow : Window
             return _modDatabaseCardsScrollViewer;
         }
 
-        if (_modsScrollViewer != null)
-        {
-            return _modsScrollViewer;
-        }
+        DataGrid? targetGrid = _viewModel?.SearchModDatabase == true
+            ? ModDbDataGrid
+            : ModsDataGrid;
 
-        if (ModsDataGrid == null)
+        if (targetGrid == null)
         {
             return null;
         }
 
-        _modsScrollViewer = FindDescendantScrollViewer(ModsDataGrid);
+        if (_modsScrollViewer != null && ReferenceEquals(_modsScrollViewerSource, targetGrid))
+        {
+            return _modsScrollViewer;
+        }
+
+        _modsScrollViewer = FindDescendantScrollViewer(targetGrid);
+        _modsScrollViewerSource = targetGrid;
         return _modsScrollViewer;
     }
 
