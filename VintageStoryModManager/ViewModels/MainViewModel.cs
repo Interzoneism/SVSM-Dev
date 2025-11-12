@@ -34,6 +34,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
     private const string NoCompatibleModDatabaseResultsStatusMessage = "No compatible mods found in the mod database.";
     private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
+    private static readonly int MaxConcurrentUserReportRefreshes = DevConfig.MaxConcurrentUserReportRefreshes;
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
     private static readonly int InstalledModsIncrementalBatchSize = DevConfig.InstalledModsIncrementalBatchSize;
     private static readonly int MaxModDatabaseResultLimit = DevConfig.MaxModDatabaseResultLimit;
@@ -69,6 +70,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly int _newModsRecentMonths;
     private volatile bool _hasPendingLightweightModUpdateCheck;
     private int _isLightweightModUpdateCheckRunning;
+    private readonly SemaphoreSlim _userReportRefreshLimiter = new(MaxConcurrentUserReportRefreshes, MaxConcurrentUserReportRefreshes);
 
     private SortOption? _selectedSortOption;
     private bool _isBusy;
@@ -2223,6 +2225,28 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private async Task<ModVersionVoteSummary?> RunUserReportOperationAsync(
+        Func<CancellationToken, Task<ModVersionVoteSummary?>> operation,
+        CancellationToken cancellationToken)
+    {
+        bool entered = false;
+
+        try
+        {
+            await _userReportRefreshLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
+            entered = true;
+
+            return await operation(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (entered)
+            {
+                _userReportRefreshLimiter.Release();
+            }
+        }
+    }
+
     private void QueueLatestReleaseUserReportRefresh(ModListItemViewModel mod)
     {
         if (mod is null)
@@ -2235,17 +2259,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        _ = RefreshLatestReleaseUserReportAsync(mod, suppressErrors: true, CancellationToken.None);
+        _ = RunUserReportOperationAsync(
+            ct => RefreshLatestReleaseUserReportCoreAsync(mod, suppressErrors: true, ct),
+            CancellationToken.None);
     }
 
     public Task<ModVersionVoteSummary?> RefreshLatestReleaseUserReportAsync(
         ModListItemViewModel mod,
         CancellationToken cancellationToken = default)
     {
-        return RefreshLatestReleaseUserReportAsync(mod, suppressErrors: false, cancellationToken);
+        return RunUserReportOperationAsync(
+            ct => RefreshLatestReleaseUserReportCoreAsync(mod, suppressErrors: false, ct),
+            cancellationToken);
     }
 
-    private async Task<ModVersionVoteSummary?> RefreshLatestReleaseUserReportAsync(
+    private async Task<ModVersionVoteSummary?> RefreshLatestReleaseUserReportCoreAsync(
         ModListItemViewModel mod,
         bool suppressErrors,
         CancellationToken cancellationToken)
@@ -2334,7 +2362,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        _ = RefreshUserReportAsync(mod, suppressErrors: true, CancellationToken.None);
+        _ = RunUserReportOperationAsync(
+            ct => RefreshUserReportCoreAsync(mod, suppressErrors: true, ct),
+            CancellationToken.None);
     }
 
     public void EnableUserReportFetching()
@@ -2374,7 +2404,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ModListItemViewModel mod,
         CancellationToken cancellationToken = default)
     {
-        return RefreshUserReportAsync(mod, suppressErrors: false, cancellationToken);
+        return RunUserReportOperationAsync(
+            ct => RefreshUserReportCoreAsync(mod, suppressErrors: false, ct),
+            cancellationToken);
     }
 
     public async Task<ModVersionVoteSummary?> SubmitUserReportVoteAsync(
@@ -2446,7 +2478,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    private async Task<ModVersionVoteSummary?> RefreshUserReportAsync(
+    private async Task<ModVersionVoteSummary?> RefreshUserReportCoreAsync(
         ModListItemViewModel mod,
         bool suppressErrors,
         CancellationToken cancellationToken)
@@ -5336,6 +5368,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _clientSettingsWatcher.Dispose();
         _modDetailsBusyScope?.Dispose();
         _modDetailsBusyScope = null;
+        _userReportRefreshLimiter.Dispose();
     }
 
     private static int CompareOfflineReleases(ModReleaseInfo? left, ModReleaseInfo? right)

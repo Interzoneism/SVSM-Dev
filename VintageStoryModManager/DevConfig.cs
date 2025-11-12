@@ -13,6 +13,7 @@ public static class DevConfig
 
     // View model tuning.
     public static int MaxConcurrentDatabaseRefreshes { get; } = 4;
+    public static int MaxConcurrentUserReportRefreshes { get; } = 6;
     public static int MaxNewModsRecentMonths { get; } = 24;
     public static int InstalledModsIncrementalBatchSize { get; } = 32;
     public static int MaxModDatabaseResultLimit { get; } = int.MaxValue;
