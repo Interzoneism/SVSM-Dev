@@ -3561,8 +3561,8 @@ public partial class MainWindow : Window
 
         foreach ((string ModId, string DisplayName) mod in mods)
         {
-            var words = BuildSearchTokens(mod.DisplayName);
-            if (words.Count == 0)
+            List<IReadOnlyList<string>> tokenSets = BuildModSearchTokenSets(mod.ModId, mod.DisplayName);
+            if (tokenSets.Count == 0)
             {
                 continue;
             }
@@ -3570,22 +3570,49 @@ public partial class MainWindow : Window
             string? bestPath = null;
             int bestScore = int.MaxValue;
             int bestCandidateIndex = -1;
+            int bestWordCount = 0;
 
             for (int i = 0; i < candidates.Count; i++)
             {
                 var candidate = candidates[i];
-                if (!TryCalculateMatchScore(words, candidate.Tokens, out int score))
+                bool hasMatch = false;
+                int candidateScore = int.MaxValue;
+                int candidateWordCount = 0;
+
+                foreach (IReadOnlyList<string> words in tokenSets)
+                {
+                    if (!TryCalculateMatchScore(words, candidate.Tokens, out int score))
+                    {
+                        continue;
+                    }
+
+                    hasMatch = true;
+
+                    if (score < candidateScore)
+                    {
+                        candidateScore = score;
+                        candidateWordCount = words.Count;
+
+                        if (score == 0)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasMatch)
                 {
                     continue;
                 }
 
-                if (score < bestScore)
+                if (candidateScore < bestScore)
                 {
-                    bestScore = score;
+                    bestScore = candidateScore;
                     bestPath = candidate.Path;
                     bestCandidateIndex = i;
+                    bestWordCount = candidateWordCount;
 
-                    if (score == 0)
+                    if (candidateScore == 0)
                     {
                         break;
                     }
@@ -3596,7 +3623,8 @@ public partial class MainWindow : Window
             // weak matches that only satisfy the fallback threshold.
             if (bestPath is not null
                 && bestCandidateIndex >= 0
-                && bestScore < words.Count * AutomaticConfigMaxWordDistance)
+                && bestWordCount > 0
+                && bestScore < bestWordCount * AutomaticConfigMaxWordDistance)
             {
                 results.Add((mod.ModId, bestPath));
                 candidates.RemoveAt(bestCandidateIndex);
@@ -3713,7 +3741,78 @@ public partial class MainWindow : Window
         return previous[targetLength];
     }
 
-    private static List<string> BuildSearchTokens(string value)
+    private static List<IReadOnlyList<string>> BuildModSearchTokenSets(string? modId, string? displayName)
+    {
+        var tokenSets = new List<IReadOnlyList<string>>();
+
+        AddTokenVariations(displayName);
+        AddTokenVariations(modId);
+
+        return tokenSets;
+
+        void AddTokenVariations(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            List<string> tokens = BuildSearchTokens(value, includeCombinedToken: false);
+            if (tokens.Count == 0)
+            {
+                return;
+            }
+
+            AddTokenSet(tokens);
+
+            if (tokens.Count > 1)
+            {
+                string combined = string.Concat(tokens);
+                if (!string.IsNullOrWhiteSpace(combined))
+                {
+                    AddTokenSet(new List<string> { combined });
+                }
+            }
+        }
+
+        void AddTokenSet(List<string> tokens)
+        {
+            if (tokens.Count == 0)
+            {
+                return;
+            }
+
+            foreach (IReadOnlyList<string> existing in tokenSets)
+            {
+                if (AreTokenListsEqual(existing, tokens))
+                {
+                    return;
+                }
+            }
+
+            tokenSets.Add(tokens);
+        }
+    }
+
+    private static bool AreTokenListsEqual(IReadOnlyList<string> first, IReadOnlyList<string> second)
+    {
+        if (first.Count != second.Count)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < first.Count; i++)
+        {
+            if (!string.Equals(first[i], second[i], StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static List<string> BuildSearchTokens(string value, bool includeCombinedToken = true)
     {
         List<string> tokens = ExtractWords(value);
         if (tokens.Count == 0 && !string.IsNullOrWhiteSpace(value))
@@ -3721,7 +3820,7 @@ public partial class MainWindow : Window
             tokens.Add(value.ToLowerInvariant());
         }
 
-        if (tokens.Count > 1)
+        if (includeCombinedToken && tokens.Count > 1)
         {
             string combined = string.Concat(tokens);
             if (!string.IsNullOrEmpty(combined) && !tokens.Contains(combined))
