@@ -16,40 +16,6 @@ public partial class GuideDialogWindow : Window
     public GuideDialogWindow(string managerDirectory, string? cachedModsDirectory, string configurationFilePath)
     {
         InitializeComponent();
-
-        ConfigureHyperlink(ManagerFolderHyperlink, managerDirectory, ensureDirectory: true);
-        ConfigureHyperlink(CachedModsHyperlink, cachedModsDirectory, ensureDirectory: true);
-        ConfigureHyperlink(ConfigurationFileHyperlink, Path.GetDirectoryName(configurationFilePath), ensureDirectory: true);
-    }
-
-    private void ConfigureHyperlink(Hyperlink hyperlink, string? path, bool ensureDirectory)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            hyperlink.IsEnabled = false;
-            hyperlink.Tag = null;
-            hyperlink.NavigateUri = null;
-            hyperlink.ToolTip = "Location not available";
-            hyperlink.Foreground = System.Windows.SystemColors.GrayTextBrush;
-            hyperlink.TextDecorations = null;
-            return;
-        }
-
-        if (ensureDirectory)
-        {
-            try
-            {
-                Directory.CreateDirectory(path);
-            }
-            catch (Exception)
-            {
-                // Ignore failures; the navigation handler will surface errors if needed.
-            }
-        }
-
-        hyperlink.Tag = path;
-        hyperlink.NavigateUri = TryCreateUri(path);
-        hyperlink.ToolTip = path;
     }
 
     private static Uri? TryCreateUri(string path)

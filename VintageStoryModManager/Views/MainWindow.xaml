@@ -945,6 +945,7 @@
                             <TextBox.Style>
                                 <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
                                     <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
+                                    <Setter Property="Visibility" Value="Search installed mods" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                             <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod Database" />
