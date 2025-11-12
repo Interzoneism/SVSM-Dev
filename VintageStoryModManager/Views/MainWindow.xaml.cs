@@ -3111,25 +3111,38 @@ public partial class MainWindow : Window
 
     private static (string Property, ListSortDirection Direction)[] BuildSortDescriptions(string sortMemberPath, ListSortDirection direction)
     {
+        List<(string Property, ListSortDirection Direction)> sorts;
+
         if (IsActiveSortMember(sortMemberPath))
         {
-            return new[]
+            sorts = new List<(string, ListSortDirection)>
             {
                 (nameof(ModListItemViewModel.ActiveSortOrder), direction),
                 (nameof(ModListItemViewModel.NameSortKey), ListSortDirection.Ascending)
             };
         }
-
-        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.LatestVersionSortKey), StringComparison.OrdinalIgnoreCase))
+        else if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.LatestVersionSortKey), StringComparison.OrdinalIgnoreCase))
         {
-            return new[]
+            sorts = new List<(string, ListSortDirection)>
             {
                 (nameof(ModListItemViewModel.LatestVersionSortKey), direction),
                 (nameof(ModListItemViewModel.NameSortKey), ListSortDirection.Ascending)
             };
         }
+        else
+        {
+            sorts = new List<(string, ListSortDirection)>
+            {
+                (sortMemberPath, direction)
+            };
+        }
 
-        return new[] { (sortMemberPath, direction) };
+        if (!sorts.Any(s => string.Equals(s.Property, nameof(ModListItemViewModel.StableSortKey), StringComparison.OrdinalIgnoreCase)))
+        {
+            sorts.Add((nameof(ModListItemViewModel.StableSortKey), ListSortDirection.Ascending));
+        }
+
+        return sorts.ToArray();
     }
 
     private static string BuildSortDisplayName(string sortMemberPath, ListSortDirection direction)
@@ -6636,7 +6649,8 @@ public partial class MainWindow : Window
 
                 builder.AppendLine();
                 builder.Append("    ");
-                builder.AppendLine(result.ConfigPath);
+                string? configFileName = Path.GetFileName(result.ConfigPath);
+                builder.AppendLine(string.IsNullOrEmpty(configFileName) ? result.ConfigPath : configFileName);
             }
 
             WpfMessageBox.Show(
