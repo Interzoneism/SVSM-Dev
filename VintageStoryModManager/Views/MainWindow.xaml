@@ -1116,7 +1116,7 @@
                                         Margin="4,0,4,4"
                                         SnapsToDevicePixels="True">
                                                     <Border.Effect>
-                                                        <DropShadowEffect Color="{Binding Source={StaticResource Brush.DataGrid.RowShadow}, Path=Color}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
+                                                        <DropShadowEffect Color="{Binding Color, Source={StaticResource Brush.DataGrid.RowShadow}}" BlurRadius="2" Direction="210" ShadowDepth="2" Opacity="0.5"/>
 
                                                     </Border.Effect>
                                                     <Grid>
@@ -1422,11 +1422,11 @@
                                     </DataGridTextColumn.Header>
                                     <DataGridTextColumn.Binding>
                                         <MultiBinding Converter="{StaticResource IMM.DownloadMetricDisplayConverter}">
-                                            <Binding Path="DataContext.IsShowingRecentDownloadMetric" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                                            <Binding Path="DataContext.IsShowingRecentDownloadMetric" RelativeSource="{RelativeSource AncestorType={x:Type DataGrid}}" />
                                             <Binding Path="DownloadsDisplay" />
                                             <Binding Path="RecentDownloadsDisplay" />
                                             <Binding Path="TenDayDownloadsDisplay" />
-                                            <Binding Path="DataContext.ModDatabaseAutoLoadMode" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                                            <Binding Path="DataContext.ModDatabaseAutoLoadMode" RelativeSource="{RelativeSource AncestorType={x:Type DataGrid}}" />
                                         </MultiBinding>
                                     </DataGridTextColumn.Binding>
                                     <DataGridTextColumn.ElementStyle>
