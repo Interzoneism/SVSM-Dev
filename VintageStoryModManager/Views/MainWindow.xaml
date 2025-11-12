@@ -1878,70 +1878,6 @@
                                     </Style>
                                 </DataGrid.RowStyle>
                                 <DataGrid.Columns>
-                                    <DataGridTemplateColumn x:Name="ModDbActiveColumn" Header="Active" SortMemberPath="ActiveSortOrder" Width="90" MinWidth="85">
-                                        <DataGridTemplateColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                <Setter Property="Padding" Value="0" />
-                                            </Style>
-                                        </DataGridTemplateColumn.CellStyle>
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Grid HorizontalAlignment="Center">
-                                                    <ui:ToggleSwitch IsOn="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                     HorizontalAlignment="Center"
-                                                     Toggled="ActiveToggle_OnToggled"
-                                                     PreviewMouseLeftButtonDown="ActiveToggle_OnPreviewMouseLeftButtonDown"
-                                                     PreviewMouseLeftButtonUp="ActiveToggle_OnPreviewMouseLeftButtonUp"
-                                                     PreviewMouseMove="ActiveToggle_OnPreviewMouseMove"
-                                                     Margin="12,0"
-                                                     OnContent="{x:Null}"
-                                                     OffContent="{x:Null}">
-                                                        <ui:ToggleSwitch.Style>
-                                                            <Style TargetType="{x:Type ui:ToggleSwitch}" BasedOn="{StaticResource IMM.ToggleSwitchBaseStyle}">
-                                                                <Setter Property="IsEnabled" Value="{Binding CanToggle}" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
-                                                                        <Setter Property="IsEnabled" Value="False" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </ui:ToggleSwitch.Style>
-                                                    </ui:ToggleSwitch>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTemplateColumn x:Name="ModDbIconColumn" Header="Icon" Width="76" IsReadOnly="True">
-                                        <DataGridTemplateColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Left" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                <Setter Property="Padding" Value="0,0,12,0" />
-                                            </Style>
-                                        </DataGridTemplateColumn.CellStyle>
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Border Width="64" Height="64"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Center"
-                                        ToolTipService.ShowDuration="60000"
-                                        ToolTipService.InitialShowDelay="200">
-                                                    <ToolTipService.ToolTip>
-                                                        <TextBlock Text="{Binding Tooltip}"
-                                                   FontFamily="Segoe UI"
-                                                   FontSize="12"
-                                                   FontWeight="Normal"
-                                                   MaxWidth="300"
-                                                   Foreground="{DynamicResource Brush.ToolTip.Text}"
-                                                   TextWrapping="Wrap" />
-                                                    </ToolTipService.ToolTip>
-                                                    <Image Source="{Binding Icon}" Stretch="Uniform" Margin="0" />
-                                                </Border>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
                                     <DataGridTextColumn x:Name="ModDbNameColumn" Header="Name" Binding="{Binding DisplayName, Mode=OneWay}" Width="220" SortMemberPath="NameSortKey" IsReadOnly="True">
                                         <DataGridTextColumn.ElementStyle>
                                             <Style TargetType="{x:Type TextBlock}">
@@ -2002,26 +1938,6 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTextColumn x:Name="ModDbVersionColumn"
-                                         Header="Version"
-                                         Binding="{Binding VersionDisplay, Mode=OneWay}"
-                                         Width="85"
-                                         IsReadOnly="True"
-                                         MinWidth="80">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="{x:Type TextBlock}">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                                <Setter Property="VerticalAlignment" Value="Center" />
-                                                <Setter Property="TextAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.CellStyle>
-                                    </DataGridTextColumn>
                                     <DataGridTextColumn x:Name="ModDbLatestVersionColumn" Header="Latest Version" Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}" SortMemberPath="LatestVersionSortKey" Width="140" MinWidth="139" IsReadOnly="True">
                                         <DataGridTextColumn.ElementStyle>
                                             <Style TargetType="{x:Type TextBlock}">
@@ -2240,55 +2156,6 @@
                                             <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
                                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                                 <Setter Property="VerticalContentAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTemplateColumn.CellStyle>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTemplateColumn x:Name="ModDbStatusColumn" Header="Status" Width="80" IsReadOnly="True" SortMemberPath="StatusSortOrder">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Grid HorizontalAlignment="Center"
-                                          VerticalAlignment="Center">
-                                                    <Viewbox x:Name="StatusIconViewbox"
-                                                 Width="32"
-                                                 Height="32">
-                                                        <Grid Width="32"
-                                                  Height="32">
-                                                            <Image x:Name="ErrorIcon"
-                                                       Width="32"
-                                                       Height="32"
-                                                       Stretch="Uniform"
-                                                       Source="/error.png"
-                                                       Visibility="Collapsed" />
-                                                            <Image x:Name="WarningIcon"
-                                                       Width="32"
-                                                       Height="32"
-                                                       Stretch="Uniform"
-                                                       Source="/warning.png"
-                                                       Visibility="Collapsed" />
-                                                        </Grid>
-                                                    </Viewbox>
-                                                </Grid>
-                                                <DataTemplate.Triggers>
-                                                    <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
-                                                        <Setter TargetName="StatusIconViewbox" Property="Width" Value="22.5" />
-                                                        <Setter TargetName="StatusIconViewbox" Property="Height" Value="22.5" />
-                                                        <Setter TargetName="ErrorIcon" Property="Width" Value="22.5" />
-                                                        <Setter TargetName="ErrorIcon" Property="Height" Value="22.5" />
-                                                        <Setter TargetName="WarningIcon" Property="Width" Value="22.5" />
-                                                        <Setter TargetName="WarningIcon" Property="Height" Value="22.5" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding StatusText}" Value="Error">
-                                                        <Setter TargetName="ErrorIcon" Property="Visibility" Value="Visible" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding StatusText}" Value="Warning">
-                                                        <Setter TargetName="WarningIcon" Property="Visibility" Value="Visible" />
-                                                    </DataTrigger>
-                                                </DataTemplate.Triggers>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                        <DataGridTemplateColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="ToolTip" Value="{Binding StatusDetails}" />
                                             </Style>
                                         </DataGridTemplateColumn.CellStyle>
                                     </DataGridTemplateColumn>

@@ -381,17 +381,17 @@ public partial class MainWindow : Window
         bool isSearching = _isSearchingModDatabase;
         bool isCompactView = _viewModel?.IsCompactView == true;
 
-        SetColumnVisibility(ActiveColumn, ModDbActiveColumn, InstalledModsColumn.Active, !isSearching);
-        SetColumnVisibility(IconColumn, ModDbIconColumn, InstalledModsColumn.Icon, !isSearching && !isCompactView);
+        SetColumnVisibility(ActiveColumn, null, InstalledModsColumn.Active, !isSearching);
+        SetColumnVisibility(IconColumn, null, InstalledModsColumn.Icon, !isSearching && !isCompactView);
         SetColumnVisibility(NameColumn, ModDbNameColumn, InstalledModsColumn.Name, true);
         SetColumnVisibility(InstalledColumn, ModDbInstalledColumn, InstalledModsColumn.Installed, isSearching);
-        SetColumnVisibility(VersionColumn, ModDbVersionColumn, InstalledModsColumn.Version, !isSearching);
+        SetColumnVisibility(VersionColumn, null, InstalledModsColumn.Version, !isSearching);
         SetColumnVisibility(LatestVersionColumn, ModDbLatestVersionColumn, InstalledModsColumn.LatestVersion, true);
         SetColumnVisibility(DownloadsColumn, ModDbDownloadsColumn, InstalledModsColumn.Downloads, isSearching);
         SetColumnVisibility(AuthorsColumn, ModDbAuthorsColumn, InstalledModsColumn.Authors, true);
         SetColumnVisibility(TagsColumn, ModDbTagsColumn, InstalledModsColumn.Tags, true);
         SetColumnVisibility(UserReportsColumn, ModDbUserReportsColumn, InstalledModsColumn.UserReports, true);
-        SetColumnVisibility(StatusColumn, ModDbStatusColumn, InstalledModsColumn.Status, !isSearching);
+        SetColumnVisibility(StatusColumn, null, InstalledModsColumn.Status, !isSearching);
         SetColumnVisibility(SideColumn, ModDbSideColumn, InstalledModsColumn.Side, true);
     }
 
