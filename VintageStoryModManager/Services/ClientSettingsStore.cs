@@ -434,14 +434,81 @@ public sealed class ClientSettingsStore
     {
         lock (_syncRoot)
         {
-            if (_modPaths.Count > 0)
+            string expectedDataModsPath = Path.Combine(DataDirectory, "Mods");
+            bool changed = false;
+
+            if (_modPaths.Count == 0)
             {
-                return;
+                _modPaths.Add("Mods");
+                _modPaths.Add(expectedDataModsPath);
+                changed = true;
+            }
+            else
+            {
+                if (!string.Equals(_modPaths[0], "Mods", StringComparison.OrdinalIgnoreCase))
+                {
+                    int existingModsIndex = _modPaths.FindIndex(path => string.Equals(path, "Mods", StringComparison.OrdinalIgnoreCase));
+                    if (existingModsIndex >= 0)
+                    {
+                        _modPaths.RemoveAt(existingModsIndex);
+                    }
+
+                    _modPaths.Insert(0, "Mods");
+                    changed = true;
+                }
+
+                if (_modPaths.Count < 2)
+                {
+                    _modPaths.Insert(1, expectedDataModsPath);
+                    changed = true;
+                }
+                else if (!PathsEqual(_modPaths[1], expectedDataModsPath))
+                {
+                    int existingIndex = _modPaths.FindIndex(path => PathsEqual(path, expectedDataModsPath));
+                    if (existingIndex >= 0)
+                    {
+                        _modPaths.RemoveAt(existingIndex);
+                    }
+
+                    _modPaths[1] = expectedDataModsPath;
+                    changed = true;
+                }
             }
 
-            _modPaths.Add("Mods");
-            _modPaths.Add(Path.Combine(DataDirectory, "Mods"));
-            Persist();
+            if (changed)
+            {
+                Persist();
+            }
+        }
+    }
+
+    private static bool PathsEqual(string? left, string? right)
+    {
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+        {
+            return string.Equals(left?.Trim(), right?.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        string? normalizedLeft = NormalizePath(left);
+        string? normalizedRight = NormalizePath(right);
+
+        return string.Equals(normalizedLeft, normalizedRight, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? NormalizePath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return path;
+        }
+
+        try
+        {
+            return Path.GetFullPath(path);
+        }
+        catch (Exception)
+        {
+            return path.Trim();
         }
     }
 
