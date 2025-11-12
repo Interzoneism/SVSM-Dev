@@ -1023,11 +1023,12 @@
                             SnapsToDevicePixels="True">
                         <Grid>
                             <DataGrid x:Name="ModsDataGrid"
-                                      ItemsSource="{Binding CurrentModsView}"
+                                      ItemsSource="{Binding ModsView}"
                                       AutoGenerateColumns="False"
                                       CanUserAddRows="False"
                                       CanUserDeleteRows="False"
                                       IsReadOnly="False"
+                                      CanUserSortColumns="True"
                                       EnableRowVirtualization="True"
                                       VirtualizingPanel.IsVirtualizing="True"
                                       VirtualizingPanel.VirtualizationMode="Recycling"
@@ -1035,7 +1036,7 @@
                                       GridLinesVisibility="None"
                                       SelectionUnit="FullRow"
                                       SelectionMode="Single"
-                                      
+
                                       RowHeaderWidth="0"
                                       BorderThickness="0,1,2,1"
                                       IsSynchronizedWithCurrentItem="True"
@@ -1053,7 +1054,9 @@
                                       ui:ControlHelper.CornerRadius="0"
                                       FontSize="15"
                                       Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                      BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
+                                      BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                                      Visibility="{Binding IsViewingInstalledMods, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
+                                      IsEnabled="{Binding IsViewingInstalledMods}">
                                 <DataGrid.Resources>
                                     <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
                                     <Style TargetType="{x:Type Thumb}" BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" />
@@ -1065,30 +1068,6 @@
                                 <DataGrid.CellStyle>
                                     <StaticResource ResourceKey="IMM.DataGridCellBaseStyle"/>
                                 </DataGrid.CellStyle>
-                                <DataGrid.Style>
-                                    <Style TargetType="{x:Type DataGrid}">
-                                        <Setter Property="CanUserSortColumns" Value="True" />
-                                        <Setter Property="Visibility" Value="Visible" />
-
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                                <Setter Property="CanUserSortColumns" Value="False" />
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </DataTrigger>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                                    <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </MultiDataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.Style>
-
                                 <DataGrid.RowHeaderStyle>
 
                                     <Style/>
@@ -1162,14 +1141,10 @@
                                                         <DataTrigger Binding="{Binding HasActivationError}" Value="True">
                                                             <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.Overlay.Warning.Background}" />
                                                         </DataTrigger>
-                                                        <MultiDataTrigger>
-                                                            <MultiDataTrigger.Conditions>
-                                                                <Condition Binding="{Binding IsActive}" Value="False" />
-                                                                <Condition Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
-                                                            </MultiDataTrigger.Conditions>
+                                                        <DataTrigger Binding="{Binding IsActive}" Value="False">
                                                             <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.ModCard.Background.Disabled}" />
                                                             <Setter TargetName="RowBorder" Property="Opacity" Value="0.5" />
-                                                        </MultiDataTrigger>
+                                                        </DataTrigger>
                                                         <Trigger Property="DetailsVisibility" Value="Visible">
                                                             <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
                                                         </Trigger>
@@ -1237,11 +1212,6 @@
                                                         <ui:ToggleSwitch.Style>
                                                             <Style TargetType="{x:Type ui:ToggleSwitch}" BasedOn="{StaticResource IMM.ToggleSwitchBaseStyle}">
                                                                 <Setter Property="IsEnabled" Value="{Binding CanToggle}" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
-                                                                        <Setter Property="IsEnabled" Value="False" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
                                                             </Style>
                                                         </ui:ToggleSwitch.Style>
                                                     </ui:ToggleSwitch>
@@ -1369,14 +1339,10 @@
                                                 <EventSetter Event="FrameworkElement.ToolTipOpening" Handler="LatestVersionTextBlock_OnToolTipOpening" />
                                                 <EventSetter Event="FrameworkElement.ToolTipClosing" Handler="LatestVersionTextBlock_OnToolTipClosing" />
                                                 <Style.Triggers>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding ShouldHighlightLatestVersion}" Value="True" />
-                                                            <Condition Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
-                                                        </MultiDataTrigger.Conditions>
+                                                    <DataTrigger Binding="{Binding ShouldHighlightLatestVersion}" Value="True">
                                                         <Setter Property="Background" Value="{DynamicResource Brush.Accent.Primary}" />
                                                         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
-                                                    </MultiDataTrigger>
+                                                    </DataTrigger>
                                                     <DataTrigger Binding="{Binding HasNewerReleaseChangelogs}" Value="False">
                                                         <Setter Property="ToolTip" Value="{x:Null}" />
                                                     </DataTrigger>
@@ -1455,20 +1421,8 @@
                                                                     <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
                                                                     <Style TargetType="{x:Type Thumb}" BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" />
                                                                 </ScrollViewer.Resources>
-                                                                <ItemsControl ItemsPanel="{StaticResource IMM.TagFilterItemsPanelTemplate}">
-                                                                    <ItemsControl.Style>
-                                                                        <Style TargetType="{x:Type ItemsControl}">
-                                                                            <Setter Property="ItemsSource"
-                                                                            Value="{Binding DataContext.InstalledTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
-                                                                            <Style.Triggers>
-                                                                                <DataTrigger Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                                                                                     Value="True">
-                                                                                    <Setter Property="ItemsSource"
-                                                                                    Value="{Binding DataContext.ModDatabaseTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
-                                                                                </DataTrigger>
-                                                                            </Style.Triggers>
-                                                                        </Style>
-                                                                    </ItemsControl.Style>
+                                                                <ItemsControl ItemsPanel="{StaticResource IMM.TagFilterItemsPanelTemplate}"
+                                                                              ItemsSource="{Binding DataContext.InstalledTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
                                                                     <ItemsControl.ItemTemplate>
                                                                         <DataTemplate DataType="{x:Type viewModels:TagFilterOptionViewModel}">
                                                                             <ToggleButton Style="{StaticResource IMM.TagFilterToggleButtonStyle}"
@@ -1770,14 +1724,6 @@
                                                         <DataTrigger Binding="{Binding HasActivationError}" Value="True">
                                                             <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.Overlay.Warning.Background}" />
                                                         </DataTrigger>
-                                                        <MultiDataTrigger>
-                                                            <MultiDataTrigger.Conditions>
-                                                                <Condition Binding="{Binding IsActive}" Value="False" />
-                                                                <Condition Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
-                                                            </MultiDataTrigger.Conditions>
-                                                            <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.ModCard.Background.Disabled}" />
-                                                            <Setter TargetName="RowBorder" Property="Opacity" Value="0.5" />
-                                                        </MultiDataTrigger>
                                                         <Trigger Property="DetailsVisibility" Value="Visible">
                                                             <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
                                                         </Trigger>
@@ -1922,14 +1868,10 @@
                                                 <EventSetter Event="FrameworkElement.ToolTipOpening" Handler="LatestVersionTextBlock_OnToolTipOpening" />
                                                 <EventSetter Event="FrameworkElement.ToolTipClosing" Handler="LatestVersionTextBlock_OnToolTipClosing" />
                                                 <Style.Triggers>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding ShouldHighlightLatestVersion}" Value="True" />
-                                                            <Condition Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
-                                                        </MultiDataTrigger.Conditions>
+                                                    <DataTrigger Binding="{Binding ShouldHighlightLatestVersion}" Value="True">
                                                         <Setter Property="Background" Value="{DynamicResource Brush.Accent.Primary}" />
                                                         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
-                                                    </MultiDataTrigger>
+                                                    </DataTrigger>
                                                     <DataTrigger Binding="{Binding HasNewerReleaseChangelogs}" Value="False">
                                                         <Setter Property="ToolTip" Value="{x:Null}" />
                                                     </DataTrigger>
@@ -2037,20 +1979,8 @@
                                                                     <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
                                                                     <Style TargetType="{x:Type Thumb}" BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" />
                                                                 </ScrollViewer.Resources>
-                                                                <ItemsControl ItemsPanel="{StaticResource IMM.TagFilterItemsPanelTemplate}">
-                                                                    <ItemsControl.Style>
-                                                                        <Style TargetType="{x:Type ItemsControl}">
-                                                                            <Setter Property="ItemsSource"
-                                                                            Value="{Binding DataContext.InstalledTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
-                                                                            <Style.Triggers>
-                                                                                <DataTrigger Binding="{Binding DataContext.SearchModDatabase, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                                                                                     Value="True">
-                                                                                    <Setter Property="ItemsSource"
-                                                                                    Value="{Binding DataContext.ModDatabaseTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
-                                                                                </DataTrigger>
-                                                                            </Style.Triggers>
-                                                                        </Style>
-                                                                    </ItemsControl.Style>
+                                                                <ItemsControl ItemsPanel="{StaticResource IMM.TagFilterItemsPanelTemplate}"
+                                                                              ItemsSource="{Binding DataContext.ModDatabaseTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
                                                                     <ItemsControl.ItemTemplate>
                                                                         <DataTemplate DataType="{x:Type viewModels:TagFilterOptionViewModel}">
                                                                             <ToggleButton Style="{StaticResource IMM.TagFilterToggleButtonStyle}"
