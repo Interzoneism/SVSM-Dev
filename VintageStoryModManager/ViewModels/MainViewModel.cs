@@ -4218,16 +4218,24 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private static IEnumerable<SortOption> CreateSortOptions()
     {
-        yield return new SortOption("Name (A → Z)", (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending));
-        yield return new SortOption("Name (Z → A)", (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Descending));
+        yield return new SortOption(
+            "Name (A → Z)",
+            (nameof(ModListItemViewModel.NameSortKey), ListSortDirection.Ascending),
+            (nameof(ModListItemViewModel.ModId), ListSortDirection.Ascending));
+        yield return new SortOption(
+            "Name (Z → A)",
+            (nameof(ModListItemViewModel.NameSortKey), ListSortDirection.Descending),
+            (nameof(ModListItemViewModel.ModId), ListSortDirection.Ascending));
         yield return new SortOption(
             "Active (Active → Inactive)",
             (nameof(ModListItemViewModel.ActiveSortOrder), ListSortDirection.Ascending),
-            (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending));
+            (nameof(ModListItemViewModel.NameSortKey), ListSortDirection.Ascending),
+            (nameof(ModListItemViewModel.ModId), ListSortDirection.Ascending));
         yield return new SortOption(
             "Active (Inactive → Active)",
             (nameof(ModListItemViewModel.ActiveSortOrder), ListSortDirection.Descending),
-            (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending));
+            (nameof(ModListItemViewModel.NameSortKey), ListSortDirection.Ascending),
+            (nameof(ModListItemViewModel.ModId), ListSortDirection.Ascending));
     }
 
     private void ReapplyActiveSortIfNeeded()

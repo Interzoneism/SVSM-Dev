@@ -3000,6 +3000,17 @@ public partial class MainWindow : Window
             || string.Equals(sortMemberPath, nameof(ModListItemViewModel.ActiveSortOrder), StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool IsNameSortMember(string? sortMemberPath)
+    {
+        if (string.IsNullOrWhiteSpace(sortMemberPath))
+        {
+            return false;
+        }
+
+        return string.Equals(sortMemberPath, nameof(ModListItemViewModel.NameSortKey), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(sortMemberPath, nameof(ModListItemViewModel.DisplayName), StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string NormalizeSortMemberPath(string sortMemberPath)
     {
         if (string.IsNullOrWhiteSpace(sortMemberPath))
@@ -3007,9 +3018,17 @@ public partial class MainWindow : Window
             return sortMemberPath;
         }
 
-        return IsActiveSortMember(sortMemberPath)
-            ? nameof(ModListItemViewModel.ActiveSortOrder)
-            : sortMemberPath;
+        if (IsActiveSortMember(sortMemberPath))
+        {
+            return nameof(ModListItemViewModel.ActiveSortOrder);
+        }
+
+        if (IsNameSortMember(sortMemberPath))
+        {
+            return nameof(ModListItemViewModel.NameSortKey);
+        }
+
+        return sortMemberPath;
     }
 
     private static bool SortMemberMatches(string? columnSortMemberPath, string sortMemberPath)
@@ -3073,7 +3092,31 @@ public partial class MainWindow : Window
             }
 
             var secondary = option.SortDescriptions[1];
-            return string.Equals(secondary.Property, nameof(ModListItemViewModel.DisplayName), StringComparison.OrdinalIgnoreCase)
+            if (!string.Equals(secondary.Property, nameof(ModListItemViewModel.NameSortKey), StringComparison.OrdinalIgnoreCase)
+                || secondary.Direction != ListSortDirection.Ascending)
+            {
+                return false;
+            }
+
+            if (option.SortDescriptions.Count < 3)
+            {
+                return true;
+            }
+
+            var tertiary = option.SortDescriptions[2];
+            return string.Equals(tertiary.Property, nameof(ModListItemViewModel.ModId), StringComparison.OrdinalIgnoreCase)
+                && tertiary.Direction == ListSortDirection.Ascending;
+        }
+
+        if (IsNameSortMember(sortMemberPath))
+        {
+            if (option.SortDescriptions.Count < 2)
+            {
+                return true;
+            }
+
+            var secondary = option.SortDescriptions[1];
+            return string.Equals(secondary.Property, nameof(ModListItemViewModel.ModId), StringComparison.OrdinalIgnoreCase)
                 && secondary.Direction == ListSortDirection.Ascending;
         }
 
@@ -3087,7 +3130,17 @@ public partial class MainWindow : Window
             return new[]
             {
                 (nameof(ModListItemViewModel.ActiveSortOrder), direction),
-                (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending)
+                (nameof(ModListItemViewModel.NameSortKey), ListSortDirection.Ascending),
+                (nameof(ModListItemViewModel.ModId), ListSortDirection.Ascending)
+            };
+        }
+
+        if (IsNameSortMember(sortMemberPath))
+        {
+            return new[]
+            {
+                (nameof(ModListItemViewModel.NameSortKey), direction),
+                (nameof(ModListItemViewModel.ModId), ListSortDirection.Ascending)
             };
         }
 
@@ -3096,7 +3149,7 @@ public partial class MainWindow : Window
             return new[]
             {
                 (nameof(ModListItemViewModel.LatestVersionSortKey), direction),
-                (nameof(ModListItemViewModel.DisplayName), ListSortDirection.Ascending)
+                (nameof(ModListItemViewModel.NameSortKey), ListSortDirection.Ascending)
             };
         }
 
@@ -3112,7 +3165,8 @@ public partial class MainWindow : Window
                 : "Active (Inactive → Active)";
         }
 
-        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.DisplayName), StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(sortMemberPath, nameof(ModListItemViewModel.NameSortKey), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(sortMemberPath, nameof(ModListItemViewModel.DisplayName), StringComparison.OrdinalIgnoreCase))
         {
             return direction == ListSortDirection.Ascending
                 ? "Name (A → Z)"

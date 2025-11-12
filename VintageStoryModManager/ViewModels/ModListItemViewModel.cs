@@ -106,7 +106,11 @@ public sealed class ModListItemViewModel : ObservableObject
         _requireExactVersionMatch = requireExactVersionMatch;
 
         ModId = entry.ModId;
-        DisplayName = string.IsNullOrWhiteSpace(entry.Name) ? entry.ModId : entry.Name;
+        string? manifestName = string.IsNullOrWhiteSpace(entry.Name)
+            ? null
+            : entry.Name.Trim();
+        DisplayName = manifestName ?? entry.ModId;
+        NameSortKey = manifestName ?? entry.ModId;
         Version = entry.Version;
         NetworkVersion = entry.NetworkVersion;
         Website = entry.Website;
@@ -206,6 +210,8 @@ public sealed class ModListItemViewModel : ObservableObject
     public string ModId { get; }
 
     public string DisplayName { get; }
+
+    public string NameSortKey { get; }
 
     public string? Version { get; }
 
