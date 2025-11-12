@@ -59,6 +59,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly ModDiscoveryService _discoveryService;
     private readonly ModDatabaseService _databaseService;
     private readonly ModVersionVoteService _voteService = new();
+    private readonly Dictionary<string, string> _userReportEtags = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _latestReleaseUserReportEtags = new(StringComparer.OrdinalIgnoreCase);
     private readonly UserConfigurationService _configuration;
     private readonly int _modDatabaseSearchResultLimit;
     private int _modDatabaseCurrentResultLimit;
@@ -70,8 +72,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly ModDirectoryWatcher _modsWatcher;
     private readonly ClientSettingsWatcher _clientSettingsWatcher;
     private readonly int _newModsRecentMonths;
-    private volatile bool _hasPendingLightweightModUpdateCheck;
-    private int _isLightweightModUpdateCheckRunning;
+    private volatile bool _hasPendingFastCheck;
+    private int _isFastCheckRunning;
     private readonly SemaphoreSlim _userReportRefreshLimiter = new(MaxConcurrentUserReportRefreshes, MaxConcurrentUserReportRefreshes);
     private readonly object _userReportOperationLock = new();
 
@@ -684,16 +686,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         _modDatabaseSearchCts?.Cancel();
 
-        bool hadSearchText = !string.IsNullOrEmpty(SearchText);
-        bool modDatabaseSearchTriggeredByClearing = false;
-
         _viewSection = section;
-
-        if (hadSearchText)
-        {
-            SearchText = string.Empty;
-            modDatabaseSearchTriggeredByClearing = section == ViewSection.ModDatabase;
-        }
 
         CanLoadMoreModDatabaseResults = false;
 
@@ -706,22 +699,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         switch (section)
         {
             case ViewSection.ModDatabase:
-                ClearSearchResults();
                 SelectedMod = null;
-                if (!modDatabaseSearchTriggeredByClearing)
+                if (_searchResults.Count == 0)
                 {
                     TriggerModDatabaseSearch();
                 }
+                else
+                {
+                    SetStatus("Showing mod database.", false);
+                }
                 break;
             case ViewSection.InstalledMods:
-                ClearSearchResults();
                 SelectedMod = null;
                 SelectedSortOption?.Apply(ModsView);
                 ModsView.Refresh();
                 SetStatus("Showing installed mods.", false);
                 break;
             case ViewSection.CloudModlists:
-                ClearSearchResults();
                 SelectedMod = null;
                 SetStatus("Showing cloud modlists.", false);
                 break;
@@ -736,7 +730,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         NotifyLoadMoreCommandCanExecuteChanged();
 
-        TriggerLightweightModUpdateCheck();
+        FastCheck();
     }
 
     private void NotifyLoadMoreCommandCanExecuteChanged()
@@ -744,41 +738,43 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _loadMoreModDatabaseResultsCommand?.NotifyCanExecuteChanged();
     }
 
-    public void TriggerLightweightModUpdateCheck()
+    public void FastCheck()
     {
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
             return;
         }
 
-        _hasPendingLightweightModUpdateCheck = true;
+        _hasPendingFastCheck = true;
 
-        if (Interlocked.CompareExchange(ref _isLightweightModUpdateCheckRunning, 1, 0) == 0)
+        if (Interlocked.CompareExchange(ref _isFastCheckRunning, 1, 0) == 0)
         {
-            _ = Task.Run(RunLightweightModUpdateCheckAsync);
+            _ = Task.Run(RunFastCheckAsync);
         }
     }
 
-    private async Task RunLightweightModUpdateCheckAsync()
+    private async Task RunFastCheckAsync()
     {
         try
         {
-            while (_hasPendingLightweightModUpdateCheck)
+            while (_hasPendingFastCheck)
             {
-                _hasPendingLightweightModUpdateCheck = false;
+                _hasPendingFastCheck = false;
 
                 if (InternetAccessManager.IsInternetAccessDisabled)
                 {
                     break;
                 }
 
-                bool hasUpdates = await CheckForNewModReleasesAsync(CancellationToken.None).ConfigureAwait(false);
-                if (hasUpdates)
+                IReadOnlyList<ModEntry> updateCandidates = await CheckForNewModReleasesAsync(CancellationToken.None)
+                    .ConfigureAwait(false);
+
+                if (updateCandidates.Count > 0)
                 {
-                    await InvokeOnDispatcherAsync(() => RefreshCommand.Execute(null), CancellationToken.None)
-                        .ConfigureAwait(false);
-                    break;
+                    QueueDatabaseInfoRefresh(updateCandidates);
                 }
+
+                await CheckForVoteChangesAsync(CancellationToken.None).ConfigureAwait(false);
             }
         }
         catch
@@ -787,23 +783,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
         finally
         {
-            Interlocked.Exchange(ref _isLightweightModUpdateCheckRunning, 0);
+            Interlocked.Exchange(ref _isFastCheckRunning, 0);
 
-            if (_hasPendingLightweightModUpdateCheck && !InternetAccessManager.IsInternetAccessDisabled)
+            if (_hasPendingFastCheck && !InternetAccessManager.IsInternetAccessDisabled)
             {
-                TriggerLightweightModUpdateCheck();
+                FastCheck();
             }
         }
     }
 
-    private async Task<bool> CheckForNewModReleasesAsync(CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<ModEntry>> CheckForNewModReleasesAsync(CancellationToken cancellationToken)
     {
         try
         {
-            List<(string ModId, string? InstalledVersion)> mods = await InvokeOnDispatcherAsync(
+            List<ModEntry> entries = await InvokeOnDispatcherAsync(
                 () =>
                 {
-                    var snapshot = new List<(string, string?)>(_modEntriesBySourcePath.Count);
+                    var snapshot = new List<ModEntry>(_modEntriesBySourcePath.Count);
                     foreach (ModEntry entry in _modEntriesBySourcePath.Values)
                     {
                         if (entry is null || string.IsNullOrWhiteSpace(entry.ModId))
@@ -811,24 +807,33 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                             continue;
                         }
 
-                        snapshot.Add((entry.ModId, entry.Version));
+                        snapshot.Add(entry);
                     }
 
                     return snapshot;
                 },
                 cancellationToken).ConfigureAwait(false);
 
-            if (mods.Count == 0)
+            if (entries.Count == 0)
             {
-                return false;
+                return Array.Empty<ModEntry>();
             }
 
-            foreach ((string ModId, string? InstalledVersion) mod in mods)
+            var updateCandidates = new List<ModEntry>();
+            var processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (ModEntry entry in entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                string modId = entry.ModId;
+                if (!processed.Add(modId))
+                {
+                    continue;
+                }
+
                 string? latestVersion = await _databaseService
-                    .TryFetchLatestReleaseVersionAsync(mod.ModId, cancellationToken)
+                    .TryFetchLatestReleaseVersionAsync(modId, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (string.IsNullOrWhiteSpace(latestVersion))
@@ -836,23 +841,207 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     continue;
                 }
 
-                if (IsDifferentVersion(mod.InstalledVersion, latestVersion))
+                if (!IsDifferentVersion(entry.Version, latestVersion))
                 {
-                    return true;
+                    continue;
                 }
+
+                string? knownLatest = entry.DatabaseInfo?.LatestRelease?.Version
+                    ?? entry.DatabaseInfo?.LatestVersion;
+
+                if (string.Equals(knownLatest, latestVersion, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                updateCandidates.Add(entry);
             }
 
-            return false;
+            return updateCandidates.Count == 0
+                ? Array.Empty<ModEntry>()
+                : updateCandidates;
         }
         catch (OperationCanceledException)
         {
-            return false;
+            return Array.Empty<ModEntry>();
         }
         catch
         {
-            return false;
+            return Array.Empty<ModEntry>();
         }
     }
+
+    private async Task CheckForVoteChangesAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_installedGameVersion))
+        {
+            return;
+        }
+
+        List<VoteCheckTarget> targets = await InvokeOnDispatcherAsync(
+            () =>
+            {
+                var list = new List<VoteCheckTarget>(_mods.Count);
+                foreach (ModListItemViewModel mod in _mods)
+                {
+                    bool hasUserReportSummary = mod.UserReportSummary is not null;
+                    bool hasLatestReleaseSummary = mod.LatestReleaseUserReportSummary is not null;
+
+                    if (!hasUserReportSummary && !hasLatestReleaseSummary)
+                    {
+                        continue;
+                    }
+
+                    string? latestReleaseVersion = hasLatestReleaseSummary ? mod.LatestRelease?.Version : null;
+                    list.Add(new VoteCheckTarget(
+                        mod,
+                        hasUserReportSummary ? mod.UserReportModVersion : null,
+                        hasUserReportSummary,
+                        latestReleaseVersion,
+                        hasLatestReleaseSummary));
+                }
+
+                return list;
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        if (targets.Count == 0)
+        {
+            return;
+        }
+
+        using var limiter = new SemaphoreSlim(MaxConcurrentUserReportRefreshes, MaxConcurrentUserReportRefreshes);
+        var tasks = targets
+            .Select(target => CheckVoteChangesForModAsync(target, limiter, cancellationToken))
+            .ToArray();
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+    }
+
+    private async Task CheckVoteChangesForModAsync(
+        VoteCheckTarget target,
+        SemaphoreSlim limiter,
+        CancellationToken cancellationToken)
+    {
+        await limiter.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            if (target.HasUserReportSummary
+                && !string.IsNullOrWhiteSpace(target.UserReportVersion)
+                && !string.IsNullOrWhiteSpace(_installedGameVersion))
+            {
+                string key = BuildVoteEtagKey("current", target.Mod.ModId, target.UserReportVersion, _installedGameVersion);
+                _userReportEtags.TryGetValue(key, out string? etag);
+
+                ModVersionVoteService.VoteSummaryResult result = await _voteService
+                    .GetVoteSummaryIfChangedAsync(target.Mod.ModId, target.UserReportVersion, _installedGameVersion!, etag, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (!result.IsNotModified)
+                {
+                    if (result.Summary is not null)
+                    {
+                        await InvokeOnDispatcherAsync(
+                            () => target.Mod.ApplyUserReportSummary(result.Summary!),
+                            cancellationToken,
+                            DispatcherPriority.Background).ConfigureAwait(false);
+                    }
+
+                    StoreUserReportEtag(target.Mod.ModId, target.UserReportVersion, result.ETag);
+                }
+                else if (string.IsNullOrEmpty(etag) && !string.IsNullOrEmpty(result.ETag))
+                {
+                    StoreUserReportEtag(target.Mod.ModId, target.UserReportVersion, result.ETag);
+                }
+            }
+
+            if (target.HasLatestReleaseSummary
+                && !string.IsNullOrWhiteSpace(target.LatestReleaseVersion)
+                && !string.IsNullOrWhiteSpace(_installedGameVersion))
+            {
+                string key = BuildVoteEtagKey("latest", target.Mod.ModId, target.LatestReleaseVersion, _installedGameVersion);
+                _latestReleaseUserReportEtags.TryGetValue(key, out string? etag);
+
+                ModVersionVoteService.VoteSummaryResult result = await _voteService
+                    .GetVoteSummaryIfChangedAsync(target.Mod.ModId, target.LatestReleaseVersion, _installedGameVersion!, etag, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (!result.IsNotModified)
+                {
+                    if (result.Summary is not null)
+                    {
+                        await InvokeOnDispatcherAsync(
+                            () => target.Mod.ApplyLatestReleaseUserReportSummary(result.Summary!),
+                            cancellationToken,
+                            DispatcherPriority.Background).ConfigureAwait(false);
+                    }
+
+                    StoreLatestReleaseUserReportEtag(target.Mod.ModId, target.LatestReleaseVersion, result.ETag);
+                }
+                else if (string.IsNullOrEmpty(etag) && !string.IsNullOrEmpty(result.ETag))
+                {
+                    StoreLatestReleaseUserReportEtag(target.Mod.ModId, target.LatestReleaseVersion, result.ETag);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            // Swallow unexpected failures for individual mods to allow other checks to continue.
+        }
+        finally
+        {
+            limiter.Release();
+        }
+    }
+
+    private sealed record VoteCheckTarget(
+        ModListItemViewModel Mod,
+        string? UserReportVersion,
+        bool HasUserReportSummary,
+        string? LatestReleaseVersion,
+        bool HasLatestReleaseSummary);
+
+    private void StoreUserReportEtag(string modId, string? modVersion, string? etag)
+    {
+        UpdateVoteEtag(_userReportEtags, "current", modId, modVersion, etag);
+    }
+
+    private void StoreLatestReleaseUserReportEtag(string modId, string? modVersion, string? etag)
+    {
+        UpdateVoteEtag(_latestReleaseUserReportEtags, "latest", modId, modVersion, etag);
+    }
+
+    private void UpdateVoteEtag(
+        Dictionary<string, string> target,
+        string prefix,
+        string modId,
+        string? modVersion,
+        string? etag)
+    {
+        if (string.IsNullOrWhiteSpace(modId)
+            || string.IsNullOrWhiteSpace(modVersion)
+            || string.IsNullOrWhiteSpace(_installedGameVersion))
+        {
+            return;
+        }
+
+        string key = BuildVoteEtagKey(prefix, modId, modVersion, _installedGameVersion);
+        if (string.IsNullOrEmpty(etag))
+        {
+            target.Remove(key);
+            return;
+        }
+
+        target[key] = etag;
+    }
+
+    private static string BuildVoteEtagKey(string prefix, string modId, string modVersion, string? gameVersion) =>
+        string.Concat(prefix, '|', modId, '|', modVersion, '|', gameVersion ?? string.Empty);
 
     private static bool IsDifferentVersion(string? installedVersion, string? latestVersion)
     {
@@ -2314,6 +2503,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             await InvokeOnDispatcherAsync(mod.ClearLatestReleaseUserReport, cancellationToken, DispatcherPriority.Background)
                 .ConfigureAwait(false);
+            StoreLatestReleaseUserReportEtag(mod.ModId, null, null);
             return null;
         }
 
@@ -2327,6 +2517,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             await InvokeOnDispatcherAsync(mod.ClearLatestReleaseUserReport, cancellationToken, DispatcherPriority.Background)
                 .ConfigureAwait(false);
+            StoreLatestReleaseUserReportEtag(mod.ModId, latestReleaseVersion, null);
             return null;
         }
 
@@ -2334,27 +2525,31 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             await InvokeOnDispatcherAsync(mod.ClearLatestReleaseUserReport, cancellationToken, DispatcherPriority.Background)
                 .ConfigureAwait(false);
+            StoreLatestReleaseUserReportEtag(mod.ModId, latestReleaseVersion, null);
             return null;
         }
 
         try
         {
-            ModVersionVoteSummary summary = await _voteService
-                .GetVoteSummaryAsync(mod.ModId, latestReleaseVersion, _installedGameVersion!, cancellationToken)
+            (ModVersionVoteSummary Summary, string? etag) = await _voteService
+                .GetVoteSummaryWithEtagAsync(mod.ModId, latestReleaseVersion, _installedGameVersion!, cancellationToken)
                 .ConfigureAwait(false);
 
             await InvokeOnDispatcherAsync(
-                    () => mod.ApplyLatestReleaseUserReportSummary(summary),
+                    () => mod.ApplyLatestReleaseUserReportSummary(Summary),
                     cancellationToken,
                     DispatcherPriority.Background)
                 .ConfigureAwait(false);
 
-            return summary;
+            StoreLatestReleaseUserReportEtag(mod.ModId, latestReleaseVersion, etag);
+
+            return Summary;
         }
         catch (InternetAccessDisabledException)
         {
             await InvokeOnDispatcherAsync(mod.ClearLatestReleaseUserReport, cancellationToken, DispatcherPriority.Background)
                 .ConfigureAwait(false);
+            StoreLatestReleaseUserReportEtag(mod.ModId, latestReleaseVersion, null);
             return null;
         }
         catch (Exception ex)
@@ -2372,6 +2567,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             await InvokeOnDispatcherAsync(mod.ClearLatestReleaseUserReport, cancellationToken, DispatcherPriority.Background)
                 .ConfigureAwait(false);
+            StoreLatestReleaseUserReportEtag(mod.ModId, latestReleaseVersion, null);
             return null;
         }
     }
@@ -2467,7 +2663,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         try
         {
-            ModVersionVoteSummary summary = option.HasValue
+            (ModVersionVoteSummary Summary, string? etag) = option.HasValue
                 ? await _voteService
                     .SubmitVoteAsync(
                         mod.ModId,
@@ -2482,17 +2678,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     .ConfigureAwait(false);
 
             await InvokeOnDispatcherAsync(
-                    () => mod.ApplyUserReportSummary(summary),
+                    () => mod.ApplyUserReportSummary(Summary),
                     cancellationToken,
                     DispatcherPriority.Background)
                 .ConfigureAwait(false);
 
-            return summary;
+            StoreUserReportEtag(mod.ModId, mod.UserReportModVersion, etag);
+
+            return Summary;
         }
         catch (InternetAccessDisabledException)
         {
             await InvokeOnDispatcherAsync(mod.SetUserReportOffline, cancellationToken, DispatcherPriority.Background)
                 .ConfigureAwait(false);
+            StoreUserReportEtag(mod.ModId, mod.UserReportModVersion, null);
             throw;
         }
         catch (Exception ex)
@@ -2521,6 +2720,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     cancellationToken,
                     DispatcherPriority.Background)
                 .ConfigureAwait(false);
+            StoreUserReportEtag(mod.ModId, mod.UserReportModVersion, null);
             return null;
         }
 
@@ -2528,6 +2728,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             await InvokeOnDispatcherAsync(mod.SetUserReportOffline, cancellationToken, DispatcherPriority.Background)
                 .ConfigureAwait(false);
+            StoreUserReportEtag(mod.ModId, mod.UserReportModVersion, null);
             return null;
         }
 
@@ -2536,22 +2737,25 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         try
         {
-            ModVersionVoteSummary summary = await _voteService
-                .GetVoteSummaryAsync(mod.ModId, mod.UserReportModVersion!, _installedGameVersion!, cancellationToken)
+            (ModVersionVoteSummary Summary, string? etag) = await _voteService
+                .GetVoteSummaryWithEtagAsync(mod.ModId, mod.UserReportModVersion!, _installedGameVersion!, cancellationToken)
                 .ConfigureAwait(false);
 
             await InvokeOnDispatcherAsync(
-                    () => mod.ApplyUserReportSummary(summary),
+                    () => mod.ApplyUserReportSummary(Summary),
                     cancellationToken,
                     DispatcherPriority.Background)
                 .ConfigureAwait(false);
 
-            return summary;
+            StoreUserReportEtag(mod.ModId, mod.UserReportModVersion, etag);
+
+            return Summary;
         }
         catch (InternetAccessDisabledException)
         {
             await InvokeOnDispatcherAsync(mod.SetUserReportOffline, cancellationToken, DispatcherPriority.Background)
                 .ConfigureAwait(false);
+            StoreUserReportEtag(mod.ModId, mod.UserReportModVersion, null);
             return null;
         }
         catch (Exception ex)
