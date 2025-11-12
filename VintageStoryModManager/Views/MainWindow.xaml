@@ -1309,35 +1309,6 @@
                                             </Style>
                                         </DataGridTextColumn.CellStyle>
                                     </DataGridTextColumn>
-                                    <DataGridTemplateColumn x:Name="InstalledColumn" Header="Installed" Width="85" IsReadOnly="True" Visibility="Collapsed">
-                                        <DataGridTemplateColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTemplateColumn.CellStyle>
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="✓"
-                                           Foreground="{DynamicResource Brush.Accent.Primary}"
-                                           FontSize="16"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="{x:Type TextBlock}">
-                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsInstalled}" Value="True">
-                                                                    <Setter Property="Visibility" Value="Visible" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
                                     <DataGridTextColumn x:Name="VersionColumn"
                                          Header="Version"
                                          Binding="{Binding VersionDisplay, Mode=OneWay}"
@@ -1410,35 +1381,6 @@
                                                         <Setter Property="ToolTip" Value="{x:Null}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.CellStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn x:Name="DownloadsColumn"
-                                         Width="120"
-                                         MinWidth="110"
-                                         IsReadOnly="True">
-                                        <DataGridTextColumn.Header>
-                                            <TextBlock Text="Downloads" />
-                                        </DataGridTextColumn.Header>
-                                        <DataGridTextColumn.Binding>
-                                            <MultiBinding Converter="{StaticResource IMM.DownloadMetricDisplayConverter}">
-                                                <Binding Path="DataContext.IsShowingRecentDownloadMetric" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
-                                                <Binding Path="DownloadsDisplay" />
-                                                <Binding Path="RecentDownloadsDisplay" />
-                                                <Binding Path="TenDayDownloadsDisplay" />
-                                                <Binding Path="DataContext.ModDatabaseAutoLoadMode" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
-                                            </MultiBinding>
-                                        </DataGridTextColumn.Binding>
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="{x:Type TextBlock}">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                                <Setter Property="VerticalAlignment" Value="Center" />
                                             </Style>
                                         </DataGridTextColumn.ElementStyle>
                                         <DataGridTextColumn.CellStyle>

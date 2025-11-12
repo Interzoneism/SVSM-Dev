@@ -384,10 +384,10 @@ public partial class MainWindow : Window
         SetColumnVisibility(ActiveColumn, null, InstalledModsColumn.Active, !isSearching);
         SetColumnVisibility(IconColumn, null, InstalledModsColumn.Icon, !isSearching && !isCompactView);
         SetColumnVisibility(NameColumn, ModDbNameColumn, InstalledModsColumn.Name, true);
-        SetColumnVisibility(InstalledColumn, ModDbInstalledColumn, InstalledModsColumn.Installed, isSearching);
+        SetColumnVisibility(null, ModDbInstalledColumn, InstalledModsColumn.Installed, isSearching);
         SetColumnVisibility(VersionColumn, null, InstalledModsColumn.Version, !isSearching);
         SetColumnVisibility(LatestVersionColumn, ModDbLatestVersionColumn, InstalledModsColumn.LatestVersion, true);
-        SetColumnVisibility(DownloadsColumn, ModDbDownloadsColumn, InstalledModsColumn.Downloads, isSearching);
+        SetColumnVisibility(null, ModDbDownloadsColumn, InstalledModsColumn.Downloads, isSearching);
         SetColumnVisibility(AuthorsColumn, ModDbAuthorsColumn, InstalledModsColumn.Authors, true);
         SetColumnVisibility(TagsColumn, ModDbTagsColumn, InstalledModsColumn.Tags, true);
         SetColumnVisibility(UserReportsColumn, ModDbUserReportsColumn, InstalledModsColumn.UserReports, true);
@@ -397,7 +397,11 @@ public partial class MainWindow : Window
 
     private void SetColumnVisibility(DataGridColumn? column, DataGridColumn? modDbColumn, InstalledModsColumn columnKey, bool isContextuallyVisible)
     {
-        SetColumnVisibility(column, columnKey, isContextuallyVisible);
+        if (column != null)
+        {
+            SetColumnVisibility(column, columnKey, isContextuallyVisible);
+        }
+        
 
         if (modDbColumn == null)
         {
