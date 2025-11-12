@@ -231,12 +231,10 @@ public partial class MainWindow : Window
     private ScrollViewer? _modsScrollViewer;
     private DataGrid? _modsScrollViewerSource;
     private ScrollViewer? _modDatabaseCardsScrollViewer;
+    private ICollectionView? _currentModsView;
     private bool _suppressSortPreferenceSave;
-    private string? _cachedSortMemberPath;
-    private ListSortDirection? _cachedSortDirection;
 
     public IAsyncRelayCommand RefreshModsUiCommand { get; }
-    private SortOption? _cachedSortOption;
     private readonly SemaphoreSlim _backupSemaphore = new(1, 1);
     private readonly SemaphoreSlim _cloudStoreLock = new(1, 1);
     private FirebaseModlistStore? _cloudModlistStore;
@@ -2495,12 +2493,8 @@ public partial class MainWindow : Window
                     if (_viewModel != null)
                     {
                         UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
-                        _modsScrollViewer = null;
-                        _modDatabaseCardsScrollViewer = null;
                     }
                 }, DispatcherPriority.Background);
-
-                Dispatcher.InvokeAsync(UpdateLoadMoreScrollThresholdState, DispatcherPriority.Background);
             }
         }
         else if (e.PropertyName == nameof(MainViewModel.ModDatabaseAutoLoadMode))
@@ -2535,7 +2529,10 @@ public partial class MainWindow : Window
                 {
                     if (_viewModel != null)
                     {
-                        AttachToModsView(_viewModel.CurrentModsView);
+                        ICollectionView newView = _viewModel.CurrentModsView;
+                        ICollectionView? previousView = _currentModsView;
+                        bool preserveState = ShouldPreserveModsViewState(previousView, newView);
+                        AttachToModsView(newView, preserveState);
                     }
                 }, DispatcherPriority.Background);
             }
@@ -2745,73 +2742,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (isSearchingModDatabase)
+        if (!isSearchingModDatabase)
         {
-            CacheCurrentSortState();
-            ModsDataGrid.CanUserSortColumns = false;
-
-            ICollectionView? view = _viewModel?.SearchResultsView;
-            if (view != null && view.SortDescriptions.Count > 0)
-            {
-                view.SortDescriptions.Clear();
-            }
-
-            if (ModsDataGrid.Items.SortDescriptions.Count > 0)
-            {
-                ModsDataGrid.Items.SortDescriptions.Clear();
-            }
-            return;
-        }
-
-        ModsDataGrid.CanUserSortColumns = true;
-        RestoreCachedSortState();
-    }
-
-    private void CacheCurrentSortState()
-    {
-        _cachedSortMemberPath = null;
-        _cachedSortDirection = null;
-        _cachedSortOption = _viewModel?.SelectedSortOption;
-
-        if (ModsDataGrid != null)
-        {
-            foreach (DataGridColumn column in ModsDataGrid.Columns)
-            {
-                if (!column.SortDirection.HasValue)
-                {
-                    continue;
-                }
-
-                string? memberPath = column.SortMemberPath;
-                if (string.IsNullOrWhiteSpace(memberPath))
-                {
-                    continue;
-                }
-
-                _cachedSortMemberPath = NormalizeSortMemberPath(memberPath);
-                _cachedSortDirection = column.SortDirection;
-                break;
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(_cachedSortMemberPath) && _cachedSortDirection.HasValue)
-        {
-            return;
-        }
-
-        if (_viewModel?.SelectedSortOption is { SortDescriptions: { Count: > 0 } sorts })
-        {
-            var primary = sorts[0];
-            _cachedSortMemberPath = NormalizeSortMemberPath(primary.Property);
-            _cachedSortDirection = primary.Direction;
-            return;
-        }
-
-        if (ModsDataGrid?.Items.SortDescriptions.Count > 0)
-        {
-            SortDescription description = ModsDataGrid.Items.SortDescriptions[0];
-            _cachedSortMemberPath = NormalizeSortMemberPath(description.PropertyName);
-            _cachedSortDirection = description.Direction;
+            ModsDataGrid.CanUserSortColumns = true;
         }
     }
 
@@ -2891,43 +2824,6 @@ public partial class MainWindow : Window
                 _isRefreshingAfterModlistLoad = false;
             }
         }, DispatcherPriority.Background);
-    }
-
-    private void RestoreCachedSortState()
-    {
-        var viewModel = _viewModel;
-        if (viewModel is null)
-        {
-            return;
-        }
-
-        SortOption? cachedOption = _cachedSortOption;
-        string? cachedMemberPath = _cachedSortMemberPath;
-        ListSortDirection? cachedDirection = _cachedSortDirection;
-        _cachedSortMemberPath = null;
-        _cachedSortDirection = null;
-        _cachedSortOption = null;
-
-        if (cachedOption is not null)
-        {
-            ApplySortOption(cachedOption, persistPreference: false);
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(cachedMemberPath) && cachedDirection.HasValue)
-        {
-            ApplyModListSort(cachedMemberPath, cachedDirection.Value, persistPreference: false);
-            return;
-        }
-
-        if (viewModel.SelectedSortOption is { } selectedOption)
-        {
-            selectedOption.Apply(viewModel.ModsView);
-            UpdateSortPreferenceFromSelectedOption(persistPreference: false);
-            return;
-        }
-
-        RestoreSortPreference();
     }
 
     private void RestoreSortPreference()
@@ -12555,17 +12451,45 @@ public partial class MainWindow : Window
         return ModListScrollMultiplier;
     }
 
-    private void AttachToModsView(ICollectionView modsView)
+    private bool ShouldPreserveModsViewState(ICollectionView? previousView, ICollectionView? nextView)
     {
+        if (_viewModel is null || previousView is null || nextView is null)
+        {
+            return false;
+        }
+
+        bool previousIsInstalled = ReferenceEquals(previousView, _viewModel.ModsView);
+        bool previousIsModDb = ReferenceEquals(previousView, _viewModel.SearchResultsView);
+        bool nextIsInstalled = ReferenceEquals(nextView, _viewModel.ModsView);
+        bool nextIsModDb = ReferenceEquals(nextView, _viewModel.SearchResultsView);
+
+        return (previousIsInstalled && nextIsModDb) || (previousIsModDb && nextIsInstalled);
+    }
+
+    private void AttachToModsView(ICollectionView? modsView, bool preserveState = false)
+    {
+        if (modsView is null)
+        {
+            if (_modsCollection != null)
+            {
+                _modsCollection.CollectionChanged -= ModsView_OnCollectionChanged;
+                _modsCollection = null;
+            }
+
+            if (!preserveState)
+            {
+                ClearSelection(resetAnchor: true);
+            }
+
+            _currentModsView = null;
+            return;
+        }
+
         if (_modsCollection != null)
         {
             _modsCollection.CollectionChanged -= ModsView_OnCollectionChanged;
             _modsCollection = null;
         }
-
-        _modsScrollViewer = null;
-        _modsScrollViewerSource = null;
-        _modDatabaseCardsScrollViewer = null;
 
         if (modsView is INotifyCollectionChanged notify)
         {
@@ -12573,11 +12497,21 @@ public partial class MainWindow : Window
             notify.CollectionChanged += ModsView_OnCollectionChanged;
         }
 
-        ClearSelection(resetAnchor: true);
+        if (!preserveState)
+        {
+            ClearSelection(resetAnchor: true);
+        }
+
+        _currentModsView = modsView;
     }
 
     private void ModsView_OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (!ReferenceEquals(sender, _viewModel?.ModsView))
+        {
+            return;
+        }
+
         Dispatcher.Invoke(() => ClearSelection(resetAnchor: true));
     }
 
