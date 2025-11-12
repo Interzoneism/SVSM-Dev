@@ -18,6 +18,22 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public sealed class ModVersionVoteService
 {
+    public readonly struct VoteSummaryResult
+    {
+        public VoteSummaryResult(ModVersionVoteSummary? summary, string? eTag, bool isNotModified)
+        {
+            Summary = summary;
+            ETag = eTag;
+            IsNotModified = isNotModified;
+        }
+
+        public ModVersionVoteSummary? Summary { get; }
+
+        public string? ETag { get; }
+
+        public bool IsNotModified { get; }
+    }
+
     private static readonly string DefaultDbUrl = DevConfig.ModVersionVoteDefaultDbUrl;
 
     private static readonly string VotesRootPath = DevConfig.ModVersionVoteRootPath;
@@ -50,10 +66,36 @@ public sealed class ModVersionVoteService
         _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
     }
 
+
     public async Task<ModVersionVoteSummary> GetVoteSummaryAsync(
         string modId,
         string modVersion,
         string vintageStoryVersion,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateIdentifiers(modId, modVersion, vintageStoryVersion);
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession? session = await _authenticator
+            .TryGetExistingSessionAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        (ModVersionVoteSummary Summary, string? _) = await GetVoteSummaryWithEtagAsync(
+                session,
+                modId,
+                modVersion,
+                vintageStoryVersion,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return Summary;
+    }
+
+    public async Task<VoteSummaryResult> GetVoteSummaryIfChangedAsync(
+        string modId,
+        string modVersion,
+        string vintageStoryVersion,
+        string? knownEtag,
         CancellationToken cancellationToken = default)
     {
         ValidateIdentifiers(modId, modVersion, vintageStoryVersion);
@@ -68,11 +110,34 @@ public sealed class ModVersionVoteService
                 modId,
                 modVersion,
                 vintageStoryVersion,
+                knownEtag,
                 cancellationToken)
             .ConfigureAwait(false);
     }
 
-    public async Task<ModVersionVoteSummary> SubmitVoteAsync(
+    public async Task<(ModVersionVoteSummary Summary, string? ETag)> GetVoteSummaryWithEtagAsync(
+        string modId,
+        string modVersion,
+        string vintageStoryVersion,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateIdentifiers(modId, modVersion, vintageStoryVersion);
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession? session = await _authenticator
+            .TryGetExistingSessionAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return await GetVoteSummaryWithEtagAsync(
+                session,
+                modId,
+                modVersion,
+                vintageStoryVersion,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<(ModVersionVoteSummary Summary, string? ETag)> SubmitVoteAsync(
         string modId,
         string modVersion,
         string vintageStoryVersion,
@@ -109,7 +174,7 @@ public sealed class ModVersionVoteService
 
         await EnsureOkAsync(response, "Submit vote").ConfigureAwait(false);
 
-        return await GetVoteSummaryInternalAsync(
+        return await GetVoteSummaryWithEtagAsync(
                 session,
                 modId,
                 modVersion,
@@ -118,7 +183,7 @@ public sealed class ModVersionVoteService
             .ConfigureAwait(false);
     }
 
-    public async Task<ModVersionVoteSummary> RemoveVoteAsync(
+    public async Task<(ModVersionVoteSummary Summary, string? ETag)> RemoveVoteAsync(
         string modId,
         string modVersion,
         string vintageStoryVersion,
@@ -146,7 +211,7 @@ public sealed class ModVersionVoteService
             await EnsureOkAsync(response, "Remove vote").ConfigureAwait(false);
         }
 
-        return await GetVoteSummaryInternalAsync(
+        return await GetVoteSummaryWithEtagAsync(
                 session,
                 modId,
                 modVersion,
@@ -155,24 +220,63 @@ public sealed class ModVersionVoteService
             .ConfigureAwait(false);
     }
 
-    private async Task<ModVersionVoteSummary> GetVoteSummaryInternalAsync(
+    private async Task<(ModVersionVoteSummary Summary, string? ETag)> GetVoteSummaryWithEtagAsync(
         FirebaseAnonymousAuthenticator.FirebaseAuthSession? session,
         string modId,
         string modVersion,
         string vintageStoryVersion,
         CancellationToken cancellationToken)
     {
+        VoteSummaryResult result = await GetVoteSummaryInternalAsync(
+                session,
+                modId,
+                modVersion,
+                vintageStoryVersion,
+                knownEtag: null,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (result.Summary is null)
+        {
+            throw new InvalidOperationException("Vote summary was not available.");
+        }
+
+        return (result.Summary, result.ETag);
+    }
+
+    private async Task<VoteSummaryResult> GetVoteSummaryInternalAsync(
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession? session,
+        string modId,
+        string modVersion,
+        string vintageStoryVersion,
+        string? knownEtag,
+        CancellationToken cancellationToken)
+    {
         string modKey = SanitizeKey(modId);
         string versionKey = SanitizeKey(modVersion);
         string url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "users");
 
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.TryAddWithoutValidation("X-Firebase-ETag", "true");
+        if (!string.IsNullOrWhiteSpace(knownEtag))
+        {
+            request.Headers.TryAddWithoutValidation("If-None-Match", knownEtag);
+        }
+
         using HttpResponseMessage response = await HttpClient
-            .GetAsync(url, cancellationToken)
+            .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
+
+        string? responseEtag = response.Headers.ETag?.Tag;
+
+        if (response.StatusCode == HttpStatusCode.NotModified)
+        {
+            return new VoteSummaryResult(null, responseEtag ?? knownEtag, true);
+        }
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
-            return new ModVersionVoteSummary(
+            var emptySummary = new ModVersionVoteSummary(
                 modId,
                 modVersion,
                 vintageStoryVersion,
@@ -180,14 +284,21 @@ public sealed class ModVersionVoteService
                 ModVersionVoteComments.Empty,
                 null,
                 null);
+
+            return new VoteSummaryResult(emptySummary, responseEtag, false);
         }
 
         await EnsureOkAsync(response, "Fetch votes").ConfigureAwait(false);
 
-        string json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(json) || string.Equals(json.Trim(), "null", StringComparison.OrdinalIgnoreCase))
+        await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        using JsonDocument document = await JsonDocument
+            .ParseAsync(contentStream, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        JsonElement root = document.RootElement;
+        if (root.ValueKind == JsonValueKind.Null)
         {
-            return new ModVersionVoteSummary(
+            var emptySummary = new ModVersionVoteSummary(
                 modId,
                 modVersion,
                 vintageStoryVersion,
@@ -195,13 +306,13 @@ public sealed class ModVersionVoteService
                 ModVersionVoteComments.Empty,
                 null,
                 null);
+
+            return new VoteSummaryResult(emptySummary, responseEtag, false);
         }
 
-        using JsonDocument document = JsonDocument.Parse(json);
-        JsonElement root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
         {
-            return new ModVersionVoteSummary(
+            var emptySummary = new ModVersionVoteSummary(
                 modId,
                 modVersion,
                 vintageStoryVersion,
@@ -209,6 +320,8 @@ public sealed class ModVersionVoteService
                 ModVersionVoteComments.Empty,
                 null,
                 null);
+
+            return new VoteSummaryResult(emptySummary, responseEtag, false);
         }
 
         int fullyFunctional = 0;
@@ -218,38 +331,34 @@ public sealed class ModVersionVoteService
         int crashesOrFreezes = 0;
         ModVersionVoteOption? userVote = null;
         string? userComment = null;
-        string? installedVersionNormalized = NormalizeVersion(vintageStoryVersion);
-        string? currentUserId = session?.UserId;
-        var notFunctionalComments = new List<string>();
-        var crashesOrFreezesComments = new List<string>();
+
+        if (session.HasValue && session.Value.UserId is { Length: > 0 } userId)
+        {
+            if (root.TryGetProperty(userId, out JsonElement userElement)
+                && TryDeserializeRecord(userElement) is VoteRecord currentUserRecord)
+            {
+                userVote = currentUserRecord.Option;
+                userComment = currentUserRecord.Comment;
+            }
+        }
+
+        List<string> notFunctionalComments = new();
+        List<string> crashesOrFreezesGameComments = new();
 
         foreach (JsonProperty property in root.EnumerateObject())
         {
+            if (property.Value.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
             VoteRecord? record = TryDeserializeRecord(property.Value);
             if (record is null)
             {
                 continue;
             }
 
-            ModVersionVoteOption option = record.Value.Option;
-            string? normalizedComment = NormalizeComment(record.Value.Comment);
-
-            if (!string.IsNullOrWhiteSpace(currentUserId)
-                && string.Equals(property.Name, currentUserId, StringComparison.Ordinal))
-            {
-                userVote = option;
-                userComment = normalizedComment;
-            }
-
-            if (!string.Equals(
-                    NormalizeVersion(record.Value.VintageStoryVersion),
-                    installedVersionNormalized,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            switch (option)
+            switch (record.Value.Option)
             {
                 case ModVersionVoteOption.FullyFunctional:
                     fullyFunctional++;
@@ -262,11 +371,11 @@ public sealed class ModVersionVoteService
                     break;
                 case ModVersionVoteOption.NotFunctional:
                     notFunctional++;
-                    AddComment(notFunctionalComments, normalizedComment);
+                    AddComment(notFunctionalComments, record.Value.Comment);
                     break;
                 case ModVersionVoteOption.CrashesOrFreezesGame:
                     crashesOrFreezes++;
-                    AddComment(crashesOrFreezesComments, normalizedComment);
+                    AddComment(crashesOrFreezesGameComments, record.Value.Comment);
                     break;
             }
         }
@@ -279,8 +388,9 @@ public sealed class ModVersionVoteService
             crashesOrFreezes);
         var comments = new ModVersionVoteComments(
             ToReadOnlyList(notFunctionalComments),
-            ToReadOnlyList(crashesOrFreezesComments));
-        return new ModVersionVoteSummary(
+            ToReadOnlyList(crashesOrFreezesGameComments));
+
+        var summary = new ModVersionVoteSummary(
             modId,
             modVersion,
             vintageStoryVersion,
@@ -288,6 +398,8 @@ public sealed class ModVersionVoteService
             comments,
             userVote,
             userComment);
+
+        return new VoteSummaryResult(summary, responseEtag, false);
     }
 
     private static VoteRecord? TryDeserializeRecord(JsonElement element)
