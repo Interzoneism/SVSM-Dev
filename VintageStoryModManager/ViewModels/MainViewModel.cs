@@ -33,6 +33,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan BusyStateReleaseDelay = TimeSpan.FromMilliseconds(600);
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
     private const string NoCompatibleModDatabaseResultsStatusMessage = "No compatible mods found in the mod database.";
+    private const string UserReportsLoadingStatusMessage = "Loading user reports...";
+    private const string UserReportsLoadedStatusMessage = "User reports loaded.";
     private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
     private static readonly int MaxConcurrentUserReportRefreshes = DevConfig.MaxConcurrentUserReportRefreshes;
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
@@ -71,6 +73,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private volatile bool _hasPendingLightweightModUpdateCheck;
     private int _isLightweightModUpdateCheckRunning;
     private readonly SemaphoreSlim _userReportRefreshLimiter = new(MaxConcurrentUserReportRefreshes, MaxConcurrentUserReportRefreshes);
+    private readonly object _userReportOperationLock = new();
 
     private SortOption? _selectedSortOption;
     private bool _isBusy;
@@ -138,6 +141,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _isTagsColumnVisible = true;
     private readonly HashSet<string> _suppressedTagEntries = new(StringComparer.OrdinalIgnoreCase);
     private bool _areUserReportsVisible = true;
+    private int _activeUserReportOperations;
 
     public MainViewModel(
         string dataDirectory,
@@ -2229,6 +2233,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         Func<CancellationToken, Task<ModVersionVoteSummary?>> operation,
         CancellationToken cancellationToken)
     {
+        using var userReportScope = BeginUserReportOperation();
         bool entered = false;
 
         try
@@ -2244,6 +2249,45 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 _userReportRefreshLimiter.Release();
             }
+        }
+    }
+
+    private IDisposable BeginUserReportOperation()
+    {
+        bool shouldSetLoadingStatus;
+
+        lock (_userReportOperationLock)
+        {
+            _activeUserReportOperations++;
+            shouldSetLoadingStatus = _activeUserReportOperations == 1;
+        }
+
+        if (shouldSetLoadingStatus)
+        {
+            SetStatus(UserReportsLoadingStatusMessage, false);
+        }
+
+        IDisposable busyScope = BeginBusyScope();
+        return new UserReportOperationScope(this, busyScope);
+    }
+
+    private void EndUserReportOperation()
+    {
+        bool shouldSetLoadedStatus;
+
+        lock (_userReportOperationLock)
+        {
+            if (_activeUserReportOperations > 0)
+            {
+                _activeUserReportOperations--;
+            }
+
+            shouldSetLoadedStatus = _activeUserReportOperations == 0;
+        }
+
+        if (shouldSetLoadedStatus)
+        {
+            SetStatus(UserReportsLoadedStatusMessage, false);
         }
     }
 
@@ -3700,6 +3744,31 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         else
         {
             IsLoadingModDetails = isLoading;
+        }
+    }
+
+    private sealed class UserReportOperationScope : IDisposable
+    {
+        private readonly MainViewModel _owner;
+        private readonly IDisposable _busyScope;
+        private bool _disposed;
+
+        public UserReportOperationScope(MainViewModel owner, IDisposable busyScope)
+        {
+            _owner = owner;
+            _busyScope = busyScope;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _busyScope.Dispose();
+            _owner.EndUserReportOperation();
         }
     }
 
