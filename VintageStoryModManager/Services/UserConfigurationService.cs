@@ -170,6 +170,7 @@ public sealed class UserConfigurationService
     private bool _migrationCheckCompleted;
     private bool _requireExactVsVersionMatch;
     private bool _firebaseAuthBackupCreated;
+    private bool _gameProfileCreationWarningAcknowledged;
 
     public UserConfigurationService()
     {
@@ -237,6 +238,8 @@ public sealed class UserConfigurationService
                 StringComparison.OrdinalIgnoreCase);
         }
     }
+
+    public bool GameProfileCreationWarningAcknowledged => _gameProfileCreationWarningAcknowledged;
 
     public ModlistAutoLoadBehavior ModlistAutoLoadBehavior => _modlistAutoLoadBehavior;
 
@@ -1310,6 +1313,17 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetGameProfileCreationWarningAcknowledged(bool acknowledged)
+    {
+        if (_gameProfileCreationWarningAcknowledged == acknowledged)
+        {
+            return;
+        }
+
+        _gameProfileCreationWarningAcknowledged = acknowledged;
+        Save();
+    }
+
     public void SetDisableInternetAccess(bool disable)
     {
         if (_disableInternetAccess == disable)
@@ -1499,6 +1513,7 @@ public sealed class UserConfigurationService
         _colorTheme = ColorTheme.VintageStory;
         ResetThemePaletteToDefaults();
         _selectedPresetName = null;
+        _gameProfileCreationWarningAcknowledged = false;
     
         try
         {
@@ -1536,6 +1551,8 @@ public sealed class UserConfigurationService
             _suppressRefreshCachePrompt = obj["suppressRefreshCachePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePromptVersion = NormalizeVersion(
                 GetOptionalString(obj["suppressRefreshCachePromptVersion"]));
+            _gameProfileCreationWarningAcknowledged =
+                obj["gameProfileCreationWarningAcknowledged"]?.GetValue<bool?>() ?? false;
             if (_suppressRefreshCachePrompt)
             {
                 if (_suppressRefreshCachePromptVersion is null)
@@ -1707,6 +1724,7 @@ public sealed class UserConfigurationService
             _isModUsageTrackingDisabled = false;
             _migrationCheckCompleted = false;
             _firebaseAuthBackupCreated = false;
+            _gameProfileCreationWarningAcknowledged = false;
         }
     
         LoadPersistentModConfigPaths();
@@ -1750,6 +1768,7 @@ public sealed class UserConfigurationService
                 ["suppressModlistSavePrompt"] = _suppressModlistSavePrompt,
                 ["suppressRefreshCachePrompt"] = _suppressRefreshCachePrompt,
                 ["suppressRefreshCachePromptVersion"] = _suppressRefreshCachePromptVersion,
+                ["gameProfileCreationWarningAcknowledged"] = _gameProfileCreationWarningAcknowledged,
                 ["useDarkVsMode"] = _colorTheme != ColorTheme.Light,
                 ["colorTheme"] = _colorTheme.ToString(),
                 ["modlistAutoLoadBehavior"] = _modlistAutoLoadBehavior.ToString(),
