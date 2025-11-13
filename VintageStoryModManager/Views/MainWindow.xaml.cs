@@ -7391,6 +7391,23 @@ public partial class MainWindow : Window
 
     private async void CreateGameProfileMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
+        if (!_userConfiguration.GameProfileCreationWarningAcknowledged)
+        {
+            MessageBoxResult confirmation = WpfMessageBox.Show(
+                this,
+                "Game Profiles are specifically made to manage different Vintage Story installations - use Modlists to swap between different mod sets. This warning will not be shown again.",
+                "Simple VS Manager",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning);
+
+            if (confirmation != MessageBoxResult.OK)
+            {
+                return;
+            }
+
+            _userConfiguration.SetGameProfileCreationWarningAcknowledged(true);
+        }
+
         var dialog = new GameProfileDialog(this);
         bool? result = dialog.ShowDialog();
         if (result != true)
