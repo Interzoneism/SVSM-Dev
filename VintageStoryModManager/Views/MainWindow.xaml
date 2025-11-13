@@ -757,11 +757,13 @@
         <TextBlock x:Name="ActiveGameProfileTextBlock"
                    Grid.Row="1"
                    Margin="16,8,0,0"
-                   FontSize="14"
+                   FontSize="17"
                    FontWeight="SemiBold"
+                   Padding="3,0,0,3"
                    Foreground="{DynamicResource Brush.Text.Primary}"
                    Text="Profile: Default"
                    Visibility="Collapsed"
+                   Opacity="0.5"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top" />
 
