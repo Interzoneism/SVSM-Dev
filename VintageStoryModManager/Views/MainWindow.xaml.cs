@@ -7395,7 +7395,7 @@ public partial class MainWindow : Window
         {
             MessageBoxResult confirmation = WpfMessageBox.Show(
                 this,
-                "Game Profiles are specifically made to manage different Vintage Story installations - use Modlists to swap between different mod sets. This warning will not be shown again.",
+                "Game Profiles are specifically made to manage different Vintage Story installations, using different Data and Game folders. If you are looking for a way to easily switch between mod lists, use Modlists to swap between different mod sets. This dialog will not be shown again.",
                 "Simple VS Manager",
                 MessageBoxButton.OKCancel,
                 MessageBoxImage.Warning);
