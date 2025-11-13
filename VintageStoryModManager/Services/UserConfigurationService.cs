@@ -112,6 +112,10 @@ public sealed class UserConfigurationService
 
         public string? CustomShortcutPath { get; set; }
 
+        public bool RequiresDataDirectorySelection { get; set; }
+
+        public bool RequiresGameDirectorySelection { get; set; }
+
         public Dictionary<string, string> ModConfigPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public Dictionary<string, bool> BulkUpdateModExclusions { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -185,6 +189,10 @@ public sealed class UserConfigurationService
     public string? DataDirectory => _activeGameProfile.DataDirectory;
 
     public string? GameDirectory => _activeGameProfile.GameDirectory;
+
+    public bool RequiresDataDirectorySelection => _activeGameProfile.RequiresDataDirectorySelection;
+
+    public bool RequiresGameDirectorySelection => _activeGameProfile.RequiresGameDirectorySelection;
 
     public string ConfigurationVersion => _configurationVersion;
 
@@ -306,7 +314,7 @@ public sealed class UserConfigurationService
             && string.Equals(normalized, DefaultGameProfileName, StringComparison.OrdinalIgnoreCase);
     }
 
-    public bool TryCreateGameProfile(string? name, bool copyFromActive, out string? normalizedName, out string? errorMessage)
+    public bool TryCreateGameProfile(string? name, out string? normalizedName, out string? errorMessage)
     {
         normalizedName = NormalizeGameProfileName(name);
 
@@ -329,12 +337,12 @@ public sealed class UserConfigurationService
         }
 
         GameProfileState profile = new(normalizedName);
+        profile.RequiresDataDirectorySelection = true;
+        profile.RequiresGameDirectorySelection = true;
+        profile.DataDirectory = null;
+        profile.GameDirectory = null;
+        profile.CustomShortcutPath = null;
         _gameProfiles[normalizedName] = profile;
-
-        if (copyFromActive)
-        {
-            CopyProfileData(ActiveProfile, profile);
-        }
 
         Save();
         errorMessage = null;
@@ -467,33 +475,6 @@ public sealed class UserConfigurationService
         }
     }
 
-    private void CopyProfileData(GameProfileState source, GameProfileState destination)
-    {
-        destination.DataDirectory = source.DataDirectory;
-        destination.GameDirectory = source.GameDirectory;
-        destination.CustomShortcutPath = source.CustomShortcutPath;
-        destination.BulkUpdateModExclusions.Clear();
-        foreach (var pair in source.BulkUpdateModExclusions)
-        {
-            destination.BulkUpdateModExclusions[pair.Key] = pair.Value;
-        }
-
-        destination.SkippedModVersions.Clear();
-        foreach (var pair in source.SkippedModVersions)
-        {
-            destination.SkippedModVersions[pair.Key] = pair.Value;
-        }
-
-        destination.ModUsageSessionCounts.Clear();
-        foreach (var pair in source.ModUsageSessionCounts)
-        {
-            destination.ModUsageSessionCounts[pair.Key] = pair.Value;
-        }
-
-        destination.LongRunningSessionCount = source.LongRunningSessionCount;
-        destination.HasPendingModUsagePrompt = source.HasPendingModUsagePrompt;
-    }
-
     private GameProfileState EnsureProfile(string name)
     {
         if (_gameProfiles.TryGetValue(name, out GameProfileState? profile))
@@ -582,6 +563,11 @@ public sealed class UserConfigurationService
         {
             profile.CustomShortcutPath = shortcut;
         }
+
+        profile.RequiresDataDirectorySelection =
+            obj["requiresDataDirectorySelection"]?.GetValue<bool?>() ?? false;
+        profile.RequiresGameDirectorySelection =
+            obj["requiresGameDirectorySelection"]?.GetValue<bool?>() ?? false;
 
         LoadBulkUpdateModExclusions(obj["bulkUpdateModExclusions"], profile.BulkUpdateModExclusions);
         LoadSkippedModVersions(obj["skippedModVersions"], profile.SkippedModVersions);
@@ -1230,6 +1216,7 @@ public sealed class UserConfigurationService
     public void SetDataDirectory(string path)
     {
         _activeGameProfile.DataDirectory = NormalizePath(path);
+        _activeGameProfile.RequiresDataDirectorySelection = false;
         EnsureModConfigDirectoryExists(_activeGameProfile.DataDirectory);
         RefreshActiveModConfigPathsFromHistory();
         Save();
@@ -1239,16 +1226,19 @@ public sealed class UserConfigurationService
     {
         if (_activeGameProfile.DataDirectory is null)
         {
+            _activeGameProfile.RequiresDataDirectorySelection = true;
             return;
         }
 
         _activeGameProfile.DataDirectory = null;
+        _activeGameProfile.RequiresDataDirectorySelection = true;
         Save();
     }
 
     public void SetGameDirectory(string path)
     {
         _activeGameProfile.GameDirectory = NormalizePath(path);
+        _activeGameProfile.RequiresGameDirectorySelection = false;
         Save();
     }
 
@@ -1256,10 +1246,12 @@ public sealed class UserConfigurationService
     {
         if (_activeGameProfile.GameDirectory is null)
         {
+            _activeGameProfile.RequiresGameDirectorySelection = true;
             return;
         }
 
         _activeGameProfile.GameDirectory = null;
+        _activeGameProfile.RequiresGameDirectorySelection = true;
         Save();
     }
 
@@ -1656,9 +1648,35 @@ public sealed class UserConfigurationService
             string? rootShortcut = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
             foreach (GameProfileState profile in _gameProfiles.Values)
             {
-                profile.DataDirectory ??= rootDataDirectory;
-                profile.GameDirectory ??= rootGameDirectory;
-                if (profile.CustomShortcutPath is null)
+                if (profile.DataDirectory is null)
+                {
+                    if (!profile.RequiresDataDirectorySelection)
+                    {
+                        profile.DataDirectory = rootDataDirectory;
+                    }
+                }
+
+                if (profile.DataDirectory is not null)
+                {
+                    profile.RequiresDataDirectorySelection = false;
+                }
+
+                if (profile.GameDirectory is null)
+                {
+                    if (!profile.RequiresGameDirectorySelection)
+                    {
+                        profile.GameDirectory = rootGameDirectory;
+                    }
+                }
+
+                if (profile.GameDirectory is not null)
+                {
+                    profile.RequiresGameDirectorySelection = false;
+                }
+
+                if (profile.CustomShortcutPath is null
+                    && !profile.RequiresDataDirectorySelection
+                    && !profile.RequiresGameDirectorySelection)
                 {
                     profile.CustomShortcutPath = rootShortcut;
                 }
@@ -2080,6 +2098,16 @@ public sealed class UserConfigurationService
                 ["skippedModVersions"] = BuildSkippedModVersionsJson(profile.SkippedModVersions),
                 ["modUsageTracking"] = BuildModUsageTrackingJson(profile)
             };
+
+            if (profile.RequiresDataDirectorySelection)
+            {
+                profileObject["requiresDataDirectorySelection"] = true;
+            }
+
+            if (profile.RequiresGameDirectorySelection)
+            {
+                profileObject["requiresGameDirectorySelection"] = true;
+            }
 
             result[profile.Name] = profileObject;
         }

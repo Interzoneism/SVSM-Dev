@@ -12,7 +12,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -31,14 +30,7 @@
                  CaretBrush="{DynamicResource Brush.Dialog.TextBox.Caret}"
                  TextChanged="NameTextBox_OnTextChanged" />
 
-        <CheckBox x:Name="CopyFromCurrentCheckBox"
-                  Grid.Row="2"
-                  Margin="0,12,0,0"
-                  Content="Copy settings from current profile"
-                  IsChecked="True"
-                  Foreground="{DynamicResource Brush.Text.Primary}" />
-
-        <StackPanel Grid.Row="4"
+        <StackPanel Grid.Row="3"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="0,24,0,0">

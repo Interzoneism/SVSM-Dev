@@ -11,13 +11,10 @@ public partial class GameProfileDialog : Window
         InitializeComponent();
 
         Owner = owner;
-        CopyFromCurrentCheckBox.IsChecked = true;
         UpdateConfirmButtonState();
     }
 
     public string ProfileName => NameTextBox.Text.Trim();
-
-    public bool CopyFromCurrentProfile => CopyFromCurrentCheckBox.IsChecked == true;
 
     private void ConfirmButton_OnClick(object sender, RoutedEventArgs e)
     {

@@ -3896,8 +3896,9 @@ public partial class MainWindow : Window
 
     private bool TryResolveDataDirectory()
     {
+        bool requiresSelection = _userConfiguration.RequiresDataDirectorySelection;
         string? storedPath = _userConfiguration.DataDirectory;
-        if (TryValidateDataDirectory(storedPath, out _dataDirectory, out _))
+        if (!requiresSelection && TryValidateDataDirectory(storedPath, out _dataDirectory, out _))
         {
             return true;
         }
@@ -3908,12 +3909,16 @@ public partial class MainWindow : Window
         }
 
         string defaultPath = DataDirectoryLocator.Resolve();
-        if (TryValidateDataDirectory(defaultPath, out _dataDirectory, out _))
+        if (!requiresSelection && TryValidateDataDirectory(defaultPath, out _dataDirectory, out _))
         {
             return true;
         }
 
-        WpfMessageBox.Show("The Vintage Story data folder could not be located. Please select it to enable mod management.",
+        string promptMessage = requiresSelection
+            ? "Select the Vintage Story data folder for this profile to enable mod management."
+            : "The Vintage Story data folder could not be located. Please select it to enable mod management.";
+
+        WpfMessageBox.Show(promptMessage,
             "Simple VS Manager",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
@@ -3939,8 +3944,9 @@ public partial class MainWindow : Window
 
     private bool TryResolveGameDirectory()
     {
+        bool requiresSelection = _userConfiguration.RequiresGameDirectorySelection;
         string? storedPath = _userConfiguration.GameDirectory;
-        if (TryValidateGameDirectory(storedPath, out _gameDirectory, out _))
+        if (!requiresSelection && TryValidateGameDirectory(storedPath, out _gameDirectory, out _))
         {
             return true;
         }
@@ -3951,12 +3957,18 @@ public partial class MainWindow : Window
         }
 
         string defaultPath = GameDirectoryLocator.Resolve();
-        if (!string.IsNullOrWhiteSpace(defaultPath) && TryValidateGameDirectory(defaultPath, out _gameDirectory, out _))
+        if (!requiresSelection
+            && !string.IsNullOrWhiteSpace(defaultPath)
+            && TryValidateGameDirectory(defaultPath, out _gameDirectory, out _))
         {
             return true;
         }
 
-        WpfMessageBox.Show("The Vintage Story installation folder could not be located. Please select it to enable game-related features.",
+        string promptMessage = requiresSelection
+            ? "Select the Vintage Story installation folder for this profile to enable game-related features."
+            : "The Vintage Story installation folder could not be located. Please select it to enable game-related features.";
+
+        WpfMessageBox.Show(promptMessage,
             "Simple VS Manager",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
@@ -7416,9 +7428,8 @@ public partial class MainWindow : Window
         }
 
         string profileName = dialog.ProfileName;
-        bool copyCurrent = dialog.CopyFromCurrentProfile;
 
-        if (!_userConfiguration.TryCreateGameProfile(profileName, copyCurrent, out string? normalizedName, out string? errorMessage))
+        if (!_userConfiguration.TryCreateGameProfile(profileName, out string? normalizedName, out string? errorMessage))
         {
             if (!string.IsNullOrWhiteSpace(errorMessage))
             {
