@@ -457,30 +457,16 @@ public partial class MainWindow : Window
             ? $"Simple VS Manager {currentVersion} is now installed. Clearing cached mod data is recommended after updates to avoid stale information.\n\nWould you like to clear the caches now?"
             : $"Simple VS Manager was updated from version {previousVersion} to {currentVersion}. Clearing cached mod data is recommended after updates to avoid stale information.\n\nWould you like to clear the caches now?";
 
-        var buttonOverrides = new MessageDialogButtonContentOverrides
-        {
-            Yes = "Clear caches now",
-            No = "Remind me later"
-        };
-
-        var extraButton = new MessageDialogExtraButton("Don't remind me again", MessageBoxResult.Cancel);
-
         MessageBoxResult result = WpfMessageBox.Show(
             this,
             message,
             "Simple VS Manager",
             MessageBoxButton.YesNo,
-            MessageBoxImage.Question,
-            extraButton,
-            buttonOverrides);
+            MessageBoxImage.Question);
 
         if (result == MessageBoxResult.Yes)
         {
             await ClearManagerCachesForVersionUpdateAsync().ConfigureAwait(true);
-        }
-        else if (result == MessageBoxResult.Cancel)
-        {
-            _userConfiguration.SetSuppressRefreshCachePrompt(true);
         }
     }
 
