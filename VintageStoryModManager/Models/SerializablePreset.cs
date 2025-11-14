@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace VintageStoryModManager.Core.Models;
+namespace VintageStoryModManager.Models;
 
 /// <summary>
 /// Serializable representation of a <see cref="ModPreset"/> used for persisting

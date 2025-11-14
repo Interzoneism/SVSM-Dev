@@ -38,8 +38,6 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
-using VintageStoryModManager.Core.Models;
-using VintageStoryModManager.Core.Services;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;

@@ -2,9 +2,9 @@ using System;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using VintageStoryModManager.Core.Models;
+using VintageStoryModManager.Models;
 
-namespace VintageStoryModManager.Core.Services;
+namespace VintageStoryModManager.Services;
 
 /// <summary>
 /// Provides helpers for encoding modlist presets into PDF-friendly payloads and
