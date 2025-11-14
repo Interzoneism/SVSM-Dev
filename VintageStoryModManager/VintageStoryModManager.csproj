@@ -53,10 +53,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\VintageStoryModManager.Core\VintageStoryModManager.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="ViewModels\" />
   </ItemGroup>
 

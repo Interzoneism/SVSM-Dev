@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace VintageStoryModManager.Core.Models;
+namespace VintageStoryModManager.Models;
 
 /// <summary>
 /// Serializable representation of configuration files that can be embedded
