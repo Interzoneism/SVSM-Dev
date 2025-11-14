@@ -1,8 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows;
 using VintageStoryModManager.Services;
 
@@ -10,57 +7,46 @@ namespace VintageStoryModManager.Views.Dialogs;
 
 public partial class DeleteGameProfilesDialog : Window
 {
-    private readonly ObservableCollection<GameProfileDeletionOption> _profiles = new();
-
     public DeleteGameProfilesDialog(IEnumerable<string> profileNames, string activeProfileName)
     {
-        if (profileNames is null)
-        {
-            throw new ArgumentNullException(nameof(profileNames));
-        }
+        if (profileNames is null) throw new ArgumentNullException(nameof(profileNames));
 
         InitializeComponent();
 
-        foreach (string profileName in profileNames)
+        foreach (var profileName in profileNames)
         {
-            bool isDefault = string.Equals(
+            var isDefault = string.Equals(
                 profileName,
                 UserConfigurationService.DefaultProfileName,
                 StringComparison.OrdinalIgnoreCase);
 
-            bool isActive = string.Equals(profileName, activeProfileName, StringComparison.OrdinalIgnoreCase);
+            var isActive = string.Equals(profileName, activeProfileName, StringComparison.OrdinalIgnoreCase);
 
             var option = new GameProfileDeletionOption(profileName, isActive, isDefault);
             option.PropertyChanged += OnProfilePropertyChanged;
-            _profiles.Add(option);
+            Profiles.Add(option);
         }
 
         UpdateDeleteButtonState();
     }
 
-    public ObservableCollection<GameProfileDeletionOption> Profiles => _profiles;
+    public ObservableCollection<GameProfileDeletionOption> Profiles { get; } = new();
 
-    public IReadOnlyList<string> SelectedProfileNames => _profiles
+    public IReadOnlyList<string> SelectedProfileNames => Profiles
         .Where(profile => profile.IsSelectable && profile.IsSelected)
         .Select(profile => profile.Name)
         .ToArray();
 
     private void OnProfilePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(GameProfileDeletionOption.IsSelected))
-        {
-            UpdateDeleteButtonState();
-        }
+        if (e.PropertyName == nameof(GameProfileDeletionOption.IsSelected)) UpdateDeleteButtonState();
     }
 
     private void UpdateDeleteButtonState()
     {
-        if (DeleteButton is null)
-        {
-            return;
-        }
+        if (DeleteButton is null) return;
 
-        DeleteButton.IsEnabled = _profiles.Any(profile => profile.IsSelectable && profile.IsSelected);
+        DeleteButton.IsEnabled = Profiles.Any(profile => profile.IsSelectable && profile.IsSelected);
     }
 
     private void DeleteButton_OnClick(object sender, RoutedEventArgs e)
@@ -92,11 +78,8 @@ public partial class DeleteGameProfilesDialog : Window
             get => _isSelected;
             set
             {
-                bool newValue = IsSelectable && value;
-                if (_isSelected == newValue)
-                {
-                    return;
-                }
+                var newValue = IsSelectable && value;
+                if (_isSelected == newValue) return;
 
                 _isSelected = newValue;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));

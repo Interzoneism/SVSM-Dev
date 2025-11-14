@@ -1,4 +1,3 @@
-using System;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -18,10 +17,7 @@ public partial class GameProfileDialog : Window
 
     private void ConfirmButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(ProfileName))
-        {
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(ProfileName)) return;
 
         DialogResult = true;
     }
@@ -33,10 +29,7 @@ public partial class GameProfileDialog : Window
 
     private void UpdateConfirmButtonState()
     {
-        if (ConfirmButton is null)
-        {
-            return;
-        }
+        if (ConfirmButton is null) return;
 
         ConfirmButton.IsEnabled = !string.IsNullOrWhiteSpace(NameTextBox.Text);
     }

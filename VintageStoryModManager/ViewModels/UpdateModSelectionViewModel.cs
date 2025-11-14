@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
@@ -8,8 +6,11 @@ namespace VintageStoryModManager.ViewModels;
 
 public sealed partial class UpdateModSelectionViewModel : ObservableObject
 {
-    private readonly ModReleaseInfo? _overrideRelease;
     private readonly bool _isServerOptionsEnabled;
+    private readonly ModReleaseInfo? _overrideRelease;
+
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ShowExcludeVersionButton))]
+    private bool _isSelected;
 
     public UpdateModSelectionViewModel(
         ModListItemViewModel mod,
@@ -33,9 +34,9 @@ public sealed partial class UpdateModSelectionViewModel : ObservableObject
     {
         get
         {
-            string? target = _overrideRelease?.Version
-                ?? Mod.LatestRelease?.Version
-                ?? Mod.Version;
+            var target = _overrideRelease?.Version
+                         ?? Mod.LatestRelease?.Version
+                         ?? Mod.Version;
             return string.IsNullOrWhiteSpace(target) ? "—" : target!;
         }
     }
@@ -44,11 +45,12 @@ public sealed partial class UpdateModSelectionViewModel : ObservableObject
 
     public bool CanSkip => !string.IsNullOrWhiteSpace(TargetUpdateVersion);
 
-    private string? LatestServerInstallVersion => Mod.LatestRelease?.Version ?? _overrideRelease?.Version ?? Mod.Version;
+    private string? LatestServerInstallVersion =>
+        Mod.LatestRelease?.Version ?? _overrideRelease?.Version ?? Mod.Version;
 
     public bool ShowServerInstallCommand => _isServerOptionsEnabled
-        && !string.IsNullOrWhiteSpace(Mod.ModId)
-        && !string.IsNullOrWhiteSpace(LatestServerInstallVersion);
+                                            && !string.IsNullOrWhiteSpace(Mod.ModId)
+                                            && !string.IsNullOrWhiteSpace(LatestServerInstallVersion);
 
     public string? LatestInstallCommand => ShowServerInstallCommand
         ? ServerCommandBuilder.TryBuildInstallCommand(Mod.ModId, LatestServerInstallVersion)
@@ -58,12 +60,9 @@ public sealed partial class UpdateModSelectionViewModel : ObservableObject
     {
         get
         {
-            string installed = InstalledVersionDisplay;
-            string target = TargetVersionDisplay;
-            if (string.Equals(installed, target, StringComparison.OrdinalIgnoreCase))
-            {
-                return $"Installed: {installed}";
-            }
+            var installed = InstalledVersionDisplay;
+            var target = TargetVersionDisplay;
+            if (string.Equals(installed, target, StringComparison.OrdinalIgnoreCase)) return $"Installed: {installed}";
 
             return $"Installed: {installed} → Update to: {target}";
         }
@@ -78,10 +77,6 @@ public sealed partial class UpdateModSelectionViewModel : ObservableObject
     public string ChangelogHeader => ChangelogCount <= 1
         ? "Changelog"
         : $"Changelogs ({ChangelogCount})";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowExcludeVersionButton))]
-    private bool _isSelected;
 
     public bool ShowExcludeVersionButton => !IsSelected && CanSkip;
 }

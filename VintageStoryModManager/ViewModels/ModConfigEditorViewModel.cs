@@ -1,9 +1,6 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,20 +11,16 @@ namespace VintageStoryModManager.ViewModels;
 public sealed class ModConfigEditorViewModel : ObservableObject
 {
     private string _filePath;
-    private JsonNode? _rootNode;
     private ModConfigFormat _format;
+    private JsonNode? _rootNode;
 
     public ModConfigEditorViewModel(string modDisplayName, string filePath)
     {
         if (string.IsNullOrWhiteSpace(modDisplayName))
-        {
             throw new ArgumentException("Mod name is required.", nameof(modDisplayName));
-        }
 
         if (string.IsNullOrWhiteSpace(filePath))
-        {
             throw new ArgumentException("Configuration file path is required.", nameof(filePath));
-        }
 
         ModDisplayName = modDisplayName;
         _filePath = NormalizePath(filePath);
@@ -45,10 +38,7 @@ public sealed class ModConfigEditorViewModel : ObservableObject
         get => _filePath;
         private set
         {
-            if (string.Equals(_filePath, value, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
+            if (string.Equals(_filePath, value, StringComparison.OrdinalIgnoreCase)) return;
 
             _filePath = value;
             OnPropertyChanged();
@@ -59,12 +49,9 @@ public sealed class ModConfigEditorViewModel : ObservableObject
 
     public void Save()
     {
-        foreach (ModConfigNodeViewModel node in RootNodes)
-        {
-            node.ApplyChanges();
-        }
+        foreach (var node in RootNodes) node.ApplyChanges();
 
-        string content = _format switch
+        var content = _format switch
         {
             ModConfigFormat.Json => SerializeJson(_rootNode),
             ModConfigFormat.Yaml => SerializeYaml(_rootNode),
@@ -76,10 +63,10 @@ public sealed class ModConfigEditorViewModel : ObservableObject
 
     public void ReplaceConfigurationFile(string filePath)
     {
-        string normalizedPath = NormalizePath(filePath);
+        var normalizedPath = NormalizePath(filePath);
         _format = DetermineFormat(normalizedPath);
 
-        JsonNode? node = _format switch
+        var node = _format switch
         {
             ModConfigFormat.Json => LoadJsonNode(normalizedPath),
             ModConfigFormat.Yaml => LoadYamlNode(normalizedPath),
@@ -99,19 +86,17 @@ public sealed class ModConfigEditorViewModel : ObservableObject
 
     private static ModConfigFormat DetermineFormat(string filePath)
     {
-        string extension = Path.GetExtension(filePath);
+        var extension = Path.GetExtension(filePath);
         if (extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase)
             || extension.Equals(".yml", StringComparison.OrdinalIgnoreCase))
-        {
             return ModConfigFormat.Yaml;
-        }
 
         return ModConfigFormat.Json;
     }
 
     private static JsonNode? LoadJsonNode(string path)
     {
-        using FileStream stream = File.OpenRead(path);
+        using var stream = File.OpenRead(path);
         return JsonNode.Parse(stream);
     }
 
@@ -119,23 +104,20 @@ public sealed class ModConfigEditorViewModel : ObservableObject
     {
         var deserializer = new DeserializerBuilder().Build();
         using var reader = new StreamReader(path);
-        object? yamlObject = deserializer.Deserialize(reader);
+        var yamlObject = deserializer.Deserialize(reader);
         return ConvertYamlToJsonNode(yamlObject);
     }
 
     private static JsonNode? ConvertYamlToJsonNode(object? value)
     {
-        if (value is null)
-        {
-            return null;
-        }
+        if (value is null) return null;
 
         if (value is IDictionary dictionary)
         {
             var obj = new JsonObject();
             foreach (DictionaryEntry entry in dictionary)
             {
-                string key = entry.Key?.ToString() ?? string.Empty;
+                var key = entry.Key?.ToString() ?? string.Empty;
                 obj[key] = ConvertYamlToJsonNode(entry.Value);
             }
 
@@ -145,10 +127,7 @@ public sealed class ModConfigEditorViewModel : ObservableObject
         if (value is IEnumerable enumerable and not string)
         {
             var array = new JsonArray();
-            foreach (object? item in enumerable)
-            {
-                array.Add(ConvertYamlToJsonNode(item));
-            }
+            foreach (var item in enumerable) array.Add(ConvertYamlToJsonNode(item));
 
             return array;
         }
@@ -189,7 +168,7 @@ public sealed class ModConfigEditorViewModel : ObservableObject
 
     private static string SerializeYaml(JsonNode? node)
     {
-        object? yamlObject = ConvertJsonNodeToYamlObject(node);
+        var yamlObject = ConvertJsonNodeToYamlObject(node);
         var serializer = new SerializerBuilder().Build();
         using var writer = new StringWriter();
         serializer.Serialize(writer, yamlObject);
@@ -205,20 +184,14 @@ public sealed class ModConfigEditorViewModel : ObservableObject
             case JsonObject obj:
             {
                 var dictionary = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach (KeyValuePair<string, JsonNode?> pair in obj)
-                {
-                    dictionary[pair.Key] = ConvertJsonNodeToYamlObject(pair.Value);
-                }
+                foreach (var pair in obj) dictionary[pair.Key] = ConvertJsonNodeToYamlObject(pair.Value);
 
                 return dictionary;
             }
             case JsonArray array:
             {
                 var list = new List<object?>(array.Count);
-                foreach (JsonNode? item in array)
-                {
-                    list.Add(ConvertJsonNodeToYamlObject(item));
-                }
+                foreach (var item in array) list.Add(ConvertJsonNodeToYamlObject(item));
 
                 return list;
             }
@@ -231,41 +204,20 @@ public sealed class ModConfigEditorViewModel : ObservableObject
 
     private static object? ConvertJsonValueToPrimitive(JsonValue value)
     {
-        string json = value.ToJsonString();
-        if (string.Equals(json, "null", StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
+        var json = value.ToJsonString();
+        if (string.Equals(json, "null", StringComparison.OrdinalIgnoreCase)) return null;
 
-        if (value.TryGetValue<bool>(out bool boolResult))
-        {
-            return boolResult;
-        }
+        if (value.TryGetValue(out bool boolResult)) return boolResult;
 
-        if (value.TryGetValue<long>(out long longResult))
-        {
-            return longResult;
-        }
+        if (value.TryGetValue(out long longResult)) return longResult;
 
-        if (value.TryGetValue<ulong>(out ulong ulongResult))
-        {
-            return ulongResult;
-        }
+        if (value.TryGetValue(out ulong ulongResult)) return ulongResult;
 
-        if (value.TryGetValue<decimal>(out decimal decimalResult))
-        {
-            return decimalResult;
-        }
+        if (value.TryGetValue(out decimal decimalResult)) return decimalResult;
 
-        if (value.TryGetValue<double>(out double doubleResult))
-        {
-            return doubleResult;
-        }
+        if (value.TryGetValue(out double doubleResult)) return doubleResult;
 
-        if (value.TryGetValue<string>(out string? stringResult))
-        {
-            return stringResult;
-        }
+        if (value.TryGetValue(out string? stringResult)) return stringResult;
 
         return json;
     }
@@ -273,9 +225,7 @@ public sealed class ModConfigEditorViewModel : ObservableObject
     private static string NormalizePath(string filePath)
     {
         if (string.IsNullOrWhiteSpace(filePath))
-        {
             throw new ArgumentException("Configuration file path is required.", nameof(filePath));
-        }
 
         return Path.GetFullPath(filePath);
     }
@@ -283,19 +233,15 @@ public sealed class ModConfigEditorViewModel : ObservableObject
     private IEnumerable<ModConfigNodeViewModel> CreateRootNodes(JsonNode node)
     {
         if (node is JsonObject obj)
-        {
             return obj
                 .Select(pair => CreateNode(pair.Key, pair.Value, value => obj[pair.Key] = value))
                 .ToList();
-        }
 
         if (node is JsonArray array)
-        {
             return new[]
             {
                 CreateArrayNode("(root)", array, "Items")
             };
-        }
 
         return new[]
         {
@@ -303,7 +249,8 @@ public sealed class ModConfigEditorViewModel : ObservableObject
         };
     }
 
-    private ModConfigNodeViewModel CreateNode(string name, JsonNode? node, Action<JsonNode?> setter, string? displayName = null)
+    private ModConfigNodeViewModel CreateNode(string name, JsonNode? node, Action<JsonNode?> setter,
+        string? displayName = null)
     {
         if (node is JsonObject obj)
         {
@@ -312,10 +259,7 @@ public sealed class ModConfigEditorViewModel : ObservableObject
             return new ModConfigObjectNodeViewModel(name, children, displayName);
         }
 
-        if (node is JsonArray array)
-        {
-            return CreateArrayNode(name, array, displayName);
-        }
+        if (node is JsonArray array) return CreateArrayNode(name, array, displayName);
 
         return CreateValueNode(name, node, setter, displayName);
     }
@@ -323,11 +267,11 @@ public sealed class ModConfigEditorViewModel : ObservableObject
     private ModConfigNodeViewModel CreateArrayNode(string name, JsonArray array, string? displayName = null)
     {
         var children = new ObservableCollection<ModConfigNodeViewModel>();
-        for (int i = 0; i < array.Count; i++)
+        for (var i = 0; i < array.Count; i++)
         {
-            int index = i;
-            JsonNode? childNode = array[index];
-            string? childDisplayName = childNode switch
+            var index = i;
+            var childNode = array[index];
+            var childDisplayName = childNode switch
             {
                 JsonObject => $"Item {i + 1}",
                 JsonArray => $"Item {i + 1}",
@@ -339,7 +283,8 @@ public sealed class ModConfigEditorViewModel : ObservableObject
         return new ModConfigArrayNodeViewModel(name, children, () => array.Count, displayName);
     }
 
-    private ModConfigNodeViewModel CreateValueNode(string name, JsonNode? node, Action<JsonNode?> setter, string? displayName)
+    private ModConfigNodeViewModel CreateValueNode(string name, JsonNode? node, Action<JsonNode?> setter,
+        string? displayName)
     {
         return new ModConfigValueNodeViewModel(name, node, setter, displayName);
     }

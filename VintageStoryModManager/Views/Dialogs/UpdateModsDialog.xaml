@@ -95,7 +95,7 @@
                                                 <StackPanel Margin="0,0,0,12">
                                                     <TextBlock Text="{Binding Version}"
                                                                FontWeight="SemiBold"
-                                                               TextWrapping="Wrap"/>
+                                                               TextWrapping="Wrap" />
                                                     <TextBlock Text="{Binding Changelog}"
                                                                TextWrapping="Wrap"
                                                                Margin="0,4,0,0" />

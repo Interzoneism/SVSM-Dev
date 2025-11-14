@@ -1,16 +1,13 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows;
 
 namespace VintageStoryModManager.Views.Dialogs;
 
 public partial class ModConfigSelectionDialog : Window
 {
-    private bool _isUpdatingSelection;
     private bool _isUpdatingSelectAll;
+    private bool _isUpdatingSelection;
 
     public ModConfigSelectionDialog(IEnumerable<ModConfigOption> configOptions)
     {
@@ -20,10 +17,7 @@ public partial class ModConfigSelectionDialog : Window
 
         InitializeComponent();
 
-        foreach (ModConfigOption option in ConfigOptions)
-        {
-            option.PropertyChanged += ConfigOption_OnPropertyChanged;
-        }
+        foreach (var option in ConfigOptions) option.PropertyChanged += ConfigOption_OnPropertyChanged;
 
         UpdateSelectAllState();
     }
@@ -45,18 +39,12 @@ public partial class ModConfigSelectionDialog : Window
 
     private void SelectAllCheckBox_OnClick(object sender, RoutedEventArgs e)
     {
-        if (_isUpdatingSelectAll)
-        {
-            return;
-        }
+        if (_isUpdatingSelectAll) return;
 
-        bool shouldSelect = SelectAllCheckBox.IsChecked == true;
+        var shouldSelect = SelectAllCheckBox.IsChecked == true;
 
         _isUpdatingSelection = true;
-        foreach (ModConfigOption option in ConfigOptions)
-        {
-            option.IsSelected = shouldSelect;
-        }
+        foreach (var option in ConfigOptions) option.IsSelected = shouldSelect;
 
         _isUpdatingSelection = false;
         UpdateSelectAllState();
@@ -64,25 +52,16 @@ public partial class ModConfigSelectionDialog : Window
 
     private void ConfigOption_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (!string.Equals(e.PropertyName, nameof(ModConfigOption.IsSelected), StringComparison.Ordinal))
-        {
-            return;
-        }
+        if (!string.Equals(e.PropertyName, nameof(ModConfigOption.IsSelected), StringComparison.Ordinal)) return;
 
-        if (_isUpdatingSelection)
-        {
-            return;
-        }
+        if (_isUpdatingSelection) return;
 
         UpdateSelectAllState();
     }
 
     private void UpdateSelectAllState()
     {
-        if (SelectAllCheckBox is null)
-        {
-            return;
-        }
+        if (SelectAllCheckBox is null) return;
 
         if (!HasConfigOptions)
         {
@@ -92,15 +71,15 @@ public partial class ModConfigSelectionDialog : Window
             return;
         }
 
-        int selectedCount = ConfigOptions.Count(option => option.IsSelected);
-        int totalCount = ConfigOptions.Count;
+        var selectedCount = ConfigOptions.Count(option => option.IsSelected);
+        var totalCount = ConfigOptions.Count;
 
         _isUpdatingSelectAll = true;
         SelectAllCheckBox.IsChecked = selectedCount switch
         {
             0 => false,
             _ when selectedCount == totalCount => true,
-            _ => (bool?)null
+            _ => null
         };
         _isUpdatingSelectAll = false;
     }

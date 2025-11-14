@@ -1,8 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -11,28 +8,34 @@ using VintageStoryModManager.ViewModels;
 namespace VintageStoryModManager.Services;
 
 /// <summary>
-/// Stores simple user configuration values for the mod manager, such as the selected directories.
+///     Stores simple user configuration values for the mod manager, such as the selected directories.
 /// </summary>
 public sealed class UserConfigurationService
 {
-    private static readonly string ConfigurationFileName = DevConfig.ConfigurationFileName;
-    private static readonly string ModConfigPathsFileName = DevConfig.ModConfigPathsFileName;
     private const string ModConfigDirectoryName = "ModConfig";
-    private static readonly char[] DirectorySeparators =
-    {
-        Path.DirectorySeparatorChar,
-        Path.AltDirectorySeparatorChar
-    };
-    private static readonly StringComparison PathComparison = OperatingSystem.IsWindows()
-        ? StringComparison.OrdinalIgnoreCase
-        : StringComparison.Ordinal;
-    private static readonly string CurrentModManagerVersion = ResolveCurrentVersion();
-    private static readonly string CurrentConfigurationVersion = CurrentModManagerVersion;
     private const string ModConfigPathHistoryVersionPropertyName = "version";
     private const string ModConfigPathHistoryEntriesPropertyName = "modConfigPaths";
     private const string ModConfigPathHistoryDirectoryPropertyName = "directoryPath";
     private const string ModConfigPathHistoryFileNamePropertyName = "fileName";
     private const string ModConfigPathHistoryConfigNamePropertyName = "configName";
+    private const string DefaultGameProfileName = "Default";
+    public const string DefaultProfileName = DefaultGameProfileName;
+    private static readonly string ConfigurationFileName = DevConfig.ConfigurationFileName;
+    private static readonly string ModConfigPathsFileName = DevConfig.ModConfigPathsFileName;
+
+    private static readonly char[] DirectorySeparators =
+    {
+        Path.DirectorySeparatorChar,
+        Path.AltDirectorySeparatorChar
+    };
+
+    private static readonly StringComparison PathComparison = OperatingSystem.IsWindows()
+        ? StringComparison.OrdinalIgnoreCase
+        : StringComparison.Ordinal;
+
+    private static readonly string CurrentModManagerVersion = ResolveCurrentVersion();
+    private static readonly string CurrentConfigurationVersion = CurrentModManagerVersion;
+
     private static readonly IReadOnlyDictionary<string, string> VintageStoryPaletteColors =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -80,12 +83,12 @@ public sealed class UserConfigurationService
             ["Palette.Text.Link"] = "#FF0078D4",
             ["Palette.Text.Primary"] = "#FF000000"
         };
+
     private static readonly int DefaultModDatabaseSearchResultLimit = DevConfig.DefaultModDatabaseSearchResultLimit;
     private static readonly int DefaultModDatabaseNewModsRecentMonths = DevConfig.DefaultModDatabaseNewModsRecentMonths;
     private static readonly int MaxModDatabaseNewModsRecentMonths = DevConfig.MaxModDatabaseNewModsRecentMonths;
     private static readonly int GameSessionVoteThreshold = DevConfig.GameSessionVoteThreshold;
-    private const string DefaultGameProfileName = "Default";
-    public const string DefaultProfileName = DefaultGameProfileName;
+
     private static readonly string[] RedundantRootProfilePropertyNames =
     {
         "dataDirectory",
@@ -97,84 +100,29 @@ public sealed class UserConfigurationService
         "customShortcutPath"
     };
 
-    private sealed class GameProfileState
-    {
-        public GameProfileState(string name)
-        {
-            Name = name;
-        }
-
-        public string Name { get; }
-
-        public string? DataDirectory { get; set; }
-
-        public string? GameDirectory { get; set; }
-
-        public string? CustomShortcutPath { get; set; }
-
-        public bool RequiresDataDirectorySelection { get; set; }
-
-        public bool RequiresGameDirectorySelection { get; set; }
-
-        public Dictionary<string, string> ModConfigPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
-
-        public Dictionary<string, bool> BulkUpdateModExclusions { get; } = new(StringComparer.OrdinalIgnoreCase);
-
-        public Dictionary<string, string> SkippedModVersions { get; } = new(StringComparer.OrdinalIgnoreCase);
-
-        public Dictionary<ModUsageTrackingKey, int> ModUsageSessionCounts { get; } = new();
-
-        public int LongRunningSessionCount { get; set; }
-
-        public bool HasPendingModUsagePrompt { get; set; }
-    }
-
     private readonly string _configurationPath;
-    private readonly string _modConfigPathsPath;
-    private readonly Dictionary<string, GameProfileState> _gameProfiles = new(StringComparer.OrdinalIgnoreCase);
-    private GameProfileState _activeGameProfile = new(DefaultGameProfileName);
-    private readonly Dictionary<string, ModConfigPathEntry> _storedModConfigPaths = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, string> _themePaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _customThemePaletteColors = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, GameProfileState> _gameProfiles = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _installedColumnVisibility = new(StringComparer.OrdinalIgnoreCase);
-    private string? _previousConfigurationVersion;
-    private string? _previousModManagerVersion;
-    private string? _selectedPresetName;
-    private string _configurationVersion = CurrentConfigurationVersion;
-    private string _modManagerVersion = CurrentModManagerVersion;
-    private bool _isCompactView;
-    private bool _useModDbDesignView = true;
-    private ModDatabaseAutoLoadMode _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
-    private bool _excludeInstalledModDatabaseResults;
-    private bool _onlyShowCompatibleModDatabaseResults;
-    private bool _cacheAllVersionsLocally = true;
-    private bool _disableAutoRefresh;
-    private bool _disableAutoRefreshWarningAcknowledged;
-    private bool _disableInternetAccess;
-    private bool _enableServerOptions;
-    private bool _suppressModlistSavePrompt;
-    private bool _suppressRefreshCachePrompt;
-    private string? _suppressRefreshCachePromptVersion;
-    private ModlistAutoLoadBehavior _modlistAutoLoadBehavior = ModlistAutoLoadBehavior.Prompt;
-    private int _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
-    private int _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
-    private string? _modsSortMemberPath;
-    private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
-    private double? _windowWidth;
-    private double? _windowHeight;
+    private readonly string _modConfigPathsPath;
+
+    private readonly Dictionary<string, ModConfigPathEntry> _storedModConfigPaths =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private readonly Dictionary<string, string> _themePaletteColors = new(StringComparer.OrdinalIgnoreCase);
+    private bool _hasPendingModConfigPathSave;
+    private bool _hasPendingSave;
+    private bool _isModUsageTrackingDisabled;
+    private bool _isPersistenceEnabled;
     private double? _modInfoPanelLeft;
     private double? _modInfoPanelTop;
-    private string? _cloudUploaderName;
-    private bool _isPersistenceEnabled;
-    private bool _hasPendingSave;
-    private bool _hasPendingModConfigPathSave;
-    private ColorTheme _colorTheme = ColorTheme.VintageStory;
-    private bool _hasVersionMismatch;
-    private bool _isModUsageTrackingDisabled;
-    private bool _migrationCheckCompleted;
-    private bool _requireExactVsVersionMatch;
-    private bool _firebaseAuthBackupCreated;
-    private bool _gameProfileCreationWarningAcknowledged;
+    private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
+    private string? _modsSortMemberPath;
+    private string? _selectedPresetName;
+    private bool _suppressRefreshCachePrompt;
+    private string? _suppressRefreshCachePromptVersion;
+    private double? _windowHeight;
+    private double? _windowWidth;
 
     public UserConfigurationService()
     {
@@ -186,76 +134,71 @@ public sealed class UserConfigurationService
         _hasPendingModConfigPathSave = false;
     }
 
-    public string? DataDirectory => _activeGameProfile.DataDirectory;
+    public string? DataDirectory => ActiveProfile.DataDirectory;
 
-    public string? GameDirectory => _activeGameProfile.GameDirectory;
+    public string? GameDirectory => ActiveProfile.GameDirectory;
 
-    public bool RequiresDataDirectorySelection => _activeGameProfile.RequiresDataDirectorySelection;
+    public bool RequiresDataDirectorySelection => ActiveProfile.RequiresDataDirectorySelection;
 
-    public bool RequiresGameDirectorySelection => _activeGameProfile.RequiresGameDirectorySelection;
+    public bool RequiresGameDirectorySelection => ActiveProfile.RequiresGameDirectorySelection;
 
-    public string ConfigurationVersion => _configurationVersion;
+    public string ConfigurationVersion { get; private set; } = CurrentConfigurationVersion;
 
-    public string ModManagerVersion => _modManagerVersion;
+    public string ModManagerVersion { get; private set; } = CurrentModManagerVersion;
 
-    public bool HasVersionMismatch => _hasVersionMismatch;
+    public bool HasVersionMismatch { get; private set; }
 
-    public string? PreviousConfigurationVersion => _previousConfigurationVersion;
+    public string? PreviousConfigurationVersion { get; private set; }
 
-    public string? PreviousModManagerVersion => _previousModManagerVersion;
+    public string? PreviousModManagerVersion { get; private set; }
 
-    public bool IsCompactView => _isCompactView;
+    public bool IsCompactView { get; private set; }
 
-    public bool UseModDbDesignView => _useModDbDesignView;
+    public bool UseModDbDesignView { get; private set; } = true;
 
-    public bool CacheAllVersionsLocally => _cacheAllVersionsLocally;
+    public bool CacheAllVersionsLocally { get; private set; } = true;
 
-    public ColorTheme ColorTheme => _colorTheme;
+    public ColorTheme ColorTheme { get; private set; } = ColorTheme.VintageStory;
 
-    public bool ExcludeInstalledModDatabaseResults => _excludeInstalledModDatabaseResults;
+    public bool ExcludeInstalledModDatabaseResults { get; private set; }
 
-    public bool OnlyShowCompatibleModDatabaseResults => _onlyShowCompatibleModDatabaseResults;
+    public bool OnlyShowCompatibleModDatabaseResults { get; private set; }
 
-    public bool DisableAutoRefresh => _disableAutoRefresh;
+    public bool DisableAutoRefresh { get; private set; }
 
-    public bool DisableAutoRefreshWarningAcknowledged => _disableAutoRefreshWarningAcknowledged;
+    public bool DisableAutoRefreshWarningAcknowledged { get; private set; }
 
-    public bool DisableInternetAccess => _disableInternetAccess;
+    public bool DisableInternetAccess { get; private set; }
 
-    public bool EnableServerOptions => _enableServerOptions;
+    public bool EnableServerOptions { get; private set; }
 
-    public bool SuppressModlistSavePrompt => _suppressModlistSavePrompt;
+    public bool SuppressModlistSavePrompt { get; private set; }
 
     public bool SuppressRefreshCachePrompt
     {
         get
         {
-            if (!_suppressRefreshCachePrompt)
-            {
-                return false;
-            }
+            if (!_suppressRefreshCachePrompt) return false;
 
-            if (_suppressRefreshCachePromptVersion is null)
-            {
-                return true;
-            }
+            if (_suppressRefreshCachePromptVersion is null) return true;
 
             return string.Equals(
                 _suppressRefreshCachePromptVersion,
-                _modManagerVersion,
+                ModManagerVersion,
                 StringComparison.OrdinalIgnoreCase);
         }
     }
 
-    public bool GameProfileCreationWarningAcknowledged => _gameProfileCreationWarningAcknowledged;
+    public bool GameProfileCreationWarningAcknowledged { get; private set; }
 
-    public ModlistAutoLoadBehavior ModlistAutoLoadBehavior => _modlistAutoLoadBehavior;
+    public ModlistAutoLoadBehavior ModlistAutoLoadBehavior { get; private set; } = ModlistAutoLoadBehavior.Prompt;
 
-    public int ModDatabaseSearchResultLimit => _modDatabaseSearchResultLimit;
+    public int ModDatabaseSearchResultLimit { get; private set; } = DefaultModDatabaseSearchResultLimit;
 
-    public int ModDatabaseNewModsRecentMonths => _modDatabaseNewModsRecentMonths;
+    public int ModDatabaseNewModsRecentMonths { get; private set; } = DefaultModDatabaseNewModsRecentMonths;
 
-    public ModDatabaseAutoLoadMode ModDatabaseAutoLoadMode => _modDatabaseAutoLoadMode;
+    public ModDatabaseAutoLoadMode ModDatabaseAutoLoadMode { get; private set; } =
+        ModDatabaseAutoLoadMode.TotalDownloads;
 
     public double? WindowWidth => _windowWidth;
 
@@ -265,19 +208,19 @@ public sealed class UserConfigurationService
 
     public double? ModInfoPanelTop => _modInfoPanelTop;
 
-    public string? CustomShortcutPath => _activeGameProfile.CustomShortcutPath;
+    public string? CustomShortcutPath => ActiveProfile.CustomShortcutPath;
 
-    public string? CloudUploaderName => _cloudUploaderName;
+    public string? CloudUploaderName { get; private set; }
 
     public bool HasPendingModUsagePrompt => !_isModUsageTrackingDisabled
-        && _activeGameProfile.HasPendingModUsagePrompt
-        && _activeGameProfile.ModUsageSessionCounts.Count > 0;
+                                            && ActiveProfile.HasPendingModUsagePrompt
+                                            && ActiveProfile.ModUsageSessionCounts.Count > 0;
 
     public bool IsModUsageTrackingEnabled => !_isModUsageTrackingDisabled;
 
-    public string ActiveGameProfileName => _activeGameProfile.Name;
+    public string ActiveGameProfileName => ActiveProfile.Name;
 
-    private GameProfileState ActiveProfile => _activeGameProfile;
+    private GameProfileState ActiveProfile { get; set; } = new(DefaultGameProfileName);
 
     private Dictionary<string, string> ActiveModConfigPaths => ActiveProfile.ModConfigPaths;
 
@@ -299,6 +242,12 @@ public sealed class UserConfigurationService
         set => ActiveProfile.HasPendingModUsagePrompt = value;
     }
 
+    public bool MigrationCheckCompleted { get; private set; }
+
+    public bool RequireExactVsVersionMatch { get; private set; }
+
+    public bool FirebaseAuthBackupCreated { get; private set; }
+
     public IReadOnlyList<string> GetGameProfileNames()
     {
         return _gameProfiles.Keys
@@ -309,9 +258,9 @@ public sealed class UserConfigurationService
 
     public bool IsDefaultGameProfile(string? name)
     {
-        string? normalized = NormalizeGameProfileName(name);
+        var normalized = NormalizeGameProfileName(name);
         return normalized is not null
-            && string.Equals(normalized, DefaultGameProfileName, StringComparison.OrdinalIgnoreCase);
+               && string.Equals(normalized, DefaultGameProfileName, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool TryCreateGameProfile(string? name, out string? normalizedName, out string? errorMessage)
@@ -351,23 +300,14 @@ public sealed class UserConfigurationService
 
     public bool TrySetActiveGameProfile(string? name)
     {
-        string? normalized = NormalizeGameProfileName(name);
-        if (normalized is null)
-        {
-            return false;
-        }
+        var normalized = NormalizeGameProfileName(name);
+        if (normalized is null) return false;
 
-        if (!_gameProfiles.TryGetValue(normalized, out GameProfileState? profile))
-        {
-            return false;
-        }
+        if (!_gameProfiles.TryGetValue(normalized, out var profile)) return false;
 
-        if (ReferenceEquals(_activeGameProfile, profile))
-        {
-            return true;
-        }
+        if (ReferenceEquals(ActiveProfile, profile)) return true;
 
-        _activeGameProfile = profile;
+        ActiveProfile = profile;
         RefreshActiveModConfigPathsFromHistory();
         Save();
         return true;
@@ -388,18 +328,12 @@ public sealed class UserConfigurationService
 
         var normalizedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (string profileName in profileNames)
+        foreach (var profileName in profileNames)
         {
-            if (profileName is null)
-            {
-                continue;
-            }
+            if (profileName is null) continue;
 
-            string? normalized = NormalizeGameProfileName(profileName);
-            if (normalized is null)
-            {
-                continue;
-            }
+            var normalized = NormalizeGameProfileName(profileName);
+            if (normalized is null) continue;
 
             if (string.Equals(normalized, DefaultGameProfileName, StringComparison.OrdinalIgnoreCase))
             {
@@ -416,17 +350,15 @@ public sealed class UserConfigurationService
             return false;
         }
 
-        bool removedAny = false;
+        var removedAny = false;
         var removedProfiles = new List<string>();
 
-        foreach (string name in normalizedNames)
-        {
+        foreach (var name in normalizedNames)
             if (_gameProfiles.Remove(name))
             {
                 removedAny = true;
                 removedProfiles.Add(name);
             }
-        }
 
         if (!removedAny)
         {
@@ -434,10 +366,10 @@ public sealed class UserConfigurationService
             return false;
         }
 
-        if (normalizedNames.Contains(_activeGameProfile.Name))
+        if (normalizedNames.Contains(ActiveProfile.Name))
         {
-            GameProfileState defaultProfile = EnsureProfile(DefaultGameProfileName);
-            _activeGameProfile = defaultProfile;
+            var defaultProfile = EnsureProfile(DefaultGameProfileName);
+            ActiveProfile = defaultProfile;
             activeProfileChanged = true;
         }
 
@@ -449,27 +381,21 @@ public sealed class UserConfigurationService
 
     public string GetActiveGameProfileBackupDirectoryName()
     {
-        return BuildBackupDirectoryName(_activeGameProfile.Name);
+        return BuildBackupDirectoryName(ActiveProfile.Name);
     }
 
     private void DeleteProfileBackupDirectories(IEnumerable<string> profileNames)
     {
-        if (profileNames is null)
+        if (profileNames is null) return;
+
+        var baseDirectory = GetConfigurationDirectory();
+
+        foreach (var profileName in profileNames)
         {
-            return;
-        }
+            if (string.IsNullOrWhiteSpace(profileName)) continue;
 
-        string baseDirectory = GetConfigurationDirectory();
-
-        foreach (string profileName in profileNames)
-        {
-            if (string.IsNullOrWhiteSpace(profileName))
-            {
-                continue;
-            }
-
-            string directoryName = BuildBackupDirectoryName(profileName);
-            string directoryPath = Path.Combine(baseDirectory, directoryName);
+            var directoryName = BuildBackupDirectoryName(profileName);
+            var directoryPath = Path.Combine(baseDirectory, directoryName);
 
             TryDeleteDirectory(directoryPath);
         }
@@ -477,10 +403,7 @@ public sealed class UserConfigurationService
 
     private GameProfileState EnsureProfile(string name)
     {
-        if (_gameProfiles.TryGetValue(name, out GameProfileState? profile))
-        {
-            return profile;
-        }
+        if (_gameProfiles.TryGetValue(name, out var profile)) return profile;
 
         profile = new GameProfileState(name);
         _gameProfiles[name] = profile;
@@ -489,16 +412,10 @@ public sealed class UserConfigurationService
 
     private static string? NormalizeGameProfileName(string? name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(name)) return null;
 
-        string normalized = name.Trim();
-        if (normalized.Length > 128)
-        {
-            normalized = normalized[..128];
-        }
+        var normalized = name.Trim();
+        if (normalized.Length > 128) normalized = normalized[..128];
 
         return normalized.Length == 0 ? null : normalized;
     }
@@ -509,32 +426,21 @@ public sealed class UserConfigurationService
             .Where(ch => !Path.GetInvalidFileNameChars().Contains(ch))
             .ToArray());
 
-        if (string.IsNullOrWhiteSpace(sanitized))
-        {
-            sanitized = DefaultGameProfileName;
-        }
+        if (string.IsNullOrWhiteSpace(sanitized)) sanitized = DefaultGameProfileName;
 
         if (string.Equals(sanitized, DefaultGameProfileName, StringComparison.OrdinalIgnoreCase))
-        {
             return DevConfig.BackupDirectoryName;
-        }
 
         return $"{DevConfig.BackupDirectoryName}_{sanitized}";
     }
 
     private static void TryDeleteDirectory(string? path)
     {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(path)) return;
 
         try
         {
-            if (Directory.Exists(path))
-            {
-                Directory.Delete(path, recursive: true);
-            }
+            if (Directory.Exists(path)) Directory.Delete(path, true);
         }
         catch (IOException)
         {
@@ -546,23 +452,14 @@ public sealed class UserConfigurationService
 
     private void LoadGameProfile(GameProfileState profile, JsonObject obj)
     {
-        string? dataDirectory = NormalizePath(GetOptionalString(obj["dataDirectory"]));
-        if (dataDirectory is not null)
-        {
-            profile.DataDirectory = dataDirectory;
-        }
+        var dataDirectory = NormalizePath(GetOptionalString(obj["dataDirectory"]));
+        if (dataDirectory is not null) profile.DataDirectory = dataDirectory;
 
-        string? gameDirectory = NormalizePath(GetOptionalString(obj["gameDirectory"]));
-        if (gameDirectory is not null)
-        {
-            profile.GameDirectory = gameDirectory;
-        }
+        var gameDirectory = NormalizePath(GetOptionalString(obj["gameDirectory"]));
+        if (gameDirectory is not null) profile.GameDirectory = gameDirectory;
 
-        string? shortcut = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
-        if (shortcut is not null)
-        {
-            profile.CustomShortcutPath = shortcut;
-        }
+        var shortcut = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
+        if (shortcut is not null) profile.CustomShortcutPath = shortcut;
 
         profile.RequiresDataDirectorySelection =
             obj["requiresDataDirectorySelection"]?.GetValue<bool?>() ?? false;
@@ -576,53 +473,31 @@ public sealed class UserConfigurationService
 
     private void ApplyLegacyProfileData(JsonObject root, GameProfileState profile)
     {
-        string? shortcut = NormalizePath(GetOptionalString(root["customShortcutPath"]));
-        if (profile.CustomShortcutPath is null)
-        {
-            profile.CustomShortcutPath = shortcut;
-        }
+        var shortcut = NormalizePath(GetOptionalString(root["customShortcutPath"]));
+        if (profile.CustomShortcutPath is null) profile.CustomShortcutPath = shortcut;
 
         if (profile.BulkUpdateModExclusions.Count == 0)
-        {
             LoadBulkUpdateModExclusions(root["bulkUpdateModExclusions"], profile.BulkUpdateModExclusions);
-        }
 
         if (profile.SkippedModVersions.Count == 0)
-        {
             LoadSkippedModVersions(root["skippedModVersions"], profile.SkippedModVersions);
-        }
 
-        if (profile.ModUsageSessionCounts.Count == 0)
-        {
-            LoadModUsageTracking(root["modUsageTracking"], profile);
-        }
+        if (profile.ModUsageSessionCounts.Count == 0) LoadModUsageTracking(root["modUsageTracking"], profile);
     }
-
-    public bool MigrationCheckCompleted => _migrationCheckCompleted;
-
-    public bool RequireExactVsVersionMatch => _requireExactVsVersionMatch;
-
-    public bool FirebaseAuthBackupCreated => _firebaseAuthBackupCreated;
 
     public void SetMigrationCheckCompleted()
     {
-        if (_migrationCheckCompleted)
-        {
-            return;
-        }
+        if (MigrationCheckCompleted) return;
 
-        _migrationCheckCompleted = true;
+        MigrationCheckCompleted = true;
         Save();
     }
 
     public void SetFirebaseAuthBackupCreated()
     {
-        if (_firebaseAuthBackupCreated)
-        {
-            return;
-        }
+        if (FirebaseAuthBackupCreated) return;
 
-        _firebaseAuthBackupCreated = true;
+        FirebaseAuthBackupCreated = true;
         Save();
     }
 
@@ -633,10 +508,7 @@ public sealed class UserConfigurationService
 
     public IReadOnlyDictionary<ModUsageTrackingKey, int> GetPendingModUsageCounts()
     {
-        if (_isModUsageTrackingDisabled)
-        {
-            return new Dictionary<ModUsageTrackingKey, int>();
-        }
+        if (_isModUsageTrackingDisabled) return new Dictionary<ModUsageTrackingKey, int>();
 
         return new Dictionary<ModUsageTrackingKey, int>(ActiveModUsageSessionCounts);
     }
@@ -645,102 +517,66 @@ public sealed class UserConfigurationService
     {
         recordedUsage = false;
 
-        if (_isModUsageTrackingDisabled)
-        {
-            return false;
-        }
+        if (_isModUsageTrackingDisabled) return false;
 
-        bool wasPending = HasPendingModUsagePrompt;
+        var wasPending = HasPendingModUsagePrompt;
 
         if (activeMods is not null && activeMods.Count > 0)
-        {
-            foreach (ModUsageTrackingEntry entry in activeMods)
+            foreach (var entry in activeMods)
             {
                 if (string.IsNullOrEmpty(entry.ModId)
                     || string.IsNullOrEmpty(entry.ModVersion)
                     || string.IsNullOrEmpty(entry.GameVersion))
-                {
                     continue;
-                }
 
-                if (!entry.CanSubmitVote || entry.HasUserVote)
-                {
-                    continue;
-                }
+                if (!entry.CanSubmitVote || entry.HasUserVote) continue;
 
                 var key = new ModUsageTrackingKey(entry.ModId, entry.ModVersion, entry.GameVersion);
-                if (ActiveModUsageSessionCounts.TryGetValue(key, out int existing))
-                {
+                if (ActiveModUsageSessionCounts.TryGetValue(key, out var existing))
                     ActiveModUsageSessionCounts[key] = existing >= int.MaxValue - 1 ? int.MaxValue : existing + 1;
-                }
                 else
-                {
                     ActiveModUsageSessionCounts[key] = 1;
-                }
 
                 recordedUsage = true;
             }
-        }
 
-        if (ActiveLongRunningSessionCount < int.MaxValue)
-        {
-            ActiveLongRunningSessionCount++;
-        }
+        if (ActiveLongRunningSessionCount < int.MaxValue) ActiveLongRunningSessionCount++;
 
         if (ActiveLongRunningSessionCount > GameSessionVoteThreshold)
-        {
             ActiveLongRunningSessionCount = GameSessionVoteThreshold;
-        }
 
         if (ActiveLongRunningSessionCount >= GameSessionVoteThreshold && ActiveModUsageSessionCounts.Count > 0)
-        {
             ActiveHasPendingModUsagePrompt = true;
-        }
 
         Save();
 
-        bool isPending = HasPendingModUsagePrompt;
+        var isPending = HasPendingModUsagePrompt;
         return !wasPending && isPending;
     }
 
     public void DisableModUsageTracking()
     {
-        if (_isModUsageTrackingDisabled)
-        {
-            return;
-        }
+        if (_isModUsageTrackingDisabled) return;
 
         _isModUsageTrackingDisabled = true;
-        bool hadTrackingState = ActiveLongRunningSessionCount != 0
-            || ActiveModUsageSessionCounts.Count > 0
-            || ActiveHasPendingModUsagePrompt;
+        var hadTrackingState = ActiveLongRunningSessionCount != 0
+                               || ActiveModUsageSessionCounts.Count > 0
+                               || ActiveHasPendingModUsagePrompt;
         ResetModUsageTracking();
-        if (!hadTrackingState)
-        {
-            Save();
-        }
+        if (!hadTrackingState) Save();
     }
 
     public void ResetModUsageCounts(IEnumerable<ModUsageTrackingKey>? keys)
     {
-        if (keys is null)
+        if (keys is null) return;
+
+        var changed = false;
+
+        foreach (var key in keys)
         {
-            return;
-        }
+            if (!key.IsValid) continue;
 
-        bool changed = false;
-
-        foreach (ModUsageTrackingKey key in keys)
-        {
-            if (!key.IsValid)
-            {
-                continue;
-            }
-
-            if (ActiveModUsageSessionCounts.Remove(key))
-            {
-                changed = true;
-            }
+            if (ActiveModUsageSessionCounts.Remove(key)) changed = true;
         }
 
         if (ActiveModUsageSessionCounts.Count == 0)
@@ -754,7 +590,7 @@ public sealed class UserConfigurationService
         }
         else
         {
-            bool shouldPrompt = ActiveLongRunningSessionCount >= GameSessionVoteThreshold;
+            var shouldPrompt = ActiveLongRunningSessionCount >= GameSessionVoteThreshold;
             if (ActiveHasPendingModUsagePrompt != shouldPrompt)
             {
                 ActiveHasPendingModUsagePrompt = shouldPrompt;
@@ -762,31 +598,20 @@ public sealed class UserConfigurationService
             }
         }
 
-        if (changed)
-        {
-            Save();
-        }
+        if (changed) Save();
     }
 
     public void CompleteModUsageVotes(IEnumerable<ModUsageTrackingKey>? completedKeys)
     {
-        bool changed = false;
+        var changed = false;
 
         if (completedKeys is not null)
-        {
-            foreach (ModUsageTrackingKey key in completedKeys)
+            foreach (var key in completedKeys)
             {
-                if (!key.IsValid)
-                {
-                    continue;
-                }
+                if (!key.IsValid) continue;
 
-                if (ActiveModUsageSessionCounts.Remove(key))
-                {
-                    changed = true;
-                }
+                if (ActiveModUsageSessionCounts.Remove(key)) changed = true;
             }
-        }
 
         if (ActiveModUsageSessionCounts.Count == 0)
         {
@@ -807,18 +632,13 @@ public sealed class UserConfigurationService
             }
         }
 
-        if (changed)
-        {
-            Save();
-        }
+        if (changed) Save();
     }
 
     public void ResetModUsageTracking()
     {
-        if (ActiveLongRunningSessionCount == 0 && ActiveModUsageSessionCounts.Count == 0 && !ActiveHasPendingModUsagePrompt)
-        {
-            return;
-        }
+        if (ActiveLongRunningSessionCount == 0 && ActiveModUsageSessionCounts.Count == 0 &&
+            !ActiveHasPendingModUsagePrompt) return;
 
         ActiveLongRunningSessionCount = 0;
         ActiveModUsageSessionCounts.Clear();
@@ -828,44 +648,31 @@ public sealed class UserConfigurationService
 
     public bool TrySetThemePaletteColor(string key, string color)
     {
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(key)) return false;
 
-        string normalizedKey = key.Trim();
-        if (!_themePaletteColors.ContainsKey(normalizedKey))
-        {
-            return false;
-        }
+        var normalizedKey = key.Trim();
+        if (!_themePaletteColors.ContainsKey(normalizedKey)) return false;
 
-        if (!TryNormalizeHexColor(color, out string normalizedColor))
-        {
-            return false;
-        }
+        if (!TryNormalizeHexColor(color, out var normalizedColor)) return false;
 
-        if (_themePaletteColors.TryGetValue(normalizedKey, out string? current)
+        if (_themePaletteColors.TryGetValue(normalizedKey, out var current)
             && string.Equals(current, normalizedColor, StringComparison.OrdinalIgnoreCase))
-        {
             return true;
-        }
 
         _themePaletteColors[normalizedKey] = normalizedColor;
-        if (_colorTheme == ColorTheme.Custom)
+        if (ColorTheme == ColorTheme.Custom)
         {
             EnsureCustomThemePaletteInitialized();
             _customThemePaletteColors[normalizedKey] = normalizedColor;
         }
+
         Save();
         return true;
     }
 
     public void ResetThemePalette()
     {
-        if (_colorTheme == ColorTheme.Custom)
-        {
-            ResetCustomThemePaletteToDefaults();
-        }
+        if (ColorTheme == ColorTheme.Custom) ResetCustomThemePaletteToDefaults();
 
         ResetThemePaletteToDefaults();
         Save();
@@ -883,32 +690,24 @@ public sealed class UserConfigurationService
 
     public bool? GetInstalledColumnVisibility(string columnName)
     {
-        string? normalized = NormalizeInstalledColumnKey(columnName);
+        var normalized = NormalizeInstalledColumnKey(columnName);
 
-        if (normalized is null)
-        {
-            return null;
-        }
+        if (normalized is null) return null;
 
-        return _installedColumnVisibility.TryGetValue(normalized, out bool value)
+        return _installedColumnVisibility.TryGetValue(normalized, out var value)
             ? value
             : null;
     }
 
     public void SetInstalledColumnVisibility(string columnName, bool isVisible)
     {
-        string? normalized = NormalizeInstalledColumnKey(columnName);
+        var normalized = NormalizeInstalledColumnKey(columnName);
 
-        if (normalized is null)
-        {
-            throw new ArgumentException("Column name cannot be empty.", nameof(columnName));
-        }
+        if (normalized is null) throw new ArgumentException("Column name cannot be empty.", nameof(columnName));
 
-        if (_installedColumnVisibility.TryGetValue(normalized, out bool current)
+        if (_installedColumnVisibility.TryGetValue(normalized, out var current)
             && current == isVisible)
-        {
             return;
-        }
 
         _installedColumnVisibility[normalized] = isVisible;
         Save();
@@ -916,42 +715,33 @@ public sealed class UserConfigurationService
 
     public string GetConfigurationDirectory()
     {
-        string directory = Path.GetDirectoryName(_configurationPath)
-            ?? AppContext.BaseDirectory;
+        var directory = Path.GetDirectoryName(_configurationPath)
+                        ?? AppContext.BaseDirectory;
         Directory.CreateDirectory(directory);
         return directory;
     }
 
     public void EnablePersistence()
     {
-        if (_isPersistenceEnabled)
-        {
-            return;
-        }
+        if (_isPersistenceEnabled) return;
 
         _isPersistenceEnabled = true;
 
-        if (_hasPendingSave)
-        {
-            PersistConfiguration();
-        }
+        if (_hasPendingSave) PersistConfiguration();
 
-        if (_hasPendingModConfigPathSave)
-        {
-            PersistModConfigPathHistory();
-        }
+        if (_hasPendingModConfigPathSave) PersistModConfigPathHistory();
     }
 
-    public string? GetLastSelectedPresetName() => _selectedPresetName;
+    public string? GetLastSelectedPresetName()
+    {
+        return _selectedPresetName;
+    }
 
     public void SetLastSelectedPresetName(string? name)
     {
-        string? normalized = NormalizePresetName(name);
+        var normalized = NormalizePresetName(name);
 
-        if (string.Equals(_selectedPresetName, normalized, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
+        if (string.Equals(_selectedPresetName, normalized, StringComparison.OrdinalIgnoreCase)) return;
 
         _selectedPresetName = normalized;
 
@@ -966,18 +756,15 @@ public sealed class UserConfigurationService
             return false;
         }
 
-        string key = modId.Trim();
-        if (ActiveModConfigPaths.TryGetValue(key, out path))
-        {
-            return true;
-        }
+        var key = modId.Trim();
+        if (ActiveModConfigPaths.TryGetValue(key, out path)) return true;
 
-        if (_storedModConfigPaths.TryGetValue(key, out ModConfigPathEntry? entry) && entry is not null)
+        if (_storedModConfigPaths.TryGetValue(key, out var entry) && entry is not null)
         {
-            string? combined = BuildFullConfigPath(entry);
+            var combined = BuildFullConfigPath(entry);
             if (!string.IsNullOrWhiteSpace(combined))
             {
-                string combinedPath = combined!;
+                var combinedPath = combined!;
                 ActiveModConfigPaths[key] = combinedPath;
                 path = combinedPath;
                 return true;
@@ -990,33 +777,23 @@ public sealed class UserConfigurationService
 
     public void SetModConfigPath(string modId, string path, string? configName = null)
     {
-        if (string.IsNullOrWhiteSpace(modId))
-        {
-            throw new ArgumentException("Mod ID cannot be empty.", nameof(modId));
-        }
+        if (string.IsNullOrWhiteSpace(modId)) throw new ArgumentException("Mod ID cannot be empty.", nameof(modId));
 
-        string? normalized = NormalizePath(path);
+        var normalized = NormalizePath(path);
         if (string.IsNullOrWhiteSpace(normalized))
-        {
             throw new ArgumentException("The configuration path is invalid.", nameof(path));
-        }
 
-        string? modConfigDirectory = GetActiveModConfigDirectory();
+        var modConfigDirectory = GetActiveModConfigDirectory();
         if (!string.IsNullOrWhiteSpace(modConfigDirectory) && !IsPathInDirectory(normalized, modConfigDirectory))
-        {
             throw new ArgumentException(
                 "The configuration path must be inside the ModConfig directory.",
                 nameof(path));
-        }
 
-        string key = modId.Trim();
+        var key = modId.Trim();
         ActiveModConfigPaths[key] = normalized;
 
-        string? normalizedConfigName = NormalizeConfigName(configName);
-        if (normalizedConfigName is null)
-        {
-            normalizedConfigName = ExtractFileName(normalized);
-        }
+        var normalizedConfigName = NormalizeConfigName(configName);
+        if (normalizedConfigName is null) normalizedConfigName = ExtractFileName(normalized);
 
         UpdatePersistentModConfigPath(key, normalized, normalizedConfigName);
         Save();
@@ -1024,143 +801,102 @@ public sealed class UserConfigurationService
 
     public void RemoveModConfigPath(string? modId, bool preserveHistory = false)
     {
-        if (string.IsNullOrWhiteSpace(modId))
-        {
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(modId)) return;
 
-        string key = modId.Trim();
-        bool removed = ActiveModConfigPaths.Remove(key);
-        bool historyChanged = false;
+        var key = modId.Trim();
+        var removed = ActiveModConfigPaths.Remove(key);
+        var historyChanged = false;
 
-        if (!preserveHistory)
-        {
-            historyChanged = _storedModConfigPaths.Remove(key);
-        }
+        if (!preserveHistory) historyChanged = _storedModConfigPaths.Remove(key);
 
-        if (removed)
-        {
-            Save();
-        }
+        if (removed) Save();
 
-        if (historyChanged)
-        {
-            SaveModConfigPathHistory();
-        }
+        if (historyChanged) SaveModConfigPathHistory();
     }
 
     public void SetCompactViewMode(bool isCompact)
     {
-        if (_isCompactView == isCompact)
-        {
-            return;
-        }
+        if (IsCompactView == isCompact) return;
 
-        _isCompactView = isCompact;
+        IsCompactView = isCompact;
         Save();
     }
 
     public void SetModDbDesignViewMode(bool useModDbDesignView)
     {
-        if (_useModDbDesignView == useModDbDesignView)
-        {
-            return;
-        }
+        if (UseModDbDesignView == useModDbDesignView) return;
 
-        _useModDbDesignView = useModDbDesignView;
+        UseModDbDesignView = useModDbDesignView;
         Save();
     }
 
     public void SetColorTheme(ColorTheme theme, IReadOnlyDictionary<string, string>? paletteOverride = null)
     {
-        bool paletteChanged = false;
+        var paletteChanged = false;
 
-        if (_colorTheme != theme)
+        if (ColorTheme != theme)
         {
-            _colorTheme = theme;
+            ColorTheme = theme;
             ResetThemePaletteToDefaults();
             paletteChanged = true;
         }
 
-        if (paletteOverride is not null)
-        {
-            paletteChanged |= ApplyThemePaletteOverride(paletteOverride);
-        }
+        if (paletteOverride is not null) paletteChanged |= ApplyThemePaletteOverride(paletteOverride);
 
-        if (paletteChanged)
-        {
-            Save();
-        }
+        if (paletteChanged) Save();
     }
 
     public void SetEnableServerOptions(bool enableServerOptions)
     {
-        if (_enableServerOptions == enableServerOptions)
-        {
-            return;
-        }
+        if (EnableServerOptions == enableServerOptions) return;
 
-        _enableServerOptions = enableServerOptions;
+        EnableServerOptions = enableServerOptions;
         Save();
     }
 
     public void SetModlistAutoLoadBehavior(ModlistAutoLoadBehavior behavior)
     {
-        if (_modlistAutoLoadBehavior == behavior)
-        {
-            return;
-        }
+        if (ModlistAutoLoadBehavior == behavior) return;
 
-        _modlistAutoLoadBehavior = behavior;
+        ModlistAutoLoadBehavior = behavior;
         Save();
     }
 
     public void SetCacheAllVersionsLocally(bool cacheAllVersionsLocally)
     {
-        if (_cacheAllVersionsLocally == cacheAllVersionsLocally)
-        {
-            return;
-        }
+        if (CacheAllVersionsLocally == cacheAllVersionsLocally) return;
 
-        _cacheAllVersionsLocally = cacheAllVersionsLocally;
+        CacheAllVersionsLocally = cacheAllVersionsLocally;
         Save();
     }
 
     public void SetModDatabaseAutoLoadMode(ModDatabaseAutoLoadMode mode)
     {
-        if (_modDatabaseAutoLoadMode == mode)
-        {
-            return;
-        }
+        if (ModDatabaseAutoLoadMode == mode) return;
 
-        _modDatabaseAutoLoadMode = mode;
+        ModDatabaseAutoLoadMode = mode;
         Save();
     }
 
     public void SetModDatabaseSearchResultLimit(int limit)
     {
-        int normalized = NormalizeModDatabaseSearchResultLimit(limit);
+        var normalized = NormalizeModDatabaseSearchResultLimit(limit);
 
-        if (_modDatabaseSearchResultLimit == normalized)
-        {
-            return;
-        }
+        if (ModDatabaseSearchResultLimit == normalized) return;
 
-        _modDatabaseSearchResultLimit = normalized;
+        ModDatabaseSearchResultLimit = normalized;
         Save();
     }
 
     public void SetModListSortPreference(string? sortMemberPath, ListSortDirection direction)
     {
-        string? normalized = string.IsNullOrWhiteSpace(sortMemberPath)
+        var normalized = string.IsNullOrWhiteSpace(sortMemberPath)
             ? null
             : sortMemberPath.Trim();
 
         if (string.Equals(_modsSortMemberPath, normalized, StringComparison.Ordinal)
             && _modsSortDirection == direction)
-        {
             return;
-        }
 
         _modsSortMemberPath = normalized;
         _modsSortDirection = direction;
@@ -1169,21 +905,15 @@ public sealed class UserConfigurationService
 
     public void SetWindowDimensions(double width, double height)
     {
-        double? normalizedWidth = NormalizeWindowDimension(width);
-        double? normalizedHeight = NormalizeWindowDimension(height);
+        var normalizedWidth = NormalizeWindowDimension(width);
+        var normalizedHeight = NormalizeWindowDimension(height);
 
-        if (!normalizedWidth.HasValue || !normalizedHeight.HasValue)
-        {
-            return;
-        }
+        if (!normalizedWidth.HasValue || !normalizedHeight.HasValue) return;
 
-        bool hasWidthChanged = !_windowWidth.HasValue || Math.Abs(_windowWidth.Value - normalizedWidth.Value) > 0.1;
-        bool hasHeightChanged = !_windowHeight.HasValue || Math.Abs(_windowHeight.Value - normalizedHeight.Value) > 0.1;
+        var hasWidthChanged = !_windowWidth.HasValue || Math.Abs(_windowWidth.Value - normalizedWidth.Value) > 0.1;
+        var hasHeightChanged = !_windowHeight.HasValue || Math.Abs(_windowHeight.Value - normalizedHeight.Value) > 0.1;
 
-        if (!hasWidthChanged && !hasHeightChanged)
-        {
-            return;
-        }
+        if (!hasWidthChanged && !hasHeightChanged) return;
 
         _windowWidth = normalizedWidth;
         _windowHeight = normalizedHeight;
@@ -1192,21 +922,16 @@ public sealed class UserConfigurationService
 
     public void SetModInfoPanelPosition(double left, double top)
     {
-        double? normalizedLeft = NormalizeModInfoCoordinate(left);
-        double? normalizedTop = NormalizeModInfoCoordinate(top);
+        var normalizedLeft = NormalizeModInfoCoordinate(left);
+        var normalizedTop = NormalizeModInfoCoordinate(top);
 
-        if (!normalizedLeft.HasValue || !normalizedTop.HasValue)
-        {
-            return;
-        }
+        if (!normalizedLeft.HasValue || !normalizedTop.HasValue) return;
 
-        bool hasLeftChanged = !_modInfoPanelLeft.HasValue || Math.Abs(_modInfoPanelLeft.Value - normalizedLeft.Value) > 0.1;
-        bool hasTopChanged = !_modInfoPanelTop.HasValue || Math.Abs(_modInfoPanelTop.Value - normalizedTop.Value) > 0.1;
+        var hasLeftChanged = !_modInfoPanelLeft.HasValue ||
+                             Math.Abs(_modInfoPanelLeft.Value - normalizedLeft.Value) > 0.1;
+        var hasTopChanged = !_modInfoPanelTop.HasValue || Math.Abs(_modInfoPanelTop.Value - normalizedTop.Value) > 0.1;
 
-        if (!hasLeftChanged && !hasTopChanged)
-        {
-            return;
-        }
+        if (!hasLeftChanged && !hasTopChanged) return;
 
         _modInfoPanelLeft = normalizedLeft;
         _modInfoPanelTop = normalizedTop;
@@ -1215,58 +940,53 @@ public sealed class UserConfigurationService
 
     public void SetDataDirectory(string path)
     {
-        _activeGameProfile.DataDirectory = NormalizePath(path);
-        _activeGameProfile.RequiresDataDirectorySelection = false;
-        EnsureModConfigDirectoryExists(_activeGameProfile.DataDirectory);
+        ActiveProfile.DataDirectory = NormalizePath(path);
+        ActiveProfile.RequiresDataDirectorySelection = false;
+        EnsureModConfigDirectoryExists(ActiveProfile.DataDirectory);
         RefreshActiveModConfigPathsFromHistory();
         Save();
     }
 
     public void ClearDataDirectory()
     {
-        if (_activeGameProfile.DataDirectory is null)
+        if (ActiveProfile.DataDirectory is null)
         {
-            _activeGameProfile.RequiresDataDirectorySelection = true;
+            ActiveProfile.RequiresDataDirectorySelection = true;
             return;
         }
 
-        _activeGameProfile.DataDirectory = null;
-        _activeGameProfile.RequiresDataDirectorySelection = true;
+        ActiveProfile.DataDirectory = null;
+        ActiveProfile.RequiresDataDirectorySelection = true;
         Save();
     }
 
     public void SetGameDirectory(string path)
     {
-        _activeGameProfile.GameDirectory = NormalizePath(path);
-        _activeGameProfile.RequiresGameDirectorySelection = false;
+        ActiveProfile.GameDirectory = NormalizePath(path);
+        ActiveProfile.RequiresGameDirectorySelection = false;
         Save();
     }
 
     public void ClearGameDirectory()
     {
-        if (_activeGameProfile.GameDirectory is null)
+        if (ActiveProfile.GameDirectory is null)
         {
-            _activeGameProfile.RequiresGameDirectorySelection = true;
+            ActiveProfile.RequiresGameDirectorySelection = true;
             return;
         }
 
-        _activeGameProfile.GameDirectory = null;
-        _activeGameProfile.RequiresGameDirectorySelection = true;
+        ActiveProfile.GameDirectory = null;
+        ActiveProfile.RequiresGameDirectorySelection = true;
         Save();
     }
 
     public void SetCustomShortcutPath(string path)
     {
-        string? normalized = NormalizePath(path);
+        var normalized = NormalizePath(path);
         if (string.IsNullOrWhiteSpace(normalized))
-        {
             throw new ArgumentException("The shortcut path is invalid.", nameof(path));
-        }
 
-        if (string.Equals(ActiveProfile.CustomShortcutPath, normalized, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
+        if (string.Equals(ActiveProfile.CustomShortcutPath, normalized, StringComparison.OrdinalIgnoreCase)) return;
 
         ActiveProfile.CustomShortcutPath = normalized;
         Save();
@@ -1274,10 +994,7 @@ public sealed class UserConfigurationService
 
     public void ClearCustomShortcutPath()
     {
-        if (ActiveProfile.CustomShortcutPath is null)
-        {
-            return;
-        }
+        if (ActiveProfile.CustomShortcutPath is null) return;
 
         ActiveProfile.CustomShortcutPath = null;
         Save();
@@ -1285,63 +1002,48 @@ public sealed class UserConfigurationService
 
     public void SetDisableAutoRefresh(bool disable)
     {
-        if (_disableAutoRefresh == disable)
-        {
-            return;
-        }
+        if (DisableAutoRefresh == disable) return;
 
-        _disableAutoRefresh = disable;
+        DisableAutoRefresh = disable;
         Save();
     }
 
     public void SetDisableAutoRefreshWarningAcknowledged(bool acknowledged)
     {
-        if (_disableAutoRefreshWarningAcknowledged == acknowledged)
-        {
-            return;
-        }
+        if (DisableAutoRefreshWarningAcknowledged == acknowledged) return;
 
-        _disableAutoRefreshWarningAcknowledged = acknowledged;
+        DisableAutoRefreshWarningAcknowledged = acknowledged;
         Save();
     }
 
     public void SetGameProfileCreationWarningAcknowledged(bool acknowledged)
     {
-        if (_gameProfileCreationWarningAcknowledged == acknowledged)
-        {
-            return;
-        }
+        if (GameProfileCreationWarningAcknowledged == acknowledged) return;
 
-        _gameProfileCreationWarningAcknowledged = acknowledged;
+        GameProfileCreationWarningAcknowledged = acknowledged;
         Save();
     }
 
     public void SetDisableInternetAccess(bool disable)
     {
-        if (_disableInternetAccess == disable)
-        {
-            return;
-        }
+        if (DisableInternetAccess == disable) return;
 
-        _disableInternetAccess = disable;
+        DisableInternetAccess = disable;
         Save();
     }
 
     public void SetSuppressModlistSavePrompt(bool suppress)
     {
-        if (_suppressModlistSavePrompt == suppress)
-        {
-            return;
-        }
+        if (SuppressModlistSavePrompt == suppress) return;
 
-        _suppressModlistSavePrompt = suppress;
+        SuppressModlistSavePrompt = suppress;
         Save();
     }
 
     public void SetSuppressRefreshCachePrompt(bool suppress)
     {
-        string? normalizedVersion = suppress
-            ? NormalizeVersion(_modManagerVersion) ?? _modManagerVersion
+        var normalizedVersion = suppress
+            ? NormalizeVersion(ModManagerVersion) ?? ModManagerVersion
             : null;
 
         if (_suppressRefreshCachePrompt == suppress
@@ -1349,9 +1051,7 @@ public sealed class UserConfigurationService
                 _suppressRefreshCachePromptVersion,
                 normalizedVersion,
                 StringComparison.OrdinalIgnoreCase))
-        {
             return;
-        }
 
         _suppressRefreshCachePrompt = suppress;
         _suppressRefreshCachePromptVersion = normalizedVersion;
@@ -1360,108 +1060,76 @@ public sealed class UserConfigurationService
 
     public void SetCloudUploaderName(string? name)
     {
-        string? normalized = NormalizeUploaderName(name);
+        var normalized = NormalizeUploaderName(name);
 
-        if (string.Equals(_cloudUploaderName, normalized, StringComparison.Ordinal))
-        {
-            return;
-        }
+        if (string.Equals(CloudUploaderName, normalized, StringComparison.Ordinal)) return;
 
-        _cloudUploaderName = normalized;
+        CloudUploaderName = normalized;
         Save();
     }
 
     public void SetExcludeInstalledModDatabaseResults(bool exclude)
     {
-        if (_excludeInstalledModDatabaseResults == exclude)
-        {
-            return;
-        }
+        if (ExcludeInstalledModDatabaseResults == exclude) return;
 
-        _excludeInstalledModDatabaseResults = exclude;
+        ExcludeInstalledModDatabaseResults = exclude;
         Save();
     }
 
     public void SetOnlyShowCompatibleModDatabaseResults(bool onlyCompatible)
     {
-        if (_onlyShowCompatibleModDatabaseResults == onlyCompatible)
-        {
-            return;
-        }
+        if (OnlyShowCompatibleModDatabaseResults == onlyCompatible) return;
 
-        _onlyShowCompatibleModDatabaseResults = onlyCompatible;
+        OnlyShowCompatibleModDatabaseResults = onlyCompatible;
         Save();
     }
 
     public void SetRequireExactVsVersionMatch(bool requireExact)
     {
-        if (_requireExactVsVersionMatch == requireExact)
-        {
-            return;
-        }
+        if (RequireExactVsVersionMatch == requireExact) return;
 
-        _requireExactVsVersionMatch = requireExact;
+        RequireExactVsVersionMatch = requireExact;
         Save();
     }
 
     public bool IsModExcludedFromBulkUpdates(string? modId)
     {
-        string? normalized = NormalizeModId(modId);
-        if (normalized is null)
-        {
-            return false;
-        }
+        var normalized = NormalizeModId(modId);
+        if (normalized is null) return false;
 
-        return ActiveBulkUpdateModExclusions.TryGetValue(normalized, out bool isExcluded) && isExcluded;
+        return ActiveBulkUpdateModExclusions.TryGetValue(normalized, out var isExcluded) && isExcluded;
     }
 
     public void SetModExcludedFromBulkUpdates(string? modId, bool isExcluded)
     {
-        string? normalized = NormalizeModId(modId);
-        if (normalized is null)
-        {
-            return;
-        }
+        var normalized = NormalizeModId(modId);
+        if (normalized is null) return;
 
         if (isExcluded)
         {
-            if (ActiveBulkUpdateModExclusions.TryGetValue(normalized, out bool current) && current)
-            {
-                return;
-            }
+            if (ActiveBulkUpdateModExclusions.TryGetValue(normalized, out var current) && current) return;
 
             ActiveBulkUpdateModExclusions[normalized] = true;
             Save();
             return;
         }
 
-        if (!ActiveBulkUpdateModExclusions.Remove(normalized))
-        {
-            return;
-        }
+        if (!ActiveBulkUpdateModExclusions.Remove(normalized)) return;
 
         Save();
     }
 
     public void SkipModVersion(string? modId, string? version)
     {
-        string? normalizedId = NormalizeModId(modId);
-        if (normalizedId is null)
-        {
-            return;
-        }
+        var normalizedId = NormalizeModId(modId);
+        if (normalizedId is null) return;
 
-        string? normalizedVersion = NormalizeVersion(version);
-        if (normalizedVersion is null)
-        {
-            return;
-        }
+        var normalizedVersion = NormalizeVersion(version);
+        if (normalizedVersion is null) return;
 
-        if (ActiveSkippedModVersions.TryGetValue(normalizedId, out string? current)
+        if (ActiveSkippedModVersions.TryGetValue(normalizedId, out var current)
             && string.Equals(current, normalizedVersion, StringComparison.OrdinalIgnoreCase))
-        {
             return;
-        }
 
         ActiveSkippedModVersions[normalizedId] = normalizedVersion;
         Save();
@@ -1469,27 +1137,16 @@ public sealed class UserConfigurationService
 
     public bool ShouldSkipModVersion(string? modId, string? version)
     {
-        string? normalizedId = NormalizeModId(modId);
-        if (normalizedId is null)
-        {
-            return false;
-        }
+        var normalizedId = NormalizeModId(modId);
+        if (normalizedId is null) return false;
 
-        if (!ActiveSkippedModVersions.TryGetValue(normalizedId, out string? storedVersion))
-        {
-            return false;
-        }
+        if (!ActiveSkippedModVersions.TryGetValue(normalizedId, out var storedVersion)) return false;
 
-        string? normalizedVersion = NormalizeVersion(version);
+        var normalizedVersion = NormalizeVersion(version);
         if (normalizedVersion is null
             || !string.Equals(storedVersion, normalizedVersion, StringComparison.OrdinalIgnoreCase))
-        {
             if (ActiveSkippedModVersions.Remove(normalizedId))
-            {
                 Save();
-            }
-
-        }
 
         return string.Equals(storedVersion, normalizedVersion, StringComparison.OrdinalIgnoreCase);
     }
@@ -1500,56 +1157,50 @@ public sealed class UserConfigurationService
         _gameProfiles.Clear();
         GameProfileState defaultProfile = new(DefaultGameProfileName);
         _gameProfiles[defaultProfile.Name] = defaultProfile;
-        _activeGameProfile = defaultProfile;
+        ActiveProfile = defaultProfile;
         ResetCustomThemePaletteToDefaults();
-        _colorTheme = ColorTheme.VintageStory;
+        ColorTheme = ColorTheme.VintageStory;
         ResetThemePaletteToDefaults();
         _selectedPresetName = null;
-        _gameProfileCreationWarningAcknowledged = false;
-    
+        GameProfileCreationWarningAcknowledged = false;
+
         try
         {
-            if (!File.Exists(_configurationPath))
-            {
-                return;
-            }
-    
-            using FileStream stream = File.OpenRead(_configurationPath);
-            JsonNode? node = JsonNode.Parse(stream);
-            if (node is not JsonObject obj)
-            {
-                return;
-            }
-    
-            string? originalConfigurationVersion = NormalizeVersion(GetOptionalString(obj["configurationVersion"]));
-            string? originalModManagerVersion = NormalizeVersion(GetOptionalString(obj["modManagerVersion"]));
+            if (!File.Exists(_configurationPath)) return;
+
+            using var stream = File.OpenRead(_configurationPath);
+            var node = JsonNode.Parse(stream);
+            if (node is not JsonObject obj) return;
+
+            var originalConfigurationVersion = NormalizeVersion(GetOptionalString(obj["configurationVersion"]));
+            var originalModManagerVersion = NormalizeVersion(GetOptionalString(obj["modManagerVersion"]));
             InitializeVersionMetadata(originalConfigurationVersion, originalModManagerVersion);
-    
-            string? rootDataDirectory = NormalizePath(GetOptionalString(obj["dataDirectory"]));
-            string? rootGameDirectory = NormalizePath(GetOptionalString(obj["gameDirectory"]));
+
+            var rootDataDirectory = NormalizePath(GetOptionalString(obj["dataDirectory"]));
+            var rootGameDirectory = NormalizePath(GetOptionalString(obj["gameDirectory"]));
             defaultProfile.DataDirectory = rootDataDirectory;
             defaultProfile.GameDirectory = rootGameDirectory;
-    
-            _isCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
-            _useModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? true;
-            _cacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? true;
-            _disableAutoRefresh = obj["disableAutoRefresh"]?.GetValue<bool?>() ?? false;
-            _disableAutoRefreshWarningAcknowledged =
+
+            IsCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
+            UseModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? true;
+            CacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? true;
+            DisableAutoRefresh = obj["disableAutoRefresh"]?.GetValue<bool?>() ?? false;
+            DisableAutoRefreshWarningAcknowledged =
                 obj["disableAutoRefreshWarningAcknowledged"]?.GetValue<bool?>() ?? false;
-            _disableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
+            DisableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _isModUsageTrackingDisabled = obj["modUsageTrackingDisabled"]?.GetValue<bool?>() ?? false;
-            _enableServerOptions = obj["enableServerOptions"]?.GetValue<bool?>() ?? false;
-            _suppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
+            EnableServerOptions = obj["enableServerOptions"]?.GetValue<bool?>() ?? false;
+            SuppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePrompt = obj["suppressRefreshCachePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePromptVersion = NormalizeVersion(
                 GetOptionalString(obj["suppressRefreshCachePromptVersion"]));
-            _gameProfileCreationWarningAcknowledged =
+            GameProfileCreationWarningAcknowledged =
                 obj["gameProfileCreationWarningAcknowledged"]?.GetValue<bool?>() ?? false;
             if (_suppressRefreshCachePrompt)
             {
                 if (_suppressRefreshCachePromptVersion is null)
                 {
-                    _suppressRefreshCachePromptVersion = _previousModManagerVersion ?? _modManagerVersion;
+                    _suppressRefreshCachePromptVersion = PreviousModManagerVersion ?? ModManagerVersion;
                     _hasPendingSave = true;
                 }
             }
@@ -1557,79 +1208,75 @@ public sealed class UserConfigurationService
             {
                 _suppressRefreshCachePromptVersion = null;
             }
-    
-            string? colorThemeValue = GetOptionalString(obj["colorTheme"]);
-            bool? legacyDarkVsMode = obj["useDarkVsMode"]?.GetValue<bool?>();
+
+            var colorThemeValue = GetOptionalString(obj["colorTheme"]);
+            var legacyDarkVsMode = obj["useDarkVsMode"]?.GetValue<bool?>();
             if (!string.IsNullOrWhiteSpace(colorThemeValue)
-                && Enum.TryParse(colorThemeValue.Trim(), ignoreCase: true, out ColorTheme parsedTheme))
+                && Enum.TryParse(colorThemeValue.Trim(), true, out ColorTheme parsedTheme))
             {
-                _colorTheme = parsedTheme;
+                ColorTheme = parsedTheme;
             }
             else
             {
-                _colorTheme = legacyDarkVsMode.HasValue && !legacyDarkVsMode.Value
+                ColorTheme = legacyDarkVsMode.HasValue && !legacyDarkVsMode.Value
                     ? ColorTheme.Light
                     : ColorTheme.VintageStory;
                 _hasPendingSave = true;
             }
-    
-            bool hasCustomPalette = LoadCustomThemePalette(obj["customThemePalette"]);
+
+            var hasCustomPalette = LoadCustomThemePalette(obj["customThemePalette"]);
             ResetThemePaletteToDefaults();
-            _modlistAutoLoadBehavior = ParseModlistAutoLoadBehavior(GetOptionalString(obj["modlistAutoLoadBehavior"]));
+            ModlistAutoLoadBehavior = ParseModlistAutoLoadBehavior(GetOptionalString(obj["modlistAutoLoadBehavior"]));
             _modsSortMemberPath = NormalizeSortMemberPath(GetOptionalString(obj["modsSortMemberPath"]));
             _modsSortDirection = ParseSortDirection(GetOptionalString(obj["modsSortDirection"]));
-            _modDatabaseSearchResultLimit = NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
-            _modDatabaseNewModsRecentMonths = NormalizeModDatabaseNewModsRecentMonths(
+            ModDatabaseSearchResultLimit =
+                NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
+            ModDatabaseNewModsRecentMonths = NormalizeModDatabaseNewModsRecentMonths(
                 obj["modDatabaseNewModsRecentMonths"]?.GetValue<int?>());
-            _modDatabaseAutoLoadMode = ParseModDatabaseAutoLoadMode(GetOptionalString(obj["modDatabaseAutoLoadMode"]));
-            _excludeInstalledModDatabaseResults = obj["excludeInstalledModDatabaseResults"]?.GetValue<bool?>() ?? false;
-            _onlyShowCompatibleModDatabaseResults = obj["onlyShowCompatibleModDatabaseResults"]?.GetValue<bool?>() ?? false;
-            _requireExactVsVersionMatch = obj["requireExactVsVersionMatch"]?.GetValue<bool?>() ?? false;
+            ModDatabaseAutoLoadMode = ParseModDatabaseAutoLoadMode(GetOptionalString(obj["modDatabaseAutoLoadMode"]));
+            ExcludeInstalledModDatabaseResults = obj["excludeInstalledModDatabaseResults"]?.GetValue<bool?>() ?? false;
+            OnlyShowCompatibleModDatabaseResults =
+                obj["onlyShowCompatibleModDatabaseResults"]?.GetValue<bool?>() ?? false;
+            RequireExactVsVersionMatch = obj["requireExactVsVersionMatch"]?.GetValue<bool?>() ?? false;
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             _modInfoPanelLeft = NormalizeModInfoCoordinate(obj["modInfoPanelLeft"]?.GetValue<double?>());
             _modInfoPanelTop = NormalizeModInfoCoordinate(obj["modInfoPanelTop"]?.GetValue<double?>());
-    
+
             LoadInstalledColumnVisibility(obj["installedColumnVisibility"]);
             LoadThemePalette(obj["themePalette"] ?? obj["darkVsPalette"]);
-            if (_colorTheme == ColorTheme.Custom)
+            if (ColorTheme == ColorTheme.Custom)
             {
                 SyncCustomThemePaletteWithCurrentTheme();
-                if (!hasCustomPalette)
-                {
-                    _hasPendingSave = true;
-                }
+                if (!hasCustomPalette) _hasPendingSave = true;
             }
-    
+
             _selectedPresetName = NormalizePresetName(GetOptionalString(obj["selectedPreset"]));
-            _cloudUploaderName = NormalizeUploaderName(GetOptionalString(obj["cloudUploaderName"]));
-            _migrationCheckCompleted = obj["migrationCheckCompleted"]?.GetValue<bool?>() ?? false;
-            _firebaseAuthBackupCreated = obj["firebaseAuthBackupCreated"]?.GetValue<bool?>() ?? false;
-    
-            bool profilesFound = false;
+            CloudUploaderName = NormalizeUploaderName(GetOptionalString(obj["cloudUploaderName"]));
+            MigrationCheckCompleted = obj["migrationCheckCompleted"]?.GetValue<bool?>() ?? false;
+            FirebaseAuthBackupCreated = obj["firebaseAuthBackupCreated"]?.GetValue<bool?>() ?? false;
+
+            var profilesFound = false;
             if (obj["gameProfiles"] is JsonObject profilesObj)
             {
                 profilesFound = true;
-                foreach ((string key, JsonNode? value) in profilesObj)
+                foreach (var (key, value) in profilesObj)
                 {
-                    string? normalizedName = NormalizeGameProfileName(key);
-                    if (normalizedName is null || value is not JsonObject profileObj)
-                    {
-                        continue;
-                    }
-    
-                    GameProfileState profile = EnsureProfile(normalizedName);
+                    var normalizedName = NormalizeGameProfileName(key);
+                    if (normalizedName is null || value is not JsonObject profileObj) continue;
+
+                    var profile = EnsureProfile(normalizedName);
                     LoadGameProfile(profile, profileObj);
                 }
             }
-    
+
             if (!profilesFound)
             {
                 ApplyLegacyProfileData(obj, defaultProfile);
             }
             else
             {
-                if (!_gameProfiles.TryGetValue(DefaultGameProfileName, out GameProfileState? existingDefault)
+                if (!_gameProfiles.TryGetValue(DefaultGameProfileName, out var existingDefault)
                     || existingDefault is null)
                 {
                     defaultProfile = new GameProfileState(DefaultGameProfileName);
@@ -1639,112 +1286,90 @@ public sealed class UserConfigurationService
                 {
                     defaultProfile = existingDefault;
                 }
-    
+
                 defaultProfile.DataDirectory ??= rootDataDirectory;
                 defaultProfile.GameDirectory ??= rootGameDirectory;
                 ApplyLegacyProfileData(obj, defaultProfile);
             }
-    
-            string? rootShortcut = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
-            foreach (GameProfileState profile in _gameProfiles.Values)
+
+            var rootShortcut = NormalizePath(GetOptionalString(obj["customShortcutPath"]));
+            foreach (var profile in _gameProfiles.Values)
             {
                 if (profile.DataDirectory is null)
-                {
                     if (!profile.RequiresDataDirectorySelection)
-                    {
                         profile.DataDirectory = rootDataDirectory;
-                    }
-                }
 
-                if (profile.DataDirectory is not null)
-                {
-                    profile.RequiresDataDirectorySelection = false;
-                }
+                if (profile.DataDirectory is not null) profile.RequiresDataDirectorySelection = false;
 
                 if (profile.GameDirectory is null)
-                {
                     if (!profile.RequiresGameDirectorySelection)
-                    {
                         profile.GameDirectory = rootGameDirectory;
-                    }
-                }
 
-                if (profile.GameDirectory is not null)
-                {
-                    profile.RequiresGameDirectorySelection = false;
-                }
+                if (profile.GameDirectory is not null) profile.RequiresGameDirectorySelection = false;
 
                 if (profile.CustomShortcutPath is null
                     && !profile.RequiresDataDirectorySelection
                     && !profile.RequiresGameDirectorySelection)
-                {
                     profile.CustomShortcutPath = rootShortcut;
-                }
             }
-    
-            string? activeName = NormalizeGameProfileName(GetOptionalString(obj["activeGameProfile"]));
-            if (activeName is not null && _gameProfiles.TryGetValue(activeName, out GameProfileState? activeProfile))
-            {
-                _activeGameProfile = activeProfile;
-            }
+
+            var activeName = NormalizeGameProfileName(GetOptionalString(obj["activeGameProfile"]));
+            if (activeName is not null && _gameProfiles.TryGetValue(activeName, out var activeProfile))
+                ActiveProfile = activeProfile;
             else
-            {
-                _activeGameProfile = defaultProfile;
-            }
-    
+                ActiveProfile = defaultProfile;
+
             if (_isModUsageTrackingDisabled)
-            {
-                foreach (GameProfileState profile in _gameProfiles.Values)
+                foreach (var profile in _gameProfiles.Values)
                 {
                     profile.ModUsageSessionCounts.Clear();
                     profile.LongRunningSessionCount = 0;
                     profile.HasPendingModUsagePrompt = false;
                 }
-            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
             _gameProfiles.Clear();
             GameProfileState resetProfile = new(DefaultGameProfileName);
             _gameProfiles[resetProfile.Name] = resetProfile;
-            _activeGameProfile = resetProfile;
-            _colorTheme = ColorTheme.VintageStory;
+            ActiveProfile = resetProfile;
+            ColorTheme = ColorTheme.VintageStory;
             ResetCustomThemePaletteToDefaults();
             ResetThemePaletteToDefaults();
-            _configurationVersion = CurrentConfigurationVersion;
-            _modManagerVersion = CurrentModManagerVersion;
-            _isCompactView = false;
-            _useModDbDesignView = true;
-            _cacheAllVersionsLocally = true;
-            _disableAutoRefresh = false;
-            _disableAutoRefreshWarningAcknowledged = false;
-            _disableInternetAccess = false;
-            _enableServerOptions = false;
-            _suppressModlistSavePrompt = false;
+            ConfigurationVersion = CurrentConfigurationVersion;
+            ModManagerVersion = CurrentModManagerVersion;
+            IsCompactView = false;
+            UseModDbDesignView = true;
+            CacheAllVersionsLocally = true;
+            DisableAutoRefresh = false;
+            DisableAutoRefreshWarningAcknowledged = false;
+            DisableInternetAccess = false;
+            EnableServerOptions = false;
+            SuppressModlistSavePrompt = false;
             _suppressRefreshCachePrompt = false;
             _suppressRefreshCachePromptVersion = null;
-            _modlistAutoLoadBehavior = ModlistAutoLoadBehavior.Prompt;
+            ModlistAutoLoadBehavior = ModlistAutoLoadBehavior.Prompt;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
             _selectedPresetName = null;
-            _modDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
-            _modDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
-            _modDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
-            _excludeInstalledModDatabaseResults = false;
-            _onlyShowCompatibleModDatabaseResults = false;
-            _requireExactVsVersionMatch = false;
+            ModDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
+            ModDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
+            ModDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
+            ExcludeInstalledModDatabaseResults = false;
+            OnlyShowCompatibleModDatabaseResults = false;
+            RequireExactVsVersionMatch = false;
             _windowWidth = null;
             _windowHeight = null;
             _modInfoPanelLeft = null;
             _modInfoPanelTop = null;
-            _cloudUploaderName = null;
+            CloudUploaderName = null;
             _installedColumnVisibility.Clear();
             _isModUsageTrackingDisabled = false;
-            _migrationCheckCompleted = false;
-            _firebaseAuthBackupCreated = false;
-            _gameProfileCreationWarningAcknowledged = false;
+            MigrationCheckCompleted = false;
+            FirebaseAuthBackupCreated = false;
+            GameProfileCreationWarningAcknowledged = false;
         }
-    
+
         LoadPersistentModConfigPaths();
         BackfillModConfigPathHistory();
     }
@@ -1753,10 +1378,7 @@ public sealed class UserConfigurationService
     {
         _hasPendingSave = true;
 
-        if (!_isPersistenceEnabled)
-        {
-            return;
-        }
+        if (!_isPersistenceEnabled) return;
 
         PersistConfiguration();
     }
@@ -1765,55 +1387,55 @@ public sealed class UserConfigurationService
     {
         try
         {
-            string directory = Path.GetDirectoryName(_configurationPath)!;
+            var directory = Path.GetDirectoryName(_configurationPath)!;
             Directory.CreateDirectory(directory);
 
             var obj = new JsonObject
             {
-                ["configurationVersion"] = _configurationVersion,
-                ["modManagerVersion"] = _modManagerVersion,
+                ["configurationVersion"] = ConfigurationVersion,
+                ["modManagerVersion"] = ModManagerVersion,
                 ["dataDirectory"] = DataDirectory,
                 ["gameDirectory"] = GameDirectory,
-                ["activeGameProfile"] = _activeGameProfile.Name,
-                ["isCompactView"] = _isCompactView,
-                ["useModDbDesignView"] = _useModDbDesignView,
-                ["cacheAllVersionsLocally"] = _cacheAllVersionsLocally,
-                ["disableAutoRefresh"] = _disableAutoRefresh,
-                ["disableAutoRefreshWarningAcknowledged"] = _disableAutoRefreshWarningAcknowledged,
-                ["disableInternetAccess"] = _disableInternetAccess,
+                ["activeGameProfile"] = ActiveProfile.Name,
+                ["isCompactView"] = IsCompactView,
+                ["useModDbDesignView"] = UseModDbDesignView,
+                ["cacheAllVersionsLocally"] = CacheAllVersionsLocally,
+                ["disableAutoRefresh"] = DisableAutoRefresh,
+                ["disableAutoRefreshWarningAcknowledged"] = DisableAutoRefreshWarningAcknowledged,
+                ["disableInternetAccess"] = DisableInternetAccess,
                 ["modUsageTrackingDisabled"] = _isModUsageTrackingDisabled,
-                ["enableServerOptions"] = _enableServerOptions,
-                ["suppressModlistSavePrompt"] = _suppressModlistSavePrompt,
+                ["enableServerOptions"] = EnableServerOptions,
+                ["suppressModlistSavePrompt"] = SuppressModlistSavePrompt,
                 ["suppressRefreshCachePrompt"] = _suppressRefreshCachePrompt,
                 ["suppressRefreshCachePromptVersion"] = _suppressRefreshCachePromptVersion,
-                ["gameProfileCreationWarningAcknowledged"] = _gameProfileCreationWarningAcknowledged,
-                ["useDarkVsMode"] = _colorTheme != ColorTheme.Light,
-                ["colorTheme"] = _colorTheme.ToString(),
-                ["modlistAutoLoadBehavior"] = _modlistAutoLoadBehavior.ToString(),
+                ["gameProfileCreationWarningAcknowledged"] = GameProfileCreationWarningAcknowledged,
+                ["useDarkVsMode"] = ColorTheme != ColorTheme.Light,
+                ["colorTheme"] = ColorTheme.ToString(),
+                ["modlistAutoLoadBehavior"] = ModlistAutoLoadBehavior.ToString(),
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
-                ["modDatabaseSearchResultLimit"] = _modDatabaseSearchResultLimit,
-                ["modDatabaseNewModsRecentMonths"] = _modDatabaseNewModsRecentMonths,
-                ["modDatabaseAutoLoadMode"] = _modDatabaseAutoLoadMode.ToString(),
-                ["excludeInstalledModDatabaseResults"] = _excludeInstalledModDatabaseResults,
-                ["onlyShowCompatibleModDatabaseResults"] = _onlyShowCompatibleModDatabaseResults,
-                ["requireExactVsVersionMatch"] = _requireExactVsVersionMatch,
+                ["modDatabaseSearchResultLimit"] = ModDatabaseSearchResultLimit,
+                ["modDatabaseNewModsRecentMonths"] = ModDatabaseNewModsRecentMonths,
+                ["modDatabaseAutoLoadMode"] = ModDatabaseAutoLoadMode.ToString(),
+                ["excludeInstalledModDatabaseResults"] = ExcludeInstalledModDatabaseResults,
+                ["onlyShowCompatibleModDatabaseResults"] = OnlyShowCompatibleModDatabaseResults,
+                ["requireExactVsVersionMatch"] = RequireExactVsVersionMatch,
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["modInfoPanelLeft"] = _modInfoPanelLeft,
                 ["modInfoPanelTop"] = _modInfoPanelTop,
-                ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(_activeGameProfile.BulkUpdateModExclusions),
-                ["skippedModVersions"] = BuildSkippedModVersionsJson(_activeGameProfile.SkippedModVersions),
+                ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(ActiveProfile.BulkUpdateModExclusions),
+                ["skippedModVersions"] = BuildSkippedModVersionsJson(ActiveProfile.SkippedModVersions),
                 ["installedColumnVisibility"] = BuildInstalledColumnVisibilityJson(),
-                ["modUsageTracking"] = BuildModUsageTrackingJson(_activeGameProfile),
+                ["modUsageTracking"] = BuildModUsageTrackingJson(ActiveProfile),
                 ["themePalette"] = BuildThemePaletteJson(),
                 ["darkVsPalette"] = BuildThemePaletteJson(),
                 ["customThemePalette"] = BuildCustomThemePaletteJson(),
                 ["selectedPreset"] = _selectedPresetName,
-                ["customShortcutPath"] = _activeGameProfile.CustomShortcutPath,
-                ["cloudUploaderName"] = _cloudUploaderName,
-                ["migrationCheckCompleted"] = _migrationCheckCompleted,
-                ["firebaseAuthBackupCreated"] = _firebaseAuthBackupCreated,
+                ["customShortcutPath"] = ActiveProfile.CustomShortcutPath,
+                ["cloudUploaderName"] = CloudUploaderName,
+                ["migrationCheckCompleted"] = MigrationCheckCompleted,
+                ["firebaseAuthBackupCreated"] = FirebaseAuthBackupCreated,
                 ["gameProfiles"] = BuildGameProfilesJson()
             };
 
@@ -1837,40 +1459,38 @@ public sealed class UserConfigurationService
     {
         if (root["gameProfiles"] is not JsonObject profiles
             || !profiles.ContainsKey(DefaultGameProfileName))
-        {
             return;
-        }
 
-        foreach (string propertyName in RedundantRootProfilePropertyNames)
-        {
-            root.Remove(propertyName);
-        }
+        foreach (var propertyName in RedundantRootProfilePropertyNames) root.Remove(propertyName);
     }
 
     private void InitializeVersionMetadata(string? configurationVersion, string? modManagerVersion)
     {
-        bool requiresSave = false;
+        var requiresSave = false;
 
-        _previousConfigurationVersion = configurationVersion;
-        _previousModManagerVersion = modManagerVersion;
+        PreviousConfigurationVersion = configurationVersion;
+        PreviousModManagerVersion = modManagerVersion;
 
-        bool configurationMismatch = !string.IsNullOrWhiteSpace(configurationVersion)
-            && !string.Equals(configurationVersion, CurrentConfigurationVersion, StringComparison.OrdinalIgnoreCase);
+        var configurationMismatch = !string.IsNullOrWhiteSpace(configurationVersion)
+                                    && !string.Equals(configurationVersion, CurrentConfigurationVersion,
+                                        StringComparison.OrdinalIgnoreCase);
 
-        bool modManagerMismatch = !string.IsNullOrWhiteSpace(modManagerVersion)
-            && !string.Equals(modManagerVersion, CurrentModManagerVersion, StringComparison.OrdinalIgnoreCase);
+        var modManagerMismatch = !string.IsNullOrWhiteSpace(modManagerVersion)
+                                 && !string.Equals(modManagerVersion, CurrentModManagerVersion,
+                                     StringComparison.OrdinalIgnoreCase);
 
-        _hasVersionMismatch = configurationMismatch || modManagerMismatch;
+        HasVersionMismatch = configurationMismatch || modManagerMismatch;
 
-        string resolvedConfigurationVersion = string.IsNullOrWhiteSpace(configurationVersion)
+        var resolvedConfigurationVersion = string.IsNullOrWhiteSpace(configurationVersion)
             ? CurrentConfigurationVersion
             : configurationVersion!;
 
-        string resolvedModManagerVersion = string.IsNullOrWhiteSpace(modManagerVersion)
+        var resolvedModManagerVersion = string.IsNullOrWhiteSpace(modManagerVersion)
             ? CurrentModManagerVersion
             : modManagerVersion!;
 
-        if (!string.Equals(resolvedConfigurationVersion, CurrentConfigurationVersion, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(resolvedConfigurationVersion, CurrentConfigurationVersion,
+                StringComparison.OrdinalIgnoreCase))
         {
             resolvedConfigurationVersion = CurrentConfigurationVersion;
             requiresSave = true;
@@ -1882,108 +1502,75 @@ public sealed class UserConfigurationService
             requiresSave = true;
         }
 
-        _configurationVersion = resolvedConfigurationVersion;
-        _modManagerVersion = resolvedModManagerVersion;
+        ConfigurationVersion = resolvedConfigurationVersion;
+        ModManagerVersion = resolvedModManagerVersion;
 
-        if (requiresSave)
-        {
-            _hasPendingSave = true;
-        }
+        if (requiresSave) _hasPendingSave = true;
     }
 
     private static int NormalizeModDatabaseSearchResultLimit(int? value)
     {
-        if (!value.HasValue)
-        {
-            return DefaultModDatabaseSearchResultLimit;
-        }
+        if (!value.HasValue) return DefaultModDatabaseSearchResultLimit;
 
-        int normalized = value.Value;
-        if (normalized <= 0)
-        {
-            return DefaultModDatabaseSearchResultLimit;
-        }
+        var normalized = value.Value;
+        if (normalized <= 0) return DefaultModDatabaseSearchResultLimit;
 
         return Math.Max(normalized, 1);
     }
 
     private static int NormalizeModDatabaseNewModsRecentMonths(int? value)
     {
-        if (!value.HasValue)
-        {
-            return DefaultModDatabaseNewModsRecentMonths;
-        }
+        if (!value.HasValue) return DefaultModDatabaseNewModsRecentMonths;
 
-        int normalized = value.Value;
-        if (normalized <= 0)
-        {
-            return DefaultModDatabaseNewModsRecentMonths;
-        }
+        var normalized = value.Value;
+        if (normalized <= 0) return DefaultModDatabaseNewModsRecentMonths;
 
         return Math.Clamp(normalized, 1, MaxModDatabaseNewModsRecentMonths);
     }
 
     private static ModlistAutoLoadBehavior ParseModlistAutoLoadBehavior(string? value)
     {
-        if (Enum.TryParse(value, ignoreCase: true, out ModlistAutoLoadBehavior behavior))
-        {
-            return behavior;
-        }
+        if (Enum.TryParse(value, true, out ModlistAutoLoadBehavior behavior)) return behavior;
 
         return ModlistAutoLoadBehavior.Prompt;
     }
 
     private static ModDatabaseAutoLoadMode ParseModDatabaseAutoLoadMode(string? value)
     {
-        if (Enum.TryParse(value, ignoreCase: true, out ModDatabaseAutoLoadMode mode))
-        {
-            return mode;
-        }
+        if (Enum.TryParse(value, true, out ModDatabaseAutoLoadMode mode)) return mode;
 
         return ModDatabaseAutoLoadMode.TotalDownloads;
     }
 
     private static double? NormalizeWindowDimension(double? dimension)
     {
-        if (!dimension.HasValue)
-        {
-            return null;
-        }
+        if (!dimension.HasValue) return null;
 
-        double value = dimension.Value;
-        if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0)
-        {
-            return null;
-        }
+        var value = dimension.Value;
+        if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0) return null;
 
         return value;
     }
 
     private static double? NormalizeModInfoCoordinate(double? coordinate)
     {
-        if (!coordinate.HasValue)
-        {
-            return null;
-        }
+        if (!coordinate.HasValue) return null;
 
-        double value = coordinate.Value;
-        if (double.IsNaN(value) || double.IsInfinity(value))
-        {
-            return null;
-        }
+        var value = coordinate.Value;
+        if (double.IsNaN(value) || double.IsInfinity(value)) return null;
 
         return value;
     }
 
     private static string DetermineConfigurationPath()
     {
-        string preferredDirectory = GetPreferredConfigurationDirectory();
+        var preferredDirectory = GetPreferredConfigurationDirectory();
         return Path.Combine(preferredDirectory, ConfigurationFileName);
     }
 
     private static string DetermineModConfigPathsPath(string fileName)
     {
-        string preferredDirectory = GetPreferredConfigurationDirectory();
+        var preferredDirectory = GetPreferredConfigurationDirectory();
         return Path.Combine(preferredDirectory, fileName);
     }
 
@@ -1993,10 +1580,7 @@ public sealed class UserConfigurationService
 
         foreach (var pair in _installedColumnVisibility.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
-            if (string.IsNullOrWhiteSpace(pair.Key))
-            {
-                continue;
-            }
+            if (string.IsNullOrWhiteSpace(pair.Key)) continue;
 
             result[pair.Key] = pair.Value;
         }
@@ -2010,10 +1594,7 @@ public sealed class UserConfigurationService
 
         foreach (var pair in source.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
-            if (string.IsNullOrWhiteSpace(pair.Key) || !pair.Value)
-            {
-                continue;
-            }
+            if (string.IsNullOrWhiteSpace(pair.Key) || !pair.Value) continue;
 
             result[pair.Key] = true;
         }
@@ -2027,10 +1608,7 @@ public sealed class UserConfigurationService
 
         foreach (var pair in source.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
-            if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
-            {
-                continue;
-            }
+            if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value)) continue;
 
             result[pair.Key] = pair.Value;
         }
@@ -2043,14 +1621,11 @@ public sealed class UserConfigurationService
         var counts = new JsonArray();
 
         foreach (var pair in profile.ModUsageSessionCounts
-            .OrderBy(entry => entry.Key.ModId, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(entry => entry.Key.ModVersion, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(entry => entry.Key.GameVersion, StringComparer.OrdinalIgnoreCase))
+                     .OrderBy(entry => entry.Key.ModId, StringComparer.OrdinalIgnoreCase)
+                     .ThenBy(entry => entry.Key.ModVersion, StringComparer.OrdinalIgnoreCase)
+                     .ThenBy(entry => entry.Key.GameVersion, StringComparer.OrdinalIgnoreCase))
         {
-            if (!pair.Key.IsValid || pair.Value <= 0)
-            {
-                continue;
-            }
+            if (!pair.Key.IsValid || pair.Value <= 0) continue;
 
             counts.Add(new JsonObject
             {
@@ -2071,9 +1646,9 @@ public sealed class UserConfigurationService
 
     private JsonObject BuildThemePaletteJson()
     {
-        IReadOnlyDictionary<string, string> defaults = _colorTheme == ColorTheme.Custom
+        var defaults = ColorTheme == ColorTheme.Custom
             ? _customThemePaletteColors
-            : GetDefaultPalette(_colorTheme);
+            : GetDefaultPalette(ColorTheme);
         return BuildPaletteJson(_themePaletteColors, defaults);
     }
 
@@ -2086,7 +1661,7 @@ public sealed class UserConfigurationService
     {
         var result = new JsonObject();
 
-        foreach (GameProfileState profile in _gameProfiles.Values
+        foreach (var profile in _gameProfiles.Values
                      .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
         {
             var profileObject = new JsonObject
@@ -2099,15 +1674,9 @@ public sealed class UserConfigurationService
                 ["modUsageTracking"] = BuildModUsageTrackingJson(profile)
             };
 
-            if (profile.RequiresDataDirectorySelection)
-            {
-                profileObject["requiresDataDirectorySelection"] = true;
-            }
+            if (profile.RequiresDataDirectorySelection) profileObject["requiresDataDirectorySelection"] = true;
 
-            if (profile.RequiresGameDirectorySelection)
-            {
-                profileObject["requiresGameDirectorySelection"] = true;
-            }
+            if (profile.RequiresGameDirectorySelection) profileObject["requiresGameDirectorySelection"] = true;
 
             result[profile.Name] = profileObject;
         }
@@ -2123,20 +1692,14 @@ public sealed class UserConfigurationService
 
         foreach (var pair in palette.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
-            if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
-            {
-                continue;
-            }
+            if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value)) continue;
 
             result[pair.Key] = pair.Value;
         }
 
         foreach (var pair in defaults.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
         {
-            if (result.ContainsKey(pair.Key))
-            {
-                continue;
-            }
+            if (result.ContainsKey(pair.Key)) continue;
 
             result[pair.Key] = pair.Value;
         }
@@ -2148,102 +1711,78 @@ public sealed class UserConfigurationService
     {
         target.Clear();
 
-        if (node is not JsonObject obj)
-        {
-            return;
-        }
+        if (node is not JsonObject obj) return;
 
-        bool requiresSave = false;
+        var requiresSave = false;
 
-        foreach ((string key, JsonNode? value) in obj)
+        foreach (var (key, value) in obj)
         {
-            string? normalized = NormalizeModId(key);
+            var normalized = NormalizeModId(key);
             if (normalized is null)
             {
                 requiresSave = true;
                 continue;
             }
 
-            bool isExcluded = value?.GetValue<bool?>() ?? false;
+            var isExcluded = value?.GetValue<bool?>() ?? false;
             if (!isExcluded)
             {
                 requiresSave = true;
                 continue;
             }
 
-            if (target.ContainsKey(normalized))
-            {
-                continue;
-            }
+            if (target.ContainsKey(normalized)) continue;
 
             target[normalized] = true;
         }
 
-        if (requiresSave)
-        {
-            _hasPendingSave = true;
-        }
+        if (requiresSave) _hasPendingSave = true;
     }
 
     private void LoadSkippedModVersions(JsonNode? node, Dictionary<string, string> target)
     {
         target.Clear();
 
-        if (node is not JsonObject obj)
-        {
-            return;
-        }
+        if (node is not JsonObject obj) return;
 
-        bool requiresSave = false;
+        var requiresSave = false;
 
-        foreach ((string key, JsonNode? value) in obj)
+        foreach (var (key, value) in obj)
         {
-            string? normalizedId = NormalizeModId(key);
+            var normalizedId = NormalizeModId(key);
             if (normalizedId is null)
             {
                 requiresSave = true;
                 continue;
             }
 
-            string? version = NormalizeVersion(GetOptionalString(value));
+            var version = NormalizeVersion(GetOptionalString(value));
             if (version is null)
             {
                 requiresSave = true;
                 continue;
             }
 
-            if (target.ContainsKey(normalizedId))
-            {
-                continue;
-            }
+            if (target.ContainsKey(normalizedId)) continue;
 
             target[normalizedId] = version;
         }
 
-        if (requiresSave)
-        {
-            _hasPendingSave = true;
-        }
+        if (requiresSave) _hasPendingSave = true;
     }
 
     private void LoadInstalledColumnVisibility(JsonNode? node)
     {
         _installedColumnVisibility.Clear();
 
-        if (node is not JsonObject obj)
-        {
-            return;
-        }
+        if (node is not JsonObject obj) return;
 
         foreach (var pair in obj)
         {
-            string? columnKey = NormalizeInstalledColumnKey(pair.Key);
-            bool? isVisible = pair.Value?.GetValue<bool?>();
+            var columnKey = NormalizeInstalledColumnKey(pair.Key);
+            var isVisible = pair.Value?.GetValue<bool?>();
 
-            if (columnKey is null || !isVisible.HasValue)
-            {
-                continue;
-            }
+            if (columnKey is null || !isVisible.HasValue) continue;
 
             _installedColumnVisibility[columnKey] = isVisible.Value;
         }
@@ -2251,7 +1790,7 @@ public sealed class UserConfigurationService
 
     private void LoadThemePalette(JsonNode? node)
     {
-        IReadOnlyDictionary<string, string> defaults = GetCurrentThemeDefaults();
+        var defaults = GetCurrentThemeDefaults();
 
         if (node is not JsonObject obj)
         {
@@ -2260,30 +1799,24 @@ public sealed class UserConfigurationService
             return;
         }
 
-        bool requiresSave = false;
+        var requiresSave = false;
         var processedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var pair in obj)
         {
-            string key = pair.Key;
-            if (string.IsNullOrWhiteSpace(key))
-            {
-                continue;
-            }
+            var key = pair.Key;
+            if (string.IsNullOrWhiteSpace(key)) continue;
 
-            string normalizedKey = key.Trim();
+            var normalizedKey = key.Trim();
             if (!_themePaletteColors.ContainsKey(normalizedKey))
             {
-                if (defaults.ContainsKey(normalizedKey))
-                {
-                    _themePaletteColors[normalizedKey] = defaults[normalizedKey];
-                }
+                if (defaults.ContainsKey(normalizedKey)) _themePaletteColors[normalizedKey] = defaults[normalizedKey];
 
                 continue;
             }
 
-            string? value = GetOptionalString(pair.Value);
-            if (!TryNormalizeHexColor(value, out string normalized))
+            var value = GetOptionalString(pair.Value);
+            if (!TryNormalizeHexColor(value, out var normalized))
             {
                 requiresSave = true;
                 continue;
@@ -2295,21 +1828,12 @@ public sealed class UserConfigurationService
 
         foreach (var pair in defaults)
         {
-            if (!processedKeys.Contains(pair.Key))
-            {
-                requiresSave = true;
-            }
+            if (!processedKeys.Contains(pair.Key)) requiresSave = true;
 
-            if (!_themePaletteColors.ContainsKey(pair.Key))
-            {
-                _themePaletteColors[pair.Key] = pair.Value;
-            }
+            if (!_themePaletteColors.ContainsKey(pair.Key)) _themePaletteColors[pair.Key] = pair.Value;
         }
 
-        if (requiresSave)
-        {
-            _hasPendingSave = true;
-        }
+        if (requiresSave) _hasPendingSave = true;
     }
 
     private void LoadModUsageTracking(JsonNode? node, GameProfileState profile)
@@ -2318,73 +1842,49 @@ public sealed class UserConfigurationService
         profile.HasPendingModUsagePrompt = false;
         profile.ModUsageSessionCounts.Clear();
 
-        if (node is not JsonObject obj)
-        {
-            return;
-        }
+        if (node is not JsonObject obj) return;
 
-        int? storedCount = obj["longSessionCount"]?.GetValue<int?>();
+        var storedCount = obj["longSessionCount"]?.GetValue<int?>();
         profile.LongRunningSessionCount = storedCount.HasValue && storedCount.Value > 0 ? storedCount.Value : 0;
         profile.HasPendingModUsagePrompt = obj["pendingPrompt"]?.GetValue<bool?>() ?? false;
 
-        JsonNode? countsNode = obj["modCounts"];
+        var countsNode = obj["modCounts"];
 
         if (countsNode is JsonArray array)
-        {
-            foreach (JsonNode? item in array)
+            foreach (var item in array)
             {
-                if (item is not JsonObject entry)
-                {
-                    continue;
-                }
+                if (item is not JsonObject entry) continue;
 
-                string? modId = GetOptionalString(entry["modId"]);
-                string? modVersion = GetOptionalString(entry["modVersion"]);
-                string? gameVersion = GetOptionalString(entry["gameVersion"]);
-                int? usageCount = entry["count"]?.GetValue<int?>();
+                var modId = GetOptionalString(entry["modId"]);
+                var modVersion = GetOptionalString(entry["modVersion"]);
+                var gameVersion = GetOptionalString(entry["gameVersion"]);
+                var usageCount = entry["count"]?.GetValue<int?>();
 
                 if (string.IsNullOrWhiteSpace(modId)
                     || string.IsNullOrWhiteSpace(modVersion)
                     || string.IsNullOrWhiteSpace(gameVersion)
                     || !usageCount.HasValue
                     || usageCount.Value <= 0)
-                {
                     continue;
-                }
 
                 var key = new ModUsageTrackingKey(modId, modVersion, gameVersion);
-                if (!key.IsValid)
-                {
-                    continue;
-                }
+                if (!key.IsValid) continue;
 
                 profile.ModUsageSessionCounts[key] = usageCount.Value;
             }
-        }
         else if (countsNode is JsonObject legacyCounts)
-        {
-            foreach ((string? key, JsonNode? value) in legacyCounts)
+            foreach (var (key, value) in legacyCounts)
             {
-                if (string.IsNullOrWhiteSpace(key) || value is null)
-                {
-                    continue;
-                }
+                if (string.IsNullOrWhiteSpace(key) || value is null) continue;
 
-                int? usageCount = value.GetValue<int?>();
-                if (!usageCount.HasValue || usageCount.Value <= 0)
-                {
-                    continue;
-                }
+                var usageCount = value.GetValue<int?>();
+                if (!usageCount.HasValue || usageCount.Value <= 0) continue;
 
-                string? normalizedId = NormalizeModId(key);
-                if (normalizedId is null)
-                {
-                    continue;
-                }
+                var normalizedId = NormalizeModId(key);
+                if (normalizedId is null) continue;
 
                 _hasPendingSave = true;
             }
-        }
 
         if (profile.ModUsageSessionCounts.Count == 0)
         {
@@ -2399,10 +1899,10 @@ public sealed class UserConfigurationService
 
     private bool LoadCustomThemePalette(JsonNode? node)
     {
-        IReadOnlyDictionary<string, string> defaults = GetDefaultPalette(ColorTheme.Custom);
+        var defaults = GetDefaultPalette(ColorTheme.Custom);
         _customThemePaletteColors.Clear();
 
-        bool requiresSave = false;
+        var requiresSave = false;
         bool propertyFound;
         var processedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -2412,20 +1912,14 @@ public sealed class UserConfigurationService
 
             foreach (var pair in obj)
             {
-                string key = pair.Key;
-                if (string.IsNullOrWhiteSpace(key))
-                {
-                    continue;
-                }
+                var key = pair.Key;
+                if (string.IsNullOrWhiteSpace(key)) continue;
 
-                string normalizedKey = key.Trim();
-                if (!defaults.ContainsKey(normalizedKey))
-                {
-                    continue;
-                }
+                var normalizedKey = key.Trim();
+                if (!defaults.ContainsKey(normalizedKey)) continue;
 
-                string? value = GetOptionalString(pair.Value);
-                if (!TryNormalizeHexColor(value, out string normalized))
+                var value = GetOptionalString(pair.Value);
+                if (!TryNormalizeHexColor(value, out var normalized))
                 {
                     requiresSave = true;
                     continue;
@@ -2443,21 +1937,12 @@ public sealed class UserConfigurationService
 
         foreach (var pair in defaults)
         {
-            if (!processedKeys.Contains(pair.Key))
-            {
-                requiresSave = true;
-            }
+            if (!processedKeys.Contains(pair.Key)) requiresSave = true;
 
-            if (!_customThemePaletteColors.ContainsKey(pair.Key))
-            {
-                _customThemePaletteColors[pair.Key] = pair.Value;
-            }
+            if (!_customThemePaletteColors.ContainsKey(pair.Key)) _customThemePaletteColors[pair.Key] = pair.Value;
         }
 
-        if (requiresSave)
-        {
-            _hasPendingSave = true;
-        }
+        if (requiresSave) _hasPendingSave = true;
 
         return propertyFound;
     }
@@ -2466,10 +1951,7 @@ public sealed class UserConfigurationService
     {
         EnsureCustomThemePaletteInitialized();
 
-        foreach (var pair in _themePaletteColors)
-        {
-            _customThemePaletteColors[pair.Key] = pair.Value;
-        }
+        foreach (var pair in _themePaletteColors) _customThemePaletteColors[pair.Key] = pair.Value;
 
         EnsurePaletteDefaults(_customThemePaletteColors, GetDefaultPalette(ColorTheme.Custom));
     }
@@ -2478,55 +1960,41 @@ public sealed class UserConfigurationService
     {
         _themePaletteColors.Clear();
 
-        if (_colorTheme == ColorTheme.Custom)
+        if (ColorTheme == ColorTheme.Custom)
         {
             EnsureCustomThemePaletteInitialized();
-            foreach (var pair in _customThemePaletteColors)
-            {
-                _themePaletteColors[pair.Key] = pair.Value;
-            }
+            foreach (var pair in _customThemePaletteColors) _themePaletteColors[pair.Key] = pair.Value;
 
             EnsurePaletteDefaults(_themePaletteColors, GetDefaultPalette(ColorTheme.Custom));
             return;
         }
 
-        foreach (var pair in GetDefaultPalette(_colorTheme))
-        {
-            _themePaletteColors[pair.Key] = pair.Value;
-        }
+        foreach (var pair in GetDefaultPalette(ColorTheme)) _themePaletteColors[pair.Key] = pair.Value;
     }
 
     private bool ApplyThemePaletteOverride(IReadOnlyDictionary<string, string> paletteOverride)
     {
-        bool changed = false;
+        var changed = false;
 
         foreach (var pair in paletteOverride)
         {
-            if (string.IsNullOrWhiteSpace(pair.Key))
-            {
-                continue;
-            }
+            if (string.IsNullOrWhiteSpace(pair.Key)) continue;
 
-            string normalizedKey = pair.Key.Trim();
-            if (!_themePaletteColors.ContainsKey(normalizedKey))
-            {
-                continue;
-            }
+            var normalizedKey = pair.Key.Trim();
+            if (!_themePaletteColors.ContainsKey(normalizedKey)) continue;
 
-            if (!TryNormalizeHexColor(pair.Value, out string normalizedValue))
-            {
-                continue;
-            }
+            if (!TryNormalizeHexColor(pair.Value, out var normalizedValue)) continue;
 
-            if (!_themePaletteColors.TryGetValue(normalizedKey, out string? currentValue)
+            if (!_themePaletteColors.TryGetValue(normalizedKey, out var currentValue)
                 || !string.Equals(currentValue, normalizedValue, StringComparison.OrdinalIgnoreCase))
             {
                 _themePaletteColors[normalizedKey] = normalizedValue;
-                if (_colorTheme == ColorTheme.Custom)
+                if (ColorTheme == ColorTheme.Custom)
                 {
                     EnsureCustomThemePaletteInitialized();
                     _customThemePaletteColors[normalizedKey] = normalizedValue;
                 }
+
                 changed = true;
             }
         }
@@ -2538,10 +2006,7 @@ public sealed class UserConfigurationService
     {
         _customThemePaletteColors.Clear();
 
-        foreach (var pair in GetDefaultPalette(ColorTheme.Custom))
-        {
-            _customThemePaletteColors[pair.Key] = pair.Value;
-        }
+        foreach (var pair in GetDefaultPalette(ColorTheme.Custom)) _customThemePaletteColors[pair.Key] = pair.Value;
     }
 
     private void EnsureCustomThemePaletteInitialized()
@@ -2557,13 +2022,13 @@ public sealed class UserConfigurationService
 
     private IReadOnlyDictionary<string, string> GetCurrentThemeDefaults()
     {
-        if (_colorTheme == ColorTheme.Custom)
+        if (ColorTheme == ColorTheme.Custom)
         {
             EnsureCustomThemePaletteInitialized();
             return _customThemePaletteColors;
         }
 
-        return GetDefaultPalette(_colorTheme);
+        return GetDefaultPalette(ColorTheme);
     }
 
     private static void EnsurePaletteDefaults(
@@ -2571,12 +2036,8 @@ public sealed class UserConfigurationService
         IReadOnlyDictionary<string, string> defaults)
     {
         foreach (var pair in defaults)
-        {
             if (!palette.ContainsKey(pair.Key))
-            {
                 palette[pair.Key] = pair.Value;
-            }
-        }
     }
 
     private static IReadOnlyDictionary<string, string> GetDefaultPalette(ColorTheme theme)
@@ -2596,64 +2057,50 @@ public sealed class UserConfigurationService
     {
         _storedModConfigPaths.Clear();
 
-        bool conversionNeeded = false;
+        var conversionNeeded = false;
 
         try
         {
-            if (!File.Exists(_modConfigPathsPath))
-            {
-                return;
-            }
+            if (!File.Exists(_modConfigPathsPath)) return;
 
-            using FileStream stream = File.OpenRead(_modConfigPathsPath);
-            JsonNode? node = JsonNode.Parse(stream);
-            if (node is not JsonObject obj)
-            {
-                return;
-            }
+            using var stream = File.OpenRead(_modConfigPathsPath);
+            var node = JsonNode.Parse(stream);
+            if (node is not JsonObject obj) return;
 
-            string currentVersion = NormalizeVersion(_modManagerVersion) ?? _modManagerVersion;
-            string? storedVersion = NormalizeVersion(GetOptionalString(obj[ModConfigPathHistoryVersionPropertyName]));
+            var currentVersion = NormalizeVersion(ModManagerVersion) ?? ModManagerVersion;
+            var storedVersion = NormalizeVersion(GetOptionalString(obj[ModConfigPathHistoryVersionPropertyName]));
             conversionNeeded = string.IsNullOrWhiteSpace(storedVersion)
-                || !string.Equals(storedVersion, currentVersion, StringComparison.Ordinal);
+                               || !string.Equals(storedVersion, currentVersion, StringComparison.Ordinal);
 
-            JsonObject? entriesObj = obj[ModConfigPathHistoryEntriesPropertyName] as JsonObject;
-            bool usingLegacyRootEntries = entriesObj is null;
+            var entriesObj = obj[ModConfigPathHistoryEntriesPropertyName] as JsonObject;
+            var usingLegacyRootEntries = entriesObj is null;
             entriesObj ??= obj;
 
-            string? modConfigDirectory = GetActiveModConfigDirectory();
+            var modConfigDirectory = GetActiveModConfigDirectory();
 
-            foreach ((string key, JsonNode? value) in entriesObj)
+            foreach (var (key, value) in entriesObj)
             {
                 if (usingLegacyRootEntries
                     && string.Equals(key, ModConfigPathHistoryVersionPropertyName, StringComparison.OrdinalIgnoreCase))
-                {
                     continue;
-                }
 
-                if (string.IsNullOrWhiteSpace(key) || value is not JsonObject entryObj)
-                {
-                    continue;
-                }
+                if (string.IsNullOrWhiteSpace(key) || value is not JsonObject entryObj) continue;
 
-                string? directoryValue = GetOptionalString(entryObj[ModConfigPathHistoryDirectoryPropertyName]);
-                string? fileNameValue = GetOptionalString(entryObj[ModConfigPathHistoryFileNamePropertyName]);
-                string? configNameValue = GetOptionalString(entryObj[ModConfigPathHistoryConfigNamePropertyName]);
+                var directoryValue = GetOptionalString(entryObj[ModConfigPathHistoryDirectoryPropertyName]);
+                var fileNameValue = GetOptionalString(entryObj[ModConfigPathHistoryFileNamePropertyName]);
+                var configNameValue = GetOptionalString(entryObj[ModConfigPathHistoryConfigNamePropertyName]);
 
-                string? relativeDirectory = NormalizeStoredModConfigDirectory(
+                var relativeDirectory = NormalizeStoredModConfigDirectory(
                     directoryValue,
                     modConfigDirectory);
-                string? fileName = NormalizeStoredModConfigFileName(fileNameValue);
-                string? configName = NormalizeStoredModConfigName(configNameValue);
+                var fileName = NormalizeStoredModConfigFileName(fileNameValue);
+                var configName = NormalizeStoredModConfigName(configNameValue);
 
-                if (relativeDirectory is null || fileName is null)
-                {
-                    continue;
-                }
+                if (relativeDirectory is null || fileName is null) continue;
 
                 if (!conversionNeeded)
                 {
-                    string trimmedDirectory = string.IsNullOrWhiteSpace(directoryValue)
+                    var trimmedDirectory = string.IsNullOrWhiteSpace(directoryValue)
                         ? string.Empty
                         : directoryValue!.Trim();
 
@@ -2663,32 +2110,24 @@ public sealed class UserConfigurationService
                     }
                     else
                     {
-                        string? sanitizedDirectory = NormalizeRelativeModConfigDirectory(trimmedDirectory);
+                        var sanitizedDirectory = NormalizeRelativeModConfigDirectory(trimmedDirectory);
                         if (sanitizedDirectory is null
                             || !string.Equals(sanitizedDirectory, relativeDirectory, PathComparison))
-                        {
                             conversionNeeded = true;
-                        }
                     }
 
                     if (!conversionNeeded && !string.IsNullOrWhiteSpace(fileNameValue))
                     {
-                        string trimmedFileName = fileNameValue!.Trim();
-                        if (!string.Equals(trimmedFileName, fileName, PathComparison))
-                        {
-                            conversionNeeded = true;
-                        }
+                        var trimmedFileName = fileNameValue!.Trim();
+                        if (!string.Equals(trimmedFileName, fileName, PathComparison)) conversionNeeded = true;
                     }
 
                     if (!conversionNeeded && configNameValue is not null)
                     {
-                        string trimmedConfigName = configNameValue!.Trim();
+                        var trimmedConfigName = configNameValue!.Trim();
                         if (string.IsNullOrWhiteSpace(configName))
                         {
-                            if (!string.IsNullOrWhiteSpace(trimmedConfigName))
-                            {
-                                conversionNeeded = true;
-                            }
+                            if (!string.IsNullOrWhiteSpace(trimmedConfigName)) conversionNeeded = true;
                         }
                         else if (!string.Equals(trimmedConfigName, configName, StringComparison.Ordinal))
                         {
@@ -2697,75 +2136,53 @@ public sealed class UserConfigurationService
                     }
                 }
 
-                string trimmedId = key.Trim();
-                if (trimmedId.Length == 0)
-                {
-                    continue;
-                }
+                var trimmedId = key.Trim();
+                if (trimmedId.Length == 0) continue;
 
                 var entry = new ModConfigPathEntry(relativeDirectory, fileName, configName);
                 _storedModConfigPaths[trimmedId] = entry;
 
-                string? combinedPath = BuildFullConfigPath(entry);
-                if (!string.IsNullOrWhiteSpace(combinedPath))
-                {
-                    ActiveModConfigPaths[trimmedId] = combinedPath!;
-                }
+                var combinedPath = BuildFullConfigPath(entry);
+                if (!string.IsNullOrWhiteSpace(combinedPath)) ActiveModConfigPaths[trimmedId] = combinedPath!;
             }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException
+                                       or ArgumentException or NotSupportedException)
         {
             _storedModConfigPaths.Clear();
             conversionNeeded = false;
         }
 
-        if (conversionNeeded)
-        {
-            SaveModConfigPathHistory();
-        }
+        if (conversionNeeded) SaveModConfigPathHistory();
     }
 
     private void BackfillModConfigPathHistory()
     {
-        bool historyChanged = false;
+        var historyChanged = false;
 
-        foreach (GameProfileState profile in _gameProfiles.Values)
+        foreach (var profile in _gameProfiles.Values)
         {
-            if (profile.ModConfigPaths.Count == 0)
-            {
-                continue;
-            }
+            if (profile.ModConfigPaths.Count == 0) continue;
 
-            string? dataDirectory = profile.DataDirectory;
-            if (string.IsNullOrWhiteSpace(dataDirectory))
-            {
-                continue;
-            }
+            var dataDirectory = profile.DataDirectory;
+            if (string.IsNullOrWhiteSpace(dataDirectory)) continue;
 
             foreach (var pair in profile.ModConfigPaths)
             {
-                if (string.IsNullOrWhiteSpace(pair.Key))
-                {
-                    continue;
-                }
+                if (string.IsNullOrWhiteSpace(pair.Key)) continue;
 
-                string? normalizedPath = NormalizePath(pair.Value);
-                if (string.IsNullOrWhiteSpace(normalizedPath))
-                {
-                    continue;
-                }
+                var normalizedPath = NormalizePath(pair.Value);
+                if (string.IsNullOrWhiteSpace(normalizedPath)) continue;
 
-                string? configName = ExtractFileName(normalizedPath);
+                var configName = ExtractFileName(normalizedPath);
 
                 if (TryStorePersistentModConfigPath(
                         pair.Key,
                         normalizedPath,
                         dataDirectory,
                         configName,
-                        removeOnFailure: false))
-                {
+                        false))
                     historyChanged = true;
-                }
             }
         }
 
@@ -2783,28 +2200,20 @@ public sealed class UserConfigurationService
                 normalizedPath,
                 ActiveProfile.DataDirectory,
                 configName,
-                removeOnFailure: true))
-        {
+                true))
             SaveModConfigPathHistory();
-        }
     }
 
     private void RefreshActiveModConfigPathsFromHistory()
     {
         ActiveModConfigPaths.Clear();
 
-        if (_storedModConfigPaths.Count == 0)
-        {
-            return;
-        }
+        if (_storedModConfigPaths.Count == 0) return;
 
         foreach (var pair in _storedModConfigPaths)
         {
-            string? combined = BuildFullConfigPath(pair.Value);
-            if (string.IsNullOrWhiteSpace(combined))
-            {
-                continue;
-            }
+            var combined = BuildFullConfigPath(pair.Value);
+            if (string.IsNullOrWhiteSpace(combined)) continue;
 
             ActiveModConfigPaths[pair.Key] = combined!;
         }
@@ -2814,10 +2223,7 @@ public sealed class UserConfigurationService
     {
         _hasPendingModConfigPathSave = true;
 
-        if (!_isPersistenceEnabled)
-        {
-            return;
-        }
+        if (!_isPersistenceEnabled) return;
 
         PersistModConfigPathHistory();
     }
@@ -2826,10 +2232,10 @@ public sealed class UserConfigurationService
     {
         try
         {
-            string directory = Path.GetDirectoryName(_modConfigPathsPath)!;
+            var directory = Path.GetDirectoryName(_modConfigPathsPath)!;
             Directory.CreateDirectory(directory);
 
-            string version = NormalizeVersion(_modManagerVersion) ?? _modManagerVersion;
+            var version = NormalizeVersion(ModManagerVersion) ?? ModManagerVersion;
 
             var entries = new JsonObject();
 
@@ -2843,9 +2249,7 @@ public sealed class UserConfigurationService
                 };
 
                 if (!string.IsNullOrWhiteSpace(entry.ConfigName))
-                {
                     entryObject[ModConfigPathHistoryConfigNamePropertyName] = entry.ConfigName;
-                }
 
                 entries[pair.Key] = entryObject;
             }
@@ -2864,7 +2268,8 @@ public sealed class UserConfigurationService
             File.WriteAllText(_modConfigPathsPath, root.ToJsonString(options));
             _hasPendingModConfigPathSave = false;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
+                                       or NotSupportedException)
         {
             // Persisting the configuration is a best-effort attempt. Ignore failures silently.
         }
@@ -2872,22 +2277,16 @@ public sealed class UserConfigurationService
 
     private string? BuildFullConfigPath(ModConfigPathEntry entry)
     {
-        if (entry is null || string.IsNullOrWhiteSpace(entry.FileName))
-        {
-            return null;
-        }
+        if (entry is null || string.IsNullOrWhiteSpace(entry.FileName)) return null;
 
-        string? modConfigDirectory = GetActiveModConfigDirectory();
-        if (string.IsNullOrWhiteSpace(modConfigDirectory))
-        {
-            return null;
-        }
+        var modConfigDirectory = GetActiveModConfigDirectory();
+        if (string.IsNullOrWhiteSpace(modConfigDirectory)) return null;
 
-        string directory = string.IsNullOrWhiteSpace(entry.RelativeDirectoryPath)
+        var directory = string.IsNullOrWhiteSpace(entry.RelativeDirectoryPath)
             ? modConfigDirectory
             : Path.Combine(modConfigDirectory, entry.RelativeDirectoryPath);
 
-        string combined = Path.Combine(directory, entry.FileName);
+        var combined = Path.Combine(directory, entry.FileName);
         return NormalizePath(combined) ?? combined;
     }
 
@@ -2898,45 +2297,34 @@ public sealed class UserConfigurationService
         string? configName,
         bool removeOnFailure)
     {
-        if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(normalizedPath))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(normalizedPath)) return false;
 
-        string trimmedId = modId.Trim();
-        if (trimmedId.Length == 0)
-        {
-            return false;
-        }
+        var trimmedId = modId.Trim();
+        if (trimmedId.Length == 0) return false;
 
-        if (!TryGetRelativeModConfigLocation(normalizedPath, dataDirectory, out string relativeDirectory, out string fileName))
+        if (!TryGetRelativeModConfigLocation(normalizedPath, dataDirectory, out var relativeDirectory,
+                out var fileName))
         {
             if (removeOnFailure
                 && !string.IsNullOrWhiteSpace(dataDirectory)
                 && _storedModConfigPaths.Remove(trimmedId))
-            {
                 return true;
-            }
 
             return false;
         }
 
-        string? normalizedConfigName = NormalizeStoredModConfigName(configName);
+        var normalizedConfigName = NormalizeStoredModConfigName(configName);
 
-        if (_storedModConfigPaths.TryGetValue(trimmedId, out ModConfigPathEntry? existing)
+        if (_storedModConfigPaths.TryGetValue(trimmedId, out var existing)
             && existing is not null)
         {
             if (normalizedConfigName is null && !string.IsNullOrWhiteSpace(existing.ConfigName))
-            {
                 normalizedConfigName = existing.ConfigName;
-            }
 
             if (string.Equals(existing.RelativeDirectoryPath, relativeDirectory, PathComparison)
                 && string.Equals(existing.FileName, fileName, PathComparison)
                 && string.Equals(existing.ConfigName, normalizedConfigName, StringComparison.Ordinal))
-            {
                 return false;
-            }
         }
 
         var entry = new ModConfigPathEntry(relativeDirectory, fileName, normalizedConfigName);
@@ -2953,37 +2341,22 @@ public sealed class UserConfigurationService
         relativeDirectory = string.Empty;
         fileName = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(normalizedPath))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(normalizedPath)) return false;
 
-        string? modConfigDirectory = GetModConfigDirectory(dataDirectory);
-        if (string.IsNullOrWhiteSpace(modConfigDirectory))
-        {
-            return false;
-        }
+        var modConfigDirectory = GetModConfigDirectory(dataDirectory);
+        if (string.IsNullOrWhiteSpace(modConfigDirectory)) return false;
 
-        if (!IsPathInDirectory(normalizedPath, modConfigDirectory))
-        {
-            return false;
-        }
+        if (!IsPathInDirectory(normalizedPath, modConfigDirectory)) return false;
 
-        string? extractedFileName = ExtractFileName(normalizedPath);
-        if (string.IsNullOrWhiteSpace(extractedFileName))
-        {
-            return false;
-        }
+        var extractedFileName = ExtractFileName(normalizedPath);
+        if (string.IsNullOrWhiteSpace(extractedFileName)) return false;
 
         fileName = extractedFileName;
 
-        string? directory = ExtractDirectoryPath(normalizedPath) ?? modConfigDirectory;
-        string relativeDirectoryCandidate = Path.GetRelativePath(modConfigDirectory, directory);
-        string? normalizedRelativeDirectory = NormalizeRelativeModConfigDirectory(relativeDirectoryCandidate);
-        if (normalizedRelativeDirectory is null)
-        {
-            return false;
-        }
+        var directory = ExtractDirectoryPath(normalizedPath) ?? modConfigDirectory;
+        var relativeDirectoryCandidate = Path.GetRelativePath(modConfigDirectory, directory);
+        var normalizedRelativeDirectory = NormalizeRelativeModConfigDirectory(relativeDirectoryCandidate);
+        if (normalizedRelativeDirectory is null) return false;
 
         relativeDirectory = normalizedRelativeDirectory;
         return true;
@@ -2996,14 +2369,11 @@ public sealed class UserConfigurationService
 
     private static void EnsureModConfigDirectoryExists(string? dataDirectory)
     {
-        if (string.IsNullOrWhiteSpace(dataDirectory))
-        {
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(dataDirectory)) return;
 
         try
         {
-            string combined = Path.Combine(dataDirectory, ModConfigDirectoryName);
+            var combined = Path.Combine(dataDirectory, ModConfigDirectoryName);
             Directory.CreateDirectory(combined);
         }
         catch (IOException)
@@ -3019,43 +2389,31 @@ public sealed class UserConfigurationService
 
     private static string? GetModConfigDirectory(string? dataDirectory)
     {
-        if (string.IsNullOrWhiteSpace(dataDirectory))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(dataDirectory)) return null;
 
-        string combined = Path.Combine(dataDirectory, ModConfigDirectoryName);
+        var combined = Path.Combine(dataDirectory, ModConfigDirectoryName);
         return NormalizePath(combined);
     }
 
     private static string? NormalizeStoredModConfigDirectory(string? storedDirectory, string? modConfigDirectory)
     {
-        if (string.IsNullOrWhiteSpace(storedDirectory))
-        {
-            return string.Empty;
-        }
+        if (string.IsNullOrWhiteSpace(storedDirectory)) return string.Empty;
 
-        string trimmed = storedDirectory.Trim();
+        var trimmed = storedDirectory.Trim();
 
         if (Path.IsPathRooted(trimmed))
         {
-            string? normalized = NormalizePath(trimmed);
-            if (normalized is null)
-            {
-                return null;
-            }
+            var normalized = NormalizePath(trimmed);
+            if (normalized is null) return null;
 
             if (!string.IsNullOrWhiteSpace(modConfigDirectory) && IsPathInDirectory(normalized, modConfigDirectory!))
             {
-                string relative = Path.GetRelativePath(modConfigDirectory!, normalized);
+                var relative = Path.GetRelativePath(modConfigDirectory!, normalized);
                 return NormalizeRelativeModConfigDirectory(relative);
             }
 
-            string? extracted = ExtractRelativePathFromModConfigFolder(normalized);
-            if (extracted is null)
-            {
-                return null;
-            }
+            var extracted = ExtractRelativePathFromModConfigFolder(normalized);
+            if (extracted is null) return null;
 
             return NormalizeRelativeModConfigDirectory(extracted);
         }
@@ -3065,41 +2423,26 @@ public sealed class UserConfigurationService
 
     private static string? NormalizeStoredModConfigFileName(string? fileName)
     {
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(fileName)) return null;
 
-        string trimmed = fileName.Trim();
-        string sanitized = Path.GetFileName(trimmed);
+        var trimmed = fileName.Trim();
+        var sanitized = Path.GetFileName(trimmed);
 
-        if (string.IsNullOrWhiteSpace(sanitized))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(sanitized)) return null;
 
         return sanitized;
     }
 
     private static string? NormalizeStoredModConfigName(string? configName)
     {
-        if (string.IsNullOrWhiteSpace(configName))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(configName)) return null;
 
-        string trimmed = configName.Trim();
-        if (trimmed.Length == 0)
-        {
-            return null;
-        }
+        var trimmed = configName.Trim();
+        if (trimmed.Length == 0) return null;
 
-        string sanitized = Path.GetFileName(trimmed).Trim();
+        var sanitized = Path.GetFileName(trimmed).Trim();
 
-        if (sanitized.Length == 0)
-        {
-            sanitized = trimmed;
-        }
+        if (sanitized.Length == 0) sanitized = trimmed;
 
         return sanitized.Length == 0 ? null : sanitized;
     }
@@ -3111,71 +2454,46 @@ public sealed class UserConfigurationService
 
     private static string? NormalizeRelativeModConfigDirectory(string? path)
     {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return string.Empty;
-        }
+        if (string.IsNullOrWhiteSpace(path)) return string.Empty;
 
-        string trimmed = path.Trim();
-        if (trimmed.Length == 0 || string.Equals(trimmed, ".", StringComparison.Ordinal))
-        {
-            return string.Empty;
-        }
+        var trimmed = path.Trim();
+        if (trimmed.Length == 0 || string.Equals(trimmed, ".", StringComparison.Ordinal)) return string.Empty;
 
-        string sanitized = trimmed.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        var sanitized = trimmed.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
         sanitized = sanitized.Trim(DirectorySeparators);
 
-        if (sanitized.Length == 0)
-        {
-            return string.Empty;
-        }
+        if (sanitized.Length == 0) return string.Empty;
 
-        string[] segments = sanitized.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
-        if (segments.Length == 0)
-        {
-            return string.Empty;
-        }
+        var segments = sanitized.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 0) return string.Empty;
 
-        foreach (string segment in segments)
-        {
+        foreach (var segment in segments)
             if (string.Equals(segment, ".", StringComparison.Ordinal)
                 || string.Equals(segment, "..", StringComparison.Ordinal))
-            {
                 return null;
-            }
-        }
 
         return string.Join(Path.DirectorySeparatorChar, segments);
     }
 
     private static string? ExtractRelativePathFromModConfigFolder(string normalizedPath)
     {
-        if (string.IsNullOrWhiteSpace(normalizedPath))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(normalizedPath)) return null;
 
-        string sanitized = normalizedPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-        string search = Path.DirectorySeparatorChar + ModConfigDirectoryName;
-        int index = sanitized.IndexOf(search, PathComparison);
+        var sanitized = normalizedPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        var search = Path.DirectorySeparatorChar + ModConfigDirectoryName;
+        var index = sanitized.IndexOf(search, PathComparison);
 
         while (index >= 0)
         {
-            int segmentEnd = index + search.Length;
-            bool isFolderMatch = segmentEnd == sanitized.Length
-                || sanitized[segmentEnd] == Path.DirectorySeparatorChar;
+            var segmentEnd = index + search.Length;
+            var isFolderMatch = segmentEnd == sanitized.Length
+                                || sanitized[segmentEnd] == Path.DirectorySeparatorChar;
 
             if (isFolderMatch)
             {
-                if (segmentEnd < sanitized.Length && sanitized[segmentEnd] == Path.DirectorySeparatorChar)
-                {
-                    segmentEnd++;
-                }
+                if (segmentEnd < sanitized.Length && sanitized[segmentEnd] == Path.DirectorySeparatorChar) segmentEnd++;
 
-                if (segmentEnd >= sanitized.Length)
-                {
-                    return string.Empty;
-                }
+                if (segmentEnd >= sanitized.Length) return string.Empty;
 
                 return sanitized[segmentEnd..];
             }
@@ -3188,109 +2506,59 @@ public sealed class UserConfigurationService
 
     private static bool IsPathInDirectory(string path, string directory)
     {
-        if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(directory))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(directory)) return false;
 
-        string? normalizedPath = NormalizePath(path);
-        string? normalizedDirectory = NormalizePath(directory);
+        var normalizedPath = NormalizePath(path);
+        var normalizedDirectory = NormalizePath(directory);
 
-        if (normalizedPath is null || normalizedDirectory is null)
-        {
-            return false;
-        }
+        if (normalizedPath is null || normalizedDirectory is null) return false;
 
         if (!normalizedDirectory.EndsWith(Path.DirectorySeparatorChar))
-        {
             normalizedDirectory += Path.DirectorySeparatorChar;
-        }
 
         return normalizedPath.StartsWith(normalizedDirectory, PathComparison);
     }
 
     private static string? ExtractDirectoryPath(string normalizedPath)
     {
-        string? directory = Path.GetDirectoryName(normalizedPath);
+        var directory = Path.GetDirectoryName(normalizedPath);
 
-        if (string.IsNullOrWhiteSpace(directory))
-        {
-            directory = Path.GetPathRoot(normalizedPath);
-        }
+        if (string.IsNullOrWhiteSpace(directory)) directory = Path.GetPathRoot(normalizedPath);
 
-        if (string.IsNullOrWhiteSpace(directory))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(directory)) return null;
 
         return NormalizePath(directory);
     }
 
     private static string? ExtractFileName(string normalizedPath)
     {
-        string trimmed = normalizedPath.Trim();
-        string fileName = Path.GetFileName(trimmed);
+        var trimmed = normalizedPath.Trim();
+        var fileName = Path.GetFileName(trimmed);
 
         if (string.IsNullOrWhiteSpace(fileName))
-        {
             fileName = Path.GetFileName(trimmed.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-        }
 
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(fileName)) return null;
 
         return fileName;
     }
 
-    private sealed class ModConfigPathEntry
-    {
-        public ModConfigPathEntry(string relativeDirectoryPath, string fileName, string? configName)
-        {
-            RelativeDirectoryPath = relativeDirectoryPath;
-            FileName = fileName;
-            ConfigName = configName;
-        }
-
-        public string RelativeDirectoryPath { get; }
-
-        public string FileName { get; }
-
-        public string? ConfigName { get; }
-    }
-
     private static string GetPreferredConfigurationDirectory()
     {
-        string? localAppData = GetFolder(Environment.SpecialFolder.LocalApplicationData);
-        if (!string.IsNullOrWhiteSpace(localAppData))
-        {
-            return Path.Combine(localAppData, "Simple VS Manager");
-        }
+        var localAppData = GetFolder(Environment.SpecialFolder.LocalApplicationData);
+        if (!string.IsNullOrWhiteSpace(localAppData)) return Path.Combine(localAppData, "Simple VS Manager");
 
-        string? appData = GetFolder(Environment.SpecialFolder.ApplicationData);
-        if (!string.IsNullOrWhiteSpace(appData))
-        {
-            return Path.Combine(appData, "Simple VS Manager");
-        }
+        var appData = GetFolder(Environment.SpecialFolder.ApplicationData);
+        if (!string.IsNullOrWhiteSpace(appData)) return Path.Combine(appData, "Simple VS Manager");
 
-        string? documents = GetFolder(Environment.SpecialFolder.MyDocuments);
-        if (!string.IsNullOrWhiteSpace(documents))
-        {
-            return Path.Combine(documents, "Simple VS Manager");
-        }
+        var documents = GetFolder(Environment.SpecialFolder.MyDocuments);
+        if (!string.IsNullOrWhiteSpace(documents)) return Path.Combine(documents, "Simple VS Manager");
 
-        string? personal = GetFolder(Environment.SpecialFolder.Personal);
-        if (!string.IsNullOrWhiteSpace(personal))
-        {
-            return Path.Combine(personal, "Simple VS Manager");
-        }
+        var personal = GetFolder(Environment.SpecialFolder.Personal);
+        if (!string.IsNullOrWhiteSpace(personal)) return Path.Combine(personal, "Simple VS Manager");
 
-        string? userProfile = GetFolder(Environment.SpecialFolder.UserProfile);
-        if (!string.IsNullOrWhiteSpace(userProfile))
-        {
-            return Path.Combine(userProfile, ".simple-vs-manager");
-        }
+        var userProfile = GetFolder(Environment.SpecialFolder.UserProfile);
+        if (!string.IsNullOrWhiteSpace(userProfile)) return Path.Combine(userProfile, ".simple-vs-manager");
 
         return Path.Combine(AppContext.BaseDirectory, "Simple VS Manager");
     }
@@ -3299,11 +2567,8 @@ public sealed class UserConfigurationService
     {
         try
         {
-            string? path = Environment.GetFolderPath(folder, Environment.SpecialFolderOption.DoNotVerify);
-            if (!string.IsNullOrWhiteSpace(path))
-            {
-                return path;
-            }
+            var path = Environment.GetFolderPath(folder, Environment.SpecialFolderOption.DoNotVerify);
+            if (!string.IsNullOrWhiteSpace(path)) return path;
         }
         catch (PlatformNotSupportedException)
         {
@@ -3317,30 +2582,17 @@ public sealed class UserConfigurationService
     {
         normalized = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(value)) return false;
 
-        string trimmed = value.Trim();
-        if (!trimmed.StartsWith('#') || trimmed.Length <= 1)
-        {
-            return false;
-        }
+        var trimmed = value.Trim();
+        if (!trimmed.StartsWith('#') || trimmed.Length <= 1) return false;
 
-        string hex = trimmed[1..];
-        if (hex.Length is not 6 and not 8)
-        {
-            return false;
-        }
+        var hex = trimmed[1..];
+        if (hex.Length is not 6 and not 8) return false;
 
-        foreach (char c in hex)
-        {
+        foreach (var c in hex)
             if (!IsHexDigit(c))
-            {
                 return false;
-            }
-        }
 
         normalized = "#" + hex.ToUpperInvariant();
         return true;
@@ -3349,16 +2601,13 @@ public sealed class UserConfigurationService
     private static bool IsHexDigit(char c)
     {
         return (c >= '0' && c <= '9')
-            || (c >= 'A' && c <= 'F')
-            || (c >= 'a' && c <= 'f');
+               || (c >= 'A' && c <= 'F')
+               || (c >= 'a' && c <= 'f');
     }
 
     private static string? GetOptionalString(JsonNode? node)
     {
-        if (node is null)
-        {
-            return null;
-        }
+        if (node is null) return null;
 
         try
         {
@@ -3376,23 +2625,17 @@ public sealed class UserConfigurationService
 
     private static string ResolveCurrentVersion()
     {
-        Assembly assembly = typeof(UserConfigurationService).Assembly;
+        var assembly = typeof(UserConfigurationService).Assembly;
 
-        string? version = TrimToSemanticVersion(
+        var version = TrimToSemanticVersion(
             VersionStringUtility.Normalize(
                 assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion));
-        if (!string.IsNullOrWhiteSpace(version))
-        {
-            return version!;
-        }
+        if (!string.IsNullOrWhiteSpace(version)) return version!;
 
         version = TrimToSemanticVersion(
             VersionStringUtility.Normalize(
                 assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version));
-        if (!string.IsNullOrWhiteSpace(version))
-        {
-            return version!;
-        }
+        if (!string.IsNullOrWhiteSpace(version)) return version!;
 
         version = TrimToSemanticVersion(VersionStringUtility.Normalize(assembly.GetName().Version?.ToString()));
         return string.IsNullOrWhiteSpace(version) ? "0.0.0" : version!;
@@ -3400,42 +2643,27 @@ public sealed class UserConfigurationService
 
     private static string? TrimToSemanticVersion(string? version)
     {
-        if (string.IsNullOrWhiteSpace(version))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(version)) return null;
 
-        string[] parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0)
-        {
-            return null;
-        }
+        var parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return null;
 
-        if (parts.Length <= 3)
-        {
-            return string.Join('.', parts);
-        }
+        if (parts.Length <= 3) return string.Join('.', parts);
 
         return string.Join('.', parts.Take(3));
     }
 
     private static string? NormalizeVersion(string? version)
     {
-        if (string.IsNullOrWhiteSpace(version))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(version)) return null;
 
-        string? normalized = VersionStringUtility.Normalize(version);
+        var normalized = VersionStringUtility.Normalize(version);
         return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 
     private static string? NormalizePath(string? path)
     {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(path)) return null;
 
         try
         {
@@ -3449,27 +2677,19 @@ public sealed class UserConfigurationService
 
     private static string? NormalizeSortMemberPath(string? sortMemberPath)
     {
-        if (string.IsNullOrWhiteSpace(sortMemberPath))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(sortMemberPath)) return null;
 
-        string trimmed = sortMemberPath.Trim();
+        var trimmed = sortMemberPath.Trim();
 
         if (string.Equals(trimmed, nameof(ModListItemViewModel.DisplayName), StringComparison.OrdinalIgnoreCase))
-        {
             return nameof(ModListItemViewModel.NameSortKey);
-        }
 
         return trimmed;
     }
 
     private static string? NormalizeInstalledColumnKey(string? columnName)
     {
-        if (string.IsNullOrWhiteSpace(columnName))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(columnName)) return null;
 
         return columnName.Trim();
     }
@@ -3481,10 +2701,7 @@ public sealed class UserConfigurationService
 
     private static ListSortDirection ParseSortDirection(string? value)
     {
-        if (Enum.TryParse(value, ignoreCase: true, out ListSortDirection direction))
-        {
-            return direction;
-        }
+        if (Enum.TryParse(value, true, out ListSortDirection direction)) return direction;
 
         return ListSortDirection.Ascending;
     }
@@ -3497,5 +2714,53 @@ public sealed class UserConfigurationService
     private static string? NormalizeUploaderName(string? name)
     {
         return string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+    }
+
+    private sealed class GameProfileState
+    {
+        public GameProfileState(string name)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
+
+        public string? DataDirectory { get; set; }
+
+        public string? GameDirectory { get; set; }
+
+        public string? CustomShortcutPath { get; set; }
+
+        public bool RequiresDataDirectorySelection { get; set; }
+
+        public bool RequiresGameDirectorySelection { get; set; }
+
+        public Dictionary<string, string> ModConfigPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public Dictionary<string, bool> BulkUpdateModExclusions { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public Dictionary<string, string> SkippedModVersions { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public Dictionary<ModUsageTrackingKey, int> ModUsageSessionCounts { get; } = new();
+
+        public int LongRunningSessionCount { get; set; }
+
+        public bool HasPendingModUsagePrompt { get; set; }
+    }
+
+    private sealed class ModConfigPathEntry
+    {
+        public ModConfigPathEntry(string relativeDirectoryPath, string fileName, string? configName)
+        {
+            RelativeDirectoryPath = relativeDirectoryPath;
+            FileName = fileName;
+            ConfigName = configName;
+        }
+
+        public string RelativeDirectoryPath { get; }
+
+        public string FileName { get; }
+
+        public string? ConfigName { get; }
     }
 }

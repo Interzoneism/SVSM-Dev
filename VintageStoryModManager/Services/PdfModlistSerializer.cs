@@ -1,4 +1,3 @@
-using System;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -7,8 +6,8 @@ using VintageStoryModManager.Models;
 namespace VintageStoryModManager.Services;
 
 /// <summary>
-/// Provides helpers for encoding modlist presets into PDF-friendly payloads and
-/// recovering them when loading from a PDF export.
+///     Provides helpers for encoding modlist presets into PDF-friendly payloads and
+///     recovering them when loading from a PDF export.
 /// </summary>
 public static class PdfModlistSerializer
 {
@@ -34,7 +33,7 @@ public static class PdfModlistSerializer
     {
         ArgumentNullException.ThrowIfNull(preset);
 
-        string serialized = JsonSerializer.Serialize(preset, SerializationOptions);
+        var serialized = JsonSerializer.Serialize(preset, SerializationOptions);
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(serialized));
     }
 
@@ -42,7 +41,7 @@ public static class PdfModlistSerializer
     {
         ArgumentNullException.ThrowIfNull(configList);
 
-        string serialized = JsonSerializer.Serialize(configList, SerializationOptions);
+        var serialized = JsonSerializer.Serialize(configList, SerializationOptions);
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(serialized));
     }
 
@@ -55,7 +54,7 @@ public static class PdfModlistSerializer
 
     public static string CreateConfigMetadataValue(string? encodedConfigList)
     {
-        string payload = string.IsNullOrWhiteSpace(encodedConfigList)
+        var payload = string.IsNullOrWhiteSpace(encodedConfigList)
             ? ConfigMetadataMissingValue
             : encodedConfigList!;
 
@@ -92,7 +91,8 @@ public static class PdfModlistSerializer
         return true;
     }
 
-    public static bool TryDeserializeConfigListFromJson(string json, out SerializableConfigList? configList, out string? errorMessage)
+    public static bool TryDeserializeConfigListFromJson(string json, out SerializableConfigList? configList,
+        out string? errorMessage)
     {
         configList = null;
         errorMessage = null;
@@ -127,51 +127,48 @@ public static class PdfModlistSerializer
         if (!TryExtractSection(
                 pdfText,
                 ModlistDelimiter,
-                required: true,
+                true,
                 "The PDF did not contain a modlist section.",
                 "The PDF did not contain the end of the modlist section.",
                 "The PDF did not contain any modlist data.",
-                out string? normalized,
+                out var normalized,
                 out errorMessage))
         {
             json = null;
             return false;
         }
 
-        return TryConvertPayloadToJson(normalized!, out json, out errorMessage, "The PDF modlist data was not in a recognized format.");
+        return TryConvertPayloadToJson(normalized!, out json, out errorMessage,
+            "The PDF modlist data was not in a recognized format.");
     }
 
-    public static bool TryExtractModlistJsonFromMetadata(string? metadataValue, out string? json, out string? errorMessage)
+    public static bool TryExtractModlistJsonFromMetadata(string? metadataValue, out string? json,
+        out string? errorMessage)
     {
         json = null;
         errorMessage = null;
 
-        if (string.IsNullOrWhiteSpace(metadataValue))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(metadataValue)) return false;
 
-        string trimmed = metadataValue.Trim();
-        if (!trimmed.StartsWith(ModlistMetadataPrefix, StringComparison.Ordinal))
-        {
-            return false;
-        }
+        var trimmed = metadataValue.Trim();
+        if (!trimmed.StartsWith(ModlistMetadataPrefix, StringComparison.Ordinal)) return false;
 
-        string payload = trimmed[ModlistMetadataPrefix.Length..];
+        var payload = trimmed[ModlistMetadataPrefix.Length..];
         if (string.IsNullOrWhiteSpace(payload))
         {
             errorMessage = "The PDF modlist metadata did not contain any modlist data.";
             return false;
         }
 
-        string normalizedPayload = NormalizePayload(payload);
+        var normalizedPayload = NormalizePayload(payload);
         if (string.IsNullOrWhiteSpace(normalizedPayload))
         {
             errorMessage = "The PDF modlist metadata did not contain any modlist data.";
             return false;
         }
 
-        return TryConvertPayloadToJson(normalizedPayload, out json, out errorMessage, "The PDF modlist metadata was not in a recognized format.");
+        return TryConvertPayloadToJson(normalizedPayload, out json, out errorMessage,
+            "The PDF modlist metadata was not in a recognized format.");
     }
 
     public static bool TryExtractConfigJson(string pdfText, out string? json, out string? errorMessage)
@@ -179,11 +176,11 @@ public static class PdfModlistSerializer
         if (!TryExtractSection(
                 pdfText,
                 ConfigDelimiter,
-                required: false,
+                false,
                 "The PDF did not contain a configuration section.",
                 "The PDF did not contain the end of the configuration section.",
                 "The PDF did not contain any configuration data.",
-                out string? normalized,
+                out var normalized,
                 out errorMessage))
         {
             json = null;
@@ -197,30 +194,23 @@ public static class PdfModlistSerializer
             return true;
         }
 
-        return TryConvertPayloadToJson(normalized, out json, out errorMessage, "The PDF configuration data was not in a recognized format.");
+        return TryConvertPayloadToJson(normalized, out json, out errorMessage,
+            "The PDF configuration data was not in a recognized format.");
     }
 
-    public static bool TryExtractConfigJsonFromMetadata(string? metadataValue, out string? json, out string? errorMessage)
+    public static bool TryExtractConfigJsonFromMetadata(string? metadataValue, out string? json,
+        out string? errorMessage)
     {
         json = null;
         errorMessage = null;
 
-        if (string.IsNullOrWhiteSpace(metadataValue))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(metadataValue)) return false;
 
-        string trimmed = metadataValue.Trim();
-        if (!trimmed.StartsWith(ConfigMetadataPrefix, StringComparison.Ordinal))
-        {
-            return false;
-        }
+        var trimmed = metadataValue.Trim();
+        if (!trimmed.StartsWith(ConfigMetadataPrefix, StringComparison.Ordinal)) return false;
 
-        string payload = trimmed[ConfigMetadataPrefix.Length..];
-        if (string.Equals(payload, ConfigMetadataMissingValue, StringComparison.Ordinal))
-        {
-            return true;
-        }
+        var payload = trimmed[ConfigMetadataPrefix.Length..];
+        if (string.Equals(payload, ConfigMetadataMissingValue, StringComparison.Ordinal)) return true;
 
         if (string.IsNullOrWhiteSpace(payload))
         {
@@ -228,38 +218,33 @@ public static class PdfModlistSerializer
             return false;
         }
 
-        string normalizedPayload = NormalizePayload(payload);
+        var normalizedPayload = NormalizePayload(payload);
         if (string.IsNullOrWhiteSpace(normalizedPayload))
         {
             errorMessage = "The PDF configuration metadata did not contain any configuration data.";
             return false;
         }
 
-        return TryConvertPayloadToJson(normalizedPayload, out json, out errorMessage, "The PDF configuration metadata was not in a recognized format.");
+        return TryConvertPayloadToJson(normalizedPayload, out json, out errorMessage,
+            "The PDF configuration metadata was not in a recognized format.");
     }
 
     public static string NormalizePayload(string content)
     {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return string.Empty;
-        }
+        if (string.IsNullOrWhiteSpace(content)) return string.Empty;
 
-        string sanitized = content
+        var sanitized = content
             .Replace("\r\n", "\n")
             .Replace('\r', '\n')
             .Replace("\0", string.Empty)
             .Replace("\u00A0", " ");
 
         var builder = new StringBuilder();
-        string[] lines = sanitized.Split('\n');
+        var lines = sanitized.Split('\n');
 
-        foreach (string line in lines)
+        foreach (var line in lines)
         {
-            if (builder.Length > 0)
-            {
-                builder.Append('\n');
-            }
+            if (builder.Length > 0) builder.Append('\n');
 
             builder.Append(line.TrimEnd());
         }
@@ -291,7 +276,7 @@ public static class PdfModlistSerializer
             return true;
         }
 
-        int startIndex = pdfText.IndexOf(delimiter, StringComparison.Ordinal);
+        var startIndex = pdfText.IndexOf(delimiter, StringComparison.Ordinal);
         if (startIndex < 0)
         {
             if (required)
@@ -304,7 +289,7 @@ public static class PdfModlistSerializer
         }
 
         startIndex += delimiter.Length;
-        int endIndex = pdfText.IndexOf(delimiter, startIndex, StringComparison.Ordinal);
+        var endIndex = pdfText.IndexOf(delimiter, startIndex, StringComparison.Ordinal);
         if (endIndex < 0)
         {
             errorMessage = missingEndMessage;
@@ -317,8 +302,8 @@ public static class PdfModlistSerializer
             return false;
         }
 
-        string rawContent = pdfText.Substring(startIndex, endIndex - startIndex);
-        string normalizedContent = NormalizePayload(rawContent);
+        var rawContent = pdfText.Substring(startIndex, endIndex - startIndex);
+        var normalizedContent = NormalizePayload(rawContent);
 
         if (string.IsNullOrWhiteSpace(normalizedContent))
         {
@@ -345,7 +330,7 @@ public static class PdfModlistSerializer
             return true;
         }
 
-        if (TryDecodeBase64(normalized, out string? decoded))
+        if (TryDecodeBase64(normalized, out var decoded))
         {
             json = decoded;
             return true;
@@ -357,17 +342,11 @@ public static class PdfModlistSerializer
 
     private static bool IsProbableJson(string content)
     {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(content)) return false;
 
-        foreach (char ch in content)
+        foreach (var ch in content)
         {
-            if (char.IsWhiteSpace(ch))
-            {
-                continue;
-            }
+            if (char.IsWhiteSpace(ch)) continue;
 
             return ch == '{' || ch == '[';
         }
@@ -379,22 +358,13 @@ public static class PdfModlistSerializer
     {
         decoded = null;
 
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(content)) return false;
 
-        string compact = RemoveWhitespace(content);
-        if (compact.Length == 0 || compact.Length % 4 != 0)
-        {
-            return false;
-        }
+        var compact = RemoveWhitespace(content);
+        if (compact.Length == 0 || compact.Length % 4 != 0) return false;
 
         Span<byte> buffer = new byte[compact.Length];
-        if (!Convert.TryFromBase64String(compact, buffer, out int bytesWritten))
-        {
-            return false;
-        }
+        if (!Convert.TryFromBase64String(compact, buffer, out var bytesWritten)) return false;
 
         decoded = Encoding.UTF8.GetString(buffer[..bytesWritten]);
         return !string.IsNullOrWhiteSpace(decoded);
@@ -402,19 +372,12 @@ public static class PdfModlistSerializer
 
     private static string RemoveWhitespace(string content)
     {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return string.Empty;
-        }
+        if (string.IsNullOrWhiteSpace(content)) return string.Empty;
 
         var builder = new StringBuilder(content.Length);
-        foreach (char ch in content)
-        {
+        foreach (var ch in content)
             if (!char.IsWhiteSpace(ch))
-            {
                 builder.Append(ch);
-            }
-        }
 
         return builder.ToString();
     }

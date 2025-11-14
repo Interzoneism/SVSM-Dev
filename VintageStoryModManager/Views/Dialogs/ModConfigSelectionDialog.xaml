@@ -88,10 +88,11 @@
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate DataType="{x:Type dialogs:ModConfigOption}">
-                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      ToolTip="{Binding ConfigPath}"
-                                      Margin="0"
-                                      VerticalAlignment="Center">
+                            <CheckBox
+                                IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                ToolTip="{Binding ConfigPath}"
+                                Margin="0"
+                                VerticalAlignment="Center">
                                 <CheckBox.LayoutTransform>
                                     <ScaleTransform ScaleX="1.2" ScaleY="1.2" />
                                 </CheckBox.LayoutTransform>
@@ -118,7 +119,9 @@
                         <Style TargetType="TextBlock">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                <DataTrigger
+                                    Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    Value="False">
                                     <Setter Property="Visibility" Value="Visible" />
                                 </DataTrigger>
                             </Style.Triggers>

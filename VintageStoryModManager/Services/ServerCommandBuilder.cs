@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 
 namespace VintageStoryModManager.Services;
@@ -9,17 +8,11 @@ public static class ServerCommandBuilder
 
     public static string? TryBuildInstallCommand(string? modId, string? version)
     {
-        if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(version))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(version)) return null;
 
-        string normalizedModId = modId.Trim();
-        string normalizedVersion = version.Trim();
-        if (normalizedModId.Length == 0 || normalizedVersion.Length == 0)
-        {
-            return null;
-        }
+        var normalizedModId = modId.Trim();
+        var normalizedVersion = version.Trim();
+        if (normalizedModId.Length == 0 || normalizedVersion.Length == 0) return null;
 
         return string.Format(CultureInfo.InvariantCulture, CommandTemplate, normalizedModId, normalizedVersion);
     }

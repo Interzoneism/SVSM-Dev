@@ -1,10 +1,8 @@
-using System.Collections.Generic;
-
 namespace VintageStoryModManager.Models;
 
 /// <summary>
-/// Serializable representation of a <see cref="ModPreset"/> used for persisting
-/// modlists to JSON or embedding them into PDF exports.
+///     Serializable representation of a <see cref="ModPreset" /> used for persisting
+///     modlists to JSON or embedding them into PDF exports.
 /// </summary>
 public sealed class SerializablePreset
 {
@@ -28,7 +26,7 @@ public sealed class SerializablePreset
 }
 
 /// <summary>
-/// Serializable representation of <see cref="ModPresetModState"/>.
+///     Serializable representation of <see cref="ModPresetModState" />.
 /// </summary>
 public sealed class SerializablePresetModState
 {

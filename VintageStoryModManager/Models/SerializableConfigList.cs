@@ -1,10 +1,8 @@
-using System.Collections.Generic;
-
 namespace VintageStoryModManager.Models;
 
 /// <summary>
-/// Serializable representation of configuration files that can be embedded
-/// inside a PDF export alongside the modlist payload.
+///     Serializable representation of configuration files that can be embedded
+///     inside a PDF export alongside the modlist payload.
 /// </summary>
 public sealed class SerializableConfigList
 {
@@ -12,7 +10,7 @@ public sealed class SerializableConfigList
 }
 
 /// <summary>
-/// Serializable representation of a single mod configuration file.
+///     Serializable representation of a single mod configuration file.
 /// </summary>
 public sealed class SerializableModConfiguration
 {
