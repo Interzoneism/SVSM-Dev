@@ -8558,6 +8558,26 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void InstallLocalModlistButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedLocalModlists.Count != 1) return;
+
+        var entry = _selectedLocalModlists[0];
+
+        if (string.IsNullOrWhiteSpace(entry.FilePath) || !File.Exists(entry.FilePath))
+        {
+            WpfMessageBox.Show(
+                "The selected modlist file could not be found. It may have been moved or deleted.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            RefreshLocalModlists(true);
+            return;
+        }
+
+        await LoadModlistFromFileAsync(entry.FilePath).ConfigureAwait(true);
+    }
+
     private void OpenModlistsFolderButton_OnClick(object sender, RoutedEventArgs e)
     {
         string directory;
@@ -10135,6 +10155,14 @@ public partial class MainWindow : Window
         if (SelectedLocalModlistDescription is not null)
             SelectedLocalModlistDescription.Text = primary?.Description ?? string.Empty;
 
+        if (InstallLocalModlistButton is not null)
+        {
+            if (_selectedLocalModlists.Count == 1 && primary is not null)
+                InstallLocalModlistButton.ToolTip = $"Install \"{primary.DisplayName}\"";
+            else
+                InstallLocalModlistButton.ToolTip = null;
+        }
+
         UpdateLocalModlistControlsEnabledState();
     }
 
@@ -10185,12 +10213,16 @@ public partial class MainWindow : Window
     private void UpdateLocalModlistControlsEnabledState()
     {
         var hasSelection = _selectedLocalModlists.Count > 0;
+        var hasSingleSelection = _selectedLocalModlists.Count == 1;
 
         if (DeleteLocalModlistsButton is not null)
             DeleteLocalModlistsButton.IsEnabled = hasSelection;
 
         if (ModifyLocalModlistButton is not null)
             ModifyLocalModlistButton.IsEnabled = _selectedLocalModlists.Count == 1;
+
+        if (InstallLocalModlistButton is not null)
+            InstallLocalModlistButton.IsEnabled = hasSingleSelection;
     }
 
     private async Task RefreshManagerUpdateLinkAsync()

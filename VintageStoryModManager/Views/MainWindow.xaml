@@ -2668,10 +2668,21 @@
                                                 Width="170"
                                                 VerticalAlignment="Top"
                                                 HorizontalAlignment="Left" />
+                                        <Button x:Name="InstallLocalModlistButton"
+                                                Content="Install Selected Modlist"
+                                                Padding="12,6"
+                                                Margin="200,109,0,0"
+                                                MinWidth="165"
+                                                Click="InstallLocalModlistButton_OnClick"
+                                                Height="32"
+                                                Width="170"
+                                                VerticalAlignment="Top"
+                                                HorizontalAlignment="Left"
+                                                IsEnabled="False" />
                                         <Button x:Name="DeleteLocalModlistsButton"
                                                 Content="Delete"
                                                 Padding="12,6"
-                                                Margin="200,109,0,0"
+                                                Margin="390,109,0,0"
                                                 MinWidth="165"
                                                 Click="DeleteLocalModlistsButton_OnClick"
                                                 Height="32"
@@ -2682,7 +2693,7 @@
                                         <Button x:Name="OpenModlistsFolderButton"
                                                 Content="Open Modlists Folder"
                                                 Padding="12,6"
-                                                Margin="390,109,0,0"
+                                                Margin="580,109,0,0"
                                                 MinWidth="165"
                                                 Click="OpenModlistsFolderButton_OnClick"
                                                 Height="32"
@@ -2703,28 +2714,38 @@
                                         <Border HorizontalAlignment="Left"
                                                 Height="88"
                                                 Margin="200,10,0,0"
-                                                Padding="10"
                                                 VerticalAlignment="Top"
-                                                CornerRadius="5,5,5,5"
-                                                Background="{DynamicResource Brush.ModCard.Background.Active}"
-                                                Width="942">
-                                            <Grid Margin="-10,-10,-10,-10">
-                                                <TextBlock x:Name="SelectedLocalModlistDescription"
-                                                           HorizontalAlignment="Left"
-                                                           Margin="0,16,0,0"
-                                                           TextWrapping="Wrap"
-                                                           Text=""
-                                                           VerticalAlignment="Top"
-                                                           Height="72"
-                                                           Width="932"
-                                                           Foreground="{DynamicResource Brush.Text.Primary}" />
-                                                <TextBlock x:Name="SelectedLocalModlistTitle"
-                                                           HorizontalAlignment="Left"
-                                                           TextWrapping="Wrap"
-                                                           Text=""
-                                                           VerticalAlignment="Top"
-                                                           FontWeight="Bold" />
-                                            </Grid>
+                                                CornerRadius="5"
+                                                Width="942"
+                                                Background="Transparent"
+                                                BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
+                                                BorderThickness="0,0,2,2"
+                                                SnapsToDevicePixels="True">
+                                            <Border Background="{DynamicResource Brush.ModCard.Background.Active}"
+                                                    BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Dark}"
+                                                    BorderThickness="2,2,0,0"
+                                                    CornerRadius="5"
+                                                    Padding="10"
+                                                    SnapsToDevicePixels="True">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="*" />
+                                                    </Grid.RowDefinitions>
+                                                    <TextBlock x:Name="SelectedLocalModlistTitle"
+                                                               Grid.Row="0"
+                                                               TextWrapping="Wrap"
+                                                               Text=""
+                                                               FontWeight="Bold"
+                                                               Foreground="{DynamicResource Brush.Text.Primary}" />
+                                                    <TextBlock x:Name="SelectedLocalModlistDescription"
+                                                               Grid.Row="1"
+                                                               Margin="0,8,0,0"
+                                                               TextWrapping="Wrap"
+                                                               Text=""
+                                                               Foreground="{DynamicResource Brush.Text.Primary}" />
+                                                </Grid>
+                                            </Border>
                                         </Border>
                                     </Grid>
                                 </Border>
@@ -3102,28 +3123,38 @@
                                         <Border HorizontalAlignment="Left"
                                                 Height="88"
                                                 Margin="200,10,0,0"
-                                                Padding="10"
                                                 VerticalAlignment="Top"
-                                                CornerRadius="5,5,5,5"
-                                                Background="{DynamicResource Brush.ModCard.Background.Active}"
-                                                Width="942">
-                                            <Grid Margin="-10,-10,-10,-10">
-                                                <TextBlock x:Name="SelectedModlistDescription"
-                                                           HorizontalAlignment="Left"
-                                                           Margin="0,16,0,0"
-                                                           TextWrapping="Wrap"
-                                                           Text=""
-                                                           VerticalAlignment="Top"
-                                                           Height="72"
-                                                           Width="932"
-                                                           Foreground="{DynamicResource Brush.Text.Primary}" />
-                                                <TextBlock x:Name="SelectedModlistTitle"
-                                                           HorizontalAlignment="Left"
-                                                           TextWrapping="Wrap"
-                                                           Text=""
-                                                           VerticalAlignment="Top"
-                                                           FontWeight="Bold" />
-                                            </Grid>
+                                                CornerRadius="5"
+                                                Width="942"
+                                                Background="Transparent"
+                                                BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
+                                                BorderThickness="0,0,2,2"
+                                                SnapsToDevicePixels="True">
+                                            <Border Background="{DynamicResource Brush.ModCard.Background.Active}"
+                                                    BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Dark}"
+                                                    BorderThickness="2,2,0,0"
+                                                    CornerRadius="5"
+                                                    Padding="10"
+                                                    SnapsToDevicePixels="True">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="*" />
+                                                    </Grid.RowDefinitions>
+                                                    <TextBlock x:Name="SelectedModlistTitle"
+                                                               Grid.Row="0"
+                                                               TextWrapping="Wrap"
+                                                               Text=""
+                                                               FontWeight="Bold"
+                                                               Foreground="{DynamicResource Brush.Text.Primary}" />
+                                                    <TextBlock x:Name="SelectedModlistDescription"
+                                                               Grid.Row="1"
+                                                               Margin="0,8,0,0"
+                                                               TextWrapping="Wrap"
+                                                               Text=""
+                                                               Foreground="{DynamicResource Brush.Text.Primary}" />
+                                                </Grid>
+                                            </Border>
                                         </Border>
                                     </Grid>
                                 </Border>
