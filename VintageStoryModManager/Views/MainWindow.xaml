@@ -2679,6 +2679,16 @@
                                                 VerticalAlignment="Top"
                                                 HorizontalAlignment="Left"
                                                 IsEnabled="False" />
+                                        <Button x:Name="OpenModlistsFolderButton"
+                                                Content="Open Modlists Folder"
+                                                Padding="12,6"
+                                                Margin="390,109,0,0"
+                                                MinWidth="165"
+                                                Click="OpenModlistsFolderButton_OnClick"
+                                                Height="32"
+                                                Width="170"
+                                                VerticalAlignment="Top"
+                                                HorizontalAlignment="Left" />
                                         <Button x:Name="ModifyLocalModlistButton"
                                                 Content="Modify"
                                                 Padding="12,6"

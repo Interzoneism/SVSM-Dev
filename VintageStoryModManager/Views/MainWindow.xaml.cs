@@ -5235,19 +5235,36 @@ public partial class MainWindow : Window
             return false;
         }
 
-        var saveFileDialog = new SaveFileDialog
+        string filePath;
+        try
         {
-            Title = "Save Modlist PDF",
-            DefaultExt = ".pdf",
-            Filter = "PDF files (*.pdf)|*.pdf",
-            AddExtension = true,
-            FileName = BuildPdfFileName(listName)
-        };
+            var modListDirectory = EnsureModListDirectory();
+            var entryName = BuildSuggestedFileName(listName, "Modlist");
+            filePath = Path.Combine(modListDirectory, entryName + ".pdf");
 
-        var saveResult = saveFileDialog.ShowDialog(this);
-        if (saveResult != true) return false;
+            if (File.Exists(filePath))
+            {
+                var message =
+                    $"A modlist PDF named \"{Path.GetFileName(filePath)}\" already exists in the Modlists folder. Do you want to replace it?";
+                var confirmation = WpfMessageBox.Show(
+                    this,
+                    message,
+                    "Replace Modlist PDF",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
 
-        var filePath = saveFileDialog.FileName;
+                if (confirmation != MessageBoxResult.Yes) return false;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException
+                                       or PathTooLongException or SecurityException)
+        {
+            WpfMessageBox.Show($"Failed to prepare the Modlists folder:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return false;
+        }
 
         var presetName = string.IsNullOrWhiteSpace(listName)
             ? "Installed Mods"
@@ -7410,7 +7427,6 @@ public partial class MainWindow : Window
     private bool TrySaveModlist(Func<string?>? suggestedNameProvider, out string? savedFilePath)
     {
         savedFilePath = null;
-        string? capturedFilePath = null;
 
         var configOptions = BuildModConfigOptions();
         var suggestedName = suggestedNameProvider?.Invoke();
@@ -7449,42 +7465,60 @@ public partial class MainWindow : Window
                 includedConfigurations);
         }
 
-        var modListDirectory = EnsureModListDirectory();
-
-        string? SuggestedNameForDialog()
+        try
         {
-            if (!string.IsNullOrWhiteSpace(listName)) return listName;
-            return string.IsNullOrWhiteSpace(suggestedName) ? null : suggestedName;
+            var modListDirectory = EnsureModListDirectory();
+            var suggestedEntryName = !string.IsNullOrWhiteSpace(listName)
+                ? listName
+                : suggestedName;
+            var entryName = BuildSuggestedFileName(suggestedEntryName, "Modlist");
+            var filePath = Path.Combine(modListDirectory, entryName + ".json");
+
+            if (File.Exists(filePath))
+            {
+                var message =
+                    $"A modlist named \"{Path.GetFileName(filePath)}\" already exists in the Modlists folder. Do you want to replace it?";
+                var confirmation = WpfMessageBox.Show(
+                    this,
+                    message,
+                    "Replace Modlist",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (confirmation != MessageBoxResult.Yes) return false;
+            }
+
+            var serializable = BuildSerializablePreset(entryName, true, true, includedConfigurations);
+            if (!string.IsNullOrWhiteSpace(listName)) serializable.Name = listName.Trim();
+            serializable.Description = description;
+            serializable.Version = version;
+            serializable.Uploader = string.IsNullOrWhiteSpace(createdBy)
+                ? null
+                : createdBy.Trim();
+
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
+            var json = JsonSerializer.Serialize(serializable, options);
+            File.WriteAllText(filePath, json);
+
+            _viewModel?.ReportStatus($"Saved modlist \"{entryName}\".");
+            savedFilePath = filePath;
+            return true;
         }
-
-        var result = TrySaveSnapshot(
-            modListDirectory,
-            "Save Modlist",
-            "Modlist files (*.json)|*.json|All files (*.*)|*.*",
-            "Modlists must be saved inside the Modlists folder.",
-            "Modlist",
-            SuggestedNameForDialog,
-            name =>
-            {
-                capturedFilePath = Path.Combine(modListDirectory, name + ".json");
-                _viewModel?.ReportStatus($"Saved modlist \"{name}\".");
-            },
-            "modlist",
-            true,
-            true,
-            includedConfigurations,
-            serializable =>
-            {
-                if (!string.IsNullOrWhiteSpace(listName)) serializable.Name = listName.Trim();
-                serializable.Description = description;
-                serializable.Version = version;
-                serializable.Uploader = string.IsNullOrWhiteSpace(createdBy)
-                    ? null
-                    : createdBy.Trim();
-            });
-
-        savedFilePath = capturedFilePath;
-        return result;
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException
+                                      or PathTooLongException)
+        {
+            WpfMessageBox.Show($"Failed to save the modlist:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return false;
+        }
     }
 
     private bool TrySaveAutomaticModlist(string requestedName, out string savedName, out string filePath)
@@ -8042,24 +8076,6 @@ public partial class MainWindow : Window
         return $"Modlist {DateTime.Now:yyyy-MM-dd HH:mm}";
     }
 
-    private static string BuildPdfFileName(string listName)
-    {
-        if (string.IsNullOrWhiteSpace(listName)) return "Installed Mods";
-
-        var invalidCharacters = Path.GetInvalidFileNameChars();
-        var builder = new StringBuilder(listName.Length);
-
-        foreach (var character in listName.Trim())
-            builder.Append(Array.IndexOf(invalidCharacters, character) >= 0 ? '_' : character);
-
-        var sanitized = builder.ToString().Trim();
-        if (string.IsNullOrWhiteSpace(sanitized)) return "Installed Mods";
-
-        if (sanitized.Length > 120) sanitized = sanitized[..120];
-
-        return sanitized;
-    }
-
     private static void EnsureQuestPdfLicense()
     {
         if (_isQuestPdfLicenseInitialized) return;
@@ -8540,6 +8556,25 @@ public partial class MainWindow : Window
             if (!string.IsNullOrWhiteSpace(savedFilePath)) preservedSelection.Add(savedFilePath);
             RefreshLocalModlists(true, preservedSelection);
         }
+    }
+
+    private void OpenModlistsFolderButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        string directory;
+        try
+        {
+            directory = EnsureModListDirectory();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
+        {
+            WpfMessageBox.Show($"Failed to open the Modlists folder:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        OpenFolder(directory, "Modlists");
     }
 
     private void DeleteLocalModlistsButton_OnClick(object sender, RoutedEventArgs e)
@@ -9875,8 +9910,10 @@ public partial class MainWindow : Window
 
         var list = new List<LocalModlistListEntry>();
 
-        foreach (var filePath in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
+        foreach (var filePath in Directory.EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly))
         {
+            if (!HasSupportedModlistExtension(filePath)) continue;
+
             if (TryCreateLocalModlistEntry(filePath, out var entry, out var error))
             {
                 if (entry is not null) list.Add(entry);
@@ -9905,35 +9942,106 @@ public partial class MainWindow : Window
 
         try
         {
-            var json = File.ReadAllText(filePath);
-            if (!PdfModlistSerializer.TryDeserializeFromJson(json, out var preset, out var errorMessage))
+            if (string.Equals(Path.GetExtension(filePath), ".pdf", StringComparison.OrdinalIgnoreCase))
             {
-                error = string.IsNullOrWhiteSpace(errorMessage)
-                    ? "The file is not a valid SVSM modlist."
-                    : errorMessage;
-                return false;
+                using var document = PdfDocument.Open(filePath);
+                string? json = null;
+
+                var information = document.Information;
+                var hasMetadata = PdfModlistSerializer.TryExtractModlistJsonFromMetadata(
+                    information?.Subject,
+                    out json,
+                    out var metadataError);
+
+                if (!hasMetadata)
+                {
+                    if (metadataError is not null)
+                    {
+                        error = metadataError;
+                        return false;
+                    }
+
+                    var textBuilder = new StringBuilder();
+
+                    foreach (var page in document.GetPages())
+                    {
+                        var pageBuilder = new StringBuilder();
+
+                        foreach (var letter in page.Letters)
+                        {
+                            var value = letter.Value;
+                            if (string.IsNullOrEmpty(value)) continue;
+
+                            if (value == "\r") continue;
+
+                            pageBuilder.Append(value);
+                        }
+
+                        var pageText = pageBuilder.ToString();
+                        if (string.IsNullOrWhiteSpace(pageText)) continue;
+
+                        if (textBuilder.Length > 0) textBuilder.Append('\n');
+                        textBuilder.Append(pageText);
+                    }
+
+                    var pdfText = textBuilder.ToString();
+                    if (string.IsNullOrWhiteSpace(pdfText))
+                    {
+                        error = "The PDF did not contain any readable text.";
+                        return false;
+                    }
+
+                    if (!PdfModlistSerializer.TryExtractModlistJson(pdfText!, out json, out var extractionError))
+                    {
+                        error = extractionError;
+                        return false;
+                    }
+                }
+
+                return TryCreateLocalModlistEntryFromJson(filePath, json!, out entry, out error);
             }
 
-            var metadata = ExtractModlistMetadata(json);
-            var mods = metadata.Mods ?? Array.Empty<string>();
-            var lastWriteUtc = File.GetLastWriteTimeUtc(filePath);
-            DateTimeOffset? lastModified = lastWriteUtc == DateTime.MinValue
-                ? null
-                : new DateTimeOffset(lastWriteUtc, TimeSpan.Zero);
-
-            var name = metadata.Name ?? preset?.Name;
-            var description = metadata.Description ?? preset?.Description;
-            var version = metadata.Version ?? preset?.Version;
-            var uploader = metadata.Uploader ?? preset?.Uploader;
-
-            entry = new LocalModlistListEntry(filePath, name, description, version, uploader, mods, lastModified);
-            return true;
+            var jsonText = File.ReadAllText(filePath);
+            return TryCreateLocalModlistEntryFromJson(filePath, jsonText, out entry, out error);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
             error = ex.Message;
             return false;
         }
+    }
+
+    private bool TryCreateLocalModlistEntryFromJson(
+        string filePath,
+        string json,
+        out LocalModlistListEntry? entry,
+        out string? error)
+    {
+        entry = null;
+        error = null;
+
+        if (!PdfModlistSerializer.TryDeserializeFromJson(json, out var preset, out var errorMessage))
+        {
+            error = string.IsNullOrWhiteSpace(errorMessage)
+                ? "The file is not a valid SVSM modlist."
+                : errorMessage;
+            return false;
+        }
+
+        var metadata = ExtractModlistMetadata(json);
+        var mods = metadata.Mods ?? Array.Empty<string>();
+        var lastWriteUtc = File.GetLastWriteTimeUtc(filePath);
+        DateTimeOffset? lastModified = lastWriteUtc == DateTime.MinValue
+            ? null
+            : new DateTimeOffset(lastWriteUtc, TimeSpan.Zero);
+
+        var name = metadata.Name ?? preset?.Name;
+        var description = metadata.Description ?? preset?.Description;
+        var version = metadata.Version ?? preset?.Version;
+        var uploader = metadata.Uploader ?? preset?.Uploader;
+
+        entry = new LocalModlistListEntry(filePath, name, description, version, uploader, mods, lastModified);
+        return true;
     }
 
     private async Task RefreshCloudModlistsAsync(bool force)
