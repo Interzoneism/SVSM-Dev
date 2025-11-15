@@ -1,9 +1,11 @@
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -204,6 +206,8 @@ public partial class MainWindow : Window
     private string? _recentLocalModBackupDirectory;
     private List<string>? _recentLocalModBackupModNames;
     private bool _refreshAfterModlistLoadPending;
+    private bool _localModlistsLoaded;
+    private readonly List<LocalModlistListEntry> _selectedLocalModlists = new();
     private CloudModlistListEntry? _selectedCloudModlist;
     private ModListItemViewModel? _selectionAnchor;
     private bool _suppressSortPreferenceSave;
@@ -276,6 +280,7 @@ public partial class MainWindow : Window
         InternetAccessManager.InternetAccessChanged += InternetAccessManager_OnInternetAccessChanged;
 
         UpdateCloudModlistControlsEnabledState();
+        UpdateLocalModlistControlsEnabledState();
     }
 
     public IAsyncRelayCommand RefreshModsUiCommand { get; }
@@ -2042,6 +2047,7 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
         ApplyPlayerIdentityToUiAndCloudStore();
         _cloudModlistsLoaded = false;
+        _localModlistsLoaded = false;
         _selectedCloudModlist = null;
         UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
         AttachToModsView(_viewModel.CurrentModsView);
@@ -2114,7 +2120,7 @@ public partial class MainWindow : Window
             if (_viewModel != null)
                 Dispatcher.InvokeAsync(() =>
                 {
-                    if (_viewModel != null) HandleCloudModlistsVisibilityChanged(_viewModel.IsViewingCloudModlists);
+                    if (_viewModel != null) HandleModlistsVisibilityChanged(_viewModel.IsViewingCloudModlists);
                 }, DispatcherPriority.Background);
         }
         else if (e.PropertyName == nameof(MainViewModel.IsLoadMoreModDatabaseButtonVisible))
@@ -2161,10 +2167,11 @@ public partial class MainWindow : Window
         UpdateSearchSortingBehavior(isSearchingModDatabase);
     }
 
-    private void HandleCloudModlistsVisibilityChanged(bool isVisible)
+    private void HandleModlistsVisibilityChanged(bool isVisible)
     {
         if (isVisible)
         {
+            RefreshLocalModlists(false);
             if (!EnsureCloudModlistsConsent())
             {
                 _viewModel?.ShowInstalledModsCommand.Execute(null);
@@ -2175,6 +2182,8 @@ public partial class MainWindow : Window
             return;
         }
 
+        SetLocalModlistSelection(Array.Empty<LocalModlistListEntry>());
+        if (LocalModlistsDataGrid is not null) LocalModlistsDataGrid.SelectedItems.Clear();
         SetCloudModlistSelection(null);
         if (CloudModlistsDataGrid != null) CloudModlistsDataGrid.SelectedItem = null;
     }
@@ -7348,6 +7357,14 @@ public partial class MainWindow : Window
 
     private bool TrySaveModlist()
     {
+        return TrySaveModlist(null, out _);
+    }
+
+    private bool TrySaveModlist(Func<string?>? suggestedNameProvider, out string? savedFilePath)
+    {
+        string? capturedFilePath = null;
+        savedFilePath = null;
+
         var configOptions = BuildModConfigOptions();
         IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
 
@@ -7366,18 +7383,25 @@ public partial class MainWindow : Window
         }
 
         var modListDirectory = EnsureModListDirectory();
-        return TrySaveSnapshot(
+        var result = TrySaveSnapshot(
             modListDirectory,
             "Save Modlist",
             "Modlist files (*.json)|*.json|All files (*.*)|*.*",
             "Modlists must be saved inside the Modlists folder.",
             "Modlist",
-            null,
-            name => _viewModel?.ReportStatus($"Saved modlist \"{name}\"."),
+            suggestedNameProvider,
+            name =>
+            {
+                capturedFilePath = Path.Combine(modListDirectory, name + ".json");
+                _viewModel?.ReportStatus($"Saved modlist \"{name}\".");
+            },
             "modlist",
             true,
             true,
             includedConfigurations);
+
+        savedFilePath = capturedFilePath;
+        return result;
     }
 
     private bool TrySaveAutomaticModlist(string requestedName, out string savedName, out string filePath)
@@ -7678,7 +7702,19 @@ public partial class MainWindow : Window
 
         if (prompt == MessageBoxResult.Cancel) return false;
 
-        if (prompt == MessageBoxResult.Yes) return TrySaveModlist();
+        if (prompt == MessageBoxResult.Yes)
+        {
+            var result = TrySaveModlist(null, out var savedFilePath);
+            if (result)
+            {
+                if (!string.IsNullOrWhiteSpace(savedFilePath))
+                    RefreshLocalModlists(true, new[] { savedFilePath });
+                else
+                    RefreshLocalModlists(true);
+            }
+
+            return result;
+        }
 
         return true;
     }
@@ -8088,7 +8124,13 @@ public partial class MainWindow : Window
 
     private void SaveModlistMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        TrySaveModlist();
+        if (TrySaveModlist(null, out var savedFilePath))
+        {
+            if (!string.IsNullOrWhiteSpace(savedFilePath))
+                RefreshLocalModlists(true, new[] { savedFilePath });
+            else
+                RefreshLocalModlists(true);
+        }
     }
 
     private Task SaveModlistToCloudAsync()
@@ -8329,6 +8371,7 @@ public partial class MainWindow : Window
     {
         Dispatcher.InvokeAsync(() =>
         {
+            RefreshLocalModlists(true);
             if (_viewModel?.IsViewingCloudModlists == true) _ = RefreshCloudModlistsAsync(true);
         }, DispatcherPriority.Background);
     }
@@ -8368,13 +8411,195 @@ public partial class MainWindow : Window
                 string.Equals(entry.OwnerId, currentUserId, StringComparison.Ordinal))
                 continue;
 
-            var metadata = ExtractCloudModlistMetadata(entry.ContentJson);
+            var metadata = ExtractModlistMetadata(entry.ContentJson);
             if (metadata.Uploader is not null &&
                 string.Equals(metadata.Uploader, trimmedUploader, StringComparison.OrdinalIgnoreCase))
                 return false;
         }
 
         return true;
+    }
+
+    private void LocalModlistsDataGrid_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (LocalModlistsDataGrid is null)
+        {
+            SetLocalModlistSelection(Array.Empty<LocalModlistListEntry>());
+            return;
+        }
+
+        var selectedEntries = LocalModlistsDataGrid.SelectedItems
+            .OfType<LocalModlistListEntry>()
+            .ToList();
+
+        SetLocalModlistSelection(selectedEntries);
+    }
+
+    private void SaveLocalModlistButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var preservedSelection = _selectedLocalModlists
+            .Where(entry => entry is not null && !string.IsNullOrWhiteSpace(entry.FilePath))
+            .Select(entry => entry.FilePath)
+            .ToList();
+
+        Func<string?>? suggestedNameProvider = null;
+        if (_selectedLocalModlists.Count == 1 && _selectedLocalModlists[0] is LocalModlistListEntry selected)
+            suggestedNameProvider = () => selected.DisplayName;
+
+        if (TrySaveModlist(suggestedNameProvider, out var savedFilePath))
+        {
+            if (!string.IsNullOrWhiteSpace(savedFilePath)) preservedSelection.Add(savedFilePath);
+            RefreshLocalModlists(true, preservedSelection);
+        }
+    }
+
+    private void DeleteLocalModlistsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedLocalModlists.Count == 0) return;
+
+        var entries = _selectedLocalModlists
+            .Where(entry => entry is not null && !string.IsNullOrWhiteSpace(entry.FilePath))
+            .ToList();
+
+        if (entries.Count == 0) return;
+
+        string message;
+        if (entries.Count == 1)
+        {
+            var name = entries[0].DisplayName;
+            message = $"Are you sure you want to delete the modlist \"{name}\"? This cannot be undone.";
+        }
+        else
+        {
+            message = $"Are you sure you want to delete the {entries.Count} selected modlists? This cannot be undone.";
+        }
+
+        var confirmation = WpfMessageBox.Show(
+            this,
+            message,
+            "Delete Modlists",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (confirmation != MessageBoxResult.Yes) return;
+
+        var errors = new List<string>();
+        var deletedCount = 0;
+
+        foreach (var entry in entries)
+        {
+            try
+            {
+                if (!File.Exists(entry.FilePath)) continue;
+                File.Delete(entry.FilePath);
+                deletedCount++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                errors.Add($"{entry.DisplayName}: {ex.Message}");
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            var summary = string.Join("\n", errors.Select(err => $"• {err}"));
+            WpfMessageBox.Show(
+                this,
+                "Some modlists could not be deleted:\n" + summary,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        else if (deletedCount > 0)
+        {
+            var statusMessage = deletedCount == 1
+                ? "Deleted local modlist."
+                : $"Deleted {deletedCount} local modlists.";
+            _viewModel?.ReportStatus(statusMessage);
+        }
+
+        RefreshLocalModlists(true, Array.Empty<string>());
+    }
+
+    private void ModifyLocalModlistButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedLocalModlists.Count != 1) return;
+
+        var entry = _selectedLocalModlists[0];
+        if (entry is null || string.IsNullOrWhiteSpace(entry.FilePath)) return;
+
+        var dialog = new LocalModlistEditDialog(this, entry.DisplayName, entry.Description, entry.Version);
+        var dialogResult = dialog.ShowDialog();
+        if (dialogResult != true) return;
+
+        string json;
+        try
+        {
+            json = File.ReadAllText(entry.FilePath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            WpfMessageBox.Show(
+                this,
+                $"Failed to read the modlist:\n{ex.Message}",
+                "Modify Modlist",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        if (!PdfModlistSerializer.TryDeserializeFromJson(json, out var preset, out var errorMessage) || preset is null)
+        {
+            var message = string.IsNullOrWhiteSpace(errorMessage)
+                ? "The modlist could not be read."
+                : errorMessage!;
+            WpfMessageBox.Show(
+                this,
+                message,
+                "Modify Modlist",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        var updatedName = dialog.ModlistName?.Trim();
+        var updatedDescription = string.IsNullOrWhiteSpace(dialog.ModlistDescription)
+            ? null
+            : dialog.ModlistDescription!.Trim();
+        var updatedVersion = string.IsNullOrWhiteSpace(dialog.ModlistVersion)
+            ? null
+            : dialog.ModlistVersion!.Trim();
+
+        preset.Name = updatedName;
+        preset.Description = updatedDescription;
+        preset.Version = updatedVersion;
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
+        try
+        {
+            var updatedJson = JsonSerializer.Serialize(preset, options);
+            File.WriteAllText(entry.FilePath, updatedJson);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            WpfMessageBox.Show(
+                this,
+                $"Failed to update the modlist:\n{ex.Message}",
+                "Modify Modlist",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        var statusName = string.IsNullOrWhiteSpace(updatedName) ? entry.DisplayName : updatedName!;
+        _viewModel?.ReportStatus($"Updated modlist \"{statusName}\".");
+        RefreshLocalModlists(true, new[] { entry.FilePath });
     }
 
     private async void RefreshCloudModlistsButton_OnClick(object sender, RoutedEventArgs e)
@@ -9464,12 +9689,12 @@ public partial class MainWindow : Window
             if (!includeEmptySlots && !isOccupied) continue;
 
             string? json = null;
-            var metadata = CloudModlistMetadata.Empty;
+            var metadata = ModlistMetadata.Empty;
             if (isOccupied)
                 try
                 {
                     json = await store.LoadAsync(slotKey);
-                    metadata = ExtractCloudModlistMetadata(json);
+                    metadata = ExtractModlistMetadata(json);
                 }
                 catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException
                                                or TaskCanceledException)
@@ -9485,6 +9710,141 @@ public partial class MainWindow : Window
         }
 
         return result;
+    }
+
+    private void RefreshLocalModlists(bool force, IReadOnlyCollection<string>? preferredSelection = null)
+    {
+        if (!force && _localModlistsLoaded) return;
+
+        IReadOnlyList<LocalModlistListEntry> entries;
+        List<string> errors;
+
+        try
+        {
+            entries = BuildLocalModlistEntries(out errors);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            WpfMessageBox.Show($"Failed to read local modlists:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            entries = Array.Empty<LocalModlistListEntry>();
+            errors = new List<string>();
+        }
+
+        _viewModel?.ReplaceLocalModlists(entries);
+        _localModlistsLoaded = true;
+
+        var preferred = preferredSelection is not null
+            ? new HashSet<string>(preferredSelection.Where(path => !string.IsNullOrWhiteSpace(path)),
+                StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(_selectedLocalModlists
+                .Where(entry => !string.IsNullOrWhiteSpace(entry?.FilePath))
+                .Select(entry => entry.FilePath), StringComparer.OrdinalIgnoreCase);
+
+        if (LocalModlistsDataGrid is not null)
+        {
+            LocalModlistsDataGrid.SelectedItems.Clear();
+
+            if (preferred.Count > 0)
+            {
+                foreach (var item in LocalModlistsDataGrid.Items.OfType<LocalModlistListEntry>())
+                    if (!string.IsNullOrWhiteSpace(item?.FilePath) && preferred.Contains(item.FilePath))
+                        LocalModlistsDataGrid.SelectedItems.Add(item);
+            }
+        }
+
+        if (LocalModlistsDataGrid is not null && LocalModlistsDataGrid.SelectedItems.Count > 0)
+        {
+            var selected = LocalModlistsDataGrid.SelectedItems.OfType<LocalModlistListEntry>().ToList();
+            SetLocalModlistSelection(selected);
+        }
+        else
+        {
+            SetLocalModlistSelection(Array.Empty<LocalModlistListEntry>());
+        }
+
+        if (errors.Count > 0)
+        {
+            var summary = string.Join("\n", errors.Select(error => $"• {error}"));
+            WpfMessageBox.Show(
+                this,
+                "Some local modlists could not be loaded:\n" + summary,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private IReadOnlyList<LocalModlistListEntry> BuildLocalModlistEntries(out List<string> errors)
+    {
+        errors = new List<string>();
+
+        var directory = EnsureModListDirectory();
+        if (!Directory.Exists(directory)) return Array.Empty<LocalModlistListEntry>();
+
+        var list = new List<LocalModlistListEntry>();
+
+        foreach (var filePath in Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
+        {
+            if (TryCreateLocalModlistEntry(filePath, out var entry, out var error))
+            {
+                if (entry is not null) list.Add(entry);
+            }
+            else if (!string.IsNullOrWhiteSpace(error))
+            {
+                errors.Add($"{Path.GetFileName(filePath)}: {error}");
+            }
+        }
+
+        list.Sort((left, right) =>
+        {
+            var compare = string.Compare(left.DisplayName, right.DisplayName, StringComparison.OrdinalIgnoreCase);
+            if (compare != 0) return compare;
+
+            return string.Compare(left.FilePath, right.FilePath, StringComparison.OrdinalIgnoreCase);
+        });
+
+        return list;
+    }
+
+    private bool TryCreateLocalModlistEntry(string filePath, out LocalModlistListEntry? entry, out string? error)
+    {
+        entry = null;
+        error = null;
+
+        try
+        {
+            var json = File.ReadAllText(filePath);
+            if (!PdfModlistSerializer.TryDeserializeFromJson(json, out var preset, out var errorMessage))
+            {
+                error = string.IsNullOrWhiteSpace(errorMessage)
+                    ? "The file is not a valid SVSM modlist."
+                    : errorMessage;
+                return false;
+            }
+
+            var metadata = ExtractModlistMetadata(json);
+            var mods = metadata.Mods ?? Array.Empty<string>();
+            var lastWriteUtc = File.GetLastWriteTimeUtc(filePath);
+            DateTimeOffset? lastModified = lastWriteUtc == DateTime.MinValue
+                ? null
+                : new DateTimeOffset(lastWriteUtc, TimeSpan.Zero);
+
+            var name = metadata.Name ?? preset?.Name;
+            var description = metadata.Description ?? preset?.Description;
+            var version = metadata.Version ?? preset?.Version;
+            var uploader = metadata.Uploader ?? preset?.Uploader;
+
+            entry = new LocalModlistListEntry(filePath, name, description, version, uploader, mods, lastModified);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            error = ex.Message;
+            return false;
+        }
     }
 
     private async Task RefreshCloudModlistsAsync(bool force)
@@ -9533,7 +9893,7 @@ public partial class MainWindow : Window
             if (!seen.Add(entry.RegistryKey)) continue;
 
             var slotLabel = FormatCloudSlotLabel(entry.SlotKey);
-            var metadata = ExtractCloudModlistMetadata(entry.ContentJson);
+            var metadata = ExtractModlistMetadata(entry.ContentJson);
             list.Add(new CloudModlistListEntry(
                 entry.OwnerId,
                 entry.SlotKey,
@@ -9559,6 +9919,26 @@ public partial class MainWindow : Window
         });
 
         return list;
+    }
+
+    private void SetLocalModlistSelection(IReadOnlyList<LocalModlistListEntry> selection)
+    {
+        _selectedLocalModlists.Clear();
+
+        if (selection is not null)
+            foreach (var entry in selection)
+                if (entry is not null)
+                    _selectedLocalModlists.Add(entry);
+
+        var primary = _selectedLocalModlists.FirstOrDefault();
+
+        if (SelectedLocalModlistTitle is not null)
+            SelectedLocalModlistTitle.Text = primary?.DisplayName ?? string.Empty;
+
+        if (SelectedLocalModlistDescription is not null)
+            SelectedLocalModlistDescription.Text = primary?.Description ?? string.Empty;
+
+        UpdateLocalModlistControlsEnabledState();
     }
 
     private void SetCloudModlistSelection(CloudModlistListEntry? entry)
@@ -9603,6 +9983,17 @@ public partial class MainWindow : Window
             var hasSelection = _selectedCloudModlist is not null;
             InstallCloudModlistButton.IsEnabled = internetEnabled && hasSelection;
         }
+    }
+
+    private void UpdateLocalModlistControlsEnabledState()
+    {
+        var hasSelection = _selectedLocalModlists.Count > 0;
+
+        if (DeleteLocalModlistsButton is not null)
+            DeleteLocalModlistsButton.IsEnabled = hasSelection;
+
+        if (ModifyLocalModlistButton is not null)
+            ModifyLocalModlistButton.IsEnabled = _selectedLocalModlists.Count == 1;
     }
 
     private async Task RefreshManagerUpdateLinkAsync()
@@ -9670,7 +10061,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private static string BuildCloudSlotDisplay(string slotKey, CloudModlistMetadata metadata, bool isOccupied)
+    private static string BuildCloudSlotDisplay(string slotKey, ModlistMetadata metadata, bool isOccupied)
     {
         if (!isOccupied) return $"{FormatCloudSlotLabel(slotKey)} (Empty)";
 
@@ -9692,17 +10083,17 @@ public partial class MainWindow : Window
 
     private static string? ExtractModlistName(string? json)
     {
-        return ExtractCloudModlistMetadata(json).Name;
+        return ExtractModlistMetadata(json).Name;
     }
 
-    private static CloudModlistMetadata ExtractCloudModlistMetadata(string? json)
+    private static ModlistMetadata ExtractModlistMetadata(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json)) return CloudModlistMetadata.Empty;
+        if (string.IsNullOrWhiteSpace(json)) return ModlistMetadata.Empty;
 
         try
         {
             using var document = JsonDocument.Parse(json);
-            if (document.RootElement.ValueKind != JsonValueKind.Object) return CloudModlistMetadata.Empty;
+            if (document.RootElement.ValueKind != JsonValueKind.Object) return ModlistMetadata.Empty;
 
             var root = document.RootElement;
             var name = TryGetTrimmedProperty(root, "name");
@@ -9727,11 +10118,11 @@ public partial class MainWindow : Window
                     mods.Add(display);
                 }
 
-            return new CloudModlistMetadata(name, description, version, uploader, mods);
+            return new ModlistMetadata(name, description, version, uploader, mods);
         }
         catch (JsonException)
         {
-            return CloudModlistMetadata.Empty;
+            return ModlistMetadata.Empty;
         }
     }
 
@@ -11554,11 +11945,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private sealed class CloudModlistMetadata
+    private sealed class ModlistMetadata
     {
-        public static readonly CloudModlistMetadata Empty = new(null, null, null, null, Array.Empty<string>());
+        public static readonly ModlistMetadata Empty = new(null, null, null, null, Array.Empty<string>());
 
-        public CloudModlistMetadata(string? name, string? description, string? version, string? uploader,
+        public ModlistMetadata(string? name, string? description, string? version, string? uploader,
             IReadOnlyList<string> mods)
         {
             Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim();

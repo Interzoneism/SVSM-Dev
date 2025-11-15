@@ -42,6 +42,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly RelayCommand _clearSearchCommand;
     private readonly ClientSettingsWatcher _clientSettingsWatcher;
     private readonly ObservableCollection<CloudModlistListEntry> _cloudModlists = new();
+    private readonly ObservableCollection<LocalModlistListEntry> _localModlists = new();
     private readonly UserConfigurationService _configuration;
     private readonly ModDatabaseService _databaseService;
     private readonly ModDiscoveryService _discoveryService;
@@ -175,6 +176,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ModsView.Filter = FilterMod;
         SearchResultsView = CollectionViewSource.GetDefaultView(_searchResults);
         CloudModlistsView = CollectionViewSource.GetDefaultView(_cloudModlists);
+        LocalModlistsView = CollectionViewSource.GetDefaultView(_localModlists);
         InstalledTagFilters = new ReadOnlyObservableCollection<TagFilterOptionViewModel>(_installedTagFilters);
         ModDatabaseTagFilters = new ReadOnlyObservableCollection<TagFilterOptionViewModel>(_modDatabaseTagFilters);
         ModDatabaseFetchLimitOptions = new ReadOnlyObservableCollection<int>(_modDatabaseFetchLimitOptions);
@@ -235,6 +237,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public ICollectionView SearchResultsView { get; }
 
     public ICollectionView CloudModlistsView { get; }
+
+    public ICollectionView LocalModlistsView { get; }
 
     public ReadOnlyObservableCollection<TagFilterOptionViewModel> InstalledTagFilters { get; }
 
@@ -423,6 +427,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public bool IsViewingInstalledMods => _viewSection == ViewSection.InstalledMods;
 
     public bool HasCloudModlists => _cloudModlists.Count > 0;
+
+    public bool HasLocalModlists => _localModlists.Count > 0;
 
     public bool CanLoadMoreModDatabaseResults
     {
@@ -1159,6 +1165,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         CloudModlistsView.Refresh();
         OnPropertyChanged(nameof(HasCloudModlists));
+    }
+
+    public void ReplaceLocalModlists(IEnumerable<LocalModlistListEntry>? entries)
+    {
+        _localModlists.Clear();
+
+        if (entries is not null)
+            foreach (var entry in entries)
+                if (entry is not null)
+                    _localModlists.Add(entry);
+
+        LocalModlistsView.Refresh();
+        OnPropertyChanged(nameof(HasLocalModlists));
     }
 
     public IReadOnlyList<string> GetCurrentDisabledEntries()
