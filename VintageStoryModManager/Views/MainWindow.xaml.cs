@@ -5179,6 +5179,7 @@ public partial class MainWindow : Window
             configOptions,
             GetUploaderNameForPdf(),
             defaultVersion: null,
+            defaultGameVersion: _viewModel?.InstalledGameVersion,
             SaveInstalledModsDialogResult.SavePdf)
         {
             Owner = this
@@ -5193,6 +5194,7 @@ public partial class MainWindow : Window
         var uploaderName = metadataDialog.CreatedBy;
         if (string.IsNullOrWhiteSpace(uploaderName)) uploaderName = GetUploaderNameForPdf();
         else uploaderName = uploaderName!.Trim();
+        var gameVersion = ResolveGameVersion(metadataDialog.VintageStoryVersion);
 
         var selectedConfigOptions = metadataDialog.GetSelectedConfigOptions();
         var includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
@@ -5203,6 +5205,7 @@ public partial class MainWindow : Window
             description,
             uploaderName,
             includedConfigurations,
+            gameVersion,
             mods);
     }
 
@@ -5212,6 +5215,7 @@ public partial class MainWindow : Window
         string? description,
         string uploaderName,
         IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations,
+        string? gameVersion,
         IReadOnlyList<ModListItemViewModel>? preFetchedMods = null)
     {
         if (_viewModel is null)
@@ -5269,11 +5273,13 @@ public partial class MainWindow : Window
         var presetName = string.IsNullOrWhiteSpace(listName)
             ? "Installed Mods"
             : listName.Trim();
+        var resolvedGameVersion = ResolveGameVersion(gameVersion);
         var serializable = BuildSerializablePreset(
             presetName,
             true,
             true,
-            includedConfigurations);
+            includedConfigurations,
+            resolvedGameVersion);
 
         serializable.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         serializable.Version = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
@@ -5294,7 +5300,7 @@ public partial class MainWindow : Window
                 version,
                 description,
                 normalizedUploader,
-                _viewModel.InstalledGameVersion,
+                resolvedGameVersion,
                 mods,
                 serializable,
                 serializableConfigList);
@@ -7209,7 +7215,11 @@ public partial class MainWindow : Window
         if (!string.Equals(entryName, Path.GetFileNameWithoutExtension(filePath), StringComparison.Ordinal))
             filePath = Path.Combine(directory, entryName + ".json");
 
-        var serializable = BuildSerializablePreset(entryName, includeModVersions, exclusive, includedConfigurations);
+        var serializable = BuildSerializablePreset(entryName,
+            includeModVersions,
+            exclusive,
+            includedConfigurations,
+            ResolveGameVersion(null));
         configureSerializable?.Invoke(serializable);
 
         try
@@ -7241,7 +7251,8 @@ public partial class MainWindow : Window
         string entryName,
         bool includeModVersions,
         bool exclusive,
-        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations = null)
+        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations = null,
+        string? gameVersion = null)
     {
         if (_viewModel is null) throw new InvalidOperationException("View model is not initialized.");
 
@@ -7290,8 +7301,17 @@ public partial class MainWindow : Window
             IncludeModStatus = true,
             IncludeModVersions = includeModVersions ? true : null,
             Exclusive = exclusive ? true : null,
-            Mods = mods
+            Mods = mods,
+            GameVersion = string.IsNullOrWhiteSpace(gameVersion) ? null : gameVersion.Trim()
         };
+    }
+
+    private string? ResolveGameVersion(string? requestedVersion)
+    {
+        if (!string.IsNullOrWhiteSpace(requestedVersion)) return requestedVersion.Trim();
+
+        var installed = _viewModel?.InstalledGameVersion;
+        return string.IsNullOrWhiteSpace(installed) ? null : installed!.Trim();
     }
 
     private static SerializableConfigList? BuildSerializableConfigList(
@@ -7436,6 +7456,7 @@ public partial class MainWindow : Window
             configOptions,
             GetUploaderNameForPdf(),
             defaultVersion: null,
+            defaultGameVersion: _viewModel?.InstalledGameVersion,
             SaveInstalledModsDialogResult.SaveJson)
         {
             Owner = this
@@ -7451,6 +7472,7 @@ public partial class MainWindow : Window
         createdBy = string.IsNullOrWhiteSpace(createdBy)
             ? GetUploaderNameForPdf()
             : createdBy!.Trim();
+        var gameVersion = ResolveGameVersion(metadataDialog.VintageStoryVersion);
 
         var selectedConfigOptions = metadataDialog.GetSelectedConfigOptions();
         var includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
@@ -7462,7 +7484,8 @@ public partial class MainWindow : Window
                 version,
                 description,
                 createdBy,
-                includedConfigurations);
+                includedConfigurations,
+                gameVersion);
         }
 
         try
@@ -7488,7 +7511,7 @@ public partial class MainWindow : Window
                 if (confirmation != MessageBoxResult.Yes) return false;
             }
 
-            var serializable = BuildSerializablePreset(entryName, true, true, includedConfigurations);
+            var serializable = BuildSerializablePreset(entryName, true, true, includedConfigurations, gameVersion);
             if (!string.IsNullOrWhiteSpace(listName)) serializable.Name = listName.Trim();
             serializable.Description = description;
             serializable.Version = version;
@@ -7532,7 +7555,7 @@ public partial class MainWindow : Window
         savedName = BuildSuggestedFileName(requestedName, "Modlist");
         filePath = Path.Combine(modListDirectory, savedName + ".json");
 
-        var serializable = BuildSerializablePreset(savedName, true, true);
+        var serializable = BuildSerializablePreset(savedName, true, true, gameVersion: ResolveGameVersion(null));
 
         try
         {
@@ -7842,6 +7865,7 @@ public partial class MainWindow : Window
         string? version,
         string uploader,
         IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations,
+        string? gameVersion,
         out string json)
     {
         json = string.Empty;
@@ -7849,7 +7873,7 @@ public partial class MainWindow : Window
         var trimmedName = string.IsNullOrWhiteSpace(modlistName) ? null : modlistName.Trim();
         if (string.IsNullOrEmpty(trimmedName) || _viewModel is null) return false;
 
-        var serializable = BuildSerializablePreset(trimmedName, true, true, includedConfigurations);
+        var serializable = BuildSerializablePreset(trimmedName, true, true, includedConfigurations, gameVersion);
         serializable.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         serializable.Version = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
         serializable.Uploader = string.IsNullOrWhiteSpace(uploader) ? null : uploader.Trim();
@@ -7928,7 +7952,8 @@ public partial class MainWindow : Window
                 displayName,
                 true,
                 true,
-                includedConfigurations);
+                includedConfigurations,
+                ResolveGameVersion(null));
 
             var options = new JsonSerializerOptions
             {
@@ -8098,7 +8123,7 @@ public partial class MainWindow : Window
         string? modlistVersion,
         string? description,
         string uploaderName,
-        string? installedGameVersion,
+        string? gameVersion,
         IReadOnlyList<ModListItemViewModel> mods,
         SerializablePreset serializable,
         SerializableConfigList? configList)
@@ -8108,7 +8133,7 @@ public partial class MainWindow : Window
         var normalizedListName = string.IsNullOrWhiteSpace(listName) ? "Installed Mods" : listName.Trim();
         var normalizedVersion = string.IsNullOrWhiteSpace(modlistVersion) ? null : modlistVersion.Trim();
         var normalizedDescription = description?.Trim() ?? string.Empty;
-        var gameVersion = string.IsNullOrWhiteSpace(installedGameVersion) ? "Unknown" : installedGameVersion.Trim();
+        var resolvedGameVersion = string.IsNullOrWhiteSpace(gameVersion) ? "Unknown" : gameVersion.Trim();
         var encodedModlist = PdfModlistSerializer.SerializeToBase64(serializable);
         var encodedConfigList =
             configList is null ? null : PdfModlistSerializer.SerializeConfigListToBase64(configList);
@@ -8156,7 +8181,7 @@ public partial class MainWindow : Window
                             .FontColor(Colors.Blue.Medium);
                         text.Span(" to easily load this pdf as a modlist!");
                     });
-                    column.Item().Text($"For Vintage Story {gameVersion}").FontSize(14);
+                    column.Item().Text($"Made for VS version {resolvedGameVersion}").FontSize(14);
                     column.Item().Text($"Modlist by {uploaderName}").FontSize(14);
                     column.Item().Text(text =>
                     {
@@ -8244,7 +8269,11 @@ public partial class MainWindow : Window
         {
             var suggestedName = BuildCloudModlistName();
             var configOptions = BuildModConfigOptions();
-            var detailsDialog = new CloudModlistDetailsDialog(this, suggestedName, configOptions);
+            var detailsDialog = new CloudModlistDetailsDialog(
+                this,
+                suggestedName,
+                configOptions,
+                _viewModel?.InstalledGameVersion);
             var dialogResult = detailsDialog.ShowDialog();
             if (dialogResult != true) return;
 
@@ -8258,7 +8287,14 @@ public partial class MainWindow : Window
             var selectedConfigOptions = detailsDialog.GetSelectedConfigOptions();
             includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
 
-            if (!TryBuildCurrentModlistJson(modlistName, description, version, uploader, includedConfigurations,
+            var gameVersion = ResolveGameVersion(detailsDialog.ModlistGameVersion);
+
+            if (!TryBuildCurrentModlistJson(modlistName,
+                    description,
+                    version,
+                    uploader,
+                    includedConfigurations,
+                    gameVersion,
                     out var json)) return;
 
             var slots = await GetCloudModlistSlotsAsync(store, true, false);
@@ -8672,7 +8708,8 @@ public partial class MainWindow : Window
         var entry = _selectedLocalModlists[0];
         if (entry is null || string.IsNullOrWhiteSpace(entry.FilePath)) return;
 
-        var dialog = new LocalModlistEditDialog(this, entry.DisplayName, entry.Description, entry.Version);
+        var dialog = new LocalModlistEditDialog(this, entry.DisplayName, entry.Description, entry.Version,
+            entry.GameVersion);
         var dialogResult = dialog.ShowDialog();
         if (dialogResult != true) return;
 
@@ -8713,10 +8750,14 @@ public partial class MainWindow : Window
         var updatedVersion = string.IsNullOrWhiteSpace(dialog.ModlistVersion)
             ? null
             : dialog.ModlistVersion!.Trim();
+        var updatedGameVersion = string.IsNullOrWhiteSpace(dialog.ModlistGameVersion)
+            ? null
+            : dialog.ModlistGameVersion!.Trim();
 
         preset.Name = updatedName;
         preset.Description = updatedDescription;
         preset.Version = updatedVersion;
+        preset.GameVersion = updatedGameVersion;
 
         var options = new JsonSerializerOptions
         {
@@ -10060,7 +10101,10 @@ public partial class MainWindow : Window
         var version = metadata.Version ?? preset?.Version;
         var uploader = metadata.Uploader ?? preset?.Uploader;
 
-        entry = new LocalModlistListEntry(filePath, name, description, version, uploader, mods, lastModified);
+        var gameVersion = metadata.GameVersion ?? preset?.GameVersion;
+
+        entry = new LocalModlistListEntry(filePath, name, description, version, uploader, mods, lastModified,
+            gameVersion);
         return true;
     }
 
@@ -10121,7 +10165,8 @@ public partial class MainWindow : Window
                 metadata.Uploader,
                 metadata.Mods,
                 entry.ContentJson,
-                entry.DateAdded));
+                entry.DateAdded,
+                metadata.GameVersion));
         }
 
         list.Sort((left, right) =>
@@ -10330,6 +10375,8 @@ public partial class MainWindow : Window
             var version = TryGetTrimmedProperty(root, "version");
             var uploader = TryGetTrimmedProperty(root, "uploader")
                            ?? TryGetTrimmedProperty(root, "uploaderName");
+            var gameVersion = TryGetTrimmedProperty(root, "gameVersion")
+                              ?? TryGetTrimmedProperty(root, "vsVersion");
 
             var mods = new List<string>();
             if (root.TryGetProperty("mods", out var modsElement) && modsElement.ValueKind == JsonValueKind.Array)
@@ -10347,7 +10394,7 @@ public partial class MainWindow : Window
                     mods.Add(display);
                 }
 
-            return new ModlistMetadata(name, description, version, uploader, mods);
+            return new ModlistMetadata(name, description, version, uploader, mods, gameVersion);
         }
         catch (JsonException)
         {
@@ -12176,16 +12223,17 @@ public partial class MainWindow : Window
 
     private sealed class ModlistMetadata
     {
-        public static readonly ModlistMetadata Empty = new(null, null, null, null, Array.Empty<string>());
+        public static readonly ModlistMetadata Empty = new(null, null, null, null, Array.Empty<string>(), null);
 
         public ModlistMetadata(string? name, string? description, string? version, string? uploader,
-            IReadOnlyList<string> mods)
+            IReadOnlyList<string> mods, string? gameVersion)
         {
             Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
             Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
             Version = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
             Uploader = string.IsNullOrWhiteSpace(uploader) ? null : uploader.Trim();
             Mods = mods ?? Array.Empty<string>();
+            GameVersion = string.IsNullOrWhiteSpace(gameVersion) ? null : gameVersion.Trim();
         }
 
         public string? Name { get; }
@@ -12197,6 +12245,8 @@ public partial class MainWindow : Window
         public string? Uploader { get; }
 
         public IReadOnlyList<string> Mods { get; }
+
+        public string? GameVersion { get; }
     }
 
     private sealed record ModConfigurationSnapshot(string FileName, string Content);

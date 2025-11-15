@@ -17,7 +17,8 @@ public sealed class CloudModlistListEntry
         string? uploader,
         IReadOnlyList<string> mods,
         string contentJson,
-        DateTimeOffset? dateAdded)
+        DateTimeOffset? dateAdded,
+        string? gameVersion)
     {
         OwnerId = ownerId ?? throw new ArgumentNullException(nameof(ownerId));
         SlotKey = slotKey ?? throw new ArgumentNullException(nameof(slotKey));
@@ -29,6 +30,7 @@ public sealed class CloudModlistListEntry
         Mods = mods?.ToList() ?? throw new ArgumentNullException(nameof(mods));
         ContentJson = contentJson ?? throw new ArgumentNullException(nameof(contentJson));
         DateAdded = dateAdded;
+        GameVersion = string.IsNullOrWhiteSpace(gameVersion) ? null : gameVersion.Trim();
     }
 
     public string OwnerId { get; }
@@ -51,6 +53,8 @@ public sealed class CloudModlistListEntry
 
     public DateTimeOffset? DateAdded { get; }
 
+    public string? GameVersion { get; }
+
     public string DisplayName => Name ?? "Unnamed Modlist";
 
     public string ModsSummary => Mods.Count == 0
@@ -60,4 +64,6 @@ public sealed class CloudModlistListEntry
             : $"{Mods.Count} mods";
 
     public string DateAddedDisplay => DateAdded?.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) ?? "—";
+
+    public string GameVersionDisplay => string.IsNullOrWhiteSpace(GameVersion) ? "—" : GameVersion!;
 }

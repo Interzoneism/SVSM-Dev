@@ -17,6 +17,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -57,13 +58,28 @@
                  SelectionTextBrush="{DynamicResource Brush.Dialog.TextBox.SelectionForeground}"
                  CaretBrush="{DynamicResource Brush.Dialog.TextBox.Caret}" />
 
-        <TextBlock Text="Description:"
+        <TextBlock Text="VS Version:"
                    Grid.Row="2"
+                   Grid.Column="0"
+                   Margin="0,0,12,12"
+                   VerticalAlignment="Center" />
+        <TextBox x:Name="GameVersionTextBox"
+                 Grid.Row="2"
+                 Grid.Column="1"
+                 Margin="0,0,0,12"
+                 Background="{DynamicResource Brush.Dialog.TextBox.Background}"
+                 BorderBrush="{DynamicResource Brush.Dialog.TextBox.Border}"
+                 SelectionBrush="{DynamicResource Brush.Dialog.TextBox.SelectionBackground}"
+                 SelectionTextBrush="{DynamicResource Brush.Dialog.TextBox.SelectionForeground}"
+                 CaretBrush="{DynamicResource Brush.Dialog.TextBox.Caret}" />
+
+        <TextBlock Text="Description:"
+                   Grid.Row="3"
                    Grid.Column="0"
                    Margin="0,0,12,6"
                    VerticalAlignment="Top" />
         <TextBox x:Name="DescriptionTextBox"
-                 Grid.Row="2"
+                 Grid.Row="3"
                  Grid.Column="0"
                  Grid.ColumnSpan="2"
                  MinHeight="160"
@@ -77,7 +93,7 @@
                  SelectionTextBrush="{DynamicResource Brush.Dialog.TextBox.SelectionForeground}"
                  CaretBrush="{DynamicResource Brush.Dialog.TextBox.Caret}" />
 
-        <StackPanel Grid.Row="3"
+        <StackPanel Grid.Row="4"
                     Grid.Column="0"
                     Grid.ColumnSpan="2"
                     Orientation="Horizontal"

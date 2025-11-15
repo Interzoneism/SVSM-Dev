@@ -16,6 +16,7 @@ public partial class SaveInstalledModsDialog : Window
         IEnumerable<ModConfigOption>? configOptions = null,
         string? defaultCreatedBy = null,
         string? defaultVersion = null,
+        string? defaultGameVersion = null,
         SaveInstalledModsDialogResult defaultAction = SaveInstalledModsDialogResult.SaveJson)
     {
         ConfigOptions = new ObservableCollection<ModConfigOption>(
@@ -27,6 +28,7 @@ public partial class SaveInstalledModsDialog : Window
 
         if (!string.IsNullOrWhiteSpace(defaultListName)) NameTextBox.Text = defaultListName.Trim();
         if (!string.IsNullOrWhiteSpace(defaultVersion)) VersionTextBox.Text = defaultVersion.Trim();
+        if (!string.IsNullOrWhiteSpace(defaultGameVersion)) GameVersionTextBox.Text = defaultGameVersion.Trim();
 
         if (!string.IsNullOrWhiteSpace(defaultCreatedBy))
             CreatedByTextBox.Text = defaultCreatedBy.Trim();
@@ -47,6 +49,8 @@ public partial class SaveInstalledModsDialog : Window
     public string ListName => NameTextBox.Text.Trim();
 
     public string? Version => NormalizeOptionalText(VersionTextBox.Text);
+
+    public string? VintageStoryVersion => NormalizeOptionalText(GameVersionTextBox.Text);
 
     public string? Description => NormalizeOptionalText(DescriptionTextBox.Text);
 
