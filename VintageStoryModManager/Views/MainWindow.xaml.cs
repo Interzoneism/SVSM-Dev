@@ -5174,21 +5174,12 @@ public partial class MainWindow : Window
 
         var configOptions = BuildModConfigOptions();
 
-        if (configOptions.Count > 0)
-        {
-            var configDialog = new ModConfigSelectionDialog(configOptions)
-            {
-                Owner = this
-            };
-
-            var configResult = configDialog.ShowDialog();
-            if (configResult != true) return;
-        }
-
         var metadataDialog = new SaveInstalledModsDialog(
             BuildCloudModlistName(),
             configOptions,
-            GetUploaderNameForPdf())
+            GetUploaderNameForPdf(),
+            defaultVersion: null,
+            SaveInstalledModsDialogResult.SavePdf)
         {
             Owner = this
         };
@@ -5197,12 +5188,52 @@ public partial class MainWindow : Window
         if (metadataResult != true) return;
 
         var listName = metadataDialog.ListName;
+        var version = metadataDialog.Version;
         var description = metadataDialog.Description;
-        var uploaderName = metadataDialog.CreatedBy ?? string.Empty;
+        var uploaderName = metadataDialog.CreatedBy;
         if (string.IsNullOrWhiteSpace(uploaderName)) uploaderName = GetUploaderNameForPdf();
+        else uploaderName = uploaderName!.Trim();
 
         var selectedConfigOptions = metadataDialog.GetSelectedConfigOptions();
         var includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
+
+        TrySaveInstalledModsPdf(
+            listName,
+            version,
+            description,
+            uploaderName,
+            includedConfigurations,
+            mods);
+    }
+
+    private bool TrySaveInstalledModsPdf(
+        string listName,
+        string? version,
+        string? description,
+        string uploaderName,
+        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations,
+        IReadOnlyList<ModListItemViewModel>? preFetchedMods = null)
+    {
+        if (_viewModel is null)
+        {
+            WpfMessageBox.Show(
+                "Mods are still loading. Please try again once loading is complete.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return false;
+        }
+
+        var mods = preFetchedMods ?? _viewModel.GetInstalledModsSnapshot();
+        if (mods.Count == 0)
+        {
+            WpfMessageBox.Show(
+                "No installed mods were found to include in the PDF.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return false;
+        }
 
         var saveFileDialog = new SaveFileDialog
         {
@@ -5214,7 +5245,7 @@ public partial class MainWindow : Window
         };
 
         var saveResult = saveFileDialog.ShowDialog(this);
-        if (saveResult != true) return;
+        if (saveResult != true) return false;
 
         var filePath = saveFileDialog.FileName;
 
@@ -5227,15 +5258,25 @@ public partial class MainWindow : Window
             true,
             includedConfigurations);
 
+        serializable.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        serializable.Version = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
+        serializable.Uploader = string.IsNullOrWhiteSpace(uploaderName) ? null : uploaderName.Trim();
+        if (!string.IsNullOrWhiteSpace(listName)) serializable.Name = listName.Trim();
+
         var serializableConfigList = BuildSerializableConfigList(includedConfigurations);
+
+        var normalizedUploader = string.IsNullOrWhiteSpace(uploaderName)
+            ? GetUploaderNameForPdf()
+            : uploaderName.Trim();
 
         try
         {
             GenerateInstalledModsPdf(
                 filePath,
                 listName,
+                version,
                 description,
-                uploaderName,
+                normalizedUploader,
                 _viewModel.InstalledGameVersion,
                 mods,
                 serializable,
@@ -5248,6 +5289,8 @@ public partial class MainWindow : Window
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
+
+            return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException
                                        or PathTooLongException)
@@ -5266,6 +5309,8 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+
+        return false;
     }
 
     private void ManagerDataFolderMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -7109,7 +7154,8 @@ public partial class MainWindow : Window
         string failureContext,
         bool includeModVersions,
         bool exclusive,
-        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations = null)
+        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations = null,
+        Action<SerializablePreset>? configureSerializable = null)
     {
         if (_viewModel is null) return false;
 
@@ -7147,6 +7193,7 @@ public partial class MainWindow : Window
             filePath = Path.Combine(directory, entryName + ".json");
 
         var serializable = BuildSerializablePreset(entryName, includeModVersions, exclusive, includedConfigurations);
+        configureSerializable?.Invoke(serializable);
 
         try
         {
@@ -7362,34 +7409,61 @@ public partial class MainWindow : Window
 
     private bool TrySaveModlist(Func<string?>? suggestedNameProvider, out string? savedFilePath)
     {
-        string? capturedFilePath = null;
         savedFilePath = null;
+        string? capturedFilePath = null;
 
         var configOptions = BuildModConfigOptions();
-        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
+        var suggestedName = suggestedNameProvider?.Invoke();
 
-        if (configOptions.Count > 0)
+        var metadataDialog = new SaveInstalledModsDialog(
+            suggestedName,
+            configOptions,
+            GetUploaderNameForPdf(),
+            defaultVersion: null,
+            SaveInstalledModsDialogResult.SaveJson)
         {
-            var configDialog = new ModConfigSelectionDialog(configOptions)
-            {
-                Owner = this
-            };
+            Owner = this
+        };
 
-            var dialogResult = configDialog.ShowDialog();
-            if (dialogResult != true) return false;
+        var dialogResult = metadataDialog.ShowDialog();
+        if (dialogResult != true) return false;
 
-            var selectedConfigOptions = configDialog.GetSelectedOptions();
-            includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
+        var listName = metadataDialog.ListName;
+        var version = metadataDialog.Version;
+        var description = metadataDialog.Description;
+        var createdBy = metadataDialog.CreatedBy;
+        createdBy = string.IsNullOrWhiteSpace(createdBy)
+            ? GetUploaderNameForPdf()
+            : createdBy!.Trim();
+
+        var selectedConfigOptions = metadataDialog.GetSelectedConfigOptions();
+        var includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
+
+        if (metadataDialog.SelectedAction == SaveInstalledModsDialogResult.SavePdf)
+        {
+            return TrySaveInstalledModsPdf(
+                listName,
+                version,
+                description,
+                createdBy,
+                includedConfigurations);
         }
 
         var modListDirectory = EnsureModListDirectory();
+
+        string? SuggestedNameForDialog()
+        {
+            if (!string.IsNullOrWhiteSpace(listName)) return listName;
+            return string.IsNullOrWhiteSpace(suggestedName) ? null : suggestedName;
+        }
+
         var result = TrySaveSnapshot(
             modListDirectory,
             "Save Modlist",
             "Modlist files (*.json)|*.json|All files (*.*)|*.*",
             "Modlists must be saved inside the Modlists folder.",
             "Modlist",
-            suggestedNameProvider,
+            SuggestedNameForDialog,
             name =>
             {
                 capturedFilePath = Path.Combine(modListDirectory, name + ".json");
@@ -7398,7 +7472,16 @@ public partial class MainWindow : Window
             "modlist",
             true,
             true,
-            includedConfigurations);
+            includedConfigurations,
+            serializable =>
+            {
+                if (!string.IsNullOrWhiteSpace(listName)) serializable.Name = listName.Trim();
+                serializable.Description = description;
+                serializable.Version = version;
+                serializable.Uploader = string.IsNullOrWhiteSpace(createdBy)
+                    ? null
+                    : createdBy.Trim();
+            });
 
         savedFilePath = capturedFilePath;
         return result;
@@ -7996,6 +8079,7 @@ public partial class MainWindow : Window
     private static void GenerateInstalledModsPdf(
         string filePath,
         string listName,
+        string? modlistVersion,
         string? description,
         string uploaderName,
         string? installedGameVersion,
@@ -8006,6 +8090,7 @@ public partial class MainWindow : Window
         EnsureQuestPdfLicense();
 
         var normalizedListName = string.IsNullOrWhiteSpace(listName) ? "Installed Mods" : listName.Trim();
+        var normalizedVersion = string.IsNullOrWhiteSpace(modlistVersion) ? null : modlistVersion.Trim();
         var normalizedDescription = description?.Trim() ?? string.Empty;
         var gameVersion = string.IsNullOrWhiteSpace(installedGameVersion) ? "Unknown" : installedGameVersion.Trim();
         var encodedModlist = PdfModlistSerializer.SerializeToBase64(serializable);
@@ -8038,6 +8123,10 @@ public partial class MainWindow : Window
                     column.Spacing(6);
 
                     column.Item().Text(normalizedListName).FontSize(32).Bold();
+                    if (!string.IsNullOrEmpty(normalizedVersion))
+                        column.Item().Text($"Version: {normalizedVersion}")
+                            .FontSize(12)
+                            .Italic();
                     column.Item().Text(text =>
                     {
                         text.DefaultTextStyle(style => style.FontSize(10));
