@@ -2386,20 +2386,16 @@
                                 BorderThickness="0"
                                 ItemContainerStyle="{StaticResource IMM.ModlistsTabItemStyle}">
                         <TabItem Header="Local">
-                            <Grid Height="646">
+                            <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
                                 <Rectangle Grid.Row="0"
-                                           Margin="0,0,0,207"
                                            Fill="{DynamicResource Brush.DataGrid.Background}" />
 
                                 <Border Grid.Row="0"
-
-                                        Margin="0,0,0,207"
-
                                         Background="Transparent"
                                         BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
                                         BorderThickness="0,0,2,2"
@@ -2717,8 +2713,8 @@
                                     </TextBlock.Style>
                                 </TextBlock>
 
-                                <Border
-                                        Margin="10,466,0,0"
+                                <Border Grid.Row="1"
+                                        Margin="10,16,0,0"
                                         Background="{DynamicResource Brush.ModCard.Background.Active}"
                                         CornerRadius="10,10,10,10"
                                         Height="180"
@@ -2823,18 +2819,16 @@
                             </Grid>
                         </TabItem>
                         <TabItem Header="Online">
-                            <Grid Height="646">
+                            <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
                                 <Rectangle Grid.Row="0"
-                                           Margin="0,0,0,22"
                                            Fill="{DynamicResource Brush.DataGrid.Background}" />
 
                                 <Border Grid.Row="0"
-                                        Margin="0,0,0,22"
                                         Background="Transparent"
                                         BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
                                         BorderThickness="0,0,2,2"
