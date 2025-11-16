@@ -11,8 +11,6 @@
 		<AssetTargetFallback>$(AssetTargetFallback);net5.0-windows7.0;netcoreapp3.0</AssetTargetFallback>
 		<ApplicationIcon>SVSM.ico</ApplicationIcon>
 		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
-		<EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
-		<EnableDefaultPageItems>false</EnableDefaultPageItems>
 
 		<!-- What Windows/Task Manager shows -->
 		<FileDescription>Simple VS Manager</FileDescription>   <!-- Task Manager "Name" (File description) -->
@@ -34,94 +32,7 @@
 		<None Remove="Views\soilcorrect.png" />
 	</ItemGroup>
 	<ItemGroup>
-		<ApplicationDefinition Include="App.xaml">
-			<Generator>MSBuild:Compile</Generator>
-			<SubType>Designer</SubType>
-		</ApplicationDefinition>
-	</ItemGroup>
-
-	<ItemGroup>
-		<Page Include="Resources\Themes\DarkVsTheme.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\BulkCompatibilityPromptWindow.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\BulkUpdateChangelogWindow.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\MainWindow.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\ModConfigEditorWindow.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\CloudModlistDetailsDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\CloudModlistManagementDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\CloudModlistRenameDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\CloudSlotSelectionDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\CompatibilityResultsDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\DeleteGameProfilesDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\ExperimentalCompReviewDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\ExperimentalModDebugDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\GameProfileDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\GuideDialogWindow.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\HelpDialogWindow.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\LocalModlistEditDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\MessageDialogWindow.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\ModConfigSelectionDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\ModUsageNoIssuesDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\ModVoteDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\ModVoteReasonDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\RestoreBackupDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\SaveInstalledModsDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\ThemePaletteEditorDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\UpdateModsDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
-		<Page Include="Views\Dialogs\VintageStoryVersionSelectionDialog.xaml">
-			<Generator>MSBuild:Compile</Generator>
-		</Page>
+		<Page Remove="Resources\Themes\LightTheme.xaml" />
 	</ItemGroup>
 
 	<ItemGroup>
