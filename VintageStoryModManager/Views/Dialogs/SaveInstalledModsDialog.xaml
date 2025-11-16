@@ -24,6 +24,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -68,11 +69,26 @@
 
         <TextBlock Grid.Row="2"
                    Grid.Column="0"
+                   Margin="0,0,12,12"
+                   VerticalAlignment="Center"
+                   Text="VS Version:" />
+        <TextBox x:Name="GameVersionTextBox"
+                 Grid.Row="2"
+                 Grid.Column="1"
+                 Margin="0,0,0,12"
+                 Background="{DynamicResource Brush.Dialog.TextBox.Background}"
+                 BorderBrush="{DynamicResource Brush.Dialog.TextBox.Border}"
+                 SelectionBrush="{DynamicResource Brush.Dialog.TextBox.SelectionBackground}"
+                 SelectionTextBrush="{DynamicResource Brush.Dialog.TextBox.SelectionForeground}"
+                 CaretBrush="{DynamicResource Brush.Dialog.TextBox.Caret}" />
+
+        <TextBlock Grid.Row="3"
+                   Grid.Column="0"
                    Grid.ColumnSpan="2"
                    Margin="0,0,0,6"
                    Text="Modlist created by..." />
         <TextBox x:Name="CreatedByTextBox"
-                 Grid.Row="3"
+                 Grid.Row="4"
                  Grid.Column="0"
                  Grid.ColumnSpan="2"
                  Margin="0,0,0,12"
@@ -82,13 +98,13 @@
                  SelectionTextBrush="{DynamicResource Brush.Dialog.TextBox.SelectionForeground}"
                  CaretBrush="{DynamicResource Brush.Dialog.TextBox.Caret}" />
 
-        <TextBlock Grid.Row="4"
+        <TextBlock Grid.Row="5"
                    Grid.Column="0"
                    Grid.ColumnSpan="2"
                    Margin="0,0,0,6"
                    Text="Description:" />
         <TextBox x:Name="DescriptionTextBox"
-                 Grid.Row="5"
+                 Grid.Row="6"
                  Grid.Column="0"
                  Grid.ColumnSpan="2"
                  MinHeight="120"
@@ -103,7 +119,7 @@
 
         <Grid Grid.Row="0"
               Grid.Column="3"
-              Grid.RowSpan="6">
+              Grid.RowSpan="7">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -199,7 +215,7 @@
             </TextBlock>
         </Grid>
 
-        <StackPanel Grid.Row="6"
+        <StackPanel Grid.Row="7"
                     Grid.Column="0"
                     Grid.ColumnSpan="4"
                     Orientation="Horizontal"

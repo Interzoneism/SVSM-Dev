@@ -18,7 +18,8 @@ public sealed class LocalModlistListEntry
         string? version,
         string? uploader,
         IReadOnlyList<string> mods,
-        DateTimeOffset? lastModified)
+        DateTimeOffset? lastModified,
+        string? gameVersion)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
@@ -30,6 +31,7 @@ public sealed class LocalModlistListEntry
         Uploader = string.IsNullOrWhiteSpace(uploader) ? null : uploader.Trim();
         Mods = mods?.ToList() ?? throw new ArgumentNullException(nameof(mods));
         LastModified = lastModified;
+        GameVersion = string.IsNullOrWhiteSpace(gameVersion) ? null : gameVersion.Trim();
     }
 
     public string FilePath { get; }
@@ -48,6 +50,8 @@ public sealed class LocalModlistListEntry
 
     public DateTimeOffset? LastModified { get; }
 
+    public string? GameVersion { get; }
+
     public string DisplayName => string.IsNullOrWhiteSpace(Name)
         ? Path.GetFileNameWithoutExtension(FileName)
         : Name!;
@@ -61,4 +65,6 @@ public sealed class LocalModlistListEntry
             : $"{Mods.Count} mods";
 
     public string LastModifiedDisplay => LastModified?.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) ?? "—";
+
+    public string GameVersionDisplay => string.IsNullOrWhiteSpace(GameVersion) ? "—" : GameVersion!;
 }
