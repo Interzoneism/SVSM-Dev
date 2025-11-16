@@ -2322,7 +2322,7 @@
                 <Grid x:Name="Modlists" Grid.RowSpan="2" Margin="0,0,-29,0">
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -2334,18 +2334,18 @@
                     <TabControl x:Name="ModlistsTabControl"
                                 Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
                         <TabItem Header="Local">
-                            <Grid Margin="0,0,0,10">
+                            <Grid Height="646">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
                                 <Rectangle Grid.Row="0"
-                                           Margin="0,0,0,166"
+                                           Margin="0,0,0,207"
                                            Fill="{DynamicResource Brush.DataGrid.Background}" />
 
                                 <Border Grid.Row="0"
-                                        Margin="0,0,0,166"
+                                        Margin="0,0,0,166"Margin="0,0,0,207"
                                         Background="Transparent"
                                         BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
                                         BorderThickness="0,0,2,2"
@@ -2663,83 +2663,81 @@
                                     </TextBlock.Style>
                                 </TextBlock>
 
-                                <Border Grid.Row="1"
-                                        Margin="10,0,10,10"
+                                <Border
+                                        Margin="10,466,0,0"
                                         Background="{DynamicResource Brush.ModCard.Background.Active}"
                                         CornerRadius="10,10,10,10"
-                                        Height="151"
-                                        VerticalAlignment="Bottom">
+                                        Height="180"
+                                        VerticalAlignment="Top">
                                     <Border.Effect>
                                         <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2" />
                                     </Border.Effect>
 
-                                    <Grid Height="151"
+                                    <Grid Height="160"
                                           VerticalAlignment="Center"
                                           HorizontalAlignment="Left"
-                                          Width="1152">
+                                          Width="1161">
                                         <Button x:Name="SaveLocalModlistButton"
                                                 Content="Save Modlist (Local)"
                                                 Padding="12,6"
-                                                Margin="10,109,0,0"
+                                                Margin="10,84,0,0"
                                                 MinWidth="165"
                                                 Click="SaveLocalModlistButton_OnClick"
                                                 Height="32"
-                                                Width="170"
+                                                Width="185"
                                                 VerticalAlignment="Top"
                                                 HorizontalAlignment="Left" />
                                         <Button x:Name="InstallLocalModlistButton"
                                                 Content="Install Selected Modlist"
                                                 Padding="12,6"
-                                                Margin="200,109,0,0"
+                                                Margin="200,121,0,0"
                                                 MinWidth="165"
                                                 Click="InstallLocalModlistButton_OnClick"
                                                 Height="32"
-                                                Width="170"
+                                                Width="192"
                                                 VerticalAlignment="Top"
                                                 HorizontalAlignment="Left"
                                                 IsEnabled="False" />
                                         <Button x:Name="DeleteLocalModlistsButton"
                                                 Content="Delete"
                                                 Padding="12,6"
-                                                Margin="390,109,0,0"
+                                                Margin="10,47,0,0"
                                                 MinWidth="165"
                                                 Click="DeleteLocalModlistsButton_OnClick"
                                                 Height="32"
-                                                Width="170"
+                                                Width="185"
                                                 VerticalAlignment="Top"
                                                 HorizontalAlignment="Left"
                                                 IsEnabled="False" />
                                         <Button x:Name="OpenModlistsFolderButton"
                                                 Content="Open Modlists Folder"
                                                 Padding="12,6"
-                                                Margin="580,109,0,0"
+                                                Margin="10,121,0,0"
                                                 MinWidth="165"
                                                 Click="OpenModlistsFolderButton_OnClick"
                                                 Height="32"
-                                                Width="170"
+                                                Width="185"
                                                 VerticalAlignment="Top"
                                                 HorizontalAlignment="Left" />
                                         <Button x:Name="ModifyLocalModlistButton"
                                                 Content="Modify"
                                                 Padding="12,6"
-                                                Margin="10,66,0,0"
+                                                Margin="10,10,0,0"
                                                 MinWidth="165"
                                                 Click="ModifyLocalModlistButton_OnClick"
                                                 Height="32"
-                                                Width="170"
+                                                Width="185"
                                                 VerticalAlignment="Top"
                                                 HorizontalAlignment="Left"
                                                 IsEnabled="False" />
                                         <Border HorizontalAlignment="Left"
-                                                Height="88"
                                                 Margin="200,10,0,0"
-                                                VerticalAlignment="Top"
                                                 CornerRadius="5"
                                                 Width="942"
                                                 Background="Transparent"
                                                 BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
                                                 BorderThickness="0,0,2,2"
-                                                SnapsToDevicePixels="True">
+                                                SnapsToDevicePixels="True" Height="106" VerticalAlignment="Top">
                                             <Border Background="{DynamicResource Brush.ModCard.Background.Active}"
                                                     BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Dark}"
                                                     BorderThickness="2,2,0,0"
@@ -2756,7 +2754,7 @@
                                                                TextWrapping="Wrap"
                                                                Text=""
                                                                FontWeight="Bold"
-                                                               Foreground="{DynamicResource Brush.Text.Primary}" />
+                                                               Foreground="{DynamicResource Brush.Text.Primary}" Margin="0,0,0,66" Grid.RowSpan="2" />
                                                     <TextBlock x:Name="SelectedLocalModlistDescription"
                                                                Grid.Row="1"
                                                                Margin="0,8,0,0"
@@ -2771,18 +2769,18 @@
                             </Grid>
                         </TabItem>
                         <TabItem Header="Online">
-                            <Grid Margin="0,0,0,10">
+                            <Grid Height="646">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*" />
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
                                 <Rectangle Grid.Row="0"
-                                           Margin="0,0,0,166"
+                                           Margin="0,0,0,22"
                                            Fill="{DynamicResource Brush.DataGrid.Background}" />
 
                                 <Border Grid.Row="0"
-                                        Margin="0,0,0,166"
+                                        Margin="0,0,0,22"
                                         Background="Transparent"
                                         BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
                                         BorderThickness="0,0,2,2"
@@ -3102,11 +3100,11 @@
                                 </TextBlock>
 
                                 <Border Grid.Row="1"
-                                        Margin="10,0,10,10"
+                                        Margin="10,0,10,0"
                                         Background="{DynamicResource Brush.ModCard.Background.Active}"
                                         CornerRadius="10,10,10,10"
-                                        Height="151"
-                                        VerticalAlignment="Bottom">
+                                        Height="175"
+                                        VerticalAlignment="Center">
                                     <Border.Effect>
                                         <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2" />
                                     </Border.Effect>
@@ -3114,18 +3112,22 @@
                                     <Grid Height="151"
                                           VerticalAlignment="Center"
                                           HorizontalAlignment="Left"
-                                          Width="1152"
+                                          Width="1227"
                                           IsEnabled="{Binding CanAccessCloudModlists}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="197*"/>
+                                            <ColumnDefinition Width="955*"/>
+                                        </Grid.ColumnDefinitions>
                                         <Button x:Name="InstallCloudModlistButton"
                                                 Content="Install Selected Modlist"
                                                 Padding="12,6"
-                                                MinWidth="195"
+                                                MinWidth="185"
                                                 IsEnabled="False"
                                                 Visibility="Visible"
                                                 Click="InstallCloudModlistButton_OnClick"
-                                                Margin="200,109,0,0"
+                                                Margin="10,35,0,0"
                                                 Height="32"
-                                                Width="170"
+                                                Width="43"
                                                 HorizontalAlignment="Left"
                                                 VerticalAlignment="Top" />
                                         <Button x:Name="SaveCloudModlistButton"
@@ -3135,17 +3137,17 @@
                                                 MinWidth="165"
                                                 Click="SaveCloudModlistButton_OnClick"
                                                 Height="32"
-                                                Width="170"
+                                                Width="185"
                                                 VerticalAlignment="Top"
                                                 HorizontalAlignment="Left" />
                                         <Button x:Name="ModifyCloudModlistsButton"
-                                                Content="Modify Modlists (Online)"
+                                                Content="Modify Modlists"
                                                 Padding="12,6"
-                                                Margin="10,66,0,0"
+                                                Margin="10,72,0,0"
                                                 MinWidth="165"
                                                 Click="ModifyCloudModlistsButton_OnClick"
                                                 Height="32"
-                                                Width="170"
+                                                Width="185"
                                                 VerticalAlignment="Top"
                                                 HorizontalAlignment="Left" />
                                         <Button x:Name="RefreshCloudModlistsButton"
@@ -3153,21 +3155,21 @@
                                                 Padding="12,6"
                                                 MinWidth="100"
                                                 Click="RefreshCloudModlistsButton_OnClick"
-                                                Margin="10,22,0,0"
+                                                Margin="898,109,0,0"
                                                 Height="32"
-                                                Width="100"
+                                                Width="109"
                                                 HorizontalAlignment="Left"
-                                                VerticalAlignment="Top" />
+                                                VerticalAlignment="Top" Grid.Column="1" />
                                         <Border HorizontalAlignment="Left"
-                                                Height="88"
-                                                Margin="200,10,0,0"
-                                                VerticalAlignment="Top"
+                                                Height="131"
+                                                Margin="3,0,0,0"
+                                                VerticalAlignment="Center"
                                                 CornerRadius="5"
-                                                Width="942"
+                                                Width="877"
                                                 Background="Transparent"
                                                 BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
                                                 BorderThickness="0,0,2,2"
-                                                SnapsToDevicePixels="True">
+                                                SnapsToDevicePixels="True" Grid.Column="1">
                                             <Border Background="{DynamicResource Brush.ModCard.Background.Active}"
                                                     BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Dark}"
                                                     BorderThickness="2,2,0,0"
