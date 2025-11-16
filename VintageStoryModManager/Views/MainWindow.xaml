@@ -3187,12 +3187,17 @@
                                                                Text=""
                                                                FontWeight="Bold"
                                                                Foreground="{DynamicResource Brush.Text.Primary}" />
-                                                    <TextBlock x:Name="SelectedModlistDescription"
-                                                               Grid.Row="1"
-                                                               Margin="0,8,0,0"
-                                                               TextWrapping="Wrap"
-                                                               Text=""
-                                                               Foreground="{DynamicResource Brush.Text.Primary}" />
+                                                    <ScrollViewer Grid.Row="1"
+                                                                  Margin="0,8,0,0"
+                                                                  HorizontalScrollBarVisibility="Disabled"
+                                                                  VerticalScrollBarVisibility="Hidden"
+                                                                  CanContentScroll="False"
+                                                                  PanningMode="VerticalOnly">
+                                                        <TextBlock x:Name="SelectedModlistDescription"
+                                                                   TextWrapping="Wrap"
+                                                                   Text=""
+                                                                   Foreground="{DynamicResource Brush.Text.Primary}" />
+                                                    </ScrollViewer>
                                                 </Grid>
                                             </Border>
                                         </Border>
