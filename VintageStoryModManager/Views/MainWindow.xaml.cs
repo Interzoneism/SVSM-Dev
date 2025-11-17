@@ -8613,11 +8613,7 @@ public partial class MainWindow : Window
             .Select(entry => entry.FilePath)
             .ToList();
 
-        Func<string?>? suggestedNameProvider = null;
-        if (_selectedLocalModlists.Count == 1 && _selectedLocalModlists[0] is LocalModlistListEntry selected)
-            suggestedNameProvider = () => selected.DisplayName;
-
-        if (TrySaveModlist(suggestedNameProvider, out var savedFilePath))
+        if (TrySaveModlist(null, out var savedFilePath))
         {
             if (!string.IsNullOrWhiteSpace(savedFilePath)) preservedSelection.Add(savedFilePath);
             RefreshLocalModlists(true, preservedSelection);
