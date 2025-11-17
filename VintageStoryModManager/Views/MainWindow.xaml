@@ -2384,8 +2384,10 @@
                     <TabControl x:Name="ModlistsTabControl"
                                 Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                 BorderThickness="0"
-                                ItemContainerStyle="{StaticResource IMM.ModlistsTabItemStyle}">
-                        <TabItem Header="Local">
+                                ItemContainerStyle="{StaticResource IMM.ModlistsTabItemStyle}"
+                                SelectionChanged="ModlistsTabControl_OnSelectionChanged">
+                        <TabItem x:Name="LocalModlistsTabItem"
+                                 Header="Local">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*" />
@@ -2821,7 +2823,8 @@
                                 </Border>
                             </Grid>
                         </TabItem>
-                        <TabItem Header="Online">
+                        <TabItem x:Name="OnlineModlistsTabItem"
+                                 Header="Online">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*" />

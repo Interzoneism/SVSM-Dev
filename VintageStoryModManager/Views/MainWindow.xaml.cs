@@ -61,6 +61,7 @@ using WinForms = System.Windows.Forms;
 using WpfButton = System.Windows.Controls.Button;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 using WpfToolTip = System.Windows.Controls.ToolTip;
+using TabControl = System.Windows.Controls.TabControl;
 
 namespace VintageStoryModManager.Views;
 
@@ -191,6 +192,7 @@ public partial class MainWindow : Window
     private bool _isDraggingModInfoPanel;
     private bool _isFullRefreshInProgress;
     private bool _isInitializing;
+    private bool _isUpdatingModlistsTabSelection;
     private bool _isModUpdateInProgress;
     private bool _isModUsageDialogOpen;
     private bool _isRefreshingAfterModlistLoad;
@@ -2172,13 +2174,11 @@ public partial class MainWindow : Window
         if (isVisible)
         {
             RefreshLocalModlists(false);
-            if (!EnsureCloudModlistsConsent())
+            if (HasFirebaseAuthStateFile())
             {
-                _viewModel?.ShowInstalledModsCommand.Execute(null);
-                return;
+                EnsureFirebaseAuthBackedUpIfAvailable();
+                _ = RefreshCloudModlistsAsync(!_cloudModlistsLoaded);
             }
-
-            _ = RefreshCloudModlistsAsync(!_cloudModlistsLoaded);
             return;
         }
 
@@ -2186,6 +2186,32 @@ public partial class MainWindow : Window
         if (LocalModlistsDataGrid is not null) LocalModlistsDataGrid.SelectedItems.Clear();
         SetCloudModlistSelection(null);
         if (CloudModlistsDataGrid != null) CloudModlistsDataGrid.SelectedItem = null;
+    }
+
+    private void ModlistsTabControl_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isUpdatingModlistsTabSelection) return;
+        if (_viewModel?.IsViewingCloudModlists != true) return;
+        if (sender is not TabControl tabControl) return;
+        if (OnlineModlistsTabItem is null || LocalModlistsTabItem is null) return;
+        if (!Equals(tabControl.SelectedItem, OnlineModlistsTabItem)) return;
+
+        if (!EnsureCloudModlistsConsent())
+        {
+            _isUpdatingModlistsTabSelection = true;
+            try
+            {
+                tabControl.SelectedItem = LocalModlistsTabItem;
+            }
+            finally
+            {
+                _isUpdatingModlistsTabSelection = false;
+            }
+
+            return;
+        }
+
+        _ = RefreshCloudModlistsAsync(!_cloudModlistsLoaded);
     }
 
     private void InternetAccessManager_OnInternetAccessChanged(object? sender, EventArgs e)
@@ -2240,6 +2266,12 @@ public partial class MainWindow : Window
             buttonContentOverrides: buttonOverrides);
 
         return result == MessageBoxResult.OK;
+    }
+
+    private static bool HasFirebaseAuthStateFile()
+    {
+        var stateFilePath = FirebaseAnonymousAuthenticator.GetStateFilePath();
+        return !string.IsNullOrWhiteSpace(stateFilePath) && File.Exists(stateFilePath);
     }
 
     private bool EnsureUserReportVotingConsent()
