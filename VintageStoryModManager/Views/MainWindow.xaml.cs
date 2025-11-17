@@ -85,6 +85,7 @@ public partial class MainWindow : Window
     private static readonly string PresetDirectoryName = DevConfig.PresetDirectoryName;
     private static readonly string ModListDirectoryName = DevConfig.ModListDirectoryName;
     private static readonly string CloudModListCacheDirectoryName = DevConfig.CloudModListCacheDirectoryName;
+    private static readonly string RebuiltModListDirectoryName = DevConfig.RebuiltModListDirectoryName;
     private static readonly int AutomaticConfigMaxWordDistance = DevConfig.AutomaticConfigMaxWordDistance;
 
     private static readonly HttpClient ConnectivityTestHttpClient = new()
@@ -7583,7 +7584,7 @@ public partial class MainWindow : Window
 
         if (_viewModel is null) return false;
 
-        var modListDirectory = EnsureModListDirectory();
+        var modListDirectory = EnsureRebuiltModListDirectory();
         savedName = BuildSuggestedFileName(requestedName, "Modlist");
         filePath = Path.Combine(modListDirectory, savedName + ".json");
 
@@ -10552,6 +10553,14 @@ public partial class MainWindow : Window
     {
         var baseDirectory = _userConfiguration.GetConfigurationDirectory();
         var modListDirectory = Path.Combine(baseDirectory, ModListDirectoryName);
+        Directory.CreateDirectory(modListDirectory);
+        return modListDirectory;
+    }
+
+    private string EnsureRebuiltModListDirectory()
+    {
+        var baseDirectory = _userConfiguration.GetConfigurationDirectory();
+        var modListDirectory = Path.Combine(baseDirectory, RebuiltModListDirectoryName);
         Directory.CreateDirectory(modListDirectory);
         return modListDirectory;
     }
