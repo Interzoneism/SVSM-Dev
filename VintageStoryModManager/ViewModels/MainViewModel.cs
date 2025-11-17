@@ -1296,7 +1296,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         state.IsActive is not bool desiredState) continue;
 
                     var normalizedId = state.ModId.Trim();
-                    if (!installedMods.TryGetValue(normalizedId, out var installedVersion)) continue;
+                    var hasInstalledMod = installedMods.TryGetValue(normalizedId, out var installedVersion);
 
                     var recordedVersion = string.IsNullOrWhiteSpace(state.Version)
                         ? null
@@ -1304,6 +1304,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                     if (desiredState)
                     {
+                        if (!hasInstalledMod) continue;
+
                         var versionsToActivate = new HashSet<string?>(StringComparer.OrdinalIgnoreCase)
                         {
                             null
@@ -1322,9 +1324,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     }
                     else
                     {
-                        var versionToDisable = !string.IsNullOrWhiteSpace(installedVersion)
-                            ? installedVersion
-                            : (!string.IsNullOrWhiteSpace(recordedVersion) ? recordedVersion : null);
+                        string? versionToDisable;
+
+                        if (hasInstalledMod && !string.IsNullOrWhiteSpace(installedVersion))
+                        {
+                            versionToDisable = installedVersion;
+                        }
+                        else if (!string.IsNullOrWhiteSpace(recordedVersion))
+                        {
+                            versionToDisable = recordedVersion;
+                        }
+                        else
+                        {
+                            versionToDisable = null;
+                        }
 
                         if (!_settingsStore.TrySetActive(normalizedId, versionToDisable, false, out var error))
                         {
