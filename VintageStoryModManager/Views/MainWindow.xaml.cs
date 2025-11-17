@@ -374,6 +374,8 @@ public partial class MainWindow : Window
 
         _userConfiguration.EnablePersistence();
 
+        MigrateLegacyRebuiltModlistsIfNeeded();
+
         // Ensure firebase-auth.json is backed up if it exists and hasn't been backed up yet
         FirebaseAnonymousAuthenticator.EnsureStartupBackup(_userConfiguration);
 
@@ -390,6 +392,53 @@ public partial class MainWindow : Window
 
         await RefreshDeleteCachedModsMenuHeaderAsync();
         await RefreshManagerUpdateLinkAsync();
+    }
+
+    private void MigrateLegacyRebuiltModlistsIfNeeded()
+    {
+        if (_userConfiguration.RebuiltModlistMigrationCompleted) return;
+
+        try
+        {
+            var modListDirectory = EnsureModListDirectory();
+            var rebuiltDirectory = Path.Combine(modListDirectory, RebuiltModListDirectoryName);
+            Directory.CreateDirectory(rebuiltDirectory);
+
+            var movedAny = false;
+            foreach (var entry in Directory.EnumerateFileSystemEntries(
+                         modListDirectory,
+                         "Rebuilt_*",
+                         SearchOption.TopDirectoryOnly))
+            {
+                if (Directory.Exists(entry))
+                {
+                    var targetPath = Path.Combine(rebuiltDirectory, Path.GetFileName(entry));
+                    targetPath = EnsureUniqueDirectoryPath(targetPath);
+                    Directory.Move(entry, targetPath);
+                    movedAny = true;
+                }
+                else if (File.Exists(entry))
+                {
+                    var targetPath = Path.Combine(rebuiltDirectory, Path.GetFileName(entry));
+                    targetPath = EnsureUniqueFilePath(targetPath);
+                    File.Move(entry, targetPath);
+                    movedAny = true;
+                }
+            }
+
+            if (movedAny)
+                _viewModel?.ReportStatus($"Moved rebuilt modlists into \"{RebuiltModListDirectoryName}\" folder.");
+
+            _userConfiguration.SetRebuiltModlistMigrationCompleted();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PathTooLongException)
+        {
+            WpfMessageBox.Show(
+                $"Failed to prepare the Rebuilt modlists folder:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private async Task PromptCacheRefreshIfNeededAsync()
