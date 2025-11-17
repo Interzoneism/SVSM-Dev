@@ -1321,7 +1321,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     }
                     else
                     {
-                        if (!_settingsStore.TrySetActive(normalizedId, null, false, out var error))
+                        var versionToDisable = !string.IsNullOrWhiteSpace(installedVersion)
+                            ? installedVersion
+                            : (!string.IsNullOrWhiteSpace(recordedVersion) ? recordedVersion : null);
+
+                        if (!_settingsStore.TrySetActive(normalizedId, versionToDisable, false, out var error))
                         {
                             localError = error;
                             return false;
