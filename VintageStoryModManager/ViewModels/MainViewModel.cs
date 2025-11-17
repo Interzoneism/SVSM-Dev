@@ -158,6 +158,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _configuration = configuration;
 
         _settingsStore = new ClientSettingsStore(DataDirectory);
+        PerformClientSettingsCleanupIfNeeded();
         _discoveryService = new ModDiscoveryService(_settingsStore);
         _databaseService = new ModDatabaseService();
         _modDatabaseSearchResultLimit = Math.Clamp(modDatabaseSearchResultLimit, 1, MaxModDatabaseResultLimit);
@@ -4848,6 +4849,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _disposed = true;
             _busyScope.Dispose();
             _owner.EndUserReportOperation();
+        }
+    }
+
+    private void PerformClientSettingsCleanupIfNeeded()
+    {
+        if (_configuration.ClientSettingsCleanupCompleted) return;
+
+        try
+        {
+            _settingsStore.RemoveInvalidDisabledEntries();
+            _configuration.SetClientSettingsCleanupCompleted();
+        }
+        catch (Exception)
+        {
+            // This cleanup is a best-effort operation.
         }
     }
 
