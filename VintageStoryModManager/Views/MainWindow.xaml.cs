@@ -8297,13 +8297,11 @@ public partial class MainWindow : Window
     {
         return ExecuteCloudOperationAsync(async store =>
         {
-            var suggestedName = _selectedCloudModlist?.Name ?? BuildCloudModlistName();
-            var suggestedDescription = _selectedCloudModlist?.Description;
+            var suggestedName = BuildCloudModlistName();
             var configOptions = BuildModConfigOptions();
             var detailsDialog = new CloudModlistDetailsDialog(
                 this,
                 suggestedName,
-                suggestedDescription,
                 configOptions,
                 _viewModel?.InstalledGameVersion);
             var dialogResult = detailsDialog.ShowDialog();

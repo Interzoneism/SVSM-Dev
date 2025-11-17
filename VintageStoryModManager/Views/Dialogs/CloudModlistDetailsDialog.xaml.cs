@@ -13,7 +13,6 @@ public partial class CloudModlistDetailsDialog : Window
     public CloudModlistDetailsDialog(
         Window owner,
         string? suggestedName,
-        string? suggestedDescription,
         IEnumerable<ModConfigOption>? configOptions,
         string? defaultGameVersion = null)
     {
@@ -32,9 +31,6 @@ public partial class CloudModlistDetailsDialog : Window
         NameTextBox.Text = string.IsNullOrWhiteSpace(suggestedName)
             ? string.Empty
             : suggestedName;
-        DescriptionTextBox.Text = string.IsNullOrWhiteSpace(suggestedDescription)
-            ? string.Empty
-            : suggestedDescription;
         if (!string.IsNullOrWhiteSpace(defaultGameVersion)) GameVersionTextBox.Text = defaultGameVersion.Trim();
         NameTextBox.SelectAll();
         UpdateConfirmButtonState();
