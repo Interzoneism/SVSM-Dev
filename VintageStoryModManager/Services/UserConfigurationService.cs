@@ -250,6 +250,8 @@ public sealed class UserConfigurationService
 
     public bool ClientSettingsCleanupCompleted { get; private set; }
 
+    public bool RebuiltModlistMigrationCompleted { get; private set; }
+
     public IReadOnlyList<string> GetGameProfileNames()
     {
         return _gameProfiles.Keys
@@ -508,6 +510,14 @@ public sealed class UserConfigurationService
         if (ClientSettingsCleanupCompleted) return;
 
         ClientSettingsCleanupCompleted = true;
+        Save();
+    }
+
+    public void SetRebuiltModlistMigrationCompleted()
+    {
+        if (RebuiltModlistMigrationCompleted) return;
+
+        RebuiltModlistMigrationCompleted = true;
         Save();
     }
 
@@ -1266,6 +1276,8 @@ public sealed class UserConfigurationService
             MigrationCheckCompleted = obj["migrationCheckCompleted"]?.GetValue<bool?>() ?? false;
             FirebaseAuthBackupCreated = obj["firebaseAuthBackupCreated"]?.GetValue<bool?>() ?? false;
             ClientSettingsCleanupCompleted = obj["clientSettingsCleanupCompleted"]?.GetValue<bool?>() ?? false;
+            RebuiltModlistMigrationCompleted =
+                obj["rebuiltModlistMigrationCompleted"]?.GetValue<bool?>() ?? false;
 
             var profilesFound = false;
             if (obj["gameProfiles"] is JsonObject profilesObj)
@@ -1380,6 +1392,7 @@ public sealed class UserConfigurationService
             FirebaseAuthBackupCreated = false;
             GameProfileCreationWarningAcknowledged = false;
             ClientSettingsCleanupCompleted = false;
+            RebuiltModlistMigrationCompleted = false;
         }
 
         LoadPersistentModConfigPaths();
@@ -1449,6 +1462,7 @@ public sealed class UserConfigurationService
                 ["migrationCheckCompleted"] = MigrationCheckCompleted,
                 ["firebaseAuthBackupCreated"] = FirebaseAuthBackupCreated,
                 ["clientSettingsCleanupCompleted"] = ClientSettingsCleanupCompleted,
+                ["rebuiltModlistMigrationCompleted"] = RebuiltModlistMigrationCompleted,
                 ["gameProfiles"] = BuildGameProfilesJson()
             };
 
