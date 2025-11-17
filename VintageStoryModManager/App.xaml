@@ -345,7 +345,6 @@
                                     <Track x:Name="PART_Track"
                                            Margin="0"
                                            Orientation="{TemplateBinding Orientation}"
-                                           IsDirectionReversed="True"
                                            Maximum="{TemplateBinding Maximum}"
                                            Minimum="{TemplateBinding Minimum}"
                                            Value="{TemplateBinding Value}"
@@ -376,6 +375,7 @@
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="Orientation" Value="Horizontal">
+                                    <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False" />
                                     <Setter TargetName="LineDecreaseButton" Property="Grid.Row" Value="0" />
                                     <Setter TargetName="LineDecreaseButton" Property="Grid.RowSpan" Value="3" />
                                     <Setter TargetName="LineDecreaseButton" Property="Grid.Column" Value="0" />
@@ -398,6 +398,9 @@
                                             Value="{x:Static primitives:ScrollBar.PageLeftCommand}" />
                                     <Setter TargetName="IncreasePage" Property="Command"
                                             Value="{x:Static primitives:ScrollBar.PageRightCommand}" />
+                                </Trigger>
+                                <Trigger Property="Orientation" Value="Vertical">
+                                    <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="True" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter TargetName="LineDecreaseButton" Property="IsEnabled" Value="False" />
