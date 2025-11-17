@@ -10556,10 +10556,10 @@ public partial class MainWindow : Window
 
     private string EnsureRebuiltModListDirectory()
     {
-        var baseDirectory = _userConfiguration.GetConfigurationDirectory();
-        var modListDirectory = Path.Combine(baseDirectory, RebuiltModListDirectoryName);
-        Directory.CreateDirectory(modListDirectory);
-        return modListDirectory;
+        var modListBaseDirectory = EnsureModListDirectory();
+        var rebuiltModListDirectory = Path.Combine(modListBaseDirectory, RebuiltModListDirectoryName);
+        Directory.CreateDirectory(rebuiltModListDirectory);
+        return rebuiltModListDirectory;
     }
 
     private string EnsureCloudModListCacheDirectory()
