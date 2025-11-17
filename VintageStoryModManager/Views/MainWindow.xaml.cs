@@ -2174,11 +2174,6 @@ public partial class MainWindow : Window
         if (isVisible)
         {
             RefreshLocalModlists(false);
-            if (HasFirebaseAuthStateFile())
-            {
-                EnsureFirebaseAuthBackedUpIfAvailable();
-                _ = RefreshCloudModlistsAsync(!_cloudModlistsLoaded);
-            }
             return;
         }
 
@@ -2195,6 +2190,8 @@ public partial class MainWindow : Window
         if (sender is not TabControl tabControl) return;
         if (OnlineModlistsTabItem is null || LocalModlistsTabItem is null) return;
         if (!Equals(tabControl.SelectedItem, OnlineModlistsTabItem)) return;
+
+        if (HasFirebaseAuthStateFile()) EnsureFirebaseAuthBackedUpIfAvailable();
 
         if (!EnsureCloudModlistsConsent())
         {
