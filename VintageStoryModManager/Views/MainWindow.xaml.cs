@@ -2111,7 +2111,10 @@ public partial class MainWindow : Window
             if (_viewModel != null)
                 Dispatcher.InvokeAsync(() =>
                 {
-                    if (_viewModel != null) UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
+                    if (_viewModel == null) return;
+
+                    UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
+                    if (!_viewModel.SearchModDatabase) ClearModDatabaseSelections();
                 }, DispatcherPriority.Background);
         }
         else if (e.PropertyName == nameof(MainViewModel.ModDatabaseAutoLoadMode))
@@ -11474,6 +11477,45 @@ public partial class MainWindow : Window
         if (resetAnchor) _selectionAnchor = null;
 
         UpdateSelectedModButtons();
+    }
+
+    private void ClearModDatabaseSelections()
+    {
+        if (_selectedMods.Count > 0)
+        {
+            var removedAny = false;
+
+            for (var i = _selectedMods.Count - 1; i >= 0; i--)
+            {
+                var mod = _selectedMods[i];
+                if (!mod.IsModDatabaseEntry) continue;
+
+                _selectedMods.RemoveAt(i);
+                mod.IsSelected = false;
+                UnsubscribeFromSelectedMod(mod);
+                removedAny = true;
+            }
+
+            if (removedAny)
+            {
+                if (_selectionAnchor is { } anchor && anchor.IsModDatabaseEntry) _selectionAnchor = null;
+                UpdateSelectedModButtons();
+            }
+        }
+
+        if (ModDbDataGrid != null)
+        {
+            ModDbDataGrid.SelectedIndex = -1;
+            ModDbDataGrid.SelectedItem = null;
+            ModDbDataGrid.UnselectAll();
+        }
+
+        if (ModDatabaseCardsListView != null)
+        {
+            ModDatabaseCardsListView.SelectedIndex = -1;
+            ModDatabaseCardsListView.SelectedItem = null;
+            ModDatabaseCardsListView.UnselectAll();
+        }
     }
 
     private void RestoreSelectionFromSourcePaths(IReadOnlyList<string> sourcePaths, string? anchorSourcePath)
