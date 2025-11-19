@@ -73,6 +73,7 @@ public partial class MainWindow : Window
     // Summary key prefixes to avoid collisions between different summary types
     private const string SummaryKeyPatchModPrefix = "__PATCH_MOD__";
     private const string SummaryKeyLinePrefix = "__PREFIX__";
+    private const int MaxDataBackupsMenuItems = 15;
     private static readonly double ModListScrollMultiplier = DevConfig.ModListScrollMultiplier;
     private static readonly double ModDbDesignScrollMultiplier = DevConfig.ModDbDesignScrollMultiplier;
     private static readonly double LoadMoreScrollThreshold = DevConfig.LoadMoreScrollThreshold;
@@ -6702,9 +6703,12 @@ public partial class MainWindow : Window
         ShowDataBackupOverlay("Preparing VintagestoryData backup...");
         var progress = CreateDataBackupProgressReporter("Backing up VintagestoryData...");
 
+        var installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory);
+
         try
         {
-            await _dataBackupService.CreateBackupAsync(_dataDirectory!, progress, CancellationToken.None)
+            await _dataBackupService
+                .CreateBackupAsync(_dataDirectory!, installedGameVersion, progress, CancellationToken.None)
                 .ConfigureAwait(true);
             return true;
         }
@@ -6896,6 +6900,22 @@ public partial class MainWindow : Window
 
         menuItem.Items.Clear();
 
+        var openDirectoryMenuItem = new MenuItem
+        {
+            Header = "Open data backup directory..."
+        };
+        openDirectoryMenuItem.Click += OpenDataBackupDirectoryMenuItem_OnClick;
+        menuItem.Items.Add(openDirectoryMenuItem);
+
+        var deleteBackupsMenuItem = new MenuItem
+        {
+            Header = "Delete all data folder backups",
+            IsEnabled = false
+        };
+        deleteBackupsMenuItem.Click += DeleteDataFolderBackupsMenuItem_OnClick;
+        menuItem.Items.Add(deleteBackupsMenuItem);
+        menuItem.Items.Add(new Separator());
+
         IReadOnlyList<DataFolderBackupSummary> backups;
         try
         {
@@ -6925,6 +6945,12 @@ public partial class MainWindow : Window
                 .ToArray();
         }
 
+        var installedVersion = VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory);
+        var normalizedInstalledVersion = VersionStringUtility.Normalize(installedVersion);
+        deleteBackupsMenuItem.IsEnabled = !string.IsNullOrWhiteSpace(dataDirectory)
+                                          && !string.IsNullOrWhiteSpace(normalizedInstalledVersion)
+                                          && filteredBackups.Length > 0;
+
         if (filteredBackups.Length == 0)
         {
             var header = string.IsNullOrWhiteSpace(dataDirectory)
@@ -6938,13 +6964,19 @@ public partial class MainWindow : Window
             return;
         }
 
-        foreach (var backup in filteredBackups)
+        var displayedBackups = filteredBackups
+            .Take(MaxDataBackupsMenuItems)
+            .ToArray();
+
+        foreach (var backup in displayedBackups)
         {
             var timestamp = backup.CreatedOnUtc.ToLocalTime()
                 .ToString("dd MMM yyyy '•' HH:mm:ss", CultureInfo.CurrentCulture);
             var header = string.IsNullOrWhiteSpace(backup.Id)
                 ? timestamp
                 : $"{timestamp} — {backup.Id}";
+            if (!string.IsNullOrWhiteSpace(backup.VintageStoryVersion))
+                header += $" — VS {backup.VintageStoryVersion}";
             var item = new MenuItem
             {
                 Header = header,
@@ -6952,6 +6984,15 @@ public partial class MainWindow : Window
             };
             item.Click += RestoreDataFolderMenuItem_OnBackupClick;
             menuItem.Items.Add(item);
+        }
+
+        if (filteredBackups.Length > displayedBackups.Length)
+        {
+            menuItem.Items.Add(new MenuItem
+            {
+                Header = $"Showing latest {displayedBackups.Length} of {filteredBackups.Length} backups",
+                IsEnabled = false
+            });
         }
     }
 
@@ -6978,6 +7019,116 @@ public partial class MainWindow : Window
         if (confirmation != MessageBoxResult.Yes) return;
 
         await RestoreDataBackupAsync(summary).ConfigureAwait(true);
+    }
+
+    private void OpenDataBackupDirectoryMenuItem_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var directory = _dataBackupService.GetBackupRootDirectory();
+        try
+        {
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                WpfMessageBox.Show(
+                    "The data backup directory is not available.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            Directory.CreateDirectory(directory);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = directory,
+                UseShellExecute = true
+            });
+        }
+        catch (Win32Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to open the data backup directory:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            WpfMessageBox.Show(
+                $"Failed to open the data backup directory:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void DeleteDataFolderBackupsMenuItem_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_dataDirectory))
+        {
+            WpfMessageBox.Show(
+                "Set the VintagestoryData folder before deleting backups.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var installedVersion = VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory);
+        var normalizedInstalledVersion = VersionStringUtility.Normalize(installedVersion);
+        if (string.IsNullOrWhiteSpace(normalizedInstalledVersion))
+        {
+            WpfMessageBox.Show(
+                "The installed Vintage Story version could not be determined, so backups cannot be deleted safely.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var displayVersion = installedVersion ?? normalizedInstalledVersion;
+        var confirmation = WpfMessageBox.Show(
+            $"Delete all VintagestoryData backups for Vintage Story {displayVersion}? This action cannot be undone.",
+            "Simple VS Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirmation != MessageBoxResult.Yes) return;
+
+        try
+        {
+            var deleted = _dataBackupService.DeleteBackups(_dataDirectory!, displayVersion);
+            if (deleted == 0)
+            {
+                WpfMessageBox.Show(
+                    "No backups matching the current data folder and Vintage Story version were found.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            _viewModel?.ReportStatus(
+                deleted == 1
+                    ? "Deleted 1 VintagestoryData backup."
+                    : $"Deleted {deleted} VintagestoryData backups.");
+
+            WpfMessageBox.Show(
+                deleted == 1
+                    ? "Deleted 1 VintagestoryData backup."
+                    : $"Deleted {deleted} VintagestoryData backups.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException
+                                   or ArgumentException)
+        {
+            WpfMessageBox.Show(
+                $"Failed to delete the VintagestoryData backups:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private void RestoreBackupMenuItem_OnSubmenuOpened(object sender, RoutedEventArgs e)
@@ -7113,6 +7264,23 @@ public partial class MainWindow : Window
         {
             WpfMessageBox.Show(
                 "This backup was created for a different VintagestoryData folder and cannot be restored.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var installedVersion = VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory);
+        var normalizedInstalledVersion = VersionStringUtility.Normalize(installedVersion);
+        var normalizedBackupVersion = VersionStringUtility.Normalize(summary.VintageStoryVersion);
+        if (!string.IsNullOrWhiteSpace(normalizedBackupVersion)
+            && !string.IsNullOrWhiteSpace(normalizedInstalledVersion)
+            && !string.Equals(normalizedBackupVersion, normalizedInstalledVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            var backupVersionDisplay = summary.VintageStoryVersion ?? normalizedBackupVersion;
+            var installedVersionDisplay = installedVersion ?? normalizedInstalledVersion;
+            WpfMessageBox.Show(
+                $"This backup was created for Vintage Story {backupVersionDisplay}, but the installed version is {installedVersionDisplay}. Install the matching Vintage Story version before restoring this backup.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
