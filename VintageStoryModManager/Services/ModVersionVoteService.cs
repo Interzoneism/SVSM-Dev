@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -18,6 +19,8 @@ public sealed class ModVersionVoteService
     private static readonly string DefaultDbUrl = DevConfig.ModVersionVoteDefaultDbUrl;
 
     private static readonly string VotesRootPath = DevConfig.ModVersionVoteRootPath;
+
+    private static readonly int? _clientVersionCode = ResolveClientVersionCode();
 
     private static readonly HttpClient HttpClient = new();
 
@@ -156,7 +159,8 @@ public sealed class ModVersionVoteService
             Option = option,
             VintageStoryVersion = vintageStoryVersion,
             UpdatedUtc = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-            Comment = NormalizeComment(comment)
+            Comment = NormalizeComment(comment),
+            ClientVersionCode = _clientVersionCode
         };
 
         var url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "users", userKey);
@@ -477,6 +481,35 @@ public sealed class ModVersionVoteService
             : source.ToArray();
     }
 
+    private static int? ResolveClientVersionCode()
+    {
+        var assembly = typeof(ModVersionVoteService).Assembly;
+
+        var normalizedVersion = VersionStringUtility.Normalize(
+                                    assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                                        .InformationalVersion)
+                                ?? VersionStringUtility.Normalize(
+                                    assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version)
+                                ?? VersionStringUtility.Normalize(assembly.GetName().Version?.ToString());
+
+        if (normalizedVersion is null) return null;
+
+        var parts =
+            normalizedVersion.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0) return null;
+
+        if (!int.TryParse(parts[0], out var major)) return null;
+
+        var minor = 0;
+        var patch = 0;
+
+        if (parts.Length > 1 && !int.TryParse(parts[1], out minor)) return null;
+
+        if (parts.Length > 2 && !int.TryParse(parts[2], out patch)) return null;
+
+        return (major * 100 + minor) * 100 + patch;
+    }
+
     private static string? NormalizeComment(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return null;
@@ -572,6 +605,8 @@ public sealed class ModVersionVoteService
         [JsonPropertyName("updatedUtc")] public string? UpdatedUtc { get; set; }
 
         [JsonPropertyName("comment")] public string? Comment { get; set; }
+
+        [JsonPropertyName("clientVersionCode")] public int? ClientVersionCode { get; set; }
     }
 
     private readonly record struct VoteCacheKey(string ModId, string ModVersion, string VintageStoryVersion);
