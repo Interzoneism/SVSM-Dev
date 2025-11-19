@@ -41,20 +41,12 @@
           "users": {
             ".read": true,
             "$userId": {
-              ".write": "auth != null && auth.uid == $userId && (!root.child('config').child('compatVotesMinVersionCode').exists() || (newData.child('clientVersionCode').isNumber() && newData.child('clientVersionCode').val() >= root.child('config').child('compatVotesMinVersionCode').val()))",
-              ".validate": "!newData.exists() || (newData.hasChildren(['option','vintageStoryVersion','updatedUtc']) && newData.child('option').isString() && (newData.child('option').val() == 'fullyFunctional' || newData.child('option').val() == 'noIssuesSoFar' || newData.child('option').val() == 'someIssuesButWorks' || newData.child('option').val() == 'notFunctional' || newData.child('option').val() == 'crashesOrFreezesGame' || newData.child('option').val() == 'workingPerfectly' || newData.child('option').val() == 'notWorking') && newData.child('vintageStoryVersion').isString() && newData.child('updatedUtc').isString() && (!newData.child('comment').exists() || newData.child('comment').isString()) && (!((newData.child('option').val() == 'notFunctional') || (newData.child('option').val() == 'notWorking') || (newData.child('option').val() == 'crashesOrFreezesGame')) || (newData.child('comment').isString() && newData.child('comment').val().matches(/\\S/)))) && (!root.child('config').child('compatVotesMinVersionCode').exists() || (newData.child('clientVersionCode').isNumber() && newData.child('clientVersionCode').val() >= root.child('config').child('compatVotesMinVersionCode').val() && newData.hasChild('clientVersionCode'))))"
+              ".write": "auth != null && auth.uid == $userId",
+              ".validate": "!newData.exists() || (newData.hasChildren(['option','vintageStoryVersion','updatedUtc']) && newData.child('option').isString() && (newData.child('option').val() == 'fullyFunctional' || newData.child('option').val() == 'noIssuesSoFar' || newData.child('option').val() == 'someIssuesButWorks' || newData.child('option').val() == 'notFunctional' || newData.child('option').val() == 'crashesOrFreezesGame' || newData.child('option').val() == 'workingPerfectly' || newData.child('option').val() == 'notWorking') && newData.child('vintageStoryVersion').isString() && newData.child('updatedUtc').isString() && (!newData.child('comment').exists() || newData.child('comment').isString()) && (!((newData.child('option').val() == 'notFunctional') || (newData.child('option').val() == 'notWorking') || (newData.child('option').val() == 'crashesOrFreezesGame')) || (newData.child('comment').isString() && newData.child('comment').val().matches(/\\S/))))"
             }
           }
         }
       }
-    }
-  },
-
-  "config": {
-    "compatVotesMinVersionCode": {
-      ".read": false,
-      ".write": "auth != null && auth.token.admin == true",
-      ".validate": "newData.isNumber()"
     }
   }
 }
