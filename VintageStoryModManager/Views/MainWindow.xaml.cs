@@ -14,6 +14,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -34,6 +35,8 @@ using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
 using VintageStoryModManager.Views.Dialogs;
+using DataFolderBackupProgress = VintageStoryModManager.Services.DataBackupProgress;
+using DataFolderBackupSummary = VintageStoryModManager.Services.DataBackupSummary;
 using YamlDotNet.Core;
 using ButtonBase = System.Windows.Controls.Primitives.ButtonBase;
 using Colors = QuestPDF.Helpers.Colors;
@@ -164,6 +167,45 @@ public partial class MainWindow : Window
             typeof(bool),
             typeof(MainWindow));
 
+    public static readonly DependencyProperty IsDataBackupInProgressProperty =
+        DependencyProperty.Register(
+            nameof(IsDataBackupInProgress),
+            typeof(bool),
+            typeof(MainWindow),
+            new PropertyMetadata(false));
+
+    public static readonly DependencyProperty DataBackupProgressProperty =
+        DependencyProperty.Register(
+            nameof(DataBackupProgress),
+            typeof(double),
+            typeof(MainWindow),
+            new PropertyMetadata(0d));
+
+    public static readonly DependencyProperty DataBackupStatusMessageProperty =
+        DependencyProperty.Register(
+            nameof(DataBackupStatusMessage),
+            typeof(string),
+            typeof(MainWindow),
+            new PropertyMetadata(string.Empty));
+
+    public bool IsDataBackupInProgress
+    {
+        get => (bool)GetValue(IsDataBackupInProgressProperty);
+        set => SetValue(IsDataBackupInProgressProperty, value);
+    }
+
+    public double DataBackupProgress
+    {
+        get => (double)GetValue(DataBackupProgressProperty);
+        set => SetValue(DataBackupProgressProperty, value);
+    }
+
+    public string DataBackupStatusMessage
+    {
+        get => (string)GetValue(DataBackupStatusMessageProperty);
+        set => SetValue(DataBackupStatusMessageProperty, value);
+    }
+
     private readonly SemaphoreSlim _backupSemaphore = new(1, 1);
     private readonly SemaphoreSlim _cloudStoreLock = new(1, 1);
     private readonly List<MenuItem> _developerProfileMenuItems = new();
@@ -172,6 +214,7 @@ public partial class MainWindow : Window
     private readonly ModCompatibilityCommentsService _modCompatibilityCommentsService = new();
     private readonly ModDatabaseService _modDatabaseService = new();
     private readonly ModUpdateService _modUpdateService = new();
+    private readonly DataBackupService _dataBackupService;
     private readonly Dictionary<ModListItemViewModel, PropertyChangedEventHandler> _selectedModPropertyHandlers = new();
 
     private readonly List<ModListItemViewModel> _selectedMods = new();
@@ -224,6 +267,7 @@ public partial class MainWindow : Window
             AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
         _userConfiguration = new UserConfigurationService();
+        _dataBackupService = new DataBackupService(_userConfiguration.GetConfigurationDirectory());
 
         InitializeComponent();
 
@@ -240,6 +284,7 @@ public partial class MainWindow : Window
         RequireExactVsVersionMenuItem.IsChecked = _userConfiguration.RequireExactVsVersionMatch;
         DisableAutoRefreshMenuItem.IsChecked = _userConfiguration.DisableAutoRefresh;
         DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
+        AutomaticDataBackupsMenuItem.IsChecked = _userConfiguration.AutomaticDataBackupsEnabled;
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
 
@@ -1096,6 +1141,25 @@ public partial class MainWindow : Window
 
         _userConfiguration.SetDisableAutoRefresh(disable);
         _viewModel?.SetAutoRefreshDisabled(disable);
+    }
+
+    private void AutomaticDataBackupsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        if (menuItem.IsChecked && (string.IsNullOrWhiteSpace(_dataDirectory) || !Directory.Exists(_dataDirectory)))
+        {
+            WpfMessageBox.Show(
+                "Please configure a valid VintagestoryData folder before enabling automatic backups.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            menuItem.IsChecked = false;
+            return;
+        }
+
+        _userConfiguration.SetAutomaticDataBackupsEnabled(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.AutomaticDataBackupsEnabled;
     }
 
     private void DisableInternetAccessMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -6614,9 +6678,49 @@ public partial class MainWindow : Window
         Close();
     }
 
-    private void LaunchGameButton_OnClick(object sender, RoutedEventArgs e)
+    private async Task<bool> TryEnsureDataBackupBeforeLaunchAsync()
+    {
+        if (!_userConfiguration.AutomaticDataBackupsEnabled) return true;
+        if (string.IsNullOrWhiteSpace(_dataDirectory) || !Directory.Exists(_dataDirectory)) return true;
+
+        ShowDataBackupOverlay("Preparing VintagestoryData backup...");
+        var progress = CreateDataBackupProgressReporter("Backing up VintagestoryData...");
+
+        try
+        {
+            await _dataBackupService.CreateBackupAsync(_dataDirectory!, progress, CancellationToken.None)
+                .ConfigureAwait(true);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            var response = WpfMessageBox.Show(
+                $"The automatic VintagestoryData backup failed:\n{ex.Message}\n\nLaunch Vintage Story without creating a backup?",
+                "Simple VS Manager",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            return response == MessageBoxResult.Yes;
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"The automatic VintagestoryData backup failed:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return false;
+        }
+        finally
+        {
+            HideDataBackupOverlay();
+        }
+    }
+
+    private async void LaunchGameButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (_isApplyingPreset) return;
+
+        if (!await TryEnsureDataBackupBeforeLaunchAsync().ConfigureAwait(true)) return;
 
         if (!string.IsNullOrWhiteSpace(_customShortcutPath))
         {
@@ -6770,6 +6874,80 @@ public partial class MainWindow : Window
         _customShortcutPath = null;
     }
 
+    private void RestoreDataFolderMenuItem_OnSubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        menuItem.Items.Clear();
+
+        IReadOnlyList<DataFolderBackupSummary> backups;
+        try
+        {
+            backups = _dataBackupService.GetAvailableBackups();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Trace.TraceWarning("Failed to access data backups: {0}", ex.Message);
+            menuItem.Items.Add(new MenuItem
+            {
+                Header = "Backups unavailable",
+                IsEnabled = false
+            });
+            return;
+        }
+
+        if (backups.Count == 0)
+        {
+            menuItem.Items.Add(new MenuItem
+            {
+                Header = "No backups available",
+                IsEnabled = false
+            });
+            return;
+        }
+
+        foreach (var backup in backups)
+        {
+            var timestamp = backup.CreatedOnUtc.ToLocalTime()
+                .ToString("dd MMM yyyy '•' HH:mm:ss", CultureInfo.CurrentCulture);
+            var header = string.IsNullOrWhiteSpace(backup.Id)
+                ? timestamp
+                : $"{timestamp} — {backup.Id}";
+            var item = new MenuItem
+            {
+                Header = header,
+                Tag = backup
+            };
+            item.Click += RestoreDataFolderMenuItem_OnBackupClick;
+            menuItem.Items.Add(item);
+        }
+    }
+
+    private async void RestoreDataFolderMenuItem_OnBackupClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem || menuItem.Tag is not DataFolderBackupSummary summary) return;
+
+        if (string.IsNullOrWhiteSpace(_dataDirectory) || !Directory.Exists(_dataDirectory))
+        {
+            WpfMessageBox.Show(
+                "The VintagestoryData folder is not available. Please set it before restoring a backup.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var confirmation = WpfMessageBox.Show(
+            "Restoring a VintagestoryData backup replaces the entire folder (the Cache folder will be cleared). Continue?",
+            "Simple VS Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirmation != MessageBoxResult.Yes) return;
+
+        await RestoreDataBackupAsync(summary).ConfigureAwait(true);
+    }
+
     private void RestoreBackupMenuItem_OnSubmenuOpened(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menuItem) return;
@@ -6893,6 +7071,65 @@ public partial class MainWindow : Window
         var loadedPreset = preset!;
         await ApplyPresetAsync(loadedPreset, restoreConfigurations).ConfigureAwait(true);
         _viewModel.ReportStatus($"Restored backup \"{loadedPreset.Name}\".");
+    }
+
+    private async Task RestoreDataBackupAsync(DataFolderBackupSummary summary)
+    {
+        if (string.IsNullOrWhiteSpace(_dataDirectory) || !Directory.Exists(_dataDirectory)) return;
+
+        ShowDataBackupOverlay("Preparing to restore VintagestoryData...");
+        var progress = CreateDataBackupProgressReporter("Restoring VintagestoryData...");
+
+        try
+        {
+            await _dataBackupService.RestoreBackupAsync(summary, _dataDirectory!, progress, CancellationToken.None)
+                .ConfigureAwait(true);
+            await RefreshModsAsync(true).ConfigureAwait(true);
+            _viewModel?.ReportStatus($"Restored VintagestoryData backup \"{summary.Id}\".");
+            WpfMessageBox.Show(
+                "VintagestoryData was restored from the selected backup.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            WpfMessageBox.Show(
+                $"Failed to restore the selected VintagestoryData backup:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            HideDataBackupOverlay();
+        }
+    }
+
+    private IProgress<DataFolderBackupProgress> CreateDataBackupProgressReporter(string fallbackMessage)
+    {
+        return new Progress<DataFolderBackupProgress>(value =>
+        {
+            var status = string.IsNullOrWhiteSpace(value.Status) ? fallbackMessage : value.Status;
+            DataBackupStatusMessage = status;
+            DataBackupProgress = double.IsNaN(value.Percent)
+                ? 0
+                : Math.Clamp(value.Percent, 0, 100);
+        });
+    }
+
+    private void ShowDataBackupOverlay(string message)
+    {
+        DataBackupProgress = 0;
+        DataBackupStatusMessage = message;
+        IsDataBackupInProgress = true;
+    }
+
+    private void HideDataBackupOverlay()
+    {
+        IsDataBackupInProgress = false;
+        DataBackupProgress = 0;
+        DataBackupStatusMessage = string.Empty;
     }
 
     private void OpenModFolderButton_OnClick(object sender, RoutedEventArgs e)
