@@ -50,6 +50,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly HashSet<ModListItemViewModel> _installedModSubscriptions = new();
     private readonly ObservableCollection<TagFilterOptionViewModel> _installedTagFilters = new();
     private readonly Dictionary<string, string> _latestReleaseUserReportEtags = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ModVersionVoteSummary> _cachedVoteSummaries = new(StringComparer.Ordinal);
     private readonly RelayCommand _loadMoreModDatabaseResultsCommand;
     private readonly ObservableCollection<int> _modDatabaseFetchLimitOptions;
     private readonly int _modDatabaseSearchResultLimit;
@@ -805,8 +806,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     .ConfigureAwait(false);
 
                 if (updateCandidates.Count > 0) QueueDatabaseInfoRefresh(updateCandidates, true);
-
-                await CheckForVoteChangesAsync(CancellationToken.None).ConfigureAwait(false);
             }
         }
         catch
@@ -1057,6 +1056,42 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         target[key] = etag;
+    }
+
+    private bool TryGetCachedVoteSummary(
+        string prefix,
+        string modId,
+        string? modVersion,
+        out ModVersionVoteSummary? summary)
+    {
+        summary = null;
+
+        if (string.IsNullOrWhiteSpace(modId)
+            || string.IsNullOrWhiteSpace(modVersion)
+            || string.IsNullOrWhiteSpace(InstalledGameVersion))
+            return false;
+
+        return _cachedVoteSummaries.TryGetValue(BuildVoteCacheKey(prefix, modId, modVersion), out summary);
+    }
+
+    private void CacheVoteSummary(
+        string prefix,
+        string modId,
+        string? modVersion,
+        ModVersionVoteSummary? summary)
+    {
+        if (summary is null
+            || string.IsNullOrWhiteSpace(modId)
+            || string.IsNullOrWhiteSpace(modVersion)
+            || string.IsNullOrWhiteSpace(InstalledGameVersion))
+            return;
+
+        _cachedVoteSummaries[BuildVoteCacheKey(prefix, modId, modVersion)] = summary;
+    }
+
+    private string BuildVoteCacheKey(string prefix, string modId, string modVersion)
+    {
+        return BuildVoteEtagKey(prefix, modId, modVersion, InstalledGameVersion);
     }
 
     private static string BuildVoteEtagKey(string prefix, string modId, string modVersion, string? gameVersion)
@@ -2194,7 +2229,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (string.Equals(mod.LatestReleaseUserReportVersion, latestReleaseVersion, StringComparison.OrdinalIgnoreCase)
             && mod.LatestReleaseUserReportSummary is not null)
+        {
+            CacheVoteSummary("latest", mod.ModId, latestReleaseVersion, mod.LatestReleaseUserReportSummary);
             return mod.LatestReleaseUserReportSummary;
+        }
+
+        if (TryGetCachedVoteSummary("latest", mod.ModId, latestReleaseVersion, out var cachedSummary))
+        {
+            await InvokeOnDispatcherAsync(
+                    () => mod.ApplyLatestReleaseUserReportSummary(cachedSummary!),
+                    cancellationToken,
+                    DispatcherPriority.Background)
+                .ConfigureAwait(false);
+
+            return cachedSummary;
+        }
 
         if (string.IsNullOrWhiteSpace(InstalledGameVersion))
         {
@@ -2227,6 +2276,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 .ConfigureAwait(false);
 
             StoreLatestReleaseUserReportEtag(mod.ModId, latestReleaseVersion, etag);
+            CacheVoteSummary("latest", mod.ModId, latestReleaseVersion, Summary);
 
             return Summary;
         }
@@ -2345,6 +2395,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 .ConfigureAwait(false);
 
             StoreUserReportEtag(mod.ModId, mod.UserReportModVersion, etag);
+            CacheVoteSummary("current", mod.ModId, mod.UserReportModVersion, Summary);
 
             return Summary;
         }
@@ -2383,6 +2434,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return null;
         }
 
+        if (mod.UserReportSummary is not null)
+        {
+            CacheVoteSummary("current", mod.ModId, mod.UserReportModVersion, mod.UserReportSummary);
+            return mod.UserReportSummary;
+        }
+
+        if (TryGetCachedVoteSummary("current", mod.ModId, mod.UserReportModVersion, out var cachedSummary))
+        {
+            await InvokeOnDispatcherAsync(
+                    () => mod.ApplyUserReportSummary(cachedSummary!),
+                    cancellationToken,
+                    DispatcherPriority.Background)
+                .ConfigureAwait(false);
+
+            return cachedSummary;
+        }
+
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
             await InvokeOnDispatcherAsync(mod.SetUserReportOffline, cancellationToken, DispatcherPriority.Background)
@@ -2408,6 +2476,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 .ConfigureAwait(false);
 
             StoreUserReportEtag(mod.ModId, mod.UserReportModVersion, etag);
+            CacheVoteSummary("current", mod.ModId, mod.UserReportModVersion, Summary);
 
             return Summary;
         }
