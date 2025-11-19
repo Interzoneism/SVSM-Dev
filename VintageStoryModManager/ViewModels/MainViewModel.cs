@@ -805,8 +805,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     .ConfigureAwait(false);
 
                 if (updateCandidates.Count > 0) QueueDatabaseInfoRefresh(updateCandidates, true);
-
-                await CheckForVoteChangesAsync(CancellationToken.None).ConfigureAwait(false);
             }
         }
         catch
