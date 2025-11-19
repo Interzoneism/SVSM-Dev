@@ -2355,6 +2355,11 @@ public partial class MainWindow : Window
         _ = RefreshCloudModlistsAsync(!_cloudModlistsLoaded);
     }
 
+    private void ModlistsTabControl_OnLoaded(object sender, RoutedEventArgs e)
+    {
+        ApplyPreferredModlistsTabSelection();
+    }
+
     private void ApplyPreferredModlistsTabSelection()
     {
         if (ModlistsTabControl is null || LocalModlistsTabItem is null || OnlineModlistsTabItem is null) return;
