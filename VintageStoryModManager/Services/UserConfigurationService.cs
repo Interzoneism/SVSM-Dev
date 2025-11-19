@@ -172,6 +172,8 @@ public sealed class UserConfigurationService
 
     public bool EnableServerOptions { get; private set; }
 
+    public bool AutomaticDataBackupsEnabled { get; private set; }
+
     public bool SuppressModlistSavePrompt { get; private set; }
 
     public bool SuppressRefreshCachePrompt
@@ -874,6 +876,14 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetAutomaticDataBackupsEnabled(bool isEnabled)
+    {
+        if (AutomaticDataBackupsEnabled == isEnabled) return;
+
+        AutomaticDataBackupsEnabled = isEnabled;
+        Save();
+    }
+
     public void SetModlistAutoLoadBehavior(ModlistAutoLoadBehavior behavior)
     {
         if (ModlistAutoLoadBehavior == behavior) return;
@@ -1210,6 +1220,7 @@ public sealed class UserConfigurationService
             DisableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _isModUsageTrackingDisabled = obj["modUsageTrackingDisabled"]?.GetValue<bool?>() ?? false;
             EnableServerOptions = obj["enableServerOptions"]?.GetValue<bool?>() ?? false;
+            AutomaticDataBackupsEnabled = obj["automaticDataBackupsEnabled"]?.GetValue<bool?>() ?? false;
             SuppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePrompt = obj["suppressRefreshCachePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePromptVersion = NormalizeVersion(
@@ -1430,6 +1441,7 @@ public sealed class UserConfigurationService
                 ["disableInternetAccess"] = DisableInternetAccess,
                 ["modUsageTrackingDisabled"] = _isModUsageTrackingDisabled,
                 ["enableServerOptions"] = EnableServerOptions,
+                ["automaticDataBackupsEnabled"] = AutomaticDataBackupsEnabled,
                 ["suppressModlistSavePrompt"] = SuppressModlistSavePrompt,
                 ["suppressRefreshCachePrompt"] = _suppressRefreshCachePrompt,
                 ["suppressRefreshCachePromptVersion"] = _suppressRefreshCachePromptVersion,
