@@ -35,10 +35,13 @@ public sealed class DataBackupService
 
     public Task<DataBackupResult> CreateBackupAsync(
         string dataDirectory,
+        string? vintageStoryVersion,
         IProgress<DataBackupProgress>? progress,
         CancellationToken cancellationToken)
     {
-        return Task.Run(() => CreateBackupInternal(dataDirectory, progress, cancellationToken), cancellationToken);
+        return Task.Run(
+            () => CreateBackupInternal(dataDirectory, vintageStoryVersion, progress, cancellationToken),
+            cancellationToken);
     }
 
     public Task RestoreBackupAsync(
@@ -66,17 +69,55 @@ public sealed class DataBackupService
                 manifest.Id ?? Path.GetFileName(directory),
                 manifest.CreatedOnUtc,
                 directory,
-                manifest.SourceDataDirectory));
+                manifest.SourceDataDirectory,
+                manifest.VintageStoryVersion));
         }
 
         return summaries
             .OrderByDescending(summary => summary.CreatedOnUtc)
-            .Take(DevConfig.DataFolderBackupRetentionCount)
             .ToArray();
+    }
+
+    public int DeleteBackups(string dataDirectory, string vintageStoryVersion)
+    {
+        if (string.IsNullOrWhiteSpace(dataDirectory))
+            throw new ArgumentException("A data directory must be provided.", nameof(dataDirectory));
+
+        if (string.IsNullOrWhiteSpace(vintageStoryVersion))
+            throw new ArgumentException("Vintage Story version is required.", nameof(vintageStoryVersion));
+
+        var normalizedSource = NormalizeDirectoryPath(dataDirectory)
+                               ?? throw new ArgumentException("A valid data directory must be provided.", nameof(dataDirectory));
+        var normalizedVersion = VersionStringUtility.Normalize(vintageStoryVersion);
+        if (string.IsNullOrWhiteSpace(normalizedVersion))
+            throw new ArgumentException("A valid Vintage Story version must be provided.", nameof(vintageStoryVersion));
+
+        if (!Directory.Exists(_backupRootDirectory)) return 0;
+
+        var deleted = 0;
+        foreach (var directory in Directory.EnumerateDirectories(_backupRootDirectory))
+        {
+            var manifest = TryLoadManifest(directory);
+            if (manifest is null) continue;
+            if (!DirectoriesMatch(manifest.SourceDataDirectory, normalizedSource)) continue;
+            if (!VersionsMatch(manifest.VintageStoryVersion, normalizedVersion)) continue;
+
+            TryDeleteDirectory(directory);
+            deleted++;
+        }
+
+        if (deleted > 0) CleanupSaveStore();
+        return deleted;
+    }
+
+    public string GetBackupRootDirectory()
+    {
+        return _backupRootDirectory;
     }
 
     private DataBackupResult CreateBackupInternal(
         string dataDirectory,
+        string? vintageStoryVersion,
         IProgress<DataBackupProgress>? progress,
         CancellationToken cancellationToken)
     {
@@ -97,18 +138,21 @@ public sealed class DataBackupService
         progress?.Report(new DataBackupProgress(0, "Scanning VintagestoryData..."));
         var plan = BuildBackupPlan(dataDirectory, dataTargetDirectory, cancellationToken);
 
+        var normalizedSourceDirectory = NormalizeDirectoryPath(dataDirectory);
+        var normalizedVersion = VersionStringUtility.Normalize(vintageStoryVersion);
+
         var manifest = new BackupManifest
         {
             Id = identifier,
             CreatedOnUtc = timestampUtc,
-            SourceDataDirectory = dataDirectory
+            SourceDataDirectory = normalizedSourceDirectory ?? dataDirectory,
+            VintageStoryVersion = normalizedVersion ?? vintageStoryVersion
         };
 
         try
         {
             ExecuteBackupPlan(plan, manifest, progress, cancellationToken);
             WriteManifest(Path.Combine(backupDirectory, DevConfig.DataFolderBackupManifestFileName), manifest);
-            PruneExcessBackups();
             CleanupSaveStore();
             progress?.Report(new DataBackupProgress(100, "Backup completed."));
             return new DataBackupResult(identifier, timestampUtc, backupDirectory);
@@ -562,25 +606,6 @@ public sealed class DataBackupService
         }
     }
 
-    private void PruneExcessBackups()
-    {
-        if (!Directory.Exists(_backupRootDirectory)) return;
-
-        var directories = Directory.EnumerateDirectories(_backupRootDirectory)
-            .Select(dir => new { Directory = dir, Manifest = TryLoadManifest(dir) })
-            .Where(entry => entry.Manifest is { CreatedOnUtc: var created } && created != default)
-            .OrderBy(entry => entry.Manifest!.CreatedOnUtc)
-            .ToList();
-
-        var excess = directories.Count - DevConfig.DataFolderBackupRetentionCount;
-        if (excess <= 0) return;
-
-        for (var i = 0; i < excess; i++)
-        {
-            TryDeleteDirectory(directories[i].Directory);
-        }
-    }
-
     private void CleanupSaveStore()
     {
         if (!Directory.Exists(_savesStoreDirectory)) return;
@@ -664,6 +689,36 @@ public sealed class DataBackupService
         return Path.Combine(_savesStoreDirectory, hash + suffix);
     }
 
+    private static string? NormalizeDirectoryPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return null;
+
+        try
+        {
+            return Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool DirectoriesMatch(string? candidate, string normalizedTarget)
+    {
+        if (string.IsNullOrWhiteSpace(candidate)) return false;
+        var normalizedCandidate = NormalizeDirectoryPath(candidate);
+        if (normalizedCandidate is null) return false;
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        return string.Equals(normalizedCandidate, normalizedTarget, comparison);
+    }
+
+    private static bool VersionsMatch(string? candidate, string normalizedTarget)
+    {
+        var normalizedCandidate = VersionStringUtility.Normalize(candidate);
+        if (string.IsNullOrWhiteSpace(normalizedCandidate)) return false;
+        return string.Equals(normalizedCandidate, normalizedTarget, StringComparison.OrdinalIgnoreCase);
+    }
+
     private sealed class BackupPlan
     {
         public BackupPlan(string dataTargetDirectory)
@@ -693,6 +748,7 @@ public sealed class DataBackupService
         public string? Id { get; set; }
         public DateTime CreatedOnUtc { get; set; }
         public string? SourceDataDirectory { get; set; }
+        public string? VintageStoryVersion { get; set; }
         public List<SaveReference> Saves { get; set; } = new();
     }
 
@@ -711,6 +767,7 @@ public sealed record DataBackupSummary(
     string Id,
     DateTime CreatedOnUtc,
     string DirectoryPath,
-    string? SourceDataDirectory);
+    string? SourceDataDirectory,
+    string? VintageStoryVersion);
 
 public sealed record DataBackupResult(string Id, DateTime CreatedOnUtc, string DirectoryPath);

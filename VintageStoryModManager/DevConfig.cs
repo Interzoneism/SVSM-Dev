@@ -41,7 +41,6 @@ public static class DevConfig
     public static string DataFolderBackupDirectoryName { get; } = "Data Folder Backups";
     public static string DataFolderBackupManifestFileName { get; } = "data-backup.json";
     public static string DataFolderBackupSaveStoreName { get; } = ".saves";
-    public static int DataFolderBackupRetentionCount { get; } = 30;
     public static int AutomaticConfigMaxWordDistance { get; } = 2;
 
     // Mod metadata cache.
