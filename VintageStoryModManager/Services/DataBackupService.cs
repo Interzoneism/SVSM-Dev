@@ -89,8 +89,9 @@ public sealed class DataBackupService
         Directory.CreateDirectory(_backupRootDirectory);
         Directory.CreateDirectory(_savesStoreDirectory);
 
-        var timestamp = DateTime.UtcNow;
-        var identifier = timestamp.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture);
+        var timestampUtc = DateTime.UtcNow;
+        var identifierTimestamp = timestampUtc.ToLocalTime();
+        var identifier = identifierTimestamp.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture);
         var backupDirectory = EnsureUniqueDirectory(Path.Combine(_backupRootDirectory, identifier));
         var dataTargetDirectory = Path.Combine(backupDirectory, DataDirectoryName);
 
@@ -100,7 +101,7 @@ public sealed class DataBackupService
         var manifest = new BackupManifest
         {
             Id = identifier,
-            CreatedOnUtc = timestamp,
+            CreatedOnUtc = timestampUtc,
             SourceDataDirectory = dataDirectory
         };
 
@@ -111,7 +112,7 @@ public sealed class DataBackupService
             PruneExcessBackups();
             CleanupSaveStore();
             progress?.Report(new DataBackupProgress(100, "Backup completed."));
-            return new DataBackupResult(identifier, timestamp, backupDirectory);
+            return new DataBackupResult(identifier, timestampUtc, backupDirectory);
         }
         catch
         {
@@ -658,7 +659,7 @@ public sealed class DataBackupService
         public string? Id { get; set; }
         public DateTime CreatedOnUtc { get; set; }
         public string? SourceDataDirectory { get; set; }
-        public List<SaveReference> Saves { get; } = new();
+        public List<SaveReference> Saves { get; set; } = new();
     }
 
     private sealed class SaveReference
