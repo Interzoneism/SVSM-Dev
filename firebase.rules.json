@@ -38,6 +38,7 @@
     "compatVotes": {
       "$modKey": {
         "$versionKey": {
+          ".write": "auth != null",
           "users": {
             ".read": true,
             "$userId": {
