@@ -14,6 +14,8 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 public sealed class ModVersionVoteService
 {
+    private const int MaxRecentCommentsPerOption = 50;
+
     private static readonly string DefaultDbUrl = DevConfig.ModVersionVoteDefaultDbUrl;
 
     private static readonly string VotesRootPath = DevConfig.ModVersionVoteRootPath;
@@ -136,7 +138,16 @@ public sealed class ModVersionVoteService
         var userKey = session.UserId ??
                       throw new InvalidOperationException("Firebase session did not provide a user ID.");
 
-        var record = new VoteRecord
+        var existing = await FetchSummaryAsync(
+                session,
+                modKey,
+                versionKey,
+                null,
+                true,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        var record = new ModVersionVoteRecord
         {
             Option = option,
             VintageStoryVersion = vintageStoryVersion,
@@ -144,15 +155,25 @@ public sealed class ModVersionVoteService
             Comment = NormalizeComment(comment)
         };
 
-        var url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "users", userKey);
-        var payload = JsonSerializer.Serialize(record, SerializerOptions);
+        var updatedSummary = ModVersionVoteAggregator.ApplyVoteChange(
+            existing.SummaryRecord,
+            existing.UserVote,
+            record,
+            userKey,
+            MaxRecentCommentsPerOption);
 
-        using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-        using var response = await HttpClient
-            .PutAsync(url, content, cancellationToken)
+        await PatchVotesAsync(
+                session,
+                modKey,
+                versionKey,
+                new Dictionary<string, object?>
+                {
+                    [$"users/{userKey}"] = record,
+                    ["summary"] = updatedSummary
+                },
+                "Submit vote",
+                cancellationToken)
             .ConfigureAwait(false);
-
-        await EnsureOkAsync(response, "Submit vote").ConfigureAwait(false);
 
         return await GetVoteSummaryWithEtagAsync(
                 session,
@@ -181,14 +202,34 @@ public sealed class ModVersionVoteService
         var userKey = session.UserId ??
                       throw new InvalidOperationException("Firebase session did not provide a user ID.");
 
-        var url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "users", userKey);
-
-        using var response = await HttpClient
-            .DeleteAsync(url, cancellationToken)
+        var existing = await FetchSummaryAsync(
+                session,
+                modKey,
+                versionKey,
+                null,
+                true,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        if (response.StatusCode != HttpStatusCode.NotFound)
-            await EnsureOkAsync(response, "Remove vote").ConfigureAwait(false);
+        var updatedSummary = ModVersionVoteAggregator.ApplyVoteChange(
+            existing.SummaryRecord,
+            existing.UserVote,
+            null,
+            userKey,
+            MaxRecentCommentsPerOption);
+
+        await PatchVotesAsync(
+                session,
+                modKey,
+                versionKey,
+                new Dictionary<string, object?>
+                {
+                    [$"users/{userKey}"] = null,
+                    ["summary"] = updatedSummary
+                },
+                "Remove vote",
+                cancellationToken)
+            .ConfigureAwait(false);
 
         return await GetVoteSummaryWithEtagAsync(
                 session,
@@ -230,7 +271,39 @@ public sealed class ModVersionVoteService
     {
         var modKey = SanitizeKey(modId);
         var versionKey = SanitizeKey(modVersion);
-        var url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "users");
+        var includeUser = session.HasValue && session.Value.UserId is { Length: > 0 };
+
+        var summary = await FetchSummaryAsync(
+                session,
+                modKey,
+                versionKey,
+                knownEtag,
+                includeUser,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (summary.IsNotModified)
+            return new VoteSummaryResult(null, summary.ETag ?? knownEtag, true);
+
+        var domainSummary = BuildDomainSummary(
+            modId,
+            modVersion,
+            vintageStoryVersion,
+            summary.SummaryRecord,
+            summary.UserVote);
+
+        return new VoteSummaryResult(domainSummary, summary.ETag, false);
+    }
+
+    private async Task<SummaryFetchResult> FetchSummaryAsync(
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession? session,
+        string modKey,
+        string versionKey,
+        string? knownEtag,
+        bool includeUserVote,
+        CancellationToken cancellationToken)
+    {
+        var url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "summary");
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.TryAddWithoutValidation("X-Firebase-ETag", "true");
@@ -243,21 +316,96 @@ public sealed class ModVersionVoteService
         var responseEtag = response.Headers.ETag?.Tag;
 
         if (response.StatusCode == HttpStatusCode.NotModified)
-            return new VoteSummaryResult(null, responseEtag ?? knownEtag, true);
+            return new SummaryFetchResult(null, null, responseEtag ?? knownEtag, true);
 
         if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            var emptySummary = new ModVersionVoteSummary(
-                modId,
-                modVersion,
-                vintageStoryVersion,
-                ModVersionVoteCounts.Empty,
-                ModVersionVoteComments.Empty,
-                null,
-                null);
+            return await BackfillSummaryAsync(
+                    session,
+                    modKey,
+                    versionKey,
+                    includeUserVote,
+                    cancellationToken)
+                .ConfigureAwait(false);
 
-            return new VoteSummaryResult(emptySummary, responseEtag, false);
-        }
+        await EnsureOkAsync(response, "Fetch summary").ConfigureAwait(false);
+
+        await using var contentStream =
+            await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+
+        var summaryRecord = await JsonSerializer
+            .DeserializeAsync<VoteSummaryRecord>(contentStream, SerializerOptions, cancellationToken)
+            .ConfigureAwait(false);
+
+        summaryRecord = NormalizeSummary(summaryRecord);
+
+        ModVersionVoteRecord? userRecord = null;
+        if (includeUserVote && session.HasValue && session.Value.UserId is { Length: > 0 } userId)
+            userRecord = await FetchUserVoteAsync(session.Value, modKey, versionKey, userId, cancellationToken)
+                .ConfigureAwait(false);
+
+        return new SummaryFetchResult(summaryRecord, userRecord, responseEtag, false);
+    }
+
+    private async Task<SummaryFetchResult> BackfillSummaryAsync(
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession? session,
+        string modKey,
+        string versionKey,
+        bool includeUserVote,
+        CancellationToken cancellationToken)
+    {
+        var votes = await FetchAllVotesAsync(session, modKey, versionKey, cancellationToken).ConfigureAwait(false);
+
+        var backfilledSummary = ModVersionVoteAggregator.CreateSummary(
+            votes,
+            MaxRecentCommentsPerOption,
+            session?.UserId);
+
+        if (session.HasValue)
+            await WriteSummaryAsync(session, modKey, versionKey, backfilledSummary, cancellationToken)
+                .ConfigureAwait(false);
+
+        ModVersionVoteRecord? userVote = null;
+        if (includeUserVote && session?.UserId is { Length: > 0 } userId)
+            votes.TryGetValue(userId, out userVote);
+
+        return new SummaryFetchResult(backfilledSummary, userVote, null, false);
+    }
+
+    private async Task<ModVersionVoteRecord?> FetchUserVoteAsync(
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession session,
+        string modKey,
+        string versionKey,
+        string userKey,
+        CancellationToken cancellationToken)
+    {
+        var url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "users", userKey);
+
+        using var response = await HttpClient
+            .GetAsync(url, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+
+        await EnsureOkAsync(response, "Fetch user vote").ConfigureAwait(false);
+
+        var payload = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        return JsonSerializer.Deserialize<ModVersionVoteRecord>(payload, SerializerOptions);
+    }
+
+    private async Task<IReadOnlyDictionary<string, ModVersionVoteRecord>> FetchAllVotesAsync(
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession? session,
+        string modKey,
+        string versionKey,
+        CancellationToken cancellationToken)
+    {
+        var url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "users");
+
+        using var response = await HttpClient
+            .GetAsync(url, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return new Dictionary<string, ModVersionVoteRecord>();
 
         await EnsureOkAsync(response, "Fetch votes").ConfigureAwait(false);
 
@@ -268,114 +416,124 @@ public sealed class ModVersionVoteService
             .ConfigureAwait(false);
 
         var root = document.RootElement;
-        if (root.ValueKind == JsonValueKind.Null)
-        {
-            var emptySummary = new ModVersionVoteSummary(
-                modId,
-                modVersion,
-                vintageStoryVersion,
-                ModVersionVoteCounts.Empty,
-                ModVersionVoteComments.Empty,
-                null,
-                null);
+        if (root.ValueKind != JsonValueKind.Object) return new Dictionary<string, ModVersionVoteRecord>();
 
-            return new VoteSummaryResult(emptySummary, responseEtag, false);
-        }
-
-        if (root.ValueKind != JsonValueKind.Object)
-        {
-            var emptySummary = new ModVersionVoteSummary(
-                modId,
-                modVersion,
-                vintageStoryVersion,
-                ModVersionVoteCounts.Empty,
-                ModVersionVoteComments.Empty,
-                null,
-                null);
-
-            return new VoteSummaryResult(emptySummary, responseEtag, false);
-        }
-
-        var fullyFunctional = 0;
-        var noIssuesSoFar = 0;
-        var someIssuesButWorks = 0;
-        var notFunctional = 0;
-        var crashesOrFreezes = 0;
-        ModVersionVoteOption? userVote = null;
-        string? userComment = null;
-
-        if (session.HasValue && session.Value.UserId is { Length: > 0 } userId)
-            if (root.TryGetProperty(userId, out var userElement)
-                && TryDeserializeRecord(userElement) is VoteRecord currentUserRecord)
-            {
-                userVote = currentUserRecord.Option;
-                userComment = currentUserRecord.Comment;
-            }
-
-        List<string> notFunctionalComments = new();
-        List<string> crashesOrFreezesGameComments = new();
+        var result = new Dictionary<string, ModVersionVoteRecord>(StringComparer.Ordinal);
 
         foreach (var property in root.EnumerateObject())
         {
             if (property.Value.ValueKind != JsonValueKind.Object) continue;
 
-            var record = TryDeserializeRecord(property.Value);
-            if (record is null) continue;
+            var vote = TryDeserializeVoteRecord(property.Value);
+            if (vote is null) continue;
 
-            switch (record.Value.Option)
-            {
-                case ModVersionVoteOption.FullyFunctional:
-                    fullyFunctional++;
-                    break;
-                case ModVersionVoteOption.NoIssuesSoFar:
-                    noIssuesSoFar++;
-                    break;
-                case ModVersionVoteOption.SomeIssuesButWorks:
-                    someIssuesButWorks++;
-                    break;
-                case ModVersionVoteOption.NotFunctional:
-                    notFunctional++;
-                    AddComment(notFunctionalComments, record.Value.Comment);
-                    break;
-                case ModVersionVoteOption.CrashesOrFreezesGame:
-                    crashesOrFreezes++;
-                    AddComment(crashesOrFreezesGameComments, record.Value.Comment);
-                    break;
-            }
+            result[property.Name] = vote;
         }
 
-        var counts = new ModVersionVoteCounts(
-            fullyFunctional,
-            noIssuesSoFar,
-            someIssuesButWorks,
-            notFunctional,
-            crashesOrFreezes);
-        var comments = new ModVersionVoteComments(
-            ToReadOnlyList(notFunctionalComments),
-            ToReadOnlyList(crashesOrFreezesGameComments));
-
-        var summary = new ModVersionVoteSummary(
-            modId,
-            modVersion,
-            vintageStoryVersion,
-            counts,
-            comments,
-            userVote,
-            userComment);
-
-        return new VoteSummaryResult(summary, responseEtag, false);
+        return result;
     }
 
-    private static VoteRecord? TryDeserializeRecord(JsonElement element)
+    private static ModVersionVoteRecord? TryDeserializeVoteRecord(JsonElement element)
     {
         try
         {
-            return element.Deserialize<VoteRecord>(SerializerOptions);
+            return element.Deserialize<ModVersionVoteRecord>(SerializerOptions);
         }
         catch
         {
             return null;
         }
+    }
+
+    private static VoteSummaryRecord NormalizeSummary(VoteSummaryRecord? summary)
+    {
+        summary ??= new VoteSummaryRecord();
+
+        summary.RecentComments ??= new VoteSummaryComments();
+        summary.RecentComments.NotFunctional ??= new List<VoteSummaryComment>();
+        summary.RecentComments.CrashesOrFreezesGame ??= new List<VoteSummaryComment>();
+
+        return summary;
+    }
+
+    private async Task WriteSummaryAsync(
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession? session,
+        string modKey,
+        string versionKey,
+        VoteSummaryRecord summary,
+        CancellationToken cancellationToken)
+    {
+        var url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey, "summary");
+        var payload = JsonSerializer.Serialize(summary, SerializerOptions);
+
+        using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+        using var response = await HttpClient
+            .PutAsync(url, content, cancellationToken)
+            .ConfigureAwait(false);
+
+        await EnsureOkAsync(response, "Update summary").ConfigureAwait(false);
+    }
+
+    private async Task PatchVotesAsync(
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession session,
+        string modKey,
+        string versionKey,
+        IDictionary<string, object?> payload,
+        string operation,
+        CancellationToken cancellationToken)
+    {
+        var url = BuildVotesUrl(session, VotesRootPath, modKey, versionKey);
+        var body = JsonSerializer.Serialize(payload, SerializerOptions);
+
+        using var content = new StringContent(body, Encoding.UTF8, "application/json");
+        using var request = new HttpRequestMessage(HttpMethod.Patch, url) { Content = content };
+        using var response = await HttpClient
+            .SendAsync(request, cancellationToken)
+            .ConfigureAwait(false);
+
+        await EnsureOkAsync(response, operation).ConfigureAwait(false);
+    }
+
+    private static ModVersionVoteSummary BuildDomainSummary(
+        string modId,
+        string modVersion,
+        string vintageStoryVersion,
+        VoteSummaryRecord? summary,
+        ModVersionVoteRecord? userVote)
+    {
+        if (summary is null)
+        {
+            return new ModVersionVoteSummary(
+                modId,
+                modVersion,
+                NormalizeVersion(vintageStoryVersion),
+                ModVersionVoteCounts.Empty,
+                ModVersionVoteComments.Empty,
+                null,
+                null);
+        }
+
+        var normalizedSummary = NormalizeSummary(summary);
+
+        var counts = new ModVersionVoteCounts(
+            normalizedSummary.FullyFunctional,
+            normalizedSummary.NoIssuesSoFar,
+            normalizedSummary.SomeIssuesButWorks,
+            normalizedSummary.NotFunctional,
+            normalizedSummary.CrashesOrFreezesGame);
+
+        var comments = ModVersionVoteAggregator.ToDomainComments(normalizedSummary);
+
+        var userComment = NormalizeComment(userVote?.Comment);
+
+        return new ModVersionVoteSummary(
+            modId,
+            modVersion,
+            NormalizeVersion(vintageStoryVersion),
+            counts,
+            comments,
+            userVote?.Option,
+            userComment);
     }
 
     private string BuildVotesUrl(
@@ -431,21 +589,6 @@ public sealed class ModVersionVoteService
 
         var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(trimmed));
         return base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
-    }
-
-    private static void AddComment(List<string> target, string? comment)
-    {
-        var normalized = NormalizeComment(comment);
-        if (string.IsNullOrEmpty(normalized)) return;
-
-        target.Add(normalized);
-    }
-
-    private static IReadOnlyList<string> ToReadOnlyList(List<string> source)
-    {
-        return source.Count == 0
-            ? Array.Empty<string>()
-            : source.ToArray();
     }
 
     private static string? NormalizeComment(string? value)
@@ -533,15 +676,27 @@ public sealed class ModVersionVoteService
         }
     }
 
-    private struct VoteRecord
+    private sealed class SummaryFetchResult
     {
-        [JsonPropertyName("option")] public ModVersionVoteOption Option { get; set; }
+        public SummaryFetchResult(
+            VoteSummaryRecord? summaryRecord,
+            ModVersionVoteRecord? userVote,
+            string? eTag,
+            bool isNotModified)
+        {
+            SummaryRecord = summaryRecord;
+            UserVote = userVote;
+            ETag = eTag;
+            IsNotModified = isNotModified;
+        }
 
-        [JsonPropertyName("vintageStoryVersion")]
-        public string? VintageStoryVersion { get; set; }
+        public VoteSummaryRecord? SummaryRecord { get; }
 
-        [JsonPropertyName("updatedUtc")] public string? UpdatedUtc { get; set; }
+        public ModVersionVoteRecord? UserVote { get; }
 
-        [JsonPropertyName("comment")] public string? Comment { get; set; }
+        public string? ETag { get; }
+
+        public bool IsNotModified { get; }
+
     }
 }
