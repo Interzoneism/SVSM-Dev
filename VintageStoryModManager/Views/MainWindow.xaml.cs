@@ -6896,17 +6896,33 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (backups.Count == 0)
+        var dataDirectory = _dataDirectory;
+        DataFolderBackupSummary[] filteredBackups;
+        if (string.IsNullOrWhiteSpace(dataDirectory))
         {
+            filteredBackups = Array.Empty<DataFolderBackupSummary>();
+        }
+        else
+        {
+            filteredBackups = backups
+                .Where(summary => IsSameDirectory(summary.SourceDataDirectory, dataDirectory))
+                .ToArray();
+        }
+
+        if (filteredBackups.Length == 0)
+        {
+            var header = string.IsNullOrWhiteSpace(dataDirectory)
+                ? "Set VintagestoryData folder to restore backups"
+                : "No backups for this VintagestoryData folder";
             menuItem.Items.Add(new MenuItem
             {
-                Header = "No backups available",
+                Header = header,
                 IsEnabled = false
             });
             return;
         }
 
-        foreach (var backup in backups)
+        foreach (var backup in filteredBackups)
         {
             var timestamp = backup.CreatedOnUtc.ToLocalTime()
                 .ToString("dd MMM yyyy '•' HH:mm:ss", CultureInfo.CurrentCulture);
@@ -7076,6 +7092,16 @@ public partial class MainWindow : Window
     private async Task RestoreDataBackupAsync(DataFolderBackupSummary summary)
     {
         if (string.IsNullOrWhiteSpace(_dataDirectory) || !Directory.Exists(_dataDirectory)) return;
+
+        if (!IsSameDirectory(summary.SourceDataDirectory, _dataDirectory))
+        {
+            WpfMessageBox.Show(
+                "This backup was created for a different VintagestoryData folder and cannot be restored.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
 
         ShowDataBackupOverlay("Preparing to restore VintagestoryData...");
         var progress = CreateDataBackupProgressReporter("Restoring VintagestoryData...");
@@ -7402,6 +7428,23 @@ public partial class MainWindow : Window
             return separator == Path.DirectorySeparatorChar || separator == Path.AltDirectorySeparatorChar;
         }
         catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private static bool IsSameDirectory(string? first, string? second)
+    {
+        if (string.IsNullOrWhiteSpace(first) || string.IsNullOrWhiteSpace(second)) return false;
+
+        try
+        {
+            var normalizedFirst = Path.TrimEndingDirectorySeparator(Path.GetFullPath(first));
+            var normalizedSecond = Path.TrimEndingDirectorySeparator(Path.GetFullPath(second));
+            var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            return string.Equals(normalizedFirst, normalizedSecond, comparison);
+        }
+        catch
         {
             return false;
         }

@@ -90,8 +90,7 @@ public sealed class DataBackupService
         Directory.CreateDirectory(_savesStoreDirectory);
 
         var timestampUtc = DateTime.UtcNow;
-        var identifierTimestamp = timestampUtc.ToLocalTime();
-        var identifier = identifierTimestamp.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture);
+        var identifier = GenerateBackupIdentifier(timestampUtc);
         var backupDirectory = EnsureUniqueDirectory(Path.Combine(_backupRootDirectory, identifier));
         var dataTargetDirectory = Path.Combine(backupDirectory, DataDirectoryName);
 
@@ -478,6 +477,41 @@ public sealed class DataBackupService
         {
             return 0;
         }
+    }
+
+    private string GenerateBackupIdentifier(DateTime timestampUtc)
+    {
+        var localTimestamp = timestampUtc.ToLocalTime();
+        var dateStamp = localTimestamp.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var prefix = $"{dateStamp}-";
+        var highestSuffix = 0;
+
+        if (Directory.Exists(_backupRootDirectory))
+        {
+            try
+            {
+                foreach (var directory in Directory.EnumerateDirectories(_backupRootDirectory, $"{prefix}*", SearchOption.TopDirectoryOnly))
+                {
+                    var name = Path.GetFileName(directory);
+                    if (string.IsNullOrWhiteSpace(name) || name.Length <= prefix.Length) continue;
+
+                    var suffix = name[prefix.Length..];
+                    var underscoreIndex = suffix.IndexOf('_');
+                    if (underscoreIndex >= 0) suffix = suffix[..underscoreIndex];
+
+                    if (!int.TryParse(suffix, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)) continue;
+
+                    if (value > highestSuffix) highestSuffix = value;
+                }
+            }
+            catch
+            {
+                // If enumeration fails, fall back to the base identifier.
+            }
+        }
+
+        var nextSuffix = highestSuffix + 1;
+        return $"{prefix}{nextSuffix:000}";
     }
 
     private static string EnsureUniqueDirectory(string candidate)
