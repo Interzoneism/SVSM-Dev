@@ -4109,9 +4109,9 @@
                                Margin="0,0,0,8" />
                     <TextBlock Text="Simple VS Manager disables all controls while the backup finishes."
                                FontSize="13"
-                               Foreground="{DynamicResource Brush.Text.Secondary}"
+                               Foreground="{DynamicResource Brush.Text.Primary}"
                                TextWrapping="Wrap"
-                               TextAlignment="Center" />
+                               TextAlignment="Center" Width="228" />
                 </StackPanel>
             </Border>
         </Border>
