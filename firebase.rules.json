@@ -50,7 +50,7 @@
             ".write": "auth != null",
             ".validate": "!newData.exists() || (newData.hasChildren(['fullyFunctional','noIssuesSoFar','someIssuesButWorks','notFunctional','crashesOrFreezesGame','recentComments']) && newData.child('fullyFunctional').isNumber() && newData.child('fullyFunctional').val() >= 0 && newData.child('noIssuesSoFar').isNumber() && newData.child('noIssuesSoFar').val() >= 0 && newData.child('someIssuesButWorks').isNumber() && newData.child('someIssuesButWorks').val() >= 0 && newData.child('notFunctional').isNumber() && newData.child('notFunctional').val() >= 0 && newData.child('crashesOrFreezesGame').isNumber() && newData.child('crashesOrFreezesGame').val() >= 0 && (!newData.child('userVoteId').exists() || newData.child('userVoteId').isString()) && (!newData.child('updatedUtc').exists() || newData.child('updatedUtc').isString()) && (!newData.child('recentComments').exists() || newData.child('recentComments').hasChildren(['notFunctional','crashesOrFreezesGame'])))",
             "recentComments": {
-              ".validate": "!newData.exists() || (newData.child('notFunctional').isList() && newData.child('crashesOrFreezesGame').isList())",
+              ".validate": "!newData.exists() || (newData.child('notFunctional').exists() && newData.child('crashesOrFreezesGame').exists())",
               "notFunctional": {
                 "$idx": {
                   ".validate": "!newData.exists() || (newData.hasChildren(['text','userId']) && newData.child('text').isString() && newData.child('text').val().matches(/\\S/) && newData.child('userId').isString() && (!newData.child('updatedUtc').exists() || newData.child('updatedUtc').isString()))"
