@@ -1035,6 +1035,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         UpdateVoteEtag(_latestReleaseUserReportEtags, "latest", modId, modVersion, etag);
     }
 
+    private string? GetVoteEtag(
+        Dictionary<string, string> source,
+        string prefix,
+        string modId,
+        string? modVersion)
+    {
+        if (string.IsNullOrWhiteSpace(modId)
+            || string.IsNullOrWhiteSpace(modVersion)
+            || string.IsNullOrWhiteSpace(InstalledGameVersion))
+            return null;
+
+        var key = BuildVoteEtagKey(prefix, modId, modVersion, InstalledGameVersion);
+        return source.TryGetValue(key, out var etag) ? etag : null;
+    }
+
     private void UpdateVoteEtag(
         Dictionary<string, string> target,
         string prefix,
@@ -2214,19 +2229,30 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         try
         {
-            var (Summary, etag) = await _voteService
-                .GetVoteSummaryWithEtagAsync(mod.ModId, latestReleaseVersion, InstalledGameVersion!, cancellationToken)
+            var etag = GetVoteEtag(_latestReleaseUserReportEtags, "latest", mod.ModId, latestReleaseVersion);
+
+            var result = await _voteService
+                .GetVoteSummaryIfChangedAsync(
+                    mod.ModId,
+                    latestReleaseVersion,
+                    InstalledGameVersion!,
+                    etag,
+                    cancellationToken)
                 .ConfigureAwait(false);
 
-            await InvokeOnDispatcherAsync(
-                    () => mod.ApplyLatestReleaseUserReportSummary(Summary),
-                    cancellationToken,
-                    DispatcherPriority.Background)
-                .ConfigureAwait(false);
+            var summary = result.Summary ?? mod.LatestReleaseUserReportSummary;
 
-            StoreLatestReleaseUserReportEtag(mod.ModId, latestReleaseVersion, etag);
+            if (!result.IsNotModified || mod.LatestReleaseUserReportSummary is null)
+                if (summary is not null)
+                    await InvokeOnDispatcherAsync(
+                            () => mod.ApplyLatestReleaseUserReportSummary(summary),
+                            cancellationToken,
+                            DispatcherPriority.Background)
+                        .ConfigureAwait(false);
 
-            return Summary;
+            StoreLatestReleaseUserReportEtag(mod.ModId, latestReleaseVersion, result.ETag);
+
+            return summary;
         }
         catch (InternetAccessDisabledException)
         {
@@ -2394,20 +2420,30 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         try
         {
-            var (Summary, etag) = await _voteService
-                .GetVoteSummaryWithEtagAsync(mod.ModId, mod.UserReportModVersion!, InstalledGameVersion!,
+            var etag = GetVoteEtag(_userReportEtags, "current", mod.ModId, mod.UserReportModVersion);
+
+            var result = await _voteService
+                .GetVoteSummaryIfChangedAsync(
+                    mod.ModId,
+                    mod.UserReportModVersion!,
+                    InstalledGameVersion!,
+                    etag,
                     cancellationToken)
                 .ConfigureAwait(false);
 
-            await InvokeOnDispatcherAsync(
-                    () => mod.ApplyUserReportSummary(Summary),
-                    cancellationToken,
-                    DispatcherPriority.Background)
-                .ConfigureAwait(false);
+            var summary = result.Summary ?? mod.UserReportSummary;
 
-            StoreUserReportEtag(mod.ModId, mod.UserReportModVersion, etag);
+            if (!result.IsNotModified || mod.UserReportSummary is null)
+                if (summary is not null)
+                    await InvokeOnDispatcherAsync(
+                            () => mod.ApplyUserReportSummary(summary),
+                            cancellationToken,
+                            DispatcherPriority.Background)
+                        .ConfigureAwait(false);
 
-            return Summary;
+            StoreUserReportEtag(mod.ModId, mod.UserReportModVersion, result.ETag);
+
+            return summary;
         }
         catch (InternetAccessDisabledException)
         {
