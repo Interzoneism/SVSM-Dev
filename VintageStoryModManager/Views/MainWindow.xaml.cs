@@ -1158,6 +1158,22 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (menuItem.IsChecked && !_userConfiguration.AutomaticDataBackupsWarningAcknowledged)
+        {
+            const string message =
+                "This is an experimental feature and will increase your start up time depending on your files. Depending on your mods, saves and other files it could also end up taking up a lot of disk space."
+                + "\n\n"
+                + "But probably not. Report any bugs! Remember to launch with the \"Launch Vintage Story\" button, it backups at launch ONLY.";
+
+            WpfMessageBox.Show(
+                message,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            _userConfiguration.SetAutomaticDataBackupsWarningAcknowledged(true);
+        }
+
         _userConfiguration.SetAutomaticDataBackupsEnabled(menuItem.IsChecked);
         menuItem.IsChecked = _userConfiguration.AutomaticDataBackupsEnabled;
     }

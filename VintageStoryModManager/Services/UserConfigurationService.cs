@@ -174,6 +174,8 @@ public sealed class UserConfigurationService
 
     public bool AutomaticDataBackupsEnabled { get; private set; }
 
+    public bool AutomaticDataBackupsWarningAcknowledged { get; private set; }
+
     public bool SuppressModlistSavePrompt { get; private set; }
 
     public bool SuppressRefreshCachePrompt
@@ -884,6 +886,14 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetAutomaticDataBackupsWarningAcknowledged(bool acknowledged)
+    {
+        if (AutomaticDataBackupsWarningAcknowledged == acknowledged) return;
+
+        AutomaticDataBackupsWarningAcknowledged = acknowledged;
+        Save();
+    }
+
     public void SetModlistAutoLoadBehavior(ModlistAutoLoadBehavior behavior)
     {
         if (ModlistAutoLoadBehavior == behavior) return;
@@ -1193,6 +1203,7 @@ public sealed class UserConfigurationService
         ResetThemePaletteToDefaults();
         _selectedPresetName = null;
         GameProfileCreationWarningAcknowledged = false;
+        AutomaticDataBackupsWarningAcknowledged = false;
 
         try
         {
@@ -1221,6 +1232,8 @@ public sealed class UserConfigurationService
             _isModUsageTrackingDisabled = obj["modUsageTrackingDisabled"]?.GetValue<bool?>() ?? false;
             EnableServerOptions = obj["enableServerOptions"]?.GetValue<bool?>() ?? false;
             AutomaticDataBackupsEnabled = obj["automaticDataBackupsEnabled"]?.GetValue<bool?>() ?? false;
+            AutomaticDataBackupsWarningAcknowledged =
+                obj["automaticDataBackupsWarningAcknowledged"]?.GetValue<bool?>() ?? false;
             SuppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePrompt = obj["suppressRefreshCachePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePromptVersion = NormalizeVersion(
@@ -1379,6 +1392,7 @@ public sealed class UserConfigurationService
             DisableAutoRefreshWarningAcknowledged = false;
             DisableInternetAccess = false;
             EnableServerOptions = false;
+            AutomaticDataBackupsWarningAcknowledged = false;
             SuppressModlistSavePrompt = false;
             _suppressRefreshCachePrompt = false;
             _suppressRefreshCachePromptVersion = null;
@@ -1442,6 +1456,7 @@ public sealed class UserConfigurationService
                 ["modUsageTrackingDisabled"] = _isModUsageTrackingDisabled,
                 ["enableServerOptions"] = EnableServerOptions,
                 ["automaticDataBackupsEnabled"] = AutomaticDataBackupsEnabled,
+                ["automaticDataBackupsWarningAcknowledged"] = AutomaticDataBackupsWarningAcknowledged,
                 ["suppressModlistSavePrompt"] = SuppressModlistSavePrompt,
                 ["suppressRefreshCachePrompt"] = _suppressRefreshCachePrompt,
                 ["suppressRefreshCachePromptVersion"] = _suppressRefreshCachePromptVersion,
