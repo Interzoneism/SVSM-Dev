@@ -539,6 +539,18 @@ public sealed class FirebaseModlistStore
                     }
                     else
                     {
+                        // Ownership exists but belongs to a different Firebase UID
+                        // This happens when migrating to a new Firebase project
+                        // Try to migrate ownership by setting the ownershipMigration flag first
+                        var migrationSuccess = await TryMigrateOwnershipAsync(identity, readResult.Session, ct)
+                            .ConfigureAwait(false);
+
+                        if (migrationSuccess)
+                        {
+                            _ownershipClaimedForUid = identity.SanitizedUid;
+                            return;
+                        }
+
                         throw new InvalidOperationException(
                             "Cloud modlists for this Vintage Story UID are already bound to another Firebase anonymous account.");
                     }
@@ -579,6 +591,73 @@ public sealed class FirebaseModlistStore
         finally
         {
             _ownershipClaimLock.Release();
+        }
+    }
+
+    /// <summary>
+    ///     Attempts to migrate ownership from an old Firebase UID to the new one.
+    ///     This is used when switching Firebase projects - it sets the ownershipMigration flag
+    ///     to allow the new Firebase UID to access the data, then updates the owners entry.
+    /// </summary>
+    private async Task<bool> TryMigrateOwnershipAsync(
+        PlayerIdentity identity,
+        FirebaseAnonymousAuthenticator.FirebaseAuthSession session,
+        CancellationToken ct)
+    {
+        try
+        {
+            // Step 1: Set the ownershipMigration flag to grant temporary access
+            var migrationFlagResult = await SendWithAuthRetryAsync(sess =>
+            {
+                var migrationUrl = BuildAuthenticatedUrl(sess.IdToken, null, "ownershipMigration",
+                    identity.SanitizedUid, sess.UserId);
+                var payload = JsonSerializer.Serialize(true);
+                var request = new HttpRequestMessage(HttpMethod.Put, migrationUrl)
+                {
+                    Content = new StringContent(payload, Encoding.UTF8, "application/json")
+                };
+                return HttpClient.SendAsync(request, ct);
+            }, ct).ConfigureAwait(false);
+
+            using (migrationFlagResult.Response)
+            {
+                if (!migrationFlagResult.Response.IsSuccessStatusCode)
+                {
+                    // Failed to set migration flag - cannot proceed
+                    return false;
+                }
+            }
+
+            // Step 2: Now that we have temporary access via the migration flag, update the owners entry
+            var updateOwnerResult = await SendWithAuthRetryAsync(sess =>
+            {
+                var ownersUrl = BuildAuthenticatedUrl(sess.IdToken, null, "owners", identity.SanitizedUid);
+                var payload = JsonSerializer.Serialize(sess.UserId);
+                var request = new HttpRequestMessage(HttpMethod.Put, ownersUrl)
+                {
+                    Content = new StringContent(payload, Encoding.UTF8, "application/json")
+                };
+                return HttpClient.SendAsync(request, ct);
+            }, ct).ConfigureAwait(false);
+
+            using (updateOwnerResult.Response)
+            {
+                if (!updateOwnerResult.Response.IsSuccessStatusCode)
+                {
+                    // Failed to update owner - migration incomplete
+                    return false;
+                }
+            }
+
+            // Migration successful
+            StatusLogService.AppendStatus(
+                $"Successfully migrated cloud modlist ownership for player UID: {identity.OriginalUid}", false);
+            return true;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
+        {
+            // Migration failed - the user will get the standard "already bound" error
+            return false;
         }
     }
 
