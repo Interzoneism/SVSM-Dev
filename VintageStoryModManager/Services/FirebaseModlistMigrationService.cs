@@ -1,8 +1,8 @@
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Security;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -19,41 +19,55 @@ internal sealed class FirebaseModlistMigrationService
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public async Task<bool> TryMigrateAsync(string? playerUid, string? playerName, CancellationToken ct)
+    public async Task<FirebaseModlistMigrationResult?> TryMigrateAsync(
+        string? playerUid,
+        string? playerName,
+        CancellationToken ct,
+        IProgress<FirebaseMigrationProgress>? progress = null)
     {
-        if (string.IsNullOrWhiteSpace(playerUid)) return false;
+        if (string.IsNullOrWhiteSpace(playerUid)) return null;
 
         var stateFilePath = FirebaseAnonymousAuthenticator.GetStateFilePath();
-        if (string.IsNullOrWhiteSpace(stateFilePath) || !File.Exists(stateFilePath)) return false;
+        if (string.IsNullOrWhiteSpace(stateFilePath) || !File.Exists(stateFilePath)) return null;
 
         var projectId = TryReadProjectId(stateFilePath);
-        if (IsNewProject(projectId)) return false;
-        if (!IsLegacyProject(projectId)) return false;
+        if (IsNewProject(projectId) || !IsLegacyProject(projectId)) return null;
 
+        progress?.Report(new FirebaseMigrationProgress("Starting cloud modlist migration..."));
         StatusLogService.AppendStatus("Migrating cloud modlists to the new Firebase project...", false);
 
         var legacyAuthenticator = new FirebaseAnonymousAuthenticator(DevConfig.FirebaseLegacyApiKey);
         var legacyStore = new FirebaseModlistStore(DevConfig.FirebaseLegacyModlistDbUrl, legacyAuthenticator);
         legacyStore.SetPlayerIdentity(playerUid, playerName);
 
-        var modlists = await DownloadLegacyModlistsAsync(legacyStore, ct).ConfigureAwait(false);
+        progress?.Report(new FirebaseMigrationProgress("Checking for legacy cloud modlists..."));
+        var modlists = await DownloadLegacyModlistsAsync(legacyStore, ct, progress).ConfigureAwait(false);
 
         var backupPath = TryBackupLegacyAuthFile(stateFilePath);
+
+        var legacySession = await legacyStore.Authenticator.TryGetExistingSessionAsync(ct).ConfigureAwait(false)
+                            ?? await legacyStore.Authenticator.GetSessionAsync(ct).ConfigureAwait(false);
 
         var newStore = new FirebaseModlistStore();
         newStore.SetPlayerIdentity(playerUid, playerName);
 
-        await newStore.Authenticator.GetSessionAsync(ct).ConfigureAwait(false);
+        progress?.Report(new FirebaseMigrationProgress("Preparing new Firebase session..."));
+        var newSession = await newStore.Authenticator.GetSessionAsync(ct).ConfigureAwait(false);
 
         foreach (var modlist in modlists)
+        {
+            progress?.Report(new FirebaseMigrationProgress(
+                $"Saving \"{modlist.DisplayName ?? modlist.SlotKey}\" to the new project...",
+                modlist.DisplayName ?? modlist.SlotKey));
             await newStore.SaveAsync(modlist.SlotKey, modlist.ContentJson, ct).ConfigureAwait(false);
+        }
 
         StatusLogService.AppendStatus(
             "Cloud modlists migrated to the new Firebase project successfully." +
             (string.IsNullOrWhiteSpace(backupPath) ? string.Empty : $" Legacy auth saved to {backupPath} for reference."),
             false);
 
-        return true;
+        return new FirebaseModlistMigrationResult(true, legacySession.UserId, newSession.UserId, modlists);
     }
 
     private static bool IsNewProject(string? projectId)
@@ -66,8 +80,10 @@ internal sealed class FirebaseModlistMigrationService
         return string.Equals(projectId, DevConfig.FirebaseLegacyProjectId, StringComparison.OrdinalIgnoreCase);
     }
 
-    private async Task<IReadOnlyList<LegacyModlist>> DownloadLegacyModlistsAsync(FirebaseModlistStore legacyStore,
-        CancellationToken ct)
+    private async Task<IReadOnlyList<LegacyModlist>> DownloadLegacyModlistsAsync(
+        FirebaseModlistStore legacyStore,
+        CancellationToken ct,
+        IProgress<FirebaseMigrationProgress>? progress)
     {
         var result = new List<LegacyModlist>();
         var slots = await legacyStore.ListSlotsAsync(ct).ConfigureAwait(false);
@@ -76,13 +92,17 @@ internal sealed class FirebaseModlistMigrationService
         {
             try
             {
+                progress?.Report(new FirebaseMigrationProgress($"Downloading modlist from {slot}...", slot));
                 var content = await legacyStore.LoadAsync(slot, ct).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(content)) continue;
 
-                result.Add(new LegacyModlist(slot, content));
+                var legacyModlist = new LegacyModlist(slot, content, TryExtractModlistName(content));
+                result.Add(legacyModlist);
+                progress?.Report(new FirebaseMigrationProgress(
+                    $"Finished downloading \"{legacyModlist.DisplayName ?? slot}\".",
+                    legacyModlist.DisplayName ?? slot));
             }
-            catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException
-                                           or TaskCanceledException)
+            catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or TaskCanceledException)
             {
                 StatusLogService.AppendStatus($"Failed to read legacy modlist for {slot}: {ex.Message}", true);
             }
@@ -194,10 +214,59 @@ internal sealed class FirebaseModlistMigrationService
         return null;
     }
 
-    private sealed record LegacyModlist(string SlotKey, string ContentJson);
+    private static string? TryExtractModlistName(string? contentJson)
+    {
+        if (string.IsNullOrWhiteSpace(contentJson)) return null;
+
+        try
+        {
+            using var document = JsonDocument.Parse(contentJson);
+            var root = document.RootElement;
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                if (root.TryGetProperty("name", out var nameProperty) && nameProperty.ValueKind == JsonValueKind.String)
+                {
+                    var name = nameProperty.GetString();
+                    if (!string.IsNullOrWhiteSpace(name)) return name.Trim();
+                }
+
+                if (root.TryGetProperty("content", out var contentProperty) && contentProperty.ValueKind == JsonValueKind.Object
+                    && contentProperty.TryGetProperty("name", out var contentName)
+                    && contentName.ValueKind == JsonValueKind.String)
+                {
+                    var name = contentName.GetString();
+                    if (!string.IsNullOrWhiteSpace(name)) return name.Trim();
+                }
+            }
+        }
+        catch
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    public sealed record FirebaseMigrationProgress(string Message, string? ModlistName = null)
+    {
+        public string Message { get; } = string.IsNullOrWhiteSpace(Message)
+            ? throw new ArgumentException("A progress message is required.", nameof(Message))
+            : Message.Trim();
+
+        public string? ModlistName { get; } = string.IsNullOrWhiteSpace(ModlistName) ? null : ModlistName.Trim();
+    }
+
+    public sealed record FirebaseModlistMigrationResult(
+        bool Success,
+        string? LegacyUserId,
+        string? NewUserId,
+        IReadOnlyList<LegacyModlist> MigratedModlists);
+
+    public sealed record LegacyModlist(string SlotKey, string ContentJson, string? DisplayName);
 
     private sealed class AuthStateModel
     {
         public string? IdToken { get; set; }
+        public string? UserId { get; set; }
     }
 }

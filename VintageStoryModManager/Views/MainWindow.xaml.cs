@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -37,6 +38,9 @@ using VintageStoryModManager.ViewModels;
 using VintageStoryModManager.Views.Dialogs;
 using DataFolderBackupProgress = VintageStoryModManager.Services.DataBackupProgress;
 using DataFolderBackupSummary = VintageStoryModManager.Services.DataBackupSummary;
+using FirebaseMigrationProgress = VintageStoryModManager.Services.FirebaseModlistMigrationService.FirebaseMigrationProgress;
+using FirebaseModlistMigrationResult = VintageStoryModManager.Services.FirebaseModlistMigrationService.FirebaseModlistMigrationResult;
+using LegacyModlist = VintageStoryModManager.Services.FirebaseModlistMigrationService.LegacyModlist;
 using YamlDotNet.Core;
 using ButtonBase = System.Windows.Controls.Primitives.ButtonBase;
 using Colors = QuestPDF.Helpers.Colors;
@@ -62,6 +66,7 @@ using TextBoxBase = System.Windows.Controls.Primitives.TextBoxBase;
 using VerticalAlignment = System.Windows.VerticalAlignment;
 using WinForms = System.Windows.Forms;
 using WpfButton = System.Windows.Controls.Button;
+using WpfListBox = System.Windows.Controls.ListBox;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 using WpfToolTip = System.Windows.Controls.ToolTip;
 using TabControl = System.Windows.Controls.TabControl;
@@ -429,6 +434,8 @@ public partial class MainWindow : Window
         await CheckAndPromptMigrationAsync().ConfigureAwait(true);
 
         await PromptCacheRefreshIfNeededAsync().ConfigureAwait(true);
+
+        await RunFirebaseModlistMigrationAsync().ConfigureAwait(true);
 
         if (_viewModel != null)
         {
@@ -10168,26 +10175,128 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task MigrateLegacyFirebaseDataIfNeededAsync()
+    private Task RunFirebaseModlistMigrationAsync()
     {
-        if (_firebaseMigrationAttempted) return;
+        if (_firebaseMigrationAttempted) return Task.CompletedTask;
 
         var playerUid = _viewModel?.PlayerUid;
-        if (string.IsNullOrWhiteSpace(playerUid)) return;
+        if (string.IsNullOrWhiteSpace(playerUid)) return Task.CompletedTask;
 
         _firebaseMigrationAttempted = true;
 
-        try
+        var migrationService = new FirebaseModlistMigrationService();
+
+        var progressItems = new ObservableCollection<string>
         {
-            var migrationService = new FirebaseModlistMigrationService();
-            await migrationService.TryMigrateAsync(playerUid, _viewModel?.PlayerName, CancellationToken.None)
-                .ConfigureAwait(false);
-        }
-        catch (Exception ex)
+            "Cloud modlist migration is starting..."
+        };
+
+        var progressList = new WpfListBox
         {
-            StatusLogService.AppendStatus($"Failed to migrate cloud modlists to the new Firebase project: {ex.Message}",
-                true);
+            ItemsSource = progressItems,
+            Margin = new Thickness(10),
+            Height = 200
+        };
+
+        var descriptionText = new TextBlock
+        {
+            Text = "Please wait while your cloud modlists are copied to the new project.",
+            Margin = new Thickness(10, 10, 10, 0),
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        var progressWindow = new Window
+        {
+            Title = "Cloud Modlist Migration",
+            Width = 460,
+            Height = 320,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = this,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStyle = WindowStyle.ToolWindow
+        };
+
+        var stackPanel = new StackPanel();
+        stackPanel.Children.Add(descriptionText);
+        stackPanel.Children.Add(progressList);
+
+        progressWindow.Content = stackPanel;
+
+        FirebaseModlistMigrationResult? migrationResult = null;
+
+        var progress = new Progress<FirebaseMigrationProgress>(update =>
+        {
+            if (update is null || string.IsNullOrWhiteSpace(update.Message)) return;
+
+            progressItems.Add(update.Message);
+            progressList.ScrollIntoView(update.Message);
+        });
+
+        progressWindow.Loaded += async (_, _) =>
+        {
+            try
+            {
+                migrationResult = await migrationService
+                    .TryMigrateAsync(playerUid, _viewModel?.PlayerName, CancellationToken.None, progress)
+                    .ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                progressItems.Add($"Migration failed: {ex.Message}");
+                StatusLogService.AppendStatus(
+                    $"Failed to migrate cloud modlists to the new Firebase project: {ex.Message}", true);
+                migrationResult = new FirebaseModlistMigrationResult(
+                    false,
+                    null,
+                    null,
+                    System.Array.Empty<LegacyModlist>());
+            }
+            finally
+            {
+                progressWindow.Close();
+            }
+        };
+
+        progressWindow.ShowDialog();
+
+        if (migrationResult is null) return Task.CompletedTask;
+
+        var builder = new StringBuilder();
+
+        if (migrationResult.Success)
+        {
+            builder.AppendLine("Cloud modlist migration completed successfully.");
         }
+        else
+        {
+            builder.AppendLine("Cloud modlist migration did not complete successfully.");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine($"Old Firebase UID: {migrationResult.LegacyUserId ?? "Unavailable"}");
+        builder.AppendLine($"New Firebase UID: {migrationResult.NewUserId ?? "Unavailable"}");
+
+        if (migrationResult.MigratedModlists.Count > 0)
+        {
+            builder.AppendLine();
+            builder.AppendLine("Migrated modlists:");
+
+            foreach (var modlist in migrationResult.MigratedModlists)
+            {
+                var name = modlist.DisplayName ?? modlist.SlotKey;
+                builder.AppendLine($"- {name} ({modlist.SlotKey})");
+            }
+        }
+
+        var caption = migrationResult.Success
+            ? "Simple VS Manager"
+            : "Simple VS Manager - Migration";
+
+        var icon = migrationResult.Success ? MessageBoxImage.Information : MessageBoxImage.Warning;
+
+        WpfMessageBox.Show(this, builder.ToString(), caption, MessageBoxButton.OK, icon);
+
+        return Task.CompletedTask;
     }
 
     private async Task<FirebaseModlistStore> EnsureCloudStoreInitializedAsync()
@@ -10206,8 +10315,6 @@ public partial class MainWindow : Window
                 ApplyPlayerIdentityToCloudStore(cached);
                 return cached;
             }
-
-            await MigrateLegacyFirebaseDataIfNeededAsync().ConfigureAwait(false);
 
             var store = new FirebaseModlistStore();
             ApplyPlayerIdentityToCloudStore(store);
