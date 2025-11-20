@@ -10180,8 +10180,19 @@ public partial class MainWindow : Window
         try
         {
             var migrationService = new FirebaseModlistMigrationService();
-            await migrationService.TryMigrateAsync(playerUid, _viewModel?.PlayerName, CancellationToken.None)
+            var migrationSucceeded = await migrationService
+                .TryMigrateAsync(playerUid, _viewModel?.PlayerName, CancellationToken.None)
                 .ConfigureAwait(false);
+
+            if (migrationSucceeded)
+            {
+                await Dispatcher.InvokeAsync(() =>
+                    WpfMessageBox.Show(
+                        "Due to bandwidth issues, the manager is changing to another database. Your modlists will be saved and moved to the new database. Each users modlists will appear in the Online Modlists tab when they update. All compatibility votes have been reset. Thank you for using the manager and voting!",
+                        "Simple VS Manager",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information));
+            }
         }
         catch (Exception ex)
         {
