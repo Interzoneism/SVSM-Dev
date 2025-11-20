@@ -1,4 +1,5 @@
 using System.IO;
+using static System.Net.WebRequestMethods;
 
 namespace VintageStoryModManager;
 
@@ -115,7 +116,7 @@ public static class DevConfig
 
     // Compatibility vote storage.
     public static string ModVersionVoteDefaultDbUrl { get; } =
-        "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
+        "https://simplevsmanager-default-rtdb.europe-west1.firebasedatabase.app";
 
     public static string ModVersionVoteRootPath { get; } = "compatVotes";
 
