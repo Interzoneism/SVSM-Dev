@@ -51,6 +51,9 @@ public static class DevConfig
     public static string FirebaseModlistDefaultDbUrl { get; } =
         "https://simplevsmanager-default-rtdb.europe-west1.firebasedatabase.app";
 
+    public static string FirebaseLegacyModlistDbUrl { get; } =
+        "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
+
     // Cloud/Firebase backups location (AppData/Local/SVSM Backup/)
     public static string FirebaseBackupDirectory
     {
@@ -81,6 +84,12 @@ public static class DevConfig
     public static string FirebaseDeleteEndpoint { get; } = "https://identitytoolkit.googleapis.com/v1/accounts:delete";
     public static string FirebaseAuthStateFileName { get; } = "firebase-auth.json";
     public static string FirebaseDefaultApiKey { get; } = "AIzaSyBjIEr_JbB-Fx9hMa9nAOwaUyPP82HEeG4";
+
+    public static string FirebaseLegacyApiKey { get; } = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
+
+    public static string FirebaseNewProjectId { get; } = "simplevsmanager";
+
+    public static string FirebaseLegacyProjectId { get; } = "simple-vs-manager";
                                                            
     public static string FirebaseAuthBackupDirectoryName { get; } = "SVSM Backup";
 
