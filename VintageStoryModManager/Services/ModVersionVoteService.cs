@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -19,6 +20,8 @@ public sealed class ModVersionVoteService
 
     private static readonly string VotesRootPath = DevConfig.ModVersionVoteRootPath;
 
+    private static readonly string VoteCachePath = Path.Combine(DevConfig.FirebaseBackupDirectory, "compat-votes-cache.json");
+
     private static readonly HttpClient HttpClient = new();
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -34,6 +37,9 @@ public sealed class ModVersionVoteService
 
     private readonly ConcurrentDictionary<VoteCacheKey, VoteCacheEntry> _voteCache =
         new(VoteCacheKeyComparer.Instance);
+
+    private readonly SemaphoreSlim _cacheLock = new(1, 1);
+    private bool _voteCacheLoaded;
 
     public ModVersionVoteService()
         : this(DefaultDbUrl, new FirebaseAnonymousAuthenticator())
@@ -574,6 +580,8 @@ public sealed class ModVersionVoteService
         [JsonPropertyName("comment")] public string? Comment { get; set; }
     }
 
+    private sealed record VoteCacheFileEntry(ModVersionVoteSummary? Summary, string? ETag);
+
     private readonly record struct VoteCacheKey(string ModId, string ModVersion, string VintageStoryVersion);
 
     private readonly record struct VoteCacheEntry(ModVersionVoteSummary Summary, string? ETag)
@@ -607,11 +615,105 @@ public sealed class ModVersionVoteService
 
     private bool TryGetCachedSummary(VoteCacheKey key, out VoteCacheEntry entry)
     {
+        EnsureVoteCacheLoaded();
         return _voteCache.TryGetValue(key, out entry);
     }
 
     private void StoreCachedSummary(VoteCacheKey key, ModVersionVoteSummary summary, string? eTag)
     {
+        EnsureVoteCacheLoaded();
+
         _voteCache[key] = new VoteCacheEntry(summary, eTag);
+
+        PersistVoteCache();
+    }
+
+    private void EnsureVoteCacheLoaded()
+    {
+        if (_voteCacheLoaded) return;
+
+        _cacheLock.Wait();
+        try
+        {
+            if (_voteCacheLoaded) return;
+
+            TryLoadVoteCacheFromDisk();
+            _voteCacheLoaded = true;
+        }
+        finally
+        {
+            _cacheLock.Release();
+        }
+    }
+
+    private void TryLoadVoteCacheFromDisk()
+    {
+        try
+        {
+            if (!File.Exists(VoteCachePath)) return;
+
+            var json = File.ReadAllText(VoteCachePath);
+            if (string.IsNullOrWhiteSpace(json)) return;
+
+            var payload = JsonSerializer.Deserialize<Dictionary<string, VoteCacheFileEntry>>(json, SerializerOptions);
+            if (payload is null) return;
+
+            foreach (var pair in payload)
+            {
+                var key = TryParseCacheKey(pair.Key);
+                if (key is null) continue;
+
+                var value = pair.Value;
+                if (value?.Summary is null) continue;
+
+                _voteCache[key.Value] = new VoteCacheEntry(value.Summary, value.ETag);
+            }
+        }
+        catch
+        {
+            // Ignore cache load failures; fall back to network.
+        }
+    }
+
+    private void PersistVoteCache()
+    {
+        try
+        {
+            _cacheLock.Wait();
+
+            var directory = Path.GetDirectoryName(VoteCachePath);
+            if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+
+            var payload = _voteCache.ToDictionary(
+                pair => BuildCacheKey(pair.Key),
+                pair => new VoteCacheFileEntry(pair.Value.Summary, pair.Value.ETag),
+                StringComparer.Ordinal);
+
+            var json = JsonSerializer.Serialize(payload, SerializerOptions);
+            File.WriteAllText(VoteCachePath, json);
+        }
+        catch
+        {
+            // Ignore cache persistence issues; cache is best-effort.
+        }
+        finally
+        {
+            if (_cacheLock.CurrentCount == 0) _cacheLock.Release();
+        }
+    }
+
+    private static string BuildCacheKey(VoteCacheKey key)
+    {
+        return string.Join("||", key.ModId, key.ModVersion, key.VintageStoryVersion);
+    }
+
+    private static VoteCacheKey? TryParseCacheKey(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return null;
+
+        var parts = key.Split("||", StringSplitOptions.None);
+        if (parts.Length != 3) return null;
+
+        return new VoteCacheKey(parts[0], parts[1], parts[2]);
     }
 }

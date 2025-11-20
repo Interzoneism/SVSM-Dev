@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Linq;
 using System.Reflection;
@@ -7856,13 +7857,15 @@ public partial class MainWindow : Window
                     && snapshot is not null)
                 {
                     serializableState.ConfigurationFileName = snapshot.FileName;
-                    serializableState.ConfigurationContent = snapshot.Content;
+                    serializableState.ConfigurationContent =
+                        EncodeConfigurationContent(snapshot.Content);
                 }
                 else if (state.ConfigurationContent is not null)
                 {
                     serializableState.ConfigurationFileName =
                         GetSafeConfigFileName(state.ConfigurationFileName, normalizedId);
-                    serializableState.ConfigurationContent = state.ConfigurationContent;
+                    serializableState.ConfigurationContent = EncodeConfigurationContent(
+                        DecodeConfigurationContent(state.ConfigurationContent));
                 }
             }
 
@@ -10048,7 +10051,7 @@ public partial class MainWindow : Window
                 var configurationFileName = string.IsNullOrWhiteSpace(mod.ConfigurationFileName)
                     ? null
                     : mod.ConfigurationFileName!.Trim();
-                var configurationContent = mod.ConfigurationContent;
+                var configurationContent = DecodeConfigurationContent(mod.ConfigurationContent);
 
                 modStates.Add(new ModPresetModState(modId, version, mod.IsActive, configurationFileName,
                     configurationContent));
@@ -10095,7 +10098,7 @@ public partial class MainWindow : Window
                 mod.ConfigurationFileName = fileName;
 
             if (string.IsNullOrEmpty(mod.ConfigurationContent))
-                mod.ConfigurationContent = configuration.Content ?? string.Empty;
+                mod.ConfigurationContent = DecodeConfigurationContent(configuration.Content) ?? string.Empty;
         }
     }
 
@@ -11224,6 +11227,50 @@ public partial class MainWindow : Window
         }
 
         return path;
+    }
+
+    private static string? EncodeConfigurationContent(string? content)
+    {
+        if (string.IsNullOrEmpty(content)) return content;
+
+        var decoded = DecodeConfigurationContent(content);
+        if (string.IsNullOrEmpty(decoded)) return decoded;
+
+        var bytes = Encoding.UTF8.GetBytes(decoded);
+        using var buffer = new MemoryStream();
+        using (var brotli = new BrotliStream(buffer, CompressionLevel.SmallestSize, true))
+        {
+            brotli.Write(bytes, 0, bytes.Length);
+        }
+
+        var compressed = buffer.ToArray();
+
+        // Only return compressed payload when it meaningfully shrinks the content.
+        if (compressed.Length + 6 < bytes.Length)
+            return $"br64:{Convert.ToBase64String(compressed)}";
+
+        return decoded;
+    }
+
+    private static string DecodeConfigurationContent(string? content)
+    {
+        if (string.IsNullOrEmpty(content)) return content ?? string.Empty;
+
+        const string prefix = "br64:";
+        if (!content.StartsWith(prefix, StringComparison.Ordinal)) return content;
+
+        try
+        {
+            var raw = Convert.FromBase64String(content[prefix.Length..]);
+            using var input = new MemoryStream(raw);
+            using var brotli = new BrotliStream(input, CompressionMode.Decompress);
+            using var reader = new StreamReader(brotli, Encoding.UTF8);
+            return reader.ReadToEnd();
+        }
+        catch
+        {
+            return content;
+        }
     }
 
     private static string GetSnapshotNameFromFilePath(string filePath, string fallback)
