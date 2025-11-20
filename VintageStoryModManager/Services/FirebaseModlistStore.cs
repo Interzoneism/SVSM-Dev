@@ -196,6 +196,8 @@ public sealed class FirebaseModlistStore
 
         var dateAddedIso = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture);
 
+        var summaryJson = BuildSummaryJson(normalizedContent, dateAddedIso);
+
         // Build the user slot payload including registryId
         var userSlotJson = BuildSlotNodeJson(normalizedContent, registryId, dateAddedIso);
 
@@ -203,6 +205,7 @@ public sealed class FirebaseModlistStore
         // - write /users/{uid}/{slot} (content + registryId)
         // - write /registryOwners/{registryId} = auth.uid (safe even if same value)
         // - write /registry/{registryId} (public content mirror)
+        // - write /registrySummaries/{registryId} (public summary mirror)
         var saveResult = await SendWithAuthRetryAsync(session =>
         {
             var rootUrl = BuildAuthenticatedUrl(session.IdToken, null /* root */);
@@ -216,7 +219,8 @@ public sealed class FirebaseModlistStore
                 $"{{" +
                 $"\"/users/{identity.SanitizedUid}/{slotKey}\":{userSlotJson}," +
                 $"\"/registryOwners/{registryId}\":{registryOwnerJson}," +
-                $"\"/registry/{registryId}\":{registryNodeJson}" +
+                $"\"/registry/{registryId}\":{registryNodeJson}," +
+                $"\"/registrySummaries/{registryId}\":{summaryJson}" +
                 $"}}";
 
             var req = new HttpRequestMessage(new HttpMethod("PATCH"), rootUrl)
@@ -298,6 +302,7 @@ public sealed class FirebaseModlistStore
             {
                 sb.Append($",\"/registry/{registryId}\":null");
                 sb.Append($",\"/registryOwners/{registryId}\":null");
+                sb.Append($",\"/registrySummaries/{registryId}\":null");
             }
 
             sb.Append('}');
@@ -332,58 +337,60 @@ public sealed class FirebaseModlistStore
     public async Task<IReadOnlyList<CloudModlistRegistryEntry>> GetRegistryEntriesAsync(CancellationToken ct = default)
     {
         InternetAccessManager.ThrowIfInternetAccessDisabled();
+
+        var summaries = await TryFetchRegistryEntriesAsync("registrySummaries", false, ct).ConfigureAwait(false);
+        if (summaries.Count > 0) return summaries;
+
+        // Fall back to the full registry for older databases that don't have summaries yet
+        return await TryFetchRegistryEntriesAsync("registry", true, ct).ConfigureAwait(false);
+    }
+
+    public async Task<CloudModlistRegistryEntry?> GetRegistryEntryAsync(string registryId, CancellationToken ct = default)
+    {
+        InternetAccessManager.ThrowIfInternetAccessDisabled();
+
+        if (string.IsNullOrWhiteSpace(registryId))
+            throw new ArgumentException("Registry ID cannot be null or whitespace.", nameof(registryId));
+
         var sendResult = await SendWithAuthRetryAsync(session =>
         {
-            var registryUrl = BuildAuthenticatedUrl(session.IdToken, null, "registry");
+            var registryUrl = BuildAuthenticatedUrl(session.IdToken, null, "registry", registryId);
             return HttpClient.GetAsync(registryUrl, ct);
         }, ct).ConfigureAwait(false);
 
         using var response = sendResult.Response;
 
         if (response.StatusCode == HttpStatusCode.NotFound)
-            return Array.Empty<CloudModlistRegistryEntry>();
+            return null;
 
-        await EnsureOk(response, "Fetch registry").ConfigureAwait(false);
+        await EnsureOk(response, "Fetch registry entry").ConfigureAwait(false);
 
-        await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct).ConfigureAwait(false);
+        var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(json) || json == "null") return null;
 
+        using var document = JsonDocument.Parse(json);
         if (document.RootElement.ValueKind != JsonValueKind.Object)
-            return Array.Empty<CloudModlistRegistryEntry>();
+            return null;
 
-        var results = new List<CloudModlistRegistryEntry>();
+        if (!document.RootElement.TryGetProperty("content", out var contentElement))
+            return null;
 
-        // Public registry is now { entryId: { content: {...}, dateAdded: "..." }, ... }
-        foreach (var entry in document.RootElement.EnumerateObject())
+        if (contentElement.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+            return null;
+
+        DateTimeOffset? dateAdded = null;
+        if (document.RootElement.TryGetProperty("dateAdded", out var dateElement)
+            && dateElement.ValueKind == JsonValueKind.String)
         {
-            if (entry.Value.ValueKind != JsonValueKind.Object)
-                continue;
-
-            if (!entry.Value.TryGetProperty("content", out var contentElement))
-                continue;
-
-            if (contentElement.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-                continue;
-
-            var json = contentElement.GetRawText();
-
-            DateTimeOffset? dateAdded = null;
-            if (entry.Value.TryGetProperty("dateAdded", out var dateElement)
-                && dateElement.ValueKind == JsonValueKind.String)
-            {
-                var dateValue = dateElement.GetString();
-                if (!string.IsNullOrWhiteSpace(dateValue)
-                    && DateTimeOffset.TryParse(dateValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind,
-                        out var parsed))
-                    dateAdded = parsed;
-            }
-
-            // NOTE: we no longer have (ownerId, slotKey) here. If your UI expects those,
-            // you can pass entryId as "ownerId" and use "public" as a placeholder slotKey.
-            results.Add(new CloudModlistRegistryEntry(entry.Name, "public", json, dateAdded));
+            var dateValue = dateElement.GetString();
+            if (!string.IsNullOrWhiteSpace(dateValue)
+                && DateTimeOffset.TryParse(dateValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind,
+                    out var parsed))
+                dateAdded = parsed;
         }
 
-        return results;
+        var contentJson = contentElement.GetRawText();
+        return new CloudModlistRegistryEntry(registryId, "public", contentJson, dateAdded);
     }
 
 
@@ -427,6 +434,75 @@ public sealed class FirebaseModlistStore
                 list.Add(slot);
 
         return list;
+    }
+
+    private async Task<List<CloudModlistRegistryEntry>> TryFetchRegistryEntriesAsync(
+        string path,
+        bool isContentComplete,
+        CancellationToken ct)
+    {
+        var sendResult = await SendWithAuthRetryAsync(session =>
+        {
+            var registryUrl = BuildAuthenticatedUrl(session.IdToken, null, path);
+            return HttpClient.GetAsync(registryUrl, ct);
+        }, ct).ConfigureAwait(false);
+
+        using var response = sendResult.Response;
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return new List<CloudModlistRegistryEntry>();
+
+        await EnsureOk(response, $"Fetch {path}").ConfigureAwait(false);
+
+        await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct).ConfigureAwait(false);
+
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+            return new List<CloudModlistRegistryEntry>();
+
+        var results = new List<CloudModlistRegistryEntry>();
+
+        foreach (var entry in document.RootElement.EnumerateObject())
+        {
+            if (entry.Value.ValueKind != JsonValueKind.Object)
+                continue;
+
+            if (!entry.Value.TryGetProperty("content", out var contentElement))
+                continue;
+
+            if (contentElement.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+                continue;
+
+            var json = contentElement.GetRawText();
+
+            DateTimeOffset? dateAdded = null;
+            if (entry.Value.TryGetProperty("dateAdded", out var dateElement)
+                && dateElement.ValueKind == JsonValueKind.String)
+            {
+                var dateValue = dateElement.GetString();
+                if (!string.IsNullOrWhiteSpace(dateValue)
+                    && DateTimeOffset.TryParse(dateValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind,
+                        out var parsed))
+                    dateAdded = parsed;
+            }
+
+            results.Add(new CloudModlistRegistryEntry(entry.Name, "public", json, dateAdded, isContentComplete));
+        }
+
+        return results;
+    }
+
+    private static CloudModlistSummary BuildSummary(string contentJson)
+    {
+        using var document = JsonDocument.Parse(contentJson);
+        return CloudModlistSummary.FromJsonElement(document.RootElement);
+    }
+
+    private static string BuildSummaryJson(string contentJson, string dateAddedIso)
+    {
+        var summary = BuildSummary(contentJson);
+        var payload = summary.ToFirebasePayload(dateAddedIso);
+        return JsonSerializer.Serialize(payload, JsonOpts);
     }
 
     private PlayerIdentity GetIdentityComponents()

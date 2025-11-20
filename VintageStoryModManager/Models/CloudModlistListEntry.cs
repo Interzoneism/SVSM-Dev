@@ -18,7 +18,8 @@ public sealed class CloudModlistListEntry
         IReadOnlyList<string> mods,
         string contentJson,
         DateTimeOffset? dateAdded,
-        string? gameVersion)
+        string? gameVersion,
+        bool isContentComplete)
     {
         OwnerId = ownerId ?? throw new ArgumentNullException(nameof(ownerId));
         SlotKey = slotKey ?? throw new ArgumentNullException(nameof(slotKey));
@@ -31,6 +32,7 @@ public sealed class CloudModlistListEntry
         ContentJson = contentJson ?? throw new ArgumentNullException(nameof(contentJson));
         DateAdded = dateAdded;
         GameVersion = string.IsNullOrWhiteSpace(gameVersion) ? null : gameVersion.Trim();
+        IsContentComplete = isContentComplete;
     }
 
     public string OwnerId { get; }
@@ -54,6 +56,8 @@ public sealed class CloudModlistListEntry
     public DateTimeOffset? DateAdded { get; }
 
     public string? GameVersion { get; }
+
+    public bool IsContentComplete { get; }
 
     public string DisplayName => Name ?? "Unnamed Modlist";
 

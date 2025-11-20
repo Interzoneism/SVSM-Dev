@@ -9373,14 +9373,9 @@ public partial class MainWindow : Window
     {
         if (_viewModel is null || _selectedCloudModlist is not CloudModlistListEntry entry) return;
 
-        if (string.IsNullOrWhiteSpace(entry.ContentJson))
-        {
-            WpfMessageBox.Show("The selected cloud modlist has no content.",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            return;
-        }
+        var ensuredEntry = await EnsureCloudModlistContentAsync(entry);
+        if (ensuredEntry is null) return;
+        entry = ensuredEntry;
 
         string cacheDirectory;
         try
@@ -10735,7 +10730,8 @@ public partial class MainWindow : Window
                 metadata.Mods,
                 entry.ContentJson,
                 entry.DateAdded,
-                metadata.GameVersion));
+                metadata.GameVersion,
+                entry.IsContentComplete));
         }
 
         list.Sort((left, right) =>
@@ -10750,6 +10746,49 @@ public partial class MainWindow : Window
         });
 
         return list;
+    }
+
+    private async Task<CloudModlistListEntry?> EnsureCloudModlistContentAsync(CloudModlistListEntry entry)
+    {
+        if (entry.IsContentComplete && !string.IsNullOrWhiteSpace(entry.ContentJson)) return entry;
+
+        CloudModlistRegistryEntry? registryEntry = null;
+
+        await ExecuteCloudOperationAsync(async store =>
+        {
+            registryEntry = await store.GetRegistryEntryAsync(entry.OwnerId);
+        }, "download the selected cloud modlist");
+
+        if (registryEntry is null || string.IsNullOrWhiteSpace(registryEntry.ContentJson))
+        {
+            WpfMessageBox.Show("The selected cloud modlist could not be downloaded.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return null;
+        }
+
+        var metadata = ExtractModlistMetadata(registryEntry.ContentJson);
+        var refreshedEntry = new CloudModlistListEntry(
+            registryEntry.OwnerId,
+            registryEntry.SlotKey,
+            FormatCloudSlotLabel(registryEntry.SlotKey),
+            metadata.Name,
+            metadata.Description,
+            metadata.Version,
+            metadata.Uploader,
+            metadata.Mods,
+            registryEntry.ContentJson,
+            registryEntry.DateAdded,
+            metadata.GameVersion,
+            true);
+
+        if (_viewModel?.TryReplaceCloudModlist(entry, refreshedEntry) == true)
+            SetCloudModlistSelection(refreshedEntry);
+        else
+            SetCloudModlistSelection(refreshedEntry);
+
+        return refreshedEntry;
     }
 
     private void SetLocalModlistSelection(IReadOnlyList<LocalModlistListEntry> selection)
