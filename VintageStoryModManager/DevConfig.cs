@@ -49,7 +49,7 @@ public static class DevConfig
 
     // Firebase mod list storage.
     public static string FirebaseModlistDefaultDbUrl { get; } =
-        "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
+        "https://svsm-b84ef-default-rtdb.europe-west1.firebasedatabase.app/";
 
     // Cloud/Firebase backups location (AppData/Local/SVSM Backup/)
     public static string FirebaseBackupDirectory
@@ -80,7 +80,8 @@ public static class DevConfig
     public static string FirebaseRefreshEndpoint { get; } = "https://securetoken.googleapis.com/v1/token";
     public static string FirebaseDeleteEndpoint { get; } = "https://identitytoolkit.googleapis.com/v1/accounts:delete";
     public static string FirebaseAuthStateFileName { get; } = "firebase-auth.json";
-    public static string FirebaseDefaultApiKey { get; } = "AIzaSyCmDJ9yC1ccUEUf41fC-SI8fuXFJzWWlHY";
+    public static string FirebaseDefaultApiKey { get; } = "AIzaSyDhW7vg1ZaYmBKqIOpLNDndOUIPhvz4cSc";
+                                                           
     public static string FirebaseAuthBackupDirectoryName { get; } = "SVSM Backup";
 
     // User configuration defaults.
