@@ -222,6 +222,7 @@ public partial class MainWindow : Window
 
     private readonly UserConfigurationService _userConfiguration;
     private bool _cloudModlistsLoaded;
+    private bool _firebaseMigrationAttempted;
     private FirebaseModlistStore? _cloudModlistStore;
     private ICollectionView? _currentModsView;
     private string? _customShortcutPath;
@@ -10167,6 +10168,28 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task MigrateLegacyFirebaseDataIfNeededAsync()
+    {
+        if (_firebaseMigrationAttempted) return;
+
+        var playerUid = _viewModel?.PlayerUid;
+        if (string.IsNullOrWhiteSpace(playerUid)) return;
+
+        _firebaseMigrationAttempted = true;
+
+        try
+        {
+            var migrationService = new FirebaseModlistMigrationService();
+            await migrationService.TryMigrateAsync(playerUid, _viewModel?.PlayerName, CancellationToken.None)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            StatusLogService.AppendStatus($"Failed to migrate cloud modlists to the new Firebase project: {ex.Message}",
+                true);
+        }
+    }
+
     private async Task<FirebaseModlistStore> EnsureCloudStoreInitializedAsync()
     {
         if (_cloudModlistStore is { } existingStore)
@@ -10183,6 +10206,8 @@ public partial class MainWindow : Window
                 ApplyPlayerIdentityToCloudStore(cached);
                 return cached;
             }
+
+            await MigrateLegacyFirebaseDataIfNeededAsync().ConfigureAwait(false);
 
             var store = new FirebaseModlistStore();
             ApplyPlayerIdentityToCloudStore(store);
