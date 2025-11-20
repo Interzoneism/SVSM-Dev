@@ -1253,6 +1253,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HasCloudModlists));
     }
 
+    public bool TryReplaceCloudModlist(CloudModlistListEntry existing, CloudModlistListEntry replacement)
+    {
+        var index = _cloudModlists.IndexOf(existing);
+        if (index < 0) return false;
+
+        _cloudModlists[index] = replacement;
+        CloudModlistsView.Refresh();
+        OnPropertyChanged(nameof(HasCloudModlists));
+        return true;
+    }
+
     public void ReplaceLocalModlists(IEnumerable<LocalModlistListEntry>? entries)
     {
         _localModlists.Clear();
