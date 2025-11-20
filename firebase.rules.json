@@ -28,6 +28,14 @@
       }
     },
 
+    "registrySummaries": {
+      ".read": true,
+      "$entryId": {
+        ".write": "auth != null && (root.child('registryOwners').child($entryId).val() == auth.uid || !data.exists())",
+        ".validate": "!newData.exists() || (!newData.child('owner').exists() && newData.hasChildren(['content','dateAdded']) && newData.child('content').hasChildren() && newData.child('dateAdded').isString())"
+      }
+    },
+
     "registryOwners": {
       "$entryId": {
         ".read": false,
