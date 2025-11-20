@@ -352,19 +352,13 @@ public sealed class FirebaseAnonymousAuthenticator
             var json = File.ReadAllText(_stateFilePath);
             if (string.IsNullOrWhiteSpace(json)) return null;
 
-            var model = JsonSerializer.Deserialize<AuthStateModel>(json, JsonOptions);
-            if (model is null ||
-                string.IsNullOrWhiteSpace(model.IdToken) ||
-                string.IsNullOrWhiteSpace(model.RefreshToken) ||
-                string.IsNullOrWhiteSpace(model.UserId))
-                return null;
+            // Try the current format first
+            var state = TryDeserializeState(json);
+            if (state is not null) return state;
 
-            var expiration = model.ExpirationUtc == default
-                ? DateTimeOffset.MinValue
-                : model.ExpirationUtc;
-
-            return new FirebaseAuthState(model.IdToken.Trim(), model.RefreshToken.Trim(), expiration,
-                model.UserId.Trim());
+            // Attempt to migrate legacy formats before giving up
+            var legacyState = TryDeserializeLegacyState(json);
+            return legacyState;
         }
         catch (IOException)
         {
@@ -382,6 +376,62 @@ public sealed class FirebaseAnonymousAuthenticator
         {
             return null;
         }
+    }
+
+    private static FirebaseAuthState? TryDeserializeState(string json)
+    {
+        var model = JsonSerializer.Deserialize<AuthStateModel>(json, JsonOptions);
+        if (model is null ||
+            string.IsNullOrWhiteSpace(model.IdToken) ||
+            string.IsNullOrWhiteSpace(model.RefreshToken) ||
+            string.IsNullOrWhiteSpace(model.UserId))
+            return null;
+
+        var expiration = model.ExpirationUtc == default
+            ? DateTimeOffset.MinValue
+            : model.ExpirationUtc;
+
+        return new FirebaseAuthState(model.IdToken.Trim(), model.RefreshToken.Trim(), expiration,
+            model.UserId.Trim());
+    }
+
+    private static FirebaseAuthState? TryDeserializeLegacyState(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        var idToken = TryGetString(root, "idToken");
+        var refreshToken = TryGetString(root, "refreshToken");
+        var userId = TryGetString(root, "userId")
+                     ?? TryGetString(root, "uid")
+                     ?? TryGetString(root, "localId");
+
+        if (string.IsNullOrWhiteSpace(idToken) ||
+            string.IsNullOrWhiteSpace(refreshToken) ||
+            string.IsNullOrWhiteSpace(userId))
+            return null;
+
+        var expirationRaw = TryGetString(root, "expirationUtc")
+                            ?? TryGetString(root, "expiration")
+                            ?? TryGetString(root, "expiresAt");
+
+        var expiration = DateTimeOffset.TryParse(expirationRaw, out var parsed)
+            ? parsed
+            : DateTimeOffset.MinValue;
+
+        return new FirebaseAuthState(idToken.Trim(), refreshToken.Trim(), expiration, userId.Trim());
+    }
+
+    private static string? TryGetString(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out var value)) return null;
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString(),
+            JsonValueKind.Number => value.TryGetInt64(out var number) ? number.ToString() : value.ToString(),
+            _ => null
+        };
     }
 
     private void SaveStateToDisk(FirebaseAuthState state)
