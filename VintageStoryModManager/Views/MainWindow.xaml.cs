@@ -8842,7 +8842,7 @@ public partial class MainWindow : Window
         return ExecuteCloudOperationAsync(async store =>
         {
             var suggestedName = BuildCloudModlistName();
-            var configOptions = BuildModConfigOptions();
+            var configOptions = BuildModConfigOptions(selectByDefault: false);
             var detailsDialog = new CloudModlistDetailsDialog(
                 this,
                 suggestedName,
@@ -8934,7 +8934,7 @@ public partial class MainWindow : Window
         return string.IsNullOrWhiteSpace(version) ? null : version.Trim();
     }
 
-    private List<ModConfigOption> BuildModConfigOptions()
+    private List<ModConfigOption> BuildModConfigOptions(bool selectByDefault = true)
     {
         var options = new List<ModConfigOption>();
 
@@ -8953,7 +8953,7 @@ public partial class MainWindow : Window
             if (_userConfiguration.TryGetModConfigPath(normalizedId, out var path)
                 && !string.IsNullOrWhiteSpace(path)
                 && File.Exists(path))
-                options.Add(new ModConfigOption(normalizedId, mod.DisplayName, path, true));
+                options.Add(new ModConfigOption(normalizedId, mod.DisplayName, path, selectByDefault));
         }
 
         options.Sort((left, right) =>
