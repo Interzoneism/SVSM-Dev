@@ -606,6 +606,9 @@ public sealed class FirebaseModlistStore
     {
         try
         {
+            StatusLogService.AppendStatus(
+                $"Attempting to migrate cloud modlist ownership for player UID: {identity.OriginalUid}", false);
+
             // Step 1: Set the ownershipMigration flag to grant temporary access
             var migrationFlagResult = await SendWithAuthRetryAsync(sess =>
             {
@@ -624,6 +627,8 @@ public sealed class FirebaseModlistStore
                 if (!migrationFlagResult.Response.IsSuccessStatusCode)
                 {
                     // Failed to set migration flag - cannot proceed
+                    StatusLogService.AppendStatus(
+                        "Failed to set migration flag. Cannot proceed with ownership migration.", true);
                     return false;
                 }
             }
@@ -645,6 +650,8 @@ public sealed class FirebaseModlistStore
                 if (!updateOwnerResult.Response.IsSuccessStatusCode)
                 {
                     // Failed to update owner - migration incomplete
+                    StatusLogService.AppendStatus(
+                        "Failed to update ownership entry. Migration incomplete.", true);
                     return false;
                 }
             }
@@ -657,6 +664,8 @@ public sealed class FirebaseModlistStore
         catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
         {
             // Migration failed - the user will get the standard "already bound" error
+            StatusLogService.AppendStatus(
+                $"Migration failed with exception: {ex.Message}", true);
             return false;
         }
     }
