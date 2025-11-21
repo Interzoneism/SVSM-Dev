@@ -9197,7 +9197,6 @@ public partial class MainWindow : Window
         Dispatcher.InvokeAsync(() =>
         {
             RefreshLocalModlists(true);
-            if (_viewModel?.IsViewingCloudModlists == true) _ = RefreshCloudModlistsAsync(true);
         }, DispatcherPriority.Background);
     }
 
@@ -10201,9 +10200,12 @@ public partial class MainWindow : Window
                     mergedConfigurations.Add(new ModConfigurationSnapshot(safeName, content, normalizedRelativePath));
                 }
 
-                AddConfiguration(configurationFileName, configurationContent);
+                var hasConfigurationList = configurationGroups.TryGetValue(modId, out var extraConfigs);
 
-                if (configurationGroups.TryGetValue(modId, out var extraConfigs))
+                if (!hasConfigurationList)
+                    AddConfiguration(configurationFileName, configurationContent);
+
+                if (hasConfigurationList && extraConfigs is not null)
                     foreach (var config in extraConfigs)
                         AddConfiguration(config.FileName, config.Content, config.RelativePath);
 
