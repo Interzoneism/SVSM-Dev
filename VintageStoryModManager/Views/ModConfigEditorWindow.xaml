@@ -6,8 +6,8 @@
         xmlns:viewModels="clr-namespace:VintageStoryModManager.ViewModels"
         mc:Ignorable="d"
         Title="{Binding WindowTitle}"
-        Height="520"
-        Width="720"
+        Height="550"
+        Width="729"
         MinWidth="600"
         MinHeight="420"
         WindowStartupLocation="CenterOwner"
@@ -25,6 +25,7 @@
     <Grid Margin="12" Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
         <Grid.RowDefinitions>
             <RowDefinition />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -234,13 +235,7 @@
             </TabControl.ContentTemplate>
         </TabControl>
 
-        <DockPanel Grid.Row="1" Margin="0,12,0,0" LastChildFill="False">
-            <TextBlock x:Name="FilePathTextBlock"
-                       Text="{Binding FilePath}"
-                       Foreground="{DynamicResource Brush.Text.Placeholder}"
-                       VerticalAlignment="Center"
-                       Margin="0,0,16,0"
-                       TextTrimming="CharacterEllipsis" />
+        <DockPanel Grid.Row="2" Margin="0,12,0,0" LastChildFill="False">
             <StackPanel x:Name="ActionButtonsPanel" Orientation="Horizontal" HorizontalAlignment="Right"
                         DockPanel.Dock="Right">
                 <Button Content="Add"
@@ -269,5 +264,11 @@
                         Click="CancelButton_OnClick" />
             </StackPanel>
         </DockPanel>
+        <TextBlock x:Name="FilePathTextBlock"
+                       Text="{Binding FilePath}"
+                       Foreground="{DynamicResource Brush.Text.Placeholder}"
+                       VerticalAlignment="Top"
+                       Margin="0,5,705,0"
+                       TextTrimming="CharacterEllipsis" Grid.Row="1" />
     </Grid>
 </Window>
