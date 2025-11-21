@@ -762,17 +762,13 @@
                     </Hyperlink>
                 </TextBlock>
             </StackPanel>
-            <Button x:Name="DiscordButton" 
-                    Style="{StaticResource ButtonStyle1}" 
-                    Grid.Column="2" 
-                    HorizontalAlignment="Right" 
-                    VerticalAlignment="Center"
-                    Width="37" 
-                    Height="26" 
-                    Margin="0,0,14,0"
-                    Cursor="Hand">
-                <Image Source="/Resources/Discord.png" Width="37" Height="26" Stretch="Uniform"/>
-            </Button>
+
+            <TextBlock x:Name="DiscordImageText" Grid.Column="1" Height="26" Margin="809,7,0,0" HorizontalAlignment="Right" Width="38" VerticalAlignment="Top" >
+                <Hyperlink NavigateUri="https://discord.gg/Zhm3QnD2s9"
+                          TextDecorations="None" >
+                    <Image x:Name="DiscordImage" Source="Resources/Discord.png" Width="37" Stretch="Uniform"/>
+                </Hyperlink>
+            </TextBlock>
 
 
         </Grid>
