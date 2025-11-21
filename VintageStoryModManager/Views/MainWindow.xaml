@@ -252,6 +252,50 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="IMM.IconLinkButtonStyle"
+               TargetType="{x:Type Button}"
+               BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Grid>
+                            <Border x:Name="HoverOverlay"
+                                    Background="{DynamicResource Brush.Button.Primary.Background.Hover}"
+                                    Opacity="0"
+                                    CornerRadius="6" />
+                            <Border Background="{TemplateBinding Background}"
+                                    CornerRadius="6">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.1" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="HoverOverlay" Property="Background"
+                                        Value="{DynamicResource Brush.Button.Primary.Background.Pressed}" />
+                                <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.15" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="False">
+                                <Setter TargetName="HoverOverlay" Property="Opacity" Value="0" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="False">
+                                <Setter TargetName="HoverOverlay" Property="Background"
+                                        Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <!-- Menu item style shared by toggle and standard items -->
         <Style x:Key="ToggleMenuItemStyle" TargetType="{x:Type MenuItem}">
             <Setter Property="Background" Value="{DynamicResource Brush.Panel.Primary.Background.Solid}" />
@@ -1004,8 +1048,40 @@
                 </StackPanel>
                 <Grid Grid.Column="2"
                       HorizontalAlignment="Right"
-                      VerticalAlignment="Top" Height="64" Width="251">
-                    <Grid VerticalAlignment="Center" Height="64" Margin="-253,0,0,0">
+                      VerticalAlignment="Top"
+                      Width="251">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Margin="0,0,0,6">
+                        <Button x:Name="GithubButton"
+                                Style="{StaticResource IMM.IconLinkButtonStyle}"
+                                ToolTip="Open the Simple VS Manager GitHub repository"
+                                Click="GithubButton_OnClick">
+                            <Image Height="30"
+                                   Stretch="Uniform"
+                                   Source="/Resources/Github.png" />
+                        </Button>
+                        <Button x:Name="DiscordButton"
+                                Style="{StaticResource IMM.IconLinkButtonStyle}"
+                                ToolTip="Join the Simple VS Manager Discord"
+                                Click="DiscordButton_OnClick"
+                                Margin="4,0,0,0">
+                            <Image Height="30"
+                                   Stretch="Uniform"
+                                   Source="/Resources/Discord.png" />
+                        </Button>
+                    </StackPanel>
+
+                    <Grid Grid.Row="1"
+                          VerticalAlignment="Center"
+                          Height="64"
+                          Margin="-253,0,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition />
                             <ColumnDefinition Width="Auto" MinWidth="229" />

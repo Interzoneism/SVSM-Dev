@@ -93,6 +93,9 @@ public partial class MainWindow : Window
     private static readonly string RebuiltModListDirectoryName = DevConfig.RebuiltModListDirectoryName;
     private static readonly int AutomaticConfigMaxWordDistance = DevConfig.AutomaticConfigMaxWordDistance;
 
+    private const string DiscordInviteUrl = "https://discord.gg/Zhm3QnD2s9";
+    private const string GithubRepositoryUrl = "https://github.com/Interzoneism/Simple-Mod-Manager";
+
     private static readonly HttpClient ConnectivityTestHttpClient = new()
     {
         Timeout = TimeSpan.FromSeconds(10)
@@ -5726,6 +5729,38 @@ public partial class MainWindow : Window
         {
             WpfMessageBox.Show(
                 $"Failed to open the mod database page:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void GithubButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        OpenExternalLink(GithubRepositoryUrl);
+    }
+
+    private void DiscordButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        OpenExternalLink(DiscordInviteUrl);
+    }
+
+    private static void OpenExternalLink(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to open the link:\n{ex.Message}",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
