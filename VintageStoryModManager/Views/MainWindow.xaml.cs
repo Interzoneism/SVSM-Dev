@@ -5893,7 +5893,8 @@ public partial class MainWindow : Window
             "• Cached Mods\n" +
             "• Mod Database Cache\n" +
             "• Mod Metadata\n" +
-            "• Modlists (Cloud Cache)\n\n" +
+            "• Modlists (Cloud Cache)\n" +
+            "• Firebase Cache\n\n" +
             "Your settings and installed mods will NOT be affected.\n\n" +
             "This is useful when experiencing problems with the mod database or cached data.\n\n" +
             "Continue?";
@@ -5931,7 +5932,8 @@ public partial class MainWindow : Window
                 ("Cached Mods", Path.Combine(managerDataDir, "Cached Mods")),
                 ("Mod Database Cache", Path.Combine(managerDataDir, "Mod Database Cache")),
                 ("Mod Metadata", Path.Combine(managerDataDir, "Mod Metadata")),
-                ("Modlists (Cloud Cache)", Path.Combine(managerDataDir, "Modlists (Cloud Cache)"))
+                ("Modlists (Cloud Cache)", Path.Combine(managerDataDir, "Modlists (Cloud Cache)")),
+                ("Firebase Cache", Path.Combine(managerDataDir, DevConfig.FirebaseCacheDirectoryName))
             };
 
             // Delete each cache folder
