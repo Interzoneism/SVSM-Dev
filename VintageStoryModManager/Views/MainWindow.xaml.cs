@@ -9197,7 +9197,6 @@ public partial class MainWindow : Window
         Dispatcher.InvokeAsync(() =>
         {
             RefreshLocalModlists(true);
-            if (_viewModel?.IsViewingCloudModlists == true) _ = RefreshCloudModlistsAsync(true);
         }, DispatcherPriority.Background);
     }
 
