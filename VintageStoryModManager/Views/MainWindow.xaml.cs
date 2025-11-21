@@ -7927,6 +7927,7 @@ public partial class MainWindow : Window
                 {
                     ModId = trimmedId,
                     FileName = fileName,
+                    RelativePath = snapshot.RelativePath,
                     Content = content
                 });
             }
@@ -8607,6 +8608,7 @@ public partial class MainWindow : Window
                 {
                     var content = File.ReadAllText(path);
                     var fileName = GetSafeConfigFileName(Path.GetFileName(path), normalizedId);
+                    var relativePath = TryGetRelativeConfigPath(path, fileName);
 
                     if (!includedConfigurations.TryGetValue(normalizedId, out var snapshots))
                     {
@@ -8614,7 +8616,7 @@ public partial class MainWindow : Window
                         includedConfigurations[normalizedId] = snapshots;
                     }
 
-                    snapshots.Add(new ModConfigurationSnapshot(fileName, content));
+                    snapshots.Add(new ModConfigurationSnapshot(fileName, content, relativePath));
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
                                                or NotSupportedException or PathTooLongException)
@@ -9016,6 +9018,7 @@ public partial class MainWindow : Window
                 {
                     var content = File.ReadAllText(path);
                     var fileName = GetSafeConfigFileName(Path.GetFileName(path), option.ModId);
+                    var relativePath = TryGetRelativeConfigPath(path, fileName);
 
                     if (!includedConfigurations.TryGetValue(option.ModId, out var snapshots))
                     {
@@ -9023,7 +9026,7 @@ public partial class MainWindow : Window
                         includedConfigurations[option.ModId] = snapshots;
                     }
 
-                    snapshots.Add(new ModConfigurationSnapshot(fileName, content));
+                    snapshots.Add(new ModConfigurationSnapshot(fileName, content, relativePath));
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
                                                or NotSupportedException or PathTooLongException)
@@ -9045,6 +9048,62 @@ public partial class MainWindow : Window
         return includedConfigurations.ToDictionary(pair => pair.Key,
             pair => (IReadOnlyList<ModConfigurationSnapshot>)pair.Value,
             StringComparer.OrdinalIgnoreCase);
+    }
+
+    private string? TryGetRelativeConfigPath(string path, string sanitizedFileName)
+    {
+        if (string.IsNullOrWhiteSpace(_dataDirectory)) return null;
+
+        var configDirectory = Path.Combine(_dataDirectory, "ModConfig");
+        if (!IsPathWithinDirectory(configDirectory, path)) return null;
+
+        try
+        {
+            var relativePath = Path.GetRelativePath(Path.GetFullPath(configDirectory), Path.GetFullPath(path));
+            return NormalizeRelativeConfigPath(relativePath, sanitizedFileName);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static string? NormalizeRelativeConfigPath(string? relativePath, string sanitizedFileName)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath)) return null;
+
+        var normalized = relativePath
+            .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+            .TrimStart(Path.DirectorySeparatorChar);
+
+        if (string.IsNullOrWhiteSpace(normalized)) return null;
+
+        var directory = Path.GetDirectoryName(normalized);
+        var fileName = Path.GetFileName(normalized);
+        if (string.IsNullOrWhiteSpace(fileName)) fileName = sanitizedFileName;
+
+        return string.IsNullOrWhiteSpace(directory)
+            ? fileName
+            : Path.Combine(directory, fileName);
+    }
+
+    private static string EnsureUniqueRelativePath(string relativePath, HashSet<string> usedRelativePaths)
+    {
+        var uniqueRelativePath = relativePath;
+        var counter = 1;
+
+        while (!usedRelativePaths.Add(uniqueRelativePath))
+        {
+            var directory = Path.GetDirectoryName(relativePath);
+            var baseName = Path.GetFileNameWithoutExtension(relativePath);
+            var extension = Path.GetExtension(relativePath);
+            var uniqueFileName = $"{baseName}_{counter++}{extension}";
+            uniqueRelativePath = string.IsNullOrWhiteSpace(directory)
+                ? uniqueFileName
+                : Path.Combine(directory, uniqueFileName);
+        }
+
+        return uniqueRelativePath;
     }
 
     private static string[] GetSupportedConfigFiles(string directory)
@@ -10106,8 +10165,11 @@ public partial class MainWindow : Window
                 var fileName = string.IsNullOrWhiteSpace(configuration.FileName)
                     ? null
                     : configuration.FileName.Trim();
+                var relativePath = string.IsNullOrWhiteSpace(configuration.RelativePath)
+                    ? null
+                    : configuration.RelativePath.Trim();
                 var content = configuration.Content ?? string.Empty;
-                list.Add(new ModConfigurationSnapshot(fileName ?? string.Empty, content));
+                list.Add(new ModConfigurationSnapshot(fileName ?? string.Empty, content, relativePath));
             }
 
         if (data.Mods != null)
@@ -10127,22 +10189,23 @@ public partial class MainWindow : Window
                 var mergedConfigurations = new List<ModConfigurationSnapshot>();
                 var seenConfigs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                void AddConfiguration(string? fileName, string? content)
+                void AddConfiguration(string? fileName, string? content, string? relativePath = null)
                 {
                     if (string.IsNullOrEmpty(content)) return;
 
                     var safeName = GetSafeConfigFileName(fileName, modId);
-                    var key = $"{safeName}::{content}";
+                    var normalizedRelativePath = NormalizeRelativeConfigPath(relativePath, safeName);
+                    var key = $"{safeName}::{normalizedRelativePath}::{content}";
                     if (!seenConfigs.Add(key)) return;
 
-                    mergedConfigurations.Add(new ModConfigurationSnapshot(safeName, content));
+                    mergedConfigurations.Add(new ModConfigurationSnapshot(safeName, content, normalizedRelativePath));
                 }
 
                 AddConfiguration(configurationFileName, configurationContent);
 
                 if (configurationGroups.TryGetValue(modId, out var extraConfigs))
                     foreach (var config in extraConfigs)
-                        AddConfiguration(config.FileName, config.Content);
+                        AddConfiguration(config.FileName, config.Content, config.RelativePath);
 
                 if (mergedConfigurations.Count > 0)
                 {
@@ -10185,9 +10248,12 @@ public partial class MainWindow : Window
         var fileName = string.IsNullOrWhiteSpace(configuration.FileName)
             ? string.Empty
             : configuration.FileName.Trim();
+        var relativePath = string.IsNullOrWhiteSpace(configuration.RelativePath)
+            ? string.Empty
+            : configuration.RelativePath.Trim();
         var content = configuration.Content ?? string.Empty;
 
-        return $"{modId}::{fileName}::{content}";
+        return $"{modId}::{relativePath}::{fileName}::{content}";
     }
 
     private async Task ExecuteCloudOperationAsync(Func<FirebaseModlistStore, Task> operation, string actionDescription)
@@ -11413,7 +11479,7 @@ public partial class MainWindow : Window
     {
         if (preset.ModStates.Count == 0) return;
 
-        var configs = new List<(string ModId, string? FileName, string Content)>();
+        var configs = new List<(string ModId, string? FileName, string? RelativePath, string Content)>();
         var seenConfigs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var state in preset.ModStates)
@@ -11428,10 +11494,10 @@ public partial class MainWindow : Window
                 {
                     if (config is null || string.IsNullOrEmpty(config.Content)) continue;
 
-                    var key = $"{trimmedId}::{config.FileName}::{config.Content}";
+                    var key = $"{trimmedId}::{config.FileName}::{config.RelativePath}::{config.Content}";
                     if (!seenConfigs.Add(key)) continue;
 
-                    configs.Add((trimmedId, config.FileName, config.Content));
+                    configs.Add((trimmedId, config.FileName, config.RelativePath, config.Content));
                 }
             }
             else if (state.ConfigurationContent is not null)
@@ -11439,7 +11505,7 @@ public partial class MainWindow : Window
                 var key = $"{trimmedId}::{state.ConfigurationFileName}::{state.ConfigurationContent}";
                 if (!seenConfigs.Add(key)) continue;
 
-                configs.Add((trimmedId, state.ConfigurationFileName, state.ConfigurationContent!));
+                configs.Add((trimmedId, state.ConfigurationFileName, null, state.ConfigurationContent!));
             }
         }
 
@@ -11509,32 +11575,49 @@ public partial class MainWindow : Window
             return;
         }
 
-        var usedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var usedRelativePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var errors = new List<string>();
         var importedCount = 0;
+        var modConfigTargets = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        var modConfigNames = new Dictionary<string, List<string?>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var config in configs)
         {
             var fileName = GetSafeConfigFileName(config.FileName, config.ModId);
-            var uniqueFileName = fileName;
-            var counter = 1;
+            var relativePath = NormalizeRelativeConfigPath(config.RelativePath, fileName) ?? fileName;
+            var uniqueRelativePath = EnsureUniqueRelativePath(relativePath, usedRelativePaths);
+            var targetPath = Path.Combine(configDirectory, uniqueRelativePath);
 
-            while (!usedFileNames.Add(uniqueFileName))
+            if (!IsPathWithinDirectory(configDirectory, targetPath))
             {
-                var baseName = Path.GetFileNameWithoutExtension(fileName);
-                var extension = Path.GetExtension(fileName);
-                uniqueFileName = $"{baseName}_{counter++}{extension}";
+                uniqueRelativePath = EnsureUniqueRelativePath(fileName, usedRelativePaths);
+                targetPath = Path.Combine(configDirectory, uniqueRelativePath);
             }
 
-            var targetPath = Path.Combine(configDirectory, uniqueFileName);
             try
             {
+                var targetDirectory = Path.GetDirectoryName(targetPath);
+                if (!string.IsNullOrWhiteSpace(targetDirectory)) Directory.CreateDirectory(targetDirectory);
+
                 await File.WriteAllTextAsync(targetPath, config.Content).ConfigureAwait(true);
-                _userConfiguration.SetModConfigPath(config.ModId, targetPath, config.FileName);
+                if (!modConfigTargets.TryGetValue(config.ModId, out var pathsForMod))
+                {
+                    pathsForMod = new List<string>();
+                    modConfigTargets[config.ModId] = pathsForMod;
+                }
+
+                if (!modConfigNames.TryGetValue(config.ModId, out var namesForMod))
+                {
+                    namesForMod = new List<string?>();
+                    modConfigNames[config.ModId] = namesForMod;
+                }
+
+                pathsForMod.Add(targetPath);
+                namesForMod.Add(config.FileName);
                 importedCount++;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
-                                           or NotSupportedException or PathTooLongException)
+                                               or NotSupportedException or PathTooLongException)
             {
                 var displayName = modDisplayNames.TryGetValue(config.ModId, out var name) &&
                                   !string.IsNullOrWhiteSpace(name)
@@ -11546,6 +11629,28 @@ public partial class MainWindow : Window
 
         if (importedCount > 0)
         {
+            foreach (var pair in modConfigTargets)
+            {
+                var modId = pair.Key;
+                var paths = pair.Value;
+                var names = modConfigNames.TryGetValue(modId, out var configNames)
+                    ? configNames
+                    : null;
+
+                try
+                {
+                    _userConfiguration.SetModConfigPaths(modId, paths, names);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
+                                               or NotSupportedException or PathTooLongException)
+                {
+                    var displayName = modDisplayNames.TryGetValue(modId, out var name) && !string.IsNullOrWhiteSpace(name)
+                        ? name
+                        : modId;
+                    errors.Add($"{displayName}: {ex.Message}");
+                }
+            }
+
             _viewModel?.ReportStatus($"Imported configuration files for {importedCount} mod(s).");
             UpdateSelectedModButtons();
         }
