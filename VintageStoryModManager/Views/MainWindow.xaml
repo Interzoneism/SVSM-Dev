@@ -810,7 +810,7 @@
                             Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="5,0,0,0" MinHeight="40" />
                 </StackPanel>
                 <Grid x:Name="ModDB_radiobuttons" Grid.Column="1" Margin="10,0,0,96" Grid.ColumnSpan="2"
-                      HorizontalAlignment="Left" Width="617" Height="44" VerticalAlignment="Bottom">
+                      HorizontalAlignment="Left" Height="44" VerticalAlignment="Bottom">
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
                             <Setter Property="Visibility" Value="Collapsed" />
@@ -821,6 +821,10 @@
                             </Style.Triggers>
                         </Style>
                     </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition />
                         <RowDefinition />
@@ -915,6 +919,64 @@
                                   BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}" Padding="6,0,0,0"
                                   HorizontalAlignment="Left" />
                     </StackPanel>
+                    <StackPanel Grid.Column="1"
+                                Grid.RowSpan="2"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Bottom"
+                                Margin="12,0,0,0">
+                        <ToggleButton x:Name="SearchOptionsToggleButton"
+                                      Content="Search options"
+                                      VerticalAlignment="Center"
+                                      Height="27" Width="102"
+                                      Margin="0,0,0,4"
+                                      RenderTransformOrigin="0.5,0.5">
+                            <ToggleButton.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform />
+                                    <SkewTransform AngleY="0.25" />
+                                    <RotateTransform />
+                                    <TranslateTransform Y="-0.496" />
+                                </TransformGroup>
+                            </ToggleButton.RenderTransform>
+                            <ToggleButton.Style>
+                                <Style TargetType="{x:Type ToggleButton}"
+                                       BasedOn="{StaticResource IMM.ToggleButtonBaseStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding SearchModDatabase}" Value="False">
+                                            <Setter Property="IsChecked" Value="False" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ToggleButton.Style>
+                        </ToggleButton>
+                        <Popup PlacementTarget="{Binding ElementName=SearchOptionsToggleButton}"
+                               Placement="Bottom"
+                               IsOpen="{Binding IsChecked, ElementName=SearchOptionsToggleButton, Mode=TwoWay}"
+                               StaysOpen="False"
+                               AllowsTransparency="True"
+                               Focusable="False">
+                            <Border Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+                                    BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="12"
+                                    MinWidth="252">
+                                <StackPanel>
+                                    <CheckBox Content="Include installed mods"
+                                              Margin="0,0,0,8"
+                                              IsChecked="{Binding IncludeInstalledModDatabaseResults, Mode=TwoWay}" />
+                                    <CheckBox Content="Only show compatible mods"
+                                              IsChecked="{Binding OnlyShowCompatibleModDatabaseResults, Mode=TwoWay}" />
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </StackPanel>
                 </Grid>
 
                 <StackPanel Grid.Column="1"
@@ -945,56 +1007,6 @@
                 <Grid Grid.Column="2"
                       HorizontalAlignment="Right"
                       VerticalAlignment="Top" Height="64" Width="251">
-                    <ToggleButton x:Name="SearchOptionsToggleButton"
-                                  Content="Search options"
-                                  VerticalAlignment="Top"
-                                  Margin="148,-1,1,0" RenderTransformOrigin="0.5,0.5" Height="27" Width="102">
-                        <ToggleButton.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform />
-                                <SkewTransform AngleY="0.25" />
-                                <RotateTransform />
-                                <TranslateTransform Y="-0.496" />
-                            </TransformGroup>
-                        </ToggleButton.RenderTransform>
-                        <ToggleButton.Style>
-                            <Style TargetType="{x:Type ToggleButton}"
-                                   BasedOn="{StaticResource IMM.ToggleButtonBaseStyle}">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding SearchModDatabase}" Value="False">
-                                        <Setter Property="IsChecked" Value="False" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ToggleButton.Style>
-                    </ToggleButton>
-                    <Popup PlacementTarget="{Binding ElementName=SearchOptionsToggleButton}"
-                           Placement="Bottom"
-                           IsOpen="{Binding IsChecked, ElementName=SearchOptionsToggleButton, Mode=TwoWay}"
-                           StaysOpen="False"
-                           AllowsTransparency="True"
-                           Focusable="False" Margin="0,36,0,33">
-                        <Border Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
-                                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                BorderThickness="1"
-                                CornerRadius="6"
-                                Padding="12"
-                                MinWidth="252">
-                            <StackPanel>
-                                <CheckBox Content="Include installed mods"
-                                          Margin="0,0,0,8"
-                                          IsChecked="{Binding IncludeInstalledModDatabaseResults, Mode=TwoWay}" />
-                                <CheckBox Content="Only show compatible mods"
-                                          IsChecked="{Binding OnlyShowCompatibleModDatabaseResults, Mode=TwoWay}" />
-                            </StackPanel>
-                        </Border>
-                    </Popup>
                     <Grid VerticalAlignment="Center" Height="64" Margin="-253,0,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition />
