@@ -22,7 +22,7 @@
             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="TreeViewItem_OnPreviewMouseLeftButtonDown" />
         </Style>
     </Window.Resources>
-    <Grid Margin="12" Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition Height="Auto" />
@@ -30,7 +30,6 @@
         </Grid.RowDefinitions>
 
         <TabControl ItemsSource="{Binding Configurations}" SelectedItem="{Binding SelectedConfiguration}"
-                    Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
                     ItemContainerStyle="{StaticResource IMM.ModlistsTabItemStyle}">
             <TabControl.Resources>
                 <HierarchicalDataTemplate DataType="{x:Type viewModels:ModConfigObjectNodeViewModel}"
@@ -269,7 +268,6 @@
                        Text="{Binding FilePath}"
                        Foreground="{DynamicResource Brush.Text.Placeholder}"
                        VerticalAlignment="Top"
-                       Margin="0,5,705,0"
-                       TextTrimming="CharacterEllipsis" Grid.Row="1" />
+                       TextTrimming="CharacterEllipsis" Grid.Row="1" HorizontalAlignment="Left" />
     </Grid>
 </Window>
