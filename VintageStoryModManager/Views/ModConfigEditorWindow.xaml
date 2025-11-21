@@ -210,7 +210,7 @@
                 </DataTemplate>
             </TabControl.ItemTemplate>
             <TabControl.ContentTemplate>
-                <DataTemplate DataType="{x:Type viewModels:ModConfigEditorViewModel+ModConfigurationViewModel}">
+                <DataTemplate DataType="{x:Type viewModels:ModConfigurationViewModel}">
                     <Border BorderBrush="{DynamicResource Brush.Border.Default}" BorderThickness="1" CornerRadius="10"
                             Background="{DynamicResource Brush.Panel.Primary.Background.Solid}" Padding="4">
                         <Border.Effect>
