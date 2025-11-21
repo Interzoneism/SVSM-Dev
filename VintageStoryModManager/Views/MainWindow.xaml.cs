@@ -4224,32 +4224,30 @@ public partial class MainWindow : Window
 
         if (string.IsNullOrWhiteSpace(mod.ModId)) return;
 
-        string? configPath = null;
-        string? storedPath = null;
+        var configPaths = _userConfiguration
+            .GetModConfigPaths(mod.ModId)
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
         try
         {
-            if (_userConfiguration.TryGetModConfigPath(mod.ModId, out var existing) &&
-                !string.IsNullOrWhiteSpace(existing))
+            for (var i = configPaths.Count - 1; i >= 0; i--)
             {
-                storedPath = existing;
-                if (File.Exists(existing))
-                {
-                    configPath = existing;
-                }
-                else
-                {
-                    _userConfiguration.RemoveModConfigPath(mod.ModId);
-                    UpdateSelectedModEditConfigButton(mod);
-                }
+                var path = configPaths[i];
+                if (File.Exists(path)) continue;
+
+                configPaths.RemoveAt(i);
+                _userConfiguration.RemoveModConfigPath(mod.ModId, path);
             }
 
-            if (configPath is null)
+            if (configPaths.Count == 0)
             {
-                configPath = PromptForConfigFile(mod, storedPath);
-                if (configPath is null) return;
+                var primaryPath = PromptForConfigFile(mod, configPaths.FirstOrDefault());
+                if (primaryPath is null) return;
 
-                _userConfiguration.SetModConfigPath(mod.ModId, configPath);
+                configPaths.Add(primaryPath);
+                _userConfiguration.SetModConfigPaths(mod.ModId, configPaths);
                 UpdateSelectedModEditConfigButton(mod);
             }
         }
@@ -4264,7 +4262,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var editorViewModel = new ModConfigEditorViewModel(mod.DisplayName, configPath);
+            var editorViewModel = new ModConfigEditorViewModel(mod.DisplayName, configPaths);
             var editorWindow = new ModConfigEditorWindow(editorViewModel)
             {
                 Owner = this
@@ -4273,21 +4271,25 @@ public partial class MainWindow : Window
             var result = editorWindow.ShowDialog();
             if (result == true)
             {
-                if (!string.Equals(configPath, editorViewModel.FilePath, StringComparison.OrdinalIgnoreCase))
-                    try
-                    {
-                        _userConfiguration.SetModConfigPath(mod.ModId, editorViewModel.FilePath);
-                        UpdateSelectedModEditConfigButton(mod);
-                    }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
-                    {
-                        WpfMessageBox.Show($"Failed to store the configuration path:\n{ex.Message}",
-                            "Simple VS Manager",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error);
-                    }
+                var updatedPaths = editorViewModel.ConfigPaths.Where(path => !string.IsNullOrWhiteSpace(path)).ToList();
 
-                _viewModel?.ReportStatus($"Saved config for {mod.DisplayName}.");
+                try
+                {
+                    if (updatedPaths.Count == 0)
+                        _userConfiguration.RemoveModConfigPath(mod.ModId);
+                    else
+                        _userConfiguration.SetModConfigPaths(mod.ModId, updatedPaths);
+
+                    UpdateSelectedModEditConfigButton(mod);
+                    _viewModel?.ReportStatus($"Saved config for {mod.DisplayName}.");
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+                {
+                    WpfMessageBox.Show($"Failed to store the configuration path:\n{ex.Message}",
+                        "Simple VS Manager",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or YamlException)

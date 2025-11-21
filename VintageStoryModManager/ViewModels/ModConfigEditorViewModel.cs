@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -10,78 +11,168 @@ namespace VintageStoryModManager.ViewModels;
 
 public sealed class ModConfigEditorViewModel : ObservableObject
 {
-    private string _filePath;
-    private ModConfigFormat _format;
-    private JsonNode? _rootNode;
+    private ModConfigurationViewModel? _selectedConfiguration;
 
-    public ModConfigEditorViewModel(string modDisplayName, string filePath)
+    public ModConfigEditorViewModel(string modDisplayName, IEnumerable<string> filePaths)
     {
         if (string.IsNullOrWhiteSpace(modDisplayName))
             throw new ArgumentException("Mod name is required.", nameof(modDisplayName));
 
-        if (string.IsNullOrWhiteSpace(filePath))
-            throw new ArgumentException("Configuration file path is required.", nameof(filePath));
-
         ModDisplayName = modDisplayName;
-        _filePath = NormalizePath(filePath);
         WindowTitle = $"Edit Config - {ModDisplayName}";
 
-        LoadConfiguration();
+        foreach (var path in filePaths ?? Array.Empty<string>()) AddConfiguration(path, false);
+
+        SelectedConfiguration = Configurations.FirstOrDefault();
     }
 
     public string ModDisplayName { get; }
 
     public string WindowTitle { get; }
 
-    public string FilePath
-    {
-        get => _filePath;
-        private set
-        {
-            if (string.Equals(_filePath, value, StringComparison.OrdinalIgnoreCase)) return;
+    public ObservableCollection<ModConfigurationViewModel> Configurations { get; } = new();
 
-            _filePath = value;
-            OnPropertyChanged();
+    public ModConfigurationViewModel? SelectedConfiguration
+    {
+        get => _selectedConfiguration;
+        set
+        {
+            if (SetProperty(ref _selectedConfiguration, value))
+            {
+                OnPropertyChanged(nameof(FilePath));
+                OnPropertyChanged(nameof(HasConfigurations));
+            }
         }
     }
 
-    public ObservableCollection<ModConfigNodeViewModel> RootNodes { get; private set; } = new();
+    public bool HasConfigurations => SelectedConfiguration is not null;
 
-    public void Save()
+    public string FilePath => SelectedConfiguration?.FilePath ?? string.Empty;
+
+    public IReadOnlyList<string> ConfigPaths => Configurations.Select(config => config.FilePath).ToList();
+
+    public ModConfigurationViewModel AddConfiguration(string filePath, bool select = true)
     {
-        foreach (var node in RootNodes) node.ApplyChanges();
+        var configuration = new ModConfigurationViewModel(filePath);
+        Configurations.Add(configuration);
 
-        var content = _format switch
+        if (select || SelectedConfiguration is null) SelectedConfiguration = configuration;
+
+        return configuration;
+    }
+
+    public bool RemoveSelectedConfiguration()
+    {
+        if (SelectedConfiguration is null) return false;
+
+        var index = Configurations.IndexOf(SelectedConfiguration);
+        if (index < 0) return false;
+
+        Configurations.RemoveAt(index);
+
+        if (Configurations.Count == 0)
         {
-            ModConfigFormat.Json => SerializeJson(_rootNode),
-            ModConfigFormat.Yaml => SerializeYaml(_rootNode),
-            _ => throw new InvalidOperationException("Unsupported configuration format.")
-        };
+            SelectedConfiguration = null;
+        }
+        else
+        {
+            var nextIndex = Math.Min(index, Configurations.Count - 1);
+            SelectedConfiguration = Configurations[nextIndex];
+        }
 
-        File.WriteAllText(_filePath, content);
+        OnPropertyChanged(nameof(FilePath));
+        return true;
     }
 
     public void ReplaceConfigurationFile(string filePath)
     {
-        var normalizedPath = NormalizePath(filePath);
-        _format = DetermineFormat(normalizedPath);
-
-        var node = _format switch
-        {
-            ModConfigFormat.Json => LoadJsonNode(normalizedPath),
-            ModConfigFormat.Yaml => LoadYamlNode(normalizedPath),
-            _ => null
-        };
-
-        _rootNode = node ?? new JsonObject();
-        RootNodes = new ObservableCollection<ModConfigNodeViewModel>(CreateRootNodes(_rootNode));
-        FilePath = normalizedPath;
-        OnPropertyChanged(nameof(RootNodes));
+        SelectedConfiguration?.ReplaceConfigurationFile(filePath);
+        OnPropertyChanged(nameof(FilePath));
     }
 
-    private void LoadConfiguration()
+    public void Save()
     {
-        ReplaceConfigurationFile(_filePath);
+        foreach (var configuration in Configurations) configuration.Save();
+    }
+
+    public sealed class ModConfigurationViewModel : ObservableObject
+    {
+        private string _filePath;
+        private ModConfigFormat _format;
+        private JsonNode? _rootNode;
+        private ObservableCollection<ModConfigNodeViewModel> _rootNodes = new();
+
+        public ModConfigurationViewModel(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                throw new ArgumentException("Configuration file path is required.", nameof(filePath));
+
+            _filePath = NormalizePath(filePath);
+            LoadConfiguration();
+        }
+
+        public string DisplayName => string.IsNullOrWhiteSpace(FilePath) ? "Config" : Path.GetFileName(FilePath);
+
+        public string FilePath
+        {
+            get => _filePath;
+            private set
+            {
+                if (string.Equals(_filePath, value, StringComparison.OrdinalIgnoreCase)) return;
+
+                _filePath = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(DisplayName));
+            }
+        }
+
+        public ObservableCollection<ModConfigNodeViewModel> RootNodes
+        {
+            get => _rootNodes;
+            private set
+            {
+                if (ReferenceEquals(_rootNodes, value)) return;
+
+                _rootNodes = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public void Save()
+        {
+            foreach (var node in RootNodes) node.ApplyChanges();
+
+            var content = _format switch
+            {
+                ModConfigFormat.Json => SerializeJson(_rootNode),
+                ModConfigFormat.Yaml => SerializeYaml(_rootNode),
+                _ => throw new InvalidOperationException("Unsupported configuration format.")
+            };
+
+            File.WriteAllText(_filePath, content);
+        }
+
+        public void ReplaceConfigurationFile(string filePath)
+        {
+            var normalizedPath = NormalizePath(filePath);
+            _format = DetermineFormat(normalizedPath);
+
+            var node = _format switch
+            {
+                ModConfigFormat.Json => LoadJsonNode(normalizedPath),
+                ModConfigFormat.Yaml => LoadYamlNode(normalizedPath),
+                _ => null
+            };
+
+            _rootNode = node ?? new JsonObject();
+            RootNodes = new ObservableCollection<ModConfigNodeViewModel>(CreateRootNodes(_rootNode, value => _rootNode = value));
+            FilePath = normalizedPath;
+        }
+
+        private void LoadConfiguration()
+        {
+            ReplaceConfigurationFile(_filePath);
+        }
     }
 
     private static ModConfigFormat DetermineFormat(string filePath)
@@ -124,10 +215,10 @@ public sealed class ModConfigEditorViewModel : ObservableObject
             return obj;
         }
 
-        if (value is IEnumerable enumerable and not string)
+        if (value is IList list)
         {
             var array = new JsonArray();
-            foreach (var item in enumerable) array.Add(ConvertYamlToJsonNode(item));
+            foreach (var item in list) array.Add(ConvertYamlToJsonNode(item));
 
             return array;
         }
@@ -230,7 +321,7 @@ public sealed class ModConfigEditorViewModel : ObservableObject
         return Path.GetFullPath(filePath);
     }
 
-    private IEnumerable<ModConfigNodeViewModel> CreateRootNodes(JsonNode node)
+    private static IEnumerable<ModConfigNodeViewModel> CreateRootNodes(JsonNode node, Action<JsonNode?> rootSetter)
     {
         if (node is JsonObject obj)
             return obj
@@ -245,11 +336,11 @@ public sealed class ModConfigEditorViewModel : ObservableObject
 
         return new[]
         {
-            CreateValueNode("(root)", node, value => _rootNode = value, string.Empty)
+            CreateValueNode("(root)", node, rootSetter, string.Empty)
         };
     }
 
-    private ModConfigNodeViewModel CreateNode(string name, JsonNode? node, Action<JsonNode?> setter,
+    private static ModConfigNodeViewModel CreateNode(string name, JsonNode? node, Action<JsonNode?> setter,
         string? displayName = null)
     {
         if (node is JsonObject obj)
@@ -264,27 +355,22 @@ public sealed class ModConfigEditorViewModel : ObservableObject
         return CreateValueNode(name, node, setter, displayName);
     }
 
-    private ModConfigNodeViewModel CreateArrayNode(string name, JsonArray array, string? displayName = null)
+    private static ModConfigNodeViewModel CreateArrayNode(string name, JsonArray array, string? displayName = null)
     {
         var children = new ObservableCollection<ModConfigNodeViewModel>();
+
         for (var i = 0; i < array.Count; i++)
         {
             var index = i;
-            var childNode = array[index];
-            var childDisplayName = childNode switch
-            {
-                JsonObject => $"Item {i + 1}",
-                JsonArray => $"Item {i + 1}",
-                _ => string.Empty
-            };
-            children.Add(CreateNode($"[{i}]", childNode, value => array[index] = value, childDisplayName));
+            var child = CreateNode($"[{i}]", array[index], value => array[index] = value, displayName);
+            children.Add(child);
         }
 
         return new ModConfigArrayNodeViewModel(name, children, () => array.Count, displayName);
     }
 
-    private ModConfigNodeViewModel CreateValueNode(string name, JsonNode? node, Action<JsonNode?> setter,
-        string? displayName)
+    private static ModConfigNodeViewModel CreateValueNode(string name, JsonNode? node, Action<JsonNode?> setter,
+        string? displayName = null)
     {
         return new ModConfigValueNodeViewModel(name, node, setter, displayName);
     }
