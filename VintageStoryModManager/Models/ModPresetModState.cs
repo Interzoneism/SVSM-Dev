@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace VintageStoryModManager.Models;
 
 /// <summary>
@@ -11,9 +13,11 @@ namespace VintageStoryModManager.Models;
 /// </param>
 /// <param name="ConfigurationFileName">The original file name of the configuration file that was captured, if any.</param>
 /// <param name="ConfigurationContent">The contents of the configuration file that was captured, if any.</param>
+/// <param name="Configurations">Additional configuration files captured for the mod, if any.</param>
 public sealed record ModPresetModState(
     string ModId,
     string? Version,
     bool? IsActive,
     string? ConfigurationFileName,
-    string? ConfigurationContent);
+    string? ConfigurationContent,
+    IReadOnlyList<ModConfigurationSnapshot>? Configurations = null);
