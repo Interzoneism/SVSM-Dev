@@ -415,8 +415,10 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="ButtonStyle1" TargetType="{x:Type Button}">
-
+        <Style x:Key="ButtonStyle1" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
     </Window.Resources>
 
@@ -760,8 +762,16 @@
                     </Hyperlink>
                 </TextBlock>
             </StackPanel>
-            <Button Style="{DynamicResource ButtonStyle1}" Grid.Column="2" HorizontalAlignment="Right" Width="37" Height="26" Padding="0,0,0,0" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="{x:Null}" BorderThickness="0,0,0,0" VerticalAlignment="Top" Margin="0,7,14,0">
-                <Image Source="/Resources/Discord.png" Width="37" VerticalAlignment="Center"/>
+            <Button x:Name="DiscordButton" 
+                    Style="{StaticResource ButtonStyle1}" 
+                    Grid.Column="2" 
+                    HorizontalAlignment="Right" 
+                    VerticalAlignment="Center"
+                    Width="37" 
+                    Height="26" 
+                    Margin="0,0,14,0"
+                    Cursor="Hand">
+                <Image Source="/Resources/Discord.png" Width="37" Height="26" Stretch="Uniform"/>
             </Button>
 
 
