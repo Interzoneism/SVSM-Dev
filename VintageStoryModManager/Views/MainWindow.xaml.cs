@@ -9197,6 +9197,11 @@ public partial class MainWindow : Window
         Dispatcher.InvokeAsync(() =>
         {
             RefreshLocalModlists(true);
+
+            if (_viewModel?.IsViewingCloudModlists == true && ModlistsTabControl is not null &&
+                OnlineModlistsTabItem is not null &&
+                Equals(ModlistsTabControl.SelectedItem, OnlineModlistsTabItem))
+                _ = RefreshCloudModlistsAsync(true);
         }, DispatcherPriority.Background);
     }
 
