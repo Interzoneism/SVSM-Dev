@@ -10188,7 +10188,8 @@ public partial class MainWindow : Window
                 var configurationFileName = string.IsNullOrWhiteSpace(mod.ConfigurationFileName)
                     ? null
                     : mod.ConfigurationFileName!.Trim();
-                var configurationContent = DecodeConfigurationContent(mod.ConfigurationContent);
+                string? configurationContent = DecodeConfigurationContent(mod.ConfigurationContent);
+                if (string.IsNullOrWhiteSpace(configurationContent)) configurationContent = null;
 
                 var mergedConfigurations = new List<ModConfigurationSnapshot>();
                 var seenConfigs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
