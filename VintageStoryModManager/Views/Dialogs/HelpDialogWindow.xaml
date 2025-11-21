@@ -56,7 +56,7 @@
                     <Hyperlink x:Name="BackupLink"
                                RequestNavigate="OnBackupHyperlinkRequestNavigate"
                                Foreground="{DynamicResource Brush.Text.Emphasis}">
-                        <Run Text="AppData/Local/SVSM Backup" />
+                        <Run Text="AppData/Local/Simple VS Manager/Firebase Cache" />
                     </Hyperlink>
                     <Run Text="and replace the firebase-auth.json file." />
 

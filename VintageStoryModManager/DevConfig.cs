@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using static System.Net.WebRequestMethods;
 
@@ -55,20 +56,8 @@ public static class DevConfig
     public static string FirebaseLegacyModlistDbUrl { get; } =
         "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
 
-    // Cloud/Firebase backups location (AppData/Local/SVSM Backup/)
-    public static string FirebaseBackupDirectory
-    {
-        get
-        {
-            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            if (string.IsNullOrWhiteSpace(local))
-                local = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-            if (string.IsNullOrWhiteSpace(local)) return Path.Combine(AppContext.BaseDirectory, "SVSM Backup");
-
-            return Path.Combine(local, "SVSM Backup");
-        }
-    }
+    // Cloud/Firebase cache location (Simple VS Manager/Firebase Cache)
+    public static string FirebaseBackupDirectory => Path.Combine(GetManagerDirectory(), FirebaseCacheDirectoryName);
 
     // Status log display.
     public static string StatusTimestampFormat { get; } = "yyyy-MM-dd HH:mm:ss.fff";
@@ -93,6 +82,8 @@ public static class DevConfig
     public static string FirebaseLegacyProjectId { get; } = "simple-vs-manager";
                                                            
     public static string FirebaseAuthBackupDirectoryName { get; } = "SVSM Backup";
+
+    public static string FirebaseCacheDirectoryName { get; } = "Firebase Cache";
 
     // User configuration defaults.
     public static string ConfigurationFileName { get; } = "SimpleVSManagerConfiguration.json";
@@ -154,4 +145,21 @@ public static class DevConfig
     public static int ModDatabaseDefaultNewModsMonths { get; } = 3;
     public static int ModDatabaseMaxNewModsMonths { get; } = 24;
     public static double ModDatabaseMinimumIntervalDays { get; } = 1d / 24d;
+
+    private static string GetManagerDirectory()
+    {
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (!string.IsNullOrWhiteSpace(local)) return Path.Combine(local, "Simple VS Manager");
+
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        if (!string.IsNullOrWhiteSpace(appData)) return Path.Combine(appData, "Simple VS Manager");
+
+        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        if (!string.IsNullOrWhiteSpace(documents)) return Path.Combine(documents, "Simple VS Manager");
+
+        var personal = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+        if (!string.IsNullOrWhiteSpace(personal)) return Path.Combine(personal, "Simple VS Manager");
+
+        return Path.Combine(AppContext.BaseDirectory, "Simple VS Manager");
+    }
 }
