@@ -14,7 +14,7 @@
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
     Title="Simple VS Manager"
-    Height="870" Width="1285"
+    Height="852" Width="1234"
     MinWidth="1200" MinHeight="775" WindowStartupLocation="CenterScreen"
     PreviewKeyDown="MainWindow_OnPreviewKeyDown"
     AllowDrop="True"
@@ -415,6 +415,9 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="ButtonStyle1" TargetType="{x:Type Button}">
+
+        </Style>
     </Window.Resources>
 
     <Grid x:Name="RootGrid" Margin="0,0,0,8" Background="{DynamicResource Brush.Panel.Primary.Background.Solid}">
@@ -424,10 +427,11 @@
             <RowDefinition />
             <RowDefinition Height="Auto" MinHeight="40" />
         </Grid.RowDefinitions>
-        <Grid x:Name="TOP" Grid.Row="0">
+        <Grid x:Name="TOP" Grid.Row="0" Height="33" VerticalAlignment="Top" Margin="16,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="811*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
 
@@ -732,10 +736,10 @@
             </Menu>
 
             <StackPanel Grid.Column="1"
-                        Margin="4,0,4,0"
+                        Margin="4,0,0,0"
                         Orientation="Horizontal"
                         VerticalAlignment="Center"
-                        HorizontalAlignment="Left">
+                        HorizontalAlignment="Left" Height="0" Width="0">
                 <TextBlock x:Name="ManagerUpdateLinkTextBlock"
                            Visibility="Collapsed"
                            Margin="0,0,12,0"
@@ -756,6 +760,9 @@
                     </Hyperlink>
                 </TextBlock>
             </StackPanel>
+            <Button Style="{DynamicResource ButtonStyle1}" Grid.Column="2" HorizontalAlignment="Right" Width="37" Height="26" Padding="0,0,0,0" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="{x:Null}" BorderThickness="0,0,0,0" VerticalAlignment="Top" Margin="0,7,14,0">
+                <Image Source="/Resources/Discord.png" Width="37" VerticalAlignment="Center"/>
+            </Button>
 
 
         </Grid>
@@ -774,7 +781,7 @@
                    VerticalAlignment="Top" />
 
         <Grid x:Name="MIDDLE" Grid.Row="1"
-              Margin="16,34,16,10">
+              Margin="16,10,16,10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
