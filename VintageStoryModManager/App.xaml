@@ -1037,6 +1037,56 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+            <Style x:Key="IMM.ModlistsTabItemStyle"
+                   TargetType="{x:Type TabItem}">
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+                <Setter Property="Background" Value="{DynamicResource Brush.ModTabs.Background}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.SunkenSurface.Bevel.Dark}" />
+                <Setter Property="BorderThickness" Value="1,1,1,0" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                <Setter Property="Padding" Value="20,10" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TabItem}">
+                            <Grid SnapsToDevicePixels="True" Background="Transparent">
+                                <Border x:Name="TabBorder"
+                                        Margin="0,0,0,-1"
+                                        CornerRadius="6,6,0,0"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}">
+                                    <ContentPresenter x:Name="ContentSite"
+                                                      ContentSource="Header"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      Margin="{TemplateBinding Padding}"
+                                                      TextElement.FontSize="16"
+                                                      RecognizesAccessKey="True" />
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Panel.ZIndex" Value="1" />
+                                    <Setter TargetName="TabBorder" Property="Background"
+                                            Value="{DynamicResource Brush.Panel.Primary.Background.Solid}" />
+                                    <Setter TargetName="TabBorder" Property="BorderBrush"
+                                            Value="{DynamicResource Brush.Accent.Primary}" />
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="TabBorder" Property="Background"
+                                            Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Subtle}" />
+                                    <Setter TargetName="TabBorder" Property="Opacity" Value="0.6" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
             <Style TargetType="ToggleButton" BasedOn="{StaticResource IMM.ToggleButtonBaseStyle}" />
         </ResourceDictionary>
     </Application.Resources>

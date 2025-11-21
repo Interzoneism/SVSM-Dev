@@ -30,7 +30,8 @@
         </Grid.RowDefinitions>
 
         <TabControl ItemsSource="{Binding Configurations}" SelectedItem="{Binding SelectedConfiguration}"
-                    Background="{DynamicResource Brush.Panel.Primary.Background.Solid}">
+                    Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+                    ItemContainerStyle="{StaticResource IMM.ModlistsTabItemStyle}">
             <TabControl.Resources>
                 <HierarchicalDataTemplate DataType="{x:Type viewModels:ModConfigObjectNodeViewModel}"
                                           ItemsSource="{Binding Children}">
