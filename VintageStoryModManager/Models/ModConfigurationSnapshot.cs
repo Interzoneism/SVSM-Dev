@@ -1,3 +1,3 @@
 namespace VintageStoryModManager.Models;
 
-public sealed record ModConfigurationSnapshot(string FileName, string Content);
+public sealed record ModConfigurationSnapshot(string FileName, string Content, string? RelativePath = null);

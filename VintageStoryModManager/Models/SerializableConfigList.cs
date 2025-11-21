@@ -18,5 +18,7 @@ public sealed class SerializableModConfiguration
 
     public string? FileName { get; set; }
 
+    public string? RelativePath { get; set; }
+
     public string? Content { get; set; }
 }
