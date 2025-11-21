@@ -5408,7 +5408,7 @@ public partial class MainWindow : Window
         string? version,
         string? description,
         string uploaderName,
-        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations,
+        IReadOnlyDictionary<string, IReadOnlyList<ModConfigurationSnapshot>>? includedConfigurations,
         string? gameVersion,
         IReadOnlyList<ModListItemViewModel>? preFetchedMods = null)
     {
@@ -7754,7 +7754,7 @@ public partial class MainWindow : Window
         string failureContext,
         bool includeModVersions,
         bool exclusive,
-        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations = null,
+        IReadOnlyDictionary<string, IReadOnlyList<ModConfigurationSnapshot>>? includedConfigurations = null,
         Action<SerializablePreset>? configureSerializable = null)
     {
         if (_viewModel is null) return false;
@@ -7828,7 +7828,7 @@ public partial class MainWindow : Window
         string entryName,
         bool includeModVersions,
         bool exclusive,
-        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations = null,
+        IReadOnlyDictionary<string, IReadOnlyList<ModConfigurationSnapshot>>? includedConfigurations = null,
         string? gameVersion = null)
     {
         if (_viewModel is null) throw new InvalidOperationException("View model is not initialized.");
@@ -7855,9 +7855,10 @@ public partial class MainWindow : Window
                 var normalizedId = trimmedId!;
 
                 if (includedConfigurations != null
-                    && includedConfigurations.TryGetValue(normalizedId, out var snapshot)
-                    && snapshot is not null)
+                    && includedConfigurations.TryGetValue(normalizedId, out var snapshots)
+                    && snapshots?.Count > 0)
                 {
+                    var snapshot = snapshots[0];
                     serializableState.ConfigurationFileName = snapshot.FileName;
                     serializableState.ConfigurationContent =
                         EncodeConfigurationContent(snapshot.Content);
@@ -7874,6 +7875,8 @@ public partial class MainWindow : Window
             mods.Add(serializableState);
         }
 
+        var configList = BuildSerializableConfigList(includedConfigurations);
+
         return new SerializablePreset
         {
             Name = entryName,
@@ -7881,7 +7884,8 @@ public partial class MainWindow : Window
             IncludeModVersions = includeModVersions ? true : null,
             Exclusive = exclusive ? true : null,
             Mods = mods,
-            GameVersion = string.IsNullOrWhiteSpace(gameVersion) ? null : gameVersion.Trim()
+            GameVersion = string.IsNullOrWhiteSpace(gameVersion) ? null : gameVersion.Trim(),
+            Configurations = configList?.Configurations
         };
     }
 
@@ -7894,37 +7898,47 @@ public partial class MainWindow : Window
     }
 
     private static SerializableConfigList? BuildSerializableConfigList(
-        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations)
+        IReadOnlyDictionary<string, IReadOnlyList<ModConfigurationSnapshot>>? includedConfigurations)
     {
         if (includedConfigurations is null || includedConfigurations.Count == 0) return null;
 
-        var configurations = new List<SerializableModConfiguration>(includedConfigurations.Count);
+        var configurations = new List<SerializableModConfiguration>();
 
         foreach (var pair in includedConfigurations)
         {
-            if (pair.Key is null || pair.Value is null) continue;
+            if (pair.Key is null || pair.Value is null || pair.Value.Count == 0) continue;
 
             var trimmedId = pair.Key.Trim();
             if (string.IsNullOrWhiteSpace(trimmedId)) continue;
 
-            var fileName = string.IsNullOrWhiteSpace(pair.Value.FileName)
-                ? null
-                : pair.Value.FileName.Trim();
-
-            var content = pair.Value.Content ?? string.Empty;
-
-            configurations.Add(new SerializableModConfiguration
+            foreach (var snapshot in pair.Value)
             {
-                ModId = trimmedId,
-                FileName = fileName,
-                Content = content
-            });
+                if (snapshot is null) continue;
+
+                var fileName = string.IsNullOrWhiteSpace(snapshot.FileName)
+                    ? null
+                    : snapshot.FileName.Trim();
+
+                var content = snapshot.Content ?? string.Empty;
+
+                configurations.Add(new SerializableModConfiguration
+                {
+                    ModId = trimmedId,
+                    FileName = fileName,
+                    Content = content
+                });
+            }
         }
 
         if (configurations.Count == 0) return null;
 
         configurations.Sort((left, right) =>
-            string.Compare(left?.ModId, right?.ModId, StringComparison.OrdinalIgnoreCase));
+        {
+            var modComparison = string.Compare(left?.ModId, right?.ModId, StringComparison.OrdinalIgnoreCase);
+            if (modComparison != 0) return modComparison;
+
+            return string.Compare(left?.FileName, right?.FileName, StringComparison.OrdinalIgnoreCase);
+        });
 
         return new SerializableConfigList
         {
@@ -8443,7 +8457,7 @@ public partial class MainWindow : Window
         string? description,
         string? version,
         string uploader,
-        IReadOnlyDictionary<string, ModConfigurationSnapshot>? includedConfigurations,
+        IReadOnlyDictionary<string, IReadOnlyList<ModConfigurationSnapshot>>? includedConfigurations,
         string? gameVersion,
         out string json)
     {
@@ -8563,12 +8577,13 @@ public partial class MainWindow : Window
         }
     }
 
-    private IReadOnlyDictionary<string, ModConfigurationSnapshot>? CaptureConfigurationsForBackup(
-        IReadOnlyList<ModListItemViewModel> mods)
+    private IReadOnlyDictionary<string, IReadOnlyList<ModConfigurationSnapshot>>?
+        CaptureConfigurationsForBackup(
+            IReadOnlyList<ModListItemViewModel> mods)
     {
         if (mods is null || mods.Count == 0) return null;
 
-        var includedConfigurations = new Dictionary<string, ModConfigurationSnapshot>(StringComparer.OrdinalIgnoreCase);
+        var includedConfigurations = new Dictionary<string, List<ModConfigurationSnapshot>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var mod in mods)
         {
@@ -8577,31 +8592,44 @@ public partial class MainWindow : Window
             var normalizedId = mod.ModId.Trim();
             if (includedConfigurations.ContainsKey(normalizedId)) continue;
 
-            if (!_userConfiguration.TryGetModConfigPath(normalizedId, out var path)
-                || string.IsNullOrWhiteSpace(path))
-                continue;
+            var configPaths = _userConfiguration.GetModConfigPaths(normalizedId)
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(path => path.Trim())
+                .Where(File.Exists)
+                .ToList();
 
-            var normalizedPath = path.Trim();
-            if (!File.Exists(normalizedPath)) continue;
+            if (configPaths.Count == 0) continue;
 
-            try
-            {
-                var content = File.ReadAllText(normalizedPath);
-                var fileName = GetSafeConfigFileName(Path.GetFileName(normalizedPath), normalizedId);
-                includedConfigurations[normalizedId] = new ModConfigurationSnapshot(fileName, content);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
-                                           or NotSupportedException or PathTooLongException)
-            {
-                Trace.TraceWarning(
-                    "Failed to include configuration file {0} for mod {1} in backup: {2}",
-                    normalizedPath,
-                    normalizedId,
-                    ex.Message);
-            }
+            foreach (var path in configPaths)
+                try
+                {
+                    var content = File.ReadAllText(path);
+                    var fileName = GetSafeConfigFileName(Path.GetFileName(path), normalizedId);
+
+                    if (!includedConfigurations.TryGetValue(normalizedId, out var snapshots))
+                    {
+                        snapshots = new List<ModConfigurationSnapshot>();
+                        includedConfigurations[normalizedId] = snapshots;
+                    }
+
+                    snapshots.Add(new ModConfigurationSnapshot(fileName, content));
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
+                                               or NotSupportedException or PathTooLongException)
+                {
+                    Trace.TraceWarning(
+                        "Failed to include configuration file {0} for mod {1} in backup: {2}",
+                        path,
+                        normalizedId,
+                        ex.Message);
+                }
         }
 
-        return includedConfigurations.Count > 0 ? includedConfigurations : null;
+        return includedConfigurations.Count > 0
+            ? includedConfigurations.ToDictionary(pair => pair.Key,
+                pair => (IReadOnlyList<ModConfigurationSnapshot>)pair.Value,
+                StringComparer.OrdinalIgnoreCase)
+            : null;
     }
 
     private static bool IsAppStartedBackup(string? path)
@@ -8862,7 +8890,7 @@ public partial class MainWindow : Window
             var description = detailsDialog.ModlistDescription;
             var version = detailsDialog.ModlistVersion;
 
-            Dictionary<string, ModConfigurationSnapshot>? includedConfigurations = null;
+            Dictionary<string, IReadOnlyList<ModConfigurationSnapshot>>? includedConfigurations = null;
             var selectedConfigOptions = detailsDialog.GetSelectedConfigOptions();
             includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
 
@@ -8955,10 +8983,12 @@ public partial class MainWindow : Window
             var normalizedId = mod.ModId.Trim();
             if (!seenIds.Add(normalizedId)) continue;
 
-            if (_userConfiguration.TryGetModConfigPath(normalizedId, out var path)
-                && !string.IsNullOrWhiteSpace(path)
-                && File.Exists(path))
-                options.Add(new ModConfigOption(normalizedId, mod.DisplayName, path, selectByDefault));
+            var configPaths = _userConfiguration.GetModConfigPaths(normalizedId)
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .ToList();
+
+            if (configPaths.Count > 0)
+                options.Add(new ModConfigOption(normalizedId, mod.DisplayName, configPaths, selectByDefault));
         }
 
         options.Sort((left, right) =>
@@ -8966,28 +8996,38 @@ public partial class MainWindow : Window
         return options;
     }
 
-    private Dictionary<string, ModConfigurationSnapshot>? TryReadModConfigurations(
+    private Dictionary<string, IReadOnlyList<ModConfigurationSnapshot>>? TryReadModConfigurations(
         IReadOnlyList<ModConfigOption> selectedConfigOptions)
     {
         if (selectedConfigOptions is null || selectedConfigOptions.Count == 0) return null;
 
-        var includedConfigurations = new Dictionary<string, ModConfigurationSnapshot>(StringComparer.OrdinalIgnoreCase);
+        var includedConfigurations = new Dictionary<string, List<ModConfigurationSnapshot>>(StringComparer.OrdinalIgnoreCase);
         var readErrors = new List<string>();
 
         foreach (var option in selectedConfigOptions)
         {
-            if (option is null) continue;
+            if (option is null || option.ConfigPaths.Count == 0) continue;
 
-            try
+            foreach (var path in option.ConfigPaths)
             {
-                var content = File.ReadAllText(option.ConfigPath);
-                var fileName = GetSafeConfigFileName(Path.GetFileName(option.ConfigPath), option.ModId);
-                includedConfigurations[option.ModId] = new ModConfigurationSnapshot(fileName, content);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
-                                           or NotSupportedException or PathTooLongException)
-            {
-                readErrors.Add($"{option.DisplayName}: {ex.Message}");
+                try
+                {
+                    var content = File.ReadAllText(path);
+                    var fileName = GetSafeConfigFileName(Path.GetFileName(path), option.ModId);
+
+                    if (!includedConfigurations.TryGetValue(option.ModId, out var snapshots))
+                    {
+                        snapshots = new List<ModConfigurationSnapshot>();
+                        includedConfigurations[option.ModId] = snapshots;
+                    }
+
+                    snapshots.Add(new ModConfigurationSnapshot(fileName, content));
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
+                                               or NotSupportedException or PathTooLongException)
+                {
+                    readErrors.Add($"{option.DisplayName}: {ex.Message}");
+                }
             }
         }
 
@@ -8998,7 +9038,11 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-        return includedConfigurations.Count == 0 ? null : includedConfigurations;
+        if (includedConfigurations.Count == 0) return null;
+
+        return includedConfigurations.ToDictionary(pair => pair.Key,
+            pair => (IReadOnlyList<ModConfigurationSnapshot>)pair.Value,
+            StringComparer.OrdinalIgnoreCase);
     }
 
     private static string[] GetSupportedConfigFiles(string directory)
@@ -10041,6 +10085,29 @@ public partial class MainWindow : Window
         var exclusive = options.ForceExclusive;
 
         var modStates = new List<ModPresetModState>();
+
+        var configurationGroups = new Dictionary<string, List<ModConfigurationSnapshot>>(StringComparer.OrdinalIgnoreCase);
+        if (data.Configurations is not null)
+            foreach (var configuration in data.Configurations)
+            {
+                if (configuration is null || string.IsNullOrWhiteSpace(configuration.ModId)) continue;
+
+                var trimmedId = configuration.ModId.Trim();
+                if (string.IsNullOrWhiteSpace(trimmedId)) continue;
+
+                if (!configurationGroups.TryGetValue(trimmedId, out var list))
+                {
+                    list = new List<ModConfigurationSnapshot>();
+                    configurationGroups[trimmedId] = list;
+                }
+
+                var fileName = string.IsNullOrWhiteSpace(configuration.FileName)
+                    ? null
+                    : configuration.FileName.Trim();
+                var content = configuration.Content ?? string.Empty;
+                list.Add(new ModConfigurationSnapshot(fileName ?? string.Empty, content));
+            }
+
         if (data.Mods != null)
             foreach (var mod in data.Mods)
             {
@@ -10055,8 +10122,34 @@ public partial class MainWindow : Window
                     : mod.ConfigurationFileName!.Trim();
                 var configurationContent = DecodeConfigurationContent(mod.ConfigurationContent);
 
+                var mergedConfigurations = new List<ModConfigurationSnapshot>();
+                var seenConfigs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                void AddConfiguration(string? fileName, string? content)
+                {
+                    if (string.IsNullOrEmpty(content)) return;
+
+                    var safeName = GetSafeConfigFileName(fileName, modId);
+                    var key = $"{safeName}::{content}";
+                    if (!seenConfigs.Add(key)) return;
+
+                    mergedConfigurations.Add(new ModConfigurationSnapshot(safeName, content));
+                }
+
+                AddConfiguration(configurationFileName, configurationContent);
+
+                if (configurationGroups.TryGetValue(modId, out var extraConfigs))
+                    foreach (var config in extraConfigs)
+                        AddConfiguration(config.FileName, config.Content);
+
+                if (mergedConfigurations.Count > 0)
+                {
+                    configurationFileName ??= mergedConfigurations[0].FileName;
+                    configurationContent ??= mergedConfigurations[0].Content;
+                }
+
                 modStates.Add(new ModPresetModState(modId, version, mod.IsActive, configurationFileName,
-                    configurationContent));
+                    configurationContent, mergedConfigurations.Count > 0 ? mergedConfigurations : null));
             }
 
         preset = new ModPreset(name, disabledEntries, modStates, includeStatus, includeVersions, exclusive);
@@ -10067,41 +10160,32 @@ public partial class MainWindow : Window
     {
         if (preset is null || configList?.Configurations is null || configList.Configurations.Count == 0) return;
 
-        if (preset.Mods is null) preset.Mods = new List<SerializablePresetModState>();
+        preset.Configurations ??= new List<SerializableModConfiguration>();
 
-        var configurationLookup =
-            new Dictionary<string, SerializableModConfiguration>(StringComparer.OrdinalIgnoreCase);
+        var existingKeys = new HashSet<string>(preset.Configurations.Select(BuildConfigKey),
+            StringComparer.OrdinalIgnoreCase);
 
         foreach (var configuration in configList.Configurations)
         {
             if (configuration is null || string.IsNullOrWhiteSpace(configuration.ModId) ||
                 configuration.Content is null) continue;
 
-            var trimmedId = configuration.ModId.Trim();
-            if (string.IsNullOrWhiteSpace(trimmedId)) continue;
+            var key = BuildConfigKey(configuration);
+            if (!existingKeys.Add(key)) continue;
 
-            configurationLookup[trimmedId] = configuration;
+            preset.Configurations.Add(configuration);
         }
+    }
 
-        if (configurationLookup.Count == 0) return;
+    private static string BuildConfigKey(SerializableModConfiguration configuration)
+    {
+        var modId = string.IsNullOrWhiteSpace(configuration.ModId) ? string.Empty : configuration.ModId.Trim();
+        var fileName = string.IsNullOrWhiteSpace(configuration.FileName)
+            ? string.Empty
+            : configuration.FileName.Trim();
+        var content = configuration.Content ?? string.Empty;
 
-        foreach (var mod in preset.Mods)
-        {
-            if (mod is null || string.IsNullOrWhiteSpace(mod.ModId)) continue;
-
-            var trimmedId = mod.ModId.Trim();
-            if (!configurationLookup.TryGetValue(trimmedId, out var configuration)) continue;
-
-            var fileName = string.IsNullOrWhiteSpace(configuration.FileName)
-                ? null
-                : configuration.FileName.Trim();
-
-            if (string.IsNullOrWhiteSpace(mod.ConfigurationFileName) && fileName is not null)
-                mod.ConfigurationFileName = fileName;
-
-            if (string.IsNullOrEmpty(mod.ConfigurationContent))
-                mod.ConfigurationContent = DecodeConfigurationContent(configuration.Content) ?? string.Empty;
-        }
+        return $"{modId}::{fileName}::{content}";
     }
 
     private async Task ExecuteCloudOperationAsync(Func<FirebaseModlistStore, Task> operation, string actionDescription)
@@ -11328,19 +11412,33 @@ public partial class MainWindow : Window
         if (preset.ModStates.Count == 0) return;
 
         var configs = new List<(string ModId, string? FileName, string Content)>();
-        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seenConfigs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var state in preset.ModStates)
         {
-            if (state is null
-                || string.IsNullOrWhiteSpace(state.ModId)
-                || state.ConfigurationContent is null)
-                continue;
+            if (state is null || string.IsNullOrWhiteSpace(state.ModId)) continue;
 
             var trimmedId = state.ModId.Trim();
-            if (!seenIds.Add(trimmedId)) continue;
 
-            configs.Add((trimmedId, state.ConfigurationFileName, state.ConfigurationContent!));
+            if (state.Configurations is not null && state.Configurations.Count > 0)
+            {
+                foreach (var config in state.Configurations)
+                {
+                    if (config is null || string.IsNullOrEmpty(config.Content)) continue;
+
+                    var key = $"{trimmedId}::{config.FileName}::{config.Content}";
+                    if (!seenConfigs.Add(key)) continue;
+
+                    configs.Add((trimmedId, config.FileName, config.Content));
+                }
+            }
+            else if (state.ConfigurationContent is not null)
+            {
+                var key = $"{trimmedId}::{state.ConfigurationFileName}::{state.ConfigurationContent}";
+                if (!seenConfigs.Add(key)) continue;
+
+                configs.Add((trimmedId, state.ConfigurationFileName, state.ConfigurationContent!));
+            }
         }
 
         if (configs.Count == 0) return;
@@ -12988,8 +13086,6 @@ public partial class MainWindow : Window
 
         public string? GameVersion { get; }
     }
-
-    private sealed record ModConfigurationSnapshot(string FileName, string Content);
 
     private readonly record struct PresetModInstallResult(
         bool Success,

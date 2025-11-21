@@ -20,6 +20,8 @@ public sealed class SerializablePreset
 
     public List<SerializablePresetModState>? Mods { get; set; }
 
+    public List<SerializableModConfiguration>? Configurations { get; set; }
+
     public bool? IncludeModStatus { get; set; }
 
     public bool? IncludeModVersions { get; set; }
