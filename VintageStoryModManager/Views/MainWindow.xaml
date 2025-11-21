@@ -813,7 +813,7 @@
                       HorizontalAlignment="Left" Height="44" VerticalAlignment="Bottom">
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -822,8 +822,8 @@
                         </Style>
                     </Grid.Style>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" MinWidth="614" />
+                        <ColumnDefinition Width="Auto" MinWidth="114" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition />
@@ -845,8 +845,8 @@
                             Style="{StaticResource IMM.ModDatabaseActivityTabButtonStyle}" Margin="80,-17,465,19"
                             Padding="0,0,0,0" UseLayoutRounding="False"
                             Background="{DynamicResource Brush.Button.Primary.Background.Hover}" />
-                    <Border x:Name="DownloadsBorder" HorizontalAlignment="Right" Grid.RowSpan="2"
-                            Visibility="{Binding IsModDatabaseDownloadsTabSelected, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
+                    <Border x:Name="DownloadsBorder" HorizontalAlignment="Center" Grid.RowSpan="2"
+                            Visibility="{Binding IsModDatabaseDownloadsTabSelected, Converter={StaticResource IMM.VisibleWhenTrueConverter}}" Width="614">
                         <Grid>
                             <Rectangle Margin="0,0,379,-4" RadiusX="4" RadiusY="4" StrokeThickness="2"
                                        HorizontalAlignment="Right" Width="235"
@@ -874,8 +874,8 @@
                                          VerticalContentAlignment="Center" />
                         </Grid>
                     </Border>
-                    <Border x:Name="ActivityBorder" HorizontalAlignment="Right" Grid.RowSpan="2"
-                            Visibility="{Binding IsModDatabaseActivityTabSelected, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
+                    <Border x:Name="ActivityBorder" HorizontalAlignment="Center" Grid.RowSpan="2"
+                            Visibility="{Binding IsModDatabaseActivityTabSelected, Converter={StaticResource IMM.VisibleWhenTrueConverter}}" Width="614">
                         <Grid>
                             <Rectangle Margin="0,0,379,-4" RadiusX="4" RadiusY="4" StrokeThickness="2"
                                        Fill="{DynamicResource Brush.Button.Primary.Background.Hover}"
@@ -919,17 +919,15 @@
                                   BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}" Padding="6,0,0,0"
                                   HorizontalAlignment="Left" />
                     </StackPanel>
-                    <StackPanel Grid.Column="1"
-                                Grid.RowSpan="2"
+                    <StackPanel
                                 Orientation="Horizontal"
-                                VerticalAlignment="Bottom"
-                                Margin="12,0,0,0">
+                                VerticalAlignment="Top"
+                                Margin="341,17,0,0" HorizontalAlignment="Left" Grid.RowSpan="2">
                         <ToggleButton x:Name="SearchOptionsToggleButton"
                                       Content="Search options"
                                       VerticalAlignment="Center"
                                       Height="27" Width="102"
-                                      Margin="0,0,0,4"
-                                      RenderTransformOrigin="0.5,0.5">
+                                      RenderTransformOrigin="0.5,0.5" HorizontalAlignment="Left" Padding="0,0,0,0">
                             <ToggleButton.RenderTransform>
                                 <TransformGroup>
                                     <ScaleTransform />
@@ -941,7 +939,7 @@
                             <ToggleButton.Style>
                                 <Style TargetType="{x:Type ToggleButton}"
                                        BasedOn="{StaticResource IMM.ToggleButtonBaseStyle}">
-                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Setter Property="Visibility" Value="Visible" />
                                     <Setter Property="HorizontalContentAlignment" Value="Center" />
                                     <Setter Property="VerticalContentAlignment" Value="Center" />
                                     <Style.Triggers>
@@ -4047,7 +4045,7 @@
                 Background="#C0000000"
                 Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsDataBackupInProgress, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
                 IsHitTestVisible="True"
-                Panel.ZIndex="5000">
+                Panel.ZIndex="5000" d:IsHidden="True">
             <Border HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
