@@ -26,6 +26,7 @@
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenTrueConverter" />
         <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenFalseConverter" IsInverted="True" />
+        <converters:BooleanToVisibilityConverter x:Key="IMM.HiddenWhenFalseConverter" UseHidden="True" />
         <converters:RowPaddingOffsetConverter x:Key="IMM.RowPaddingOffsetConverter" />
         <Thickness x:Key="IMM.RowPaddingBase">0,0,0,0</Thickness>
         <sys:Double x:Key="IMM.NormalRowHeightOffset">10</sys:Double>
@@ -1197,7 +1198,7 @@
                                       FontSize="15"
                                       Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                       BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                      Visibility="{Binding IsViewingInstalledMods, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
+                                      Visibility="{Binding IsViewingInstalledMods, Converter={StaticResource IMM.HiddenWhenFalseConverter}}"
                                       IsEnabled="{Binding IsViewingInstalledMods}">
                                 <DataGrid.Resources>
                                     <Style TargetType="{x:Type ScrollBar}"
