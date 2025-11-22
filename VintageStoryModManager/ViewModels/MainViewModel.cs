@@ -2762,6 +2762,26 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             EnableUserReportFetching();
     }
 
+    private void ScheduleDeferredUserReportFetching()
+    {
+        // Helper method to schedule user report fetching with a delay during initial load
+        // This ensures the UI is fully responsive before background operations start
+        if (!_areUserReportsVisible || _hasEnabledUserReportFetching || !_allowModDetailsRefresh)
+            return;
+
+        var delay = _isInitialLoadComplete ? TimeSpan.Zero : UserReportFetchDelay;
+        if (delay > TimeSpan.Zero)
+        {
+            Task.Delay(delay).ContinueWith(
+                _ => EnableUserReportFetching(),
+                TaskScheduler.Default);
+        }
+        else
+        {
+            EnableUserReportFetching();
+        }
+    }
+
     private void ScheduleInstalledTagFilterRefresh()
     {
         if (!_isTagsColumnVisible) return;
@@ -2830,23 +2850,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Check if initial load is complete after tags are done
                 InvokeCheckAndCompleteInitialLoad();
                 // Defer user report fetching to ensure UI is fully responsive first
-                // Use a longer delay during initial load to prioritize UI interaction
-                if (_areUserReportsVisible && !_hasEnabledUserReportFetching && _allowModDetailsRefresh)
-                {
-                    var delay = _isInitialLoadComplete ? TimeSpan.Zero : UserReportFetchDelay;
-                    if (delay > TimeSpan.Zero)
-                    {
-                        _ = Task.Run(async () =>
-                        {
-                            await Task.Delay(delay).ConfigureAwait(false);
-                            EnableUserReportFetching();
-                        });
-                    }
-                    else
-                    {
-                        EnableUserReportFetching();
-                    }
-                }
+                ScheduleDeferredUserReportFetching();
             }
         }
 
@@ -2914,22 +2918,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 _isModDatabaseTagRefreshPending = false;
                 // Defer user report fetching to ensure UI is fully responsive first
-                if (_areUserReportsVisible && !_hasEnabledUserReportFetching && _allowModDetailsRefresh)
-                {
-                    var delay = _isInitialLoadComplete ? TimeSpan.Zero : UserReportFetchDelay;
-                    if (delay > TimeSpan.Zero)
-                    {
-                        _ = Task.Run(async () =>
-                        {
-                            await Task.Delay(delay).ConfigureAwait(false);
-                            EnableUserReportFetching();
-                        });
-                    }
-                    else
-                    {
-                        EnableUserReportFetching();
-                    }
-                }
+                ScheduleDeferredUserReportFetching();
             }
         }
 
