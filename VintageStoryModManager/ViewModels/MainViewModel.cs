@@ -2229,7 +2229,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (_installedModSubscriptions.Add(mod)) mod.PropertyChanged += OnInstalledModPropertyChanged;
 
-        if (_allowModDetailsRefresh) QueueUserReportRefresh(mod);
+        // Only queue user report refresh if tags are not currently loading
+        if (_allowModDetailsRefresh && !_isInstalledTagRefreshPending) 
+            QueueUserReportRefresh(mod);
     }
 
     private void DetachInstalledMod(ModListItemViewModel mod)
@@ -2250,9 +2252,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (_searchResultSubscriptions.Add(mod)) mod.PropertyChanged += OnSearchResultPropertyChanged;
 
-        if (mod.CanSubmitUserReport) QueueUserReportRefresh(mod);
+        // Only queue user report refresh if tags are not currently loading
+        if (!_isInstalledTagRefreshPending)
+        {
+            if (mod.CanSubmitUserReport) QueueUserReportRefresh(mod);
 
-        QueueLatestReleaseUserReportRefresh(mod);
+            QueueLatestReleaseUserReportRefresh(mod);
+        }
     }
 
     private void DetachSearchResult(ModListItemViewModel mod)
@@ -2707,7 +2713,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (_allowModDetailsRefresh) EnableUserReportFetching();
+        // Only enable user report fetching if tags are not currently loading
+        // If tags are loading, user reports will be enabled when tag loading completes
+        if (_allowModDetailsRefresh && !_isInstalledTagRefreshPending) 
+            EnableUserReportFetching();
     }
 
     private void ScheduleInstalledTagFilterRefresh()
@@ -2768,6 +2777,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 _isInstalledTagRefreshPending = false;
                 // Check if initial load is complete after tags are done
                 InvokeCheckAndCompleteInitialLoad();
+                // Start user report fetching now that tags are complete
+                if (_areUserReportsVisible && !_hasEnabledUserReportFetching && _allowModDetailsRefresh)
+                {
+                    EnableUserReportFetching();
+                }
             }
         }
 
@@ -4592,7 +4606,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
                         {
                             viewModel.UpdateDatabaseInfo(preparedInfo, loadLogoImmediately);
-                            QueueLatestReleaseUserReportRefresh(viewModel);
+                            // Only queue user report refresh if tags are not currently loading
+                            // If tags are loading, user reports will be queued when tag loading completes
+                            if (!_isInstalledTagRefreshPending)
+                                QueueLatestReleaseUserReportRefresh(viewModel);
                         }
                     },
                     CancellationToken.None,
