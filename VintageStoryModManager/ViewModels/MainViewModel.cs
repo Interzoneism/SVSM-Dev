@@ -5059,12 +5059,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         if (cts.IsCancellationRequested) return;
 
+        // Check if this is still the current pending search (prevent race conditions)
+        bool shouldExecute;
+        lock (_searchDebounceLock)
+        {
+            shouldExecute = ReferenceEquals(cts, _pendingSearchCts);
+        }
+
+        if (!shouldExecute) return;
+
         // Execute the search on the UI thread
         if (Application.Current?.Dispatcher is { } dispatcher)
         {
             dispatcher.BeginInvoke(new Action(() =>
             {
-                if (!cts.IsCancellationRequested && ReferenceEquals(cts, _pendingSearchCts))
+                if (!cts.IsCancellationRequested)
                 {
                     ModsView.Refresh();
                 }
