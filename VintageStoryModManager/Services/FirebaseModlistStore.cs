@@ -33,6 +33,7 @@ public sealed class FirebaseModlistStore : IDisposable
     private readonly string _dbUrl;
     private readonly SemaphoreSlim _ownershipClaimLock = new(1, 1);
     private readonly SemaphoreSlim _registryCacheLock = new(1, 1);
+    private readonly object _disposeLock = new();
     private string? _ownershipClaimedForUid;
     private string? _playerName;
 
@@ -1082,8 +1083,12 @@ public sealed class FirebaseModlistStore : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
+        lock (_disposeLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+        }
+        
         _ownershipClaimLock.Dispose();
         _registryCacheLock.Dispose();
     }

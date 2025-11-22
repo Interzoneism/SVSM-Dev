@@ -39,6 +39,7 @@ public sealed class ModVersionVoteService : IDisposable
         new(VoteCacheKeyComparer.Instance);
 
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
+    private readonly object _disposeLock = new();
     private bool _voteCacheLoaded;
     private bool _disposed;
 
@@ -735,8 +736,12 @@ public sealed class ModVersionVoteService : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
+        lock (_disposeLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+        }
+        
         _cacheLock.Dispose();
     }
 }

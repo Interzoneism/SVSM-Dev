@@ -32,6 +32,7 @@ public sealed class FirebaseAnonymousAuthenticator : IDisposable
 
     private readonly string _stateFilePath;
     private readonly SemaphoreSlim _stateLock = new(1, 1);
+    private readonly object _disposeLock = new();
 
     private FirebaseAuthState? _cachedState;
     private bool _disposed;
@@ -807,8 +808,12 @@ public sealed class FirebaseAnonymousAuthenticator : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
+        lock (_disposeLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+        }
+        
         _stateLock.Dispose();
     }
 }
