@@ -1095,8 +1095,12 @@ public sealed class ModListItemViewModel : ObservableObject
 
     /// <summary>
     /// Gets a cached HashSet of database tags for efficient filtering operations.
-    /// The set is created lazily and cached until the tags are updated.
+    /// The set is created lazily on first access and cached until the tags are updated.
     /// </summary>
+    /// <returns>
+    /// A case-insensitive HashSet containing the trimmed, non-empty tags, or null if no valid tags exist.
+    /// The returned HashSet is cached and reused across multiple filter operations until tags are modified.
+    /// </returns>
     public HashSet<string>? GetCachedTagSet()
     {
         if (_cachedTagSet != null)

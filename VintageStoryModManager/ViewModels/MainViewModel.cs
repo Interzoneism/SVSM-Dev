@@ -2886,6 +2886,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return result.Tags ?? Array.Empty<string>();
     }
 
+    /// <summary>
+    /// Determines whether a pre-computed tag set contains all required tags.
+    /// This is an optimized version for use with cached tag sets from ModListItemViewModel.
+    /// </summary>
+    /// <param name="sourceTagSet">A case-insensitive HashSet of available tags, or null if no tags exist.</param>
+    /// <param name="requiredTags">The list of tags that must all be present in the source set.</param>
+    /// <returns>True if all required tags are present in the source set; false otherwise.</returns>
     private static bool ContainsAllTags(HashSet<string>? sourceTagSet, IReadOnlyList<string> requiredTags)
     {
         if (requiredTags.Count == 0) return true;
@@ -2899,6 +2906,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return true;
     }
 
+    /// <summary>
+    /// Determines whether a collection of tags contains all required tags.
+    /// This version creates a temporary HashSet and is used for scenarios where tags are not pre-cached,
+    /// such as filtering mod database search results.
+    /// </summary>
+    /// <param name="sourceTags">An enumerable collection of available tags, or null if no tags exist.</param>
+    /// <param name="requiredTags">The list of tags that must all be present in the source collection.</param>
+    /// <returns>True if all required tags are present in the source collection; false otherwise.</returns>
     private static bool ContainsAllTags(IEnumerable<string>? sourceTags, IReadOnlyList<string> requiredTags)
     {
         if (requiredTags.Count == 0) return true;
