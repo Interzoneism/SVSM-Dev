@@ -40,12 +40,14 @@ public sealed class ModVersionVoteService : IDisposable
 
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
     private readonly object _disposeLock = new();
+    private readonly bool _ownsAuthenticator;
     private bool _voteCacheLoaded;
     private bool _disposed;
 
     public ModVersionVoteService()
         : this(DefaultDbUrl, new FirebaseAnonymousAuthenticator())
     {
+        _ownsAuthenticator = true;
     }
 
     public ModVersionVoteService(string databaseUrl, FirebaseAnonymousAuthenticator authenticator)
@@ -55,6 +57,7 @@ public sealed class ModVersionVoteService : IDisposable
 
         _dbUrl = databaseUrl.TrimEnd('/');
         _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
+        _ownsAuthenticator = false;
     }
 
 
@@ -743,5 +746,10 @@ public sealed class ModVersionVoteService : IDisposable
         }
         
         _cacheLock.Dispose();
+        
+        if (_ownsAuthenticator)
+        {
+            _authenticator.Dispose();
+        }
     }
 }
