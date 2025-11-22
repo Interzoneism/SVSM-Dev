@@ -715,6 +715,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _modDetailsBusyScope?.Dispose();
         _modDetailsBusyScope = null;
         _userReportRefreshLimiter.Dispose();
+        _voteService.Dispose();
     }
 
     public IDisposable EnterBusyScope()

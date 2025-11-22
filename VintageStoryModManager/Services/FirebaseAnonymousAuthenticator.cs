@@ -13,7 +13,7 @@ namespace SimpleVsManager.Cloud;
 /// <summary>
 ///     Handles Firebase anonymous authentication and persists refresh tokens for reuse.
 /// </summary>
-public sealed class FirebaseAnonymousAuthenticator
+public sealed class FirebaseAnonymousAuthenticator : IDisposable
 {
     private static readonly string SignInEndpoint = DevConfig.FirebaseSignInEndpoint;
     private static readonly string RefreshEndpoint = DevConfig.FirebaseRefreshEndpoint;
@@ -34,6 +34,7 @@ public sealed class FirebaseAnonymousAuthenticator
     private readonly SemaphoreSlim _stateLock = new(1, 1);
 
     private FirebaseAuthState? _cachedState;
+    private bool _disposed;
 
     public FirebaseAnonymousAuthenticator() : this(DefaultApiKey)
     {
@@ -802,5 +803,12 @@ public sealed class FirebaseAnonymousAuthenticator
         public string IdToken { get; }
 
         public string UserId { get; }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _stateLock.Dispose();
     }
 }

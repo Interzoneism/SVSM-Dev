@@ -16,7 +16,7 @@ namespace SimpleVsManager.Cloud;
 /// <summary>
 ///     Firebase RTDB access that relies solely on the player's Vintage Story identity.
 /// </summary>
-public sealed class FirebaseModlistStore
+public sealed class FirebaseModlistStore : IDisposable
 {
     private static readonly HttpClient HttpClient = new();
 
@@ -41,6 +41,7 @@ public sealed class FirebaseModlistStore
 
     private string? _playerUid; // Original player UID from Vintage Story
     private string? _sanitizedPlayerUid; // Firebase-compatible version of the player UID
+    private bool _disposed;
 
     public FirebaseModlistStore()
         : this(DefaultDbUrl, new FirebaseAnonymousAuthenticator())
@@ -1077,5 +1078,13 @@ public sealed class FirebaseModlistStore
     private struct ModlistNode
     {
         [JsonPropertyName("content")] public JsonElement Content { get; set; }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _ownershipClaimLock.Dispose();
+        _registryCacheLock.Dispose();
     }
 }
