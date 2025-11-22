@@ -732,15 +732,27 @@ public sealed class ModDiscoveryService
             // Ignore failures when probing file metadata; the cache lookup will simply miss.
         }
 
-        if (ModManifestCacheService.TryGetManifest(archiveFile.FullName, lastWriteTimeUtc, length, out var manifestJson,
-                out var cachedIconBytes))
+        if (ModManifestCacheService.TryGetManifest(archiveFile.FullName, lastWriteTimeUtc, length, out var manifestJson))
             try
             {
                 using var cachedDocument = JsonDocument.Parse(manifestJson, DocumentOptions);
                 var cachedInfo = ParseModInfo(cachedDocument.RootElement,
                     Path.GetFileNameWithoutExtension(archiveFile.Name));
 
-                var iconBytes = cachedIconBytes;
+                // Try to load icon from icon cache
+                byte[]? iconBytes = null;
+                if (ModIconCacheService.TryGetIconPath(archiveFile.FullName, lastWriteTimeUtc, length, out var iconPath))
+                {
+                    try
+                    {
+                        iconBytes = File.ReadAllBytes(iconPath!);
+                    }
+                    catch (Exception)
+                    {
+                        // If icon file is missing or corrupt, we'll use default
+                    }
+                }
+                
                 iconBytes ??= LoadDefaultIcon();
 
                 return CreateEntry(cachedInfo, archiveFile.FullName, ModSourceKind.ZipArchive, iconBytes);
@@ -748,6 +760,7 @@ public sealed class ModDiscoveryService
             catch (Exception)
             {
                 ModManifestCacheService.Invalidate(archiveFile.FullName);
+                ModIconCacheService.Invalidate(archiveFile.FullName);
             }
 
         try
@@ -773,14 +786,24 @@ public sealed class ModDiscoveryService
             var iconBytes = archiveIconBytes;
             iconBytes ??= LoadDefaultIcon();
 
+            // Store manifest in metadata cache (without icon)
             ModManifestCacheService.StoreManifest(
                 archiveFile.FullName,
                 lastWriteTimeUtc,
                 length,
                 info.ModId,
                 info.Version,
-                manifestContent,
-                archiveIconBytes);
+                manifestContent);
+
+            // Store icon separately in icon cache
+            if (archiveIconBytes != null)
+            {
+                ModIconCacheService.StoreIcon(
+                    archiveFile.FullName,
+                    lastWriteTimeUtc,
+                    length,
+                    archiveIconBytes);
+            }
 
             return CreateEntry(info, archiveFile.FullName, ModSourceKind.ZipArchive, iconBytes);
         }

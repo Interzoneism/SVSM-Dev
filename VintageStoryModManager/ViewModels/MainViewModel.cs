@@ -5017,8 +5017,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             // Ignore filesystem probing failures; the cache simply will not be used.
         }
 
-        if (ModManifestCacheService.TryGetManifest(archivePath, lastWriteTimeUtc, length, out var cachedManifest,
-                out _))
+        if (ModManifestCacheService.TryGetManifest(archivePath, lastWriteTimeUtc, length, out var cachedManifest))
             try
             {
                 using var document = JsonDocument.Parse(cachedManifest);
@@ -5093,7 +5092,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     : Path.GetFileNameWithoutExtension(archivePath);
 
             ModManifestCacheService.StoreManifest(archivePath, lastWriteTimeUtc, length, cacheModId, version,
-                manifestContent, null);
+                manifestContent);
 
             return new ModReleaseInfo
             {
