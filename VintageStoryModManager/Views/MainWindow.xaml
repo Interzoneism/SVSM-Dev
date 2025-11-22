@@ -429,10 +429,10 @@
             <RowDefinition />
             <RowDefinition Height="Auto" MinHeight="40" />
         </Grid.RowDefinitions>
-        <Grid x:Name="TOP" Grid.Row="0" Height="33" VerticalAlignment="Top" Margin="16,0,0,0">
+        <Grid x:Name="TOP" Grid.Row="0" Height="33" VerticalAlignment="Top" Margin="16,0,16,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="811*" />
+                <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
@@ -763,12 +763,22 @@
                 </TextBlock>
             </StackPanel>
 
-            <TextBlock x:Name="DiscordImageText" Grid.Column="1" Height="26" Margin="809,7,0,0" HorizontalAlignment="Right" Width="38" VerticalAlignment="Top" >
-                <Hyperlink NavigateUri="https://discord.gg/Zhm3QnD2s9"
-                          TextDecorations="None" >
-                    <Image x:Name="DiscordImage" Source="Resources/Discord.png" Width="37" Stretch="Uniform"/>
-                </Hyperlink>
-            </TextBlock>
+            <Button x:Name="DiscordButton"
+                    Grid.Column="2"
+                    Width="32"
+                    Height="32"
+                    Padding="0"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    ToolTip="Join the Simple VS Manager Discord"
+                    Click="DiscordButton_OnClick">
+                <Image Source="Resources/Discord.png"
+                       Width="26"
+                       Height="26"
+                       Stretch="Uniform" />
+            </Button>
 
 
         </Grid>
