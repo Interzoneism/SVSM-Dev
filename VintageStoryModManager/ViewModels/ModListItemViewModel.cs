@@ -2032,14 +2032,14 @@ public sealed class ModListItemViewModel : ObservableObject
                 var stream = new MemoryStream(buffer);
                 try
                 {
-                    stream.Position = 0; // Ensure stream is at the beginning
                     var bitmap = new BitmapImage();
                     bitmap.BeginInit();
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
                     bitmap.StreamSource = stream;
                     bitmap.EndInit();
                     TryFreezeImageSource(bitmap, $"{context} (byte stream)", LogDebug);
-                    // Force the bitmap to load immediately by accessing PixelWidth
+                    // Access PixelWidth to force WPF to fully load and decode the bitmap data immediately
+                    // This ensures the image is ready to use even after the stream is disposed
                     _ = bitmap.PixelWidth;
                     return bitmap;
                 }
