@@ -2197,6 +2197,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 break;
             case NotifyCollectionChangedAction.Remove:
                 foreach (var mod in EnumerateModItems(e.OldItems)) DetachInstalledMod(mod);
+                // Schedule refresh to update the tag list after removal
+                ScheduleInstalledTagFilterRefresh();
                 break;
             case NotifyCollectionChangedAction.Replace:
                 foreach (var mod in EnumerateModItems(e.OldItems)) DetachInstalledMod(mod);
@@ -2207,12 +2209,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 DetachAllInstalledMods();
                 foreach (var mod in _mods) AttachInstalledMod(mod);
                 break;
-        }
-
-        // For Remove action, also schedule refresh to update the tag list
-        if (e.Action == NotifyCollectionChangedAction.Remove)
-        {
-            ScheduleInstalledTagFilterRefresh();
         }
         
         UpdateActiveCount();
@@ -2236,6 +2232,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 break;
             case NotifyCollectionChangedAction.Remove:
                 foreach (var mod in EnumerateModItems(e.OldItems)) DetachSearchResult(mod);
+                // Schedule refresh to update the tag list after removal
+                ScheduleModDatabaseTagRefresh();
                 break;
             case NotifyCollectionChangedAction.Replace:
                 foreach (var mod in EnumerateModItems(e.OldItems)) DetachSearchResult(mod);
@@ -2246,12 +2244,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 DetachAllSearchResults();
                 foreach (var mod in _searchResults) AttachSearchResult(mod);
                 break;
-        }
-
-        // For Remove action, also schedule refresh to update the tag list
-        if (e.Action == NotifyCollectionChangedAction.Remove)
-        {
-            ScheduleModDatabaseTagRefresh();
         }
     }
 
