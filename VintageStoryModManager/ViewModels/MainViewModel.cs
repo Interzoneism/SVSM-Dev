@@ -2886,6 +2886,34 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return result.Tags ?? Array.Empty<string>();
     }
 
+    /// <summary>
+    /// Determines whether a pre-computed tag set contains all required tags.
+    /// This is an optimized version for use with cached tag sets from ModListItemViewModel.
+    /// </summary>
+    /// <param name="sourceTagSet">A case-insensitive HashSet of available tags, or null if no tags exist.</param>
+    /// <param name="requiredTags">The list of tags that must all be present in the source set.</param>
+    /// <returns>True if all required tags are present in the source set; false otherwise.</returns>
+    private static bool ContainsAllTags(HashSet<string>? sourceTagSet, IReadOnlyList<string> requiredTags)
+    {
+        if (requiredTags.Count == 0) return true;
+
+        if (sourceTagSet is null || sourceTagSet.Count == 0) return false;
+
+        foreach (var required in requiredTags)
+            if (!sourceTagSet.Contains(required))
+                return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Determines whether a collection of tags contains all required tags.
+    /// This version creates a temporary HashSet and is used for scenarios where tags are not pre-cached,
+    /// such as filtering mod database search results.
+    /// </summary>
+    /// <param name="sourceTags">An enumerable collection of available tags, or null if no tags exist.</param>
+    /// <param name="requiredTags">The list of tags that must all be present in the source collection.</param>
+    /// <returns>True if all required tags are present in the source collection; false otherwise.</returns>
     private static bool ContainsAllTags(IEnumerable<string>? sourceTags, IReadOnlyList<string> requiredTags)
     {
         if (requiredTags.Count == 0) return true;
@@ -3857,7 +3885,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (item is not ModListItemViewModel mod) return false;
 
-        if (_selectedInstalledTags.Count > 0 && !ContainsAllTags(mod.DatabaseTags, _selectedInstalledTags))
+        if (_selectedInstalledTags.Count > 0 && !ContainsAllTags(mod.GetCachedTagSet(), _selectedInstalledTags))
             return false;
 
         if (_searchTokens.Length == 0) return true;
