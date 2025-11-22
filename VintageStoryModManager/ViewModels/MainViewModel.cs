@@ -1861,8 +1861,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     SetStatus($"Reloaded {changeSet.Paths.Count} mod(s).", false);
                 }
 
+                // Defer background operations for partial reloads as well
                 if (_allowModDetailsRefresh && updatedEntriesForStatus.Count > 0)
-                    QueueDatabaseInfoRefresh(updatedEntriesForStatus);
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(50).ConfigureAwait(false);
+                        QueueDatabaseInfoRefresh(updatedEntriesForStatus);
+                    });
+                }
             }
 
             TotalMods = _mods.Count;
@@ -1871,11 +1878,28 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ModsView.Refresh();
             await UpdateModsStateSnapshotAsync();
             
-            // If there are no mods, no background operations (database info refresh, 
-            // tag loading, user report loading) will be queued, so complete initial load
-            if (!_isInitialLoadComplete && TotalMods == 0)
+            // Complete initial load immediately after mods are displayed
+            // This allows the UI to be responsive while background operations continue
+            if (!_isInitialLoadComplete)
             {
-                InvokeCheckAndCompleteInitialLoad();
+                _isInitialLoadComplete = true;
+                
+                // Set a user-friendly status message
+                if (_viewSection == ViewSection.InstalledMods)
+                {
+                    if (TotalMods == 0)
+                    {
+                        SetStatus("No mods found.", false);
+                    }
+                    else if (IsModDetailsRefreshPending())
+                    {
+                        SetStatus($"Loaded {TotalMods} mods. Loading additional details in background...", false);
+                    }
+                    else
+                    {
+                        SetStatus($"Loaded {TotalMods} mods.", false);
+                    }
+                }
             }
         }
         catch (Exception ex)
@@ -1951,7 +1975,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             else
                 SelectedMod = null;
 
-            if (_allowModDetailsRefresh && entries.Count > 0) QueueDatabaseInfoRefresh(entries);
+            // Queue background operations but don't wait for them to complete
+            // This allows the UI to be immediately responsive while details load in the background
+            if (_allowModDetailsRefresh && entries.Count > 0) 
+            {
+                // Defer database info refresh to after initial UI render
+                _ = Task.Run(async () =>
+                {
+                    // Small delay to ensure UI thread processes the initial mods display
+                    await Task.Delay(50).ConfigureAwait(false);
+                    QueueDatabaseInfoRefresh(entries);
+                });
+            }
 
             UpdateLoadedModsStatus();
         }, CancellationToken.None).ConfigureAwait(true);
@@ -3783,12 +3818,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void CheckAndCompleteInitialLoad()
     {
-        // This method should only be called from the UI thread or with proper synchronization
-        // Don't complete if already complete
-        if (_isInitialLoadComplete) return;
-
-        // Check if all initial operations are done
-        // Note: We check operations under locks where applicable
+        // This method checks if background operations are complete and updates status accordingly
+        // Initial load is now considered complete as soon as mods are displayed, so this method
+        // only updates status messages to reflect when background operations finish
+        
+        // Check if all background operations are done
         bool modDetailsComplete = !IsModDetailsRefreshPending();
         bool tagsComplete = !_isInstalledTagRefreshPending;
         
@@ -3800,27 +3834,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         
         bool allOperationsComplete = modDetailsComplete && tagsComplete && userReportsComplete;
 
-        if (!allOperationsComplete) return;
-
-        // Mark as complete and set final status message
-        _isInitialLoadComplete = true;
-        
-        if (_viewSection == ViewSection.InstalledMods)
+        // Update status message if we're in the installed mods view and background operations finished
+        if (allOperationsComplete && _isInitialLoadComplete && _viewSection == ViewSection.InstalledMods)
         {
-            SetStatus("Installed mods tab loaded.", false);
+            SetStatus($"Loaded {TotalMods} mods. All details up to date.", false);
         }
     }
 
     private void InvokeCheckAndCompleteInitialLoad()
     {
-        if (_isInitialLoadComplete) return;
-        
+        // Always invoke to allow status message updates even after initial load is complete
         if (Application.Current?.Dispatcher is { } dispatcher)
         {
             if (dispatcher.CheckAccess())
                 CheckAndCompleteInitialLoad();
             else
-                dispatcher.BeginInvoke(DispatcherPriority.Normal, CheckAndCompleteInitialLoad);
+                dispatcher.BeginInvoke(DispatcherPriority.Background, CheckAndCompleteInitialLoad);
         }
         else
         {
