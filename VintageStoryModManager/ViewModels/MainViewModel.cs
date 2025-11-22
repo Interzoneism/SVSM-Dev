@@ -2181,13 +2181,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void OnModsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        // If tags column is visible and we're about to add/replace mods, set the pending flag
-        // to prevent user reports from being queued before tags start loading
+        // Schedule tag refresh BEFORE attaching mods to ensure the pending flag is set
+        // This prevents user reports from being queued before tags start loading
         if (_isTagsColumnVisible && (e.Action == NotifyCollectionChangedAction.Add || 
                                       e.Action == NotifyCollectionChangedAction.Replace || 
                                       e.Action == NotifyCollectionChangedAction.Reset))
         {
-            _isInstalledTagRefreshPending = true;
+            ScheduleInstalledTagFilterRefresh();
         }
 
         switch (e.Action)
@@ -2209,7 +2209,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 break;
         }
 
-        ScheduleInstalledTagFilterRefresh();
+        // For Remove action, also schedule refresh to update the tag list
+        if (e.Action == NotifyCollectionChangedAction.Remove)
+        {
+            ScheduleInstalledTagFilterRefresh();
+        }
+        
         UpdateActiveCount();
     }
 
