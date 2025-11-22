@@ -5030,6 +5030,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void TriggerDebouncedInstalledModsSearch()
     {
+        if (_disposed) return;
+
         lock (_searchDebounceLock)
         {
             // Cancel any pending search
@@ -5054,6 +5056,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ExecuteInstalledModsSearch(CancellationTokenSource cts)
     {
+        if (_disposed) return;
         if (cts.IsCancellationRequested) return;
 
         // Execute the search on the UI thread
