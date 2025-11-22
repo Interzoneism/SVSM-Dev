@@ -1114,10 +1114,7 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             if (string.IsNullOrWhiteSpace(tag)) continue;
 
-            var trimmed = tag.Trim();
-            if (trimmed.Length == 0) continue;
-
-            set.Add(trimmed);
+            set.Add(tag.Trim());
         }
 
         if (set.Count == 0)

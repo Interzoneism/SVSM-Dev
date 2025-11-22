@@ -3885,12 +3885,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (item is not ModListItemViewModel mod) return false;
 
-        if (_selectedInstalledTags.Count > 0)
-        {
-            var cachedTagSet = mod.GetCachedTagSet();
-            if (!ContainsAllTags(cachedTagSet, _selectedInstalledTags))
-                return false;
-        }
+        if (_selectedInstalledTags.Count > 0 && !ContainsAllTags(mod.GetCachedTagSet(), _selectedInstalledTags))
+            return false;
 
         if (_searchTokens.Length == 0) return true;
 
