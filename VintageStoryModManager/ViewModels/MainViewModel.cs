@@ -112,6 +112,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _isBusy;
     private bool _isCompactView;
     private bool _isErrorStatus;
+    private bool _isInitialLoadComplete;
     private int _isFastCheckRunning;
     private bool _isInstalledTagRefreshPending;
     private bool _isLoadingModDetails;
@@ -1869,10 +1870,32 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             SelectedSortOption?.Apply(ModsView);
             ModsView.Refresh();
             await UpdateModsStateSnapshotAsync();
+            
+            // If there are no mods, no background operations (database info refresh, 
+            // tag loading, user report loading) will be queued, so complete initial load
+            if (!_isInitialLoadComplete && TotalMods == 0)
+            {
+                InvokeCheckAndCompleteInitialLoad();
+            }
         }
         catch (Exception ex)
         {
             SetStatus($"Failed to load mods: {ex.Message}", true);
+            // Ensure initial load completes even on error (on UI thread)
+            if (!_isInitialLoadComplete)
+            {
+                if (Application.Current?.Dispatcher is { } dispatcher)
+                {
+                    if (dispatcher.CheckAccess())
+                        _isInitialLoadComplete = true;
+                    else
+                        _ = dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => _isInitialLoadComplete = true));
+                }
+                else
+                {
+                    _isInitialLoadComplete = true;
+                }
+            }
         }
         finally
         {
@@ -2273,7 +2296,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             shouldSetLoadingStatus = _activeUserReportOperations == 1;
         }
 
-        if (shouldSetLoadingStatus) SetStatus(UserReportsLoadingStatusMessage, false);
+        // Show comprehensive message during initial load
+        if (shouldSetLoadingStatus)
+        {
+            if (!_isInitialLoadComplete)
+            {
+                SetStatus($"Loading user reports for {TotalMods} mods...", false);
+            }
+            else
+            {
+                SetStatus(UserReportsLoadingStatusMessage, false);
+            }
+        }
 
         var busyScope = BeginBusyScope();
         return new UserReportOperationScope(this, busyScope);
@@ -2290,7 +2324,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             shouldSetLoadedStatus = _activeUserReportOperations == 0;
         }
 
-        if (shouldSetLoadedStatus) SetStatus(UserReportsLoadedStatusMessage, false);
+        // Only set status message if we're past initial load
+        if (shouldSetLoadedStatus && _isInitialLoadComplete) SetStatus(UserReportsLoadedStatusMessage, false);
+        
+        // Check if initial load is complete
+        if (shouldSetLoadedStatus && !_isInitialLoadComplete)
+        {
+            InvokeCheckAndCompleteInitialLoad();
+        }
     }
 
     private void QueueLatestReleaseUserReportRefresh(ModListItemViewModel mod)
@@ -2645,11 +2686,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             try
             {
-                await InvokeOnDispatcherAsync(
-                        () => SetStatus("Loading tags...", false),
-                        CancellationToken.None,
-                        DispatcherPriority.ContextIdle)
-                    .ConfigureAwait(false);
+                // Show comprehensive message during initial load
+                if (!_isInitialLoadComplete)
+                {
+                    await InvokeOnDispatcherAsync(
+                            () => SetStatus($"Loading tags for {TotalMods} mods...", false),
+                            CancellationToken.None,
+                            DispatcherPriority.ContextIdle)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    await InvokeOnDispatcherAsync(
+                            () => SetStatus("Loading tags...", false),
+                            CancellationToken.None,
+                            DispatcherPriority.ContextIdle)
+                        .ConfigureAwait(false);
+                }
 
                 var tagSnapshot = EnumerateModTags(_mods).ToList();
                 var selectedSnapshot = _selectedInstalledTags.ToList();
@@ -2660,7 +2713,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         () =>
                         {
                             ApplyInstalledTagFilters(normalized);
-                            SetStatus("Tags loaded.", false);
+                            // Only show completion message if we're past initial load
+                            if (_isInitialLoadComplete)
+                            {
+                                SetStatus("Tags loaded.", false);
+                            }
                         },
                         CancellationToken.None,
                         DispatcherPriority.ContextIdle)
@@ -2673,6 +2730,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             finally
             {
                 _isInstalledTagRefreshPending = false;
+                // Check if initial load is complete after tags are done
+                InvokeCheckAndCompleteInitialLoad();
             }
         }
 
@@ -2694,11 +2753,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             try
             {
-                await InvokeOnDispatcherAsync(
-                        () => SetStatus("Loading tags...", false),
-                        CancellationToken.None,
-                        DispatcherPriority.ContextIdle)
-                    .ConfigureAwait(false);
+                // Only show loading message if we're past initial load
+                if (_isInitialLoadComplete)
+                {
+                    await InvokeOnDispatcherAsync(
+                            () => SetStatus("Loading tags...", false),
+                            CancellationToken.None,
+                            DispatcherPriority.ContextIdle)
+                        .ConfigureAwait(false);
+                }
 
                 var existing = _modDatabaseAvailableTags;
                 var tagSnapshot = EnumerateModTags(_searchResults).ToList();
@@ -2711,7 +2774,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         () =>
                         {
                             ApplyNormalizedModDatabaseAvailableTags(normalized);
-                            SetStatus("Tags loaded.", false);
+                            // Only show completion message if we're past initial load
+                            if (_isInitialLoadComplete)
+                            {
+                                SetStatus("Tags loaded.", false);
+                            }
                         },
                         CancellationToken.None,
                         DispatcherPriority.ContextIdle)
@@ -3390,8 +3457,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     cancellationToken)
                 .ConfigureAwait(false);
 
+            // Set final comprehensive message
+            var finalMessage = BuildModDatabaseResultsMessage(hasSearchTokens, viewModels.Count);
             await InvokeOnDispatcherAsync(
-                    () => SetStatus(BuildModDatabaseResultsMessage(hasSearchTokens, viewModels.Count), false),
+                    () => SetStatus($"Mod database loaded. {finalMessage}", false),
                     cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -3666,7 +3735,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         UpdateIsLoadingModDetails(true);
 
         if (newCount == count || !_isModDetailsStatusActive)
-            SetStatus(BuildModDetailsLoadingStatusMessage(), false, true);
+        {
+            // Show a comprehensive message during initial load
+            if (!_isInitialLoadComplete)
+            {
+                SetStatus($"Loading mod details for {TotalMods} mods...", false, true);
+            }
+            else
+            {
+                SetStatus(BuildModDetailsLoadingStatusMessage(), false, true);
+            }
+        }
     }
 
     private void OnModDetailsRefreshCompleted()
@@ -3679,6 +3758,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             UpdateIsLoadingModDetails(false);
 
             if (_isModDetailsStatusActive) SetStatus(BuildModDetailsReadyStatusMessage(), false);
+            
+            // Check if initial load is complete
+            InvokeCheckAndCompleteInitialLoad();
         }
     }
 
@@ -3696,6 +3778,53 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             _modDetailsBusyScope?.Dispose();
             _modDetailsBusyScope = null;
+        }
+    }
+
+    private void CheckAndCompleteInitialLoad()
+    {
+        // This method should only be called from the UI thread or with proper synchronization
+        // Don't complete if already complete
+        if (_isInitialLoadComplete) return;
+
+        // Check if all initial operations are done
+        // Note: We check operations under locks where applicable
+        bool modDetailsComplete = !IsModDetailsRefreshPending();
+        bool tagsComplete = !_isInstalledTagRefreshPending;
+        
+        bool userReportsComplete;
+        lock (_userReportOperationLock)
+        {
+            userReportsComplete = _activeUserReportOperations == 0;
+        }
+        
+        bool allOperationsComplete = modDetailsComplete && tagsComplete && userReportsComplete;
+
+        if (!allOperationsComplete) return;
+
+        // Mark as complete and set final status message
+        _isInitialLoadComplete = true;
+        
+        if (_viewSection == ViewSection.InstalledMods)
+        {
+            SetStatus("Installed mods tab loaded.", false);
+        }
+    }
+
+    private void InvokeCheckAndCompleteInitialLoad()
+    {
+        if (_isInitialLoadComplete) return;
+        
+        if (Application.Current?.Dispatcher is { } dispatcher)
+        {
+            if (dispatcher.CheckAccess())
+                CheckAndCompleteInitialLoad();
+            else
+                dispatcher.BeginInvoke(DispatcherPriority.Normal, CheckAndCompleteInitialLoad);
+        }
+        else
+        {
+            CheckAndCompleteInitialLoad();
         }
     }
 
