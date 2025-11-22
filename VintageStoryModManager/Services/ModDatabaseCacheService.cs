@@ -570,9 +570,9 @@ internal sealed class ModDatabaseCacheService : IDisposable
                         _isDirty = false;
                     }
                 }
-                catch (Exception)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
                 {
-                    // Best effort - ignore errors during disposal
+                    // Best effort - ignore expected cache write errors during disposal
                 }
                 finally
                 {
