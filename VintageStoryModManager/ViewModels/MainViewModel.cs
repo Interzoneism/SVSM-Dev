@@ -4151,6 +4151,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return entry.DatabaseInfo == null || entry.DatabaseInfo.IsOfflineOnly;
     }
 
+    private bool ShouldSkipOnlineDatabaseRefresh(ModDatabaseInfo? cachedInfo)
+    {
+        if (_isTagsColumnVisible) return false;
+
+        if (_areUserReportsVisible) return false;
+
+        if (cachedInfo is null || cachedInfo.IsOfflineOnly) return false;
+
+        return true;
+    }
+
     private static bool TryGetTagSuppressionKey(ModEntry entry, out string? key)
     {
         key = null;
@@ -4198,6 +4209,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 releaseCount = cachedInfo.Releases?.Count ?? 0;
 
                 if (InternetAccessManager.IsInternetAccessDisabled)
+                {
+                    source = "cache";
+                    return;
+                }
+
+                if (ShouldSkipOnlineDatabaseRefresh(cachedInfo))
                 {
                     source = "cache";
                     return;
