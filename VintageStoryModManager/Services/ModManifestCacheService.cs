@@ -183,9 +183,11 @@ internal static class ModManifestCacheService
                     // Retry with replace semantics when running on platforms that require it.
                     File.Replace(tempPath, cacheFilePath, null);
                 }
-                finally
+                catch
                 {
+                    // Clean up temp file only if replace also failed
                     if (File.Exists(tempPath)) File.Delete(tempPath);
+                    throw;
                 }
             }
         }

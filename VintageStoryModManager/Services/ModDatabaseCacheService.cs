@@ -10,7 +10,7 @@ namespace VintageStoryModManager.Services;
 ///     subsequent requests can be served without repeatedly downloading large payloads.
 ///     All cache entries are stored in a single file for improved IO performance.
 /// </summary>
-internal sealed class ModDatabaseCacheService
+internal sealed class ModDatabaseCacheService : IDisposable
 {
     private static readonly int CacheSchemaVersion = DevConfig.ModDatabaseCacheSchemaVersion;
 
@@ -29,6 +29,7 @@ internal sealed class ModDatabaseCacheService
 
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
     private Dictionary<string, CachedModDatabaseInfo>? _cacheIndex;
+    private bool _disposed;
 
     internal static void ClearCacheDirectory()
     {
@@ -213,15 +214,20 @@ internal sealed class ModDatabaseCacheService
                 // Retry with replace semantics when running on platforms that require it.
                 File.Replace(tempPath, cacheFilePath, null);
             }
-            finally
+            catch
             {
+                // Clean up temp file only if replace also failed
                 if (File.Exists(tempPath)) File.Delete(tempPath);
+                throw;
             }
         }
     }
 
     private static string GetCacheKey(string modId, string? normalizedGameVersion)
     {
+        if (string.IsNullOrWhiteSpace(modId))
+            throw new ArgumentException("Mod ID cannot be null or empty.", nameof(modId));
+
         var safeGameVersion = string.IsNullOrWhiteSpace(normalizedGameVersion)
             ? AnyGameVersionToken
             : normalizedGameVersion;
@@ -477,6 +483,13 @@ internal sealed class ModDatabaseCacheService
             ? AnyGameVersionToken
             : normalizedGameVersion;
         return string.Equals(cachedValue, currentValue, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _cacheLock.Dispose();
     }
 
     private sealed class ModDatabaseCache
