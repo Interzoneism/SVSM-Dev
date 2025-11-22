@@ -774,7 +774,7 @@
                     BorderThickness="0"
                     ToolTip="Join the Simple VS Manager Discord"
                     Click="DiscordButton_OnClick">
-                <Image Source="Resources/Discord.png"
+                <Image Source="/Resources/Discord.png"
                        Width="26"
                        Height="26"
                        Stretch="Uniform" />
