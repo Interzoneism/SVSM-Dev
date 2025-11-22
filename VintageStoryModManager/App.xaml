@@ -1071,7 +1071,7 @@
                                     <Setter TargetName="TabBorder" Property="Background"
                                             Value="{DynamicResource Brush.Panel.Primary.Background.Solid}" />
                                     <Setter TargetName="TabBorder" Property="BorderBrush"
-                                            Value="{DynamicResource Brush.Accent.Primary}" />
+                                            Value="{DynamicResource Brush.Button.Primary.Border.Normal}" />
                                     <Setter Property="FontWeight" Value="SemiBold" />
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
