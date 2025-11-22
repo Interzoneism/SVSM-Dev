@@ -104,6 +104,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _hasSelectedMods;
     private bool _hasSelectedTags;
     private bool _hasShownModDetailsLoadingStatus;
+    private bool _isModsViewRefreshPending;
     private bool _isAutoRefreshDisabled;
     private bool _isBusy;
     private bool _isCompactView;
@@ -612,7 +613,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
             else
             {
-                ModsView.Refresh();
+                ScheduleModsViewRefresh();
             }
         }
     }
@@ -3848,6 +3849,27 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (_searchTokens.Length == 0) return true;
 
         return mod.MatchesSearchTokens(_searchTokens);
+    }
+
+    private void ScheduleModsViewRefresh()
+    {
+        if (_isModsViewRefreshPending) return;
+
+        void Refresh()
+        {
+            _isModsViewRefreshPending = false;
+            ModsView.Refresh();
+        }
+
+        _isModsViewRefreshPending = true;
+
+        if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+        {
+            dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(Refresh));
+            return;
+        }
+
+        Refresh();
     }
 
     private static string[] CreateSearchTokens(string value)
