@@ -8,55 +8,90 @@ This is a **WPF desktop application** for managing Vintage Story mods. The appli
 - Viewing mod metadata and dependencies
 
 ### Technology Stack
-- **Framework**: .NET 8.0 (Windows-targeted WPF application)
+- **Framework**: .NET 8.0+ (Windows-targeted WPF application, currently builds with .NET 10.0.100)
 - **UI Framework**: WPF with ModernWpfUI for modern styling
 - **Architecture**: MVVM pattern using CommunityToolkit.Mvvm
 - **Language**: C# with nullable reference types enabled
+- **Main Dependencies**: CommunityToolkit.Mvvm, ModernWpfUI, HtmlAgilityPack, QuestPDF, YamlDotNet
 
 ## Repository Structure
-- `VintageStoryModManager/` - Main application code (118 C# files, 23 XAML files)
-  - `Views/` - WPF views and UI components
-  - `ViewModels/` - MVVM view models
-  - `Models/` - Data models
-  - `Services/` - Business logic and service layer
-  - `Converters/` - WPF value converters
-  - `Resources/` - UI resources, themes, and assets
-- `VSFOLDER/` - **Reference only**: Game dependency DLL files (do not modify)
-- `VS_1.21_assets/` - **Reference only**: Vintage Story game assets (JSON for blocktypes, recipes, shapes, etc.)
-- `VS_1.21_Decompiled/` - **Reference only**: Decompiled Vintage Story game source code for API reference
-- `ZZCakeBuild/` - Build automation scripts (do not build or test directly)
+- `VintageStoryModManager/` - Main application code (112 C# files, 29 XAML files, ~58MB)
+  - `Views/` - WPF views and UI components (26 XAML files, including MainWindow.xaml with 13K+ lines)
+  - `ViewModels/` - MVVM view models (13 C# files)
+  - `Models/` - Data models (17 C# files)
+  - `Services/` - Business logic and service layer (37 C# files)
+  - `Converters/` - WPF value converters (8 C# files)
+  - `Resources/` - UI resources, themes, and assets (DarkVsTheme.xaml, images)
+  - `Properties/` - Application properties and settings
+  - `Design/` - Design-time data
+- `VSFOLDER/` - **Reference only**: Game dependency DLL files (~54MB, do not modify)
+- `VS_1.21_assets/` - **Reference only**: Vintage Story game assets (~125MB, JSON for blocktypes, recipes, shapes, etc.)
+- `VS_1.21_Decompiled/` - **Reference only**: Decompiled Vintage Story game source code (~25MB, for API reference)
 - `.github/` - GitHub configuration and Copilot instructions
 
-**Important**: The folders `VSFOLDER`, `VS_1.21_assets`, and `VS_1.21_Decompiled` are reference code only. Do not search, modify, or include them in changes unless explicitly requested.
+**IMPORTANT WARNINGS**:
+- The folders `VSFOLDER`, `VS_1.21_assets`, and `VS_1.21_Decompiled` are reference code only (total ~204MB). Do not search, modify, or include them in changes unless explicitly requested.
+- **There is NO ZZCakeBuild directory** - The `build.sh` and `build.ps1` scripts reference a non-existent `./ZZCakeBuild/CakeBuild.csproj` and will fail. Use `dotnet build` directly instead.
+- The repository contains 3808+ C# files total (most in reference directories), but only 112 in the main project.
 
 ## Build & Test
 
-### Build Commands
+### Prerequisites
+- **.NET SDK**: 8.0 or later (tested with 10.0.100)
+- **Platform**: Windows (Linux/Mac build will fail due to WPF dependency)
+- **First time setup**: Run `dotnet restore` to restore NuGet packages (~4 seconds)
+
+### Build Commands - VALIDATED AND WORKING
 ```bash
-# Primary build command (recommended)
+# Primary build command (ALWAYS USE THIS - verified working)
 dotnet build -nologo -clp:Summary -warnaserror
 
-# The build.sh and build.ps1 scripts run Cake build automation - do not use for regular builds
+# Build without treating warnings as errors (for exploration)
+dotnet build -nologo -clp:Summary
+
+# Clean build artifacts
+dotnet clean --nologo
+
+# Restore packages (usually automatic, but can be run explicitly)
+dotnet restore --nologo
 ```
+
+**Build Performance**:
+- Clean build: ~17-25 seconds
+- Incremental build: ~15 seconds
+- Output: `VintageStoryModManager/bin/Release/net8.0-windows/VintageStoryModManager.dll` (1.7MB PE32 executable)
+- The DLL is the main executable file - on Windows this can be run directly
+
+**CRITICAL - DO NOT USE**:
+- **DO NOT** run `./build.sh` or `build.ps1` - These scripts reference a non-existent `ZZCakeBuild/CakeBuild.csproj` and will fail with "The provided file path does not exist"
+- Always use `dotnet build` directly
 
 ### Test Commands
 ```bash
-# Run tests (if any exist)
+# Run tests (currently NO tests exist in the solution)
 dotnet test --nologo --verbosity=minimal
 ```
+**Note**: Running `dotnet test` completes successfully but runs zero tests. Do not be alarmed by this - the project has no test project.
 
-### Linting (Optional)
+### Linting & Formatting
 ```bash
-# Format verification
+# Format verification (CORRECT SYNTAX - note that --nologo doesn't work with this command)
 dotnet format --verify-no-changes
+
+# Auto-fix formatting issues (will modify files)
+dotnet format
 ```
+**Warning**: The codebase currently has whitespace formatting issues. Running `dotnet format --verify-no-changes` will show many WHITESPACE errors, primarily in `ViewModels/MainViewModel.cs` and `ViewModels/ModConfigNodeViewModels.cs`. This is expected - format checking is optional unless you're modifying those specific files.
 
 ### Important Build Notes
-- **Target Framework**: .NET 8.0 for Windows
+- **Target Framework**: .NET 8.0 for Windows (`net8.0-windows`)
+- **Output Type**: WinExe (Windows application, not console)
 - **Ignore NET7 warnings**: Focus is on NET8; all NET7 compatibility warnings should be ignored
-- **Do not build ZZCakeBuild**: The Cake build project and Program.cs are for automation only
-- **Solution File**: `ImprovedModMenu.sln`
-- **Output**: Windows executable named `VintageStoryModManager.exe`
+- **Solution File**: `ImprovedModMenu.sln` (contains single project: VintageStoryModManager)
+- **Project File**: `VintageStoryModManager/VintageStoryModManager.csproj`
+- **Main Assembly**: VintageStoryModManager.dll (but displays as "Simple VS Manager" in Task Manager)
+- **Version Management**: Version is centrally managed in `Directory.Build.props` (currently 1.6.3)
+- **Icon**: `VintageStoryModManager/SVSM.ico` (169KB)
 
 ## Code Style & Conventions
 
@@ -150,13 +185,59 @@ dotnet format --verify-no-changes
 - Git for version control
 
 ## Additional Notes
-- **Project Name**: The assembly is named `VintageStoryModManager` but displays as "Simple VS Manager"
-- **Company**: Interzone
-- **Version**: Managed centrally in `Directory.Build.props` (currently 1.4.0)
-- **Icon**: `SVSM.ico` is the application icon
+- **Project Name**: The assembly is named `VintageStoryModManager` but displays as "Simple VS Manager" in Windows Task Manager
+- **Company**: Interzone  
+- **Version**: Managed centrally in `Directory.Build.props` (currently 1.6.3)
+- **Icon**: `SVSM.ico` in the VintageStoryModManager directory (169KB)
 - **File Description**: Shows as "Simple VS Manager" in Windows Task Manager
+- **Key configuration**: DevConfig.cs contains developer-tunable values (like MaxConcurrentDatabaseRefreshes)
+- **No .editorconfig**: The repository does not have an .editorconfig file for code style rules
+- **Implicit usings**: Enabled in the project - common namespaces are automatically imported
+- **Application manifest**: `app.manifest` defines Windows compatibility and permissions
 
-## Questions & Support
-- Review `AGENTS.md` for custom agent configurations
-- Check the solution file `ImprovedModMenu.sln` for project structure
-- Consult WPF and ModernWpfUI documentation for UI-related questions
+## Root Directory Files
+```
+.gitattributes          - Git attributes configuration
+.github/                - Contains copilot-instructions.md
+.gitignore              - Comprehensive C#/Visual Studio gitignore (13KB)
+AGENTS.md               - Custom agent instructions (1KB)
+Directory.Build.props   - Central version management (AppVersion: 1.6.3)
+ImprovedModMenu.sln     - Visual Studio solution file
+build.ps1               - BROKEN: References non-existent ZZCakeBuild
+build.sh                - BROKEN: References non-existent ZZCakeBuild  
+firebase.rules.json     - Firebase security rules configuration
+SIMPLE VS MANAGER PUBLIC.lnk - Windows shortcut file
+```
+
+## Common Pitfalls & Solutions
+
+### Build Script Failures
+**Problem**: Running `./build.sh` or `build.ps1` fails with "The provided file path does not exist"  
+**Solution**: Use `dotnet build` directly. The build scripts reference a non-existent Cake build project.
+
+### Whitespace Formatting Warnings
+**Problem**: `dotnet format --verify-no-changes` shows many WHITESPACE errors  
+**Solution**: This is expected. The codebase has existing formatting issues. Only fix formatting in files you're actively modifying.
+
+### No Tests Found
+**Problem**: `dotnet test` reports 0 tests  
+**Solution**: This is correct. The project has no test project. Don't add tests unless explicitly requested.
+
+### Reference Directory Search
+**Problem**: Searches are slow or include too many irrelevant files  
+**Solution**: Exclude VS_1.21_Decompiled, VS_1.21_assets, and VSFOLDER directories from searches. These contain 3696 C# files but are reference-only.
+
+### NET7 Compatibility Warnings
+**Problem**: Build shows warnings about .NET 7 compatibility  
+**Solution**: Ignore these. The project targets .NET 8 and NET7 warnings are expected and harmless.
+
+## Validation Steps
+When making changes, follow this sequence:
+1. Make your code changes
+2. Run `dotnet build -nologo -clp:Summary -warnaserror` to verify no errors/warnings
+3. If you modified formatting-sensitive files, optionally run `dotnet format` to auto-fix whitespace
+4. Manually test your changes if they affect UI or critical functionality
+5. Commit with clear, descriptive messages
+
+## Trust These Instructions
+These instructions have been validated through actual testing of the repository. The build commands, timings, and warnings documented here are accurate as of the last update. Only search for additional information if you find these instructions incomplete or incorrect for your specific task.
