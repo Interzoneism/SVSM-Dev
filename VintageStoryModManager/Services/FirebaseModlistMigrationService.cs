@@ -5,9 +5,11 @@ using System.Security;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SimpleVsManager.Cloud;
+using VintageStoryModManager.Models;
 
 namespace VintageStoryModManager.Services;
 
@@ -17,6 +19,13 @@ internal sealed class FirebaseModlistMigrationService
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    private readonly JsonSerializerOptions _modlistJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = true
     };
 
     public async Task<bool> TryMigrateAsync(string? playerUid, string? playerName, CancellationToken ct)
@@ -37,6 +46,7 @@ internal sealed class FirebaseModlistMigrationService
         legacyStore.SetPlayerIdentity(playerUid, playerName);
 
         var modlists = await DownloadLegacyModlistsAsync(legacyStore, ct).ConfigureAwait(false);
+        var preparedModlists = modlists.Select(EncodeLegacyModlist).ToList();
 
         var backupPath = TryBackupLegacyAuthFile(stateFilePath);
 
@@ -45,7 +55,7 @@ internal sealed class FirebaseModlistMigrationService
 
         await newStore.Authenticator.GetSessionAsync(ct).ConfigureAwait(false);
 
-        foreach (var modlist in modlists)
+        foreach (var modlist in preparedModlists)
             await newStore.SaveAsync(modlist.SlotKey, modlist.ContentJson, ct).ConfigureAwait(false);
 
         StatusLogService.AppendStatus(
@@ -195,6 +205,41 @@ internal sealed class FirebaseModlistMigrationService
     }
 
     private sealed record LegacyModlist(string SlotKey, string ContentJson);
+
+    private LegacyModlist EncodeLegacyModlist(LegacyModlist legacyModlist)
+    {
+        var encoded = TryEncodeModlistContent(legacyModlist.ContentJson);
+        return new LegacyModlist(legacyModlist.SlotKey, encoded ?? legacyModlist.ContentJson);
+    }
+
+    private string? TryEncodeModlistContent(string contentJson)
+    {
+        try
+        {
+            var preset = JsonSerializer.Deserialize<SerializablePreset>(contentJson, _modlistJsonOptions);
+            if (preset is null) return null;
+
+            EncodePresetConfigurationContent(preset);
+
+            return JsonSerializer.Serialize(preset, _modlistJsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static void EncodePresetConfigurationContent(SerializablePreset preset)
+    {
+        if (preset.Mods is null) return;
+
+        foreach (var mod in preset.Mods)
+        {
+            if (mod?.ConfigurationContent is null) continue;
+
+            mod.ConfigurationContent = ModConfigurationEncoding.Encode(mod.ConfigurationContent);
+        }
+    }
 
     private sealed class AuthStateModel
     {
