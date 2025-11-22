@@ -785,12 +785,13 @@
                                        Height="26"
                                        Stretch="Uniform" />
                                 <Rectangle x:Name="DiscordHoverOverlay"
-                                           Width="26"
-                                           Height="26"
+                                           Width="{Binding ActualWidth, ElementName=DiscordIcon}"
+                                           Height="{Binding ActualHeight, ElementName=DiscordIcon}"
                                            Visibility="Collapsed"
                                            Fill="#5865F2">
                                     <Rectangle.OpacityMask>
-                                        <ImageBrush ImageSource="/Resources/Discord.png" />
+                                        <ImageBrush ImageSource="/Resources/Discord.png"
+                                                    Stretch="Uniform" />
                                     </Rectangle.OpacityMask>
                                 </Rectangle>
                             </Grid>
