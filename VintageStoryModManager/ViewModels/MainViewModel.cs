@@ -5030,10 +5030,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void TriggerDebouncedInstalledModsSearch()
     {
-        if (_disposed) return;
-
         lock (_searchDebounceLock)
         {
+            if (_disposed) return;
+
             // Cancel any pending search
             _pendingSearchCts?.Cancel();
             _pendingSearchCts?.Dispose();
@@ -5042,6 +5042,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             var cts = _pendingSearchCts;
 
             // Initialize or restart the debounce timer
+            // Note: Timer callback captures CTS, but it's cleaned up on each new search
+            // and on disposal, preventing memory leaks
             if (_searchDebounceTimer == null)
             {
                 _searchDebounceTimer = new Timer(_ => ExecuteInstalledModsSearch(cts), null,
@@ -5056,13 +5058,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ExecuteInstalledModsSearch(CancellationTokenSource cts)
     {
-        if (_disposed) return;
         if (cts.IsCancellationRequested) return;
 
-        // Check if this is still the current pending search (prevent race conditions)
+        // Check disposal and verify this is still the current pending search
         bool shouldExecute;
         lock (_searchDebounceLock)
         {
+            if (_disposed) return;
             shouldExecute = ReferenceEquals(cts, _pendingSearchCts);
         }
 
