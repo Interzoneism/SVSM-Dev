@@ -2181,13 +2181,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void OnModsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        // If tags column is visible and we're about to add/replace mods, set the pending flag
-        // to prevent user reports from being queued before tags start loading
+        // Schedule tag refresh BEFORE attaching mods to ensure the pending flag is set
+        // This prevents user reports from being queued before tags start loading
         if (_isTagsColumnVisible && (e.Action == NotifyCollectionChangedAction.Add || 
                                       e.Action == NotifyCollectionChangedAction.Replace || 
                                       e.Action == NotifyCollectionChangedAction.Reset))
         {
-            _isInstalledTagRefreshPending = true;
+            ScheduleInstalledTagFilterRefresh();
         }
 
         switch (e.Action)
@@ -2197,6 +2197,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 break;
             case NotifyCollectionChangedAction.Remove:
                 foreach (var mod in EnumerateModItems(e.OldItems)) DetachInstalledMod(mod);
+                // Schedule refresh to update the tag list after removal
+                ScheduleInstalledTagFilterRefresh();
                 break;
             case NotifyCollectionChangedAction.Replace:
                 foreach (var mod in EnumerateModItems(e.OldItems)) DetachInstalledMod(mod);
@@ -2208,13 +2210,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 foreach (var mod in _mods) AttachInstalledMod(mod);
                 break;
         }
-
-        ScheduleInstalledTagFilterRefresh();
+        
         UpdateActiveCount();
     }
 
     private void OnSearchResultsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        // Schedule tag refresh BEFORE attaching search results to ensure the pending flag is set
+        // This prevents user reports from being queued before tags start loading
+        if (_isTagsColumnVisible && (e.Action == NotifyCollectionChangedAction.Add || 
+                                      e.Action == NotifyCollectionChangedAction.Replace || 
+                                      e.Action == NotifyCollectionChangedAction.Reset))
+        {
+            ScheduleModDatabaseTagRefresh();
+        }
+
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
@@ -2222,6 +2232,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 break;
             case NotifyCollectionChangedAction.Remove:
                 foreach (var mod in EnumerateModItems(e.OldItems)) DetachSearchResult(mod);
+                // Schedule refresh to update the tag list after removal
+                ScheduleModDatabaseTagRefresh();
                 break;
             case NotifyCollectionChangedAction.Replace:
                 foreach (var mod in EnumerateModItems(e.OldItems)) DetachSearchResult(mod);
@@ -2233,8 +2245,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 foreach (var mod in _searchResults) AttachSearchResult(mod);
                 break;
         }
-
-        ScheduleModDatabaseTagRefresh();
     }
 
     private static IEnumerable<ModListItemViewModel> EnumerateModItems(IList? items)
