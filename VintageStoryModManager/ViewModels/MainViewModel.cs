@@ -58,7 +58,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly ObservableCollection<int> _modDatabaseFetchLimitOptions;
     private readonly int _modDatabaseSearchResultLimit;
     private readonly ObservableCollection<TagFilterOptionViewModel> _modDatabaseTagFilters = new();
-    private readonly object _modDetailsBusyScopeLock = new();
     private readonly Dictionary<string, ModEntry> _modEntriesBySourcePath = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
@@ -132,7 +131,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private IReadOnlyList<string> _modDatabaseAvailableTags = Array.Empty<string>();
     private int _modDatabaseCurrentResultLimit;
     private CancellationTokenSource? _modDatabaseSearchCts;
-    private IDisposable? _modDetailsBusyScope;
     private string? _modsStateFingerprint;
     private bool _onlyShowCompatibleModDatabaseResults;
     private int _pendingModDetailsRefreshCount;
@@ -715,8 +713,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         _clientSettingsWatcher.Dispose();
-        _modDetailsBusyScope?.Dispose();
-        _modDetailsBusyScope = null;
         _userReportRefreshLimiter.Dispose();
         _voteService.Dispose();
     }
@@ -2773,7 +2769,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (delay > TimeSpan.Zero)
         {
             Task.Delay(delay).ContinueWith(
-                _ => EnableUserReportFetching(),
+                _ =>
+                {
+                    try
+                    {
+                        EnableUserReportFetching();
+                    }
+                    catch (Exception)
+                    {
+                        // Swallow exceptions from background user report fetching to prevent crashes
+                    }
+                },
                 TaskScheduler.Default);
         }
         else
@@ -3885,30 +3891,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (newCount <= 0)
         {
             Interlocked.Exchange(ref _pendingModDetailsRefreshCount, 0);
-            ReleaseModDetailsBusyScope();
+            // No busy scope to release since we don't create one anymore for better UI responsiveness
             UpdateIsLoadingModDetails(false);
 
             // Don't show status messages for mod details completion to avoid UI flickering
             
             // Check if initial load is complete
             InvokeCheckAndCompleteInitialLoad();
-        }
-    }
-
-    private void EnsureModDetailsBusyScope()
-    {
-        lock (_modDetailsBusyScopeLock)
-        {
-            _modDetailsBusyScope ??= BeginBusyScope();
-        }
-    }
-
-    private void ReleaseModDetailsBusyScope()
-    {
-        lock (_modDetailsBusyScopeLock)
-        {
-            _modDetailsBusyScope?.Dispose();
-            _modDetailsBusyScope = null;
         }
     }
 
