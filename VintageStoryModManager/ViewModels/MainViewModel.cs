@@ -1971,33 +1971,32 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             await foreach (var batch in _discoveryService.LoadModsIncrementallyAsync(batchSize))
             {
-                var entries = batch.ToList();
-                if (entries.Count == 0) continue;
+                // batch is already IReadOnlyList<ModEntry>, no need to call ToList()
+                if (batch.Count == 0) continue;
 
                 // Process entries off the UI thread
                 await Task.Run(() =>
                 {
-                    foreach (var entry in entries)
+                    foreach (var entry in batch)
                     {
                         ResetCalculatedModState(entry);
                         if (previousEntries.TryGetValue(entry.SourcePath, out var previous))
                             CopyTransientModState(previous, entry);
                     }
-                    allLoadedEntries.AddRange(entries);
+                    allLoadedEntries.AddRange(batch);
                 }).ConfigureAwait(false);
 
                 // Apply load statuses incrementally for this batch
-                if (entries.Count > 0)
-                {
-                    await Task.Run(() => _discoveryService.ApplyLoadStatusesIncremental(
-                        allLoadedEntries, entries, null)).ConfigureAwait(false);
-                }
+                // Note: ApplyLoadStatusesIncremental requires ICollection, so we need to convert
+                var batchAsList = batch is List<ModEntry> list ? list : batch.ToList();
+                await Task.Run(() => _discoveryService.ApplyLoadStatusesIncremental(
+                    allLoadedEntries, batchAsList, null)).ConfigureAwait(false);
 
                 // Create view models off the UI thread where possible
-                var viewModels = new List<(string sourcePath, ModListItemViewModel viewModel)>(entries.Count);
+                var viewModels = new List<(string sourcePath, ModListItemViewModel viewModel)>(batch.Count);
                 await Task.Run(() =>
                 {
-                    foreach (var entry in entries)
+                    foreach (var entry in batch)
                     {
                         var isActive = !_settingsStore.IsDisabled(entry.ModId, entry.Version);
                         var location = GetDisplayPath(entry.SourcePath);
@@ -2017,7 +2016,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Batch add to collections on UI thread
                 await InvokeOnDispatcherAsync(() =>
                 {
-                    foreach (var entry in entries)
+                    foreach (var entry in batch)
                     {
                         _modEntriesBySourcePath[entry.SourcePath] = entry;
                     }
@@ -2034,7 +2033,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     if (isFirstBatch)
                     {
                         isFirstBatch = false;
-                        SetStatus($"Loading mods... {TotalMods} loaded", false);
+                        // Use simple concatenation for infrequent status updates
+                        SetStatus("Loading mods... " + TotalMods + " loaded", false);
                     }
                 }, CancellationToken.None, DispatcherPriority.Background).ConfigureAwait(true);
 
@@ -3186,19 +3186,30 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private static List<string> NormalizeAndSortTags(IEnumerable<string> tags)
     {
-        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var tag in tags)
+        // If tags is already a HashSet with the correct comparer, we can skip deduplication
+        List<string> list;
+        if (tags is HashSet<string> hashSet && hashSet.Comparer == StringComparer.OrdinalIgnoreCase)
         {
-            if (string.IsNullOrWhiteSpace(tag)) continue;
+            // Already deduplicated, just convert to list and sort
+            list = new List<string>(hashSet);
+        }
+        else
+        {
+            // Need to deduplicate using dictionary
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var tag in tags)
+            {
+                if (string.IsNullOrWhiteSpace(tag)) continue;
 
-            var trimmed = tag.Trim();
-            if (trimmed.Length == 0) continue;
+                var trimmed = tag.Trim();
+                if (trimmed.Length == 0) continue;
 
-            // Use TryAdd to avoid redundant ContainsKey check
-            map.TryAdd(trimmed, trimmed);
+                // Use TryAdd to avoid redundant ContainsKey check
+                map.TryAdd(trimmed, trimmed);
+            }
+            list = new List<string>(map.Values);
         }
 
-        var list = new List<string>(map.Values);
         list.Sort(StringComparer.OrdinalIgnoreCase);
         return list;
     }
