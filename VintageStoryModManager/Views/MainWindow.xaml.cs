@@ -4429,6 +4429,11 @@ public partial class MainWindow : Window
 
         if (confirmation != MessageBoxResult.Yes) return;
 
+        if (deletable.Count > 1)
+        {
+            _viewModel?.ReportStatus($"Deleting {deletable.Count} mod(s)...");
+        }
+
         await CreateAutomaticBackupAsync("ModsDeleted").ConfigureAwait(true);
 
         var removedCount = 0;
