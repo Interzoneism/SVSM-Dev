@@ -76,6 +76,9 @@ public sealed class ModDatabaseService
 
         var internetDisabled = InternetAccessManager.IsInternetAccessDisabled;
 
+        // Pre-load the cache into memory before processing any mods
+        await CacheService.PreloadCacheAsync(cancellationToken).ConfigureAwait(false);
+
         using var semaphore = new SemaphoreSlim(MaxConcurrentMetadataRequests);
         // Pre-allocate with reasonable initial capacity (actual collection count if available, otherwise 16 as fallback)
         var tasks = new List<Task>(capacity: mods is ICollection<ModEntry> collection ? collection.Count : 16);

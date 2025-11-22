@@ -150,6 +150,31 @@ internal sealed class ModDatabaseCacheService : IDisposable
     }
 
     /// <summary>
+    ///     Pre-loads the cache into memory if not already loaded.
+    ///     This should be called before bulk operations to ensure the cache is ready.
+    /// </summary>
+    public async Task PreloadCacheAsync(CancellationToken cancellationToken = default)
+    {
+        await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await EnsureCacheLoadedAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // Ignore cache load failures - lazy loading will handle it later if needed.
+        }
+        finally
+        {
+            _cacheLock.Release();
+        }
+    }
+
+    /// <summary>
     ///     Flushes any pending cache changes to disk.
     ///     Should be called after bulk operations to persist accumulated updates.
     /// </summary>
