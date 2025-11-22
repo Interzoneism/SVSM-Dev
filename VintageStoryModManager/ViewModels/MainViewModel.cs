@@ -787,6 +787,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 if (_areUserReportsVisible)
                 {
                     _hasEnabledUserReportFetching = false;
+                    // If tags are not being refreshed (or tags column is not visible),
+                    // enable user report fetching immediately
+                    if (_allowModDetailsRefresh && ShouldQueueUserReports())
+                    {
+                        EnableUserReportFetching();
+                    }
                 }
                 SetStatus("Showing installed mods.", false);
                 break;
