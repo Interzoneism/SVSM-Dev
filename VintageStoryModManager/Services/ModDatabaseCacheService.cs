@@ -564,8 +564,8 @@ internal sealed class ModDatabaseCacheService : IDisposable
                     // Double-check after acquiring lock
                     if (_isDirty && _cacheIndex != null)
                     {
-                        // Use synchronous save for disposal to ensure data is written
-                        // without risking deadlocks from async operations
+                        // Use synchronous save for disposal because Dispose cannot use async/await
+                        // (IDisposable.Dispose is a synchronous method)
                         SaveCacheSync(_cacheIndex);
                         _isDirty = false;
                     }
