@@ -85,6 +85,7 @@ public partial class MainWindow : Window
     private static readonly double DefaultModInfoPanelTop = DevConfig.DefaultModInfoPanelTop;
     private static readonly double DefaultModInfoPanelRightMargin = DevConfig.DefaultModInfoPanelRightMargin;
     private static readonly string ManagerModDatabaseUrl = DevConfig.ManagerModDatabaseUrl;
+    private const string DiscordInviteUrl = "https://discord.gg/Zhm3QnD2s9";
     private static readonly string ManagerModDatabaseModId = DevConfig.ManagerModDatabaseModId;
     private static readonly string ModDatabaseUnavailableMessage = DevConfig.ModDatabaseUnavailableMessage;
     private static readonly string PresetDirectoryName = DevConfig.PresetDirectoryName;
@@ -5693,6 +5694,41 @@ public partial class MainWindow : Window
     {
         e.Handled = true;
         OpenManagerModDatabasePage();
+    }
+
+    private void DiscordButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (e is not null)
+        {
+            e.Handled = true;
+        }
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            WpfMessageBox.Show(
+                "Enable Internet Access in the File menu to open Discord.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = DiscordInviteUrl,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to open Discord:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private async void ModUsagePromptLink_OnClick(object sender, RoutedEventArgs e)
