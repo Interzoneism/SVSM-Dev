@@ -776,14 +776,34 @@
                     Click="DiscordButton_OnClick">
                 <Button.Template>
                     <ControlTemplate TargetType="{x:Type Button}">
-                        <ContentPresenter HorizontalAlignment="Center"
-                                          VerticalAlignment="Center" />
+                        <Grid Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
+                            <Grid HorizontalAlignment="Center"
+                                  VerticalAlignment="Center">
+                                <Image x:Name="DiscordIcon"
+                                       Source="/Resources/Discord.png"
+                                       Width="26"
+                                       Height="26"
+                                       Stretch="Uniform" />
+                                <Rectangle x:Name="DiscordHoverOverlay"
+                                           Width="26"
+                                           Height="26"
+                                           Visibility="Collapsed"
+                                           Fill="#5865F2">
+                                    <Rectangle.OpacityMask>
+                                        <ImageBrush ImageSource="/Resources/Discord.png" />
+                                    </Rectangle.OpacityMask>
+                                </Rectangle>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="DiscordHoverOverlay"
+                                        Property="Visibility"
+                                        Value="Visible" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Button.Template>
-                <Image Source="/Resources/Discord.png"
-                       Width="26"
-                       Height="26"
-                       Stretch="Uniform" />
             </Button>
 
 
