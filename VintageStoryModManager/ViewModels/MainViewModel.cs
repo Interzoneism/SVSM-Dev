@@ -35,6 +35,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan BusyStateReleaseDelay = TimeSpan.FromMilliseconds(600);
     private static readonly TimeSpan FastCheckInterval = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan BackgroundOperationDelay = TimeSpan.FromMilliseconds(50);
+    private static readonly TimeSpan UserReportFetchDelay = TimeSpan.FromMilliseconds(1500);
     private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
     private static readonly int MaxConcurrentUserReportRefreshes = DevConfig.MaxConcurrentUserReportRefreshes;
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
@@ -57,7 +58,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly ObservableCollection<int> _modDatabaseFetchLimitOptions;
     private readonly int _modDatabaseSearchResultLimit;
     private readonly ObservableCollection<TagFilterOptionViewModel> _modDatabaseTagFilters = new();
-    private readonly object _modDetailsBusyScopeLock = new();
     private readonly Dictionary<string, ModEntry> _modEntriesBySourcePath = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly ObservableCollection<ModListItemViewModel> _mods = new();
@@ -108,7 +108,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _hasRequestedAdditionalModDatabaseResults;
     private bool _hasSelectedMods;
     private bool _hasSelectedTags;
-    private bool _hasShownModDetailsLoadingStatus;
     private bool _isAutoRefreshDisabled;
     private bool _isBusy;
     private bool _isCompactView;
@@ -123,7 +122,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _isModDatabaseLoading;
     private bool _isModDatabaseTagRefreshPending;
     private bool _isModDetailsRefreshForced;
-    private bool _isModDetailsStatusActive;
     private bool _isModInfoExpanded = true;
     private bool _isTagsColumnVisible = true;
     private ModDatabaseAutoLoadMode _lastActivityAutoLoadMode = ModDatabaseAutoLoadMode.RecentlyAdded;
@@ -131,7 +129,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private IReadOnlyList<string> _modDatabaseAvailableTags = Array.Empty<string>();
     private int _modDatabaseCurrentResultLimit;
     private CancellationTokenSource? _modDatabaseSearchCts;
-    private IDisposable? _modDetailsBusyScope;
     private string? _modsStateFingerprint;
     private bool _onlyShowCompatibleModDatabaseResults;
     private int _pendingModDetailsRefreshCount;
@@ -714,8 +711,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         _clientSettingsWatcher.Dispose();
-        _modDetailsBusyScope?.Dispose();
-        _modDetailsBusyScope = null;
         _userReportRefreshLimiter.Dispose();
         _voteService.Dispose();
     }
@@ -2387,21 +2382,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             shouldSetLoadingStatus = _activeUserReportOperations == 1;
         }
 
-        // Only update status when starting the first operation to reduce UI churn
-        if (shouldSetLoadingStatus)
-        {
-            if (!_isInitialLoadComplete)
-            {
-                SetStatus($"Loading user reports for {TotalMods} mods...", false);
-            }
-            else
-            {
-                SetStatus(UserReportsLoadingStatusMessage, false);
-            }
-        }
+        // Don't show status messages during user report loading to avoid UI flickering
+        // User reports load silently in the background to prioritize UI responsiveness
 
-        var busyScope = BeginBusyScope();
-        return new UserReportOperationScope(this, busyScope);
+        // Don't create a busy scope for user report operations - they should not block the UI
+        // User reports are non-critical and should load in the background without affecting responsiveness
+        return new UserReportOperationScope(this, null);
     }
 
     private void EndUserReportOperation()
@@ -2415,11 +2401,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             shouldSetLoadedStatus = _activeUserReportOperations == 0;
         }
 
-        // Only update status when all operations complete to reduce UI churn
-        if (shouldSetLoadedStatus && _isInitialLoadComplete) 
-        {
-            SetStatus(UserReportsLoadedStatusMessage, false);
-        }
+        // Don't show status messages for user report completion to avoid UI flickering
         
         // Check if initial load is complete
         if (shouldSetLoadedStatus && !_isInitialLoadComplete)
@@ -2774,6 +2756,45 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             EnableUserReportFetching();
     }
 
+    private void ScheduleDeferredUserReportFetching()
+    {
+        // Helper method to schedule user report fetching with a delay during initial load
+        // This ensures the UI is fully responsive before background operations start
+        if (!_areUserReportsVisible || _hasEnabledUserReportFetching || !_allowModDetailsRefresh)
+            return;
+
+        var delay = _isInitialLoadComplete ? TimeSpan.Zero : UserReportFetchDelay;
+        if (delay > TimeSpan.Zero)
+        {
+            Task.Delay(delay).ContinueWith(
+                _ =>
+                {
+                    try
+                    {
+                        EnableUserReportFetching();
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // Object was disposed during delay - this is expected during shutdown
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log unexpected exceptions but don't crash - user reports are non-critical
+                        StatusLogService.AppendStatus(
+                            $"Error enabling user report fetching: {ex.Message}",
+                            true);
+                    }
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
+        }
+        else
+        {
+            EnableUserReportFetching();
+        }
+    }
+
     private void ScheduleInstalledTagFilterRefresh()
     {
         if (!_isTagsColumnVisible) return;
@@ -2792,16 +2813,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Check again in case multiple schedules happened
                 if (!_isInstalledTagRefreshPending) return;
 
-                // Show comprehensive message during initial load
-                if (!_isInitialLoadComplete)
-                {
-                    await InvokeOnDispatcherAsync(
-                            () => SetStatus($"Loading tags for {TotalMods} mods...", false),
-                            CancellationToken.None,
-                            DispatcherPriority.ContextIdle)
-                        .ConfigureAwait(false);
-                }
-                else
+                // Don't show status messages during initial load to avoid UI flickering
+                // Tags will load silently in the background
+                if (_isInitialLoadComplete)
                 {
                     await InvokeOnDispatcherAsync(
                             () => SetStatus("Loading tags...", false),
@@ -2848,11 +2862,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 _isInstalledTagRefreshPending = false;
                 // Check if initial load is complete after tags are done
                 InvokeCheckAndCompleteInitialLoad();
-                // Start user report fetching now that tags are complete
-                if (_areUserReportsVisible && !_hasEnabledUserReportFetching && _allowModDetailsRefresh)
-                {
-                    EnableUserReportFetching();
-                }
+                // Defer user report fetching to ensure UI is fully responsive first
+                ScheduleDeferredUserReportFetching();
             }
         }
 
@@ -2880,15 +2891,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Check again in case multiple schedules happened
                 if (!_isModDatabaseTagRefreshPending) return;
 
-                // Only show loading message if we're past initial load
-                if (_isInitialLoadComplete)
-                {
-                    await InvokeOnDispatcherAsync(
-                            () => SetStatus("Loading tags...", false),
-                            CancellationToken.None,
-                            DispatcherPriority.ContextIdle)
-                        .ConfigureAwait(false);
-                }
+                // Don't show status messages during tag refresh to avoid UI flickering
+                // Tags will load silently in the background
 
                 // Collect tags more efficiently
                 var normalized = await Task.Run(() =>
@@ -2913,11 +2917,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         () =>
                         {
                             ApplyNormalizedModDatabaseAvailableTags(normalized);
-                            // Only show completion message if we're past initial load
-                            if (_isInitialLoadComplete)
-                            {
-                                SetStatus("Tags loaded.", false);
-                            }
+                            // Don't show completion messages to avoid UI status flickering
                         },
                         CancellationToken.None,
                         DispatcherPriority.ContextIdle)
@@ -2930,11 +2930,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             finally
             {
                 _isModDatabaseTagRefreshPending = false;
-                // Start user report fetching now that mod database tags are complete
-                if (_areUserReportsVisible && !_hasEnabledUserReportFetching && _allowModDetailsRefresh)
-                {
-                    EnableUserReportFetching();
-                }
+                // Defer user report fetching to ensure UI is fully responsive first
+                ScheduleDeferredUserReportFetching();
             }
         }
 
@@ -3861,14 +3858,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void UpdateLoadedModsStatus()
     {
-        if (IsModDetailsRefreshPending())
-        {
-            if (!_isModDetailsStatusActive) SetStatus(BuildModDetailsLoadingStatusMessage(), false, true);
-        }
-        else
-        {
-            SetStatus(BuildModDetailsReadyStatusMessage(), false);
-        }
+        // Don't show mod details loading status - let details load silently in background
+        // Just show the basic loaded mods count
+        SetStatus($"Loaded {TotalMods} mods.", false);
     }
 
     private bool IsModDetailsRefreshPending()
@@ -3887,21 +3879,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        EnsureModDetailsBusyScope();
+        // Don't create a busy scope for mod details refresh - let it load in background
+        // This allows users to interact with mods while details are loading
         UpdateIsLoadingModDetails(true);
 
-        if (newCount == count || !_isModDetailsStatusActive)
-        {
-            // Show a comprehensive message during initial load
-            if (!_isInitialLoadComplete)
-            {
-                SetStatus($"Loading mod details for {TotalMods} mods...", false, true);
-            }
-            else
-            {
-                SetStatus(BuildModDetailsLoadingStatusMessage(), false, true);
-            }
-        }
+        // Don't show status messages during mod details loading to avoid UI flickering
+        // Details will load silently in the background
     }
 
     private void OnModDetailsRefreshCompleted()
@@ -3910,30 +3893,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (newCount <= 0)
         {
             Interlocked.Exchange(ref _pendingModDetailsRefreshCount, 0);
-            ReleaseModDetailsBusyScope();
+            // No busy scope to release since we don't create one anymore for better UI responsiveness
             UpdateIsLoadingModDetails(false);
 
-            if (_isModDetailsStatusActive) SetStatus(BuildModDetailsReadyStatusMessage(), false);
+            // Don't show status messages for mod details completion to avoid UI flickering
             
             // Check if initial load is complete
             InvokeCheckAndCompleteInitialLoad();
-        }
-    }
-
-    private void EnsureModDetailsBusyScope()
-    {
-        lock (_modDetailsBusyScopeLock)
-        {
-            _modDetailsBusyScope ??= BeginBusyScope();
-        }
-    }
-
-    private void ReleaseModDetailsBusyScope()
-    {
-        lock (_modDetailsBusyScopeLock)
-        {
-            _modDetailsBusyScope?.Dispose();
-            _modDetailsBusyScope = null;
         }
     }
 
@@ -3977,18 +3943,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             CheckAndCompleteInitialLoad();
         }
-    }
-
-    private string BuildModDetailsLoadingStatusMessage()
-    {
-        return $"Loaded {TotalMods} mods. Loading mod details...";
-    }
-
-    private string BuildModDetailsReadyStatusMessage()
-    {
-        if (_hasShownModDetailsLoadingStatus) return $"Loaded {TotalMods} mods. Mod details up to date.";
-
-        return $"Loaded {TotalMods} mods.";
     }
 
     private string BuildNoModDatabaseResultsMessage(bool hasSearchTokens)
@@ -4329,13 +4283,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                    StringComparison.OrdinalIgnoreCase);
     }
 
-    private void SetStatus(string message, bool isError, bool isModDetailsStatus = false)
+    private void SetStatus(string message, bool isError)
     {
         StatusLogService.AppendStatus(message, isError);
         StatusMessage = message;
         IsErrorStatus = isError;
-        _isModDetailsStatusActive = isModDetailsStatus;
-        _hasShownModDetailsLoadingStatus = isModDetailsStatus;
     }
 
     private Dictionary<string, ModEntry?> LoadChangedModEntries(
@@ -5357,11 +5309,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private sealed class UserReportOperationScope : IDisposable
     {
-        private readonly IDisposable _busyScope;
+        private readonly IDisposable? _busyScope;
         private readonly MainViewModel _owner;
         private bool _disposed;
 
-        public UserReportOperationScope(MainViewModel owner, IDisposable busyScope)
+        public UserReportOperationScope(MainViewModel owner, IDisposable? busyScope)
         {
             _owner = owner;
             _busyScope = busyScope;
@@ -5372,7 +5324,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (_disposed) return;
 
             _disposed = true;
-            _busyScope.Dispose();
+            _busyScope?.Dispose();
             _owner.EndUserReportOperation();
         }
     }
