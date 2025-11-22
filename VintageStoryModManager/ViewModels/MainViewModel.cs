@@ -2787,7 +2787,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             try
             {
                 // Small delay to debounce rapid successive calls
-                await Task.Delay(50).ConfigureAwait(false);
+                await Task.Delay(DevConfig.TagFilterRefreshDebounceMs).ConfigureAwait(false);
                 
                 // Check again in case multiple schedules happened
                 if (!_isInstalledTagRefreshPending) return;
@@ -2875,7 +2875,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             try
             {
                 // Small delay to debounce rapid successive calls
-                await Task.Delay(50).ConfigureAwait(false);
+                await Task.Delay(DevConfig.TagFilterRefreshDebounceMs).ConfigureAwait(false);
                 
                 // Check again in case multiple schedules happened
                 if (!_isModDatabaseTagRefreshPending) return;
