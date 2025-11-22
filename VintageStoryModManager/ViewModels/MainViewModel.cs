@@ -5071,20 +5071,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // Execute the search on the UI thread
         if (Application.Current?.Dispatcher is { } dispatcher)
         {
-            dispatcher.BeginInvoke(new Action(() =>
-            {
-                if (!cts.IsCancellationRequested)
-                {
-                    ModsView.Refresh();
-                }
-            }), DispatcherPriority.Background);
+            dispatcher.BeginInvoke(new Action(() => RefreshModsViewIfNotCancelled(cts)), 
+                DispatcherPriority.Background);
         }
         else
         {
-            if (!cts.IsCancellationRequested)
-            {
-                ModsView.Refresh();
-            }
+            RefreshModsViewIfNotCancelled(cts);
+        }
+    }
+
+    private void RefreshModsViewIfNotCancelled(CancellationTokenSource cts)
+    {
+        if (!cts.IsCancellationRequested)
+        {
+            ModsView.Refresh();
         }
     }
 
