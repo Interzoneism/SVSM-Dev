@@ -1870,10 +1870,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             SelectedSortOption?.Apply(ModsView);
             ModsView.Refresh();
             await UpdateModsStateSnapshotAsync();
+            
+            // If there are no mods, no background operations will be queued,
+            // so we need to complete initial load immediately on the UI thread
+            if (!_isInitialLoadComplete && TotalMods == 0)
+            {
+                // Dispatch to ensure we're on UI thread
+                await InvokeOnDispatcherAsync(CheckAndCompleteInitialLoad, CancellationToken.None);
+            }
         }
         catch (Exception ex)
         {
             SetStatus($"Failed to load mods: {ex.Message}", true);
+            // Ensure initial load completes even on error
+            if (!_isInitialLoadComplete)
+            {
+                _isInitialLoadComplete = true;
+            }
         }
         finally
         {
@@ -2305,10 +2318,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // Only set status message if we're past initial load
         if (shouldSetLoadedStatus && _isInitialLoadComplete) SetStatus(UserReportsLoadedStatusMessage, false);
         
-        // Check if initial load is complete
+        // Check if initial load is complete (ensure we're on UI thread)
         if (shouldSetLoadedStatus && !_isInitialLoadComplete)
         {
-            CheckAndCompleteInitialLoad();
+            if (Application.Current?.Dispatcher is { } dispatcher)
+            {
+                if (dispatcher.CheckAccess())
+                    CheckAndCompleteInitialLoad();
+                else
+                    dispatcher.BeginInvoke(DispatcherPriority.Normal, CheckAndCompleteInitialLoad);
+            }
+            else
+            {
+                CheckAndCompleteInitialLoad();
+            }
         }
     }
 
@@ -3740,8 +3763,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             if (_isModDetailsStatusActive) SetStatus(BuildModDetailsReadyStatusMessage(), false);
             
-            // Check if initial load is complete
-            CheckAndCompleteInitialLoad();
+            // Check if initial load is complete (ensure we're on UI thread)
+            if (Application.Current?.Dispatcher is { } dispatcher)
+            {
+                if (dispatcher.CheckAccess())
+                    CheckAndCompleteInitialLoad();
+                else
+                    dispatcher.BeginInvoke(DispatcherPriority.Normal, CheckAndCompleteInitialLoad);
+            }
+            else
+            {
+                CheckAndCompleteInitialLoad();
+            }
         }
     }
 
@@ -3764,13 +3797,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void CheckAndCompleteInitialLoad()
     {
+        // This method should only be called from the UI thread or with proper synchronization
         // Don't complete if already complete
         if (_isInitialLoadComplete) return;
 
         // Check if all initial operations are done
-        bool allOperationsComplete = !IsModDetailsRefreshPending() 
-                                   && !_isInstalledTagRefreshPending 
-                                   && _activeUserReportOperations == 0;
+        // Note: We check operations under locks where applicable
+        bool modDetailsComplete = !IsModDetailsRefreshPending();
+        bool tagsComplete = !_isInstalledTagRefreshPending;
+        
+        bool userReportsComplete;
+        lock (_userReportOperationLock)
+        {
+            userReportsComplete = _activeUserReportOperations == 0;
+        }
+        
+        bool allOperationsComplete = modDetailsComplete && tagsComplete && userReportsComplete;
 
         if (!allOperationsComplete) return;
 
