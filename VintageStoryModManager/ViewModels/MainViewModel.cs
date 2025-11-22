@@ -5081,7 +5081,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
         else
         {
-            ModsView.Refresh();
+            if (!cts.IsCancellationRequested)
+            {
+                ModsView.Refresh();
+            }
         }
     }
 
