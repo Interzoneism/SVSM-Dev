@@ -77,7 +77,7 @@ public sealed class ModDatabaseService
         var internetDisabled = InternetAccessManager.IsInternetAccessDisabled;
 
         using var semaphore = new SemaphoreSlim(MaxConcurrentMetadataRequests);
-        var tasks = new List<Task>();
+        var tasks = new List<Task>(capacity: mods is ICollection<ModEntry> collection ? collection.Count : 16);
 
         foreach (var mod in mods)
         {
@@ -822,7 +822,10 @@ public sealed class ModDatabaseService
         if (!element.TryGetProperty(propertyName, out var value) || value.ValueKind != JsonValueKind.Array)
             return Array.Empty<string>();
 
-        var list = new List<string>();
+        var arrayLength = value.GetArrayLength();
+        if (arrayLength == 0) return Array.Empty<string>();
+
+        var list = new List<string>(capacity: arrayLength);
         foreach (var item in value.EnumerateArray())
             if (item.ValueKind == JsonValueKind.String)
             {
@@ -856,7 +859,10 @@ public sealed class ModDatabaseService
         if (!modElement.TryGetProperty("releases", out var releasesElement) ||
             releasesElement.ValueKind != JsonValueKind.Array) return Array.Empty<ModReleaseInfo>();
 
-        var releases = new List<ModReleaseInfo>();
+        var arrayLength = releasesElement.GetArrayLength();
+        if (arrayLength == 0) return Array.Empty<ModReleaseInfo>();
+
+        var releases = new List<ModReleaseInfo>(capacity: arrayLength);
 
         foreach (var releaseElement in releasesElement.EnumerateArray())
         {
