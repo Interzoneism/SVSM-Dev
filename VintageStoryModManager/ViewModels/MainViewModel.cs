@@ -2159,6 +2159,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void OnModsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        // If tags column is visible and we're about to add/replace mods, set the pending flag
+        // to prevent user reports from being queued before tags start loading
+        if (_isTagsColumnVisible && (e.Action == NotifyCollectionChangedAction.Add || 
+                                      e.Action == NotifyCollectionChangedAction.Replace || 
+                                      e.Action == NotifyCollectionChangedAction.Reset))
+        {
+            _isInstalledTagRefreshPending = true;
+        }
+
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
@@ -2225,11 +2234,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private bool ShouldQueueUserReports()
+    {
+        // Only queue user reports if:
+        // 1. Either tags column is not visible, OR tags are not currently being refreshed
+        // This ensures that when both columns are visible, tags load before user reports
+        return !(_isTagsColumnVisible && _isInstalledTagRefreshPending);
+    }
+
     private void AttachInstalledMod(ModListItemViewModel mod)
     {
         if (_installedModSubscriptions.Add(mod)) mod.PropertyChanged += OnInstalledModPropertyChanged;
 
-        if (_allowModDetailsRefresh) QueueUserReportRefresh(mod);
+        if (_allowModDetailsRefresh && ShouldQueueUserReports()) 
+            QueueUserReportRefresh(mod);
     }
 
     private void DetachInstalledMod(ModListItemViewModel mod)
@@ -2250,9 +2268,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (_searchResultSubscriptions.Add(mod)) mod.PropertyChanged += OnSearchResultPropertyChanged;
 
-        if (mod.CanSubmitUserReport) QueueUserReportRefresh(mod);
+        if (ShouldQueueUserReports())
+        {
+            if (mod.CanSubmitUserReport) QueueUserReportRefresh(mod);
 
-        QueueLatestReleaseUserReportRefresh(mod);
+            QueueLatestReleaseUserReportRefresh(mod);
+        }
     }
 
     private void DetachSearchResult(ModListItemViewModel mod)
@@ -2496,6 +2517,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public void EnableUserReportFetching()
     {
+        // This method queues user reports for all mods when called.
+        // It should only be called when tags have completed loading (if tags column is visible),
+        // or when user reports column is made visible while tags are not loading.
+        // Individual attach methods use ShouldQueueUserReports() to prevent premature queueing.
+        
         if (!_areUserReportsVisible) return;
 
         if (_hasEnabledUserReportFetching) return;
@@ -2707,7 +2733,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (_allowModDetailsRefresh) EnableUserReportFetching();
+        if (_allowModDetailsRefresh && ShouldQueueUserReports()) 
+            EnableUserReportFetching();
     }
 
     private void ScheduleInstalledTagFilterRefresh()
@@ -2768,6 +2795,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 _isInstalledTagRefreshPending = false;
                 // Check if initial load is complete after tags are done
                 InvokeCheckAndCompleteInitialLoad();
+                // Start user report fetching now that tags are complete
+                if (_areUserReportsVisible && !_hasEnabledUserReportFetching && _allowModDetailsRefresh)
+                {
+                    EnableUserReportFetching();
+                }
             }
         }
 
@@ -4592,7 +4624,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
                         {
                             viewModel.UpdateDatabaseInfo(preparedInfo, loadLogoImmediately);
-                            QueueLatestReleaseUserReportRefresh(viewModel);
+                            if (ShouldQueueUserReports())
+                                QueueLatestReleaseUserReportRefresh(viewModel);
                         }
                     },
                     CancellationToken.None,
