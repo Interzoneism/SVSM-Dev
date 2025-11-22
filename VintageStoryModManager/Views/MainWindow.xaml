@@ -875,7 +875,7 @@
                       HorizontalAlignment="Left" Height="44" VerticalAlignment="Bottom">
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Hidden" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
@@ -1044,7 +1044,7 @@
                             VerticalAlignment="Top" Height="24" Margin="16,20,230,0">
                     <StackPanel.Style>
                         <Style TargetType="{x:Type StackPanel}">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Hidden" />
                             <Style.Triggers>
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
@@ -1089,7 +1089,7 @@
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
                                             <Setter Property="IsEnabled" Value="False" />
-                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Setter Property="Visibility" Value="Hidden" />
                                             <Setter Property="ui:ControlHelper.PlaceholderText"
                                                     Value="Cloud modlist search coming soon" />
                                         </DataTrigger>
@@ -1110,7 +1110,7 @@
                                     MinHeight="32">
                                 <Button.Style>
                                     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
-                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Setter Property="Visibility" Value="Hidden" />
                                         <Setter Property="Padding" Value="6,6,6,6" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsViewingInstalledMods}" Value="True">
@@ -1129,7 +1129,7 @@
                                     Click="RebuildButton_OnClick" MinHeight="32">
                                 <Button.Style>
                                     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
-                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Setter Property="Visibility" Value="Hidden" />
                                         <Setter Property="Padding" Value="6,6,6,6" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsViewingInstalledMods}" Value="True">
@@ -1849,7 +1849,7 @@
                                     <Style TargetType="{x:Type DataGrid}">
                                         <Setter Property="CanUserSortColumns" Value="True" />
                                         <Setter Property="IsEnabled" Value="False" />
-                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Setter Property="Visibility" Value="Hidden" />
 
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
@@ -1858,7 +1858,7 @@
                                                 <Setter Property="IsEnabled" Value="True" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
-                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Setter Property="Visibility" Value="Hidden" />
                                                 <Setter Property="IsEnabled" Value="False" />
                                             </DataTrigger>
                                             <MultiDataTrigger>
@@ -1866,7 +1866,7 @@
                                                     <Condition Binding="{Binding SearchModDatabase}" Value="True" />
                                                     <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
                                                 </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Setter Property="Visibility" Value="Hidden" />
                                                 <Setter Property="IsEnabled" Value="False" />
                                             </MultiDataTrigger>
                                         </Style.Triggers>
@@ -2582,7 +2582,7 @@
                                                     <Setter Property="Visibility" Value="Visible" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding HasLocalModlists}" Value="False">
-                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Setter Property="Visibility" Value="Hidden" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -3019,7 +3019,7 @@
                                                     <Setter Property="Visibility" Value="Visible" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding HasCloudModlists}" Value="False">
-                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Setter Property="Visibility" Value="Hidden" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
