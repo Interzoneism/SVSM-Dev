@@ -10391,7 +10391,7 @@ public partial class MainWindow : Window
             {
                 WpfMessageBox.Show(
                     this,
-                    "Due to bandwidth issues, the manager is changing to another database. Your modlists will be saved and moved to the new database. Each users modlists will appear in the Online Modlists tab when they update. All compatibility votes have been reset. Thank you for using the manager and voting!",
+                    "Due to bandwidth issues, the manager is changing to another database. Your modlists will be saved and moved to the new database. Each user's modlists will appear in the Online Modlists tab when they update. All compatibility votes have been reset. Thank you for using the manager and voting!",
                     "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -10421,6 +10421,8 @@ public partial class MainWindow : Window
                 return cached;
             }
 
+            // Migration is only attempted once (see _firebaseMigrationAttempted flag).
+            // The dialog is shown from the primary call in MainWindow_Loaded.
             await MigrateLegacyFirebaseDataIfNeededAsync().ConfigureAwait(false);
 
             var store = new FirebaseModlistStore();
