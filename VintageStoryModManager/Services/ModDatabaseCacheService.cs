@@ -234,24 +234,7 @@ internal sealed class ModDatabaseCacheService : IDisposable
                 .ConfigureAwait(false);
         }
 
-        try
-        {
-            File.Move(tempPath, cacheFilePath, true);
-        }
-        catch (IOException)
-        {
-            try
-            {
-                // Retry with replace semantics when running on platforms that require it.
-                File.Replace(tempPath, cacheFilePath, null);
-            }
-            catch
-            {
-                // Clean up temp file only if replace also failed
-                if (File.Exists(tempPath)) File.Delete(tempPath);
-                throw;
-            }
-        }
+        MoveCacheFile(tempPath, cacheFilePath);
     }
 
     private void SaveCacheSync(Dictionary<string, CachedModDatabaseInfo> index)
@@ -276,6 +259,11 @@ internal sealed class ModDatabaseCacheService : IDisposable
             JsonSerializer.Serialize(tempStream, cache, SerializerOptions);
         }
 
+        MoveCacheFile(tempPath, cacheFilePath);
+    }
+
+    private static void MoveCacheFile(string tempPath, string cacheFilePath)
+    {
         try
         {
             File.Move(tempPath, cacheFilePath, true);
