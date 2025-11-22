@@ -1953,61 +1953,125 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         await InvokeOnDispatcherAsync(() =>
         {
             foreach (var pair in _modEntriesBySourcePath) previousEntries[pair.Key] = pair.Value;
-        }, CancellationToken.None).ConfigureAwait(true);
-
-        var discoveredEntries = await Task
-            .Run(() => _discoveryService.LoadMods())
-            .ConfigureAwait(true);
-
-        var entries = discoveredEntries.Count == 0
-            ? new List<ModEntry>()
-            : new List<ModEntry>(discoveredEntries);
-
-        foreach (var entry in entries)
-        {
-            ResetCalculatedModState(entry);
-            if (previousEntries.TryGetValue(entry.SourcePath, out var previous)) CopyTransientModState(previous, entry);
-        }
-
-        if (entries.Count > 0) await Task.Run(() => _discoveryService.ApplyLoadStatuses(entries)).ConfigureAwait(true);
-
-        await InvokeOnDispatcherAsync(() =>
-        {
+            
+            // Clear collections once at the start to avoid multiple collection changed events
             _modEntriesBySourcePath.Clear();
             _modViewModelsBySourcePath.Clear();
+            
+            // Temporarily detach collection changed handler to avoid per-item events during bulk loading
+            _mods.CollectionChanged -= OnModsCollectionChanged;
             _mods.Clear();
-
-            foreach (var entry in entries)
-            {
-                _modEntriesBySourcePath[entry.SourcePath] = entry;
-                var viewModel = CreateModViewModel(entry);
-                _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
-                _mods.Add(viewModel);
-            }
-
-            TotalMods = _mods.Count;
-
-            if (!string.IsNullOrWhiteSpace(previousSelection)
-                && _modViewModelsBySourcePath.TryGetValue(previousSelection, out var selected))
-                SelectedMod = selected;
-            else
-                SelectedMod = null;
-
-            // Queue background operations but don't wait for them to complete
-            // This allows the UI to be immediately responsive while details load in the background
-            if (_allowModDetailsRefresh && entries.Count > 0) 
-            {
-                // Defer database info refresh to after initial UI render
-                _ = Task.Run(async () =>
-                {
-                    // Small delay to ensure UI thread processes the initial mods display
-                    await Task.Delay(BackgroundOperationDelay).ConfigureAwait(false);
-                    QueueDatabaseInfoRefresh(entries);
-                });
-            }
-
-            UpdateLoadedModsStatus();
         }, CancellationToken.None).ConfigureAwait(true);
+
+        var batchSize = InstalledModsIncrementalBatchSize;
+        var allLoadedEntries = new List<ModEntry>();
+        var isFirstBatch = true;
+
+        try
+        {
+            await foreach (var batch in _discoveryService.LoadModsIncrementallyAsync(batchSize))
+            {
+                var entries = batch.ToList();
+                if (entries.Count == 0) continue;
+
+                // Process entries off the UI thread
+                await Task.Run(() =>
+                {
+                    foreach (var entry in entries)
+                    {
+                        ResetCalculatedModState(entry);
+                        if (previousEntries.TryGetValue(entry.SourcePath, out var previous))
+                            CopyTransientModState(previous, entry);
+                    }
+                    allLoadedEntries.AddRange(entries);
+                }).ConfigureAwait(false);
+
+                // Apply load statuses incrementally for this batch
+                if (entries.Count > 0)
+                {
+                    await Task.Run(() => _discoveryService.ApplyLoadStatusesIncremental(
+                        allLoadedEntries, entries, null)).ConfigureAwait(false);
+                }
+
+                // Create view models off the UI thread where possible
+                var viewModels = new List<(string sourcePath, ModListItemViewModel viewModel)>(entries.Count);
+                await Task.Run(() =>
+                {
+                    foreach (var entry in entries)
+                    {
+                        var isActive = !_settingsStore.IsDisabled(entry.ModId, entry.Version);
+                        var location = GetDisplayPath(entry.SourcePath);
+                        var viewModel = new ModListItemViewModel(
+                            entry,
+                            isActive,
+                            location,
+                            ApplyActivationChangeAsync,
+                            InstalledGameVersion,
+                            true,
+                            _configuration.ShouldSkipModVersion,
+                            () => _configuration.RequireExactVsVersionMatch);
+                        viewModels.Add((entry.SourcePath, viewModel));
+                    }
+                }).ConfigureAwait(false);
+
+                // Batch add to collections on UI thread
+                await InvokeOnDispatcherAsync(() =>
+                {
+                    foreach (var entry in entries)
+                    {
+                        _modEntriesBySourcePath[entry.SourcePath] = entry;
+                    }
+
+                    foreach (var (sourcePath, viewModel) in viewModels)
+                    {
+                        _modViewModelsBySourcePath[sourcePath] = viewModel;
+                        _mods.Add(viewModel);
+                    }
+
+                    TotalMods = _mods.Count;
+
+                    // Show progress after first batch to make UI responsive quickly
+                    if (isFirstBatch)
+                    {
+                        isFirstBatch = false;
+                        SetStatus($"Loading mods... {TotalMods} loaded", false);
+                    }
+                }, CancellationToken.None, DispatcherPriority.Background).ConfigureAwait(true);
+
+                // Small yield to allow UI thread to process and render
+                await Task.Delay(1).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            // Reattach collection changed handler and trigger single reset event
+            await InvokeOnDispatcherAsync(() =>
+            {
+                _mods.CollectionChanged += OnModsCollectionChanged;
+                
+                // Manually trigger the collection changed logic once for all items
+                OnModsCollectionChanged(this, new NotifyCollectionChangedEventArgs(
+                    NotifyCollectionChangedAction.Reset));
+
+                if (!string.IsNullOrWhiteSpace(previousSelection)
+                    && _modViewModelsBySourcePath.TryGetValue(previousSelection, out var selected))
+                    SelectedMod = selected;
+                else
+                    SelectedMod = null;
+
+                // Queue background operations but don't wait for them to complete
+                if (_allowModDetailsRefresh && allLoadedEntries.Count > 0)
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(BackgroundOperationDelay).ConfigureAwait(false);
+                        QueueDatabaseInfoRefresh(allLoadedEntries);
+                    });
+                }
+
+                UpdateLoadedModsStatus();
+            }, CancellationToken.None).ConfigureAwait(true);
+        }
     }
 
     public async Task<bool> CheckForModStateChangesAsync()
@@ -2824,19 +2888,31 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         .ConfigureAwait(false);
                 }
 
-                // Collect tags more efficiently without intermediate ToList()
+                // Collect tags more efficiently using HashSet to avoid duplicates during collection
                 var normalized = await Task.Run(() =>
                 {
-                    var tagList = new List<string>(capacity: _mods.Count * DevConfig.AverageTagsPerMod);
+                    // Use HashSet directly to deduplicate as we go
+                    var uniqueTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    
                     foreach (var mod in _mods)
                     {
                         if (mod.DatabaseTags is { Count: > 0 } tags)
                         {
-                            tagList.AddRange(tags);
+                            foreach (var tag in tags)
+                            {
+                                if (!string.IsNullOrWhiteSpace(tag))
+                                    uniqueTags.Add(tag.Trim());
+                            }
                         }
                     }
-                    tagList.AddRange(_selectedInstalledTags);
-                    return NormalizeAndSortTags(tagList);
+                    
+                    foreach (var tag in _selectedInstalledTags)
+                    {
+                        if (!string.IsNullOrWhiteSpace(tag))
+                            uniqueTags.Add(tag);
+                    }
+                    
+                    return NormalizeAndSortTags(uniqueTags);
                 }).ConfigureAwait(false);
 
                 await InvokeOnDispatcherAsync(
@@ -2894,23 +2970,31 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Don't show status messages during tag refresh to avoid UI flickering
                 // Tags will load silently in the background
 
-                // Collect tags more efficiently
+                // Collect tags more efficiently using HashSet to avoid duplicates
                 var normalized = await Task.Run(() =>
                 {
                     var existing = _modDatabaseAvailableTags;
-                    var tagList = new List<string>(capacity: existing.Count + _searchResults.Count * DevConfig.AverageTagsPerMod);
-                    tagList.AddRange(existing);
+                    var uniqueTags = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
                     
                     foreach (var mod in _searchResults)
                     {
                         if (mod.DatabaseTags is { Count: > 0 } tags)
                         {
-                            tagList.AddRange(tags);
+                            foreach (var tag in tags)
+                            {
+                                if (!string.IsNullOrWhiteSpace(tag))
+                                    uniqueTags.Add(tag.Trim());
+                            }
                         }
                     }
                     
-                    tagList.AddRange(_selectedModDatabaseTags);
-                    return NormalizeAndSortTags(tagList);
+                    foreach (var tag in _selectedModDatabaseTags)
+                    {
+                        if (!string.IsNullOrWhiteSpace(tag))
+                            uniqueTags.Add(tag);
+                    }
+                    
+                    return NormalizeAndSortTags(uniqueTags);
                 }).ConfigureAwait(false);
 
                 await InvokeOnDispatcherAsync(
