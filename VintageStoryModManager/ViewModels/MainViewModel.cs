@@ -200,7 +200,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         _excludeInstalledModDatabaseResults = excludeInstalledModDatabaseResults;
         _onlyShowCompatibleModDatabaseResults = onlyShowCompatibleModDatabaseResults;
-        _hasEnabledUserReportFetching = FirebaseAnonymousAuthenticator.HasPersistedState();
+        _hasEnabledUserReportFetching = false;
         _isAutoRefreshDisabled = configuration.DisableAutoRefresh;
         _allowModDetailsRefresh = !_isAutoRefreshDisabled;
 
