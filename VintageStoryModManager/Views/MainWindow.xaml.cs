@@ -6419,6 +6419,15 @@ public partial class MainWindow : Window
             errors.Add(BuildCacheClearErrorMessage("Mod metadata cache", ex));
         }
 
+        try
+        {
+            ModIconCacheService.ClearCache();
+        }
+        catch (Exception ex)
+        {
+            errors.Add(BuildCacheClearErrorMessage("Mod icon cache", ex));
+        }
+
         var cachedModsDirectory = ModCacheLocator.GetCachedModsDirectory();
         if (!preserveModCache && !string.IsNullOrWhiteSpace(cachedModsDirectory))
             try

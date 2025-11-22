@@ -16,11 +16,9 @@ internal static class ModManifestCacheService
         string sourcePath,
         DateTime lastWriteTimeUtc,
         long length,
-        out string manifestJson,
-        out byte[]? iconBytes)
+        out string manifestJson)
     {
         manifestJson = string.Empty;
-        iconBytes = null;
 
         var normalizedPath = NormalizePath(sourcePath);
         var ticks = ToUniversalTicks(lastWriteTimeUtc);
@@ -40,7 +38,6 @@ internal static class ModManifestCacheService
             try
             {
                 manifestJson = entry.ManifestJson ?? string.Empty;
-                iconBytes = entry.IconBytes;
                 return !string.IsNullOrWhiteSpace(manifestJson);
             }
             catch (Exception)
@@ -79,8 +76,7 @@ internal static class ModManifestCacheService
         long length,
         string modId,
         string? version,
-        string manifestJson,
-        byte[]? iconBytes)
+        string manifestJson)
     {
         var normalizedPath = NormalizePath(sourcePath);
         var ticks = ToUniversalTicks(lastWriteTimeUtc);
@@ -99,7 +95,6 @@ internal static class ModManifestCacheService
                 entry.ModId = modId;
                 entry.Version = version;
                 entry.ManifestJson = manifestJson;
-                entry.IconBytes = iconBytes;
                 entry.Length = length;
                 entry.LastWriteTimeUtcTicks = ticks;
 
@@ -234,7 +229,6 @@ internal static class ModManifestCacheService
         public string ModId { get; set; } = string.Empty;
         public string? Version { get; set; }
         public string? ManifestJson { get; set; }
-        public byte[]? IconBytes { get; set; }
         public long Length { get; set; }
         public long LastWriteTimeUtcTicks { get; set; }
     }
