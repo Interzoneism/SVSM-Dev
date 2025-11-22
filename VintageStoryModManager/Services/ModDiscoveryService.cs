@@ -741,12 +741,11 @@ public sealed class ModDiscoveryService
 
                 // Try to load icon from icon cache
                 byte[]? iconBytes = null;
-                if (ModIconCacheService.TryGetIconPath(archiveFile.FullName, lastWriteTimeUtc, length, out var iconPath)
-                    && !string.IsNullOrWhiteSpace(iconPath))
+                if (ModIconCacheService.TryGetIconPath(archiveFile.FullName, lastWriteTimeUtc, length, out var iconPath))
                 {
                     try
                     {
-                        iconBytes = File.ReadAllBytes(iconPath);
+                        iconBytes = File.ReadAllBytes(iconPath!);
                     }
                     catch (Exception)
                     {

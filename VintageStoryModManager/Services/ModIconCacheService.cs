@@ -6,7 +6,7 @@ namespace VintageStoryModManager.Services;
 
 /// <summary>
 ///     Provides disk-backed caching for mod icons as separate image files.
-///     Icons are stored in individual files named by a hash of the source path for quick lookup.
+///     Icons are stored in individual files named by a hash of the source path, timestamp, and file length for quick lookup and uniqueness.
 /// </summary>
 internal static class ModIconCacheService
 {
@@ -81,10 +81,17 @@ internal static class ModIconCacheService
                 }
                 catch (IOException)
                 {
-                    // If the file was created concurrently, clean up temp file
-                    if (File.Exists(tempPath)) File.Delete(tempPath);
+                    // If the file was created concurrently, that's fine - clean up temp and continue
+                    try
+                    {
+                        if (File.Exists(tempPath)) File.Delete(tempPath);
+                    }
+                    catch
+                    {
+                        // Ignore cleanup failures
+                    }
                     
-                    // If target exists, that's fine, ignore the error
+                    // Verify target exists, if not then the move really failed
                     if (!File.Exists(cachePath)) throw;
                 }
             }
