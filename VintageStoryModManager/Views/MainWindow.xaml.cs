@@ -428,6 +428,8 @@ public partial class MainWindow : Window
         // Ensure firebase-auth.json is backed up if it exists and hasn't been backed up yet
         FirebaseAnonymousAuthenticator.EnsureStartupBackup(_userConfiguration);
 
+        await MigrateLegacyFirebaseDataIfNeededAsync().ConfigureAwait(true);
+
         await CheckAndPromptMigrationAsync().ConfigureAwait(true);
 
         await PromptCacheRefreshIfNeededAsync().ConfigureAwait(true);
@@ -10382,7 +10384,7 @@ public partial class MainWindow : Window
         {
             var migrationService = new FirebaseModlistMigrationService();
             var migrationSucceeded = await migrationService
-                .TryMigrateAsync(playerUid, _viewModel?.PlayerName, CancellationToken.None)
+                .TryMigrateAsync(playerUid, _viewModel?.PlayerName, _userConfiguration, CancellationToken.None)
                 .ConfigureAwait(false);
 
             if (migrationSucceeded)

@@ -541,7 +541,7 @@ public sealed class FirebaseAnonymousAuthenticator
         }
     }
 
-    private static string? GetBackupFilePath()
+    internal static string? GetBackupFilePath()
     {
         try
         {
