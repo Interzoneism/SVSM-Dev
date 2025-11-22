@@ -169,6 +169,7 @@ public sealed class FirebaseModlistStore : IDisposable
     /// </summary>
     public void SetPlayerIdentity(string? playerUid, string? playerName)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseModlistStore));
         _playerUid = Normalize(playerUid);
         _playerName = Normalize(playerName);
 
@@ -184,6 +185,7 @@ public sealed class FirebaseModlistStore : IDisposable
     /// <summary>Save or replace the JSON in the given slot (e.g., "slot1").</summary>
     public async Task SaveAsync(string slotKey, string modlistJson, CancellationToken ct = default)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseModlistStore));
         InternetAccessManager.ThrowIfInternetAccessDisabled();
         ValidateSlotKey(slotKey);
         var identity = GetIdentityComponents();
@@ -251,6 +253,7 @@ public sealed class FirebaseModlistStore : IDisposable
     /// <summary>Load a JSON string from the slot. Returns null if missing.</summary>
     public async Task<string?> LoadAsync(string slotKey, CancellationToken ct = default)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseModlistStore));
         InternetAccessManager.ThrowIfInternetAccessDisabled();
         ValidateSlotKey(slotKey);
         var identity = GetIdentityComponents();

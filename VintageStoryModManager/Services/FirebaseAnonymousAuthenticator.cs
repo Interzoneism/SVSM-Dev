@@ -58,6 +58,7 @@ public sealed class FirebaseAnonymousAuthenticator : IDisposable
     /// </summary>
     public async Task<string> GetIdTokenAsync(CancellationToken ct)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseAnonymousAuthenticator));
         InternetAccessManager.ThrowIfInternetAccessDisabled();
         var session = await GetSessionAsync(ct).ConfigureAwait(false);
         return session.IdToken;
@@ -65,6 +66,7 @@ public sealed class FirebaseAnonymousAuthenticator : IDisposable
 
     public async Task<FirebaseAuthSession> GetSessionAsync(CancellationToken ct)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseAnonymousAuthenticator));
         InternetAccessManager.ThrowIfInternetAccessDisabled();
         await _stateLock.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -101,6 +103,7 @@ public sealed class FirebaseAnonymousAuthenticator : IDisposable
 
     public async Task<FirebaseAuthSession?> TryGetExistingSessionAsync(CancellationToken ct)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseAnonymousAuthenticator));
         if (InternetAccessManager.IsInternetAccessDisabled) return null;
 
         await _stateLock.WaitAsync(ct).ConfigureAwait(false);
