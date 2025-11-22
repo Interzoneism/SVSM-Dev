@@ -35,6 +35,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly Func<bool>? _requireExactVersionMatch;
     private readonly string _searchIndex;
     private readonly Func<string?, string?, bool>? _shouldSkipVersion;
+    private HashSet<string>? _cachedTagSet;
     private string? _activationError;
     private int? _databaseComments;
     private int? _databaseDownloads;
@@ -927,6 +928,7 @@ public sealed class ModListItemViewModel : ObservableObject
         if (HasDifferentContent(DatabaseTags, tags))
         {
             DatabaseTags = tags;
+            _cachedTagSet = null;
             OnPropertyChanged(nameof(DatabaseTags));
             OnPropertyChanged(nameof(DatabaseTagsDisplay));
         }
@@ -1086,8 +1088,39 @@ public sealed class ModListItemViewModel : ObservableObject
         if (DatabaseTags.Count == 0) return;
 
         DatabaseTags = Array.Empty<string>();
+        _cachedTagSet = null;
         OnPropertyChanged(nameof(DatabaseTags));
         OnPropertyChanged(nameof(DatabaseTagsDisplay));
+    }
+
+    /// <summary>
+    /// Gets a cached HashSet of database tags for efficient filtering operations.
+    /// The set is created lazily and cached until the tags are updated.
+    /// </summary>
+    public HashSet<string>? GetCachedTagSet()
+    {
+        if (_cachedTagSet != null)
+            return _cachedTagSet;
+
+        if (DatabaseTags.Count == 0)
+            return null;
+
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var tag in DatabaseTags)
+        {
+            if (string.IsNullOrWhiteSpace(tag)) continue;
+
+            var trimmed = tag.Trim();
+            if (trimmed.Length == 0) continue;
+
+            set.Add(trimmed);
+        }
+
+        if (set.Count == 0)
+            return null;
+
+        _cachedTagSet = set;
+        return _cachedTagSet;
     }
 
     public void RefreshSkippedUpdateState()

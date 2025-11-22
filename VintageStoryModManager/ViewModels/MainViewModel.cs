@@ -2886,6 +2886,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return result.Tags ?? Array.Empty<string>();
     }
 
+    private static bool ContainsAllTags(HashSet<string>? sourceTagSet, IReadOnlyList<string> requiredTags)
+    {
+        if (requiredTags.Count == 0) return true;
+
+        if (sourceTagSet is null || sourceTagSet.Count == 0) return false;
+
+        foreach (var required in requiredTags)
+            if (!sourceTagSet.Contains(required))
+                return false;
+
+        return true;
+    }
+
     private static bool ContainsAllTags(IEnumerable<string>? sourceTags, IReadOnlyList<string> requiredTags)
     {
         if (requiredTags.Count == 0) return true;
@@ -3857,8 +3870,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (item is not ModListItemViewModel mod) return false;
 
-        if (_selectedInstalledTags.Count > 0 && !ContainsAllTags(mod.DatabaseTags, _selectedInstalledTags))
-            return false;
+        if (_selectedInstalledTags.Count > 0)
+        {
+            var cachedTagSet = mod.GetCachedTagSet();
+            if (!ContainsAllTags(cachedTagSet, _selectedInstalledTags))
+                return false;
+        }
 
         if (_searchTokens.Length == 0) return true;
 
