@@ -429,7 +429,7 @@
             <RowDefinition />
             <RowDefinition Height="Auto" MinHeight="40" />
         </Grid.RowDefinitions>
-        <Grid x:Name="TOP" Grid.Row="0" Height="33" VerticalAlignment="Top" Margin="16,0,16,0">
+        <Grid x:Name="TOP" Height="45" VerticalAlignment="Center" Margin="16,0,16,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -765,12 +765,11 @@
 
             <Button x:Name="DiscordButton"
                     Grid.Column="2"
-                    Width="32"
-                    Height="32"
+                    Width="45.4"
+                    Height="45"
                     Padding="0"
-                    Margin="8,0,0,0"
+                    Margin="8,8,0,0"
                     VerticalAlignment="Center"
-                    Background="Transparent"
                     BorderThickness="0"
                     ToolTip="Join the Simple VS Manager Discord"
                     Click="DiscordButton_OnClick">
