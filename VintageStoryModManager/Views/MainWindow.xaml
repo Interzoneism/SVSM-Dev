@@ -774,6 +774,12 @@
                     BorderThickness="0"
                     ToolTip="Join the Simple VS Manager Discord"
                     Click="DiscordButton_OnClick">
+                <Button.Template>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </ControlTemplate>
+                </Button.Template>
                 <Image Source="/Resources/Discord.png"
                        Width="26"
                        Height="26"
