@@ -228,9 +228,6 @@ public sealed class ModDatabaseService
                 requireExactVersionMatch, cancellationToken)
             .ConfigureAwait(false);
 
-        // Flush cache after single mod query (not a bulk operation)
-        await CacheService.FlushAsync(cancellationToken).ConfigureAwait(false);
-
         return info ?? cached;
     }
 

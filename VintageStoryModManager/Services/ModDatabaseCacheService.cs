@@ -254,6 +254,48 @@ internal sealed class ModDatabaseCacheService : IDisposable
         }
     }
 
+    private void SaveCacheSync(Dictionary<string, CachedModDatabaseInfo> index)
+    {
+        var cacheFilePath = GetCacheFilePath();
+        if (string.IsNullOrWhiteSpace(cacheFilePath)) return;
+
+        var directory = Path.GetDirectoryName(cacheFilePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+            Directory.CreateDirectory(directory);
+
+        var tempPath = cacheFilePath + ".tmp";
+
+        var cache = new ModDatabaseCache
+        {
+            SchemaVersion = CacheSchemaVersion,
+            Entries = index
+        };
+
+        using (FileStream tempStream = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            JsonSerializer.Serialize(tempStream, cache, SerializerOptions);
+        }
+
+        try
+        {
+            File.Move(tempPath, cacheFilePath, true);
+        }
+        catch (IOException)
+        {
+            try
+            {
+                // Retry with replace semantics when running on platforms that require it.
+                File.Replace(tempPath, cacheFilePath, null);
+            }
+            catch
+            {
+                // Clean up temp file only if replace also failed
+                if (File.Exists(tempPath)) File.Delete(tempPath);
+                throw;
+            }
+        }
+    }
+
     private static string GetCacheKey(string modId, string? normalizedGameVersion)
     {
         if (string.IsNullOrWhiteSpace(modId))
@@ -527,7 +569,9 @@ internal sealed class ModDatabaseCacheService : IDisposable
             try
             {
                 // Use synchronous save for disposal to ensure data is written
-                FlushAsync(CancellationToken.None).GetAwaiter().GetResult();
+                // without risking deadlocks from async operations
+                SaveCacheSync(_cacheIndex);
+                _isDirty = false;
             }
             catch
             {
