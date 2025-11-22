@@ -5,12 +5,10 @@ namespace VintageStoryModManager.Services;
 
 /// <summary>
 ///     Provides disk-backed caching for mod manifests and icons so zip archives do not need to be reopened repeatedly.
+///     All cache entries are stored in a single file for improved IO performance.
 /// </summary>
 internal static class ModManifestCacheService
 {
-    private static readonly string MetadataFolderName = DevConfig.MetadataFolderName;
-    private static readonly string IndexFileName = DevConfig.MetadataIndexFileName;
-
     private static readonly object IndexLock = new();
     private static Dictionary<string, CacheEntry>? _index;
 
@@ -23,9 +21,6 @@ internal static class ModManifestCacheService
     {
         manifestJson = string.Empty;
         iconBytes = null;
-
-        var root = GetMetadataRoot();
-        if (root is null) return false;
 
         var normalizedPath = NormalizePath(sourcePath);
         var ticks = ToUniversalTicks(lastWriteTimeUtc);
@@ -42,19 +37,11 @@ internal static class ModManifestCacheService
                 return false;
             }
 
-            if (!File.Exists(entry.ManifestPath))
-            {
-                index.Remove(normalizedPath);
-                SaveIndexLocked(index);
-                return false;
-            }
-
             try
             {
-                manifestJson = File.ReadAllText(entry.ManifestPath);
-                if (!string.IsNullOrWhiteSpace(entry.IconPath) && File.Exists(entry.IconPath))
-                    iconBytes = File.ReadAllBytes(entry.IconPath);
-                return true;
+                manifestJson = entry.ManifestJson ?? string.Empty;
+                iconBytes = entry.IconBytes;
+                return !string.IsNullOrWhiteSpace(manifestJson);
             }
             catch (Exception)
             {
@@ -72,16 +59,17 @@ internal static class ModManifestCacheService
             _index = null;
         }
 
-        var root = GetMetadataRoot();
-        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) return;
+        var cacheFilePath = GetCacheFilePath();
+        if (string.IsNullOrWhiteSpace(cacheFilePath)) return;
 
         try
         {
-            Directory.Delete(root, true);
+            if (File.Exists(cacheFilePath))
+                File.Delete(cacheFilePath);
         }
         catch (Exception ex)
         {
-            throw new IOException($"Failed to delete the mod metadata cache at {root}.", ex);
+            throw new IOException($"Failed to delete the mod metadata cache at {cacheFilePath}.", ex);
         }
     }
 
@@ -94,31 +82,11 @@ internal static class ModManifestCacheService
         string manifestJson,
         byte[]? iconBytes)
     {
-        var root = GetMetadataRoot();
-        if (root is null) return;
-
         var normalizedPath = NormalizePath(sourcePath);
         var ticks = ToUniversalTicks(lastWriteTimeUtc);
 
-        var sanitizedModId = ModCacheLocator.SanitizeFileName(modId, "mod");
-        var sanitizedVersion = ModCacheLocator.SanitizeFileName(version, "noversion");
-
         try
         {
-            Directory.CreateDirectory(root);
-            var modDirectory = Path.Combine(root, sanitizedModId);
-            Directory.CreateDirectory(modDirectory);
-
-            var manifestPath = Path.Combine(modDirectory, sanitizedVersion + ".json");
-            File.WriteAllText(manifestPath, manifestJson);
-
-            string? iconPath = null;
-            if (iconBytes is { Length: > 0 })
-            {
-                iconPath = Path.Combine(modDirectory, sanitizedVersion + ".icon");
-                File.WriteAllBytes(iconPath, iconBytes);
-            }
-
             lock (IndexLock)
             {
                 var index = EnsureIndexLocked();
@@ -130,14 +98,10 @@ internal static class ModManifestCacheService
 
                 entry.ModId = modId;
                 entry.Version = version;
-                entry.ManifestPath = manifestPath;
+                entry.ManifestJson = manifestJson;
+                entry.IconBytes = iconBytes;
                 entry.Length = length;
                 entry.LastWriteTimeUtcTicks = ticks;
-
-                if (iconPath != null)
-                    entry.IconPath = iconPath;
-                else if (!string.IsNullOrWhiteSpace(entry.IconPath) && !File.Exists(entry.IconPath))
-                    entry.IconPath = null;
 
                 SaveIndexLocked(index);
             }
@@ -165,39 +129,22 @@ internal static class ModManifestCacheService
 
     private static Dictionary<string, CacheEntry> LoadIndex()
     {
-        var indexPath = GetIndexPath();
-        if (indexPath == null) return new Dictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
+        var cacheFilePath = GetCacheFilePath();
+        if (string.IsNullOrWhiteSpace(cacheFilePath) || !File.Exists(cacheFilePath))
+            return new Dictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
 
         try
         {
-            if (!File.Exists(indexPath)) return new Dictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
-
-            var json = File.ReadAllText(indexPath);
-            var model = JsonSerializer.Deserialize<CacheIndex>(json, new JsonSerializerOptions
+            var json = File.ReadAllText(cacheFilePath);
+            var model = JsonSerializer.Deserialize<ModManifestCache>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
 
-            if (model?.Entries == null) return new Dictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
+            if (model?.Entries == null)
+                return new Dictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
 
-            var dictionary = new Dictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
-            foreach (var entry in model.Entries)
-            {
-                if (string.IsNullOrWhiteSpace(entry.SourcePath) ||
-                    string.IsNullOrWhiteSpace(entry.ManifestPath)) continue;
-
-                dictionary[entry.SourcePath] = new CacheEntry
-                {
-                    ModId = entry.ModId ?? string.Empty,
-                    Version = entry.Version,
-                    ManifestPath = entry.ManifestPath,
-                    IconPath = entry.IconPath,
-                    Length = entry.Length,
-                    LastWriteTimeUtcTicks = entry.LastWriteTimeUtcTicks
-                };
-            }
-
-            return dictionary;
+            return model.Entries;
         }
         catch (Exception)
         {
@@ -207,33 +154,40 @@ internal static class ModManifestCacheService
 
     private static void SaveIndexLocked(Dictionary<string, CacheEntry> index)
     {
-        var indexPath = GetIndexPath();
-        if (indexPath == null) return;
+        var cacheFilePath = GetCacheFilePath();
+        if (string.IsNullOrWhiteSpace(cacheFilePath)) return;
 
         try
         {
-            var directory = Path.GetDirectoryName(indexPath);
+            var directory = Path.GetDirectoryName(cacheFilePath);
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
 
-            var model = new CacheIndex
+            var model = new ModManifestCache
             {
-                Entries = new List<CacheIndexEntry>(index.Count)
+                Entries = index
             };
 
-            foreach (var pair in index)
-                model.Entries.Add(new CacheIndexEntry
-                {
-                    SourcePath = pair.Key,
-                    ModId = pair.Value.ModId,
-                    Version = pair.Value.Version,
-                    ManifestPath = pair.Value.ManifestPath,
-                    IconPath = pair.Value.IconPath,
-                    Length = pair.Value.Length,
-                    LastWriteTimeUtcTicks = pair.Value.LastWriteTimeUtcTicks
-                });
-
             var json = JsonSerializer.Serialize(model);
-            File.WriteAllText(indexPath, json);
+            var tempPath = cacheFilePath + ".tmp";
+            
+            File.WriteAllText(tempPath, json);
+            
+            try
+            {
+                File.Move(tempPath, cacheFilePath, true);
+            }
+            catch (IOException)
+            {
+                try
+                {
+                    // Retry with replace semantics when running on platforms that require it.
+                    File.Replace(tempPath, cacheFilePath, null);
+                }
+                finally
+                {
+                    if (File.Exists(tempPath)) File.Delete(tempPath);
+                }
+            }
         }
         catch (Exception)
         {
@@ -241,16 +195,12 @@ internal static class ModManifestCacheService
         }
     }
 
-    private static string? GetMetadataRoot()
+    private static string? GetCacheFilePath()
     {
         var baseDirectory = ModCacheLocator.GetManagerDataDirectory();
-        return baseDirectory is null ? null : Path.Combine(baseDirectory, MetadataFolderName);
-    }
+        if (string.IsNullOrWhiteSpace(baseDirectory)) return null;
 
-    private static string? GetIndexPath()
-    {
-        var root = GetMetadataRoot();
-        return root is null ? null : Path.Combine(root, IndexFileName);
+        return Path.Combine(baseDirectory, "mod-metadata-cache.json");
     }
 
     private static string NormalizePath(string sourcePath)
@@ -272,28 +222,17 @@ internal static class ModManifestCacheService
         return value.ToUniversalTime().Ticks;
     }
 
+    private sealed class ModManifestCache
+    {
+        public Dictionary<string, CacheEntry> Entries { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    }
+
     private sealed class CacheEntry
     {
         public string ModId { get; set; } = string.Empty;
         public string? Version { get; set; }
-        public string ManifestPath { get; set; } = string.Empty;
-        public string? IconPath { get; set; }
-        public long Length { get; set; }
-        public long LastWriteTimeUtcTicks { get; set; }
-    }
-
-    private sealed class CacheIndex
-    {
-        public List<CacheIndexEntry> Entries { get; set; } = new();
-    }
-
-    private sealed class CacheIndexEntry
-    {
-        public string SourcePath { get; set; } = string.Empty;
-        public string ModId { get; set; } = string.Empty;
-        public string? Version { get; set; }
-        public string ManifestPath { get; set; } = string.Empty;
-        public string? IconPath { get; set; }
+        public string? ManifestJson { get; set; }
+        public byte[]? IconBytes { get; set; }
         public long Length { get; set; }
         public long LastWriteTimeUtcTicks { get; set; }
     }
