@@ -5039,14 +5039,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _pendingSearchCts?.Dispose();
             _pendingSearchCts = new CancellationTokenSource();
 
-            var cts = _pendingSearchCts;
-
             // Initialize or restart the debounce timer
-            // Note: Timer callback captures CTS, but it's cleaned up on each new search
-            // and on disposal, preventing memory leaks
+            // Note: Pass null to callback as we check _pendingSearchCts inside the callback
+            // instead of capturing it in a closure, which prevents stale CTS references
             if (_searchDebounceTimer == null)
             {
-                _searchDebounceTimer = new Timer(_ => ExecuteInstalledModsSearch(cts), null,
+                _searchDebounceTimer = new Timer(OnSearchDebounceTimerElapsed, null,
                     InstalledModsSearchDebounce, Timeout.InfiniteTimeSpan);
             }
             else
@@ -5054,6 +5052,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 _searchDebounceTimer.Change(InstalledModsSearchDebounce, Timeout.InfiniteTimeSpan);
             }
         }
+    }
+
+    private void OnSearchDebounceTimerElapsed(object? state)
+    {
+        // Get the current CTS inside the callback to avoid capturing stale references
+        CancellationTokenSource? cts;
+        lock (_searchDebounceLock)
+        {
+            if (_disposed) return;
+            cts = _pendingSearchCts;
+        }
+
+        if (cts == null) return;
+        ExecuteInstalledModsSearch(cts);
     }
 
     private void ExecuteInstalledModsSearch(CancellationTokenSource cts)
