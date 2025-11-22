@@ -2220,6 +2220,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void OnSearchResultsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        // Schedule tag refresh BEFORE attaching search results to ensure the pending flag is set
+        // This prevents user reports from being queued before tags start loading
+        if (_isTagsColumnVisible && (e.Action == NotifyCollectionChangedAction.Add || 
+                                      e.Action == NotifyCollectionChangedAction.Replace || 
+                                      e.Action == NotifyCollectionChangedAction.Reset))
+        {
+            ScheduleModDatabaseTagRefresh();
+        }
+
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
@@ -2239,7 +2248,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 break;
         }
 
-        ScheduleModDatabaseTagRefresh();
+        // For Remove action, also schedule refresh to update the tag list
+        if (e.Action == NotifyCollectionChangedAction.Remove)
+        {
+            ScheduleModDatabaseTagRefresh();
+        }
     }
 
     private static IEnumerable<ModListItemViewModel> EnumerateModItems(IList? items)
