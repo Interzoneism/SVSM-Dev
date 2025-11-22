@@ -32,8 +32,8 @@ public partial class BulkCompatibilityPromptWindow : Window
         }
         else
         {
-            InstallCompatibleButton.Visibility = Visibility.Collapsed;
-            InstallCompatibleAllButton.Visibility = Visibility.Collapsed;
+            InstallCompatibleButton.Visibility = Visibility.Hidden;
+            InstallCompatibleAllButton.Visibility = Visibility.Hidden;
         }
 
         SkipButton.Content = "Skip this mod";

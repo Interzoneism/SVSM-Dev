@@ -685,7 +685,7 @@
                               Padding="12,6"
                               IsEnabled="False"
                               Focusable="False"
-                              Visibility="Collapsed"
+                              Visibility="Hidden"
                               Opacity="0.75" />
                     <Separator />
                     <MenuItem Header="Open manager config folder"
@@ -703,7 +703,7 @@
                     <MenuItem x:Name="DeveloperProfilesMenuItem"
                               Header="Developer Profiles"
                               Padding="12,6"
-                              Visibility="Collapsed" />
+                              Visibility="Hidden" />
                     <Separator />
                     <MenuItem x:Name="DisableInternetAccessMenuItem"
                               Header="_Disable Internet Access"
@@ -744,7 +744,7 @@
                         VerticalAlignment="Center"
                         HorizontalAlignment="Left" Height="0" Width="0">
                 <TextBlock x:Name="ManagerUpdateLinkTextBlock"
-                           Visibility="Collapsed"
+                           Visibility="Hidden"
                            Margin="0,0,12,0"
                            VerticalAlignment="Center">
                     <Hyperlink NavigateUri="https://mods.vintagestory.at/simplevsmanager"
@@ -755,7 +755,7 @@
                 </TextBlock>
 
                 <TextBlock x:Name="ModUsagePromptTextBlock"
-                           Visibility="Collapsed"
+                           Visibility="Hidden"
                            VerticalAlignment="Center">
                     <Hyperlink Foreground="{DynamicResource Brush.Text.Emphasis}"
                                Click="ModUsagePromptLink_OnClick">
@@ -796,7 +796,7 @@
                                 <Rectangle x:Name="DiscordHoverOverlay"
                                            Width="{Binding ActualWidth, ElementName=DiscordIcon}"
                                            Height="{Binding ActualHeight, ElementName=DiscordIcon}"
-                                           Visibility="Collapsed"
+                                           Visibility="Hidden"
                                            Fill="#5865F2">
                                     <Rectangle.OpacityMask>
                                         <ImageBrush ImageSource="/Resources/Discord.png"
@@ -812,7 +812,7 @@
                                         Value="Visible" />
                                 <Setter TargetName="DiscordNormalOverlay"
                                         Property="Visibility"
-                                        Value="Collapsed" />
+                                        Value="Hidden" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -830,7 +830,7 @@
                    Padding="3,0,0,3"
                    Foreground="{DynamicResource Brush.Text.Primary}"
                    Text="Profile: Default"
-                   Visibility="Collapsed"
+                   Visibility="Hidden"
                    Opacity="0.5"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top" />

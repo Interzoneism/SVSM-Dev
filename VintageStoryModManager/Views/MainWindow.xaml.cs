@@ -299,7 +299,7 @@ public partial class MainWindow : Window
             var managerVersion = GetManagerInformationalVersion();
             if (string.IsNullOrWhiteSpace(managerVersion))
             {
-                ManagerVersionMenuItem.Visibility = Visibility.Collapsed;
+                ManagerVersionMenuItem.Visibility = Visibility.Hidden;
             }
             else
             {
@@ -399,7 +399,7 @@ public partial class MainWindow : Window
 
         if (column == null) return;
 
-        column.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        column.Visibility = isVisible ? Visibility.Visible : Visibility.Hidden;
     }
 
     private void NotifyViewModelOfInstalledColumnVisibility(InstalledModsColumn column, bool isVisible)
@@ -779,7 +779,7 @@ public partial class MainWindow : Window
     {
         if (ModUsagePromptTextBlock is null) return;
 
-        ModUsagePromptTextBlock.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        ModUsagePromptTextBlock.Visibility = isVisible ? Visibility.Visible : Visibility.Hidden;
     }
 
     private async Task ShowModUsagePromptDialogAsync()
@@ -1327,7 +1327,7 @@ public partial class MainWindow : Window
 
         if (string.IsNullOrWhiteSpace(gameVersion))
         {
-            GameVersionMenuItem.Visibility = Visibility.Collapsed;
+            GameVersionMenuItem.Visibility = Visibility.Hidden;
             return;
         }
 
@@ -6601,14 +6601,14 @@ public partial class MainWindow : Window
 
         if (!DeveloperProfileManager.DevDebug)
         {
-            DeveloperProfilesMenuItem.Visibility = Visibility.Collapsed;
+            DeveloperProfilesMenuItem.Visibility = Visibility.Hidden;
             return;
         }
 
         var profiles = DeveloperProfileManager.GetProfiles();
         if (profiles.Count == 0)
         {
-            DeveloperProfilesMenuItem.Visibility = Visibility.Collapsed;
+            DeveloperProfilesMenuItem.Visibility = Visibility.Hidden;
             return;
         }
 
@@ -6687,7 +6687,7 @@ public partial class MainWindow : Window
         var hasAdditionalProfiles = profiles.Any(name => !_userConfiguration.IsDefaultGameProfile(name));
         if (!hasAdditionalProfiles)
         {
-            ActiveGameProfileTextBlock.Visibility = Visibility.Collapsed;
+            ActiveGameProfileTextBlock.Visibility = Visibility.Hidden;
             return;
         }
 
@@ -11077,7 +11077,7 @@ public partial class MainWindow : Window
         {
             if (entry is null)
             {
-                InstallCloudModlistButton.Visibility = Visibility.Collapsed;
+                InstallCloudModlistButton.Visibility = Visibility.Hidden;
                 InstallCloudModlistButton.ToolTip = null;
             }
             else
@@ -11129,14 +11129,14 @@ public partial class MainWindow : Window
 
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
-            ManagerUpdateLinkTextBlock.Visibility = Visibility.Collapsed;
+            ManagerUpdateLinkTextBlock.Visibility = Visibility.Hidden;
             return;
         }
 
         var currentVersion = GetManagerInformationalVersion();
         if (string.IsNullOrWhiteSpace(currentVersion))
         {
-            ManagerUpdateLinkTextBlock.Visibility = Visibility.Collapsed;
+            ManagerUpdateLinkTextBlock.Visibility = Visibility.Hidden;
             return;
         }
 
@@ -11150,7 +11150,7 @@ public partial class MainWindow : Window
             var hasUpdate = info?.LatestVersion is string latestVersion
                             && VersionStringUtility.IsCandidateVersionNewer(latestVersion, currentVersion);
 
-            ManagerUpdateLinkTextBlock.Visibility = hasUpdate ? Visibility.Visible : Visibility.Collapsed;
+            ManagerUpdateLinkTextBlock.Visibility = hasUpdate ? Visibility.Visible : Visibility.Hidden;
         }
         catch (OperationCanceledException)
         {
@@ -11158,7 +11158,7 @@ public partial class MainWindow : Window
         }
         catch (Exception)
         {
-            ManagerUpdateLinkTextBlock.Visibility = Visibility.Collapsed;
+            ManagerUpdateLinkTextBlock.Visibility = Visibility.Hidden;
         }
     }
 
@@ -12539,8 +12539,7 @@ public partial class MainWindow : Window
             {
                 var allowDeletion = _viewModel?.SearchModDatabase != true;
                 SelectedModDeleteButton.DataContext = null;
-                SelectedModDeleteButton.Visibility = allowDeletion ? Visibility.Visible : Visibility.Collapsed;
-                SelectedModDeleteButton.IsEnabled = allowDeletion;
+                SelectedModDeleteButton.Visibility = allowDeletion ? Visibility.Visible : Visibility.Hidden;
             }
         }
         else if (_viewModel?.SearchModDatabase == true)
@@ -12582,8 +12581,7 @@ public partial class MainWindow : Window
         if (_viewModel?.SearchModDatabase != true || mod is null)
         {
             SelectedModInstallButton.DataContext = null;
-            SelectedModInstallButton.Visibility = Visibility.Collapsed;
-            SelectedModInstallButton.IsEnabled = false;
+            SelectedModInstallButton.Visibility = Visibility.Hidden;
             return;
         }
 
@@ -12599,8 +12597,7 @@ public partial class MainWindow : Window
         if (mod is null || !mod.CanFixDependencyIssues || _isModUpdateInProgress)
         {
             SelectedModFixButton.DataContext = null;
-            SelectedModFixButton.Visibility = Visibility.Collapsed;
-            SelectedModFixButton.IsEnabled = false;
+            SelectedModFixButton.Visibility = Visibility.Hidden;
             return;
         }
 
@@ -12616,8 +12613,7 @@ public partial class MainWindow : Window
         if (!_userConfiguration.EnableServerOptions || mod is null)
         {
             SelectedModCopyForServerButton.DataContext = null;
-            SelectedModCopyForServerButton.Visibility = Visibility.Collapsed;
-            SelectedModCopyForServerButton.IsEnabled = false;
+            SelectedModCopyForServerButton.Visibility = Visibility.Hidden;
             return;
         }
 
@@ -12625,8 +12621,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(command))
         {
             SelectedModCopyForServerButton.DataContext = null;
-            SelectedModCopyForServerButton.Visibility = Visibility.Collapsed;
-            SelectedModCopyForServerButton.IsEnabled = false;
+            SelectedModCopyForServerButton.Visibility = Visibility.Hidden;
             return;
         }
 
@@ -12645,8 +12640,7 @@ public partial class MainWindow : Window
             || (requireUpdate && !mod.CanUpdate))
         {
             button.DataContext = null;
-            button.Visibility = Visibility.Collapsed;
-            button.IsEnabled = false;
+            button.Visibility = Visibility.Hidden;
             return;
         }
 

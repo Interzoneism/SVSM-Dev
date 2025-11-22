@@ -41,9 +41,9 @@ public partial class MessageDialogWindow : Window
 
     private void ConfigureButtons(MessageBoxButton buttons)
     {
-        ButtonOne.Visibility = Visibility.Collapsed;
-        ButtonTwo.Visibility = Visibility.Collapsed;
-        ButtonThree.Visibility = Visibility.Collapsed;
+        ButtonOne.Visibility = Visibility.Hidden;
+        ButtonTwo.Visibility = Visibility.Hidden;
+        ButtonThree.Visibility = Visibility.Hidden;
 
         ButtonOne.IsDefault = false;
         ButtonTwo.IsDefault = false;
@@ -83,7 +83,7 @@ public partial class MessageDialogWindow : Window
     {
         if (extraButton is null)
         {
-            ButtonExtra.Visibility = Visibility.Collapsed;
+            ButtonExtra.Visibility = Visibility.Hidden;
             ButtonExtra.Tag = null;
             _extraButtonCallback = null;
             return;
@@ -127,7 +127,7 @@ public partial class MessageDialogWindow : Window
         if (source == null)
         {
             IconImage.Source = null;
-            IconImage.Visibility = Visibility.Collapsed;
+            IconImage.Visibility = Visibility.Hidden;
         }
         else
         {

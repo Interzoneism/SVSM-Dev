@@ -19,8 +19,9 @@ public sealed class BooleanToVisibilityConverter : IValueConverter
     ///     Gets or sets a value indicating whether to use <see cref="Visibility.Hidden"/> instead of
     ///     <see cref="Visibility.Collapsed"/> when the value is false.
     ///     This improves performance for large controls by keeping them in the visual tree.
+    ///     Defaults to true for better UI responsiveness.
     /// </summary>
-    public bool UseHidden { get; set; }
+    public bool UseHidden { get; set; } = true;
 
     /// <inheritdoc />
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

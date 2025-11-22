@@ -27,7 +27,7 @@
                Height="48"
                Margin="0,0,16,0"
                VerticalAlignment="Top"
-               Visibility="Collapsed" />
+               Visibility="Hidden" />
 
         <ScrollViewer Grid.Column="1"
                       VerticalScrollBarVisibility="Auto"
