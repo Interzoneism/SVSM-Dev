@@ -37,6 +37,7 @@ public sealed class BooleanToVisibilityConverter : IValueConverter
     {
         if (value is not Visibility visibility) return Binding.DoNothing;
 
+        // When UseHidden is true, both Collapsed and Hidden are treated as false (not visible)
         var flag = visibility == Visibility.Visible;
 
         if (IsInverted) flag = !flag;
