@@ -2165,8 +2165,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                                       e.Action == NotifyCollectionChangedAction.Replace || 
                                       e.Action == NotifyCollectionChangedAction.Reset))
         {
-            if (!_isInstalledTagRefreshPending)
-                _isInstalledTagRefreshPending = true;
+            _isInstalledTagRefreshPending = true;
         }
 
         switch (e.Action)
@@ -2235,15 +2234,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private bool ShouldQueueUserReports()
+    {
+        // Only queue user reports if:
+        // 1. Either tags column is not visible, OR tags are not currently being refreshed
+        // This ensures that when both columns are visible, tags load before user reports
+        return !(_isTagsColumnVisible && _isInstalledTagRefreshPending);
+    }
+
     private void AttachInstalledMod(ModListItemViewModel mod)
     {
         if (_installedModSubscriptions.Add(mod)) mod.PropertyChanged += OnInstalledModPropertyChanged;
 
-        // Only queue user report refresh if:
-        // 1. Details refresh is allowed, AND
-        // 2. Either tags column is not visible, OR tags are not currently being refreshed
-        // This ensures that when both columns are visible, tags load before user reports
-        if (_allowModDetailsRefresh && !(_isTagsColumnVisible && _isInstalledTagRefreshPending)) 
+        if (_allowModDetailsRefresh && ShouldQueueUserReports()) 
             QueueUserReportRefresh(mod);
     }
 
@@ -2265,10 +2268,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (_searchResultSubscriptions.Add(mod)) mod.PropertyChanged += OnSearchResultPropertyChanged;
 
-        // Only queue user report refresh if:
-        // 1. Either tags column is not visible, OR tags are not currently being refreshed
-        // This ensures that when both columns are visible, tags load before user reports
-        if (!(_isTagsColumnVisible && _isInstalledTagRefreshPending))
+        if (ShouldQueueUserReports())
         {
             if (mod.CanSubmitUserReport) QueueUserReportRefresh(mod);
 
@@ -2728,11 +2728,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        // Only enable user report fetching if:
-        // 1. Details refresh is allowed, AND
-        // 2. Either tags column is not visible, OR tags are not currently being refreshed
-        // This ensures that when both columns are visible, tags load before user reports
-        if (_allowModDetailsRefresh && !(_isTagsColumnVisible && _isInstalledTagRefreshPending)) 
+        if (_allowModDetailsRefresh && ShouldQueueUserReports()) 
             EnableUserReportFetching();
     }
 
@@ -4623,10 +4619,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
                         {
                             viewModel.UpdateDatabaseInfo(preparedInfo, loadLogoImmediately);
-                            // Only queue user report refresh if:
-                            // 1. Either tags column is not visible, OR tags are not currently being refreshed
-                            // This ensures that when both columns are visible, tags load before user reports
-                            if (!(_isTagsColumnVisible && _isInstalledTagRefreshPending))
+                            if (ShouldQueueUserReports())
                                 QueueLatestReleaseUserReportRefresh(viewModel);
                         }
                     },
