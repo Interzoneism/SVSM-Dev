@@ -2775,11 +2775,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     {
                         EnableUserReportFetching();
                     }
-                    catch (Exception)
+                    catch (ObjectDisposedException)
                     {
-                        // Swallow exceptions from background user report fetching to prevent crashes
+                        // Object was disposed during delay - this is expected during shutdown
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log unexpected exceptions but don't crash - user reports are non-critical
+                        StatusLogService.AppendStatus(
+                            $"Error enabling user report fetching: {ex.Message}",
+                            true);
                     }
                 },
+                CancellationToken.None,
+                TaskContinuationOptions.None,
                 TaskScheduler.Default);
         }
         else
