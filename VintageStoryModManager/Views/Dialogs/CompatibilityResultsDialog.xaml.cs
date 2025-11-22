@@ -84,7 +84,7 @@ public partial class CompatibilityResultsDialog : Window
         if (source == null)
         {
             IconImage.Source = null;
-            IconImage.Visibility = Visibility.Collapsed;
+            IconImage.Visibility = Visibility.Hidden;
         }
         else
         {

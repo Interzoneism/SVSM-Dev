@@ -105,7 +105,7 @@
                                     <Style TargetType="TextBlock">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding ItemCount}" Value="0">
-                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Setter Property="Visibility" Value="Hidden" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding ItemCount}" Value="1">
                                                 <Setter Property="Text" Value="1 item" />
@@ -163,7 +163,7 @@
                                         <Setter Property="Visibility" Value="Visible" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding HasDisplayName}" Value="False">
-                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Setter Property="Visibility" Value="Hidden" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -180,7 +180,7 @@
                                           HorizontalAlignment="Left"
                                           Width="80"
                                           IsChecked="{Binding BooleanValue, Mode=TwoWay}"
-                                          Visibility="Collapsed">
+                                          Visibility="Hidden">
                                 <ToggleButton.Style>
                                     <Style TargetType="ToggleButton"
                                            BasedOn="{StaticResource IMM.ToggleButtonBaseStyle}">
@@ -198,7 +198,7 @@
                     </Border>
                     <DataTemplate.Triggers>
                         <DataTrigger Binding="{Binding IsBoolean}" Value="True">
-                            <Setter TargetName="ValueTextBox" Property="UIElement.Visibility" Value="Collapsed" />
+                            <Setter TargetName="ValueTextBox" Property="UIElement.Visibility" Value="Hidden" />
                             <Setter TargetName="BooleanToggle" Property="UIElement.Visibility" Value="Visible" />
                         </DataTrigger>
                     </DataTemplate.Triggers>
