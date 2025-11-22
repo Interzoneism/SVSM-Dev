@@ -28,7 +28,11 @@ internal sealed class FirebaseModlistMigrationService
         WriteIndented = true
     };
 
-    public async Task<bool> TryMigrateAsync(string? playerUid, string? playerName, CancellationToken ct)
+    public async Task<bool> TryMigrateAsync(
+        string? playerUid,
+        string? playerName,
+        UserConfigurationService? userConfiguration,
+        CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(playerUid)) return false;
 
@@ -48,22 +52,31 @@ internal sealed class FirebaseModlistMigrationService
         var modlists = await DownloadLegacyModlistsAsync(legacyStore, ct).ConfigureAwait(false);
         var preparedModlists = modlists.Select(EncodeLegacyModlist).ToList();
 
+        var legacyBackupPath = TryRotateExistingBackup(userConfiguration);
         var backupPath = TryBackupLegacyAuthFile(stateFilePath);
 
         var newStore = new FirebaseModlistStore();
         newStore.SetPlayerIdentity(playerUid, playerName);
 
         await newStore.Authenticator.GetSessionAsync(ct).ConfigureAwait(false);
+        FirebaseAnonymousAuthenticator.EnsureStartupBackup(userConfiguration);
 
         foreach (var modlist in preparedModlists)
             await newStore.SaveAsync(modlist.SlotKey, modlist.ContentJson, ct).ConfigureAwait(false);
 
         StatusLogService.AppendStatus(
             "Cloud modlists migrated to the new Firebase project successfully." +
-            (string.IsNullOrWhiteSpace(backupPath) ? string.Empty : $" Legacy auth saved to {backupPath} for reference."),
+            BuildBackupMessageSuffix(legacyBackupPath ?? backupPath),
             false);
 
         return true;
+    }
+
+    private string BuildBackupMessageSuffix(string? backupPath)
+    {
+        if (string.IsNullOrWhiteSpace(backupPath)) return string.Empty;
+
+        return $" Legacy auth saved to {backupPath} for reference.";
     }
 
     private static bool IsNewProject(string? projectId)
@@ -134,6 +147,63 @@ internal sealed class FirebaseModlistMigrationService
         catch (NotSupportedException)
         {
             return null;
+        }
+    }
+
+    private string? TryRotateExistingBackup(UserConfigurationService? userConfiguration)
+    {
+        try
+        {
+            var backupPath = FirebaseAnonymousAuthenticator.GetBackupFilePath();
+            if (string.IsNullOrWhiteSpace(backupPath)) return null;
+
+            if (!File.Exists(backupPath))
+            {
+                ResetBackupFlag(userConfiguration);
+                return null;
+            }
+
+            var directory = Path.GetDirectoryName(backupPath);
+            var fileName = Path.GetFileName(backupPath);
+
+            if (string.IsNullOrWhiteSpace(directory) || string.IsNullOrWhiteSpace(fileName))
+                return null;
+
+            var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
+            var legacyBackupPath = Path.Combine(directory, $"{fileName}.legacy.{timestamp}");
+
+            File.Move(backupPath, legacyBackupPath, true);
+
+            ResetBackupFlag(userConfiguration);
+
+            return legacyBackupPath;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        catch (SecurityException)
+        {
+            return null;
+        }
+        catch (NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    private static void ResetBackupFlag(UserConfigurationService? userConfiguration)
+    {
+        try
+        {
+            userConfiguration?.ResetFirebaseAuthBackupFlag();
+        }
+        catch
+        {
         }
     }
 

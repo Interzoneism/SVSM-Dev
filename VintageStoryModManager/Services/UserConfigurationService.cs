@@ -516,6 +516,14 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void ResetFirebaseAuthBackupFlag()
+    {
+        if (!FirebaseAuthBackupCreated) return;
+
+        FirebaseAuthBackupCreated = false;
+        Save();
+    }
+
     public void SetClientSettingsCleanupCompleted()
     {
         if (ClientSettingsCleanupCompleted) return;
