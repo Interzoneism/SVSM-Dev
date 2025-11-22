@@ -128,6 +128,8 @@ internal sealed class ModDatabaseCacheService : IDisposable
 
             var cacheModel = CreateCacheModel(modId, normalizedGameVersion, info, tagsByModVersion);
             index[cacheKey] = cacheModel;
+            
+            // Set dirty flag after successful cache update
             _isDirty = true;
 
             // Do not write to disk immediately during bulk operations
@@ -552,35 +554,30 @@ internal sealed class ModDatabaseCacheService : IDisposable
         _disposed = true;
         
         // Attempt to flush any pending changes before disposal
-        // Dispose should not block on the lock as that could cause deadlocks
-        // We check without lock first, then try to acquire with zero timeout
-        if (_isDirty && _cacheIndex != null)
+        // Try to acquire lock with zero timeout to avoid blocking during disposal
+        if (_cacheLock.Wait(0))
         {
-            // Try to acquire lock with zero timeout to avoid blocking during disposal
-            if (_cacheLock.Wait(0))
+            try
             {
-                try
+                // Check if there are pending changes to flush
+                if (_isDirty && _cacheIndex != null)
                 {
-                    // Double-check after acquiring lock
-                    if (_isDirty && _cacheIndex != null)
-                    {
-                        // Use synchronous save for disposal because Dispose cannot use async/await
-                        // (IDisposable.Dispose is a synchronous method)
-                        SaveCacheSync(_cacheIndex);
-                        _isDirty = false;
-                    }
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
-                {
-                    // Best effort - ignore expected cache write errors during disposal
-                }
-                finally
-                {
-                    _cacheLock.Release();
+                    // Use synchronous save for disposal because Dispose cannot use async/await
+                    // (IDisposable.Dispose is a synchronous method)
+                    SaveCacheSync(_cacheIndex);
+                    _isDirty = false;
                 }
             }
-            // If we couldn't acquire the lock, skip the flush (best effort)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+            {
+                // Best effort - ignore expected cache write errors during disposal
+            }
+            finally
+            {
+                _cacheLock.Release();
+            }
         }
+        // If we couldn't acquire the lock, skip the flush (best effort)
         
         _cacheLock.Dispose();
     }
