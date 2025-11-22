@@ -13,10 +13,13 @@ public static class DevConfig
     public static string SingleInstanceMutexName { get; } = "VintageStoryModManager.SingleInstance";
 
     // View model tuning.
-    public static int MaxConcurrentDatabaseRefreshes { get; } = 4;
-    public static int MaxConcurrentUserReportRefreshes { get; } = 6;
+    // Increased from 4 to 8 for better performance with many mods
+    public static int MaxConcurrentDatabaseRefreshes { get; } = 8;
+    // Increased from 6 to 8 for better performance with many mods
+    public static int MaxConcurrentUserReportRefreshes { get; } = 8;
     public static int MaxNewModsRecentMonths { get; } = 24;
-    public static int InstalledModsIncrementalBatchSize { get; } = 32;
+    // Increased from 32 to 64 for better batching performance with many mods
+    public static int InstalledModsIncrementalBatchSize { get; } = 64;
     public static int MaxModDatabaseResultLimit { get; } = int.MaxValue;
 
     // Main window behaviour and layout.
@@ -105,7 +108,8 @@ public static class DevConfig
     public static string ModDatabaseAnyGameVersionToken { get; } = "any";
 
     // Mod discovery.
-    public static int ModDiscoveryBatchSize { get; } = 16;
+    // Increased from 16 to 32 for faster parallel mod loading with many mods
+    public static int ModDiscoveryBatchSize { get; } = 32;
     public static string ModDiscoveryGeneralLoadErrorMessage { get; } = "Unable to load mod. Check log files.";
 
     public static string ModDiscoveryDependencyErrorMessage { get; } =

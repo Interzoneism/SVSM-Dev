@@ -60,7 +60,8 @@ public sealed class ModDiscoveryService
 
         if (orderedEntries.Count == 0) return Array.Empty<ModEntry>();
 
-        var maxDegree = Math.Clamp(Environment.ProcessorCount, 1, 8);
+        // Scale parallelism based on CPU cores: 1 for single-core, up to 16 for many-core systems
+        var maxDegree = Math.Clamp(Environment.ProcessorCount, 1, 16);
         var collected = new ConcurrentBag<(int Order, ModEntry Entry)>();
         var options = new ParallelOptions
         {
@@ -95,7 +96,8 @@ public sealed class ModDiscoveryService
         if (orderedEntries.Count == 0) yield break;
 
         using var results = new BlockingCollection<(int Order, ModEntry? Entry)>();
-        var maxDegree = Math.Clamp(Environment.ProcessorCount, 1, 8);
+        // Scale parallelism based on CPU cores: 1 for single-core, up to 16 for many-core systems
+        var maxDegree = Math.Clamp(Environment.ProcessorCount, 1, 16);
         var options = new ParallelOptions
         {
             MaxDegreeOfParallelism = maxDegree,

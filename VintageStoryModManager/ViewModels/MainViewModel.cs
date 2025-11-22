@@ -31,6 +31,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private const string TagsColumnName = "Tags";
     private const string UserReportsColumnName = "UserReports";
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
+    private static readonly TimeSpan InstalledModsSearchDebounce = TimeSpan.FromMilliseconds(150);
     private static readonly TimeSpan BusyStateReleaseDelay = TimeSpan.FromMilliseconds(600);
     private static readonly TimeSpan FastCheckInterval = TimeSpan.FromMinutes(2);
     private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
@@ -47,6 +48,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly ModDatabaseService _databaseService;
     private readonly ModDiscoveryService _discoveryService;
     private readonly object _fastCheckTimerLock = new();
+    private readonly object _searchDebounceLock = new();
     private readonly HashSet<ModListItemViewModel> _installedModSubscriptions = new();
     private readonly ObservableCollection<TagFilterOptionViewModel> _installedTagFilters = new();
     private readonly Dictionary<string, string> _latestReleaseUserReportEtags = new(StringComparer.OrdinalIgnoreCase);
@@ -94,6 +96,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _busyReleaseCts;
     private bool _canLoadMoreModDatabaseResults;
     private bool _disposed;
+    private Timer? _searchDebounceTimer;
+    private CancellationTokenSource? _pendingSearchCts;
     private bool _excludeInstalledModDatabaseResults;
     private Timer? _fastCheckTimer;
     private bool _hasActiveBusyScope;
@@ -612,7 +616,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
             else
             {
-                ModsView.Refresh();
+                // Debounce the installed mods search to reduce UI updates during typing
+                TriggerDebouncedInstalledModsSearch();
             }
         }
     }
@@ -695,6 +700,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             _fastCheckTimer?.Dispose();
             _fastCheckTimer = null;
+        }
+
+        lock (_searchDebounceLock)
+        {
+            _searchDebounceTimer?.Dispose();
+            _searchDebounceTimer = null;
+            _pendingSearchCts?.Cancel();
+            _pendingSearchCts?.Dispose();
+            _pendingSearchCts = null;
         }
 
         _clientSettingsWatcher.Dispose();
@@ -5011,6 +5025,80 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         catch (Exception)
         {
             // This cleanup is a best-effort operation.
+        }
+    }
+
+    private void TriggerDebouncedInstalledModsSearch()
+    {
+        lock (_searchDebounceLock)
+        {
+            if (_disposed) return;
+
+            // Cancel any pending search
+            _pendingSearchCts?.Cancel();
+            _pendingSearchCts?.Dispose();
+            _pendingSearchCts = new CancellationTokenSource();
+
+            // Initialize or restart the debounce timer
+            // Note: Pass null to callback as we check _pendingSearchCts inside the callback
+            // instead of capturing it in a closure, which prevents stale CTS references
+            if (_searchDebounceTimer == null)
+            {
+                _searchDebounceTimer = new Timer(OnSearchDebounceTimerElapsed, null,
+                    InstalledModsSearchDebounce, Timeout.InfiniteTimeSpan);
+            }
+            else
+            {
+                _searchDebounceTimer.Change(InstalledModsSearchDebounce, Timeout.InfiniteTimeSpan);
+            }
+        }
+    }
+
+    private void OnSearchDebounceTimerElapsed(object? state)
+    {
+        // Get the current CTS inside the callback to avoid capturing stale references
+        CancellationTokenSource? cts;
+        lock (_searchDebounceLock)
+        {
+            if (_disposed) return;
+            cts = _pendingSearchCts;
+        }
+
+        if (cts == null) return;
+        ExecuteInstalledModsSearch(cts);
+    }
+
+    private void ExecuteInstalledModsSearch(CancellationTokenSource cts)
+    {
+        if (cts.IsCancellationRequested) return;
+
+        // Check disposal and verify this is still the current pending search
+        bool shouldExecute;
+        lock (_searchDebounceLock)
+        {
+            if (_disposed) return;
+            shouldExecute = ReferenceEquals(cts, _pendingSearchCts);
+        }
+
+        if (!shouldExecute) return;
+
+        // Execute the search on the UI thread
+        if (Application.Current?.Dispatcher is { } dispatcher)
+        {
+            dispatcher.BeginInvoke(new Action(() => RefreshModsViewIfNotCancelled(cts)), 
+                DispatcherPriority.Background);
+        }
+        else
+        {
+            RefreshModsViewIfNotCancelled(cts);
+        }
+    }
+
+    private void RefreshModsViewIfNotCancelled(CancellationTokenSource cts)
+    {
+        if (!cts.IsCancellationRequested)
+        {
+            ModsView.Refresh();
         }
     }
 
