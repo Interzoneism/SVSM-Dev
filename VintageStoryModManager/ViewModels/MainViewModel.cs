@@ -2517,6 +2517,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public void EnableUserReportFetching()
     {
+        // This method queues user reports for all mods when called.
+        // It should only be called when tags have completed loading (if tags column is visible),
+        // or when user reports column is made visible while tags are not loading.
+        // Individual attach methods use ShouldQueueUserReports() to prevent premature queueing.
+        
         if (!_areUserReportsVisible) return;
 
         if (_hasEnabledUserReportFetching) return;
