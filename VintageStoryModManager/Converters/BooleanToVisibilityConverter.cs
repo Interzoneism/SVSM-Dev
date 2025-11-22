@@ -15,6 +15,13 @@ public sealed class BooleanToVisibilityConverter : IValueConverter
     /// </summary>
     public bool IsInverted { get; set; }
 
+    /// <summary>
+    ///     Gets or sets a value indicating whether to use <see cref="Visibility.Hidden"/> instead of
+    ///     <see cref="Visibility.Collapsed"/> when the value is false.
+    ///     This improves performance for large controls by keeping them in the visual tree.
+    /// </summary>
+    public bool UseHidden { get; set; }
+
     /// <inheritdoc />
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
@@ -22,7 +29,7 @@ public sealed class BooleanToVisibilityConverter : IValueConverter
 
         if (IsInverted) flag = !flag;
 
-        return flag ? Visibility.Visible : Visibility.Collapsed;
+        return flag ? Visibility.Visible : (UseHidden ? Visibility.Hidden : Visibility.Collapsed);
     }
 
     /// <inheritdoc />
