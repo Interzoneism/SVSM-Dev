@@ -12540,6 +12540,7 @@ public partial class MainWindow : Window
                 var allowDeletion = _viewModel?.SearchModDatabase != true;
                 SelectedModDeleteButton.DataContext = null;
                 SelectedModDeleteButton.Visibility = allowDeletion ? Visibility.Visible : Visibility.Hidden;
+                SelectedModDeleteButton.IsEnabled = allowDeletion;
             }
         }
         else if (_viewModel?.SearchModDatabase == true)
@@ -12582,6 +12583,7 @@ public partial class MainWindow : Window
         {
             SelectedModInstallButton.DataContext = null;
             SelectedModInstallButton.Visibility = Visibility.Hidden;
+            SelectedModInstallButton.IsEnabled = false;
             return;
         }
 
@@ -12598,6 +12600,7 @@ public partial class MainWindow : Window
         {
             SelectedModFixButton.DataContext = null;
             SelectedModFixButton.Visibility = Visibility.Hidden;
+            SelectedModFixButton.IsEnabled = false;
             return;
         }
 
@@ -12614,6 +12617,7 @@ public partial class MainWindow : Window
         {
             SelectedModCopyForServerButton.DataContext = null;
             SelectedModCopyForServerButton.Visibility = Visibility.Hidden;
+            SelectedModCopyForServerButton.IsEnabled = false;
             return;
         }
 
@@ -12622,6 +12626,7 @@ public partial class MainWindow : Window
         {
             SelectedModCopyForServerButton.DataContext = null;
             SelectedModCopyForServerButton.Visibility = Visibility.Hidden;
+            SelectedModCopyForServerButton.IsEnabled = false;
             return;
         }
 
@@ -12641,6 +12646,7 @@ public partial class MainWindow : Window
         {
             button.DataContext = null;
             button.Visibility = Visibility.Hidden;
+            button.IsEnabled = false;
             return;
         }
 
