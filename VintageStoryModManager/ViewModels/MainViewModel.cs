@@ -2813,16 +2813,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Collect tags more efficiently without intermediate ToList()
                 var normalized = await Task.Run(() =>
                 {
-                    var tagSnapshot = new List<string>(capacity: _mods.Count * 3);
+                    var tagList = new List<string>(capacity: _mods.Count * DevConfig.AverageTagsPerMod);
                     foreach (var mod in _mods)
                     {
                         if (mod.DatabaseTags is { Count: > 0 } tags)
                         {
-                            tagSnapshot.AddRange(tags);
+                            tagList.AddRange(tags);
                         }
                     }
-                    tagSnapshot.AddRange(_selectedInstalledTags);
-                    return NormalizeAndSortTags(tagSnapshot);
+                    tagList.AddRange(_selectedInstalledTags);
+                    return NormalizeAndSortTags(tagList);
                 }).ConfigureAwait(false);
 
                 await InvokeOnDispatcherAsync(
@@ -2894,7 +2894,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 var normalized = await Task.Run(() =>
                 {
                     var existing = _modDatabaseAvailableTags;
-                    var tagList = new List<string>(capacity: existing.Count + _searchResults.Count * 3);
+                    var tagList = new List<string>(capacity: existing.Count + _searchResults.Count * DevConfig.AverageTagsPerMod);
                     tagList.AddRange(existing);
                     
                     foreach (var mod in _searchResults)
@@ -3042,7 +3042,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (!_isTagsColumnVisible) return;
 
-        var tagList = new List<string>(capacity: _modDatabaseAvailableTags.Count + _searchResults.Count * 3);
+        var tagList = new List<string>(capacity: _modDatabaseAvailableTags.Count + _searchResults.Count * DevConfig.AverageTagsPerMod);
         tagList.AddRange(_modDatabaseAvailableTags);
         
         foreach (var mod in _searchResults)

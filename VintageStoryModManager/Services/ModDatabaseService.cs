@@ -77,6 +77,7 @@ public sealed class ModDatabaseService
         var internetDisabled = InternetAccessManager.IsInternetAccessDisabled;
 
         using var semaphore = new SemaphoreSlim(MaxConcurrentMetadataRequests);
+        // Pre-allocate with reasonable initial capacity (actual collection count if available, otherwise 16 as fallback)
         var tasks = new List<Task>(capacity: mods is ICollection<ModEntry> collection ? collection.Count : 16);
 
         foreach (var mod in mods)
