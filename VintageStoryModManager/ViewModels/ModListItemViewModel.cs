@@ -2029,14 +2029,24 @@ public sealed class ModListItemViewModel : ObservableObject
         var image = CreateImageSafely(
             () =>
             {
-                using MemoryStream stream = new(buffer);
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.StreamSource = stream;
-                bitmap.EndInit();
-                TryFreezeImageSource(bitmap, $"{context} (byte stream)", LogDebug);
-                return bitmap;
+                var stream = new MemoryStream(buffer);
+                try
+                {
+                    stream.Position = 0; // Ensure stream is at the beginning
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.StreamSource = stream;
+                    bitmap.EndInit();
+                    TryFreezeImageSource(bitmap, $"{context} (byte stream)", LogDebug);
+                    // Force the bitmap to load immediately by accessing PixelWidth
+                    _ = bitmap.PixelWidth;
+                    return bitmap;
+                }
+                finally
+                {
+                    stream.Dispose();
+                }
             },
             $"{context} (byte stream)");
 
@@ -2101,7 +2111,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private static void LogDebug(string message)
     {
-        _ = message;
+        System.Diagnostics.Debug.WriteLine($"[ModListItemVM] {message}");
     }
 
     private static void TryFreezeImageSource(ImageSource image, string context, Action<string>? log)

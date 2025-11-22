@@ -1188,33 +1188,44 @@ public sealed class ModDiscoveryService
 
     private static byte[]? TryLoadBundledDefaultIcon()
     {
-        const string resourcePath = "Resources/mod-default.png";
-        try
+        // Try multiple resource path formats to ensure we can find the embedded icon
+        var resourcePaths = new[]
         {
-            var resourceUri = new Uri(resourcePath, UriKind.Relative);
-            var resource = Application.GetResourceStream(resourceUri);
-            if (resource?.Stream != null)
+            "Resources/mod-default.png",
+            "/Resources/mod-default.png",
+            "pack://application:,,,/Resources/mod-default.png",
+            "pack://application:,,,/VintageStoryModManager;component/Resources/mod-default.png"
+        };
+
+        foreach (var resourcePath in resourcePaths)
+        {
+            try
             {
-                using var stream = resource.Stream;
-                using var memory = new MemoryStream();
-                stream.CopyTo(memory);
-                return memory.ToArray();
+                var resourceUri = new Uri(resourcePath, UriKind.RelativeOrAbsolute);
+                var resource = Application.GetResourceStream(resourceUri);
+                if (resource?.Stream != null)
+                {
+                    using var stream = resource.Stream;
+                    using var memory = new MemoryStream();
+                    stream.CopyTo(memory);
+                    return memory.ToArray();
+                }
             }
-        }
-        catch (IOException)
-        {
-        }
-        catch (NotSupportedException)
-        {
-        }
-        catch (SecurityException)
-        {
-        }
-        catch (InvalidOperationException)
-        {
-        }
-        catch (UriFormatException)
-        {
+            catch (IOException)
+            {
+            }
+            catch (NotSupportedException)
+            {
+            }
+            catch (SecurityException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            catch (UriFormatException)
+            {
+            }
         }
 
         return null;
