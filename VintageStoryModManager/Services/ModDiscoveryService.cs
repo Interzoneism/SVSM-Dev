@@ -60,7 +60,7 @@ public sealed class ModDiscoveryService
 
         if (orderedEntries.Count == 0) return Array.Empty<ModEntry>();
 
-        var maxDegree = Math.Clamp(Environment.ProcessorCount, 1, 8);
+        var maxDegree = Math.Clamp(Environment.ProcessorCount, 2, 16);
         var collected = new ConcurrentBag<(int Order, ModEntry Entry)>();
         var options = new ParallelOptions
         {
@@ -95,7 +95,7 @@ public sealed class ModDiscoveryService
         if (orderedEntries.Count == 0) yield break;
 
         using var results = new BlockingCollection<(int Order, ModEntry? Entry)>();
-        var maxDegree = Math.Clamp(Environment.ProcessorCount, 1, 8);
+        var maxDegree = Math.Clamp(Environment.ProcessorCount, 2, 16);
         var options = new ParallelOptions
         {
             MaxDegreeOfParallelism = maxDegree,
