@@ -34,6 +34,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan InstalledModsSearchDebounce = TimeSpan.FromMilliseconds(150);
     private static readonly TimeSpan BusyStateReleaseDelay = TimeSpan.FromMilliseconds(600);
     private static readonly TimeSpan FastCheckInterval = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan BackgroundOperationDelay = TimeSpan.FromMilliseconds(50);
     private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
     private static readonly int MaxConcurrentUserReportRefreshes = DevConfig.MaxConcurrentUserReportRefreshes;
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
@@ -1866,7 +1867,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 {
                     _ = Task.Run(async () =>
                     {
-                        await Task.Delay(50).ConfigureAwait(false);
+                        await Task.Delay(BackgroundOperationDelay).ConfigureAwait(false);
                         QueueDatabaseInfoRefresh(updatedEntriesForStatus);
                     });
                 }
@@ -1983,7 +1984,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 _ = Task.Run(async () =>
                 {
                     // Small delay to ensure UI thread processes the initial mods display
-                    await Task.Delay(50).ConfigureAwait(false);
+                    await Task.Delay(BackgroundOperationDelay).ConfigureAwait(false);
                     QueueDatabaseInfoRefresh(entries);
                 });
             }
@@ -3849,7 +3850,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (dispatcher.CheckAccess())
                 CheckAndCompleteInitialLoad();
             else
-                dispatcher.BeginInvoke(DispatcherPriority.Background, CheckAndCompleteInitialLoad);
+                // Use Normal priority since this only updates status messages and should be timely
+                dispatcher.BeginInvoke(DispatcherPriority.Normal, CheckAndCompleteInitialLoad);
         }
         else
         {
