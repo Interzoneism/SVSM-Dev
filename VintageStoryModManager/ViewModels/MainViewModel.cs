@@ -770,8 +770,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             case ViewSection.ModDatabase:
                 SelectedMod = null;
                 // Reset user report fetching flag to ensure user reports are queued
-                // after mod database tags complete loading
-                _hasEnabledUserReportFetching = false;
+                // after mod database tags complete loading (only if user reports are visible)
+                if (_areUserReportsVisible)
+                {
+                    _hasEnabledUserReportFetching = false;
+                }
                 if (_searchResults.Count == 0)
                     TriggerModDatabaseSearch();
                 else
@@ -1810,9 +1813,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             var previousSelection = SelectedMod?.SourcePath;
 
-            // Reset user report fetching flag for full reloads to ensure user reports
-            // are queued after tags complete loading
-            if (requiresFullReload && _viewSection == ViewSection.InstalledMods)
+            // Reset user report fetching flag for full reloads in installed mods view
+            // to ensure user reports are queued after tags complete loading.
+            // Only reset for installed mods view since mod database view resets the flag
+            // in SetViewSection when switching to that view.
+            // Only reset if user reports are visible to avoid unnecessary work.
+            if (requiresFullReload && _viewSection == ViewSection.InstalledMods && _areUserReportsVisible)
             {
                 _hasEnabledUserReportFetching = false;
             }
