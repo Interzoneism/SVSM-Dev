@@ -13,7 +13,7 @@ namespace SimpleVsManager.Cloud;
 /// <summary>
 ///     Handles Firebase anonymous authentication and persists refresh tokens for reuse.
 /// </summary>
-public sealed class FirebaseAnonymousAuthenticator
+public sealed class FirebaseAnonymousAuthenticator : IDisposable
 {
     private static readonly string SignInEndpoint = DevConfig.FirebaseSignInEndpoint;
     private static readonly string RefreshEndpoint = DevConfig.FirebaseRefreshEndpoint;
@@ -32,8 +32,10 @@ public sealed class FirebaseAnonymousAuthenticator
 
     private readonly string _stateFilePath;
     private readonly SemaphoreSlim _stateLock = new(1, 1);
+    private readonly object _disposeLock = new();
 
     private FirebaseAuthState? _cachedState;
+    private bool _disposed;
 
     public FirebaseAnonymousAuthenticator() : this(DefaultApiKey)
     {
@@ -56,6 +58,7 @@ public sealed class FirebaseAnonymousAuthenticator
     /// </summary>
     public async Task<string> GetIdTokenAsync(CancellationToken ct)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseAnonymousAuthenticator));
         InternetAccessManager.ThrowIfInternetAccessDisabled();
         var session = await GetSessionAsync(ct).ConfigureAwait(false);
         return session.IdToken;
@@ -63,6 +66,7 @@ public sealed class FirebaseAnonymousAuthenticator
 
     public async Task<FirebaseAuthSession> GetSessionAsync(CancellationToken ct)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseAnonymousAuthenticator));
         InternetAccessManager.ThrowIfInternetAccessDisabled();
         await _stateLock.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -99,6 +103,7 @@ public sealed class FirebaseAnonymousAuthenticator
 
     public async Task<FirebaseAuthSession?> TryGetExistingSessionAsync(CancellationToken ct)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseAnonymousAuthenticator));
         if (InternetAccessManager.IsInternetAccessDisabled) return null;
 
         await _stateLock.WaitAsync(ct).ConfigureAwait(false);
@@ -802,5 +807,18 @@ public sealed class FirebaseAnonymousAuthenticator
         public string IdToken { get; }
 
         public string UserId { get; }
+    }
+
+    public void Dispose()
+    {
+        lock (_disposeLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+        }
+        
+        // Dispose semaphore outside the lock to avoid potential deadlocks.
+        // The _disposed flag (set atomically above) prevents new operations.
+        _stateLock.Dispose();
     }
 }

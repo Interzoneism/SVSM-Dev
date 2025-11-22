@@ -13090,6 +13090,9 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         StopModsWatcher();
+        _backupSemaphore.Dispose();
+        _cloudStoreLock.Dispose();
+        _cloudModlistStore?.Dispose();
         base.OnClosed(e);
     }
 

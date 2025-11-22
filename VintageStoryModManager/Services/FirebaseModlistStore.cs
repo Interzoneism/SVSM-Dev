@@ -16,7 +16,7 @@ namespace SimpleVsManager.Cloud;
 /// <summary>
 ///     Firebase RTDB access that relies solely on the player's Vintage Story identity.
 /// </summary>
-public sealed class FirebaseModlistStore
+public sealed class FirebaseModlistStore : IDisposable
 {
     private static readonly HttpClient HttpClient = new();
 
@@ -33,6 +33,7 @@ public sealed class FirebaseModlistStore
     private readonly string _dbUrl;
     private readonly SemaphoreSlim _ownershipClaimLock = new(1, 1);
     private readonly SemaphoreSlim _registryCacheLock = new(1, 1);
+    private readonly object _disposeLock = new();
     private string? _ownershipClaimedForUid;
     private string? _playerName;
 
@@ -41,6 +42,7 @@ public sealed class FirebaseModlistStore
 
     private string? _playerUid; // Original player UID from Vintage Story
     private string? _sanitizedPlayerUid; // Firebase-compatible version of the player UID
+    private bool _disposed;
 
     public FirebaseModlistStore()
         : this(DefaultDbUrl, new FirebaseAnonymousAuthenticator())
@@ -167,6 +169,7 @@ public sealed class FirebaseModlistStore
     /// </summary>
     public void SetPlayerIdentity(string? playerUid, string? playerName)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseModlistStore));
         _playerUid = Normalize(playerUid);
         _playerName = Normalize(playerName);
 
@@ -182,6 +185,7 @@ public sealed class FirebaseModlistStore
     /// <summary>Save or replace the JSON in the given slot (e.g., "slot1").</summary>
     public async Task SaveAsync(string slotKey, string modlistJson, CancellationToken ct = default)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseModlistStore));
         InternetAccessManager.ThrowIfInternetAccessDisabled();
         ValidateSlotKey(slotKey);
         var identity = GetIdentityComponents();
@@ -249,6 +253,7 @@ public sealed class FirebaseModlistStore
     /// <summary>Load a JSON string from the slot. Returns null if missing.</summary>
     public async Task<string?> LoadAsync(string slotKey, CancellationToken ct = default)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(FirebaseModlistStore));
         InternetAccessManager.ThrowIfInternetAccessDisabled();
         ValidateSlotKey(slotKey);
         var identity = GetIdentityComponents();
@@ -1077,5 +1082,19 @@ public sealed class FirebaseModlistStore
     private struct ModlistNode
     {
         [JsonPropertyName("content")] public JsonElement Content { get; set; }
+    }
+
+    public void Dispose()
+    {
+        lock (_disposeLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+        }
+        
+        // Dispose semaphores outside the lock to avoid potential deadlocks.
+        // The _disposed flag (set atomically above) prevents new operations.
+        _ownershipClaimLock.Dispose();
+        _registryCacheLock.Dispose();
     }
 }

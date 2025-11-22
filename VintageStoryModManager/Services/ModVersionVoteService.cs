@@ -14,7 +14,7 @@ namespace VintageStoryModManager.Services;
 /// <summary>
 ///     Provides Firebase-backed storage for per-mod user report votes.
 /// </summary>
-public sealed class ModVersionVoteService
+public sealed class ModVersionVoteService : IDisposable
 {
     private static readonly string DefaultDbUrl = DevConfig.ModVersionVoteDefaultDbUrl;
 
@@ -39,11 +39,15 @@ public sealed class ModVersionVoteService
         new(VoteCacheKeyComparer.Instance);
 
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
+    private readonly object _disposeLock = new();
+    private readonly bool _ownsAuthenticator;
     private bool _voteCacheLoaded;
+    private bool _disposed;
 
     public ModVersionVoteService()
         : this(DefaultDbUrl, new FirebaseAnonymousAuthenticator())
     {
+        _ownsAuthenticator = true;
     }
 
     public ModVersionVoteService(string databaseUrl, FirebaseAnonymousAuthenticator authenticator)
@@ -53,6 +57,7 @@ public sealed class ModVersionVoteService
 
         _dbUrl = databaseUrl.TrimEnd('/');
         _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
+        _ownsAuthenticator = false;
     }
 
 
@@ -66,7 +71,8 @@ public sealed class ModVersionVoteService
 
         var cacheKey = new VoteCacheKey(modId, modVersion, vintageStoryVersion);
 
-        if (TryGetCachedSummary(cacheKey, out var cachedSummary)) return cachedSummary.Summary;
+        var (found, cachedSummary) = await TryGetCachedSummaryAsync(cacheKey, cancellationToken).ConfigureAwait(false);
+        if (found) return cachedSummary.Summary;
 
         InternetAccessManager.ThrowIfInternetAccessDisabled();
 
@@ -94,7 +100,8 @@ public sealed class ModVersionVoteService
 
         var cacheKey = new VoteCacheKey(modId, modVersion, vintageStoryVersion);
 
-        if (TryGetCachedSummary(cacheKey, out var cachedSummary))
+        var (found, cachedSummary) = await TryGetCachedSummaryAsync(cacheKey, cancellationToken).ConfigureAwait(false);
+        if (found)
             return new VoteSummaryResult(cachedSummary.Summary, cachedSummary.ETag, true);
 
         InternetAccessManager.ThrowIfInternetAccessDisabled();
@@ -122,7 +129,8 @@ public sealed class ModVersionVoteService
 
         var cacheKey = new VoteCacheKey(modId, modVersion, vintageStoryVersion);
 
-        if (TryGetCachedSummary(cacheKey, out var cachedSummary)) return cachedSummary.ToSummaryResult();
+        var (found, cachedSummary) = await TryGetCachedSummaryAsync(cacheKey, cancellationToken).ConfigureAwait(false);
+        if (found) return cachedSummary.ToSummaryResult();
 
         InternetAccessManager.ThrowIfInternetAccessDisabled();
 
@@ -244,8 +252,12 @@ public sealed class ModVersionVoteService
         bool bypassCache,
         CancellationToken cancellationToken)
     {
-        if (!bypassCache && TryGetCachedSummary(cacheKey, out var cachedEntry))
-            return new VoteSummaryResult(cachedEntry.Summary, cachedEntry.ETag, true);
+        if (!bypassCache)
+        {
+            var (found, cachedEntry) = await TryGetCachedSummaryAsync(cacheKey, cancellationToken).ConfigureAwait(false);
+            if (found)
+                return new VoteSummaryResult(cachedEntry.Summary, cachedEntry.ETag, true);
+        }
 
         var modKey = SanitizeKey(cacheKey.ModId);
         var versionKey = SanitizeKey(cacheKey.ModVersion);
@@ -263,9 +275,10 @@ public sealed class ModVersionVoteService
 
         if (response.StatusCode == HttpStatusCode.NotModified)
         {
-            if (TryGetCachedSummary(cacheKey, out var cachedFromResponse))
+            var (foundCached, cachedFromResponse) = await TryGetCachedSummaryAsync(cacheKey, cancellationToken).ConfigureAwait(false);
+            if (foundCached)
             {
-                StoreCachedSummary(cacheKey, cachedFromResponse.Summary, responseEtag ?? knownEtag);
+                await StoreCachedSummaryAsync(cacheKey, cachedFromResponse.Summary, responseEtag ?? knownEtag, cancellationToken).ConfigureAwait(false);
                 return new VoteSummaryResult(cachedFromResponse.Summary, responseEtag ?? knownEtag, true);
             }
 
@@ -283,7 +296,7 @@ public sealed class ModVersionVoteService
                 null,
                 null);
 
-            StoreCachedSummary(cacheKey, emptySummary, responseEtag ?? knownEtag);
+            await StoreCachedSummaryAsync(cacheKey, emptySummary, responseEtag ?? knownEtag, cancellationToken).ConfigureAwait(false);
 
             return new VoteSummaryResult(emptySummary, responseEtag, false);
         }
@@ -308,7 +321,7 @@ public sealed class ModVersionVoteService
                 null,
                 null);
 
-            StoreCachedSummary(cacheKey, emptySummary, responseEtag ?? knownEtag);
+            await StoreCachedSummaryAsync(cacheKey, emptySummary, responseEtag ?? knownEtag, cancellationToken).ConfigureAwait(false);
 
             return new VoteSummaryResult(emptySummary, responseEtag, false);
         }
@@ -324,7 +337,7 @@ public sealed class ModVersionVoteService
                 null,
                 null);
 
-            StoreCachedSummary(cacheKey, emptySummary, responseEtag ?? knownEtag);
+            await StoreCachedSummaryAsync(cacheKey, emptySummary, responseEtag ?? knownEtag, cancellationToken).ConfigureAwait(false);
 
             return new VoteSummaryResult(emptySummary, responseEtag, false);
         }
@@ -396,7 +409,7 @@ public sealed class ModVersionVoteService
             userVote,
             userComment);
 
-        StoreCachedSummary(cacheKey, summary, responseEtag ?? knownEtag);
+        await StoreCachedSummaryAsync(cacheKey, summary, responseEtag ?? knownEtag, cancellationToken).ConfigureAwait(false);
 
         return new VoteSummaryResult(summary, responseEtag, false);
     }
@@ -613,26 +626,33 @@ public sealed class ModVersionVoteService
         }
     }
 
-    private bool TryGetCachedSummary(VoteCacheKey key, out VoteCacheEntry entry)
+    private async Task<(bool Found, VoteCacheEntry Entry)> TryGetCachedSummaryAsync(VoteCacheKey key, CancellationToken cancellationToken = default)
     {
-        EnsureVoteCacheLoaded();
-        return _voteCache.TryGetValue(key, out entry);
+        if (_disposed) throw new ObjectDisposedException(nameof(ModVersionVoteService));
+        await EnsureVoteCacheLoadedAsync(cancellationToken).ConfigureAwait(false);
+        if (_voteCache.TryGetValue(key, out var entry))
+        {
+            return (true, entry);
+        }
+        return (false, default);
     }
 
-    private void StoreCachedSummary(VoteCacheKey key, ModVersionVoteSummary summary, string? eTag)
+    private async Task StoreCachedSummaryAsync(VoteCacheKey key, ModVersionVoteSummary summary, string? eTag, CancellationToken cancellationToken = default)
     {
-        EnsureVoteCacheLoaded();
+        if (_disposed) throw new ObjectDisposedException(nameof(ModVersionVoteService));
+        await EnsureVoteCacheLoadedAsync(cancellationToken).ConfigureAwait(false);
 
         _voteCache[key] = new VoteCacheEntry(summary, eTag);
 
-        PersistVoteCache();
+        await PersistVoteCacheAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private void EnsureVoteCacheLoaded()
+    private async Task EnsureVoteCacheLoadedAsync(CancellationToken cancellationToken = default)
     {
         if (_voteCacheLoaded) return;
+        if (_disposed) throw new ObjectDisposedException(nameof(ModVersionVoteService));
 
-        _cacheLock.Wait();
+        await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (_voteCacheLoaded) return;
@@ -675,11 +695,11 @@ public sealed class ModVersionVoteService
         }
     }
 
-    private void PersistVoteCache()
+    private async Task PersistVoteCacheAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            _cacheLock.Wait();
+            await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             var directory = Path.GetDirectoryName(VoteCachePath);
             if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
@@ -690,7 +710,7 @@ public sealed class ModVersionVoteService
                 StringComparer.Ordinal);
 
             var json = JsonSerializer.Serialize(payload, SerializerOptions);
-            File.WriteAllText(VoteCachePath, json);
+            await File.WriteAllTextAsync(VoteCachePath, json, cancellationToken).ConfigureAwait(false);
         }
         catch
         {
@@ -715,5 +735,23 @@ public sealed class ModVersionVoteService
         if (parts.Length != 3) return null;
 
         return new VoteCacheKey(parts[0], parts[1], parts[2]);
+    }
+
+    public void Dispose()
+    {
+        lock (_disposeLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+        }
+        
+        // Dispose resources outside the lock to avoid deadlocks.
+        // The _disposed flag (set atomically above) prevents new operations from starting.
+        _cacheLock.Dispose();
+        
+        if (_ownsAuthenticator)
+        {
+            _authenticator.Dispose();
+        }
     }
 }
