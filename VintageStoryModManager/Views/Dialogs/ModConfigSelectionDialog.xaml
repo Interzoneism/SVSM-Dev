@@ -114,10 +114,10 @@
                            Foreground="{DynamicResource Brush.Text.Primary}"
                            Opacity="0.6"
                            Text="No mods with saved configuration paths were found."
-                           Visibility="Collapsed">
+                           Visibility="Hidden">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
-                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Setter Property="Visibility" Value="Hidden" />
                             <Style.Triggers>
                                 <DataTrigger
                                     Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}"

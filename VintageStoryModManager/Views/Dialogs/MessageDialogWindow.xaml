@@ -28,7 +28,7 @@
                Height="48"
                Margin="0,0,16,0"
                VerticalAlignment="Top"
-               Visibility="Collapsed" />
+               Visibility="Hidden" />
 
         <ScrollViewer Grid.Column="1"
                       VerticalScrollBarVisibility="Auto"
@@ -51,22 +51,22 @@
             <Button x:Name="ButtonThree"
                     MinWidth="88"
                     Margin="0,0,0,0"
-                    Visibility="Collapsed"
+                    Visibility="Hidden"
                     Click="OnButtonClick" />
             <Button x:Name="ButtonTwo"
                     MinWidth="88"
                     Margin="12,0,0,0"
-                    Visibility="Collapsed"
+                    Visibility="Hidden"
                     Click="OnButtonClick" />
             <Button x:Name="ButtonOne"
                     MinWidth="88"
                     Margin="12,0,0,0"
-                    Visibility="Collapsed"
+                    Visibility="Hidden"
                     Click="OnButtonClick" />
             <Button x:Name="ButtonExtra"
                     MinWidth="88"
                     Margin="12,0,0,0"
-                    Visibility="Collapsed"
+                    Visibility="Hidden"
                     Click="OnButtonClick" />
         </StackPanel>
     </Grid>

@@ -202,7 +202,7 @@
                        Margin="0,8,0,0">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
-                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Setter Property="Visibility" Value="Hidden" />
                         <Style.Triggers>
                             <DataTrigger
                                 Binding="{Binding HasConfigOptions, RelativeSource={RelativeSource AncestorType=Window}}"
