@@ -2268,9 +2268,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private bool ShouldQueueUserReports()
     {
-        // Only queue user reports if:
-        // 1. Either tags column is not visible, OR tags are not currently being refreshed
-        // This ensures that when both columns are visible, tags load before user reports
+        // Only queue user reports if tags are not currently being refreshed
+        // This ensures that when both columns are visible, tags load first before user reports
+        // Note: We check the pending flags to avoid race conditions where tags just finished
+        // but the flag hasn't been cleared yet
         return !(_isTagsColumnVisible && (_isInstalledTagRefreshPending || _isModDatabaseTagRefreshPending));
     }
 
@@ -2278,6 +2279,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (_installedModSubscriptions.Add(mod)) mod.PropertyChanged += OnInstalledModPropertyChanged;
 
+        // Only queue user reports if tags are done loading (or not visible)
         if (_allowModDetailsRefresh && ShouldQueueUserReports()) 
             QueueUserReportRefresh(mod);
     }
@@ -2385,7 +2387,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             shouldSetLoadingStatus = _activeUserReportOperations == 1;
         }
 
-        // Show comprehensive message during initial load
+        // Only update status when starting the first operation to reduce UI churn
         if (shouldSetLoadingStatus)
         {
             if (!_isInitialLoadComplete)
@@ -2413,8 +2415,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             shouldSetLoadedStatus = _activeUserReportOperations == 0;
         }
 
-        // Only set status message if we're past initial load
-        if (shouldSetLoadedStatus && _isInitialLoadComplete) SetStatus(UserReportsLoadedStatusMessage, false);
+        // Only update status when all operations complete to reduce UI churn
+        if (shouldSetLoadedStatus && _isInitialLoadComplete) 
+        {
+            SetStatus(UserReportsLoadedStatusMessage, false);
+        }
         
         // Check if initial load is complete
         if (shouldSetLoadedStatus && !_isInitialLoadComplete)
@@ -2781,6 +2786,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             try
             {
+                // Small delay to debounce rapid successive calls
+                await Task.Delay(DevConfig.TagFilterRefreshDebounceMs).ConfigureAwait(false);
+                
+                // Check again in case multiple schedules happened
+                if (!_isInstalledTagRefreshPending) return;
+
                 // Show comprehensive message during initial load
                 if (!_isInitialLoadComplete)
                 {
@@ -2799,10 +2810,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         .ConfigureAwait(false);
                 }
 
-                var tagSnapshot = EnumerateModTags(_mods).ToList();
-                var selectedSnapshot = _selectedInstalledTags.ToList();
-                var normalized = await Task.Run(() => NormalizeAndSortTags(tagSnapshot.Concat(selectedSnapshot)))
-                    .ConfigureAwait(false);
+                // Collect tags more efficiently without intermediate ToList()
+                var normalized = await Task.Run(() =>
+                {
+                    var tagList = new List<string>(capacity: _mods.Count * DevConfig.AverageTagsPerMod);
+                    foreach (var mod in _mods)
+                    {
+                        if (mod.DatabaseTags is { Count: > 0 } tags)
+                        {
+                            tagList.AddRange(tags);
+                        }
+                    }
+                    tagList.AddRange(_selectedInstalledTags);
+                    return NormalizeAndSortTags(tagList);
+                }).ConfigureAwait(false);
 
                 await InvokeOnDispatcherAsync(
                         () =>
@@ -2853,6 +2874,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             try
             {
+                // Small delay to debounce rapid successive calls
+                await Task.Delay(DevConfig.TagFilterRefreshDebounceMs).ConfigureAwait(false);
+                
+                // Check again in case multiple schedules happened
+                if (!_isModDatabaseTagRefreshPending) return;
+
                 // Only show loading message if we're past initial load
                 if (_isInitialLoadComplete)
                 {
@@ -2863,12 +2890,24 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         .ConfigureAwait(false);
                 }
 
-                var existing = _modDatabaseAvailableTags;
-                var tagSnapshot = EnumerateModTags(_searchResults).ToList();
-                var selectedSnapshot = _selectedModDatabaseTags.ToList();
-                var normalized = await Task
-                    .Run(() => NormalizeAndSortTags(existing.Concat(tagSnapshot).Concat(selectedSnapshot)))
-                    .ConfigureAwait(false);
+                // Collect tags more efficiently
+                var normalized = await Task.Run(() =>
+                {
+                    var existing = _modDatabaseAvailableTags;
+                    var tagList = new List<string>(capacity: existing.Count + _searchResults.Count * DevConfig.AverageTagsPerMod);
+                    tagList.AddRange(existing);
+                    
+                    foreach (var mod in _searchResults)
+                    {
+                        if (mod.DatabaseTags is { Count: > 0 } tags)
+                        {
+                            tagList.AddRange(tags);
+                        }
+                    }
+                    
+                    tagList.AddRange(_selectedModDatabaseTags);
+                    return NormalizeAndSortTags(tagList);
+                }).ConfigureAwait(false);
 
                 await InvokeOnDispatcherAsync(
                         () =>
@@ -3003,7 +3042,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (!_isTagsColumnVisible) return;
 
-        ApplyModDatabaseAvailableTags(_modDatabaseAvailableTags.Concat(EnumerateModTags(_searchResults)));
+        var tagList = new List<string>(capacity: _modDatabaseAvailableTags.Count + _searchResults.Count * DevConfig.AverageTagsPerMod);
+        tagList.AddRange(_modDatabaseAvailableTags);
+        
+        foreach (var mod in _searchResults)
+        {
+            if (mod.DatabaseTags is { Count: > 0 } tags)
+            {
+                tagList.AddRange(tags);
+            }
+        }
+
+        ApplyModDatabaseAvailableTags(tagList);
     }
 
     private void OnInstalledTagFilterPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -3063,10 +3113,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             var trimmed = tag.Trim();
             if (trimmed.Length == 0) continue;
 
-            if (!map.ContainsKey(trimmed)) map[trimmed] = trimmed;
+            // Use TryAdd to avoid redundant ContainsKey check
+            map.TryAdd(trimmed, trimmed);
         }
 
-        var list = map.Values.ToList();
+        var list = new List<string>(map.Values);
         list.Sort(StringComparer.OrdinalIgnoreCase);
         return list;
     }

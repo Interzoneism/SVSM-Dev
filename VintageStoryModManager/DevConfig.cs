@@ -17,6 +17,12 @@ public static class DevConfig
     public static int MaxConcurrentDatabaseRefreshes { get; } = 8;
     // Increased from 6 to 8 for better performance with many mods
     public static int MaxConcurrentUserReportRefreshes { get; } = 8;
+    // Debounce delay in milliseconds for tag filter refresh operations
+    // This prevents excessive refreshes when multiple mods are added/removed rapidly
+    public static int TagFilterRefreshDebounceMs { get; } = 50;
+    // Estimated average number of tags per mod for capacity pre-allocation
+    // This helps reduce memory allocations when collecting tags from multiple mods
+    public static int AverageTagsPerMod { get; } = 3;
     public static int MaxNewModsRecentMonths { get; } = 24;
     // Increased from 32 to 64 for better batching performance with many mods
     public static int InstalledModsIncrementalBatchSize { get; } = 64;
