@@ -783,6 +783,15 @@
                                        Width="26"
                                        Height="26"
                                        Stretch="Uniform" />
+                                <Rectangle x:Name="DiscordNormalOverlay"
+                                           Width="{Binding ActualWidth, ElementName=DiscordIcon}"
+                                           Height="{Binding ActualHeight, ElementName=DiscordIcon}"
+                                           Fill="{DynamicResource Brush.ComboBox.Background.Disabled}">
+                                    <Rectangle.OpacityMask>
+                                        <ImageBrush ImageSource="/Resources/Discord.png"
+                                                    Stretch="Uniform" />
+                                    </Rectangle.OpacityMask>
+                                </Rectangle>
                                 <Rectangle x:Name="DiscordHoverOverlay"
                                            Width="{Binding ActualWidth, ElementName=DiscordIcon}"
                                            Height="{Binding ActualHeight, ElementName=DiscordIcon}"
@@ -800,6 +809,9 @@
                                 <Setter TargetName="DiscordHoverOverlay"
                                         Property="Visibility"
                                         Value="Visible" />
+                                <Setter TargetName="DiscordNormalOverlay"
+                                        Property="Visibility"
+                                        Value="Collapsed" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
