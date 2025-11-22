@@ -820,10 +820,25 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 if (InternetAccessManager.IsInternetAccessDisabled) break;
 
+                await InvokeOnDispatcherAsync(() => SetStatus("Checking for mod updates...", false), CancellationToken.None)
+                    .ConfigureAwait(false);
+
                 var updateCandidates = await CheckForNewModReleasesAsync(CancellationToken.None)
                     .ConfigureAwait(false);
 
-                if (updateCandidates.Count > 0) QueueDatabaseInfoRefresh(updateCandidates, true);
+                if (updateCandidates.Count > 0)
+                {
+                    await InvokeOnDispatcherAsync(
+                            () => SetStatus($"Found updates for {updateCandidates.Count} mod(s). Loading details...", false),
+                            CancellationToken.None)
+                        .ConfigureAwait(false);
+                    QueueDatabaseInfoRefresh(updateCandidates, true);
+                }
+                else
+                {
+                    await InvokeOnDispatcherAsync(() => SetStatus("Mod update check complete.", false), CancellationToken.None)
+                        .ConfigureAwait(false);
+                }
             }
         }
         catch
@@ -1792,10 +1807,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             if (requiresFullReload)
             {
+                SetStatus("Loading mods...", false);
                 await PerformFullReloadAsync(previousSelection).ConfigureAwait(true);
+                SetStatus($"Loaded {TotalMods} mods.", false);
             }
             else
             {
+                if (changeSet.Paths.Count > 0)
+                {
+                    SetStatus($"Reloading {changeSet.Paths.Count} mod(s)...", false);
+                }
+
                 Dictionary<string, ModEntry> existingEntriesSnapshot =
                     new(_modEntriesBySourcePath, StringComparer.OrdinalIgnoreCase);
                 var reloadResults =
@@ -1832,6 +1854,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     .ConfigureAwait(true);
 
                 ApplyPartialUpdates(reloadResults, previousSelection);
+
+                if (changeSet.Paths.Count > 0)
+                {
+                    SetStatus($"Reloaded {changeSet.Paths.Count} mod(s).", false);
+                }
 
                 if (_allowModDetailsRefresh && updatedEntriesForStatus.Count > 0)
                     QueueDatabaseInfoRefresh(updatedEntriesForStatus);
@@ -2618,13 +2645,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             try
             {
+                await InvokeOnDispatcherAsync(
+                        () => SetStatus("Loading tags...", false),
+                        CancellationToken.None,
+                        DispatcherPriority.ContextIdle)
+                    .ConfigureAwait(false);
+
                 var tagSnapshot = EnumerateModTags(_mods).ToList();
                 var selectedSnapshot = _selectedInstalledTags.ToList();
                 var normalized = await Task.Run(() => NormalizeAndSortTags(tagSnapshot.Concat(selectedSnapshot)))
                     .ConfigureAwait(false);
 
                 await InvokeOnDispatcherAsync(
-                        () => ApplyInstalledTagFilters(normalized),
+                        () =>
+                        {
+                            ApplyInstalledTagFilters(normalized);
+                            SetStatus("Tags loaded.", false);
+                        },
                         CancellationToken.None,
                         DispatcherPriority.ContextIdle)
                     .ConfigureAwait(false);
@@ -2657,6 +2694,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             try
             {
+                await InvokeOnDispatcherAsync(
+                        () => SetStatus("Loading tags...", false),
+                        CancellationToken.None,
+                        DispatcherPriority.ContextIdle)
+                    .ConfigureAwait(false);
+
                 var existing = _modDatabaseAvailableTags;
                 var tagSnapshot = EnumerateModTags(_searchResults).ToList();
                 var selectedSnapshot = _selectedModDatabaseTags.ToList();
@@ -2665,7 +2708,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     .ConfigureAwait(false);
 
                 await InvokeOnDispatcherAsync(
-                        () => ApplyNormalizedModDatabaseAvailableTags(normalized),
+                        () =>
+                        {
+                            ApplyNormalizedModDatabaseAvailableTags(normalized);
+                            SetStatus("Tags loaded.", false);
+                        },
                         CancellationToken.None,
                         DispatcherPriority.ContextIdle)
                     .ConfigureAwait(false);
@@ -3251,7 +3298,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (cancellationToken.IsCancellationRequested) return;
 
             await InvokeOnDispatcherAsync(
-                    () => SetStatus("Loading mod details...", false),
+                    () => SetStatus($"Loading details for {entries.Count} mod(s)...", false),
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -3274,6 +3321,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                             QueueLatestReleaseUserReportRefresh(viewModel);
                         }
                     }
+
+                    SetStatus($"Loading details for {entries.Count} mod(s) finished.", false);
                 },
                 cancellationToken).ConfigureAwait(false);
 
@@ -3300,13 +3349,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
 
             await InvokeOnDispatcherAsync(
-                    () => SetStatus("Loading mod images...", false),
+                    () => SetStatus($"Loading images for {viewModels.Count} mod(s)...", false),
                     cancellationToken)
                 .ConfigureAwait(false);
 
             await LoadModDatabaseLogosAsync(viewModels, cancellationToken).ConfigureAwait(false);
 
             if (cancellationToken.IsCancellationRequested) return;
+
+            await InvokeOnDispatcherAsync(
+                    () => SetStatus($"Loaded images for {viewModels.Count} mod(s).", false),
+                    cancellationToken)
+                .ConfigureAwait(false);
 
             await InvokeOnDispatcherAsync(
                     () => SetStatus(BuildModDatabaseResultsMessage(hasSearchTokens, viewModels.Count), false),
