@@ -29,6 +29,7 @@ internal sealed class ModDatabaseCacheService : IDisposable
 
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
     private Dictionary<string, CachedModDatabaseInfo>? _cacheIndex;
+    private bool _isDirty;
     private bool _disposed;
 
     internal static void ClearCacheDirectory()
@@ -127,8 +128,40 @@ internal sealed class ModDatabaseCacheService : IDisposable
 
             var cacheModel = CreateCacheModel(modId, normalizedGameVersion, info, tagsByModVersion);
             index[cacheKey] = cacheModel;
+            
+            // Set dirty flag after successful cache update
+            _isDirty = true;
 
-            await SaveCacheAsync(index, cancellationToken).ConfigureAwait(false);
+            // Do not write to disk immediately during bulk operations
+            // Caller should invoke FlushAsync when appropriate
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // Ignore serialization or file system failures to keep cache best-effort.
+        }
+        finally
+        {
+            _cacheLock.Release();
+        }
+    }
+
+    /// <summary>
+    ///     Flushes any pending cache changes to disk.
+    ///     Should be called after bulk operations to persist accumulated updates.
+    /// </summary>
+    public async Task FlushAsync(CancellationToken cancellationToken = default)
+    {
+        await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!_isDirty || _cacheIndex == null) return;
+
+            await SaveCacheAsync(_cacheIndex, cancellationToken).ConfigureAwait(false);
+            _isDirty = false;
         }
         catch (OperationCanceledException)
         {
@@ -203,6 +236,36 @@ internal sealed class ModDatabaseCacheService : IDisposable
                 .ConfigureAwait(false);
         }
 
+        MoveCacheFile(tempPath, cacheFilePath);
+    }
+
+    private void SaveCacheSync(Dictionary<string, CachedModDatabaseInfo> index)
+    {
+        var cacheFilePath = GetCacheFilePath();
+        if (string.IsNullOrWhiteSpace(cacheFilePath)) return;
+
+        var directory = Path.GetDirectoryName(cacheFilePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+            Directory.CreateDirectory(directory);
+
+        var tempPath = cacheFilePath + ".tmp";
+
+        var cache = new ModDatabaseCache
+        {
+            SchemaVersion = CacheSchemaVersion,
+            Entries = index
+        };
+
+        using (FileStream tempStream = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            JsonSerializer.Serialize(tempStream, cache, SerializerOptions);
+        }
+
+        MoveCacheFile(tempPath, cacheFilePath);
+    }
+
+    private static void MoveCacheFile(string tempPath, string cacheFilePath)
+    {
         try
         {
             File.Move(tempPath, cacheFilePath, true);
@@ -489,6 +552,33 @@ internal sealed class ModDatabaseCacheService : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        
+        // Attempt to flush any pending changes before disposal
+        // Try to acquire lock with zero timeout to avoid blocking during disposal
+        if (_cacheLock.Wait(0))
+        {
+            try
+            {
+                // Check if there are pending changes to flush
+                if (_isDirty && _cacheIndex != null)
+                {
+                    // Use synchronous save for disposal because Dispose cannot use async/await
+                    // (IDisposable.Dispose is a synchronous method)
+                    SaveCacheSync(_cacheIndex);
+                    _isDirty = false;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+            {
+                // Best effort - ignore expected cache write errors during disposal
+            }
+            finally
+            {
+                _cacheLock.Release();
+            }
+        }
+        // If we couldn't acquire the lock, skip the flush (best effort)
+        
         _cacheLock.Dispose();
     }
 

@@ -93,6 +93,9 @@ public sealed class ModDatabaseService
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
 
+        // Flush accumulated cache changes after all mods are processed
+        await CacheService.FlushAsync(cancellationToken).ConfigureAwait(false);
+
         async Task ProcessModAsync(ModEntry modEntry)
         {
             var installedModVersion = modEntry.Version;
@@ -320,6 +323,9 @@ public sealed class ModDatabaseService
         var enriched = await EnrichWithLatestReleaseDownloadsAsync(filtered, cancellationToken)
             .ConfigureAwait(false);
 
+        // Flush accumulated cache changes after enriching all search results
+        await CacheService.FlushAsync(cancellationToken).ConfigureAwait(false);
+
         if (enriched.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
 
         return enriched
@@ -366,6 +372,9 @@ public sealed class ModDatabaseService
         var enriched = await EnrichWithLatestReleaseDownloadsAsync(filtered, cancellationToken)
             .ConfigureAwait(false);
 
+        // Flush accumulated cache changes after enriching all search results
+        await CacheService.FlushAsync(cancellationToken).ConfigureAwait(false);
+
         if (enriched.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
 
         return enriched
@@ -406,6 +415,9 @@ public sealed class ModDatabaseService
 
         var enriched = await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
             .ConfigureAwait(false);
+
+        // Flush accumulated cache changes after enriching all search results
+        await CacheService.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         if (enriched.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
 
@@ -477,6 +489,9 @@ public sealed class ModDatabaseService
                 candidates,
                 cancellationToken)
             .ConfigureAwait(false);
+
+        // Flush accumulated cache changes after enriching all search results
+        await CacheService.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         if (enriched.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
 
