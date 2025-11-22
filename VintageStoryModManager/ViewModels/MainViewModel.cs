@@ -769,6 +769,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             case ViewSection.ModDatabase:
                 SelectedMod = null;
+                // Reset user report fetching flag to ensure user reports are queued
+                // after mod database tags complete loading
+                _hasEnabledUserReportFetching = false;
                 if (_searchResults.Count == 0)
                     TriggerModDatabaseSearch();
                 else
@@ -1806,6 +1809,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                                      || changeSet.Paths.Count == 0;
 
             var previousSelection = SelectedMod?.SourcePath;
+
+            // Reset user report fetching flag for full reloads to ensure user reports
+            // are queued after tags complete loading
+            if (requiresFullReload && _viewSection == ViewSection.InstalledMods)
+            {
+                _hasEnabledUserReportFetching = false;
+            }
 
             if (requiresFullReload)
             {
