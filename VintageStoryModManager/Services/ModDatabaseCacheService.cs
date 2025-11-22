@@ -29,6 +29,7 @@ internal sealed class ModDatabaseCacheService : IDisposable
 
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
     private Dictionary<string, CachedModDatabaseInfo>? _cacheIndex;
+    private bool _isDirty;
     private bool _disposed;
 
     internal static void ClearCacheDirectory()
@@ -127,8 +128,38 @@ internal sealed class ModDatabaseCacheService : IDisposable
 
             var cacheModel = CreateCacheModel(modId, normalizedGameVersion, info, tagsByModVersion);
             index[cacheKey] = cacheModel;
+            _isDirty = true;
 
-            await SaveCacheAsync(index, cancellationToken).ConfigureAwait(false);
+            // Do not write to disk immediately during bulk operations
+            // Caller should invoke FlushAsync when appropriate
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // Ignore serialization or file system failures to keep cache best-effort.
+        }
+        finally
+        {
+            _cacheLock.Release();
+        }
+    }
+
+    /// <summary>
+    ///     Flushes any pending cache changes to disk.
+    ///     Should be called after bulk operations to persist accumulated updates.
+    /// </summary>
+    public async Task FlushAsync(CancellationToken cancellationToken = default)
+    {
+        await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!_isDirty || _cacheIndex == null) return;
+
+            await SaveCacheAsync(_cacheIndex, cancellationToken).ConfigureAwait(false);
+            _isDirty = false;
         }
         catch (OperationCanceledException)
         {
@@ -489,6 +520,21 @@ internal sealed class ModDatabaseCacheService : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        
+        // Attempt to flush any pending changes before disposal
+        if (_isDirty && _cacheIndex != null)
+        {
+            try
+            {
+                // Use synchronous save for disposal to ensure data is written
+                FlushAsync(CancellationToken.None).GetAwaiter().GetResult();
+            }
+            catch
+            {
+                // Best effort - ignore errors during disposal
+            }
+        }
+        
         _cacheLock.Dispose();
     }
 
