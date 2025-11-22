@@ -552,19 +552,34 @@ internal sealed class ModDatabaseCacheService : IDisposable
         _disposed = true;
         
         // Attempt to flush any pending changes before disposal
+        // Dispose should not block on the lock as that could cause deadlocks
+        // We check without lock first, then try to acquire with zero timeout
         if (_isDirty && _cacheIndex != null)
         {
-            try
+            // Try to acquire lock with zero timeout to avoid blocking during disposal
+            if (_cacheLock.Wait(0))
             {
-                // Use synchronous save for disposal to ensure data is written
-                // without risking deadlocks from async operations
-                SaveCacheSync(_cacheIndex);
-                _isDirty = false;
+                try
+                {
+                    // Double-check after acquiring lock
+                    if (_isDirty && _cacheIndex != null)
+                    {
+                        // Use synchronous save for disposal to ensure data is written
+                        // without risking deadlocks from async operations
+                        SaveCacheSync(_cacheIndex);
+                        _isDirty = false;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Best effort - ignore errors during disposal
+                }
+                finally
+                {
+                    _cacheLock.Release();
+                }
             }
-            catch
-            {
-                // Best effort - ignore errors during disposal
-            }
+            // If we couldn't acquire the lock, skip the flush (best effort)
         }
         
         _cacheLock.Dispose();
