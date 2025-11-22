@@ -1871,21 +1871,30 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ModsView.Refresh();
             await UpdateModsStateSnapshotAsync();
             
-            // If there are no mods, no background operations will be queued,
-            // so we need to complete initial load immediately on the UI thread
+            // If there are no mods, no background operations (database info refresh, 
+            // tag loading, user report loading) will be queued, so complete initial load
             if (!_isInitialLoadComplete && TotalMods == 0)
             {
-                // Dispatch to ensure we're on UI thread
-                await InvokeOnDispatcherAsync(CheckAndCompleteInitialLoad, CancellationToken.None);
+                InvokeCheckAndCompleteInitialLoad();
             }
         }
         catch (Exception ex)
         {
             SetStatus($"Failed to load mods: {ex.Message}", true);
-            // Ensure initial load completes even on error
+            // Ensure initial load completes even on error (on UI thread)
             if (!_isInitialLoadComplete)
             {
-                _isInitialLoadComplete = true;
+                if (Application.Current?.Dispatcher is { } dispatcher)
+                {
+                    if (dispatcher.CheckAccess())
+                        _isInitialLoadComplete = true;
+                    else
+                        _ = dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => _isInitialLoadComplete = true));
+                }
+                else
+                {
+                    _isInitialLoadComplete = true;
+                }
             }
         }
         finally
@@ -2318,20 +2327,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // Only set status message if we're past initial load
         if (shouldSetLoadedStatus && _isInitialLoadComplete) SetStatus(UserReportsLoadedStatusMessage, false);
         
-        // Check if initial load is complete (ensure we're on UI thread)
+        // Check if initial load is complete
         if (shouldSetLoadedStatus && !_isInitialLoadComplete)
         {
-            if (Application.Current?.Dispatcher is { } dispatcher)
-            {
-                if (dispatcher.CheckAccess())
-                    CheckAndCompleteInitialLoad();
-                else
-                    dispatcher.BeginInvoke(DispatcherPriority.Normal, CheckAndCompleteInitialLoad);
-            }
-            else
-            {
-                CheckAndCompleteInitialLoad();
-            }
+            InvokeCheckAndCompleteInitialLoad();
         }
     }
 
@@ -2732,10 +2731,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 _isInstalledTagRefreshPending = false;
                 // Check if initial load is complete after tags are done
-                if (!_isInitialLoadComplete)
-                {
-                    CheckAndCompleteInitialLoad();
-                }
+                InvokeCheckAndCompleteInitialLoad();
             }
         }
 
@@ -3763,18 +3759,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             if (_isModDetailsStatusActive) SetStatus(BuildModDetailsReadyStatusMessage(), false);
             
-            // Check if initial load is complete (ensure we're on UI thread)
-            if (Application.Current?.Dispatcher is { } dispatcher)
-            {
-                if (dispatcher.CheckAccess())
-                    CheckAndCompleteInitialLoad();
-                else
-                    dispatcher.BeginInvoke(DispatcherPriority.Normal, CheckAndCompleteInitialLoad);
-            }
-            else
-            {
-                CheckAndCompleteInitialLoad();
-            }
+            // Check if initial load is complete
+            InvokeCheckAndCompleteInitialLoad();
         }
     }
 
@@ -3823,9 +3809,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             SetStatus("Installed mods tab loaded.", false);
         }
-        else if (_viewSection == ViewSection.ModDatabase)
+    }
+
+    private void InvokeCheckAndCompleteInitialLoad()
+    {
+        if (_isInitialLoadComplete) return;
+        
+        if (Application.Current?.Dispatcher is { } dispatcher)
         {
-            // Will be handled by mod database search completion
+            if (dispatcher.CheckAccess())
+                CheckAndCompleteInitialLoad();
+            else
+                dispatcher.BeginInvoke(DispatcherPriority.Normal, CheckAndCompleteInitialLoad);
+        }
+        else
+        {
+            CheckAndCompleteInitialLoad();
         }
     }
 
