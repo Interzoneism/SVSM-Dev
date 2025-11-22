@@ -2239,7 +2239,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // Only queue user reports if:
         // 1. Either tags column is not visible, OR tags are not currently being refreshed
         // This ensures that when both columns are visible, tags load before user reports
-        return !(_isTagsColumnVisible && _isInstalledTagRefreshPending);
+        return !(_isTagsColumnVisible && (_isInstalledTagRefreshPending || _isModDatabaseTagRefreshPending));
     }
 
     private void AttachInstalledMod(ModListItemViewModel mod)
@@ -2859,6 +2859,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             finally
             {
                 _isModDatabaseTagRefreshPending = false;
+                // Start user report fetching now that mod database tags are complete
+                if (_areUserReportsVisible && !_hasEnabledUserReportFetching && _allowModDetailsRefresh)
+                {
+                    EnableUserReportFetching();
+                }
             }
         }
 
