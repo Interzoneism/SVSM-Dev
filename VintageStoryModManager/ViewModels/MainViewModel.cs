@@ -782,6 +782,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 break;
             case ViewSection.InstalledMods:
                 SelectedMod = null;
+                // Reset user report fetching flag to ensure user reports are queued
+                // after installed mods tags complete loading (only if user reports are visible)
+                if (_areUserReportsVisible)
+                {
+                    _hasEnabledUserReportFetching = false;
+                }
                 SetStatus("Showing installed mods.", false);
                 break;
             case ViewSection.CloudModlists:
