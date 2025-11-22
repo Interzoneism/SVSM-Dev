@@ -108,7 +108,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _hasRequestedAdditionalModDatabaseResults;
     private bool _hasSelectedMods;
     private bool _hasSelectedTags;
-    private bool _hasShownModDetailsLoadingStatus;
     private bool _isAutoRefreshDisabled;
     private bool _isBusy;
     private bool _isCompactView;
@@ -123,7 +122,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _isModDatabaseLoading;
     private bool _isModDatabaseTagRefreshPending;
     private bool _isModDetailsRefreshForced;
-    private bool _isModDetailsStatusActive;
     private bool _isModInfoExpanded = true;
     private bool _isTagsColumnVisible = true;
     private ModDatabaseAutoLoadMode _lastActivityAutoLoadMode = ModDatabaseAutoLoadMode.RecentlyAdded;
@@ -3860,14 +3858,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void UpdateLoadedModsStatus()
     {
-        if (IsModDetailsRefreshPending())
-        {
-            if (!_isModDetailsStatusActive) SetStatus(BuildModDetailsLoadingStatusMessage(), false, true);
-        }
-        else
-        {
-            SetStatus(BuildModDetailsReadyStatusMessage(), false);
-        }
+        // Don't show mod details loading status - let details load silently in background
+        // Just show the basic loaded mods count
+        SetStatus($"Loaded {TotalMods} mods.", false);
     }
 
     private bool IsModDetailsRefreshPending()
@@ -3950,18 +3943,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             CheckAndCompleteInitialLoad();
         }
-    }
-
-    private string BuildModDetailsLoadingStatusMessage()
-    {
-        return $"Loaded {TotalMods} mods. Loading mod details...";
-    }
-
-    private string BuildModDetailsReadyStatusMessage()
-    {
-        if (_hasShownModDetailsLoadingStatus) return $"Loaded {TotalMods} mods. Mod details up to date.";
-
-        return $"Loaded {TotalMods} mods.";
     }
 
     private string BuildNoModDatabaseResultsMessage(bool hasSearchTokens)
@@ -4302,13 +4283,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                    StringComparison.OrdinalIgnoreCase);
     }
 
-    private void SetStatus(string message, bool isError, bool isModDetailsStatus = false)
+    private void SetStatus(string message, bool isError)
     {
         StatusLogService.AppendStatus(message, isError);
         StatusMessage = message;
         IsErrorStatus = isError;
-        _isModDetailsStatusActive = isModDetailsStatus;
-        _hasShownModDetailsLoadingStatus = isModDetailsStatus;
     }
 
     private Dictionary<string, ModEntry?> LoadChangedModEntries(
