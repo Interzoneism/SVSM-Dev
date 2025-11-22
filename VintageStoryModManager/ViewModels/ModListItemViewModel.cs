@@ -174,6 +174,21 @@ public sealed class ModListItemViewModel : ObservableObject
         _isActive = isActive;
         HasErrors = entry.HasErrors;
 
+        // Pre-cache tag set during construction to avoid repeated creation during filtering
+        if (DatabaseTags.Count > 0)
+        {
+            _cachedTagSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var tag in DatabaseTags)
+            {
+                if (!string.IsNullOrWhiteSpace(tag))
+                    _cachedTagSet.Add(tag.Trim());
+            }
+            
+            // Clear if empty after filtering whitespace
+            if (_cachedTagSet.Count == 0)
+                _cachedTagSet = null;
+        }
+
         InitializeUpdateAvailability();
         InitializeVersionOptions();
         InitializeVersionWarning(_installedGameVersion);
@@ -1103,24 +1118,7 @@ public sealed class ModListItemViewModel : ObservableObject
     /// </returns>
     public HashSet<string>? GetCachedTagSet()
     {
-        if (_cachedTagSet != null)
-            return _cachedTagSet;
-
-        if (DatabaseTags.Count == 0)
-            return null;
-
-        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var tag in DatabaseTags)
-        {
-            if (string.IsNullOrWhiteSpace(tag)) continue;
-
-            set.Add(tag.Trim());
-        }
-
-        if (set.Count == 0)
-            return null;
-
-        _cachedTagSet = set;
+        // Tag set is now pre-cached in constructor, just return it
         return _cachedTagSet;
     }
 
