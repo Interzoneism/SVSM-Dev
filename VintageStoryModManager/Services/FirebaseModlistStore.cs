@@ -1092,6 +1092,8 @@ public sealed class FirebaseModlistStore : IDisposable
             _disposed = true;
         }
         
+        // Dispose semaphores outside the lock to avoid potential deadlocks.
+        // The _disposed flag (set atomically above) prevents new operations.
         _ownershipClaimLock.Dispose();
         _registryCacheLock.Dispose();
     }
