@@ -624,6 +624,7 @@ public sealed class ModVersionVoteService : IDisposable
 
     private async Task<(bool Found, VoteCacheEntry Entry)> TryGetCachedSummaryAsync(VoteCacheKey key, CancellationToken cancellationToken = default)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(ModVersionVoteService));
         await EnsureVoteCacheLoadedAsync(cancellationToken).ConfigureAwait(false);
         if (_voteCache.TryGetValue(key, out var entry))
         {
@@ -634,6 +635,7 @@ public sealed class ModVersionVoteService : IDisposable
 
     private async Task StoreCachedSummaryAsync(VoteCacheKey key, ModVersionVoteSummary summary, string? eTag, CancellationToken cancellationToken = default)
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(ModVersionVoteService));
         await EnsureVoteCacheLoadedAsync(cancellationToken).ConfigureAwait(false);
 
         _voteCache[key] = new VoteCacheEntry(summary, eTag);
@@ -644,6 +646,7 @@ public sealed class ModVersionVoteService : IDisposable
     private async Task EnsureVoteCacheLoadedAsync(CancellationToken cancellationToken = default)
     {
         if (_voteCacheLoaded) return;
+        if (_disposed) throw new ObjectDisposedException(nameof(ModVersionVoteService));
 
         await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
