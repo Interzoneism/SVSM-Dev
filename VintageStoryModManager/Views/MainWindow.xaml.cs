@@ -366,7 +366,9 @@ public partial class MainWindow : Window
         _installedColumnVisibilityPreferences[column] = menuItem.IsChecked;
         NotifyViewModelOfInstalledColumnVisibility(column, menuItem.IsChecked);
         ApplyInstalledColumnVisibility(column, menuItem.IsChecked);
+        menuItem.Checked -= InstalledModsColumnMenuItem_OnChecked;
         menuItem.Checked += InstalledModsColumnMenuItem_OnChecked;
+        menuItem.Unchecked -= InstalledModsColumnMenuItem_OnChecked;
         menuItem.Unchecked += InstalledModsColumnMenuItem_OnChecked;
     }
 
