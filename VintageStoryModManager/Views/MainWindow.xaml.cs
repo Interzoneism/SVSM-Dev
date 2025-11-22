@@ -12747,6 +12747,11 @@ public partial class MainWindow : Window
 
         try
         {
+            if (isBulk && mods.Count > 1)
+            {
+                _viewModel.ReportStatus($"Updating {mods.Count} mod(s)...");
+            }
+
             var results = new List<ModUpdateOperationResult>();
             ModUpdateReleasePreference? bulkPreference = null;
             var abortRequested = false;
@@ -12866,7 +12871,23 @@ public partial class MainWindow : Window
                         MessageBoxImage.Error);
                 }
 
-            if (abortRequested) _viewModel.ReportStatus(isBulk ? "Bulk update cancelled." : "Update cancelled.");
+            if (abortRequested)
+            {
+                _viewModel.ReportStatus(isBulk ? "Bulk update cancelled." : "Update cancelled.");
+            }
+            else if (isBulk && results.Count > 0)
+            {
+                var successCount = results.Count(r => r.Success);
+                var failureCount = results.Count(r => !r.Success);
+                if (failureCount > 0)
+                {
+                    _viewModel.ReportStatus($"Updated {successCount} mod(s). {failureCount} mod(s) failed.");
+                }
+                else
+                {
+                    _viewModel.ReportStatus($"Updated {successCount} mod(s).");
+                }
+            }
 
             if (results.Count > 0 && showSummary)
             {
