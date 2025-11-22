@@ -1198,8 +1198,7 @@
                                       FontSize="15"
                                       Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                       BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                      Visibility="{Binding IsViewingInstalledMods, Converter={StaticResource IMM.HiddenWhenFalseConverter}}"
-                                      IsEnabled="{Binding IsViewingInstalledMods}">
+                                      Visibility="{Binding IsViewingInstalledMods, Converter={StaticResource IMM.HiddenWhenFalseConverter}}">
                                 <DataGrid.Resources>
                                     <Style TargetType="{x:Type ScrollBar}"
                                            BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
