@@ -1189,45 +1189,57 @@ public sealed class ModDiscoveryService
     private static byte[]? TryLoadBundledDefaultIcon()
     {
         // Try multiple resource path formats to ensure we can find the embedded icon
+        // The correct format depends on how the resource was compiled into the assembly
         var resourcePaths = new[]
         {
-            "Resources/mod-default.png",
-            "/Resources/mod-default.png",
-            "pack://application:,,,/Resources/mod-default.png",
-            "pack://application:,,,/VintageStoryModManager;component/Resources/mod-default.png"
+            ("Resources/mod-default.png", UriKind.Relative),
+            ("/Resources/mod-default.png", UriKind.Relative),
+            ("pack://application:,,,/Resources/mod-default.png", UriKind.Absolute),
+            ("pack://application:,,,/VintageStoryModManager;component/Resources/mod-default.png", UriKind.Absolute)
         };
 
-        foreach (var resourcePath in resourcePaths)
+        foreach (var (resourcePath, uriKind) in resourcePaths)
         {
             try
             {
-                var resourceUri = new Uri(resourcePath, UriKind.RelativeOrAbsolute);
+                var resourceUri = new Uri(resourcePath, uriKind);
                 var resource = Application.GetResourceStream(resourceUri);
                 if (resource?.Stream != null)
                 {
                     using var stream = resource.Stream;
                     using var memory = new MemoryStream();
                     stream.CopyTo(memory);
+                    System.Diagnostics.Debug.WriteLine($"[ModDiscoveryService] Successfully loaded default icon from: {resourcePath}");
                     return memory.ToArray();
                 }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ModDiscoveryService] Resource not found at: {resourcePath}");
+                }
             }
-            catch (IOException)
+            catch (IOException ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[ModDiscoveryService] IOException loading icon from {resourcePath}: {ex.Message}");
             }
-            catch (NotSupportedException)
+            catch (NotSupportedException ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[ModDiscoveryService] NotSupportedException loading icon from {resourcePath}: {ex.Message}");
             }
-            catch (SecurityException)
+            catch (SecurityException ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[ModDiscoveryService] SecurityException loading icon from {resourcePath}: {ex.Message}");
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[ModDiscoveryService] InvalidOperationException loading icon from {resourcePath}: {ex.Message}");
             }
-            catch (UriFormatException)
+            catch (UriFormatException ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[ModDiscoveryService] UriFormatException loading icon from {resourcePath}: {ex.Message}");
             }
         }
 
+        System.Diagnostics.Debug.WriteLine("[ModDiscoveryService] Failed to load default icon from any resource path");
         return null;
     }
 

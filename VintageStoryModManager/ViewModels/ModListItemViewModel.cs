@@ -2029,24 +2029,17 @@ public sealed class ModListItemViewModel : ObservableObject
         var image = CreateImageSafely(
             () =>
             {
-                var stream = new MemoryStream(buffer);
-                try
-                {
-                    var bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.StreamSource = stream;
-                    bitmap.EndInit();
-                    TryFreezeImageSource(bitmap, $"{context} (byte stream)", LogDebug);
-                    // Access PixelWidth to force WPF to fully load and decode the bitmap data immediately
-                    // This ensures the image is ready to use even after the stream is disposed
-                    _ = bitmap.PixelWidth;
-                    return bitmap;
-                }
-                finally
-                {
-                    stream.Dispose();
-                }
+                using var stream = new MemoryStream(buffer);
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.StreamSource = stream;
+                bitmap.EndInit();
+                TryFreezeImageSource(bitmap, $"{context} (byte stream)", LogDebug);
+                // Access PixelWidth to force WPF to fully load and decode the bitmap data immediately
+                // This ensures the image is ready to use even after the stream is disposed
+                _ = bitmap.PixelWidth;
+                return bitmap;
             },
             $"{context} (byte stream)");
 
