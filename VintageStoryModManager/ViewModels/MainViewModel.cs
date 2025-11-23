@@ -37,6 +37,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan BackgroundOperationDelay = TimeSpan.FromMilliseconds(50);
     private static readonly TimeSpan UserReportFetchDelay = TimeSpan.FromMilliseconds(1500);
     private static readonly TimeSpan FallbackFingerprintCheckInterval = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan DependencyCheckDisplayDelay = TimeSpan.FromMilliseconds(200);
     private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
     private static readonly int MaxConcurrentUserReportRefreshes = DevConfig.MaxConcurrentUserReportRefreshes;
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
@@ -4045,18 +4046,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 _isCheckingDependencies = true;
                 SetStatus("Checking for dependency errors...", false);
                 // Trigger final completion after a brief delay to ensure dependency check message is visible
-                Task.Delay(200).ContinueWith(_ => 
-                {
-                    InvokeOnDispatcherAsync(
-                        () => 
-                        {
-                            _isCheckingDependencies = false;
-                            _isCheckingForUpdates = false;
-                            SetStatus($"Loaded {TotalMods} mods successfully.", false);
-                        },
-                        CancellationToken.None,
-                        DispatcherPriority.Normal);
-                }, TaskScheduler.Default);
+                ScheduleFinalLoadCompletion();
                 return;
             }
         }
@@ -4065,6 +4055,41 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             SetStatus($"Loaded {TotalMods} mods. All details up to date.", false);
         }
+    }
+
+    private void ScheduleFinalLoadCompletion()
+    {
+        // Schedule final status update after a brief delay to ensure dependency check message is visible
+        Task.Delay(DependencyCheckDisplayDelay).ContinueWith(
+            _ =>
+            {
+                try
+                {
+                    InvokeOnDispatcherAsync(
+                        () =>
+                        {
+                            _isCheckingDependencies = false;
+                            _isCheckingForUpdates = false;
+                            SetStatus($"Loaded {TotalMods} mods successfully.", false);
+                        },
+                        CancellationToken.None,
+                        DispatcherPriority.Normal);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Object was disposed during delay - this is expected during shutdown
+                }
+                catch (Exception ex)
+                {
+                    // Log unexpected exceptions but don't crash - this is non-critical status update
+                    StatusLogService.AppendStatus(
+                        $"Error updating final load status: {ex.Message}",
+                        true);
+                }
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.None,
+            TaskScheduler.Default);
     }
 
     private void InvokeCheckAndCompleteInitialLoad()
