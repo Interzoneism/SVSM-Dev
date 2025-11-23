@@ -1942,13 +1942,14 @@ public sealed class ModListItemViewModel : ObservableObject
         }
 
         // Try to get from cache or load and decode off-thread
-        // For synchronous calls, the actual decoding happens off UI thread via Task.Run
+        // Note: GetAwaiter().GetResult() is safe here because:
+        // 1. This is called from synchronous context (constructor)
+        // 2. Task.Run inside cache service ensures decoding happens on background thread
+        // 3. We're only waiting for the result, not blocking UI with actual work
         ImageSource? image = null;
         try
         {
             var task = ImageCacheService.Instance.GetOrCreateFromUriAsync(uri);
-            // GetAwaiter().GetResult() waits synchronously but the Task.Run inside cache service
-            // ensures decoding happens on a background thread
             image = task.GetAwaiter().GetResult();
         }
         catch (Exception ex)
@@ -1978,13 +1979,14 @@ public sealed class ModListItemViewModel : ObservableObject
         // Create cache key from hash of bytes for uniqueness
         var cacheKey = $"bytes:{context}:{ComputeHash(bytes)}";
         
+        // Note: GetAwaiter().GetResult() is safe here because:
+        // 1. This is called from synchronous context (constructor)
+        // 2. Task.Run inside cache service ensures decoding happens on background thread
+        // 3. We're only waiting for the result, not blocking UI with actual work
         ImageSource? image = null;
         try
         {
-            // Decode off UI thread using cache service
             var task = ImageCacheService.Instance.GetOrCreateFromBytesAsync(bytes, cacheKey);
-            // GetAwaiter().GetResult() waits synchronously but Task.Run inside cache service
-            // ensures decoding happens on a background thread
             image = task.GetAwaiter().GetResult();
         }
         catch (Exception ex)

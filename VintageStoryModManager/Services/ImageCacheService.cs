@@ -15,7 +15,7 @@ public sealed class ImageCacheService
 {
     private static readonly Lazy<ImageCacheService> _instance = new(() => new ImageCacheService());
     
-    private readonly ConcurrentDictionary<string, ImageSource?> _cache = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, ImageSource?> _cache = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     ///     Gets the singleton instance of the ImageCacheService.
