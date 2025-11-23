@@ -270,15 +270,17 @@ internal static class ModManifestCacheService
     {
         _isDirty = true;
         
-        // Ensure timer is created and running
+        // Ensure timer is created and running (one-shot timer that fires after SaveInterval)
         if (_saveTimer == null)
         {
-            _saveTimer = new System.Threading.Timer(OnSaveTimerCallback, null, SaveInterval, SaveInterval);
+            _saveTimer = new System.Threading.Timer(OnSaveTimerCallback, null, SaveInterval, System.Threading.Timeout.InfiniteTimeSpan);
         }
     }
 
     private static void OnSaveTimerCallback(object? state)
     {
+        System.Threading.Timer? timerToDispose = null;
+        
         lock (CacheLock)
         {
             if (_isDirty && _cache != null)
@@ -286,11 +288,14 @@ internal static class ModManifestCacheService
                 SaveCacheLocked(_cache);
                 _isDirty = false;
                 
-                // Stop timer after save to reduce unnecessary callbacks
-                _saveTimer?.Dispose();
+                // Capture timer reference for disposal outside the lock
+                timerToDispose = _saveTimer;
                 _saveTimer = null;
             }
         }
+        
+        // Dispose timer outside the lock to avoid potential deadlock
+        timerToDispose?.Dispose();
     }
 
     private static UnifiedMetadataCache EnsureCacheLocked()
