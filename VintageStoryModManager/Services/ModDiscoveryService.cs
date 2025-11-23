@@ -1104,6 +1104,27 @@ public sealed class ModDiscoveryService
         {
             _directoryManifestCache[directoryPath] = cached;
         }
+
+        // Also store in ModManifestCacheService for consistency
+        try
+        {
+            var modInfoPath = Path.Combine(directoryPath, "modinfo.json");
+            if (File.Exists(modInfoPath))
+            {
+                var manifestJson = File.ReadAllText(modInfoPath);
+                ModManifestCacheService.StoreManifest(
+                    modInfoPath,
+                    manifestLastWriteUtc,
+                    manifestLength,
+                    info.ModId,
+                    info.Version,
+                    manifestJson);
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore failures to persist to ModManifestCacheService
+        }
     }
 
     private void InvalidateDirectoryCache(string directoryPath)

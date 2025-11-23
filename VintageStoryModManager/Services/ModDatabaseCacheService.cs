@@ -350,7 +350,6 @@ internal sealed class ModDatabaseCacheService : IDisposable
             GameVersion = string.IsNullOrWhiteSpace(normalizedGameVersion)
                 ? AnyGameVersionToken
                 : normalizedGameVersion!,
-            Tags = info.Tags?.ToArray() ?? Array.Empty<string>(),
             AssetId = info.AssetId,
             ModPageUrl = info.ModPageUrl,
             Downloads = info.Downloads,
@@ -374,7 +373,7 @@ internal sealed class ModDatabaseCacheService : IDisposable
         string? installedModVersion,
         bool requireExactVersionMatch)
     {
-        var tags = cached.Tags is { Length: > 0 } ? cached.Tags : Array.Empty<string>();
+        var tags = Array.Empty<string>();
 
         var releases = BuildReleases(cached.Releases, normalizedGameVersion, requireExactVersionMatch);
 
@@ -576,8 +575,6 @@ internal sealed class ModDatabaseCacheService : IDisposable
         public string GameVersion { get; init; } = AnyGameVersionToken;
 
         public DateTime CachedUtc { get; init; }
-
-        public string[] Tags { get; init; } = Array.Empty<string>();
 
         public string? AssetId { get; init; }
 

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
@@ -113,7 +114,64 @@ public sealed class ModDatabaseService
                     cancellationToken)
                 .ConfigureAwait(false);
 
-            if (cached != null) modEntry.DatabaseInfo = cached;
+            // Load tags from mod-metadata-cache if available
+            string[]? cachedTags = null;
+            if (!string.IsNullOrWhiteSpace(modEntry.SourcePath))
+            {
+                try
+                {
+                    // Only check metadata cache for file-based mods (ZipArchive)
+                    if (modEntry.SourceKind == ModSourceKind.ZipArchive && File.Exists(modEntry.SourcePath))
+                    {
+                        var fileInfo = new FileInfo(modEntry.SourcePath);
+                        if (ModManifestCacheService.TryGetManifest(
+                            modEntry.SourcePath,
+                            fileInfo.LastWriteTimeUtc,
+                            fileInfo.Length,
+                            out _,
+                            out cachedTags))
+                        {
+                            // Tags loaded from metadata cache
+                        }
+                    }
+                    else if (modEntry.SourceKind == ModSourceKind.Folder && Directory.Exists(modEntry.SourcePath))
+                    {
+                        // For folders, check if there's a modinfo.json file
+                        var modInfoPath = Path.Combine(modEntry.SourcePath, "modinfo.json");
+                        if (File.Exists(modInfoPath))
+                        {
+                            var fileInfo = new FileInfo(modInfoPath);
+                            if (ModManifestCacheService.TryGetManifest(
+                                modInfoPath,
+                                fileInfo.LastWriteTimeUtc,
+                                fileInfo.Length,
+                                out _,
+                                out cachedTags))
+                            {
+                                // Tags loaded from metadata cache
+                            }
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    // Ignore cache read failures
+                }
+            }
+
+            // Merge cached database info with tags from mod metadata cache
+            if (cached != null)
+            {
+                if (cachedTags is { Length: > 0 })
+                {
+                    // Create a new ModDatabaseInfo with tags from metadata cache
+                    modEntry.DatabaseInfo = MergeDatabaseInfoWithTags(cached, cachedTags);
+                }
+                else
+                {
+                    modEntry.DatabaseInfo = cached;
+                }
+            }
 
             if (internetDisabled) return;
 
@@ -127,7 +185,38 @@ public sealed class ModDatabaseService
                         requireExactVersionMatch,
                         cancellationToken)
                     .ConfigureAwait(false);
-                if (info != null) modEntry.DatabaseInfo = info;
+                if (info != null)
+                {
+                    modEntry.DatabaseInfo = info;
+                    
+                    // Store tags in mod-metadata-cache.json for installed mods
+                    if (!string.IsNullOrWhiteSpace(modEntry.SourcePath) && info.Tags is { Count: > 0 })
+                    {
+                        try
+                        {
+                            var tagsArray = info.Tags.ToArray();
+                            
+                            // Store tags based on source kind
+                            if (modEntry.SourceKind == ModSourceKind.ZipArchive)
+                            {
+                                ModManifestCacheService.UpdateTags(modEntry.SourcePath, tagsArray);
+                            }
+                            else if (modEntry.SourceKind == ModSourceKind.Folder)
+                            {
+                                // For folders, store tags for the modinfo.json file
+                                var modInfoPath = Path.Combine(modEntry.SourcePath, "modinfo.json");
+                                if (File.Exists(modInfoPath))
+                                {
+                                    ModManifestCacheService.UpdateTags(modInfoPath, tagsArray);
+                                }
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            // Ignore cache update failures
+                        }
+                    }
+                }
             }
             finally
             {
@@ -1425,5 +1514,32 @@ public sealed class ModDatabaseService
         }
 
         return null;
+    }
+
+    private static ModDatabaseInfo MergeDatabaseInfoWithTags(ModDatabaseInfo source, string[] tags)
+    {
+        return new ModDatabaseInfo
+        {
+            Tags = tags,
+            CachedTagsVersion = source.CachedTagsVersion,
+            AssetId = source.AssetId,
+            ModPageUrl = source.ModPageUrl,
+            LatestCompatibleVersion = source.LatestCompatibleVersion,
+            LatestVersion = source.LatestVersion,
+            RequiredGameVersions = source.RequiredGameVersions,
+            Downloads = source.Downloads,
+            Comments = source.Comments,
+            Follows = source.Follows,
+            TrendingPoints = source.TrendingPoints,
+            LogoUrl = source.LogoUrl,
+            DownloadsLastThirtyDays = source.DownloadsLastThirtyDays,
+            DownloadsLastTenDays = source.DownloadsLastTenDays,
+            LastReleasedUtc = source.LastReleasedUtc,
+            CreatedUtc = source.CreatedUtc,
+            LatestRelease = source.LatestRelease,
+            LatestCompatibleRelease = source.LatestCompatibleRelease,
+            Releases = source.Releases,
+            Side = source.Side
+        };
     }
 }

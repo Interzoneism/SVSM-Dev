@@ -49,6 +49,46 @@ internal static class ModManifestCacheService
         }
     }
 
+    public static bool TryGetManifest(
+        string sourcePath,
+        DateTime lastWriteTimeUtc,
+        long length,
+        out string manifestJson,
+        out string[]? tags)
+    {
+        manifestJson = string.Empty;
+        tags = null;
+
+        var normalizedPath = NormalizePath(sourcePath);
+        var ticks = ToUniversalTicks(lastWriteTimeUtc);
+
+        lock (IndexLock)
+        {
+            var index = EnsureIndexLocked();
+            if (!index.TryGetValue(normalizedPath, out var entry)) return false;
+
+            if (entry.Length != length || entry.LastWriteTimeUtcTicks != ticks)
+            {
+                index.Remove(normalizedPath);
+                SaveIndexLocked(index);
+                return false;
+            }
+
+            try
+            {
+                manifestJson = entry.ManifestJson ?? string.Empty;
+                tags = entry.Tags;
+                return !string.IsNullOrWhiteSpace(manifestJson);
+            }
+            catch (Exception)
+            {
+                index.Remove(normalizedPath);
+                SaveIndexLocked(index);
+                return false;
+            }
+        }
+    }
+
     public static void ClearCache()
     {
         lock (IndexLock)
@@ -107,6 +147,45 @@ internal static class ModManifestCacheService
         }
     }
 
+    public static void StoreManifest(
+        string sourcePath,
+        DateTime lastWriteTimeUtc,
+        long length,
+        string modId,
+        string? version,
+        string manifestJson,
+        string[]? tags)
+    {
+        var normalizedPath = NormalizePath(sourcePath);
+        var ticks = ToUniversalTicks(lastWriteTimeUtc);
+
+        try
+        {
+            lock (IndexLock)
+            {
+                var index = EnsureIndexLocked();
+                if (!index.TryGetValue(normalizedPath, out var entry))
+                {
+                    entry = new CacheEntry();
+                    index[normalizedPath] = entry;
+                }
+
+                entry.ModId = modId;
+                entry.Version = version;
+                entry.ManifestJson = manifestJson;
+                entry.Length = length;
+                entry.LastWriteTimeUtcTicks = ticks;
+                entry.Tags = tags;
+
+                SaveIndexLocked(index);
+            }
+        }
+        catch (Exception)
+        {
+            // Intentionally swallow errors; cache failures should not impact mod loading.
+        }
+    }
+
     public static void Invalidate(string sourcePath)
     {
         var normalizedPath = NormalizePath(sourcePath);
@@ -114,6 +193,27 @@ internal static class ModManifestCacheService
         {
             var index = EnsureIndexLocked();
             if (index.Remove(normalizedPath)) SaveIndexLocked(index);
+        }
+    }
+
+    public static void UpdateTags(string sourcePath, string[]? tags)
+    {
+        var normalizedPath = NormalizePath(sourcePath);
+        try
+        {
+            lock (IndexLock)
+            {
+                var index = EnsureIndexLocked();
+                if (index.TryGetValue(normalizedPath, out var entry))
+                {
+                    entry.Tags = tags;
+                    SaveIndexLocked(index);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Intentionally swallow errors; cache failures should not impact mod loading.
         }
     }
 
@@ -231,5 +331,6 @@ internal static class ModManifestCacheService
         public string? ManifestJson { get; set; }
         public long Length { get; set; }
         public long LastWriteTimeUtcTicks { get; set; }
+        public string[]? Tags { get; set; }
     }
 }
