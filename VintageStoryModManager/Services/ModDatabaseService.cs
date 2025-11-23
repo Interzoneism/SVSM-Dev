@@ -800,7 +800,7 @@ public sealed class ModDatabaseService
             var info = new ModDatabaseInfo
             {
                 Tags = tags,
-                CachedTagsVersion = normalizedModVersion,
+                CachedTagsVersion = null,
                 AssetId = assetId,
                 ModPageUrl = modPageUrl,
                 LatestCompatibleVersion = latestCompatibleVersion,

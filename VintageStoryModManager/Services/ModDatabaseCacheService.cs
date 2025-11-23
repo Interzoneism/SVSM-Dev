@@ -113,20 +113,7 @@ internal sealed class ModDatabaseCacheService : IDisposable
         {
             var index = await EnsureCacheLoadedAsync(cancellationToken).ConfigureAwait(false);
 
-            // Load existing entry to preserve tags by version
-            var tagsByModVersion = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
-            if (index.TryGetValue(cacheKey, out var existingEntry) && existingEntry.TagsByModVersion is { Count: > 0 })
-            {
-                tagsByModVersion = new Dictionary<string, string[]>(existingEntry.TagsByModVersion, StringComparer.OrdinalIgnoreCase);
-            }
-
-            var tagsVersionKey = NormalizeModVersion(info.CachedTagsVersion);
-            if (string.IsNullOrWhiteSpace(tagsVersionKey)) tagsVersionKey = NormalizeModVersion(installedModVersion);
-
-            if (!string.IsNullOrWhiteSpace(tagsVersionKey))
-                tagsByModVersion[tagsVersionKey] = info.Tags?.ToArray() ?? Array.Empty<string>();
-
-            var cacheModel = CreateCacheModel(modId, normalizedGameVersion, info, tagsByModVersion);
+            var cacheModel = CreateCacheModel(modId, normalizedGameVersion, info);
             index[cacheKey] = cacheModel;
             
             // Set dirty flag after successful cache update
@@ -333,8 +320,7 @@ internal sealed class ModDatabaseCacheService : IDisposable
     private static CachedModDatabaseInfo CreateCacheModel(
         string modId,
         string? normalizedGameVersion,
-        ModDatabaseInfo info,
-        IReadOnlyDictionary<string, string[]> tagsByModVersion)
+        ModDatabaseInfo info)
     {
         var releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
         var releaseModels = new List<CachedModRelease>(releases.Count);
@@ -365,9 +351,6 @@ internal sealed class ModDatabaseCacheService : IDisposable
                 ? AnyGameVersionToken
                 : normalizedGameVersion!,
             Tags = info.Tags?.ToArray() ?? Array.Empty<string>(),
-            TagsByModVersion = tagsByModVersion.Count == 0
-                ? new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-                : new Dictionary<string, string[]>(tagsByModVersion, StringComparer.OrdinalIgnoreCase),
             AssetId = info.AssetId,
             ModPageUrl = info.ModPageUrl,
             Downloads = info.Downloads,
@@ -391,12 +374,7 @@ internal sealed class ModDatabaseCacheService : IDisposable
         string? installedModVersion,
         bool requireExactVersionMatch)
     {
-        var normalizedInstalledVersion = NormalizeModVersion(installedModVersion);
-
-        var tags = GetTagsForInstalledVersion(
-            cached,
-            normalizedInstalledVersion,
-            out var cachedTagsVersion);
+        var tags = cached.Tags is { Length: > 0 } ? cached.Tags : Array.Empty<string>();
 
         var releases = BuildReleases(cached.Releases, normalizedGameVersion, requireExactVersionMatch);
 
@@ -410,7 +388,7 @@ internal sealed class ModDatabaseCacheService : IDisposable
         return new ModDatabaseInfo
         {
             Tags = tags,
-            CachedTagsVersion = cachedTagsVersion,
+            CachedTagsVersion = null,
             AssetId = cached.AssetId,
             ModPageUrl = cached.ModPageUrl,
             LatestCompatibleVersion = latestCompatibleRelease?.Version,
@@ -430,31 +408,6 @@ internal sealed class ModDatabaseCacheService : IDisposable
             Releases = releases,
             Side = cached.Side
         };
-    }
-
-    private static IReadOnlyList<string> GetTagsForInstalledVersion(
-        CachedModDatabaseInfo cached,
-        string? normalizedInstalledVersion,
-        out string? cachedTagsVersion)
-    {
-        cachedTagsVersion = null;
-
-        if (!string.IsNullOrWhiteSpace(normalizedInstalledVersion)
-            && cached.TagsByModVersion is { Count: > 0 }
-            && cached.TagsByModVersion.TryGetValue(normalizedInstalledVersion, out var versionTags))
-        {
-            cachedTagsVersion = normalizedInstalledVersion;
-            return versionTags is { Length: > 0 } ? versionTags : Array.Empty<string>();
-        }
-
-        if (cached.Tags is { Length: > 0 }) return cached.Tags;
-
-        if (cached.TagsByModVersion is { Count: > 0 })
-            foreach (var entry in cached.TagsByModVersion)
-                if (entry.Value is { Length: > 0 })
-                    return entry.Value;
-
-        return Array.Empty<string>();
     }
 
     private static IReadOnlyList<ModReleaseInfo> BuildReleases(
@@ -625,8 +578,6 @@ internal sealed class ModDatabaseCacheService : IDisposable
         public DateTime CachedUtc { get; init; }
 
         public string[] Tags { get; init; } = Array.Empty<string>();
-
-        public Dictionary<string, string[]> TagsByModVersion { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
         public string? AssetId { get; init; }
 
