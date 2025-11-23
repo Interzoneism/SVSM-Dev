@@ -13096,6 +13096,10 @@ public partial class MainWindow : Window
         _backupSemaphore.Dispose();
         _cloudStoreLock.Dispose();
         _cloudModlistStore?.Dispose();
+        
+        // Flush any pending cache writes before application shutdown
+        ModManifestCacheService.Flush();
+        
         base.OnClosed(e);
     }
 
