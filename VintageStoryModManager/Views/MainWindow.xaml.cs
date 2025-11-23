@@ -3796,6 +3796,10 @@ public partial class MainWindow : Window
 
     private void ModsDataGrid_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        // We use custom selection tracking via _selectedMods list instead of DataGrid's native selection.
+        // Clear any DataGrid selection to prevent it from interfering with our custom selection.
+        // With IsSynchronizedWithCurrentItem=False, this should only fire on direct user clicks,
+        // which we handle in PreviewMouseLeftButtonDown.
         if (sender is DataGrid dataGrid)
         {
             dataGrid.SelectedIndex = -1;

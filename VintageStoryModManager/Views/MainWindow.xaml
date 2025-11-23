@@ -1182,7 +1182,7 @@
 
                                       RowHeaderWidth="0"
                                       BorderThickness="0,1,2,1"
-                                      IsSynchronizedWithCurrentItem="True"
+                                      IsSynchronizedWithCurrentItem="False"
                                       MinColumnWidth="20"
                                       SelectionChanged="ModsDataGrid_OnSelectionChanged"
                                       Foreground="{DynamicResource Brush.Text.Primary}"
@@ -1816,7 +1816,7 @@
 
                                       RowHeaderWidth="0"
                                       BorderThickness="0,1,2,1"
-                                      IsSynchronizedWithCurrentItem="True"
+                                      IsSynchronizedWithCurrentItem="False"
                                       MinColumnWidth="20"
                                       SelectionChanged="ModsDataGrid_OnSelectionChanged"
                                       Foreground="{DynamicResource Brush.Text.Primary}"
