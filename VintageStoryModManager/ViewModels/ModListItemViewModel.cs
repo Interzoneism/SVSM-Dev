@@ -1170,7 +1170,9 @@ public sealed class ModListItemViewModel : ObservableObject
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            var image = CreateBitmapFromBytes(payload, uri);
+            // Decode image off UI thread using cache service
+            var cacheKey = uri.AbsoluteUri;
+            var image = await ImageCacheService.Instance.GetOrCreateFromBytesAsync(payload, cacheKey).ConfigureAwait(false);
             if (image is null) return;
 
             await InvokeOnDispatcherAsync(
@@ -1918,27 +1920,6 @@ public sealed class ModListItemViewModel : ObservableObject
         return CreateImageFromUri(_modDatabaseLogoUrl, "Mod database logo", false);
     }
 
-    private ImageSource? CreateBitmapFromBytes(byte[] payload, Uri sourceUri)
-    {
-        try
-        {
-            using var stream = new MemoryStream(payload, false);
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-            bitmap.StreamSource = stream;
-            bitmap.EndInit();
-            TryFreezeImageSource(bitmap, $"Async mod database logo ({sourceUri})", LogDebug);
-            return bitmap;
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Async database logo load failed to create bitmap: {ex.Message}.");
-            return null;
-        }
-    }
-
     private ImageSource? CreateImageFromUri(string? url, string context, bool enableLogging = true)
     {
         var formattedUrl = FormatValue(url);
@@ -1960,20 +1941,22 @@ public sealed class ModListItemViewModel : ObservableObject
             return null;
         }
 
-        var image = CreateImageSafely(
-            () =>
-            {
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.UriSource = uri;
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-                bitmap.EndInit();
-                TryFreezeImageSource(bitmap, $"{context} ({uri})", enableLogging ? LogDebug : null);
-                return bitmap;
-            },
-            $"{context} ({uri})",
-            enableLogging);
+        // Try to get from cache or load and decode off-thread
+        // Note: GetAwaiter().GetResult() is safe here because:
+        // 1. This is called from synchronous context (constructor)
+        // 2. Task.Run inside cache service ensures decoding happens on background thread
+        // 3. We're only waiting for the result, not blocking UI with actual work
+        ImageSource? image = null;
+        try
+        {
+            var task = ImageCacheService.Instance.GetOrCreateFromUriAsync(uri);
+            image = task.GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            if (enableLogging) LogDebug($"{context}: Exception during image loading: {ex.Message}.");
+            return null;
+        }
 
         if (enableLogging)
             LogDebug(image is null
@@ -1993,20 +1976,24 @@ public sealed class ModListItemViewModel : ObservableObject
             return null;
         }
 
-        var buffer = bytes;
-        var image = CreateImageSafely(
-            () =>
-            {
-                using MemoryStream stream = new(buffer);
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.StreamSource = stream;
-                bitmap.EndInit();
-                TryFreezeImageSource(bitmap, $"{context} (byte stream)", LogDebug);
-                return bitmap;
-            },
-            $"{context} (byte stream)");
+        // Create cache key from hash of bytes for uniqueness
+        var cacheKey = $"bytes:{context}:{ComputeHash(bytes)}";
+        
+        // Note: GetAwaiter().GetResult() is safe here because:
+        // 1. This is called from synchronous context (constructor)
+        // 2. Task.Run inside cache service ensures decoding happens on background thread
+        // 3. We're only waiting for the result, not blocking UI with actual work
+        ImageSource? image = null;
+        try
+        {
+            var task = ImageCacheService.Instance.GetOrCreateFromBytesAsync(bytes, cacheKey);
+            image = task.GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"{context}: Exception during image creation: {ex.Message}.");
+            return null;
+        }
 
         LogDebug(image is null
             ? $"{context}: Failed to create bitmap from bytes."
@@ -2015,37 +2002,12 @@ public sealed class ModListItemViewModel : ObservableObject
         return image;
     }
 
-    private ImageSource? CreateImageSafely(Func<ImageSource?> factory, string context, bool enableLogging = true)
+    private static string ComputeHash(byte[] bytes)
     {
-        if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
-            try
-            {
-                if (enableLogging) LogDebug($"{context}: Invoking image creation on dispatcher thread.");
-                var result = dispatcher.Invoke(factory);
-                if (enableLogging)
-                    LogDebug(
-                        $"{context}: Dispatcher invocation completed with result {(result is null ? "null" : "available")}.");
-                return result;
-            }
-            catch (Exception ex)
-            {
-                if (enableLogging) LogDebug($"{context}: Exception during dispatcher invocation: {ex.Message}.");
-                return null;
-            }
-
-        try
-        {
-            var result = factory();
-            if (enableLogging)
-                LogDebug(
-                    $"{context}: Image creation completed on current thread with result {(result is null ? "null" : "available")}.");
-            return result;
-        }
-        catch (Exception ex)
-        {
-            if (enableLogging) LogDebug($"{context}: Exception during image creation: {ex.Message}.");
-            return null;
-        }
+        // Use SHA256 for proper hash to avoid collisions
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashBytes = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hashBytes);
     }
 
     private static Task InvokeOnDispatcherAsync(Action action, CancellationToken cancellationToken)
@@ -2070,28 +2032,6 @@ public sealed class ModListItemViewModel : ObservableObject
     private static void LogDebug(string message)
     {
         _ = message;
-    }
-
-    private static void TryFreezeImageSource(ImageSource image, string context, Action<string>? log)
-    {
-        if (image is not Freezable freezable) return;
-
-        if (freezable.IsFrozen) return;
-
-        if (!freezable.CanFreeze)
-        {
-            log?.Invoke($"{context}: Image cannot be frozen; continuing without freezing.");
-            return;
-        }
-
-        try
-        {
-            freezable.Freeze();
-        }
-        catch (Exception ex)
-        {
-            log?.Invoke($"{context}: Failed to freeze image: {ex.Message}. Continuing without freezing.");
-        }
     }
 
     private static string FormatValue(string? value)
