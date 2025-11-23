@@ -38,6 +38,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan UserReportFetchDelay = TimeSpan.FromMilliseconds(1500);
     private static readonly TimeSpan FallbackFingerprintCheckInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan DependencyCheckDisplayDelay = TimeSpan.FromMilliseconds(200);
+    private static readonly TimeSpan LazyMetadataOnlineDelay = TimeSpan.FromMilliseconds(350);
     private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
     private static readonly int MaxConcurrentUserReportRefreshes = DevConfig.MaxConcurrentUserReportRefreshes;
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
@@ -108,6 +109,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private Timer? _fastCheckTimer;
     private bool _hasActiveBusyScope;
     private bool _hasEnabledUserReportFetching;
+    private bool _hasCompletedDependencyCheck;
     private bool _hasMultipleSelectedMods;
     private volatile bool _hasPendingFastCheck;
     private bool _hasRequestedAdditionalModDatabaseResults;
@@ -1802,6 +1804,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _isModDetailsRefreshForced = false;
         var previousAllowDetails = _allowModDetailsRefresh;
         _allowModDetailsRefresh = !_isAutoRefreshDisabled || forcedRefresh;
+        _hasCompletedDependencyCheck = false;
+        _isCheckingDependencies = false;
 
         IsLoadingMods = true;
         using var busyScope = BeginBusyScope();
@@ -4034,27 +4038,54 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             userReportsComplete = _activeUserReportOperations == 0;
         }
-        
+
         bool allOperationsComplete = modDetailsComplete && tagsComplete && userReportsComplete;
 
         // During initial load, show appropriate status for each phase
-        if (!_isInitialLoadComplete && _viewSection == ViewSection.InstalledMods)
+        if (_viewSection == ViewSection.InstalledMods && allOperationsComplete && !_hasCompletedDependencyCheck
+            && !_isCheckingDependencies)
         {
-            if (allOperationsComplete && _isCheckingForUpdates && !_isCheckingDependencies)
-            {
-                // All background ops complete, now check dependencies
-                _isCheckingDependencies = true;
-                SetStatus("Checking for dependency errors...", false);
-                // Trigger final completion after a brief delay to ensure dependency check message is visible
-                ScheduleFinalLoadCompletion();
-                return;
-            }
+            _hasCompletedDependencyCheck = true;
+            _ = RunDeferredDependencyCheckAsync();
+            return;
         }
+
         // Update status message if we're in the installed mods view and background operations finished
-        else if (allOperationsComplete && _isInitialLoadComplete && _viewSection == ViewSection.InstalledMods)
-        {
+        if (allOperationsComplete && _isInitialLoadComplete && _viewSection == ViewSection.InstalledMods)
             SetStatus($"Loaded {TotalMods} mods. All details up to date.", false);
+    }
+
+    private async Task RunDeferredDependencyCheckAsync()
+    {
+        if (_isCheckingDependencies) return;
+
+        _isCheckingDependencies = true;
+        await InvokeOnDispatcherAsync(
+            () => SetStatus("Checking for dependency errors...", false),
+            CancellationToken.None,
+            DispatcherPriority.ContextIdle).ConfigureAwait(false);
+
+        List<ModEntry> entriesSnapshot;
+        lock (_modsStateLock)
+        {
+            entriesSnapshot = _modEntriesBySourcePath.Values.ToList();
         }
+
+        await Task.Run(() => _discoveryService.ApplyLoadStatusesIncremental(entriesSnapshot, entriesSnapshot, null))
+            .ConfigureAwait(false);
+
+        await InvokeOnDispatcherAsync(() =>
+        {
+            foreach (var mod in _mods)
+            {
+                if (!_modEntriesBySourcePath.TryGetValue(mod.SourcePath, out var entry)) continue;
+
+                mod.UpdateDependencyIssues(entry.DependencyHasErrors, entry.MissingDependencies ?? Array.Empty<ModDependencyInfo>());
+                mod.UpdateLoadError(entry.LoadError);
+            }
+        }, CancellationToken.None, DispatcherPriority.Background).ConfigureAwait(true);
+
+        ScheduleFinalLoadCompletion();
     }
 
     private void ScheduleFinalLoadCompletion()
@@ -4722,6 +4753,32 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return true;
     }
 
+    private static string? GetCachedLatestVersion(ModDatabaseInfo? cachedInfo)
+    {
+        return cachedInfo?.LatestRelease?.Version
+               ?? cachedInfo?.LatestVersion
+               ?? cachedInfo?.LatestCompatibleRelease?.Version
+               ?? cachedInfo?.LatestCompatibleVersion;
+    }
+
+    private async Task<bool> ShouldUseCachedMetadataAsync(ModEntry entry, ModDatabaseInfo cachedInfo)
+    {
+        // Allow the UI thread to breathe before performing online validation
+        await Task.Delay(LazyMetadataOnlineDelay).ConfigureAwait(false);
+
+        var cachedVersion = VersionStringUtility.Normalize(GetCachedLatestVersion(cachedInfo));
+        if (string.IsNullOrWhiteSpace(cachedVersion)) return false;
+
+        var latestVersion = await _databaseService
+            .TryFetchLatestReleaseVersionAsync(entry.ModId, CancellationToken.None)
+            .ConfigureAwait(false);
+
+        if (string.IsNullOrWhiteSpace(latestVersion)) return true;
+
+        var normalizedLatest = VersionStringUtility.Normalize(latestVersion);
+        return string.Equals(cachedVersion, normalizedLatest, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static bool TryGetTagSuppressionKey(ModEntry entry, out string? key)
     {
         key = null;
@@ -4779,6 +4836,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     source = "cache";
                     return;
                 }
+
+                if (await ShouldUseCachedMetadataAsync(entry, cachedInfo).ConfigureAwait(false))
+                {
+                    source = "cache-validated";
+                    return;
+                }
             }
             else if (InternetAccessManager.IsInternetAccessDisabled)
             {
@@ -4792,6 +4855,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ModDatabaseInfo? info;
             try
             {
+                await Task.Delay(LazyMetadataOnlineDelay).ConfigureAwait(false);
+
                 // Transition to "Checking for updates..." when we start making online API calls
                 if (!_isInitialLoadComplete && !_isCheckingForUpdates)
                 {
