@@ -1942,24 +1942,14 @@ public sealed class ModListItemViewModel : ObservableObject
         }
 
         // Try to get from cache or load and decode off-thread
-        // For synchronous calls, we use Task.Run to decode off UI thread
+        // For synchronous calls, the actual decoding happens off UI thread via Task.Run
         ImageSource? image = null;
         try
         {
             var task = ImageCacheService.Instance.GetOrCreateFromUriAsync(uri);
-            // We need to handle this synchronously in this context, but the actual decoding happens off-thread
-            if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
-            {
-                // Already off UI thread, safe to wait
-                image = task.GetAwaiter().GetResult();
-            }
-            else
-            {
-                // On UI thread, run the decode operation synchronously but on background thread
-                // Note: This blocks UI temporarily but is better than previous behavior which also blocked
-                // In practice, this is mainly used for initial sync loads which are unavoidable
-                image = task.GetAwaiter().GetResult();
-            }
+            // GetAwaiter().GetResult() waits synchronously but the Task.Run inside cache service
+            // ensures decoding happens on a background thread
+            image = task.GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -1986,24 +1976,16 @@ public sealed class ModListItemViewModel : ObservableObject
         }
 
         // Create cache key from hash of bytes for uniqueness
-        var cacheKey = $"bytes:{context}:{ComputeSimpleHash(bytes)}";
+        var cacheKey = $"bytes:{context}:{ComputeHash(bytes)}";
         
         ImageSource? image = null;
         try
         {
             // Decode off UI thread using cache service
             var task = ImageCacheService.Instance.GetOrCreateFromBytesAsync(bytes, cacheKey);
-            // Handle synchronously but decoding happens off-thread
-            if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
-            {
-                // Already off UI thread, safe to wait
-                image = task.GetAwaiter().GetResult();
-            }
-            else
-            {
-                // On UI thread, but decoding happens on background thread
-                image = task.GetAwaiter().GetResult();
-            }
+            // GetAwaiter().GetResult() waits synchronously but Task.Run inside cache service
+            // ensures decoding happens on a background thread
+            image = task.GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -2018,13 +2000,12 @@ public sealed class ModListItemViewModel : ObservableObject
         return image;
     }
 
-    private static string ComputeSimpleHash(byte[] bytes)
+    private static string ComputeHash(byte[] bytes)
     {
-        // Simple hash for cache key - just use length and first/last few bytes
-        if (bytes.Length == 0) return "empty";
-        if (bytes.Length < 8) return $"{bytes.Length}:{BitConverter.ToString(bytes)}";
-        
-        return $"{bytes.Length}:{bytes[0]:X2}{bytes[1]:X2}{bytes[bytes.Length-2]:X2}{bytes[bytes.Length-1]:X2}";
+        // Use SHA256 for proper hash to avoid collisions
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashBytes = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hashBytes);
     }
 
     private static Task InvokeOnDispatcherAsync(Action action, CancellationToken cancellationToken)
