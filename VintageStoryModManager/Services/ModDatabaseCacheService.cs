@@ -374,12 +374,7 @@ internal sealed class ModDatabaseCacheService : IDisposable
         string? installedModVersion,
         bool requireExactVersionMatch)
     {
-        var normalizedInstalledVersion = NormalizeModVersion(installedModVersion);
-
-        var tags = GetTagsForInstalledVersion(
-            cached,
-            normalizedInstalledVersion,
-            out var cachedTagsVersion);
+        var tags = cached.Tags is { Length: > 0 } ? cached.Tags : Array.Empty<string>();
 
         var releases = BuildReleases(cached.Releases, normalizedGameVersion, requireExactVersionMatch);
 
@@ -393,7 +388,7 @@ internal sealed class ModDatabaseCacheService : IDisposable
         return new ModDatabaseInfo
         {
             Tags = tags,
-            CachedTagsVersion = cachedTagsVersion,
+            CachedTagsVersion = null,
             AssetId = cached.AssetId,
             ModPageUrl = cached.ModPageUrl,
             LatestCompatibleVersion = latestCompatibleRelease?.Version,
@@ -413,16 +408,6 @@ internal sealed class ModDatabaseCacheService : IDisposable
             Releases = releases,
             Side = cached.Side
         };
-    }
-
-    private static IReadOnlyList<string> GetTagsForInstalledVersion(
-        CachedModDatabaseInfo cached,
-        string? normalizedInstalledVersion,
-        out string? cachedTagsVersion)
-    {
-        cachedTagsVersion = null;
-
-        return cached.Tags is { Length: > 0 } ? cached.Tags : Array.Empty<string>();
     }
 
     private static IReadOnlyList<ModReleaseInfo> BuildReleases(
