@@ -1356,8 +1356,8 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         if (tokens.Count == 0) return true;
 
-        // Use AsSpan() for better performance and ordinal comparison since 
-        // both search index and tokens are pre-lowercased
+        // Use AsSpan() for better performance with ordinal comparison
+        // Both search index and tokens are pre-lowercased for case-insensitive matching
         var searchSpan = _searchIndex.AsSpan();
         foreach (var token in tokens)
             if (searchSpan.IndexOf(token.AsSpan(), StringComparison.Ordinal) < 0)

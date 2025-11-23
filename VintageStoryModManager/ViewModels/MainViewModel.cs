@@ -2913,7 +2913,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 {
                     if (string.IsNullOrWhiteSpace(tag)) continue;
                     
-                    if (comparer.Equals(tag.Trim(), required))
+                    // Use AsSpan().Trim() to avoid string allocation when possible
+                    var trimmedSpan = tag.AsSpan().Trim();
+                    if (trimmedSpan.IsEmpty) continue;
+                    
+                    if (MemoryExtensions.Equals(trimmedSpan, required.AsSpan(), StringComparison.OrdinalIgnoreCase))
                     {
                         found = true;
                         break;
