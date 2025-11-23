@@ -36,6 +36,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan FastCheckInterval = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan BackgroundOperationDelay = TimeSpan.FromMilliseconds(50);
     private static readonly TimeSpan UserReportFetchDelay = TimeSpan.FromMilliseconds(1500);
+    private static readonly TimeSpan FallbackFingerprintCheckInterval = TimeSpan.FromSeconds(15);
     private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
     private static readonly int MaxConcurrentUserReportRefreshes = DevConfig.MaxConcurrentUserReportRefreshes;
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
@@ -82,6 +83,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly HashSet<string> _suppressedTagEntries = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _userReportEtags = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _userReportOperationLock = new();
+    private readonly object _databaseRefreshQueueLock = new();
+    private readonly Queue<ModEntry> _databaseRefreshQueue = new();
+    private readonly HashSet<string> _queuedDatabaseRefreshKeys = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _voteEtagCachePath;
     private readonly object _voteEtagPersistenceLock = new();
 
@@ -130,6 +134,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private int _modDatabaseCurrentResultLimit;
     private CancellationTokenSource? _modDatabaseSearchCts;
     private string? _modsStateFingerprint;
+    private DateTime _nextFallbackFingerprintCheckUtc;
     private bool _onlyShowCompatibleModDatabaseResults;
     private int _pendingModDetailsRefreshCount;
     private string _searchText = string.Empty;
@@ -145,6 +150,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private int _updatableModsCount;
     private bool _useModDbDesignView;
     private ViewSection _viewSection = ViewSection.InstalledMods;
+    private Task? _databaseRefreshWorker;
 
     public MainViewModel(
         string dataDirectory,
@@ -2092,7 +2098,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (_modsWatcher.HasPendingChanges) return true;
 
-        if (_modsWatcher.IsWatching) return false;
+        if (_modsWatcher.IsWatching)
+        {
+            _nextFallbackFingerprintCheckUtc = DateTime.MinValue;
+            return false;
+        }
+
+        var now = DateTime.UtcNow;
+        if (now < _nextFallbackFingerprintCheckUtc) return false;
+
+        _nextFallbackFingerprintCheckUtc = now + FallbackFingerprintCheckInterval;
 
         var fingerprint = await CaptureModsStateFingerprintAsync().ConfigureAwait(false);
         if (fingerprint is null) return false;
@@ -4536,30 +4551,97 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (pending.Length == 0) return;
 
-        OnModDetailsRefreshEnqueued(pending.Length);
+        var enqueued = 0;
 
-        _ = Task.Run(async () =>
+        lock (_databaseRefreshQueueLock)
         {
-            try
+            foreach (var entry in pending)
             {
-                if (InternetAccessManager.IsInternetAccessDisabled)
+                var key = BuildDatabaseRefreshKey(entry);
+                if (!_queuedDatabaseRefreshKeys.Add(key)) continue;
+
+                _databaseRefreshQueue.Enqueue(entry);
+                enqueued++;
+            }
+
+            if (enqueued > 0 && (_databaseRefreshWorker == null || _databaseRefreshWorker.IsCompleted))
+                _databaseRefreshWorker = Task.Run(ProcessDatabaseRefreshQueueAsync);
+        }
+
+        if (enqueued > 0) OnModDetailsRefreshEnqueued(enqueued);
+    }
+
+    private async Task ProcessDatabaseRefreshQueueAsync()
+    {
+        var running = new List<Task>();
+
+        using var limiter = new SemaphoreSlim(MaxConcurrentDatabaseRefreshes, MaxConcurrentDatabaseRefreshes);
+
+        while (true)
+        {
+            ModEntry? entry = null;
+            string? key = null;
+
+            lock (_databaseRefreshQueueLock)
+            {
+                if (_databaseRefreshQueue.Count > 0)
                 {
-                    await PopulateOfflineDatabaseInfoAsync(pending).ConfigureAwait(false);
-                    return;
+                    entry = _databaseRefreshQueue.Dequeue();
+                    key = entry != null ? BuildDatabaseRefreshKey(entry) : null;
+                }
+            }
+
+            if (entry is null || string.IsNullOrWhiteSpace(entry.ModId) || string.IsNullOrWhiteSpace(key))
+            {
+                if (!string.IsNullOrWhiteSpace(key))
+                    lock (_databaseRefreshQueueLock)
+                    {
+                        _queuedDatabaseRefreshKeys.Remove(key);
+                    }
+
+                if (entry is null)
+                {
+                    if (running.Count == 0)
+                    {
+                        lock (_databaseRefreshQueueLock)
+                        {
+                            if (_databaseRefreshQueue.Count == 0) break;
+                            continue;
+                        }
+                    }
+
+                    var completed = await Task.WhenAny(running).ConfigureAwait(false);
+                    running.Remove(completed);
                 }
 
-                using var limiter = new SemaphoreSlim(MaxConcurrentDatabaseRefreshes, MaxConcurrentDatabaseRefreshes);
-                var refreshTasks = pending
-                    .Select(entry => RefreshDatabaseInfoAsync(entry, limiter))
-                    .ToArray();
+                continue;
+            }
 
-                await Task.WhenAll(refreshTasks).ConfigureAwait(false);
-            }
-            catch (Exception)
+            var refreshTask = RefreshDatabaseInfoAsync(entry, limiter)
+                .ContinueWith(_ =>
+                {
+                    lock (_databaseRefreshQueueLock)
+                    {
+                        _queuedDatabaseRefreshKeys.Remove(key);
+                    }
+                }, TaskScheduler.Default);
+
+            running.Add(refreshTask);
+
+            if (running.Count >= MaxConcurrentDatabaseRefreshes)
             {
-                // Swallow unexpected exceptions from the refresh loop.
+                var completed = await Task.WhenAny(running).ConfigureAwait(false);
+                running.Remove(completed);
             }
-        });
+        }
+
+        await Task.WhenAll(running).ConfigureAwait(false);
+    }
+
+    private static string BuildDatabaseRefreshKey(ModEntry entry)
+    {
+        var version = string.IsNullOrWhiteSpace(entry.Version) ? "<none>" : entry.Version;
+        return string.Join("|", entry.SourcePath, entry.ModId, version);
     }
 
     private bool NeedsDatabaseRefresh(ModEntry entry)
