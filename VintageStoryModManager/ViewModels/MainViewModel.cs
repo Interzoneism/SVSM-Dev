@@ -2801,9 +2801,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (!isVisible)
         {
-            foreach (var mod in _mods) mod.ClearDatabaseTags();
+            // Batch clear operations to avoid UI thrashing
+            foreach (var mod in _mods)
+            {
+                mod.SuspendDatabaseTagNotifications();
+                mod.ClearDatabaseTags();
+            }
+            foreach (var mod in _mods)
+                mod.ResumeDatabaseTagNotifications();
 
-            foreach (var mod in _searchResults) mod.ClearDatabaseTags();
+            foreach (var mod in _searchResults)
+            {
+                mod.SuspendDatabaseTagNotifications();
+                mod.ClearDatabaseTags();
+            }
+            foreach (var mod in _searchResults)
+                mod.ResumeDatabaseTagNotifications();
 
             return;
         }
@@ -3661,6 +3674,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             await InvokeOnDispatcherAsync(
                 () =>
                 {
+                    // Suspend tag property change notifications during batch update
+                    foreach (var viewModel in viewModels)
+                        viewModel.SuspendDatabaseTagNotifications();
+
                     for (var i = 0; i < entries.Count; i++)
                     {
                         var info = entries[i].Entry.DatabaseInfo;
@@ -3671,6 +3688,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                             QueueLatestReleaseUserReportRefresh(viewModel);
                         }
                     }
+
+                    // Resume notifications - all tag changes will be notified at once
+                    foreach (var viewModel in viewModels)
+                        viewModel.ResumeDatabaseTagNotifications();
 
                     SetStatus($"Loading details for {entries.Count} mod(s) finished.", false);
                 },
