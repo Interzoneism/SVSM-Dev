@@ -2821,9 +2821,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (!isVisible)
         {
-            foreach (var mod in _mods) mod.ClearDatabaseTags();
+            // Batch clear operations to avoid UI thrashing
+            foreach (var mod in _mods)
+            {
+                mod.SuspendDatabaseTagNotifications();
+                mod.ClearDatabaseTags();
+            }
+            foreach (var mod in _mods)
+                mod.ResumeDatabaseTagNotifications();
 
-            foreach (var mod in _searchResults) mod.ClearDatabaseTags();
+            foreach (var mod in _searchResults)
+            {
+                mod.SuspendDatabaseTagNotifications();
+                mod.ClearDatabaseTags();
+            }
+            foreach (var mod in _searchResults)
+                mod.ResumeDatabaseTagNotifications();
 
             return;
         }

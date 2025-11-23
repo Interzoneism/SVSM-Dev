@@ -1113,8 +1113,16 @@ public sealed class ModListItemViewModel : ObservableObject
 
         DatabaseTags = Array.Empty<string>();
         _cachedTagSet = null;
-        OnPropertyChanged(nameof(DatabaseTags));
-        OnPropertyChanged(nameof(DatabaseTagsDisplay));
+        
+        if (_suppressTagPropertyChanges)
+        {
+            _hasPendingTagNotification = true;
+        }
+        else
+        {
+            OnPropertyChanged(nameof(DatabaseTags));
+            OnPropertyChanged(nameof(DatabaseTagsDisplay));
+        }
     }
 
     /// <summary>
