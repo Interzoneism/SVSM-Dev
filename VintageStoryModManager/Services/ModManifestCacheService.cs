@@ -144,10 +144,11 @@ internal static class ModManifestCacheService
                     ManifestJson = manifestJson,
                     Length = length,
                     LastWriteTimeUtcTicks = ticks,
-                    Tags = Array.Empty<string>() // Will be populated from database cache later
+                    Tags = Array.Empty<string>() // Tags updated via UpdateTags when database info is loaded
                 };
                 
                 cache.Entries[normalizedPath] = entry;
+                cache.InvalidateIndex(); // Rebuild index on next access
                 SaveCacheLocked(cache);
             }
         }
@@ -163,8 +164,11 @@ internal static class ModManifestCacheService
         lock (CacheLock)
         {
             var cache = EnsureCacheLocked();
-            if (cache.Entries.Remove(normalizedPath)) 
+            if (cache.Entries.Remove(normalizedPath))
+            {
+                cache.InvalidateIndex(); // Rebuild index on next access
                 SaveCacheLocked(cache);
+            }
         }
     }
 
@@ -178,19 +182,24 @@ internal static class ModManifestCacheService
             var cache = EnsureCacheLocked();
             var modified = false;
 
-            // Find all entries matching this modId and version
-            foreach (var entry in cache.Entries.Values)
+            // Use index for efficient lookup
+            var key = GetModVersionKey(modId, version);
+            if (cache.ModVersionIndex.TryGetValue(key, out var sourcePaths))
             {
-                if (string.Equals(entry.ModId, modId, StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(entry.Version, version, StringComparison.OrdinalIgnoreCase))
+                foreach (var sourcePath in sourcePaths)
                 {
-                    entry.Tags = tags.ToArray();
-                    modified = true;
+                    if (cache.Entries.TryGetValue(sourcePath, out var entry))
+                    {
+                        entry.Tags = tags.ToArray();
+                        modified = true;
+                    }
                 }
             }
 
             if (modified)
+            {
                 SaveCacheLocked(cache);
+            }
         }
     }
 
@@ -203,11 +212,12 @@ internal static class ModManifestCacheService
         {
             var cache = EnsureCacheLocked();
 
-            // Find entry matching this modId and version
-            foreach (var entry in cache.Entries.Values)
+            // Use index for efficient lookup
+            var key = GetModVersionKey(modId, version);
+            if (cache.ModVersionIndex.TryGetValue(key, out var sourcePaths) && sourcePaths.Count > 0)
             {
-                if (string.Equals(entry.ModId, modId, StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(entry.Version, version, StringComparison.OrdinalIgnoreCase))
+                // Return tags from first matching entry
+                if (cache.Entries.TryGetValue(sourcePaths[0], out var entry))
                 {
                     return entry.Tags ?? Array.Empty<string>();
                 }
@@ -215,6 +225,13 @@ internal static class ModManifestCacheService
 
             return Array.Empty<string>();
         }
+    }
+
+    private static string GetModVersionKey(string modId, string? version)
+    {
+        return string.IsNullOrWhiteSpace(version)
+            ? modId.ToLowerInvariant()
+            : $"{modId.ToLowerInvariant()}:{version.ToLowerInvariant()}";
     }
 
     private static UnifiedMetadataCache EnsureCacheLocked()
@@ -318,6 +335,38 @@ internal static class ModManifestCacheService
     {
         public Dictionary<string, CachedMetadataEntry> Entries { get; set; } = 
             new(StringComparer.OrdinalIgnoreCase);
+
+        // Secondary index for efficient lookups by ModId+Version
+        [JsonIgnore]
+        private Dictionary<string, List<string>>? _modVersionIndex;
+
+        [JsonIgnore]
+        public Dictionary<string, List<string>> ModVersionIndex
+        {
+            get
+            {
+                if (_modVersionIndex == null)
+                {
+                    _modVersionIndex = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var kvp in Entries)
+                    {
+                        var key = ModManifestCacheService.GetModVersionKey(kvp.Value.ModId, kvp.Value.Version);
+                        if (!_modVersionIndex.TryGetValue(key, out var paths))
+                        {
+                            paths = new List<string>();
+                            _modVersionIndex[key] = paths;
+                        }
+                        paths.Add(kvp.Key);
+                    }
+                }
+                return _modVersionIndex;
+            }
+        }
+
+        public void InvalidateIndex()
+        {
+            _modVersionIndex = null;
+        }
     }
 
     private sealed class CachedMetadataEntry
