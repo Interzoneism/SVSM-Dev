@@ -285,6 +285,10 @@ internal static class ModManifestCacheService
             {
                 SaveCacheLocked(_cache);
                 _isDirty = false;
+                
+                // Stop timer after save to reduce unnecessary callbacks
+                _saveTimer?.Dispose();
+                _saveTimer = null;
             }
         }
     }
