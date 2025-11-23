@@ -128,6 +128,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _isModDetailsRefreshForced;
     private bool _isModInfoExpanded = true;
     private bool _isTagsColumnVisible = true;
+    private bool _isCheckingForUpdates;
+    private bool _isCheckingDependencies;
     private ModDatabaseAutoLoadMode _lastActivityAutoLoadMode = ModDatabaseAutoLoadMode.RecentlyAdded;
     private ModDatabaseAutoLoadMode _lastDownloadsAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
     private IReadOnlyList<string> _modDatabaseAvailableTags = Array.Empty<string>();
@@ -1802,7 +1804,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         IsLoadingMods = true;
         using var busyScope = BeginBusyScope();
-        SetStatus("Loading mods...", false);
+        SetStatus("Initializing...", false);
 
         // Yield once so the UI thread has a chance to process the busy-state
         // notification before we start potentially expensive work below. This
@@ -1834,7 +1836,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 SetStatus("Loading mods...", false);
                 await PerformFullReloadAsync(previousSelection).ConfigureAwait(true);
-                SetStatus($"Loaded {TotalMods} mods.", false);
+                // Don't set final status here - let the background operations complete first
             }
             else
             {
@@ -2894,8 +2896,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
 
                 // Collect tags more efficiently without intermediate ToList()
-                // Don't show status messages during initial load to avoid UI flickering
-                // Tags will load silently in the background
+                // During initial load, we're already showing "Checking for updates..." so don't change the message
+                // After initial load, show "Loading tags..." when explicitly refreshing tags
                 if (_isInitialLoadComplete)
                 {
                     await InvokeOnDispatcherAsync(
@@ -3990,8 +3992,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // This allows users to interact with mods while details are loading
         UpdateIsLoadingModDetails(true);
 
-        // Don't show status messages during mod details loading to avoid UI flickering
-        // Details will load silently in the background
+        // Show "Loading mod details..." when database refresh starts during initial load
+        // This refresh loads cached data (tags, version info, etc.) first before checking online
+        if (!_isInitialLoadComplete && !_isCheckingForUpdates)
+        {
+            InvokeOnDispatcherAsync(
+                () => SetStatus("Loading mod details...", false),
+                CancellationToken.None,
+                DispatcherPriority.ContextIdle);
+        }
     }
 
     private void OnModDetailsRefreshCompleted()
@@ -4013,8 +4022,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private void CheckAndCompleteInitialLoad()
     {
         // This method checks if background operations are complete and updates status accordingly
-        // Initial load is now considered complete as soon as mods are displayed, so this method
-        // only updates status messages to reflect when background operations finish
+        // During initial load, show sequential status messages for each phase
         
         // Check if all background operations are done
         bool modDetailsComplete = !IsModDetailsRefreshPending();
@@ -4028,8 +4036,32 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         
         bool allOperationsComplete = modDetailsComplete && tagsComplete && userReportsComplete;
 
+        // During initial load, show appropriate status for each phase
+        if (!_isInitialLoadComplete && _viewSection == ViewSection.InstalledMods)
+        {
+            if (allOperationsComplete && _isCheckingForUpdates && !_isCheckingDependencies)
+            {
+                // All background ops complete, now check dependencies
+                _isCheckingDependencies = true;
+                SetStatus("Checking for dependency errors...", false);
+                // Trigger final completion after a brief delay to ensure dependency check message is visible
+                Task.Delay(200).ContinueWith(_ => 
+                {
+                    InvokeOnDispatcherAsync(
+                        () => 
+                        {
+                            _isCheckingDependencies = false;
+                            _isCheckingForUpdates = false;
+                            SetStatus($"Loaded {TotalMods} mods successfully.", false);
+                        },
+                        CancellationToken.None,
+                        DispatcherPriority.Normal);
+                }, TaskScheduler.Default);
+                return;
+            }
+        }
         // Update status message if we're in the installed mods view and background operations finished
-        if (allOperationsComplete && _isInitialLoadComplete && _viewSection == ViewSection.InstalledMods)
+        else if (allOperationsComplete && _isInitialLoadComplete && _viewSection == ViewSection.InstalledMods)
         {
             SetStatus($"Loaded {TotalMods} mods. All details up to date.", false);
         }
@@ -4735,6 +4767,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ModDatabaseInfo? info;
             try
             {
+                // Transition to "Checking for updates..." when we start making online API calls
+                if (!_isInitialLoadComplete && !_isCheckingForUpdates)
+                {
+                    _isCheckingForUpdates = true;
+                    await InvokeOnDispatcherAsync(
+                        () => SetStatus("Checking for updates...", false),
+                        CancellationToken.None,
+                        DispatcherPriority.ContextIdle).ConfigureAwait(false);
+                }
+                
                 info = await _databaseService
                     .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
                         _configuration.RequireExactVsVersionMatch)
