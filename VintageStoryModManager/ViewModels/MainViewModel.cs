@@ -2836,18 +2836,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private static List<string> NormalizeAndSortTags(IEnumerable<string> tags)
     {
-        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // Use HashSet for efficient case-insensitive deduplication
+        var uniqueTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var tag in tags)
         {
             if (string.IsNullOrWhiteSpace(tag)) continue;
-
             var trimmed = tag.Trim();
             if (trimmed.Length == 0) continue;
-
-            if (!map.ContainsKey(trimmed)) map[trimmed] = trimmed;
+            uniqueTags.Add(trimmed);  // HashSet handles duplicates automatically
         }
 
-        var list = map.Values.ToList();
+        if (uniqueTags.Count == 0) return new List<string>();
+
+        // Convert to list and sort in-place
+        var list = new List<string>(uniqueTags);
         list.Sort(StringComparer.OrdinalIgnoreCase);
         return list;
     }
