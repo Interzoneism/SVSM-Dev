@@ -1833,8 +1833,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 ApplyPartialUpdates(reloadResults, previousSelection);
 
-                if (_allowModDetailsRefresh && updatedEntriesForStatus.Count > 0)
-                    QueueDatabaseInfoRefresh(updatedEntriesForStatus);
+                if (_allowModDetailsRefresh)
+                {
+                    // When details refresh is forced (e.g., via refresh button), queue info
+                    // refresh for all mods, not just changed ones, to match startup behavior
+                    if (forcedRefresh && allEntries.Count > 0)
+                        QueueDatabaseInfoRefresh(allEntries);
+                    else if (updatedEntriesForStatus.Count > 0)
+                        QueueDatabaseInfoRefresh(updatedEntriesForStatus);
+                }
             }
 
             TotalMods = _mods.Count;
