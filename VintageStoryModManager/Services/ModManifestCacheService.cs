@@ -77,6 +77,12 @@ internal static class ModManifestCacheService
     {
         lock (CacheLock)
         {
+            // Flush any pending changes before clearing
+            if (_isDirty && _cache != null)
+            {
+                SaveCacheLocked(_cache);
+            }
+            
             _cache = null;
             _isDirty = false;
             _saveTimer?.Dispose();
