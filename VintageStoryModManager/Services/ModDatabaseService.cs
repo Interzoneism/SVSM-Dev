@@ -159,35 +159,13 @@ public sealed class ModDatabaseService
                 }
             }
 
-            // Merge cached database info with tags from metadata cache
+            // Merge cached database info with tags from mod metadata cache
             if (cached != null)
             {
                 if (cachedTags is { Length: > 0 })
                 {
                     // Create a new ModDatabaseInfo with tags from metadata cache
-                    modEntry.DatabaseInfo = new ModDatabaseInfo
-                    {
-                        Tags = cachedTags,
-                        CachedTagsVersion = cached.CachedTagsVersion,
-                        AssetId = cached.AssetId,
-                        ModPageUrl = cached.ModPageUrl,
-                        LatestCompatibleVersion = cached.LatestCompatibleVersion,
-                        LatestVersion = cached.LatestVersion,
-                        RequiredGameVersions = cached.RequiredGameVersions,
-                        Downloads = cached.Downloads,
-                        Comments = cached.Comments,
-                        Follows = cached.Follows,
-                        TrendingPoints = cached.TrendingPoints,
-                        LogoUrl = cached.LogoUrl,
-                        DownloadsLastThirtyDays = cached.DownloadsLastThirtyDays,
-                        DownloadsLastTenDays = cached.DownloadsLastTenDays,
-                        LastReleasedUtc = cached.LastReleasedUtc,
-                        CreatedUtc = cached.CreatedUtc,
-                        LatestRelease = cached.LatestRelease,
-                        LatestCompatibleRelease = cached.LatestCompatibleRelease,
-                        Releases = cached.Releases,
-                        Side = cached.Side
-                    };
+                    modEntry.DatabaseInfo = MergeDatabaseInfoWithTags(cached, cachedTags);
                 }
                 else
                 {
@@ -1536,5 +1514,32 @@ public sealed class ModDatabaseService
         }
 
         return null;
+    }
+
+    private static ModDatabaseInfo MergeDatabaseInfoWithTags(ModDatabaseInfo source, string[] tags)
+    {
+        return new ModDatabaseInfo
+        {
+            Tags = tags,
+            CachedTagsVersion = source.CachedTagsVersion,
+            AssetId = source.AssetId,
+            ModPageUrl = source.ModPageUrl,
+            LatestCompatibleVersion = source.LatestCompatibleVersion,
+            LatestVersion = source.LatestVersion,
+            RequiredGameVersions = source.RequiredGameVersions,
+            Downloads = source.Downloads,
+            Comments = source.Comments,
+            Follows = source.Follows,
+            TrendingPoints = source.TrendingPoints,
+            LogoUrl = source.LogoUrl,
+            DownloadsLastThirtyDays = source.DownloadsLastThirtyDays,
+            DownloadsLastTenDays = source.DownloadsLastTenDays,
+            LastReleasedUtc = source.LastReleasedUtc,
+            CreatedUtc = source.CreatedUtc,
+            LatestRelease = source.LatestRelease,
+            LatestCompatibleRelease = source.LatestCompatibleRelease,
+            Releases = source.Releases,
+            Side = source.Side
+        };
     }
 }
