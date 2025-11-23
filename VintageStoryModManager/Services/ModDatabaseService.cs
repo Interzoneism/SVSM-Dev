@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
@@ -113,7 +114,67 @@ public sealed class ModDatabaseService
                     cancellationToken)
                 .ConfigureAwait(false);
 
-            if (cached != null) modEntry.DatabaseInfo = cached;
+            // Load tags from mod-metadata-cache if available
+            string[]? cachedTags = null;
+            if (!string.IsNullOrWhiteSpace(modEntry.SourcePath))
+            {
+                try
+                {
+                    var fileInfo = new FileInfo(modEntry.SourcePath);
+                    if (fileInfo.Exists)
+                    {
+                        if (ModManifestCacheService.TryGetManifest(
+                            modEntry.SourcePath,
+                            fileInfo.LastWriteTimeUtc,
+                            fileInfo.Length,
+                            out _,
+                            out cachedTags))
+                        {
+                            // Tags loaded from metadata cache
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    // Ignore cache read failures
+                }
+            }
+
+            // Merge cached database info with tags from metadata cache
+            if (cached != null)
+            {
+                if (cachedTags is { Length: > 0 })
+                {
+                    // Create a new ModDatabaseInfo with tags from metadata cache
+                    modEntry.DatabaseInfo = new ModDatabaseInfo
+                    {
+                        Tags = cachedTags,
+                        CachedTagsVersion = cached.CachedTagsVersion,
+                        AssetId = cached.AssetId,
+                        ModPageUrl = cached.ModPageUrl,
+                        LatestCompatibleVersion = cached.LatestCompatibleVersion,
+                        LatestVersion = cached.LatestVersion,
+                        RequiredGameVersions = cached.RequiredGameVersions,
+                        Downloads = cached.Downloads,
+                        Comments = cached.Comments,
+                        Follows = cached.Follows,
+                        TrendingPoints = cached.TrendingPoints,
+                        LogoUrl = cached.LogoUrl,
+                        DownloadsLastThirtyDays = cached.DownloadsLastThirtyDays,
+                        DownloadsLastTenDays = cached.DownloadsLastTenDays,
+                        LastReleasedUtc = cached.LastReleasedUtc,
+                        CreatedUtc = cached.CreatedUtc,
+                        LatestRelease = cached.LatestRelease,
+                        LatestCompatibleRelease = cached.LatestCompatibleRelease,
+                        Releases = cached.Releases,
+                        Side = cached.Side
+                    };
+                }
+                else
+                {
+                    modEntry.DatabaseInfo = cached;
+                }
+            }
 
             if (internetDisabled) return;
 
@@ -127,7 +188,24 @@ public sealed class ModDatabaseService
                         requireExactVersionMatch,
                         cancellationToken)
                     .ConfigureAwait(false);
-                if (info != null) modEntry.DatabaseInfo = info;
+                if (info != null)
+                {
+                    modEntry.DatabaseInfo = info;
+                    
+                    // Store tags in mod-metadata-cache.json for installed mods
+                    if (!string.IsNullOrWhiteSpace(modEntry.SourcePath) && info.Tags is { Count: > 0 })
+                    {
+                        try
+                        {
+                            var tagsArray = info.Tags.ToArray();
+                            ModManifestCacheService.UpdateTags(modEntry.SourcePath, tagsArray);
+                        }
+                        catch (Exception)
+                        {
+                            // Ignore cache update failures
+                        }
+                    }
+                }
             }
             finally
             {
