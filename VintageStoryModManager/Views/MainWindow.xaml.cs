@@ -366,7 +366,9 @@ public partial class MainWindow : Window
         _installedColumnVisibilityPreferences[column] = menuItem.IsChecked;
         NotifyViewModelOfInstalledColumnVisibility(column, menuItem.IsChecked);
         ApplyInstalledColumnVisibility(column, menuItem.IsChecked);
+        menuItem.Checked -= InstalledModsColumnMenuItem_OnChecked;
         menuItem.Checked += InstalledModsColumnMenuItem_OnChecked;
+        menuItem.Unchecked -= InstalledModsColumnMenuItem_OnChecked;
         menuItem.Unchecked += InstalledModsColumnMenuItem_OnChecked;
     }
 
@@ -6415,6 +6417,15 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             errors.Add(BuildCacheClearErrorMessage("Mod metadata cache", ex));
+        }
+
+        try
+        {
+            ModIconCacheService.ClearCache();
+        }
+        catch (Exception ex)
+        {
+            errors.Add(BuildCacheClearErrorMessage("Mod icon cache", ex));
         }
 
         var cachedModsDirectory = ModCacheLocator.GetCachedModsDirectory();

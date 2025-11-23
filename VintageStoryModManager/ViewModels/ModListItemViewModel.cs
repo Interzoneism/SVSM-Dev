@@ -174,6 +174,21 @@ public sealed class ModListItemViewModel : ObservableObject
         _isActive = isActive;
         HasErrors = entry.HasErrors;
 
+        // Pre-cache tag set during construction to avoid repeated creation during filtering
+        if (DatabaseTags.Count > 0)
+        {
+            _cachedTagSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var tag in DatabaseTags)
+            {
+                if (!string.IsNullOrWhiteSpace(tag))
+                    _cachedTagSet.Add(tag.Trim());
+            }
+            
+            // Clear if empty after filtering whitespace
+            if (_cachedTagSet.Count == 0)
+                _cachedTagSet = null;
+        }
+
         InitializeUpdateAvailability();
         InitializeVersionOptions();
         InitializeVersionWarning(_installedGameVersion);
@@ -1103,24 +1118,7 @@ public sealed class ModListItemViewModel : ObservableObject
     /// </returns>
     public HashSet<string>? GetCachedTagSet()
     {
-        if (_cachedTagSet != null)
-            return _cachedTagSet;
-
-        if (DatabaseTags.Count == 0)
-            return null;
-
-        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var tag in DatabaseTags)
-        {
-            if (string.IsNullOrWhiteSpace(tag)) continue;
-
-            set.Add(tag.Trim());
-        }
-
-        if (set.Count == 0)
-            return null;
-
-        _cachedTagSet = set;
+        // Tag set is now pre-cached in constructor, just return it
         return _cachedTagSet;
     }
 
@@ -2031,13 +2029,16 @@ public sealed class ModListItemViewModel : ObservableObject
         var image = CreateImageSafely(
             () =>
             {
-                using MemoryStream stream = new(buffer);
+                using var stream = new MemoryStream(buffer);
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.StreamSource = stream;
                 bitmap.EndInit();
                 TryFreezeImageSource(bitmap, $"{context} (byte stream)", LogDebug);
+                // Access PixelWidth to force WPF to fully load and decode the bitmap data immediately
+                // This ensures the image is ready to use even after the stream is disposed
+                _ = bitmap.PixelWidth;
                 return bitmap;
             },
             $"{context} (byte stream)");
@@ -2103,7 +2104,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private static void LogDebug(string message)
     {
-        _ = message;
+        System.Diagnostics.Debug.WriteLine($"[ModListItemVM] {message}");
     }
 
     private static void TryFreezeImageSource(ImageSource image, string context, Action<string>? log)

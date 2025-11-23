@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -9,8 +8,9 @@ namespace VintageStoryModManager.Services;
 /// <summary>
 ///     Provides persistence for metadata retrieved from the Vintage Story mod database so that
 ///     subsequent requests can be served without repeatedly downloading large payloads.
+///     All cache entries are stored in a single file for improved IO performance.
 /// </summary>
-internal sealed class ModDatabaseCacheService
+internal sealed class ModDatabaseCacheService : IDisposable
 {
     private static readonly int CacheSchemaVersion = DevConfig.ModDatabaseCacheSchemaVersion;
 
@@ -27,20 +27,24 @@ internal sealed class ModDatabaseCacheService
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> _fileLocks = new(StringComparer.OrdinalIgnoreCase);
+    private readonly SemaphoreSlim _cacheLock = new(1, 1);
+    private Dictionary<string, CachedModDatabaseInfo>? _cacheIndex;
+    private bool _isDirty;
+    private bool _disposed;
 
     internal static void ClearCacheDirectory()
     {
-        var baseDirectory = ModCacheLocator.GetModDatabaseCacheDirectory();
-        if (string.IsNullOrWhiteSpace(baseDirectory) || !Directory.Exists(baseDirectory)) return;
+        var cacheFilePath = GetCacheFilePath();
+        if (string.IsNullOrWhiteSpace(cacheFilePath)) return;
 
         try
         {
-            Directory.Delete(baseDirectory, true);
+            if (File.Exists(cacheFilePath))
+                File.Delete(cacheFilePath);
         }
         catch (Exception ex)
         {
-            throw new IOException($"Failed to delete the mod database cache at {baseDirectory}.", ex);
+            throw new IOException($"Failed to delete the mod database cache at {cacheFilePath}.", ex);
         }
     }
 
@@ -52,19 +56,16 @@ internal sealed class ModDatabaseCacheService
         bool requireExactVersionMatch,
         CancellationToken cancellationToken)
     {
-        var cachePath = GetCacheFilePath(modId, normalizedGameVersion);
-        if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath)) return null;
-
-        var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
+        var cacheKey = GetCacheKey(modId, normalizedGameVersion);
+        
+        await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await using FileStream stream = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            var cached = await JsonSerializer
-                .DeserializeAsync<CachedModDatabaseInfo>(stream, SerializerOptions, cancellationToken)
-                .ConfigureAwait(false);
+            var index = await EnsureCacheLoadedAsync(cancellationToken).ConfigureAwait(false);
+            
+            if (!index.TryGetValue(cacheKey, out var cached)) return null;
 
-            if (cached is null
-                || !IsSupportedSchemaVersion(cached.SchemaVersion)
+            if (!IsSupportedSchemaVersion(cached.SchemaVersion)
                 || !IsGameVersionMatch(cached.GameVersion, normalizedGameVersion))
                 return null;
 
@@ -92,7 +93,7 @@ internal sealed class ModDatabaseCacheService
         }
         finally
         {
-            fileLock.Release();
+            _cacheLock.Release();
         }
     }
 
@@ -105,26 +106,19 @@ internal sealed class ModDatabaseCacheService
     {
         if (info is null) return;
 
-        var cachePath = GetCacheFilePath(modId, normalizedGameVersion);
-        if (string.IsNullOrWhiteSpace(cachePath)) return;
+        var cacheKey = GetCacheKey(modId, normalizedGameVersion);
 
-        var directory = Path.GetDirectoryName(cachePath);
-        if (string.IsNullOrWhiteSpace(directory)) return;
-
+        await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            Directory.CreateDirectory(directory);
-        }
-        catch (Exception)
-        {
-            return;
-        }
+            var index = await EnsureCacheLoadedAsync(cancellationToken).ConfigureAwait(false);
 
-        var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
-        try
-        {
-            var tagsByModVersion = await LoadExistingTagsByVersionAsync(cachePath, cancellationToken)
-                .ConfigureAwait(false);
+            // Load existing entry to preserve tags by version
+            var tagsByModVersion = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+            if (index.TryGetValue(cacheKey, out var existingEntry) && existingEntry.TagsByModVersion is { Count: > 0 })
+            {
+                tagsByModVersion = new Dictionary<string, string[]>(existingEntry.TagsByModVersion, StringComparer.OrdinalIgnoreCase);
+            }
 
             var tagsVersionKey = NormalizeModVersion(info.CachedTagsVersion);
             if (string.IsNullOrWhiteSpace(tagsVersionKey)) tagsVersionKey = NormalizeModVersion(installedModVersion);
@@ -132,32 +126,14 @@ internal sealed class ModDatabaseCacheService
             if (!string.IsNullOrWhiteSpace(tagsVersionKey))
                 tagsByModVersion[tagsVersionKey] = info.Tags?.ToArray() ?? Array.Empty<string>();
 
-            var tempPath = cachePath + ".tmp";
-
             var cacheModel = CreateCacheModel(modId, normalizedGameVersion, info, tagsByModVersion);
+            index[cacheKey] = cacheModel;
+            
+            // Set dirty flag after successful cache update
+            _isDirty = true;
 
-            await using (FileStream tempStream = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
-            {
-                await JsonSerializer.SerializeAsync(tempStream, cacheModel, SerializerOptions, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-
-            try
-            {
-                File.Move(tempPath, cachePath, true);
-            }
-            catch (IOException)
-            {
-                try
-                {
-                    // Retry with replace semantics when running on platforms that require it.
-                    File.Replace(tempPath, cachePath, null);
-                }
-                finally
-                {
-                    if (File.Exists(tempPath)) File.Delete(tempPath);
-                }
-            }
+            // Do not write to disk immediately during bulk operations
+            // Caller should invoke FlushAsync when appropriate
         }
         catch (OperationCanceledException)
         {
@@ -169,25 +145,20 @@ internal sealed class ModDatabaseCacheService
         }
         finally
         {
-            fileLock.Release();
+            _cacheLock.Release();
         }
     }
 
-    private async Task<Dictionary<string, string[]>> LoadExistingTagsByVersionAsync(
-        string cachePath,
-        CancellationToken cancellationToken)
+    /// <summary>
+    ///     Pre-loads the cache into memory if not already loaded.
+    ///     This should be called before bulk operations to ensure the cache is ready.
+    /// </summary>
+    public async Task PreloadCacheAsync(CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(cachePath)) return new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
-
+        await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await using FileStream stream = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            var cached = await JsonSerializer
-                .DeserializeAsync<CachedModDatabaseInfo>(stream, SerializerOptions, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (cached?.TagsByModVersion is { Count: > 0 })
-                return new Dictionary<string, string[]>(cached.TagsByModVersion, StringComparer.OrdinalIgnoreCase);
+            await EnsureCacheLoadedAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -195,10 +166,161 @@ internal sealed class ModDatabaseCacheService
         }
         catch (Exception)
         {
-            // Ignore failures when reading the existing cache entry.
+            // Ignore cache load failures - lazy loading will handle it later if needed.
+        }
+        finally
+        {
+            _cacheLock.Release();
+        }
+    }
+
+    /// <summary>
+    ///     Flushes any pending cache changes to disk.
+    ///     Should be called after bulk operations to persist accumulated updates.
+    /// </summary>
+    public async Task FlushAsync(CancellationToken cancellationToken = default)
+    {
+        await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!_isDirty || _cacheIndex == null) return;
+
+            await SaveCacheAsync(_cacheIndex, cancellationToken).ConfigureAwait(false);
+            _isDirty = false;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // Ignore serialization or file system failures to keep cache best-effort.
+        }
+        finally
+        {
+            _cacheLock.Release();
+        }
+    }
+
+    private async Task<Dictionary<string, CachedModDatabaseInfo>> EnsureCacheLoadedAsync(CancellationToken cancellationToken)
+    {
+        if (_cacheIndex != null) return _cacheIndex;
+
+        _cacheIndex = await LoadCacheAsync(cancellationToken).ConfigureAwait(false);
+        return _cacheIndex;
+    }
+
+    private async Task<Dictionary<string, CachedModDatabaseInfo>> LoadCacheAsync(CancellationToken cancellationToken)
+    {
+        var cacheFilePath = GetCacheFilePath();
+        if (string.IsNullOrWhiteSpace(cacheFilePath) || !File.Exists(cacheFilePath))
+            return new Dictionary<string, CachedModDatabaseInfo>(StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            await using FileStream stream = new(cacheFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var cache = await JsonSerializer
+                .DeserializeAsync<ModDatabaseCache>(stream, SerializerOptions, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cache?.Entries == null)
+                return new Dictionary<string, CachedModDatabaseInfo>(StringComparer.OrdinalIgnoreCase);
+
+            return cache.Entries;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return new Dictionary<string, CachedModDatabaseInfo>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private async Task SaveCacheAsync(Dictionary<string, CachedModDatabaseInfo> index, CancellationToken cancellationToken)
+    {
+        var cacheFilePath = GetCacheFilePath();
+        if (string.IsNullOrWhiteSpace(cacheFilePath)) return;
+
+        var directory = Path.GetDirectoryName(cacheFilePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+            Directory.CreateDirectory(directory);
+
+        var tempPath = cacheFilePath + ".tmp";
+
+        var cache = new ModDatabaseCache
+        {
+            SchemaVersion = CacheSchemaVersion,
+            Entries = index
+        };
+
+        await using (FileStream tempStream = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await JsonSerializer.SerializeAsync(tempStream, cache, SerializerOptions, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        return new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        MoveCacheFile(tempPath, cacheFilePath);
+    }
+
+    private void SaveCacheSync(Dictionary<string, CachedModDatabaseInfo> index)
+    {
+        var cacheFilePath = GetCacheFilePath();
+        if (string.IsNullOrWhiteSpace(cacheFilePath)) return;
+
+        var directory = Path.GetDirectoryName(cacheFilePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+            Directory.CreateDirectory(directory);
+
+        var tempPath = cacheFilePath + ".tmp";
+
+        var cache = new ModDatabaseCache
+        {
+            SchemaVersion = CacheSchemaVersion,
+            Entries = index
+        };
+
+        using (FileStream tempStream = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            JsonSerializer.Serialize(tempStream, cache, SerializerOptions);
+        }
+
+        MoveCacheFile(tempPath, cacheFilePath);
+    }
+
+    private static void MoveCacheFile(string tempPath, string cacheFilePath)
+    {
+        try
+        {
+            File.Move(tempPath, cacheFilePath, true);
+        }
+        catch (IOException)
+        {
+            try
+            {
+                // Retry with replace semantics when running on platforms that require it.
+                File.Replace(tempPath, cacheFilePath, null);
+            }
+            catch
+            {
+                // Clean up temp file only if replace also failed
+                if (File.Exists(tempPath)) File.Delete(tempPath);
+                throw;
+            }
+        }
+    }
+
+    private static string GetCacheKey(string modId, string? normalizedGameVersion)
+    {
+        if (string.IsNullOrWhiteSpace(modId))
+            throw new ArgumentException("Mod ID cannot be null or empty.", nameof(modId));
+
+        var safeGameVersion = string.IsNullOrWhiteSpace(normalizedGameVersion)
+            ? AnyGameVersionToken
+            : normalizedGameVersion;
+
+        return $"{modId}__{safeGameVersion}";
     }
 
     private static string? NormalizeModVersion(string? version)
@@ -420,11 +542,12 @@ internal sealed class ModDatabaseCacheService
         return string.Equals(normalizedReleaseVersion, normalizedInstalledVersion, StringComparison.OrdinalIgnoreCase);
     }
 
-    private async Task<SemaphoreSlim> AcquireLockAsync(string path, CancellationToken cancellationToken)
+    private static string? GetCacheFilePath()
     {
-        var gate = _fileLocks.GetOrAdd(path, _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        return gate;
+        var baseDirectory = ModCacheLocator.GetModDatabaseCacheDirectory();
+        if (string.IsNullOrWhiteSpace(baseDirectory)) return null;
+
+        return Path.Combine(baseDirectory, "mod-database-cache.json");
     }
 
     private static bool IsCacheEntryExpired(DateTime cachedUtc)
@@ -441,23 +564,6 @@ internal sealed class ModDatabaseCacheService
                && schemaVersion <= CacheSchemaVersion;
     }
 
-    private static string? GetCacheFilePath(string modId, string? normalizedGameVersion)
-    {
-        if (string.IsNullOrWhiteSpace(modId)) return null;
-
-        var baseDirectory = ModCacheLocator.GetModDatabaseCacheDirectory();
-        if (string.IsNullOrWhiteSpace(baseDirectory)) return null;
-
-        var safeModId = ModCacheLocator.SanitizeFileName(modId, "mod");
-        var safeGameVersion = string.IsNullOrWhiteSpace(normalizedGameVersion)
-            ? AnyGameVersionToken
-            : ModCacheLocator.SanitizeFileName(normalizedGameVersion!, "game");
-
-        var fileName = $"{safeModId}__{safeGameVersion}.json";
-
-        return Path.Combine(baseDirectory, fileName);
-    }
-
     private static bool IsGameVersionMatch(string? cachedGameVersion, string? normalizedGameVersion)
     {
         var cachedValue = string.IsNullOrWhiteSpace(cachedGameVersion) ? AnyGameVersionToken : cachedGameVersion;
@@ -465,6 +571,47 @@ internal sealed class ModDatabaseCacheService
             ? AnyGameVersionToken
             : normalizedGameVersion;
         return string.Equals(cachedValue, currentValue, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        
+        // Attempt to flush any pending changes before disposal
+        // Try to acquire lock with zero timeout to avoid blocking during disposal
+        if (_cacheLock.Wait(0))
+        {
+            try
+            {
+                // Check if there are pending changes to flush
+                if (_isDirty && _cacheIndex != null)
+                {
+                    // Use synchronous save for disposal because Dispose cannot use async/await
+                    // (IDisposable.Dispose is a synchronous method)
+                    SaveCacheSync(_cacheIndex);
+                    _isDirty = false;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+            {
+                // Best effort - ignore expected cache write errors during disposal
+            }
+            finally
+            {
+                _cacheLock.Release();
+            }
+        }
+        // If we couldn't acquire the lock, skip the flush (best effort)
+        
+        _cacheLock.Dispose();
+    }
+
+    private sealed class ModDatabaseCache
+    {
+        public int SchemaVersion { get; init; }
+
+        public Dictionary<string, CachedModDatabaseInfo> Entries { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     private sealed class CachedModDatabaseInfo

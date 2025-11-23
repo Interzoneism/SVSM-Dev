@@ -76,6 +76,9 @@ public sealed class ModDatabaseService
 
         var internetDisabled = InternetAccessManager.IsInternetAccessDisabled;
 
+        // Pre-load the cache into memory before processing any mods
+        await CacheService.PreloadCacheAsync(cancellationToken).ConfigureAwait(false);
+
         using var semaphore = new SemaphoreSlim(MaxConcurrentMetadataRequests);
         // Pre-allocate with reasonable initial capacity (actual collection count if available, otherwise 16 as fallback)
         var tasks = new List<Task>(capacity: mods is ICollection<ModEntry> collection ? collection.Count : 16);
@@ -92,6 +95,9 @@ public sealed class ModDatabaseService
         if (tasks.Count == 0) return;
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
+
+        // Flush accumulated cache changes after all mods are processed
+        await CacheService.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         async Task ProcessModAsync(ModEntry modEntry)
         {
@@ -320,6 +326,9 @@ public sealed class ModDatabaseService
         var enriched = await EnrichWithLatestReleaseDownloadsAsync(filtered, cancellationToken)
             .ConfigureAwait(false);
 
+        // Flush accumulated cache changes after enriching all search results
+        await CacheService.FlushAsync(cancellationToken).ConfigureAwait(false);
+
         if (enriched.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
 
         return enriched
@@ -366,6 +375,9 @@ public sealed class ModDatabaseService
         var enriched = await EnrichWithLatestReleaseDownloadsAsync(filtered, cancellationToken)
             .ConfigureAwait(false);
 
+        // Flush accumulated cache changes after enriching all search results
+        await CacheService.FlushAsync(cancellationToken).ConfigureAwait(false);
+
         if (enriched.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
 
         return enriched
@@ -406,6 +418,9 @@ public sealed class ModDatabaseService
 
         var enriched = await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
             .ConfigureAwait(false);
+
+        // Flush accumulated cache changes after enriching all search results
+        await CacheService.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         if (enriched.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
 
@@ -477,6 +492,9 @@ public sealed class ModDatabaseService
                 candidates,
                 cancellationToken)
             .ConfigureAwait(false);
+
+        // Flush accumulated cache changes after enriching all search results
+        await CacheService.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         if (enriched.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
 

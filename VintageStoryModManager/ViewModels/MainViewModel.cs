@@ -36,6 +36,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan FastCheckInterval = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan BackgroundOperationDelay = TimeSpan.FromMilliseconds(50);
     private static readonly TimeSpan UserReportFetchDelay = TimeSpan.FromMilliseconds(1500);
+    private static readonly TimeSpan FallbackFingerprintCheckInterval = TimeSpan.FromSeconds(15);
     private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
     private static readonly int MaxConcurrentUserReportRefreshes = DevConfig.MaxConcurrentUserReportRefreshes;
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
@@ -82,6 +83,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly HashSet<string> _suppressedTagEntries = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _userReportEtags = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _userReportOperationLock = new();
+    private readonly object _databaseRefreshQueueLock = new();
+    private readonly Queue<ModEntry> _databaseRefreshQueue = new();
+    private readonly HashSet<string> _queuedDatabaseRefreshKeys = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _voteEtagCachePath;
     private readonly object _voteEtagPersistenceLock = new();
 
@@ -130,6 +134,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private int _modDatabaseCurrentResultLimit;
     private CancellationTokenSource? _modDatabaseSearchCts;
     private string? _modsStateFingerprint;
+    private DateTime _nextFallbackFingerprintCheckUtc;
     private bool _onlyShowCompatibleModDatabaseResults;
     private int _pendingModDetailsRefreshCount;
     private string _searchText = string.Empty;
@@ -145,6 +150,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private int _updatableModsCount;
     private bool _useModDbDesignView;
     private ViewSection _viewSection = ViewSection.InstalledMods;
+    private Task? _databaseRefreshWorker;
 
     public MainViewModel(
         string dataDirectory,
@@ -1953,61 +1959,125 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         await InvokeOnDispatcherAsync(() =>
         {
             foreach (var pair in _modEntriesBySourcePath) previousEntries[pair.Key] = pair.Value;
-        }, CancellationToken.None).ConfigureAwait(true);
-
-        var discoveredEntries = await Task
-            .Run(() => _discoveryService.LoadMods())
-            .ConfigureAwait(true);
-
-        var entries = discoveredEntries.Count == 0
-            ? new List<ModEntry>()
-            : new List<ModEntry>(discoveredEntries);
-
-        foreach (var entry in entries)
-        {
-            ResetCalculatedModState(entry);
-            if (previousEntries.TryGetValue(entry.SourcePath, out var previous)) CopyTransientModState(previous, entry);
-        }
-
-        if (entries.Count > 0) await Task.Run(() => _discoveryService.ApplyLoadStatuses(entries)).ConfigureAwait(true);
-
-        await InvokeOnDispatcherAsync(() =>
-        {
+            
+            // Clear collections once at the start to avoid multiple collection changed events
             _modEntriesBySourcePath.Clear();
             _modViewModelsBySourcePath.Clear();
+            
+            // Temporarily detach collection changed handler to avoid per-item events during bulk loading
+            _mods.CollectionChanged -= OnModsCollectionChanged;
             _mods.Clear();
-
-            foreach (var entry in entries)
-            {
-                _modEntriesBySourcePath[entry.SourcePath] = entry;
-                var viewModel = CreateModViewModel(entry);
-                _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
-                _mods.Add(viewModel);
-            }
-
-            TotalMods = _mods.Count;
-
-            if (!string.IsNullOrWhiteSpace(previousSelection)
-                && _modViewModelsBySourcePath.TryGetValue(previousSelection, out var selected))
-                SelectedMod = selected;
-            else
-                SelectedMod = null;
-
-            // Queue background operations but don't wait for them to complete
-            // This allows the UI to be immediately responsive while details load in the background
-            if (_allowModDetailsRefresh && entries.Count > 0) 
-            {
-                // Defer database info refresh to after initial UI render
-                _ = Task.Run(async () =>
-                {
-                    // Small delay to ensure UI thread processes the initial mods display
-                    await Task.Delay(BackgroundOperationDelay).ConfigureAwait(false);
-                    QueueDatabaseInfoRefresh(entries);
-                });
-            }
-
-            UpdateLoadedModsStatus();
         }, CancellationToken.None).ConfigureAwait(true);
+
+        var batchSize = InstalledModsIncrementalBatchSize;
+        var allLoadedEntries = new List<ModEntry>();
+        var isFirstBatch = true;
+
+        try
+        {
+            await foreach (var batch in _discoveryService.LoadModsIncrementallyAsync(batchSize))
+            {
+                // batch is already IReadOnlyList<ModEntry>, no need to call ToList()
+                if (batch.Count == 0) continue;
+
+                // Process entries off the UI thread
+                await Task.Run(() =>
+                {
+                    foreach (var entry in batch)
+                    {
+                        ResetCalculatedModState(entry);
+                        if (previousEntries.TryGetValue(entry.SourcePath, out var previous))
+                            CopyTransientModState(previous, entry);
+                    }
+                    allLoadedEntries.AddRange(batch);
+                }).ConfigureAwait(false);
+
+                // Apply load statuses incrementally for this batch
+                // Note: ApplyLoadStatusesIncremental requires ICollection, so we need to convert
+                var batchAsList = batch is List<ModEntry> list ? list : batch.ToList();
+                await Task.Run(() => _discoveryService.ApplyLoadStatusesIncremental(
+                    allLoadedEntries, batchAsList, null)).ConfigureAwait(false);
+
+                // Create view models off the UI thread where possible
+                var viewModels = new List<(string sourcePath, ModListItemViewModel viewModel)>(batch.Count);
+                await Task.Run(() =>
+                {
+                    foreach (var entry in batch)
+                    {
+                        var isActive = !_settingsStore.IsDisabled(entry.ModId, entry.Version);
+                        var location = GetDisplayPath(entry.SourcePath);
+                        var viewModel = new ModListItemViewModel(
+                            entry,
+                            isActive,
+                            location,
+                            ApplyActivationChangeAsync,
+                            InstalledGameVersion,
+                            true,
+                            _configuration.ShouldSkipModVersion,
+                            () => _configuration.RequireExactVsVersionMatch);
+                        viewModels.Add((entry.SourcePath, viewModel));
+                    }
+                }).ConfigureAwait(false);
+
+                // Batch add to collections on UI thread
+                await InvokeOnDispatcherAsync(() =>
+                {
+                    foreach (var entry in batch)
+                    {
+                        _modEntriesBySourcePath[entry.SourcePath] = entry;
+                    }
+
+                    foreach (var (sourcePath, viewModel) in viewModels)
+                    {
+                        _modViewModelsBySourcePath[sourcePath] = viewModel;
+                        _mods.Add(viewModel);
+                    }
+
+                    TotalMods = _mods.Count;
+
+                    // Show progress after first batch to make UI responsive quickly
+                    if (isFirstBatch)
+                    {
+                        isFirstBatch = false;
+                        // Use simple concatenation for infrequent status updates
+                        SetStatus("Loading mods... " + TotalMods + " loaded", false);
+                    }
+                }, CancellationToken.None, DispatcherPriority.Background).ConfigureAwait(true);
+
+                // Small yield to allow UI thread to process and render
+                await Task.Delay(1).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            // Reattach collection changed handler and trigger single reset event
+            await InvokeOnDispatcherAsync(() =>
+            {
+                _mods.CollectionChanged += OnModsCollectionChanged;
+                
+                // Manually trigger the collection changed logic once for all items
+                OnModsCollectionChanged(this, new NotifyCollectionChangedEventArgs(
+                    NotifyCollectionChangedAction.Reset));
+
+                if (!string.IsNullOrWhiteSpace(previousSelection)
+                    && _modViewModelsBySourcePath.TryGetValue(previousSelection, out var selected))
+                    SelectedMod = selected;
+                else
+                    SelectedMod = null;
+
+                // Queue background operations but don't wait for them to complete
+                if (_allowModDetailsRefresh && allLoadedEntries.Count > 0)
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(BackgroundOperationDelay).ConfigureAwait(false);
+                        QueueDatabaseInfoRefresh(allLoadedEntries);
+                    });
+                }
+
+                UpdateLoadedModsStatus();
+            }, CancellationToken.None).ConfigureAwait(true);
+        }
     }
 
     public async Task<bool> CheckForModStateChangesAsync()
@@ -2028,7 +2098,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (_modsWatcher.HasPendingChanges) return true;
 
-        if (_modsWatcher.IsWatching) return false;
+        if (_modsWatcher.IsWatching)
+        {
+            _nextFallbackFingerprintCheckUtc = DateTime.MinValue;
+            return false;
+        }
+
+        var now = DateTime.UtcNow;
+        if (now < _nextFallbackFingerprintCheckUtc) return false;
+
+        _nextFallbackFingerprintCheckUtc = now + FallbackFingerprintCheckInterval;
 
         var fingerprint = await CaptureModsStateFingerprintAsync().ConfigureAwait(false);
         if (fingerprint is null) return false;
@@ -2813,19 +2892,44 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Check again in case multiple schedules happened
                 if (!_isInstalledTagRefreshPending) return;
 
+
                 // Collect tags more efficiently without intermediate ToList()
+                // Don't show status messages during initial load to avoid UI flickering
+                // Tags will load silently in the background
+                if (_isInitialLoadComplete)
+                {
+                    await InvokeOnDispatcherAsync(
+                            () => SetStatus("Loading tags...", false),
+                            CancellationToken.None,
+                            DispatcherPriority.ContextIdle)
+                        .ConfigureAwait(false);
+                }
+
+                // Collect tags more efficiently using HashSet to avoid duplicates during collection
                 var normalized = await Task.Run(() =>
                 {
-                    var tagList = new List<string>(capacity: _mods.Count * DevConfig.AverageTagsPerMod);
+                    // Use HashSet directly to deduplicate as we go
+                    var uniqueTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    
                     foreach (var mod in _mods)
                     {
                         if (mod.DatabaseTags is { Count: > 0 } tags)
                         {
-                            tagList.AddRange(tags);
+                            foreach (var tag in tags)
+                            {
+                                if (!string.IsNullOrWhiteSpace(tag))
+                                    uniqueTags.Add(tag.Trim());
+                            }
                         }
                     }
-                    tagList.AddRange(_selectedInstalledTags);
-                    return NormalizeAndSortTags(tagList);
+                    
+                    foreach (var tag in _selectedInstalledTags)
+                    {
+                        if (!string.IsNullOrWhiteSpace(tag))
+                            uniqueTags.Add(tag);
+                    }
+                    
+                    return NormalizeAndSortTags(uniqueTags);
                 }).ConfigureAwait(false);
 
                 await InvokeOnDispatcherAsync(
@@ -2878,23 +2982,31 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Don't show status messages during tag refresh to avoid UI flickering
                 // Tags will load silently in the background
 
-                // Collect tags more efficiently
+                // Collect tags more efficiently using HashSet to avoid duplicates
                 var normalized = await Task.Run(() =>
                 {
                     var existing = _modDatabaseAvailableTags;
-                    var tagList = new List<string>(capacity: existing.Count + _searchResults.Count * DevConfig.AverageTagsPerMod);
-                    tagList.AddRange(existing);
+                    var uniqueTags = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
                     
                     foreach (var mod in _searchResults)
                     {
                         if (mod.DatabaseTags is { Count: > 0 } tags)
                         {
-                            tagList.AddRange(tags);
+                            foreach (var tag in tags)
+                            {
+                                if (!string.IsNullOrWhiteSpace(tag))
+                                    uniqueTags.Add(tag.Trim());
+                            }
                         }
                     }
                     
-                    tagList.AddRange(_selectedModDatabaseTags);
-                    return NormalizeAndSortTags(tagList);
+                    foreach (var tag in _selectedModDatabaseTags)
+                    {
+                        if (!string.IsNullOrWhiteSpace(tag))
+                            uniqueTags.Add(tag);
+                    }
+                    
+                    return NormalizeAndSortTags(uniqueTags);
                 }).ConfigureAwait(false);
 
                 await InvokeOnDispatcherAsync(
@@ -3086,19 +3198,30 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private static List<string> NormalizeAndSortTags(IEnumerable<string> tags)
     {
-        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var tag in tags)
+        // If tags is already a HashSet with the correct comparer, we can skip deduplication
+        List<string> list;
+        if (tags is HashSet<string> hashSet && hashSet.Comparer == StringComparer.OrdinalIgnoreCase)
         {
-            if (string.IsNullOrWhiteSpace(tag)) continue;
+            // Already deduplicated, just convert to list and sort
+            list = new List<string>(hashSet);
+        }
+        else
+        {
+            // Need to deduplicate using dictionary
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var tag in tags)
+            {
+                if (string.IsNullOrWhiteSpace(tag)) continue;
 
-            var trimmed = tag.Trim();
-            if (trimmed.Length == 0) continue;
+                var trimmed = tag.Trim();
+                if (trimmed.Length == 0) continue;
 
-            // Use TryAdd to avoid redundant ContainsKey check
-            map.TryAdd(trimmed, trimmed);
+                // Use TryAdd to avoid redundant ContainsKey check
+                map.TryAdd(trimmed, trimmed);
+            }
+            list = new List<string>(map.Values);
         }
 
-        var list = new List<string>(map.Values);
         list.Sort(StringComparer.OrdinalIgnoreCase);
         return list;
     }
@@ -4425,30 +4548,97 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (pending.Length == 0) return;
 
-        OnModDetailsRefreshEnqueued(pending.Length);
+        var enqueued = 0;
 
-        _ = Task.Run(async () =>
+        lock (_databaseRefreshQueueLock)
         {
-            try
+            foreach (var entry in pending)
             {
-                if (InternetAccessManager.IsInternetAccessDisabled)
+                var key = BuildDatabaseRefreshKey(entry);
+                if (!_queuedDatabaseRefreshKeys.Add(key)) continue;
+
+                _databaseRefreshQueue.Enqueue(entry);
+                enqueued++;
+            }
+
+            if (enqueued > 0 && (_databaseRefreshWorker == null || _databaseRefreshWorker.IsCompleted))
+                _databaseRefreshWorker = Task.Run(ProcessDatabaseRefreshQueueAsync);
+        }
+
+        if (enqueued > 0) OnModDetailsRefreshEnqueued(enqueued);
+    }
+
+    private async Task ProcessDatabaseRefreshQueueAsync()
+    {
+        var running = new List<Task>();
+
+        using var limiter = new SemaphoreSlim(MaxConcurrentDatabaseRefreshes, MaxConcurrentDatabaseRefreshes);
+
+        while (true)
+        {
+            ModEntry? entry = null;
+            string? key = null;
+
+            lock (_databaseRefreshQueueLock)
+            {
+                if (_databaseRefreshQueue.Count > 0)
                 {
-                    await PopulateOfflineDatabaseInfoAsync(pending).ConfigureAwait(false);
-                    return;
+                    entry = _databaseRefreshQueue.Dequeue();
+                    key = entry != null ? BuildDatabaseRefreshKey(entry) : null;
+                }
+            }
+
+            if (entry is null || string.IsNullOrWhiteSpace(entry.ModId) || string.IsNullOrWhiteSpace(key))
+            {
+                if (!string.IsNullOrWhiteSpace(key))
+                    lock (_databaseRefreshQueueLock)
+                    {
+                        _queuedDatabaseRefreshKeys.Remove(key);
+                    }
+
+                if (entry is null)
+                {
+                    if (running.Count == 0)
+                    {
+                        lock (_databaseRefreshQueueLock)
+                        {
+                            if (_databaseRefreshQueue.Count == 0) break;
+                            continue;
+                        }
+                    }
+
+                    var completed = await Task.WhenAny(running).ConfigureAwait(false);
+                    running.Remove(completed);
                 }
 
-                using var limiter = new SemaphoreSlim(MaxConcurrentDatabaseRefreshes, MaxConcurrentDatabaseRefreshes);
-                var refreshTasks = pending
-                    .Select(entry => RefreshDatabaseInfoAsync(entry, limiter))
-                    .ToArray();
+                continue;
+            }
 
-                await Task.WhenAll(refreshTasks).ConfigureAwait(false);
-            }
-            catch (Exception)
+            var refreshTask = RefreshDatabaseInfoAsync(entry, limiter)
+                .ContinueWith(_ =>
+                {
+                    lock (_databaseRefreshQueueLock)
+                    {
+                        _queuedDatabaseRefreshKeys.Remove(key);
+                    }
+                }, TaskScheduler.Default);
+
+            running.Add(refreshTask);
+
+            if (running.Count >= MaxConcurrentDatabaseRefreshes)
             {
-                // Swallow unexpected exceptions from the refresh loop.
+                var completed = await Task.WhenAny(running).ConfigureAwait(false);
+                running.Remove(completed);
             }
-        });
+        }
+
+        await Task.WhenAll(running).ConfigureAwait(false);
+    }
+
+    private static string BuildDatabaseRefreshKey(ModEntry entry)
+    {
+        var version = string.IsNullOrWhiteSpace(entry.Version) ? "<none>" : entry.Version;
+        return string.Join("|", entry.SourcePath, entry.ModId, version);
     }
 
     private bool NeedsDatabaseRefresh(ModEntry entry)
@@ -4906,8 +5096,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             // Ignore filesystem probing failures; the cache simply will not be used.
         }
 
-        if (ModManifestCacheService.TryGetManifest(archivePath, lastWriteTimeUtc, length, out var cachedManifest,
-                out _))
+        if (ModManifestCacheService.TryGetManifest(archivePath, lastWriteTimeUtc, length, out var cachedManifest))
             try
             {
                 using var document = JsonDocument.Parse(cachedManifest);
@@ -4982,7 +5171,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     : Path.GetFileNameWithoutExtension(archivePath);
 
             ModManifestCacheService.StoreManifest(archivePath, lastWriteTimeUtc, length, cacheModId, version,
-                manifestContent, null);
+                manifestContent);
 
             return new ModReleaseInfo
             {
