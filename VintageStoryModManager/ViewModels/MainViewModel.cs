@@ -88,6 +88,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly object _databaseRefreshQueueLock = new();
     private readonly Queue<ModEntry> _databaseRefreshQueue = new();
     private readonly HashSet<string> _queuedDatabaseRefreshKeys = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _latestVersionCheckQueueLock = new();
+    private readonly Queue<ModEntry> _latestVersionCheckQueue = new();
+    private readonly HashSet<string> _queuedLatestVersionCheckKeys = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _voteEtagCachePath;
     private readonly object _voteEtagPersistenceLock = new();
 
@@ -109,6 +112,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private Timer? _fastCheckTimer;
     private bool _hasActiveBusyScope;
     private bool _hasEnabledUserReportFetching;
+    private bool _hasEnabledLatestVersionChecking;
     private bool _hasCompletedDependencyCheck;
     private bool _hasMultipleSelectedMods;
     private volatile bool _hasPendingFastCheck;
@@ -156,6 +160,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _useModDbDesignView;
     private ViewSection _viewSection = ViewSection.InstalledMods;
     private Task? _databaseRefreshWorker;
+    private Task? _latestVersionCheckWorker;
 
     public MainViewModel(
         string dataDirectory,
@@ -209,6 +214,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _excludeInstalledModDatabaseResults = excludeInstalledModDatabaseResults;
         _onlyShowCompatibleModDatabaseResults = onlyShowCompatibleModDatabaseResults;
         _hasEnabledUserReportFetching = false;
+        _hasEnabledLatestVersionChecking = false;
         _isAutoRefreshDisabled = configuration.DisableAutoRefresh;
         _allowModDetailsRefresh = !_isAutoRefreshDisabled;
 
@@ -781,6 +787,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 {
                     _hasEnabledUserReportFetching = false;
                 }
+                _hasEnabledLatestVersionChecking = false;
                 if (_searchResults.Count == 0)
                     TriggerModDatabaseSearch();
                 else
@@ -794,6 +801,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 {
                     _hasEnabledUserReportFetching = false;
                 }
+                _hasEnabledLatestVersionChecking = false;
                 SetStatus("Showing installed mods.", false);
                 break;
             case ViewSection.CloudModlists:
@@ -1836,6 +1844,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 _hasEnabledUserReportFetching = false;
             }
+            
+            if (requiresFullReload)
+            {
+                _hasEnabledLatestVersionChecking = false;
+            }
 
             if (requiresFullReload)
             {
@@ -2477,10 +2490,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         // Don't show status messages for user report completion to avoid UI flickering
         
-        // Check if initial load is complete
-        if (shouldSetLoadedStatus && !_isInitialLoadComplete)
+        // When user reports are complete, enable latest version checking
+        if (shouldSetLoadedStatus)
         {
-            InvokeCheckAndCompleteInitialLoad();
+            EnableLatestVersionChecking();
+            
+            // Check if initial load is complete
+            if (!_isInitialLoadComplete)
+            {
+                InvokeCheckAndCompleteInitialLoad();
+            }
         }
     }
 
@@ -2630,6 +2649,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (mod.CanSubmitUserReport) QueueUserReportRefresh(mod);
 
             QueueLatestReleaseUserReportRefresh(mod);
+        }
+    }
+
+    private void EnableLatestVersionChecking()
+    {
+        // This method enables latest version checking for all mods when called.
+        // It should only be called when user reports have completed loading (if user reports column is visible),
+        // or when latest version checking is needed and user reports are not being loaded.
+        
+        if (_hasEnabledLatestVersionChecking) return;
+
+        _hasEnabledLatestVersionChecking = true;
+
+        // Queue all mods that need latest version checking
+        if (_allowModDetailsRefresh && _modEntriesBySourcePath.Count > 0)
+        {
+            QueueLatestVersionCheck(_modEntriesBySourcePath.Values.ToArray());
         }
     }
 
@@ -2836,6 +2872,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (!isVisible)
         {
             _hasEnabledUserReportFetching = false;
+            _hasEnabledLatestVersionChecking = false;
             return;
         }
 
@@ -2847,7 +2884,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         // Helper method to schedule user report fetching with a delay during initial load
         // This ensures the UI is fully responsive before background operations start
-        if (!_areUserReportsVisible || _hasEnabledUserReportFetching || !_allowModDetailsRefresh)
+        
+        // If user reports are not visible, skip to latest version checking
+        if (!_areUserReportsVisible)
+        {
+            if (_allowModDetailsRefresh && !_hasEnabledLatestVersionChecking)
+                EnableLatestVersionChecking();
+            return;
+        }
+        
+        if (_hasEnabledUserReportFetching || !_allowModDetailsRefresh)
             return;
 
         var delay = _isInitialLoadComplete ? TimeSpan.Zero : UserReportFetchDelay;
@@ -4744,6 +4790,167 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return string.Join("|", entry.SourcePath, entry.ModId, version);
     }
 
+    private void QueueLatestVersionCheck(IEnumerable<ModEntry> entries)
+    {
+        if (entries is null) return;
+
+        if (!_allowModDetailsRefresh) return;
+
+        // Only queue entries that have cached database info (tags already loaded)
+        var pending = entries
+            .Where(entry => entry != null
+                            && !string.IsNullOrWhiteSpace(entry.ModId)
+                            && entry.DatabaseInfo != null
+                            && !entry.DatabaseInfo.IsOfflineOnly)
+            .ToArray();
+
+        if (pending.Length == 0) return;
+
+        var enqueued = 0;
+
+        lock (_latestVersionCheckQueueLock)
+        {
+            foreach (var entry in pending)
+            {
+                var key = BuildDatabaseRefreshKey(entry); // Reuse same key format
+                if (!_queuedLatestVersionCheckKeys.Add(key)) continue;
+
+                _latestVersionCheckQueue.Enqueue(entry);
+                enqueued++;
+            }
+
+            if (enqueued > 0 && (_latestVersionCheckWorker == null || _latestVersionCheckWorker.IsCompleted))
+                _latestVersionCheckWorker = Task.Run(ProcessLatestVersionCheckQueueAsync);
+        }
+
+        if (enqueued > 0) OnModDetailsRefreshEnqueued(enqueued);
+    }
+
+    private async Task ProcessLatestVersionCheckQueueAsync()
+    {
+        var running = new List<Task>();
+
+        const int MaxConcurrentChecks = 6; // Use a reasonable concurrency limit
+        using var limiter = new SemaphoreSlim(MaxConcurrentChecks, MaxConcurrentChecks);
+
+        while (true)
+        {
+            ModEntry? entry = null;
+            string? key = null;
+
+            lock (_latestVersionCheckQueueLock)
+            {
+                if (_latestVersionCheckQueue.Count > 0)
+                {
+                    entry = _latestVersionCheckQueue.Dequeue();
+                    key = entry != null ? BuildDatabaseRefreshKey(entry) : null;
+                }
+            }
+
+            if (entry is null || string.IsNullOrWhiteSpace(entry.ModId) || string.IsNullOrWhiteSpace(key))
+            {
+                if (!string.IsNullOrWhiteSpace(key))
+                    lock (_latestVersionCheckQueueLock)
+                    {
+                        _queuedLatestVersionCheckKeys.Remove(key);
+                    }
+
+                if (entry is null)
+                {
+                    if (running.Count == 0)
+                    {
+                        lock (_latestVersionCheckQueueLock)
+                        {
+                            if (_latestVersionCheckQueue.Count == 0) break;
+                            continue;
+                        }
+                    }
+
+                    var completed = await Task.WhenAny(running).ConfigureAwait(false);
+                    running.Remove(completed);
+                }
+
+                continue;
+            }
+
+            var checkTask = CheckLatestVersionAsync(entry, limiter)
+                .ContinueWith(_ =>
+                {
+                    lock (_latestVersionCheckQueueLock)
+                    {
+                        _queuedLatestVersionCheckKeys.Remove(key);
+                    }
+                }, TaskScheduler.Default);
+
+            running.Add(checkTask);
+
+            if (running.Count >= MaxConcurrentChecks)
+            {
+                var completed = await Task.WhenAny(running).ConfigureAwait(false);
+                running.Remove(completed);
+            }
+        }
+
+        await Task.WhenAll(running).ConfigureAwait(false);
+    }
+
+    private async Task CheckLatestVersionAsync(ModEntry entry, SemaphoreSlim limiter)
+    {
+        await limiter.WaitAsync().ConfigureAwait(false);
+
+        try
+        {
+            if (entry.DatabaseInfo is null) return;
+
+            // Allow the UI thread to breathe before performing online validation
+            await Task.Delay(LazyMetadataOnlineDelay).ConfigureAwait(false);
+
+            var cachedVersion = VersionStringUtility.Normalize(GetCachedLatestVersion(entry.DatabaseInfo));
+            if (string.IsNullOrWhiteSpace(cachedVersion)) return;
+
+            var latestVersion = await _databaseService
+                .TryFetchLatestReleaseVersionAsync(entry.ModId, CancellationToken.None)
+                .ConfigureAwait(false);
+
+            if (string.IsNullOrWhiteSpace(latestVersion)) return;
+
+            var normalizedLatest = VersionStringUtility.Normalize(latestVersion);
+            
+            // If versions don't match, do a full database refresh
+            if (!string.Equals(cachedVersion, normalizedLatest, StringComparison.OrdinalIgnoreCase))
+            {
+                // Transition to "Checking for updates..." when we detect an update
+                if (!_isInitialLoadComplete && !_isCheckingForUpdates)
+                {
+                    _isCheckingForUpdates = true;
+                    await InvokeOnDispatcherAsync(
+                        () => SetStatus("Checking for updates...", false),
+                        CancellationToken.None,
+                        DispatcherPriority.ContextIdle).ConfigureAwait(false);
+                }
+
+                var info = await _databaseService
+                    .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
+                        _configuration.RequireExactVsVersionMatch)
+                    .ConfigureAwait(false);
+
+                if (info is not null)
+                {
+                    await ApplyDatabaseInfoAsync(entry, info).ConfigureAwait(false);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Swallow exceptions - latest version checking is non-critical
+        }
+        finally
+        {
+            limiter.Release();
+            OnModDetailsRefreshCompleted();
+        }
+    }
+
     private bool NeedsDatabaseRefresh(ModEntry entry)
     {
         if (entry is null) return false;
@@ -4852,11 +5059,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     return;
                 }
 
-                if (await ShouldUseCachedMetadataAsync(entry, cachedInfo).ConfigureAwait(false))
-                {
-                    source = "cache-validated";
-                    return;
-                }
+                // Latest version checking is now handled by a separate queue system
+                // Tags are loaded first from cache, then latest version is checked separately
+                source = "cache";
+                return;
             }
             else if (InternetAccessManager.IsInternetAccessDisabled)
             {
