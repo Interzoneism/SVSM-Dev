@@ -60,6 +60,8 @@ public sealed class ModListItemViewModel : ObservableObject
     private string _statusDetails = string.Empty;
     private string _statusText = string.Empty;
     private bool _suppressState;
+    private bool _suppressTagPropertyChanges;
+    private bool _hasPendingTagNotification;
     private string _tooltip = string.Empty;
     private string? _updateMessage;
     private string _userReportDisplay = "—";
@@ -944,8 +946,15 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             DatabaseTags = tags;
             _cachedTagSet = null;
-            OnPropertyChanged(nameof(DatabaseTags));
-            OnPropertyChanged(nameof(DatabaseTagsDisplay));
+            if (_suppressTagPropertyChanges)
+            {
+                _hasPendingTagNotification = true;
+            }
+            else
+            {
+                OnPropertyChanged(nameof(DatabaseTags));
+                OnPropertyChanged(nameof(DatabaseTagsDisplay));
+            }
         }
 
         var requiredVersions = info.RequiredGameVersions ?? Array.Empty<string>();
@@ -1106,6 +1115,32 @@ public sealed class ModListItemViewModel : ObservableObject
         _cachedTagSet = null;
         OnPropertyChanged(nameof(DatabaseTags));
         OnPropertyChanged(nameof(DatabaseTagsDisplay));
+    }
+
+    /// <summary>
+    /// Suspends property change notifications for DatabaseTags updates.
+    /// Call this before batch updating multiple mods to improve performance.
+    /// Must be paired with ResumeDatabaseTagNotifications.
+    /// </summary>
+    public void SuspendDatabaseTagNotifications()
+    {
+        _suppressTagPropertyChanges = true;
+        _hasPendingTagNotification = false;
+    }
+
+    /// <summary>
+    /// Resumes property change notifications for DatabaseTags updates.
+    /// If any updates occurred while suspended, fires the notifications now.
+    /// </summary>
+    public void ResumeDatabaseTagNotifications()
+    {
+        _suppressTagPropertyChanges = false;
+        if (_hasPendingTagNotification)
+        {
+            _hasPendingTagNotification = false;
+            OnPropertyChanged(nameof(DatabaseTags));
+            OnPropertyChanged(nameof(DatabaseTagsDisplay));
+        }
     }
 
     /// <summary>

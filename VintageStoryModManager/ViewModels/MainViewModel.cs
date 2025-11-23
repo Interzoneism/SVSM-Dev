@@ -3681,6 +3681,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             await InvokeOnDispatcherAsync(
                 () =>
                 {
+                    // Suspend tag property change notifications during batch update
+                    foreach (var viewModel in viewModels)
+                        viewModel.SuspendDatabaseTagNotifications();
+
                     for (var i = 0; i < entries.Count; i++)
                     {
                         var info = entries[i].Entry.DatabaseInfo;
@@ -3691,6 +3695,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                             QueueLatestReleaseUserReportRefresh(viewModel);
                         }
                     }
+
+                    // Resume notifications - all tag changes will be notified at once
+                    foreach (var viewModel in viewModels)
+                        viewModel.ResumeDatabaseTagNotifications();
 
                     SetStatus($"Loading details for {entries.Count} mod(s) finished.", false);
                 },
