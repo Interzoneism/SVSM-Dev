@@ -1922,9 +1922,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Only show messages from the allowed list:
                 // - "Initializing...", "Loading mod details...", "Checking for updates...",
                 //   "Checking for dependency errors...", "Loaded X mods successfully."
+                // The final "Loaded X mods successfully." will be shown after background operations complete.
                 if (_viewSection == ViewSection.InstalledMods)
                 {
-                    // Don't show any status here - let background operations show the appropriate message
+                    // Don't show any status here - let background operations complete and show final message
                     // if (TotalMods == 0)
                     // {
                     //     SetStatus("No mods found.", false);
