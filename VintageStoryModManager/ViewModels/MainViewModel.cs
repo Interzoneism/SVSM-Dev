@@ -1911,34 +1911,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ModsView.Refresh();
             await UpdateModsStateSnapshotAsync();
             
-            // Complete initial load immediately after mods are displayed
-            // This allows the UI to be responsive while background operations continue
-            if (!_isInitialLoadComplete)
+            // If no mod detail refresh has started, complete the initial load now so status
+            // updates can continue progressing. Otherwise, defer completion until the first
+            // mod detail refresh finishes to allow "Loading mod details..." to replace the
+            // initial status message.
+            if (!_isInitialLoadComplete && !IsModDetailsRefreshPending())
             {
                 _isInitialLoadComplete = true;
-                
-                // Set a user-friendly status message
-                // Removed all intermediate status messages - not in allowed list
-                // Only show messages from the allowed list:
-                // - "Initializing...", "Loading mod details...", "Checking for updates...",
-                //   "Checking for dependency errors...", "Loaded X mods successfully."
-                // The final "Loaded X mods successfully." will be shown after background operations complete.
-                if (_viewSection == ViewSection.InstalledMods)
-                {
-                    // Don't show any status here - let background operations complete and show final message
-                    // if (TotalMods == 0)
-                    // {
-                    //     SetStatus("No mods found.", false);
-                    // }
-                    // else if (IsModDetailsRefreshPending())
-                    // {
-                    //     SetStatus($"Loaded {TotalMods} mods. Loading additional details in background...", false);
-                    // }
-                    // else
-                    // {
-                    //     SetStatus($"Loaded {TotalMods} mods.", false);
-                    // }
-                }
+                InvokeCheckAndCompleteInitialLoad();
             }
         }
         catch (Exception ex)
@@ -4025,8 +4005,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             // No busy scope to release since we don't create one anymore for better UI responsiveness
             UpdateIsLoadingModDetails(false);
 
+            if (!_isInitialLoadComplete)
+            {
+                _isInitialLoadComplete = true;
+            }
+
             // Don't show status messages for mod details completion to avoid UI flickering
-            
+
             // Check if initial load is complete
             InvokeCheckAndCompleteInitialLoad();
         }
