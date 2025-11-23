@@ -7,6 +7,7 @@ namespace VintageStoryModManager.Services;
 /// <summary>
 ///     Provides disk-backed caching for mod manifests and icons so zip archives do not need to be reopened repeatedly.
 ///     Uses a single unified JSON file for all mod metadata with icons stored separately.
+///     Cache writes are batched to reduce I/O overhead during bulk operations.
 /// </summary>
 internal static class ModManifestCacheService
 {
@@ -16,6 +17,9 @@ internal static class ModManifestCacheService
 
     private static readonly object CacheLock = new();
     private static UnifiedMetadataCache? _cache;
+    private static bool _isDirty;
+    private static System.Threading.Timer? _saveTimer;
+    private static readonly TimeSpan SaveInterval = TimeSpan.FromSeconds(5);
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -45,7 +49,7 @@ internal static class ModManifestCacheService
             if (entry.Length != length || entry.LastWriteTimeUtcTicks != ticks)
             {
                 cache.Entries.Remove(normalizedPath);
-                SaveCacheLocked(cache);
+                MarkDirtyLocked();
                 return false;
             }
 
@@ -63,7 +67,7 @@ internal static class ModManifestCacheService
             catch (Exception)
             {
                 cache.Entries.Remove(normalizedPath);
-                SaveCacheLocked(cache);
+                MarkDirtyLocked();
                 return false;
             }
         }
@@ -74,6 +78,9 @@ internal static class ModManifestCacheService
         lock (CacheLock)
         {
             _cache = null;
+            _isDirty = false;
+            _saveTimer?.Dispose();
+            _saveTimer = null;
         }
 
         var root = GetMetadataRoot();
@@ -149,7 +156,7 @@ internal static class ModManifestCacheService
                 
                 cache.Entries[normalizedPath] = entry;
                 cache.InvalidateIndex(); // Rebuild index on next access
-                SaveCacheLocked(cache);
+                MarkDirtyLocked();
             }
         }
         catch (Exception)
@@ -167,7 +174,7 @@ internal static class ModManifestCacheService
             if (cache.Entries.Remove(normalizedPath))
             {
                 cache.InvalidateIndex(); // Rebuild index on next access
-                SaveCacheLocked(cache);
+                MarkDirtyLocked();
             }
         }
     }
@@ -198,7 +205,7 @@ internal static class ModManifestCacheService
 
             if (modified)
             {
-                SaveCacheLocked(cache);
+                MarkDirtyLocked();
             }
         }
     }
@@ -232,6 +239,48 @@ internal static class ModManifestCacheService
         return string.IsNullOrWhiteSpace(version)
             ? modId.ToLowerInvariant()
             : $"{modId.ToLowerInvariant()}:{version.ToLowerInvariant()}";
+    }
+
+    /// <summary>
+    /// Flushes any pending cache writes to disk immediately.
+    /// </summary>
+    public static void Flush()
+    {
+        lock (CacheLock)
+        {
+            if (_isDirty && _cache != null)
+            {
+                SaveCacheLocked(_cache);
+                _isDirty = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Marks the cache as dirty and ensures the save timer is running.
+    /// Must be called while holding CacheLock.
+    /// </summary>
+    private static void MarkDirtyLocked()
+    {
+        _isDirty = true;
+        
+        // Ensure timer is created and running
+        if (_saveTimer == null)
+        {
+            _saveTimer = new System.Threading.Timer(OnSaveTimerCallback, null, SaveInterval, SaveInterval);
+        }
+    }
+
+    private static void OnSaveTimerCallback(object? state)
+    {
+        lock (CacheLock)
+        {
+            if (_isDirty && _cache != null)
+            {
+                SaveCacheLocked(_cache);
+                _isDirty = false;
+            }
+        }
     }
 
     private static UnifiedMetadataCache EnsureCacheLocked()
