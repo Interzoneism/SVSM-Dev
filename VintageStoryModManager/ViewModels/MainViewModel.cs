@@ -4943,6 +4943,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         catch (Exception)
         {
             // Swallow exceptions - latest version checking is non-critical
+            // Exceptions are already logged by the debug scope in the try block if needed
         }
         finally
         {
