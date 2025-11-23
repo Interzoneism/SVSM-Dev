@@ -1356,8 +1356,11 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         if (tokens.Count == 0) return true;
 
+        // Use AsSpan() for better performance and ordinal comparison since 
+        // both search index and tokens are pre-lowercased
+        var searchSpan = _searchIndex.AsSpan();
         foreach (var token in tokens)
-            if (_searchIndex.IndexOf(token, StringComparison.OrdinalIgnoreCase) < 0)
+            if (searchSpan.IndexOf(token.AsSpan(), StringComparison.Ordinal) < 0)
                 return false;
 
         return true;
@@ -1751,7 +1754,8 @@ public sealed class ModListItemViewModel : ObservableObject
         AppendDependencies(builder, Dependencies);
         AppendReleases(builder, _releases);
 
-        return builder.ToString();
+        // Lowercase the entire search index once for faster search matching
+        return builder.ToString().ToLowerInvariant();
     }
 
     private static void AppendText(StringBuilder builder, string? value)

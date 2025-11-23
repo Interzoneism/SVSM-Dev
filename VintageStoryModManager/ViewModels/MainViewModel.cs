@@ -3880,6 +3880,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (string.IsNullOrWhiteSpace(value)) return Array.Empty<string>();
 
         return value
+            .ToLowerInvariant()
             .Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
