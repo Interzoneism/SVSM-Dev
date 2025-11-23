@@ -120,9 +120,10 @@ public sealed class ModDatabaseService
             {
                 try
                 {
-                    var fileInfo = new FileInfo(modEntry.SourcePath);
-                    if (fileInfo.Exists)
+                    // Only check metadata cache for file-based mods (ZipArchive)
+                    if (modEntry.SourceKind == ModSourceKind.ZipArchive && File.Exists(modEntry.SourcePath))
                     {
+                        var fileInfo = new FileInfo(modEntry.SourcePath);
                         if (ModManifestCacheService.TryGetManifest(
                             modEntry.SourcePath,
                             fileInfo.LastWriteTimeUtc,
@@ -131,6 +132,24 @@ public sealed class ModDatabaseService
                             out cachedTags))
                         {
                             // Tags loaded from metadata cache
+                        }
+                    }
+                    else if (modEntry.SourceKind == ModSourceKind.Folder && Directory.Exists(modEntry.SourcePath))
+                    {
+                        // For folders, check if there's a modinfo.json file
+                        var modInfoPath = Path.Combine(modEntry.SourcePath, "modinfo.json");
+                        if (File.Exists(modInfoPath))
+                        {
+                            var fileInfo = new FileInfo(modInfoPath);
+                            if (ModManifestCacheService.TryGetManifest(
+                                modInfoPath,
+                                fileInfo.LastWriteTimeUtc,
+                                fileInfo.Length,
+                                out _,
+                                out cachedTags))
+                            {
+                                // Tags loaded from metadata cache
+                            }
                         }
                     }
                 }
@@ -198,7 +217,21 @@ public sealed class ModDatabaseService
                         try
                         {
                             var tagsArray = info.Tags.ToArray();
-                            ModManifestCacheService.UpdateTags(modEntry.SourcePath, tagsArray);
+                            
+                            // Store tags based on source kind
+                            if (modEntry.SourceKind == ModSourceKind.ZipArchive)
+                            {
+                                ModManifestCacheService.UpdateTags(modEntry.SourcePath, tagsArray);
+                            }
+                            else if (modEntry.SourceKind == ModSourceKind.Folder)
+                            {
+                                // For folders, store tags for the modinfo.json file
+                                var modInfoPath = Path.Combine(modEntry.SourcePath, "modinfo.json");
+                                if (File.Exists(modInfoPath))
+                                {
+                                    ModManifestCacheService.UpdateTags(modInfoPath, tagsArray);
+                                }
+                            }
                         }
                         catch (Exception)
                         {
