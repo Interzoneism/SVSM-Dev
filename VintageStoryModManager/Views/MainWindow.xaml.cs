@@ -6416,6 +6416,15 @@ public partial class MainWindow : Window
             errors.Add(BuildCacheClearErrorMessage("Mod metadata cache", ex));
         }
 
+        try
+        {
+            ClearFirebaseCacheDirectory();
+        }
+        catch (Exception ex)
+        {
+            errors.Add(BuildCacheClearErrorMessage("Firebase cache", ex));
+        }
+
         var cachedModsDirectory = ModCacheLocator.GetCachedModsDirectory();
         if (!preserveModCache && !string.IsNullOrWhiteSpace(cachedModsDirectory))
             try
@@ -6436,6 +6445,16 @@ public partial class MainWindow : Window
         if (!Directory.Exists(cachedModsDirectory)) return;
 
         Directory.Delete(cachedModsDirectory, true);
+    }
+
+    private static void ClearFirebaseCacheDirectory()
+    {
+        var firebaseCacheDirectory = DevConfig.FirebaseBackupDirectory;
+        if (string.IsNullOrWhiteSpace(firebaseCacheDirectory)) return;
+
+        if (!Directory.Exists(firebaseCacheDirectory)) return;
+
+        Directory.Delete(firebaseCacheDirectory, true);
     }
 
     private static string BuildCacheClearErrorMessage(string context, Exception ex)
