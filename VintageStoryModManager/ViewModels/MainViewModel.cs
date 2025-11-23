@@ -1839,16 +1839,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             if (requiresFullReload)
             {
-                SetStatus("Loading mods...", false);
+                // Removed "Loading mods..." status - not in allowed list
                 await PerformFullReloadAsync(previousSelection).ConfigureAwait(true);
                 // Don't set final status here - let the background operations complete first
             }
             else
             {
-                if (changeSet.Paths.Count > 0)
-                {
-                    SetStatus($"Reloading {changeSet.Paths.Count} mod(s)...", false);
-                }
+                // Removed "Reloading X mod(s)..." status - not in allowed list
+                // if (changeSet.Paths.Count > 0)
+                // {
+                //     SetStatus($"Reloading {changeSet.Paths.Count} mod(s)...", false);
+                // }
 
                 Dictionary<string, ModEntry> existingEntriesSnapshot =
                     new(_modEntriesBySourcePath, StringComparer.OrdinalIgnoreCase);
@@ -1887,10 +1888,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 ApplyPartialUpdates(reloadResults, previousSelection);
 
-                if (changeSet.Paths.Count > 0)
-                {
-                    SetStatus($"Reloaded {changeSet.Paths.Count} mod(s).", false);
-                }
+                // Removed "Reloaded X mod(s)." status - not in allowed list
+                // if (changeSet.Paths.Count > 0)
+                // {
+                //     SetStatus($"Reloaded {changeSet.Paths.Count} mod(s).", false);
+                // }
 
                 // Defer background operations for partial reloads as well
                 if (_allowModDetailsRefresh && updatedEntriesForStatus.Count > 0)
@@ -1916,20 +1918,26 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 _isInitialLoadComplete = true;
                 
                 // Set a user-friendly status message
+                // Removed all intermediate status messages - not in allowed list
+                // Only show messages from the allowed list:
+                // - "Initializing...", "Loading mod details...", "Checking for updates...",
+                //   "Checking for dependency errors...", "Loaded X mods successfully."
+                // The final "Loaded X mods successfully." will be shown after background operations complete.
                 if (_viewSection == ViewSection.InstalledMods)
                 {
-                    if (TotalMods == 0)
-                    {
-                        SetStatus("No mods found.", false);
-                    }
-                    else if (IsModDetailsRefreshPending())
-                    {
-                        SetStatus($"Loaded {TotalMods} mods. Loading additional details in background...", false);
-                    }
-                    else
-                    {
-                        SetStatus($"Loaded {TotalMods} mods.", false);
-                    }
+                    // Don't show any status here - let background operations complete and show final message
+                    // if (TotalMods == 0)
+                    // {
+                    //     SetStatus("No mods found.", false);
+                    // }
+                    // else if (IsModDetailsRefreshPending())
+                    // {
+                    //     SetStatus($"Loaded {TotalMods} mods. Loading additional details in background...", false);
+                    // }
+                    // else
+                    // {
+                    //     SetStatus($"Loaded {TotalMods} mods.", false);
+                    // }
                 }
             }
         }
@@ -2046,8 +2054,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     if (isFirstBatch)
                     {
                         isFirstBatch = false;
-                        // Use simple concatenation for infrequent status updates
-                        SetStatus("Loading mods... " + TotalMods + " loaded", false);
+                        // Removed "Loading mods... X loaded" status - not in allowed list
+                        // SetStatus("Loading mods... " + TotalMods + " loaded", false);
                     }
                 }, CancellationToken.None, DispatcherPriority.Background).ConfigureAwait(true);
 
@@ -2902,15 +2910,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 // Collect tags more efficiently without intermediate ToList()
                 // During initial load, we're already showing "Checking for updates..." so don't change the message
-                // After initial load, show "Loading tags..." when explicitly refreshing tags
-                if (_isInitialLoadComplete)
-                {
-                    await InvokeOnDispatcherAsync(
-                            () => SetStatus("Loading tags...", false),
-                            CancellationToken.None,
-                            DispatcherPriority.ContextIdle)
-                        .ConfigureAwait(false);
-                }
+                // Removed "Loading tags..." status - not in allowed list
+                // if (_isInitialLoadComplete)
+                // {
+                //     await InvokeOnDispatcherAsync(
+                //             () => SetStatus("Loading tags...", false),
+                //             CancellationToken.None,
+                //             DispatcherPriority.ContextIdle)
+                //         .ConfigureAwait(false);
+                // }
 
                 // Collect tags more efficiently using HashSet to avoid duplicates during collection
                 var normalized = await Task.Run(() =>
@@ -3972,9 +3980,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void UpdateLoadedModsStatus()
     {
+        // Removed "Loaded X mods." status - not in allowed list
         // Don't show mod details loading status - let details load silently in background
-        // Just show the basic loaded mods count
-        SetStatus($"Loaded {TotalMods} mods.", false);
+        // SetStatus($"Loaded {TotalMods} mods.", false);
     }
 
     private bool IsModDetailsRefreshPending()
@@ -4050,9 +4058,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // Removed "Loaded X mods. All details up to date." status - not in allowed list
         // Update status message if we're in the installed mods view and background operations finished
-        if (allOperationsComplete && _isInitialLoadComplete && _viewSection == ViewSection.InstalledMods)
-            SetStatus($"Loaded {TotalMods} mods. All details up to date.", false);
+        // if (allOperationsComplete && _isInitialLoadComplete && _viewSection == ViewSection.InstalledMods)
+        //     SetStatus($"Loaded {TotalMods} mods. All details up to date.", false);
     }
 
     private async Task RunDeferredDependencyCheckAsync()
