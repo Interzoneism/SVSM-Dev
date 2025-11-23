@@ -2813,17 +2813,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Check again in case multiple schedules happened
                 if (!_isInstalledTagRefreshPending) return;
 
-                // Don't show status messages during initial load to avoid UI flickering
-                // Tags will load silently in the background
-                if (_isInitialLoadComplete)
-                {
-                    await InvokeOnDispatcherAsync(
-                            () => SetStatus("Loading tags...", false),
-                            CancellationToken.None,
-                            DispatcherPriority.ContextIdle)
-                        .ConfigureAwait(false);
-                }
-
                 // Collect tags more efficiently without intermediate ToList()
                 var normalized = await Task.Run(() =>
                 {
@@ -2843,11 +2832,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         () =>
                         {
                             ApplyInstalledTagFilters(normalized);
-                            // Only show completion message if we're past initial load
-                            if (_isInitialLoadComplete)
-                            {
-                                SetStatus("Tags loaded.", false);
-                            }
                         },
                         CancellationToken.None,
                         DispatcherPriority.ContextIdle)
