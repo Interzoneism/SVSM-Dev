@@ -106,7 +106,13 @@ public sealed class ModDatabaseService
                     cancellationToken)
                 .ConfigureAwait(false);
 
-            if (cached != null) modEntry.DatabaseInfo = cached;
+            if (cached != null)
+            {
+                modEntry.DatabaseInfo = cached;
+                // Update metadata cache with tags from database cache
+                if (cached.Tags is { Count: > 0 })
+                    ModManifestCacheService.UpdateTags(modEntry.ModId, installedModVersion, cached.Tags);
+            }
 
             if (internetDisabled) return;
 
@@ -120,7 +126,13 @@ public sealed class ModDatabaseService
                         requireExactVersionMatch,
                         cancellationToken)
                     .ConfigureAwait(false);
-                if (info != null) modEntry.DatabaseInfo = info;
+                if (info != null)
+                {
+                    modEntry.DatabaseInfo = info;
+                    // Update metadata cache with tags from database info
+                    if (info.Tags is { Count: > 0 })
+                        ModManifestCacheService.UpdateTags(modEntry.ModId, installedModVersion, info.Tags);
+                }
             }
             finally
             {
