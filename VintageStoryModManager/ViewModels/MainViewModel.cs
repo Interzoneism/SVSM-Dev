@@ -2902,6 +2902,31 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (sourceTags is null) return false;
 
+        // For small required tag counts, use linear search instead of allocating a HashSet
+        if (requiredTags.Count <= 3)
+        {
+            var comparer = StringComparer.OrdinalIgnoreCase;
+            foreach (var required in requiredTags)
+            {
+                bool found = false;
+                foreach (var tag in sourceTags)
+                {
+                    if (string.IsNullOrWhiteSpace(tag)) continue;
+                    
+                    if (comparer.Equals(tag.Trim(), required))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                if (!found) return false;
+            }
+            
+            return true;
+        }
+
+        // For larger required tag counts, use HashSet for better performance
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var tag in sourceTags)
         {
