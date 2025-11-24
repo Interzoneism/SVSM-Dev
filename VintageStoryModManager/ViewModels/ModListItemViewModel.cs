@@ -916,11 +916,18 @@ public sealed class ModListItemViewModel : ObservableObject
         UpdateTooltip();
     }
 
+    /// <summary>
+    /// Updates database information for this mod with batched property change notifications.
+    /// This method must be called from the UI thread (Dispatcher thread).
+    /// </summary>
     public void UpdateDatabaseInfo(ModDatabaseInfo info, bool loadLogoImmediately = true)
     {
         if (info is null) return;
 
-        // Batch all property changes to reduce UI update overhead
+        // Batch all property changes to reduce UI update overhead.
+        // Thread safety: This method is always invoked on the Dispatcher thread via
+        // InvokeOnDispatcherAsync in MainViewModel.ApplyDatabaseInfoAsync, so no 
+        // synchronization is needed for the property change batching mechanism.
         using (SuspendPropertyChangeNotifications())
         {
             var previousSide = NormalizeSide(_modDatabaseSide);
@@ -2140,6 +2147,7 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         if (_propertyChangeSuspendCount > 0)
         {
+            // Only batch specific property changes; null PropertyName (indicating all properties changed) is intentionally ignored
             if (e.PropertyName != null)
             {
                 _pendingPropertyChanges.Add(e.PropertyName);
