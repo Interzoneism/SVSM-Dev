@@ -3365,14 +3365,12 @@ public partial class MainWindow : Window
             RestoreSelectionFromSourcePaths(selectedSourcePaths, anchorSourcePath);
     }
 
-    private async Task RefreshModDetailsOnlyAsync()
+    private void RefreshModDetailsOnly()
     {
         if (_viewModel == null) return;
 
         _viewModel.ForceNextRefreshToLoadDetails();
         _viewModel.RefreshInstalledModDetails();
-
-        await Task.CompletedTask;
     }
 
     private bool TryInitializePaths()
@@ -6272,7 +6270,7 @@ public partial class MainWindow : Window
 
         try
         {
-            await RefreshModDetailsOnlyAsync().ConfigureAwait(true);
+            RefreshModDetailsOnly();
         }
         catch (Exception ex)
         {
