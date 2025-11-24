@@ -34,19 +34,9 @@
 		<Compile Remove="App.xaml.cs" />
 		<Compile Remove="Views\**\*.xaml.cs" />
 		<Compile Remove="Resources\**\*.xaml.cs" />
-		<Compile Remove="Converters\**\*.cs" />
-		<Compile Remove="Views\OverlappingTagPanel.cs" />
-		<Compile Remove="Views\CompatibilityDecisionKind.cs" />
-		<Compile Remove="Design\**\*.cs" />
-		<Compile Remove="Properties\Settings.Designer.cs" />
 		<None Include="App.xaml.cs" />
 		<None Include="Views\**\*.xaml.cs" />
 		<None Include="Resources\**\*.xaml.cs" />
-		<None Include="Converters\**\*.cs" />
-		<None Include="Views\OverlappingTagPanel.cs" />
-		<None Include="Views\CompatibilityDecisionKind.cs" />
-		<None Include="Design\**\*.cs" />
-		<None Include="Properties\Settings.Designer.cs" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Remove="App.xaml" />
@@ -83,5 +73,20 @@
 	<ItemGroup>
 		<Folder Include="Benchmarks\" />
 		<Folder Include="ViewModels\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Properties\Settings.Designer.cs">
+			<DesignTimeSharedInput>True</DesignTimeSharedInput>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Settings.settings</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="Properties\Settings.settings">
+			<Generator>SettingsSingleFileGenerator</Generator>
+			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
+		</None>
 	</ItemGroup>
 </Project>
