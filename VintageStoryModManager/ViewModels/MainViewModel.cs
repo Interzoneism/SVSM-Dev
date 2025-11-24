@@ -26,8 +26,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 {
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
     private const string NoCompatibleModDatabaseResultsStatusMessage = "No compatible mods found in the mod database.";
-    private const string UserReportsLoadingStatusMessage = "Loading user reports...";
-    private const string UserReportsLoadedStatusMessage = "User reports loaded.";
     private const string TagsColumnName = "Tags";
     private const string UserReportsColumnName = "UserReports";
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
@@ -1556,6 +1554,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _isModDetailsRefreshForced = true;
     }
 
+    internal void RefreshInstalledModDetails()
+    {
+        if (_modEntriesBySourcePath.Count > 0)
+            QueueDatabaseInfoRefresh(_modEntriesBySourcePath.Values.ToArray(), forceRefresh: true);
+    }
+
     internal void SetSelectedMod(ModListItemViewModel? mod, int selectionCount)
     {
         HasSelectedMods = selectionCount > 0;
@@ -2308,8 +2312,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             shouldSetLoadingStatus = _activeUserReportOperations == 1;
         }
 
-        if (shouldSetLoadingStatus) SetStatus(UserReportsLoadingStatusMessage, false);
-
         var busyScope = BeginBusyScope();
         return new UserReportOperationScope(this, busyScope);
     }
@@ -2324,8 +2326,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             shouldSetLoadedStatus = _activeUserReportOperations == 0;
         }
-
-        if (shouldSetLoadedStatus) SetStatus(UserReportsLoadedStatusMessage, false);
     }
 
     private void QueueLatestReleaseUserReportRefresh(ModListItemViewModel mod)
