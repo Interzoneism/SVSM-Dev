@@ -1252,7 +1252,7 @@ public partial class MainWindow : Window
 
         if (!string.IsNullOrWhiteSpace(baseColor) && baseColor.Length == 9)
         {
-            var alphaComponent = baseColor.Substring(1, 2);
+            var alphaComponent = baseColor.AsSpan(1, 2);
             if (byte.TryParse(alphaComponent, NumberStyles.HexNumber, CultureInfo.InvariantCulture,
                     out var parsedAlpha)) alpha = parsedAlpha;
         }
@@ -1379,12 +1379,12 @@ public partial class MainWindow : Window
 
         if (!string.IsNullOrWhiteSpace(suffixSource))
         {
-            var trimmedId = suffixSource.Trim();
-            if (!string.IsNullOrWhiteSpace(trimmedId))
+            var trimmedSpan = suffixSource.AsSpan().Trim();
+            if (!trimmedSpan.IsEmpty)
             {
-                var suffix = trimmedId.Length <= 4
-                    ? trimmedId
-                    : trimmedId.Substring(trimmedId.Length - 4, 4);
+                var suffix = trimmedSpan.Length <= 4
+                    ? trimmedSpan.ToString()
+                    : trimmedSpan.Slice(trimmedSpan.Length - 4, 4).ToString();
 
                 if (string.IsNullOrWhiteSpace(suffix)) suffix = "0000";
 
@@ -11202,7 +11202,7 @@ public partial class MainWindow : Window
         if (string.Equals(slotKey, "public", StringComparison.OrdinalIgnoreCase)) return "Public Entry";
 
         if (slotKey.Length > 4 && slotKey.StartsWith("slot", StringComparison.OrdinalIgnoreCase))
-            return $"Slot {slotKey.Substring(4)}";
+            return $"Slot {slotKey.AsSpan(4).ToString()}";
 
         return slotKey;
     }
