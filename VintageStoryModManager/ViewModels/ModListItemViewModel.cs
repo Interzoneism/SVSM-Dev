@@ -2147,7 +2147,7 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         if (_propertyChangeSuspendCount > 0)
         {
-            // Only batch specific property changes; null PropertyName (indicating all properties changed) is intentionally ignored
+            // Only batch specific property changes; null PropertyName (to refresh all bindings) is intentionally ignored
             if (e.PropertyName != null)
             {
                 _pendingPropertyChanges.Add(e.PropertyName);
@@ -2165,8 +2165,9 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private void EndPropertyChangeSuspension()
     {
-        if (_propertyChangeSuspendCount <= 0)
+        if (_propertyChangeSuspendCount == 0)
         {
+            // Already at zero, nothing to do (defensive programming)
             return;
         }
 
