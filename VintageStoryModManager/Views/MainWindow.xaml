@@ -4134,6 +4134,50 @@
             </Border>
         </Canvas>
 
+        <Border x:Name="ModlistInstallOverlay"
+                Grid.RowSpan="3"
+                Margin="0,0,0,8"
+                Background="#C0000000"
+                Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsModlistInstallInProgress, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
+                IsHitTestVisible="True"
+                Panel.ZIndex="5500" d:IsHidden="True">
+            <Border HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+                    CornerRadius="10"
+                    Padding="32"
+                    Width="420">
+                <StackPanel>
+                    <TextBlock Text="Installing modlist..."
+                               FontSize="18"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Text.Primary}" />
+                    <ProgressBar Margin="0,16,0,8"
+                                 Height="18"
+                                 Minimum="0"
+                                 Maximum="100"
+                                 Value="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=ModlistInstallProgress}" />
+                    <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=ModlistInstallStatusMessage}"
+                               FontSize="14"
+                               Foreground="{DynamicResource Brush.Text.Primary}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8" />
+                    <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=ModlistDownloadSpeed, StringFormat=Download speed: {0}}"
+                               FontSize="13"
+                               Foreground="{DynamicResource Brush.Text.Primary}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8"
+                               Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=HasModlistDownloadSpeed, Converter={StaticResource IMM.VisibleWhenTrueConverter}}" />
+                    <TextBlock Text="Simple VS Manager disables all controls while mods install."
+                               FontSize="13"
+                               Foreground="{DynamicResource Brush.Text.Primary}"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center" Width="260" />
+                </StackPanel>
+            </Border>
+        </Border>
+
         <Border x:Name="DataBackupOverlay"
                 Grid.RowSpan="3"
                 Margin="0,0,0,8"
