@@ -1879,14 +1879,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (entries.Count > 0) await Task.Run(() => _discoveryService.ApplyLoadStatuses(entries)).ConfigureAwait(true);
 
-        // Create view models off the UI thread
-        var viewModels = new List<ModListItemViewModel>(entries.Count);
-        foreach (var entry in entries)
-        {
-            var viewModel = CreateModViewModel(entry);
-            viewModels.Add(viewModel);
-        }
-
         await InvokeOnDispatcherAsync(() =>
         {
             _modEntriesBySourcePath.Clear();
@@ -1897,10 +1889,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 _mods.Clear();
                 
-                for (int i = 0; i < entries.Count; i++)
+                foreach (var entry in entries)
                 {
-                    var entry = entries[i];
-                    var viewModel = viewModels[i];
+                    var viewModel = CreateModViewModel(entry);
                     _modEntriesBySourcePath[entry.SourcePath] = entry;
                     _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
                     _mods.Add(viewModel);
