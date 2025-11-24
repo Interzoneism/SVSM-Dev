@@ -192,123 +192,59 @@ Existing converters that need migration:
 - ✅ Created this MIGRATION_PROGRESS.md file
 - ✅ Built current WPF project to verify working state
 
-### Session 1
-**Date**: 2025-11-24
-**Agent**: Initial assessment, planning, and infrastructure setup
-
-**Completed**:
-- ✅ Analyzed existing WPF project structure
-- ✅ Documented MainWindow size and complexity  
-- ✅ Created migration strategy
-- ✅ Created this MIGRATION_PROGRESS.md file
-- ✅ Built current WPF project to verify working state
-- ✅ Added Avalonia NuGet packages (11.2.1)
-- ✅ Added SukiUI package (6.0.0)
-- ✅ Created AppAvalonia.axaml with SukiUI theme
-- ✅ Created AppAvalonia.axaml.cs lifecycle
-- ✅ Created Program.cs entry point
-- ✅ Created MainWindowAvalonia.axaml skeleton
-- ✅ Excluded old WPF files from compilation
-- ✅ Created WPF compatibility stubs
-
-**Build Progress**:
-- Initial: ✅ Success (WPF)
-- After Avalonia: ❌ 443 errors
-- After exclusions: ❌ 81 errors
-- After basic stubs: ❌ 3 errors
-- Final: ❌ 46 errors (89% improvement!)
-
 **Observations**:
 - MainWindow is extremely large (4,175 XAML + 13,251 C# lines)
 - Heavy use of ModernWpfUI custom controls
 - Extensive custom styling in App.xaml
 - Large code-behind suggests significant refactoring needed
 - CommunityToolkit.Mvvm should work with Avalonia (good news!)
-- Compatibility stub approach is effective for gradual migration
-- ViewModels have moderate WPF coupling
-- Most business logic is decoupled and should migrate well
-
-**Remaining Issues** (46 errors):
-1. Dispatcher method signature mismatches (need generic overloads)
-2. StreamResourceInfo class needed for GetResourceStream
-3. ICollectionView.DeferRefresh() method missing
-4. Minor API differences in stubs
 
 **Next Steps**:
-1. Fix remaining Dispatcher signature issues
-2. Add StreamResourceInfo stub class
-3. Complete ICollectionView stub with DeferRefresh
-4. Test application launch
-5. Begin MainWindow content conversion
+1. Add Avalonia NuGet packages to project
+2. Create basic App.axaml with SukiUI
+3. Create MainWindow.axaml skeleton
+4. Convert first section of MainWindow (e.g., basic window structure)
+5. Test that Avalonia application launches
 
 **Recommendations**:
-- Continue with compatibility stub approach
-- Don't spend too long perfecting stubs - make them "good enough" to compile
-- Once build succeeds, test if app launches
-- Take screenshot when window displays
-- Start converting MainWindow sections gradually
+- Start small, test often
+- Convert MainWindow in sections, not all at once
+- Keep WPF version in git history but commit to Avalonia
+- May need to create helper utilities for common conversions
+- Consider using Avalonia.Markup.Xaml.PortableXaml for complex bindings
 
 ---
 
 ## For Next Agent
 
 ### Where We Left Off
-The Avalonia infrastructure is in place with 89% of build errors resolved (443 → 46). The project has:
-- Avalonia packages installed
-- Basic app structure (AppAvalonia.axaml, Program.cs)
-- Minimal MainWindow skeleton
-- WPF compatibility stubs for gradual migration
-- Old WPF files excluded but kept for reference
+We have completed the initial assessment and planning. The project currently builds successfully as a WPF application. A comprehensive migration plan has been created.
 
-### What To Do Next - Get Build Working
-**Priority: Fix the remaining 46 build errors**
+### What To Do Next
+1. **Add Avalonia packages** to VintageStoryModManager.csproj
+2. **Create App.axaml** - Start with a basic Avalonia application
+3. **Create MainWindow.axaml skeleton** - Just the Window element and basic structure
+4. **Update Program.cs** or create one to bootstrap Avalonia
+5. **Test that it builds** - Don't worry about functionality yet, just get it to compile
 
-1. **Fix Dispatcher methods** in `WpfCompatibility/WpfStubs.cs`:
-   ```csharp
-   public class Dispatcher
-   {
-       public void Invoke(Action callback) => callback();
-       public void Invoke(Action callback, DispatcherPriority priority) => callback();
-       public void BeginInvoke(Delegate method, DispatcherPriority priority, params object[] args) 
-           => method.DynamicInvoke(args);
-       public bool CheckAccess() => true;
-       public Task InvokeAsync(Action callback) => Task.Run(callback);
-       public Task<T> InvokeAsync<T>(Func<T> callback) => Task.Run(callback);
-   }
-   ```
+### Key Files to Modify
+- `VintageStoryModManager.csproj` - Add Avalonia packages, update target framework
+- Create `App.axaml` and `App.axaml.cs` (can coexist with WPF initially)
+- Create `MainWindow.axaml` and `MainWindow.axaml.cs` (Avalonia versions)
+- May need `Program.cs` for Avalonia desktop entry point
 
-2. **Add StreamResourceInfo** in `WpfCompatibility/WpfStubs.cs`:
-   ```csharp
-   public class StreamResourceInfo
-   {
-       public System.IO.Stream? Stream { get; set; }
-   }
-   // Update Application.GetResourceStream:
-   public static StreamResourceInfo? GetResourceStream(Uri uri) 
-       => new StreamResourceInfo { Stream = null };
-   ```
+### Packages to Add
+```xml
+<PackageReference Include="Avalonia" Version="11.0.+" />
+<PackageReference Include="Avalonia.Desktop" Version="11.0.+" />
+<PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.+" />
+<PackageReference Include="SukiUI" Version="5.+" />
+```
 
-3. **Add DeferRefresh to ICollectionView**:
-   ```csharp
-   IDisposable DeferRefresh();
-   
-   // Create helper class:
-   private class DeferHelper : IDisposable
-   {
-       public void Dispose() { }
-   }
-   ```
+### Important Notes
+- Don't delete WPF files yet - we may need to reference them
+- Start with minimal Avalonia app that just opens a window
+- Test build frequently
+- Document any issues or discoveries in this file
 
-4. **Build and verify**: `dotnet build -nologo -clp:Summary`
-
-### After Build Succeeds
-1. **Run the application**: `dotnet run`
-2. **Verify window launches** (should show "Avalonia Migration In Progress...")
-3. **Take screenshot** and include in PR
-4. **Start MainWindow conversion**: Begin migrating actual UI sections
-
-### Key Files
-- `VintageStoryModManager/WpfCompatibility/WpfStubs.cs` - All compatibility types
-- `VintageStoryModManager/AppAvalonia.axaml` - Main app
-- `VintageStoryModManager/Views/MainWindowAvalonia.axaml` - Window (currently placeholder)
-- `VintageStoryModManager/Program.cs` - Entry point
+Good luck! 🚀
