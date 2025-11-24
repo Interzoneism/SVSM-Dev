@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 
 namespace VintageStoryModManager.Services;
@@ -7,6 +8,12 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 internal static class VersionStringUtility
 {
+    // Cache for normalized version strings to avoid re-parsing
+    private static readonly ConcurrentDictionary<string, string?> NormalizedVersionCache = new();
+    
+    // Cache for parsed version parts to avoid repeated parsing
+    // Successful parses cache the array directly; failed parses store Array.Empty<int>()
+    private static readonly ConcurrentDictionary<string, int[]> ParsedVersionPartsCache = new();
     /// <summary>
     ///     Normalizes a version string by extracting up to four numeric parts separated by dots.
     /// </summary>
@@ -15,6 +22,10 @@ internal static class VersionStringUtility
     public static string? Normalize(string? version)
     {
         if (string.IsNullOrWhiteSpace(version)) return null;
+
+        // Check cache first
+        if (NormalizedVersionCache.TryGetValue(version, out var cached))
+            return cached;
 
         const int MaxNormalizedParts = 4;
 
@@ -44,9 +55,12 @@ internal static class VersionStringUtility
 
         if (currentPart.Length > 0 && parts.Count < MaxNormalizedParts) parts.Add(currentPart.ToString());
 
-        if (parts.Count == 0) return null;
-
-        return string.Join('.', parts);
+        var result = parts.Count == 0 ? null : string.Join('.', parts);
+        
+        // Cache the result
+        NormalizedVersionCache.TryAdd(version, result);
+        
+        return result;
     }
 
     /// <summary>
@@ -241,17 +255,44 @@ internal static class VersionStringUtility
     /// <returns>True if the version string was successfully parsed; otherwise, false.</returns>
     private static bool TryParseVersionParts(string normalizedVersion, out int[] parts)
     {
-        var tokens =
-            normalizedVersion.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        parts = new int[tokens.Length];
+        // Check cache first - empty array indicates parse failure
+        if (ParsedVersionPartsCache.TryGetValue(normalizedVersion, out var cached))
+        {
+            // Return a defensive copy for successful parses, or Array.Empty for failures
+            parts = cached.Length == 0 ? Array.Empty<int>() : (int[])cached.Clone();
+            return cached.Length > 0;
+        }
 
-        for (var i = 0; i < tokens.Length; i++)
-            if (!int.TryParse(tokens[i], out parts[i]))
+        // Use Span-based parsing to avoid allocations
+        var span = normalizedVersion.AsSpan();
+        var partsList = new List<int>(4); // Most versions have 4 parts or less
+        
+        while (!span.IsEmpty)
+        {
+            var dotIndex = span.IndexOf('.');
+            var part = dotIndex >= 0 ? span.Slice(0, dotIndex) : span;
+            
+            if (!int.TryParse(part, out var value))
             {
+                // Cache the failure using empty array as sentinel
+                // Array.Empty is safe to share as it's read-only in practice
                 parts = Array.Empty<int>();
+                ParsedVersionPartsCache.TryAdd(normalizedVersion, parts);
                 return false;
             }
+            
+            partsList.Add(value);
+            
+            if (dotIndex < 0)
+                break;
+                
+            span = span.Slice(dotIndex + 1);
+        }
 
+        parts = partsList.ToArray();
+        
+        // Cache a copy to prevent external modifications
+        ParsedVersionPartsCache.TryAdd(normalizedVersion, (int[])parts.Clone());
         return true;
     }
 }

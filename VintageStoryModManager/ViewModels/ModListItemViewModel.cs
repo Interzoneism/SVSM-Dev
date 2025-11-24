@@ -1695,14 +1695,21 @@ public sealed class ModListItemViewModel : ObservableObject
         major = 0;
         minor = 0;
 
-        var parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (parts.Length == 0) return false;
+        var span = version.AsSpan();
+        var dotIndex = span.IndexOf('.');
+        
+        // Parse major version
+        var majorSpan = dotIndex >= 0 ? span.Slice(0, dotIndex) : span;
+        if (!int.TryParse(majorSpan.Trim(), out major)) return false;
 
-        if (!int.TryParse(parts[0], out major)) return false;
-
-        if (parts.Length > 1)
+        // Parse minor version if available
+        if (dotIndex >= 0 && dotIndex + 1 < span.Length)
         {
-            if (!int.TryParse(parts[1], out minor)) return false;
+            var remainingSpan = span.Slice(dotIndex + 1);
+            var nextDotIndex = remainingSpan.IndexOf('.');
+            var minorSpan = nextDotIndex >= 0 ? remainingSpan.Slice(0, nextDotIndex) : remainingSpan;
+            
+            if (!int.TryParse(minorSpan.Trim(), out minor)) return false;
         }
         else
         {
@@ -1819,13 +1826,13 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(value)) return null;
 
-        var trimmed = value.Trim();
-        if (trimmed.Length == 0) return null;
+        var trimmed = value.AsSpan().Trim();
+        if (trimmed.IsEmpty) return null;
 
         if (trimmed.Length == 1) return char.ToUpperInvariant(trimmed[0]).ToString(CultureInfo.InvariantCulture);
 
         var firstCharacter = char.ToUpperInvariant(trimmed[0]).ToString(CultureInfo.InvariantCulture);
-        return string.Concat(firstCharacter, trimmed.Substring(1));
+        return string.Concat(firstCharacter, trimmed.Slice(1).ToString());
     }
 
     private static string NormalizeSearchText(string value)
