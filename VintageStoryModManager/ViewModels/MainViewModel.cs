@@ -1846,6 +1846,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             SelectedSortOption?.Apply(ModsView);
             ModsView.Refresh();
             await UpdateModsStateSnapshotAsync();
+            
+            // Defer clearing IsLoadingMods until after any events from ModsView.Refresh() are processed.
+            // This ensures the guard in ModsView_OnCollectionChanged works correctly during the critical
+            // window when CollectionChanged events may be queued but not yet processed.
+            await Application.Current.Dispatcher.InvokeAsync(
+                () => { }, 
+                DispatcherPriority.Background);
         }
         catch (Exception ex)
         {
