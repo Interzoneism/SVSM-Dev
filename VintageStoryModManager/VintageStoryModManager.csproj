@@ -1,16 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
-		<UseWPF>true</UseWPF>
-		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
-		<EnableWindowsTargeting>true</EnableWindowsTargeting>
-		<AssetTargetFallback>$(AssetTargetFallback);net5.0-windows7.0;netcoreapp3.0</AssetTargetFallback>
 		<ApplicationIcon>SVSM.ico</ApplicationIcon>
 		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 
 		<!-- What Windows/Task Manager shows -->
 		<FileDescription>Simple VS Manager</FileDescription>   <!-- Task Manager "Name" (File description) -->
@@ -31,24 +28,52 @@
 		<None Remove="soil.png" />
 		<None Remove="Views\soilcorrect.png" />
 	</ItemGroup>
+
+	<!-- Exclude old WPF files from compilation (keep for reference) -->
 	<ItemGroup>
-		<Page Remove="Resources\Themes\LightTheme.xaml" />
+		<Compile Remove="App.xaml.cs" />
+		<Compile Remove="Views\**\*.xaml.cs" />
+		<Compile Remove="Resources\**\*.xaml.cs" />
+		<Compile Remove="Converters\**\*.cs" />
+		<Compile Remove="Views\OverlappingTagPanel.cs" />
+		<Compile Remove="Views\CompatibilityDecisionKind.cs" />
+		<Compile Remove="Design\**\*.cs" />
+		<Compile Remove="Properties\Settings.Designer.cs" />
+		<None Include="App.xaml.cs" />
+		<None Include="Views\**\*.xaml.cs" />
+		<None Include="Resources\**\*.xaml.cs" />
+		<None Include="Converters\**\*.cs" />
+		<None Include="Views\OverlappingTagPanel.cs" />
+		<None Include="Views\CompatibilityDecisionKind.cs" />
+		<None Include="Design\**\*.cs" />
+		<None Include="Properties\Settings.Designer.cs" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Remove="App.xaml" />
+		<None Remove="Views\**\*.xaml" />
+		<None Remove="Resources\**\*.xaml" />
+		<None Include="App.xaml" />
+		<None Include="Views\**\*.xaml" />
+		<None Include="Resources\**\*.xaml" />
 	</ItemGroup>
 
-        <ItemGroup>
-                <Resource Include="warning.png" />
-                <Resource Include="error.png" />
-                <Resource Include="mod-default.png">
-                        <Link>Resources\mod-default.png</Link>
-                </Resource>
-                <Resource Include="Resources\Discord.png" />
-        </ItemGroup>
+	<ItemGroup>
+		<AvaloniaResource Include="warning.png" />
+		<AvaloniaResource Include="error.png" />
+		<AvaloniaResource Include="mod-default.png" />
+		<AvaloniaResource Include="Resources\Discord.png" />
+	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Avalonia" Version="11.2.1" />
+		<PackageReference Include="Avalonia.Desktop" Version="11.2.1" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.1" />
+		<PackageReference Include="Avalonia.Diagnostics" Version="11.2.1" />
+		<PackageReference Include="SukiUI" Version="6.0.0" />
 		<PackageReference Include="BenchmarkDotNet" Version="0.15.6" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
 		<PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.3.36714.1" />
-		<PackageReference Include="ModernWpfUI" Version="0.9.6" />
 		<PackageReference Include="HtmlAgilityPack" Version="1.11.61" />
 		<PackageReference Include="QuestPDF" Version="2024.3.0" />
 		<PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
@@ -58,20 +83,5 @@
 	<ItemGroup>
 		<Folder Include="Benchmarks\" />
 		<Folder Include="ViewModels\" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Compile Update="Properties\Settings.Designer.cs">
-			<DesignTimeSharedInput>True</DesignTimeSharedInput>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>Settings.settings</DependentUpon>
-		</Compile>
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Properties\Settings.settings">
-			<Generator>SettingsSingleFileGenerator</Generator>
-			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
-		</None>
 	</ItemGroup>
 </Project>

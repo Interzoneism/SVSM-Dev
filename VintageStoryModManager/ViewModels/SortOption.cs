@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Windows.Data;
 
 namespace VintageStoryModManager.ViewModels;
 
