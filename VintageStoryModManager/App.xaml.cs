@@ -219,15 +219,15 @@ public partial class App : Application
 
         if (string.IsNullOrWhiteSpace(value)) return false;
 
-        var trimmed = value.Trim();
-        if (!trimmed.StartsWith("#", StringComparison.Ordinal) || trimmed.Length <= 1) return false;
+        var trimmed = value.AsSpan().Trim();
+        if (trimmed.IsEmpty || trimmed[0] != '#' || trimmed.Length <= 1) return false;
 
-        var hex = trimmed[1..];
+        var hex = trimmed.Slice(1);
         if (hex.Length == 6)
         {
-            if (TryParseHexByte(hex.Substring(0, 2), out var r)
-                && TryParseHexByte(hex.Substring(2, 2), out var g)
-                && TryParseHexByte(hex.Substring(4, 2), out var b))
+            if (TryParseHexByte(hex.Slice(0, 2), out var r)
+                && TryParseHexByte(hex.Slice(2, 2), out var g)
+                && TryParseHexByte(hex.Slice(4, 2), out var b))
             {
                 color = Color.FromRgb(r, g, b);
                 return true;
@@ -238,10 +238,10 @@ public partial class App : Application
 
         if (hex.Length == 8)
         {
-            if (TryParseHexByte(hex.Substring(0, 2), out var a)
-                && TryParseHexByte(hex.Substring(2, 2), out var r)
-                && TryParseHexByte(hex.Substring(4, 2), out var g)
-                && TryParseHexByte(hex.Substring(6, 2), out var b))
+            if (TryParseHexByte(hex.Slice(0, 2), out var a)
+                && TryParseHexByte(hex.Slice(2, 2), out var r)
+                && TryParseHexByte(hex.Slice(4, 2), out var g)
+                && TryParseHexByte(hex.Slice(6, 2), out var b))
             {
                 color = Color.FromArgb(a, r, g, b);
                 return true;
@@ -253,7 +253,7 @@ public partial class App : Application
         return false;
     }
 
-    private static bool TryParseHexByte(string hex, out byte value)
+    private static bool TryParseHexByte(ReadOnlySpan<char> hex, out byte value)
     {
         return byte.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
     }
