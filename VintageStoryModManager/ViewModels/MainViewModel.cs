@@ -782,16 +782,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 break;
         }
 
+        // Notify critical property changes immediately
         OnPropertyChanged(nameof(SearchModDatabase));
         OnPropertyChanged(nameof(IsViewingCloudModlists));
         OnPropertyChanged(nameof(IsViewingInstalledMods));
         OnPropertyChanged(nameof(CurrentModsView));
-        OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
-        OnPropertyChanged(nameof(DownloadsColumnHeader));
-
-        NotifyLoadMoreCommandCanExecuteChanged();
-
-        FastCheck();
+        
+        // Defer non-critical property changes to avoid blocking UI thread during tab switch
+        Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
+            OnPropertyChanged(nameof(DownloadsColumnHeader));
+            NotifyLoadMoreCommandCanExecuteChanged();
+            FastCheck();
+        }, DispatcherPriority.Background);
     }
 
     private void NotifyLoadMoreCommandCanExecuteChanged()
@@ -2894,12 +2898,52 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return result.Tags ?? Array.Empty<string>();
     }
 
+    private const int TagFilterLinearSearchThreshold = 3;
+    
     private static bool ContainsAllTags(IEnumerable<string>? sourceTags, IReadOnlyList<string> requiredTags)
     {
         if (requiredTags.Count == 0) return true;
 
         if (sourceTags is null) return false;
 
+        // Optimization: For a small number of required tags (1-3), use linear search
+        // to avoid HashSet allocation overhead. This is faster for the common case.
+        if (requiredTags.Count <= TagFilterLinearSearchThreshold)
+        {
+            // Use stack-allocated span to avoid heap allocation
+            Span<bool> foundTags = stackalloc bool[requiredTags.Count];
+            var foundCount = 0;
+
+            foreach (var tag in sourceTags)
+            {
+                if (string.IsNullOrWhiteSpace(tag)) continue;
+
+                var trimmed = tag.Trim();
+                if (trimmed.Length == 0) continue;
+
+                // Check if this tag matches any of the required tags
+                for (var i = 0; i < requiredTags.Count; i++)
+                {
+                    if (foundTags[i]) continue; // Already found this required tag
+
+                    if (string.Equals(trimmed, requiredTags[i], StringComparison.OrdinalIgnoreCase))
+                    {
+                        foundTags[i] = true;
+                        foundCount++;
+                        
+                        // Early exit if we've found all required tags
+                        if (foundCount == requiredTags.Count)
+                            return true;
+                        
+                        break; // Move to next source tag
+                    }
+                }
+            }
+
+            return foundCount == requiredTags.Count;
+        }
+
+        // For larger numbers of required tags, use HashSet for better performance
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var tag in sourceTags)
         {
