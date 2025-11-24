@@ -5971,6 +5971,7 @@ public partial class MainWindow : Window
             // Define cache folders to delete
             var cacheFolders = new[]
             {
+                ("Mod Icons", Path.Combine(managerDataDir, "Mod Icons")),
                 ("Cached Mods", Path.Combine(managerDataDir, "Cached Mods")),
                 ("Mod Database Cache", Path.Combine(managerDataDir, "Mod Database Cache")),
                 ("Mod Metadata", Path.Combine(managerDataDir, "Mod Metadata")),
