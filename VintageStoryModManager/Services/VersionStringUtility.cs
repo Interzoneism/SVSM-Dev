@@ -258,7 +258,8 @@ internal static class VersionStringUtility
         // Check cache first - empty array indicates parse failure
         if (ParsedVersionPartsCache.TryGetValue(normalizedVersion, out var cached))
         {
-            parts = cached;
+            // Return a copy to prevent external modifications to cached array
+            parts = cached.Length == 0 ? cached : (int[])cached.Clone();
             return cached.Length > 0;
         }
 
@@ -274,6 +275,7 @@ internal static class VersionStringUtility
             if (!int.TryParse(part, out var value))
             {
                 // Cache the failure using empty array as sentinel
+                // Array.Empty is safe to share as it's read-only in practice
                 parts = Array.Empty<int>();
                 ParsedVersionPartsCache.TryAdd(normalizedVersion, parts);
                 return false;
@@ -289,8 +291,8 @@ internal static class VersionStringUtility
 
         parts = partsList.ToArray();
         
-        // Cache the successful parse
-        ParsedVersionPartsCache.TryAdd(normalizedVersion, parts);
+        // Cache a copy to prevent external modifications
+        ParsedVersionPartsCache.TryAdd(normalizedVersion, (int[])parts.Clone());
         return true;
     }
 }
