@@ -1,0 +1,20 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1234" d:DesignHeight="852"
+        x:Class="VintageStoryModManager.Views.MainWindowAvalonia"
+        Title="Simple VS Manager"
+        Width="1234" Height="852"
+        MinWidth="1200" MinHeight="775"
+        WindowStartupLocation="CenterScreen">
+    
+    <!-- Temporary placeholder for main content -->
+    <Grid>
+        <TextBlock Text="Avalonia Migration In Progress..." 
+                   FontSize="24"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center" />
+    </Grid>
+    
+</Window>
