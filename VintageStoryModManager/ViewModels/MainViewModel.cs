@@ -1891,8 +1891,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 
                 foreach (var entry in entries)
                 {
-                    var viewModel = CreateModViewModel(entry);
                     _modEntriesBySourcePath[entry.SourcePath] = entry;
+                    var viewModel = CreateModViewModel(entry);
                     _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
                     _mods.Add(viewModel);
                 }
@@ -4077,6 +4077,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         _mods.Add(viewModel);
 
                     _modViewModelsBySourcePath[path] = viewModel;
+                    _modEntriesBySourcePath[path] = entry;  // Update entry dictionary for updated mods
                     updated++;
 
                     if (ReferenceEquals(SelectedMod, existing)) SelectedMod = viewModel;

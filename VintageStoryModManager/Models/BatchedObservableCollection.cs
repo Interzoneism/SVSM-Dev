@@ -57,6 +57,7 @@ public sealed class BatchedObservableCollection<T> : ObservableCollection<T>
 
     /// <summary>
     /// Replaces items at specified indices in a batch operation.
+    /// Indices that are out of range are silently ignored to allow partial updates.
     /// </summary>
     public void ReplaceRange(IReadOnlyList<(int Index, T Item)> replacements)
     {
@@ -70,6 +71,7 @@ public sealed class BatchedObservableCollection<T> : ObservableCollection<T>
                 {
                     this[index] = item;
                 }
+                // Note: Invalid indices are silently ignored to support partial/filtered updates
             }
         }
     }
