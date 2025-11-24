@@ -191,6 +191,41 @@ public partial class MainWindow : Window
             typeof(MainWindow),
             new PropertyMetadata(string.Empty));
 
+    public static readonly DependencyProperty IsModlistInstallInProgressProperty =
+        DependencyProperty.Register(
+            nameof(IsModlistInstallInProgress),
+            typeof(bool),
+            typeof(MainWindow),
+            new PropertyMetadata(false));
+
+    public static readonly DependencyProperty ModlistInstallProgressProperty =
+        DependencyProperty.Register(
+            nameof(ModlistInstallProgress),
+            typeof(double),
+            typeof(MainWindow),
+            new PropertyMetadata(0d));
+
+    public static readonly DependencyProperty ModlistInstallStatusMessageProperty =
+        DependencyProperty.Register(
+            nameof(ModlistInstallStatusMessage),
+            typeof(string),
+            typeof(MainWindow),
+            new PropertyMetadata(string.Empty));
+
+    public static readonly DependencyProperty ModlistDownloadSpeedProperty =
+        DependencyProperty.Register(
+            nameof(ModlistDownloadSpeed),
+            typeof(string),
+            typeof(MainWindow),
+            new PropertyMetadata(string.Empty));
+
+    public static readonly DependencyProperty HasModlistDownloadSpeedProperty =
+        DependencyProperty.Register(
+            nameof(HasModlistDownloadSpeed),
+            typeof(bool),
+            typeof(MainWindow),
+            new PropertyMetadata(false));
+
     public bool IsDataBackupInProgress
     {
         get => (bool)GetValue(IsDataBackupInProgressProperty);
@@ -207,6 +242,36 @@ public partial class MainWindow : Window
     {
         get => (string)GetValue(DataBackupStatusMessageProperty);
         set => SetValue(DataBackupStatusMessageProperty, value);
+    }
+
+    public bool IsModlistInstallInProgress
+    {
+        get => (bool)GetValue(IsModlistInstallInProgressProperty);
+        set => SetValue(IsModlistInstallInProgressProperty, value);
+    }
+
+    public double ModlistInstallProgress
+    {
+        get => (double)GetValue(ModlistInstallProgressProperty);
+        set => SetValue(ModlistInstallProgressProperty, value);
+    }
+
+    public string ModlistInstallStatusMessage
+    {
+        get => (string)GetValue(ModlistInstallStatusMessageProperty);
+        set => SetValue(ModlistInstallStatusMessageProperty, value);
+    }
+
+    public string ModlistDownloadSpeed
+    {
+        get => (string)GetValue(ModlistDownloadSpeedProperty);
+        set => SetValue(ModlistDownloadSpeedProperty, value);
+    }
+
+    public bool HasModlistDownloadSpeed
+    {
+        get => (bool)GetValue(HasModlistDownloadSpeedProperty);
+        set => SetValue(HasModlistDownloadSpeedProperty, value);
     }
 
     private readonly SemaphoreSlim _backupSemaphore = new(1, 1);
@@ -256,6 +321,8 @@ public partial class MainWindow : Window
     private string? _recentLocalModBackupDirectory;
     private List<string>? _recentLocalModBackupModNames;
     private bool _refreshAfterModlistLoadPending;
+    private int _modlistInstallCompletedSteps;
+    private int _modlistInstallTotalSteps;
     private bool _localModlistsLoaded;
     private readonly List<LocalModlistListEntry> _selectedLocalModlists = new();
     private CloudModlistListEntry? _selectedCloudModlist;
@@ -7418,6 +7485,106 @@ public partial class MainWindow : Window
         DataBackupStatusMessage = string.Empty;
     }
 
+    private void BeginModlistInstallUi(int totalSteps, string message)
+    {
+        _modlistInstallTotalSteps = Math.Max(1, totalSteps);
+        _modlistInstallCompletedSteps = 0;
+        ModlistInstallProgress = 0;
+        ModlistInstallStatusMessage = message;
+        UpdateModlistDownloadSpeed(null);
+        IsModlistInstallInProgress = true;
+    }
+
+    private void UpdateModlistInstallUi(string status, double? stepPercent, double? bytesPerSecond)
+    {
+        if (!IsModlistInstallInProgress) return;
+
+        var clampedPercent = ClampPercent(stepPercent);
+        var progress = (_modlistInstallCompletedSteps + clampedPercent / 100d) / _modlistInstallTotalSteps * 100d;
+
+        ModlistInstallProgress = Math.Clamp(progress, 0, 100);
+        ModlistInstallStatusMessage = status;
+        UpdateModlistDownloadSpeed(bytesPerSecond);
+    }
+
+    private void CompleteModlistInstallStep(string status)
+    {
+        if (!IsModlistInstallInProgress) return;
+
+        _modlistInstallCompletedSteps = Math.Min(_modlistInstallCompletedSteps + 1, _modlistInstallTotalSteps);
+        ModlistInstallProgress = (double)_modlistInstallCompletedSteps / _modlistInstallTotalSteps * 100d;
+        ModlistInstallStatusMessage = status;
+        UpdateModlistDownloadSpeed(null);
+    }
+
+    private void EndModlistInstallUi()
+    {
+        IsModlistInstallInProgress = false;
+        ModlistInstallProgress = 0;
+        ModlistInstallStatusMessage = string.Empty;
+        UpdateModlistDownloadSpeed(null);
+        _modlistInstallCompletedSteps = 0;
+        _modlistInstallTotalSteps = 0;
+    }
+
+    private static double ClampPercent(double? value)
+    {
+        if (!value.HasValue || double.IsNaN(value.Value)) return 0;
+        return Math.Clamp(value.Value, 0, 100);
+    }
+
+    private void UpdateModlistDownloadSpeed(double? bytesPerSecond)
+    {
+        if (bytesPerSecond.HasValue && bytesPerSecond.Value > 0)
+        {
+            ModlistDownloadSpeed = FormatDownloadSpeed(bytesPerSecond.Value);
+            HasModlistDownloadSpeed = true;
+            return;
+        }
+
+        ModlistDownloadSpeed = string.Empty;
+        HasModlistDownloadSpeed = false;
+    }
+
+    private static string FormatDownloadSpeed(double bytesPerSecond)
+    {
+        const double kb = 1024d;
+        const double mb = kb * 1024d;
+        const double gb = mb * 1024d;
+
+        return bytesPerSecond switch
+        {
+            < kb => $"{bytesPerSecond:0} B/s",
+            < mb => $"{bytesPerSecond / kb:0.0} KB/s",
+            < gb => $"{bytesPerSecond / mb:0.0} MB/s",
+            _ => $"{bytesPerSecond / gb:0.0} GB/s"
+        };
+    }
+
+    private IProgress<ModUpdateProgress> CreateModlistInstallProgressReporter(string modDisplayName)
+    {
+        var display = string.IsNullOrWhiteSpace(modDisplayName) ? "Mod" : modDisplayName;
+
+        return new Progress<ModUpdateProgress>(p =>
+        {
+            var status = $"{display}: {p.Message}";
+            var bytesPerSecond = p.Stage == ModUpdateStage.Downloading ? p.BytesPerSecond : null;
+            UpdateModlistInstallUi(status, p.Percent, bytesPerSecond);
+        });
+    }
+
+    private IProgress<ModUpdateProgress> CreateModUpdateProgressReporter(string modDisplayName,
+        IProgress<ModUpdateProgress>? additionalProgress = null)
+    {
+        var display = string.IsNullOrWhiteSpace(modDisplayName) ? "Mod" : modDisplayName;
+
+        return new Progress<ModUpdateProgress>(p =>
+        {
+            additionalProgress?.Report(p);
+            _viewModel?.ReportStatus($"{display}: {p.Message}");
+        });
+    }
+
     private void OpenModFolderButton_OnClick(object sender, RoutedEventArgs e)
     {
         OpenFolder(_dataDirectory is null ? null : Path.Combine(_dataDirectory, "Mods"), "mods");
@@ -11728,47 +11895,119 @@ public partial class MainWindow : Window
         }
 
         var installedAnyMods = false;
-        if (installCandidates.Count > 0)
+        var totalInstallOperations = installCandidates.Count + overrides.Count;
+        var showInstallOverlay = totalInstallOperations > 0;
+        var hasOverrides = overrides.Count > 0;
+
+        if (showInstallOverlay)
+            BeginModlistInstallUi(totalInstallOperations, "Installing mods from the modlist...");
+
+        try
         {
-            foreach (var candidate in installCandidates)
+            if (installCandidates.Count > 0)
             {
-                var installResult = await TryInstallPresetModAsync(candidate).ConfigureAwait(true);
-                if (installResult.Success)
+                foreach (var candidate in installCandidates)
                 {
-                    installedAnyMods = true;
-                    continue;
+                    var progress = showInstallOverlay
+                        ? CreateModlistInstallProgressReporter(candidate.ModId)
+                        : null;
+
+                    var installResult = await TryInstallPresetModAsync(candidate, progress).ConfigureAwait(true);
+                    if (installResult.Success)
+                    {
+                        installedAnyMods = true;
+                        if (showInstallOverlay)
+                        {
+                            var display = string.IsNullOrWhiteSpace(candidate.ModId) ? "mod" : candidate.ModId!;
+                            CompleteModlistInstallStep($"Installed {display}.");
+                        }
+
+                        continue;
+                    }
+
+                    var desiredVersion = string.IsNullOrWhiteSpace(candidate.Version)
+                        ? "Unknown"
+                        : candidate.Version!.Trim();
+
+                    if (installResult.ModMissing)
+                    {
+                        var modDisplay = string.IsNullOrWhiteSpace(candidate.ModId)
+                            ? "<unknown mod>"
+                            : candidate.ModId!;
+                        var display = string.IsNullOrWhiteSpace(installResult.ErrorMessage)
+                            ? modDisplay
+                            : $"{modDisplay} — {installResult.ErrorMessage}";
+                        missingMods.Add(display);
+
+                        if (showInstallOverlay)
+                            CompleteModlistInstallStep($"{modDisplay} was not found.");
+
+                        continue;
+                    }
+
+                    if (installResult.VersionMissing)
+                    {
+                        var modDisplay = string.IsNullOrWhiteSpace(candidate.ModId)
+                            ? "<unknown mod>"
+                            : candidate.ModId!;
+                        missingVersions.Add($"{modDisplay} ({desiredVersion})");
+
+                        if (showInstallOverlay)
+                            CompleteModlistInstallStep($"{modDisplay} {desiredVersion} unavailable.");
+
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(installResult.ErrorMessage))
+                        installFailures.Add($"{candidate.ModId}: {installResult.ErrorMessage}");
+
+                    if (showInstallOverlay)
+                    {
+                        var displayName = string.IsNullOrWhiteSpace(candidate.ModId) ? "Mod" : candidate.ModId!;
+                        var failureMessage = string.IsNullOrWhiteSpace(installResult.ErrorMessage)
+                            ? "Installation failed."
+                            : installResult.ErrorMessage!;
+                        CompleteModlistInstallStep($"{displayName}: {failureMessage}");
+                    }
                 }
 
-                var desiredVersion = string.IsNullOrWhiteSpace(candidate.Version)
-                    ? "Unknown"
-                    : candidate.Version!.Trim();
-
-                if (installResult.ModMissing)
-                {
-                    var modDisplay = string.IsNullOrWhiteSpace(candidate.ModId)
-                        ? "<unknown mod>"
-                        : candidate.ModId!;
-                    var display = string.IsNullOrWhiteSpace(installResult.ErrorMessage)
-                        ? modDisplay
-                        : $"{modDisplay} — {installResult.ErrorMessage}";
-                    missingMods.Add(display);
-                    continue;
-                }
-
-                if (installResult.VersionMissing)
-                {
-                    var modDisplay = string.IsNullOrWhiteSpace(candidate.ModId)
-                        ? "<unknown mod>"
-                        : candidate.ModId!;
-                    missingVersions.Add($"{modDisplay} ({desiredVersion})");
-                    continue;
-                }
-
-                if (!string.IsNullOrWhiteSpace(installResult.ErrorMessage))
-                    installFailures.Add($"{candidate.ModId}: {installResult.ErrorMessage}");
+                if (installedAnyMods) await RefreshModsAsync(true).ConfigureAwait(true);
             }
 
-            if (installedAnyMods) await RefreshModsAsync(true).ConfigureAwait(true);
+            if (hasOverrides)
+            {
+                Func<ModListItemViewModel, ModReleaseInfo, IProgress<ModUpdateProgress>?>? progressFactory = null;
+                Action<ModListItemViewModel, ModReleaseInfo, ModUpdateResult>? completionCallback = null;
+
+                if (showInstallOverlay)
+                {
+                    progressFactory = (mod, _) => CreateModlistInstallProgressReporter(mod.DisplayName ?? mod.ModId);
+                    completionCallback = (mod, release, result) =>
+                    {
+                        var displayName = string.IsNullOrWhiteSpace(mod.DisplayName)
+                            ? mod.ModId ?? "Mod"
+                            : mod.DisplayName!;
+                        var versionSuffix = string.IsNullOrWhiteSpace(release.Version)
+                            ? string.Empty
+                            : $" {release.Version}";
+                        var message = result.Success
+                            ? $"Updated {displayName}{versionSuffix}."
+                            : $"{displayName}: {(!string.IsNullOrWhiteSpace(result.ErrorMessage)
+                                ? result.ErrorMessage
+                                : "Update failed.")}";
+
+                        CompleteModlistInstallStep(message);
+                    };
+                }
+
+                await UpdateModsAsync(overrides.Keys.ToList(), true, overrides, false, progressFactory,
+                        completionCallback)
+                    .ConfigureAwait(true);
+            }
+        }
+        finally
+        {
+            if (showInstallOverlay) EndModlistInstallUi();
         }
 
         if (missingMods.Count > 0 || missingVersions.Count > 0 || installFailures.Count > 0)
@@ -11834,15 +12073,11 @@ public partial class MainWindow : Window
                     MessageBoxImage.Warning);
         }
 
-        var hasOverrides = overrides.Count > 0;
-        if (hasOverrides)
-            await UpdateModsAsync(overrides.Keys.ToList(), true, overrides, false)
-                .ConfigureAwait(true);
-
         return installedAnyMods || hasOverrides;
     }
 
-    private async Task<PresetModInstallResult> TryInstallPresetModAsync(ModPresetModState state)
+    private async Task<PresetModInstallResult> TryInstallPresetModAsync(ModPresetModState state,
+        IProgress<ModUpdateProgress>? installProgress = null)
     {
         if (_viewModel is null)
             return new PresetModInstallResult(false, false, false, "The mod view model is not available.");
@@ -11888,8 +12123,7 @@ public partial class MainWindow : Window
             release.Version,
             null);
 
-        var progress = new Progress<ModUpdateProgress>(p =>
-            _viewModel.ReportStatus($"{modId}: {p.Message}"));
+        var progress = CreateModUpdateProgressReporter(modId, installProgress);
 
         var result = await _modUpdateService
             .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
@@ -12742,7 +12976,9 @@ public partial class MainWindow : Window
         IReadOnlyList<ModListItemViewModel> mods,
         bool isBulk,
         IReadOnlyDictionary<ModListItemViewModel, ModReleaseInfo>? releaseOverrides = null,
-        bool showSummary = true)
+        bool showSummary = true,
+        Func<ModListItemViewModel, ModReleaseInfo, IProgress<ModUpdateProgress>?>? progressFactory = null,
+        Action<ModListItemViewModel, ModReleaseInfo, ModUpdateResult>? completionCallback = null)
     {
         if (_viewModel is null || mods.Count == 0)
         {
@@ -12775,6 +13011,8 @@ public partial class MainWindow : Window
                         : pathError!;
                     results.Add(ModUpdateOperationResult.Failure(mod, message));
                     requiresRefresh = true;
+                    if (completionCallback != null && hasOverride && overrideRelease != null)
+                        completionCallback(mod, overrideRelease, new ModUpdateResult(false, message));
                     continue;
                 }
 
@@ -12811,6 +13049,7 @@ public partial class MainWindow : Window
                             : targetError!;
                         results.Add(ModUpdateOperationResult.Failure(mod, failureMessage));
                         requiresRefresh = true;
+                        completionCallback?.Invoke(mod, release, new ModUpdateResult(false, failureMessage));
                         continue;
                     }
 
@@ -12819,8 +13058,8 @@ public partial class MainWindow : Window
                 }
 
                 var descriptor = new ModUpdateDescriptor(
-                    mod.ModId,
-                    mod.DisplayName,
+                    mod.ModId ?? mod.DisplayName ?? "Mod",
+                    mod.DisplayName ?? mod.ModId ?? "Mod",
                     release.DownloadUri,
                     targetPath,
                     targetIsDirectory,
@@ -12831,12 +13070,14 @@ public partial class MainWindow : Window
                     ExistingPath = existingPath
                 };
 
-                var progress = new Progress<ModUpdateProgress>(p =>
-                    _viewModel.ReportStatus($"{mod.DisplayName}: {p.Message}"));
+                var additionalProgress = progressFactory?.Invoke(mod, release);
+                var progress = CreateModUpdateProgressReporter(mod.DisplayName ?? mod.ModId ?? "Mod", additionalProgress);
 
                 var updateResult = await _modUpdateService
                     .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
                     .ConfigureAwait(true);
+
+                completionCallback?.Invoke(mod, release, updateResult);
 
                 if (!updateResult.Success)
                 {
@@ -12851,7 +13092,7 @@ public partial class MainWindow : Window
 
                 requiresRefresh = true;
                 _viewModel.ReportStatus($"Updated {mod.DisplayName} to {release.Version}.");
-                await _viewModel.PreserveActivationStateAsync(mod.ModId, mod.Version, release.Version, mod.IsActive)
+                await _viewModel.PreserveActivationStateAsync(mod.ModId ?? string.Empty, mod.Version, release.Version, mod.IsActive)
                     .ConfigureAwait(true);
                 var appliedChangelogEntries =
                     mod.GetChangelogEntriesForUpgrade(release.Version);
