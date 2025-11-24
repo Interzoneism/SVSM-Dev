@@ -782,16 +782,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 break;
         }
 
+        // Notify critical property changes immediately
         OnPropertyChanged(nameof(SearchModDatabase));
         OnPropertyChanged(nameof(IsViewingCloudModlists));
         OnPropertyChanged(nameof(IsViewingInstalledMods));
         OnPropertyChanged(nameof(CurrentModsView));
-        OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
-        OnPropertyChanged(nameof(DownloadsColumnHeader));
-
-        NotifyLoadMoreCommandCanExecuteChanged();
-
-        FastCheck();
+        
+        // Defer non-critical property changes to avoid blocking UI thread during tab switch
+        Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+        {
+            OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
+            OnPropertyChanged(nameof(DownloadsColumnHeader));
+            NotifyLoadMoreCommandCanExecuteChanged();
+            FastCheck();
+        }), DispatcherPriority.Background);
     }
 
     private void NotifyLoadMoreCommandCanExecuteChanged()
