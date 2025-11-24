@@ -258,8 +258,8 @@ internal static class VersionStringUtility
         // Check cache first - empty array indicates parse failure
         if (ParsedVersionPartsCache.TryGetValue(normalizedVersion, out var cached))
         {
-            // Return a copy to prevent external modifications to cached array
-            parts = cached.Length == 0 ? cached : (int[])cached.Clone();
+            // Return a defensive copy for successful parses, or Array.Empty for failures
+            parts = cached.Length == 0 ? Array.Empty<int>() : (int[])cached.Clone();
             return cached.Length > 0;
         }
 
