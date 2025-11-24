@@ -789,13 +789,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CurrentModsView));
         
         // Defer non-critical property changes to avoid blocking UI thread during tab switch
-        Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+        Application.Current?.Dispatcher.BeginInvoke(() =>
         {
             OnPropertyChanged(nameof(IsShowingRecentDownloadMetric));
             OnPropertyChanged(nameof(DownloadsColumnHeader));
             NotifyLoadMoreCommandCanExecuteChanged();
             FastCheck();
-        }), DispatcherPriority.Background);
+        }, DispatcherPriority.Background);
     }
 
     private void NotifyLoadMoreCommandCanExecuteChanged()
@@ -2898,6 +2898,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return result.Tags ?? Array.Empty<string>();
     }
 
+    private const int TagFilterLinearSearchThreshold = 3;
+    
     private static bool ContainsAllTags(IEnumerable<string>? sourceTags, IReadOnlyList<string> requiredTags)
     {
         if (requiredTags.Count == 0) return true;
@@ -2906,10 +2908,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         // Optimization: For a small number of required tags (1-3), use linear search
         // to avoid HashSet allocation overhead. This is faster for the common case.
-        if (requiredTags.Count <= 3)
+        if (requiredTags.Count <= TagFilterLinearSearchThreshold)
         {
-            // Create a small array to track which required tags we've found
-            var foundTags = new bool[requiredTags.Count];
+            // Use stack-allocated span to avoid heap allocation
+            Span<bool> foundTags = stackalloc bool[requiredTags.Count];
             var foundCount = 0;
 
             foreach (var tag in sourceTags)
