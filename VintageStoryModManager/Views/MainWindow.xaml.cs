@@ -11894,7 +11894,6 @@ public partial class MainWindow : Window
             overrides[mod] = option.Release;
         }
 
-        var installedAnyMods = false;
         var totalInstallOperations = installCandidates.Count + overrides.Count;
         var showInstallOverlay = totalInstallOperations > 0;
         var hasOverrides = overrides.Count > 0;
@@ -11915,7 +11914,6 @@ public partial class MainWindow : Window
                     var installResult = await TryInstallPresetModAsync(candidate, progress).ConfigureAwait(true);
                     if (installResult.Success)
                     {
-                        installedAnyMods = true;
                         if (showInstallOverlay)
                         {
                             var display = string.IsNullOrWhiteSpace(candidate.ModId) ? "mod" : candidate.ModId!;
@@ -11971,7 +11969,6 @@ public partial class MainWindow : Window
                     }
                 }
 
-                if (installedAnyMods) await RefreshModsAsync(true).ConfigureAwait(true);
             }
 
             if (hasOverrides)
@@ -12073,7 +12070,7 @@ public partial class MainWindow : Window
                     MessageBoxImage.Warning);
         }
 
-        return installedAnyMods || hasOverrides;
+        return showInstallOverlay;
     }
 
     private async Task<PresetModInstallResult> TryInstallPresetModAsync(ModPresetModState state,
