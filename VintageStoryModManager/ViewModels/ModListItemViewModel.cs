@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -65,6 +67,10 @@ public sealed class ModListItemViewModel : ObservableObject
     private bool _userReportHasError;
     private string? _userReportTooltip;
     private string? _versionWarningMessage;
+    
+    // Property change batching support
+    private int _propertyChangeSuspendCount;
+    private readonly HashSet<string> _pendingPropertyChanges = new();
 
     public ModListItemViewModel(
         ModEntry entry,
@@ -910,175 +916,186 @@ public sealed class ModListItemViewModel : ObservableObject
         UpdateTooltip();
     }
 
+    /// <summary>
+    /// Updates database information for this mod with batched property change notifications.
+    /// This method must be called from the UI thread (Dispatcher thread).
+    /// </summary>
     public void UpdateDatabaseInfo(ModDatabaseInfo info, bool loadLogoImmediately = true)
     {
         if (info is null) return;
 
-        var previousSide = NormalizeSide(_modDatabaseSide);
-        var updatedSide = NormalizeSide(info.Side);
-        _modDatabaseSide = info.Side;
-        if (!string.Equals(previousSide, updatedSide, StringComparison.Ordinal))
+        // Batch all property changes to reduce UI update overhead.
+        // Thread safety: This method is always invoked on the Dispatcher thread via
+        // InvokeOnDispatcherAsync in MainViewModel.ApplyDatabaseInfoAsync, so no 
+        // synchronization is needed for the property change batching mechanism.
+        using (SuspendPropertyChangeNotifications())
         {
-            OnPropertyChanged(nameof(SideDisplay));
-            OnPropertyChanged(nameof(SideSortValue));
-        }
+            var previousSide = NormalizeSide(_modDatabaseSide);
+            var updatedSide = NormalizeSide(info.Side);
+            _modDatabaseSide = info.Side;
+            if (!string.Equals(previousSide, updatedSide, StringComparison.Ordinal))
+            {
+                OnPropertyChanged(nameof(SideDisplay));
+                OnPropertyChanged(nameof(SideSortValue));
+            }
 
-        var tags = info.Tags ?? Array.Empty<string>();
-        if (HasDifferentContent(DatabaseTags, tags))
-        {
-            DatabaseTags = tags;
-            OnPropertyChanged(nameof(DatabaseTags));
-            OnPropertyChanged(nameof(DatabaseTagsDisplay));
-        }
+            var tags = info.Tags ?? Array.Empty<string>();
+            if (HasDifferentContent(DatabaseTags, tags))
+            {
+                DatabaseTags = tags;
+                OnPropertyChanged(nameof(DatabaseTags));
+                OnPropertyChanged(nameof(DatabaseTagsDisplay));
+            }
 
-        var requiredVersions = info.RequiredGameVersions ?? Array.Empty<string>();
-        if (HasDifferentContent(_databaseRequiredGameVersions, requiredVersions))
-            _databaseRequiredGameVersions = requiredVersions;
+            var requiredVersions = info.RequiredGameVersions ?? Array.Empty<string>();
+            if (HasDifferentContent(_databaseRequiredGameVersions, requiredVersions))
+                _databaseRequiredGameVersions = requiredVersions;
 
-        var latestRelease = info.LatestRelease;
-        var latestCompatibleRelease = info.LatestCompatibleRelease;
-        var releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
+            var latestRelease = info.LatestRelease;
+            var latestCompatibleRelease = info.LatestCompatibleRelease;
+            var releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
 
-        if (string.IsNullOrWhiteSpace(Version))
-        {
-            var preferredUserReportVersion = SelectPreferredUserReportVersion(
-                latestRelease,
-                latestCompatibleRelease,
-                info);
-            SetUserReportVersion(preferredUserReportVersion, true);
-        }
+            if (string.IsNullOrWhiteSpace(Version))
+            {
+                var preferredUserReportVersion = SelectPreferredUserReportVersion(
+                    latestRelease,
+                    latestCompatibleRelease,
+                    info);
+                SetUserReportVersion(preferredUserReportVersion, true);
+            }
 
-        var latestReleaseVersion = latestRelease?.Version;
-        if (!string.Equals(LatestReleaseUserReportVersion, latestReleaseVersion, StringComparison.OrdinalIgnoreCase))
-            ClearLatestReleaseUserReport();
+            var latestReleaseVersion = latestRelease?.Version;
+            if (!string.Equals(LatestReleaseUserReportVersion, latestReleaseVersion, StringComparison.OrdinalIgnoreCase))
+                ClearLatestReleaseUserReport();
 
-        LatestRelease = latestRelease;
-        LatestCompatibleRelease = latestCompatibleRelease;
-        _releases = releases;
+            LatestRelease = latestRelease;
+            LatestCompatibleRelease = latestCompatibleRelease;
+            _releases = releases;
 
-        UpdateModDatabaseMetrics(info, releases);
+            UpdateModDatabaseMetrics(info, releases);
 
-        var downloads = info.Downloads;
-        if (_databaseDownloads != downloads)
-        {
-            _databaseDownloads = downloads;
-            OnPropertyChanged(nameof(DownloadsDisplay));
-            OnPropertyChanged(nameof(ModDatabaseDownloadsSortKey));
-        }
+            var downloads = info.Downloads;
+            if (_databaseDownloads != downloads)
+            {
+                _databaseDownloads = downloads;
+                OnPropertyChanged(nameof(DownloadsDisplay));
+                OnPropertyChanged(nameof(ModDatabaseDownloadsSortKey));
+            }
 
-        var comments = info.Comments;
-        if (_databaseComments != comments)
-        {
-            _databaseComments = comments;
-            OnPropertyChanged(nameof(CommentsDisplay));
-        }
+            var comments = info.Comments;
+            if (_databaseComments != comments)
+            {
+                _databaseComments = comments;
+                OnPropertyChanged(nameof(CommentsDisplay));
+            }
 
-        LogDebug(
-            $"UpdateDatabaseInfo invoked. AssetId='{FormatValue(info.AssetId)}', PageUrl='{FormatValue(info.ModPageUrl)}', LogoUrl='{FormatValue(info.LogoUrl)}'.");
+            LogDebug(
+                $"UpdateDatabaseInfo invoked. AssetId='{FormatValue(info.AssetId)}', PageUrl='{FormatValue(info.ModPageUrl)}', LogoUrl='{FormatValue(info.LogoUrl)}'.");
 
-        var logoUrl = info.LogoUrl;
-        var logoUrlChanged = !string.Equals(_modDatabaseLogoUrl, logoUrl, StringComparison.Ordinal);
-        if (logoUrlChanged)
-        {
-            _modDatabaseLogoUrl = logoUrl;
-            var shouldCreateLogo = loadLogoImmediately && Icon is null;
-            if (shouldCreateLogo)
+            var logoUrl = info.LogoUrl;
+            var logoUrlChanged = !string.Equals(_modDatabaseLogoUrl, logoUrl, StringComparison.Ordinal);
+            if (logoUrlChanged)
+            {
+                _modDatabaseLogoUrl = logoUrl;
+                var shouldCreateLogo = loadLogoImmediately && Icon is null;
+                if (shouldCreateLogo)
+                {
+                    _modDatabaseLogo = CreateModDatabaseLogoImage();
+                    LogDebug(
+                        $"Updated database logo. New URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
+                }
+                else
+                {
+                    if (_modDatabaseLogo is not null)
+                        LogDebug("Clearing previously loaded database logo to defer image refresh.");
+
+                    _modDatabaseLogo = null;
+                    LogDebug(
+                        $"Deferred database logo update. New URL='{FormatValue(_modDatabaseLogoUrl)}'. Logo creation skipped={!shouldCreateLogo}.");
+                }
+
+                OnPropertyChanged(nameof(ModDatabasePreviewImage));
+                OnPropertyChanged(nameof(HasModDatabasePreviewImage));
+            }
+            else if (loadLogoImmediately && Icon is null && _modDatabaseLogo is null &&
+                     !string.IsNullOrWhiteSpace(_modDatabaseLogoUrl))
             {
                 _modDatabaseLogo = CreateModDatabaseLogoImage();
+                OnPropertyChanged(nameof(ModDatabasePreviewImage));
+                OnPropertyChanged(nameof(HasModDatabasePreviewImage));
                 LogDebug(
-                    $"Updated database logo. New URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
+                    $"Loaded deferred database logo. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
             }
-            else
+
+            if (!string.Equals(ModDatabaseAssetId, info.AssetId, StringComparison.Ordinal))
             {
-                if (_modDatabaseLogo is not null)
-                    LogDebug("Clearing previously loaded database logo to defer image refresh.");
-
-                _modDatabaseLogo = null;
-                LogDebug(
-                    $"Deferred database logo update. New URL='{FormatValue(_modDatabaseLogoUrl)}'. Logo creation skipped={!shouldCreateLogo}.");
+                ModDatabaseAssetId = info.AssetId;
+                OnPropertyChanged(nameof(ModDatabaseAssetId));
+                LogDebug($"Database asset id updated to '{FormatValue(ModDatabaseAssetId)}'.");
             }
 
-            OnPropertyChanged(nameof(ModDatabasePreviewImage));
-            OnPropertyChanged(nameof(HasModDatabasePreviewImage));
-        }
-        else if (loadLogoImmediately && Icon is null && _modDatabaseLogo is null &&
-                 !string.IsNullOrWhiteSpace(_modDatabaseLogoUrl))
-        {
-            _modDatabaseLogo = CreateModDatabaseLogoImage();
-            OnPropertyChanged(nameof(ModDatabasePreviewImage));
-            OnPropertyChanged(nameof(HasModDatabasePreviewImage));
-            LogDebug(
-                $"Loaded deferred database logo. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
-        }
+            var pageUrl = info.ModPageUrl;
+            if (!string.Equals(ModDatabasePageUrl, pageUrl, StringComparison.Ordinal))
+            {
+                ModDatabasePageUrl = pageUrl;
+                OnPropertyChanged(nameof(ModDatabasePageUrl));
+                OnPropertyChanged(nameof(ModDatabasePageUrlDisplay));
+                LogDebug($"Database page URL updated to '{FormatValue(ModDatabasePageUrl)}'.");
+            }
 
-        if (!string.Equals(ModDatabaseAssetId, info.AssetId, StringComparison.Ordinal))
-        {
-            ModDatabaseAssetId = info.AssetId;
-            OnPropertyChanged(nameof(ModDatabaseAssetId));
-            LogDebug($"Database asset id updated to '{FormatValue(ModDatabaseAssetId)}'.");
-        }
+            var pageUri = TryCreateHttpUri(pageUrl);
+            if (ModDatabasePageUri != pageUri)
+            {
+                ModDatabasePageUri = pageUri;
+                OnPropertyChanged(nameof(ModDatabasePageUri));
+                OnPropertyChanged(nameof(HasModDatabasePageLink));
+                LogDebug($"Database page URI resolved to '{FormatUri(ModDatabasePageUri)}'.");
+            }
 
-        var pageUrl = info.ModPageUrl;
-        if (!string.Equals(ModDatabasePageUrl, pageUrl, StringComparison.Ordinal))
-        {
-            ModDatabasePageUrl = pageUrl;
-            OnPropertyChanged(nameof(ModDatabasePageUrl));
-            OnPropertyChanged(nameof(ModDatabasePageUrlDisplay));
-            LogDebug($"Database page URL updated to '{FormatValue(ModDatabasePageUrl)}'.");
-        }
+            ICommand? pageCommand = null;
+            if (pageUri != null)
+            {
+                var commandUri = pageUri;
+                pageCommand = new RelayCommand(() => LaunchUri(commandUri));
+                LogDebug($"Database page command initialized for '{commandUri}'.");
+            }
 
-        var pageUri = TryCreateHttpUri(pageUrl);
-        if (ModDatabasePageUri != pageUri)
-        {
-            ModDatabasePageUri = pageUri;
-            OnPropertyChanged(nameof(ModDatabasePageUri));
-            OnPropertyChanged(nameof(HasModDatabasePageLink));
-            LogDebug($"Database page URI resolved to '{FormatUri(ModDatabasePageUri)}'.");
-        }
+            SetProperty(ref _openModDatabasePageCommand, pageCommand, nameof(OpenModDatabasePageCommand));
 
-        ICommand? pageCommand = null;
-        if (pageUri != null)
-        {
-            var commandUri = pageUri;
-            pageCommand = new RelayCommand(() => LaunchUri(commandUri));
-            LogDebug($"Database page command initialized for '{commandUri}'.");
-        }
+            var latestDatabaseVersion = latestRelease?.Version
+                                        ?? info.LatestVersion
+                                        ?? latestCompatibleRelease?.Version
+                                        ?? info.LatestCompatibleVersion;
 
-        SetProperty(ref _openModDatabasePageCommand, pageCommand, nameof(OpenModDatabasePageCommand));
+            if (!string.Equals(LatestDatabaseVersion, latestDatabaseVersion, StringComparison.Ordinal))
+            {
+                LatestDatabaseVersion = latestDatabaseVersion;
+                OnPropertyChanged(nameof(LatestDatabaseVersion));
+                OnPropertyChanged(nameof(LatestDatabaseVersionDisplay));
+                OnPropertyChanged(nameof(LatestVersionSortKey));
+                LogDebug($"Latest database version updated to '{FormatValue(LatestDatabaseVersion)}'.");
+            }
 
-        var latestDatabaseVersion = latestRelease?.Version
-                                    ?? info.LatestVersion
-                                    ?? latestCompatibleRelease?.Version
-                                    ?? info.LatestCompatibleVersion;
+            InitializeUpdateAvailability();
+            InitializeVersionOptions();
+            InitializeVersionWarning(_installedGameVersion);
+            UpdateNewerReleaseChangelogs();
 
-        if (!string.Equals(LatestDatabaseVersion, latestDatabaseVersion, StringComparison.Ordinal))
-        {
-            LatestDatabaseVersion = latestDatabaseVersion;
-            OnPropertyChanged(nameof(LatestDatabaseVersion));
-            OnPropertyChanged(nameof(LatestDatabaseVersionDisplay));
+            OnPropertyChanged(nameof(LatestRelease));
+            OnPropertyChanged(nameof(LatestCompatibleRelease));
+            OnPropertyChanged(nameof(LatestReleaseIsCompatible));
+            OnPropertyChanged(nameof(ShouldHighlightLatestVersion));
+            OnPropertyChanged(nameof(CanUpdate));
             OnPropertyChanged(nameof(LatestVersionSortKey));
-            LogDebug($"Latest database version updated to '{FormatValue(LatestDatabaseVersion)}'.");
+            OnPropertyChanged(nameof(RequiresCompatibilitySelection));
+            OnPropertyChanged(nameof(HasCompatibleUpdate));
+            OnPropertyChanged(nameof(HasDownloadableRelease));
+            OnPropertyChanged(nameof(InstallButtonToolTip));
+            OnPropertyChanged(nameof(UpdateButtonToolTip));
+
+            UpdateStatusFromErrors();
+            UpdateTooltip();
         }
-
-        InitializeUpdateAvailability();
-        InitializeVersionOptions();
-        InitializeVersionWarning(_installedGameVersion);
-        UpdateNewerReleaseChangelogs();
-
-        OnPropertyChanged(nameof(LatestRelease));
-        OnPropertyChanged(nameof(LatestCompatibleRelease));
-        OnPropertyChanged(nameof(LatestReleaseIsCompatible));
-        OnPropertyChanged(nameof(ShouldHighlightLatestVersion));
-        OnPropertyChanged(nameof(CanUpdate));
-        OnPropertyChanged(nameof(LatestVersionSortKey));
-        OnPropertyChanged(nameof(RequiresCompatibilitySelection));
-        OnPropertyChanged(nameof(HasCompatibleUpdate));
-        OnPropertyChanged(nameof(HasDownloadableRelease));
-        OnPropertyChanged(nameof(InstallButtonToolTip));
-        OnPropertyChanged(nameof(UpdateButtonToolTip));
-
-        UpdateStatusFromErrors();
-        UpdateTooltip();
     }
 
     public void ClearDatabaseTags()
@@ -2113,6 +2130,77 @@ public sealed class ModListItemViewModel : ObservableObject
     private static string FormatUri(Uri? uri)
     {
         return uri?.AbsoluteUri ?? "<null>";
+    }
+
+    /// <summary>
+    /// Suspends property change notifications during batch updates to reduce UI overhead.
+    /// </summary>
+    private IDisposable SuspendPropertyChangeNotifications()
+    {
+        return new PropertyChangeSuspensionScope(this);
+    }
+
+    /// <summary>
+    /// Override OnPropertyChanged to support batching.
+    /// </summary>
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        if (_propertyChangeSuspendCount > 0)
+        {
+            // Only batch specific property changes; null PropertyName (to refresh all bindings) is intentionally ignored
+            if (e.PropertyName != null)
+            {
+                _pendingPropertyChanges.Add(e.PropertyName);
+            }
+            return;
+        }
+
+        base.OnPropertyChanged(e);
+    }
+
+    private void BeginPropertyChangeSuspension()
+    {
+        _propertyChangeSuspendCount++;
+    }
+
+    private void EndPropertyChangeSuspension()
+    {
+        if (_propertyChangeSuspendCount == 0)
+        {
+            // Already at zero, nothing to do (defensive programming)
+            return;
+        }
+
+        _propertyChangeSuspendCount--;
+
+        if (_propertyChangeSuspendCount == 0 && _pendingPropertyChanges.Count > 0)
+        {
+            // Fire all pending property changes
+            foreach (var propertyName in _pendingPropertyChanges)
+            {
+                base.OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
+            }
+            _pendingPropertyChanges.Clear();
+        }
+    }
+
+    private sealed class PropertyChangeSuspensionScope : IDisposable
+    {
+        private readonly ModListItemViewModel _viewModel;
+        private bool _disposed;
+
+        public PropertyChangeSuspensionScope(ModListItemViewModel viewModel)
+        {
+            _viewModel = viewModel;
+            _viewModel.BeginPropertyChangeSuspension();
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _viewModel.EndPropertyChangeSuspension();
+        }
     }
 
     public sealed record ReleaseChangelog(string Version, string Changelog);
