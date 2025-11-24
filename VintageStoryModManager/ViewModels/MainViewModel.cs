@@ -116,6 +116,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _isInstalledTagRefreshPending;
     private bool _isLoadingModDetails;
     private bool _isLoadingMods;
+    private double _loadingProgress;
+    private string _loadingStatusText = string.Empty;
     private bool _isLoadMoreModDatabaseButtonVisible;
     private bool _isLoadMoreModDatabaseScrollThresholdReached;
     private bool _isModDatabaseLoading;
@@ -297,6 +299,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             if (SetProperty(ref _isLoadingMods, value)) RecalculateIsBusy();
         }
+    }
+
+    public double LoadingProgress
+    {
+        get => _loadingProgress;
+        private set => SetProperty(ref _loadingProgress, value);
+    }
+
+    public string LoadingStatusText
+    {
+        get => _loadingStatusText;
+        private set => SetProperty(ref _loadingStatusText, value);
     }
 
     public bool IsLoadingModDetails
@@ -1775,6 +1789,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _allowModDetailsRefresh = !_isAutoRefreshDisabled || forcedRefresh;
 
         IsLoadingMods = true;
+        LoadingProgress = 0;
+        LoadingStatusText = string.Empty;
         using var busyScope = BeginBusyScope();
         SetStatus("Loading mods...", false);
 
@@ -1874,21 +1890,47 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             foreach (var pair in _modEntriesBySourcePath) previousEntries[pair.Key] = pair.Value;
         }, CancellationToken.None).ConfigureAwait(true);
 
-        var discoveredEntries = await Task
-            .Run(() => _discoveryService.LoadMods())
-            .ConfigureAwait(true);
+        // Initialize progress tracking
+        LoadingProgress = 0;
+        LoadingStatusText = "Discovering mods...";
+        
+        var allEntries = new List<ModEntry>();
+        var batchSize = InstalledModsIncrementalBatchSize;
+        var processedCount = 0;
 
-        var entries = discoveredEntries.Count == 0
-            ? new List<ModEntry>()
-            : new List<ModEntry>(discoveredEntries);
-
-        foreach (var entry in entries)
+        // Use incremental loading to keep UI responsive
+        await foreach (var batch in _discoveryService.LoadModsIncrementallyAsync(batchSize, CancellationToken.None))
         {
-            ResetCalculatedModState(entry);
-            if (previousEntries.TryGetValue(entry.SourcePath, out var previous)) CopyTransientModState(previous, entry);
+            if (batch.Count == 0) continue;
+
+            foreach (var entry in batch)
+            {
+                ResetCalculatedModState(entry);
+                if (previousEntries.TryGetValue(entry.SourcePath, out var previous)) 
+                    CopyTransientModState(previous, entry);
+                allEntries.Add(entry);
+            }
+
+            processedCount += batch.Count;
+            
+            // Update progress - we don't know total yet, so show a generic loading message
+            LoadingStatusText = $"Loading mods... ({processedCount} found)";
+            
+            // Yield to keep UI responsive
+            await Task.Yield();
         }
 
-        if (entries.Count > 0) await Task.Run(() => _discoveryService.ApplyLoadStatuses(entries)).ConfigureAwait(true);
+        var entries = allEntries;
+        
+        // Now we know the total, update status
+        LoadingStatusText = $"Processing {entries.Count} mods...";
+        LoadingProgress = 50; // Halfway through the process
+
+        if (entries.Count > 0) 
+            await Task.Run(() => _discoveryService.ApplyLoadStatuses(entries)).ConfigureAwait(true);
+
+        LoadingStatusText = $"Updating UI with {entries.Count} mods...";
+        LoadingProgress = 75;
 
         await InvokeOnDispatcherAsync(() =>
         {
@@ -1921,6 +1963,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             UpdateLoadedModsStatus();
         }, CancellationToken.None).ConfigureAwait(true);
+        
+        // Complete
+        LoadingProgress = 100;
+        LoadingStatusText = $"Loaded {entries.Count} mods";
     }
 
     public async Task<bool> CheckForModStateChangesAsync()

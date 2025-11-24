@@ -3734,6 +3734,7 @@
                         CornerRadius="3"
                         SnapsToDevicePixels="True">
                     <Grid>
+                        <!-- Regular status message -->
                         <TextBlock Grid.Column="0"
                                    Text="{Binding StatusMessage}"
                                    TextWrapping="Wrap"
@@ -3754,10 +3755,42 @@
                                         <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
                                             <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Emphasis}" />
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsLoadingMods}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
+                        
+                        <!-- Loading progress display -->
+                        <StackPanel VerticalAlignment="Center"
+                                    Margin="8,4">
+                            <StackPanel.Style>
+                                <Style TargetType="{x:Type StackPanel}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsLoadingMods}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            
+                            <TextBlock Text="{Binding LoadingStatusText}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.Text.Primary}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,4" />
+                            
+                            <ProgressBar Value="{Binding LoadingProgress}"
+                                         Minimum="0"
+                                         Maximum="100"
+                                         Height="8"
+                                         Foreground="{DynamicResource Brush.Accent.Primary}"
+                                         Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
+                        </StackPanel>
                     </Grid>
                 </Border>
             </Border>
