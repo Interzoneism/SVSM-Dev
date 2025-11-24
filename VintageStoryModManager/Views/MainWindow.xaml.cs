@@ -12223,6 +12223,9 @@ public partial class MainWindow : Window
     {
         if (!ReferenceEquals(sender, _viewModel?.ModsView)) return;
 
+        // Don't clear selection during mod loading to allow user interaction
+        if (_viewModel?.IsLoadingMods == true) return;
+
         Dispatcher.Invoke(() => ClearSelection(true));
     }
 
