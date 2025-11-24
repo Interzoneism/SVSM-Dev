@@ -59,7 +59,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly object _modDetailsBusyScopeLock = new();
     private readonly Dictionary<string, ModEntry> _modEntriesBySourcePath = new(StringComparer.OrdinalIgnoreCase);
 
-    private readonly ObservableCollection<ModListItemViewModel> _mods = new();
+    private readonly BatchedObservableCollection<ModListItemViewModel> _mods = new();
     private readonly object _modsStateLock = new();
     private readonly ModDirectoryWatcher _modsWatcher;
 
@@ -1883,14 +1883,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             _modEntriesBySourcePath.Clear();
             _modViewModelsBySourcePath.Clear();
-            _mods.Clear();
 
-            foreach (var entry in entries)
+            // Use batch operation to minimize UI notifications
+            using (_mods.SuspendNotifications())
             {
-                _modEntriesBySourcePath[entry.SourcePath] = entry;
-                var viewModel = CreateModViewModel(entry);
-                _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
-                _mods.Add(viewModel);
+                _mods.Clear();
+                
+                foreach (var entry in entries)
+                {
+                    _modEntriesBySourcePath[entry.SourcePath] = entry;
+                    var viewModel = CreateModViewModel(entry);
+                    _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
+                    _mods.Add(viewModel);
+                }
             }
 
             TotalMods = _mods.Count;
@@ -4039,46 +4044,51 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         var updated = 0;
         var removed = 0;
 
-        foreach (var change in changes)
+        // Use batch operation to minimize UI notifications during updates
+        using (_mods.SuspendNotifications())
         {
-            var path = change.Key;
-            var entry = change.Value;
-
-            if (entry == null)
+            foreach (var change in changes)
             {
-                if (_modViewModelsBySourcePath.TryGetValue(path, out var existingVm))
-                {
-                    _mods.Remove(existingVm);
-                    _modViewModelsBySourcePath.Remove(path);
-                    removed++;
+                var path = change.Key;
+                var entry = change.Value;
 
-                    if (ReferenceEquals(SelectedMod, existingVm)) SelectedMod = null;
+                if (entry == null)
+                {
+                    if (_modViewModelsBySourcePath.TryGetValue(path, out var existingVm))
+                    {
+                        _mods.Remove(existingVm);
+                        _modViewModelsBySourcePath.Remove(path);
+                        removed++;
+
+                        if (ReferenceEquals(SelectedMod, existingVm)) SelectedMod = null;
+                    }
+
+                    _modEntriesBySourcePath.Remove(path);
+                    continue;
                 }
 
-                _modEntriesBySourcePath.Remove(path);
-                continue;
-            }
+                var viewModel = CreateModViewModel(entry);
+                if (_modViewModelsBySourcePath.TryGetValue(path, out var existing))
+                {
+                    var index = _mods.IndexOf(existing);
+                    if (index >= 0)
+                        _mods[index] = viewModel;
+                    else
+                        _mods.Add(viewModel);
 
-            var viewModel = CreateModViewModel(entry);
-            if (_modViewModelsBySourcePath.TryGetValue(path, out var existing))
-            {
-                var index = _mods.IndexOf(existing);
-                if (index >= 0)
-                    _mods[index] = viewModel;
+                    _modViewModelsBySourcePath[path] = viewModel;
+                    _modEntriesBySourcePath[path] = entry;  // Update entry dictionary for updated mods
+                    updated++;
+
+                    if (ReferenceEquals(SelectedMod, existing)) SelectedMod = viewModel;
+                }
                 else
+                {
                     _mods.Add(viewModel);
-
-                _modViewModelsBySourcePath[path] = viewModel;
-                updated++;
-
-                if (ReferenceEquals(SelectedMod, existing)) SelectedMod = viewModel;
-            }
-            else
-            {
-                _mods.Add(viewModel);
-                _modViewModelsBySourcePath[path] = viewModel;
-                _modEntriesBySourcePath[path] = entry;
-                added++;
+                    _modViewModelsBySourcePath[path] = viewModel;
+                    _modEntriesBySourcePath[path] = entry;
+                    added++;
+                }
             }
         }
 
@@ -4142,12 +4152,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     return;
                 }
 
-                using var limiter = new SemaphoreSlim(MaxConcurrentDatabaseRefreshes, MaxConcurrentDatabaseRefreshes);
-                var refreshTasks = pending
-                    .Select(entry => RefreshDatabaseInfoAsync(entry, limiter))
-                    .ToArray();
+                // Use progressive loading strategy for large mod counts
+                if (pending.Length > 100)
+                {
+                    await RefreshDatabaseInfoProgressivelyAsync(pending).ConfigureAwait(false);
+                }
+                else
+                {
+                    using var limiter = new SemaphoreSlim(MaxConcurrentDatabaseRefreshes, MaxConcurrentDatabaseRefreshes);
+                    var refreshTasks = pending
+                        .Select(entry => RefreshDatabaseInfoAsync(entry, limiter))
+                        .ToArray();
 
-                await Task.WhenAll(refreshTasks).ConfigureAwait(false);
+                    await Task.WhenAll(refreshTasks).ConfigureAwait(false);
+                }
             }
             catch (Exception)
             {
@@ -4199,6 +4217,45 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Progressively refreshes database info for large mod collections.
+    /// First batch (visible items) gets high priority, rest are processed in background.
+    /// </summary>
+    private async Task RefreshDatabaseInfoProgressivelyAsync(ModEntry[] entries)
+    {
+        const int priorityBatchSize = 50; // First 50 mods get immediate attention
+        const int regularBatchSize = 20;  // Subsequent batches are smaller
+
+        using var limiter = new SemaphoreSlim(MaxConcurrentDatabaseRefreshes, MaxConcurrentDatabaseRefreshes);
+
+        // Process first batch with high priority (likely visible in UI)
+        var priorityCount = Math.Min(priorityBatchSize, entries.Length);
+        var priorityBatch = entries.Take(priorityCount).ToArray();
+        var priorityTasks = priorityBatch
+            .Select(entry => RefreshDatabaseInfoAsync(entry, limiter))
+            .ToArray();
+
+        await Task.WhenAll(priorityTasks).ConfigureAwait(false);
+
+        // Process remaining entries in smaller batches with delays to avoid overwhelming the system
+        var remaining = entries.Skip(priorityCount).ToArray();
+        for (int i = 0; i < remaining.Length; i += regularBatchSize)
+        {
+            var batch = remaining.Skip(i).Take(regularBatchSize).ToArray();
+            var batchTasks = batch
+                .Select(entry => RefreshDatabaseInfoAsync(entry, limiter))
+                .ToArray();
+
+            await Task.WhenAll(batchTasks).ConfigureAwait(false);
+
+            // Small delay between batches to keep UI responsive
+            if (i + regularBatchSize < remaining.Length)
+            {
+                await Task.Delay(50).ConfigureAwait(false);
+            }
+        }
     }
 
     private async Task RefreshDatabaseInfoAsync(ModEntry entry, SemaphoreSlim limiter)
