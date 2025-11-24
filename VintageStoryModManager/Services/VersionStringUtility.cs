@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Collections.Immutable;
 using System.Text;
 
 namespace VintageStoryModManager.Services;
@@ -13,20 +12,8 @@ internal static class VersionStringUtility
     private static readonly ConcurrentDictionary<string, string?> NormalizedVersionCache = new();
     
     // Cache for parsed version parts to avoid repeated parsing
-    // Uses ImmutableArray to avoid ToArray() allocations on cache hits
-    private static readonly ConcurrentDictionary<string, CachedVersionParts> ParsedVersionPartsCache = new();
-
-    private readonly struct CachedVersionParts
-    {
-        public CachedVersionParts(ImmutableArray<int> parts, bool isValid)
-        {
-            Parts = parts;
-            IsValid = isValid;
-        }
-
-        public ImmutableArray<int> Parts { get; }
-        public bool IsValid { get; }
-    }
+    // Successful parses cache the array directly; failed parses store Array.Empty<int>()
+    private static readonly ConcurrentDictionary<string, int[]> ParsedVersionPartsCache = new();
     /// <summary>
     ///     Normalizes a version string by extracting up to four numeric parts separated by dots.
     /// </summary>
@@ -268,22 +255,16 @@ internal static class VersionStringUtility
     /// <returns>True if the version string was successfully parsed; otherwise, false.</returns>
     private static bool TryParseVersionParts(string normalizedVersion, out int[] parts)
     {
-        // Check cache first
+        // Check cache first - empty array indicates parse failure
         if (ParsedVersionPartsCache.TryGetValue(normalizedVersion, out var cached))
         {
-            if (!cached.IsValid)
-            {
-                parts = Array.Empty<int>();
-                return false;
-            }
-            // Convert ImmutableArray to array - this is a fast operation since ImmutableArray is a thin wrapper
-            parts = cached.Parts.IsDefaultOrEmpty ? Array.Empty<int>() : cached.Parts.ToArray();
-            return true;
+            parts = cached;
+            return cached.Length > 0;
         }
 
         // Use Span-based parsing to avoid allocations
         var span = normalizedVersion.AsSpan();
-        var partsBuilder = ImmutableArray.CreateBuilder<int>(4); // Most versions have 4 parts or less
+        var partsList = new List<int>(4); // Most versions have 4 parts or less
         
         while (!span.IsEmpty)
         {
@@ -292,14 +273,13 @@ internal static class VersionStringUtility
             
             if (!int.TryParse(part, out var value))
             {
-                // Cache the failure
-                ParsedVersionPartsCache.TryAdd(normalizedVersion, 
-                    new CachedVersionParts(ImmutableArray<int>.Empty, false));
+                // Cache the failure using empty array as sentinel
                 parts = Array.Empty<int>();
+                ParsedVersionPartsCache.TryAdd(normalizedVersion, parts);
                 return false;
             }
             
-            partsBuilder.Add(value);
+            partsList.Add(value);
             
             if (dotIndex < 0)
                 break;
@@ -307,12 +287,10 @@ internal static class VersionStringUtility
             span = span.Slice(dotIndex + 1);
         }
 
-        var immutableParts = partsBuilder.ToImmutable();
-        parts = immutableParts.ToArray();
+        parts = partsList.ToArray();
         
         // Cache the successful parse
-        ParsedVersionPartsCache.TryAdd(normalizedVersion, 
-            new CachedVersionParts(immutableParts, true));
+        ParsedVersionPartsCache.TryAdd(normalizedVersion, parts);
         return true;
     }
 }
