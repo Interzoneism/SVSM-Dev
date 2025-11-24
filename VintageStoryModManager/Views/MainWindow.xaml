@@ -3739,6 +3739,9 @@
                                         <DataTrigger Binding="{Binding IsLoadingMods}" Value="True">
                                             <Setter Property="Visibility" Value="Collapsed" />
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsModlistInstallInProgress}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </TextBlock.Style>
@@ -3753,6 +3756,9 @@
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsLoadingMods}" Value="True">
                                             <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsModlistInstallInProgress}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -3811,9 +3817,22 @@
             <ui:ProgressRing
                 HorizontalAlignment="Left"
                 IsActive="{Binding IsBusy}"
-                Visibility="{Binding IsBusy, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
                 Foreground="{DynamicResource Brush.Accent.Primary}" Margin="388,0,0,0" VerticalAlignment="Stretch"
-                Width="40" Height="40" />
+                Width="40" Height="40">
+                <ui:ProgressRing.Style>
+                    <Style TargetType="{x:Type ui:ProgressRing}">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsBusy}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsModlistInstallInProgress}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ui:ProgressRing.Style>
+            </ui:ProgressRing>
         </Grid>
         <Canvas x:Name="ModInfoOverlay" Grid.RowSpan="3" Panel.ZIndex="400">
             <Border Background="{DynamicResource Brush.ModCard.Background.Active}" x:Name="MODINFO_border"
