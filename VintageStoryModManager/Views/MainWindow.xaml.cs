@@ -303,7 +303,6 @@ public partial class MainWindow : Window
     private bool _isCloudModlistRefreshInProgress;
     private bool _isDependencyResolutionRefreshPending;
     private bool _isDraggingModInfoPanel;
-    private bool _isFullRefreshInProgress;
     private bool _isInitializing;
     private bool _isUpdatingModlistsTabSelection;
     private bool _isModUpdateInProgress;
@@ -3406,9 +3405,6 @@ public partial class MainWindow : Window
     {
         if (_viewModel?.RefreshCommand == null) return;
 
-        var scrollViewer = GetModsScrollViewer();
-        var targetOffset = scrollViewer?.VerticalOffset;
-
         List<string>? selectedSourcePaths = null;
         string? anchorSourcePath = null;
 
@@ -3434,14 +3430,14 @@ public partial class MainWindow : Window
 
         if (selectedSourcePaths is { Count: > 0 })
             RestoreSelectionFromSourcePaths(selectedSourcePaths, anchorSourcePath);
+    }
 
-        if (scrollViewer != null && targetOffset.HasValue)
-            await Dispatcher.InvokeAsync(() =>
-            {
-                scrollViewer.UpdateLayout();
-                var clampedOffset = Math.Max(0, Math.Min(targetOffset.Value, scrollViewer.ScrollableHeight));
-                scrollViewer.ScrollToVerticalOffset(clampedOffset);
-            }, DispatcherPriority.Background);
+    private void RefreshModDetailsOnly()
+    {
+        if (_viewModel == null) return;
+
+        _viewModel.ForceNextRefreshToLoadDetails();
+        _viewModel.RefreshInstalledModDetails();
     }
 
     private bool TryInitializePaths()
@@ -5002,113 +4998,6 @@ public partial class MainWindow : Window
         comboBox.Dispatcher.BeginInvoke((Action)ScrollToTop, DispatcherPriority.Background);
     }
 
-    private async void RebuildButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (_isApplyingPreset) return;
-
-        if (_isFullRefreshInProgress) return;
-
-        var viewModel = _viewModel;
-        if (viewModel?.RefreshCommand == null) return;
-
-        if (viewModel.IsBusy)
-        {
-            WpfMessageBox.Show(
-                "Please wait for the current operation to finish before refreshing.",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-            return;
-        }
-
-        var loadMode = GetRebuildModlistLoadMode();
-        if (loadMode is not ModlistLoadMode resolvedLoadMode) return;
-
-        if (!await EnsureModDatabaseReachableForRebuildAsync().ConfigureAwait(true)) return;
-
-        try
-        {
-            await EnsureInstalledModsCachedAsync(viewModel, true).ConfigureAwait(true);
-        }
-        catch (Exception ex)
-        {
-            WpfMessageBox.Show(
-                $"Failed to cache the currently installed mods before rebuilding:\n{ex.Message}",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-            return;
-        }
-
-        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
-        var requestedModlistName = $"Rebuilt_{timestamp}";
-        var savedModlistName = string.Empty;
-        var savedModlistPath = string.Empty;
-
-        _isFullRefreshInProgress = true;
-        var cachesCleared = false;
-
-        try
-        {
-            if (!TrySaveAutomaticModlist(requestedModlistName, out savedModlistName, out savedModlistPath)) return;
-
-            try
-            {
-                await Task.Run(() => ClearManagerCaches(true)).ConfigureAwait(true);
-                cachesCleared = true;
-            }
-            catch (Exception ex)
-            {
-                WpfMessageBox.Show(
-                    $"Failed to clear cached mod data:\n{ex.Message}",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
-
-            await RefreshDeleteCachedModsMenuHeaderAsync().ConfigureAwait(true);
-
-            if (!cachesCleared) return;
-
-            var deletionResult = await DeleteAllInstalledModsForRebuildAsync().ConfigureAwait(true);
-            if (!deletionResult.Success)
-            {
-                WpfMessageBox.Show(
-                    "Rebuild cancelled because some mods could not be removed.",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
-            var loadOptions = GetModlistLoadOptions(resolvedLoadMode);
-
-            if (!TryLoadPresetFromFile(savedModlistPath, "Modlist", loadOptions, out var preset, out var errorMessage))
-            {
-                var message = string.IsNullOrWhiteSpace(errorMessage)
-                    ? "The saved rebuild modlist could not be loaded."
-                    : errorMessage!;
-                WpfMessageBox.Show(
-                    $"Failed to load the rebuild modlist:\n{message}",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return;
-            }
-
-            await ApplyPresetAsync(preset!).ConfigureAwait(true);
-
-            var status = resolvedLoadMode == ModlistLoadMode.Replace
-                ? $"Rebuilt mods from \"{savedModlistName}\"."
-                : $"Rebuilt mods from \"{savedModlistName}\" (added mods).";
-            viewModel.ReportStatus(status);
-        }
-        finally
-        {
-            _isFullRefreshInProgress = false;
-        }
-    }
-
     private async void UpdateAllModsMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (_isApplyingPreset) return;
@@ -6190,8 +6079,6 @@ public partial class MainWindow : Window
 
         if (UpdateAllButton != null) UpdateAllButton.IsEnabled = isEnabled;
 
-        if (RebuildButton != null) RebuildButton.IsEnabled = isEnabled;
-
         if (LaunchGameButton != null) LaunchGameButton.IsEnabled = isEnabled;
 
         if (ModDatabaseTabButton != null) ModDatabaseTabButton.IsEnabled = isEnabled;
@@ -6441,7 +6328,7 @@ public partial class MainWindow : Window
 
     private async Task RefreshModsWithErrorHandlingAsync()
     {
-        if (_viewModel?.RefreshCommand == null) return;
+        if (_viewModel == null) return;
 
         if (Dispatcher.CheckAccess())
             await Dispatcher.Yield(DispatcherPriority.Background);
@@ -6450,12 +6337,12 @@ public partial class MainWindow : Window
 
         try
         {
-            await RefreshModsAsync(true).ConfigureAwait(true);
+            RefreshModDetailsOnly();
         }
         catch (Exception ex)
         {
             WpfMessageBox.Show(
-                $"Failed to refresh mods:\n{ex.Message}",
+                $"Failed to refresh mod details:\n{ex.Message}",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -8159,72 +8046,6 @@ public partial class MainWindow : Window
         };
     }
 
-    private async Task<(bool Success, int RemovedCount)> DeleteAllInstalledModsForRebuildAsync()
-    {
-        if (_viewModel?.ModsView is null) return (true, 0);
-
-        var installedMods = _viewModel.ModsView.Cast<ModListItemViewModel>()
-            .Where(mod => mod.IsInstalled)
-            .ToList();
-
-        if (installedMods.Count == 0) return (true, 0);
-
-        var pathErrors = new List<string>();
-        var removedCount = 0;
-        var hadDeletionFailure = false;
-
-        foreach (var mod in installedMods)
-        {
-            if (!TryGetManagedModPath(mod, out var modPath, out var errorMessage))
-            {
-                if (!string.IsNullOrWhiteSpace(errorMessage)) pathErrors.Add($"{mod.DisplayName}: {errorMessage}");
-
-                hadDeletionFailure = true;
-                continue;
-            }
-
-            if (TryDeleteModAtPath(mod, modPath))
-                removedCount++;
-            else
-                hadDeletionFailure = true;
-        }
-
-        if (_viewModel.RefreshCommand != null)
-            try
-            {
-                await RefreshModsAsync().ConfigureAwait(true);
-            }
-            catch (Exception ex)
-            {
-                WpfMessageBox.Show($"The mod list could not be refreshed:{Environment.NewLine}{ex.Message}",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return (false, removedCount);
-            }
-
-        if (pathErrors.Count > 0)
-        {
-            var message = string.Join(Environment.NewLine + Environment.NewLine, pathErrors);
-            WpfMessageBox.Show(
-                $"Some mods could not be removed automatically:{Environment.NewLine}{Environment.NewLine}{message}",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-        }
-
-        var success = !hadDeletionFailure && pathErrors.Count == 0;
-        if (success)
-        {
-            var status = removedCount == 0
-                ? "No installed mods were found to delete."
-                : $"Removed {removedCount} mod{(removedCount == 1 ? string.Empty : "s")} before rebuild.";
-            _viewModel.ReportStatus(status);
-        }
-
-        return (success, removedCount);
-    }
-
     private void SavePresetMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         var presetDirectory = EnsurePresetDirectory();
@@ -8386,197 +8207,6 @@ public partial class MainWindow : Window
                 MessageBoxImage.Error);
             savedName = string.Empty;
             filePath = string.Empty;
-            return false;
-        }
-    }
-
-    private ModlistLoadMode? GetRebuildModlistLoadMode()
-    {
-        var confirmation = WpfMessageBox.Show(
-            this,
-            "This will remove all cache and reinstall all current mods, proceed?",
-            "Rebuild Mods",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        return confirmation == MessageBoxResult.Yes ? ModlistLoadMode.Replace : null;
-    }
-
-    private async Task<bool> EnsureModDatabaseReachableForRebuildAsync()
-    {
-        if (_viewModel is null) return false;
-
-        var states = _viewModel.GetCurrentModStates();
-        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var candidates = new List<ModPresetModState>(5);
-
-        foreach (var state in states)
-        {
-            if (state is null || string.IsNullOrWhiteSpace(state.ModId)) continue;
-
-            var trimmedId = state.ModId.Trim();
-            if (!seenIds.Add(trimmedId)) continue;
-
-            candidates.Add(state);
-            if (candidates.Count >= 5) break;
-        }
-
-        if (candidates.Count == 0)
-            try
-            {
-                await _modDatabaseService.GetMostDownloadedModsAsync(1).ConfigureAwait(true);
-                return true;
-            }
-            catch (InternetAccessDisabledException ex)
-            {
-                WpfMessageBox.Show(
-                    ex.Message,
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return false;
-            }
-            catch (HttpRequestException)
-            {
-                WpfMessageBox.Show(
-                    ModDatabaseUnavailableMessage,
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return false;
-            }
-            catch (TaskCanceledException)
-            {
-                WpfMessageBox.Show(
-                    ModDatabaseUnavailableMessage,
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return false;
-            }
-            catch (Exception ex)
-            {
-                WpfMessageBox.Show(
-                    $"{ModDatabaseUnavailableMessage}.{Environment.NewLine}{ex.Message}",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return false;
-            }
-
-        var installedGameVersion = _viewModel.InstalledGameVersion;
-        foreach (var candidate in candidates)
-            try
-            {
-                if (await TryTestRebuildModConnectivityAsync(candidate, installedGameVersion).ConfigureAwait(true))
-                    return true;
-            }
-            catch (InternetAccessDisabledException ex)
-            {
-                WpfMessageBox.Show(
-                    ex.Message,
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return false;
-            }
-
-        WpfMessageBox.Show(
-            "Aborted because couldn't reach mod DB, check connection.",
-            "Simple VS Manager",
-            MessageBoxButton.OK,
-            MessageBoxImage.Warning);
-
-        return false;
-    }
-
-    private async Task<bool> TryTestRebuildModConnectivityAsync(ModPresetModState state, string? installedGameVersion)
-    {
-        var modId = state.ModId?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(modId)) return false;
-
-        var desiredVersion = string.IsNullOrWhiteSpace(state.Version) ? null : state.Version!.Trim();
-
-        var info = await _modDatabaseService
-            .TryLoadDatabaseInfoAsync(modId, desiredVersion, installedGameVersion,
-                _userConfiguration.RequireExactVsVersionMatch)
-            .ConfigureAwait(true);
-
-        if (info is null)
-        {
-            Trace.TraceWarning("Connectivity test failed to load metadata for mod {0}.", modId);
-            return false;
-        }
-
-        var release = TrySelectReleaseForConnectivityTest(info, desiredVersion);
-        if (release?.DownloadUri is null)
-        {
-            Trace.TraceWarning("Connectivity test could not find a downloadable release for mod {0}.", modId);
-            return false;
-        }
-
-        var success = await TryProbeModDownloadAsync(release.DownloadUri).ConfigureAwait(true);
-        if (!success)
-            Trace.TraceWarning("Connectivity test failed to reach download URI for mod {0} (version {1}).", modId,
-                release.Version);
-
-        return success;
-    }
-
-    private static ModReleaseInfo? TrySelectReleaseForConnectivityTest(ModDatabaseInfo info, string? desiredVersion)
-    {
-        if (!string.IsNullOrWhiteSpace(desiredVersion))
-        {
-            var trimmedVersion = desiredVersion.Trim();
-            var normalizedDesired = VersionStringUtility.Normalize(desiredVersion);
-
-            foreach (var release in info.Releases ?? Array.Empty<ModReleaseInfo>())
-            {
-                if (!string.IsNullOrWhiteSpace(release.Version)
-                    && string.Equals(release.Version.Trim(), trimmedVersion, StringComparison.OrdinalIgnoreCase))
-                    return release;
-
-                if (normalizedDesired is not null
-                    && !string.IsNullOrWhiteSpace(release.NormalizedVersion)
-                    && string.Equals(release.NormalizedVersion, normalizedDesired, StringComparison.OrdinalIgnoreCase))
-                    return release;
-            }
-        }
-
-        var releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
-
-        return info.LatestCompatibleRelease
-               ?? info.LatestRelease
-               ?? (releases.Count > 0 ? releases[0] : null);
-    }
-
-    private static async Task<bool> TryProbeModDownloadAsync(Uri downloadUri)
-    {
-        try
-        {
-            InternetAccessManager.ThrowIfInternetAccessDisabled();
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, downloadUri);
-            using var response = await ConnectivityTestHttpClient
-                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead)
-                .ConfigureAwait(true);
-
-            return response.IsSuccessStatusCode;
-        }
-        catch (HttpRequestException ex)
-        {
-            Trace.TraceWarning("Connectivity test download probe failed for {0}: {1}", downloadUri, ex.Message);
-            return false;
-        }
-        catch (TaskCanceledException ex)
-        {
-            Trace.TraceWarning("Connectivity test download probe timed out for {0}: {1}", downloadUri, ex.Message);
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Trace.TraceWarning("Connectivity test download probe encountered an unexpected error for {0}: {1}",
-                downloadUri, ex.Message);
             return false;
         }
     }
