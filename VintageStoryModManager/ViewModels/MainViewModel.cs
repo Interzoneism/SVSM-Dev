@@ -4410,11 +4410,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
                         {
                             viewModel.UpdateDatabaseInfo(preparedInfo, loadLogoImmediately);
-                            QueueLatestReleaseUserReportRefresh(viewModel);
+                            // Defer user report refresh to avoid cascading updates during bulk loading
+                            // The user report will be loaded on-demand when visible or when explicitly requested
                         }
                     },
                     CancellationToken.None,
-                    DispatcherPriority.ContextIdle)
+                    DispatcherPriority.Background)
                 .ConfigureAwait(false);
         }
         catch (TaskCanceledException)
