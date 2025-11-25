@@ -4424,7 +4424,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Pass the already-loaded cached info to avoid re-reading from disk
                 info = await _databaseService
                     .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
-                        _configuration.RequireExactVsVersionMatch, cachedInfo)
+                        _configuration.RequireExactVsVersionMatch, cachedInfo, CancellationToken.None)
                     .ConfigureAwait(false);
             }
             catch (Exception)

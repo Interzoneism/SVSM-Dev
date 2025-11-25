@@ -649,20 +649,27 @@ internal sealed class ModDatabaseCacheService
         var now = DateTime.UtcNow;
         DateTime? oldestTimestamp = null;
         string? oldestKey = null;
-        var expiredCount = 0;
+
+        // First pass: collect keys to remove (to avoid modifying while iterating)
+        var expiredKeys = new List<string>();
 
         foreach (var kvp in _inMemoryCache)
         {
             if (now - kvp.Value.CreatedUtc > InMemoryCacheMaxAge)
             {
-                _inMemoryCache.TryRemove(kvp.Key, out _);
-                expiredCount++;
+                expiredKeys.Add(kvp.Key);
             }
             else if (oldestTimestamp is null || kvp.Value.CreatedUtc < oldestTimestamp)
             {
                 oldestTimestamp = kvp.Value.CreatedUtc;
                 oldestKey = kvp.Key;
             }
+        }
+
+        // Second pass: remove expired entries
+        foreach (var key in expiredKeys)
+        {
+            _inMemoryCache.TryRemove(key, out _);
         }
 
         // If still over capacity after removing expired entries, remove oldest entry
@@ -682,15 +689,20 @@ internal sealed class ModDatabaseCacheService
         // Build the prefix once for comparison
         var prefix = cachePath + "|";
 
-        // Remove all entries with keys starting with the cache path
-        // This handles all version combinations for the same mod
-        // Using a single pass to collect and remove in one operation
+        // Collect keys to remove first (to avoid modifying while iterating)
+        var keysToRemove = new List<string>();
         foreach (var key in _inMemoryCache.Keys)
         {
             if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             {
-                _inMemoryCache.TryRemove(key, out _);
+                keysToRemove.Add(key);
             }
+        }
+
+        // Remove the collected keys
+        foreach (var key in keysToRemove)
+        {
+            _inMemoryCache.TryRemove(key, out _);
         }
     }
 }
