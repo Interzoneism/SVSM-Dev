@@ -717,6 +717,27 @@
                               IsCheckable="True"
                               Style="{StaticResource ToggleMenuItemStyle}"
                               Click="EnableServerOptionsMenuItem_OnClick" />
+                    <MenuItem Header="Enable logging for..."
+                              Padding="12,6">
+                        <MenuItem x:Name="LogModUpdateMenuItem"
+                                  Header="Mod update"
+                                  Height="35"
+                                  IsCheckable="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Click="LogModUpdateMenuItem_OnClick" />
+                        <MenuItem x:Name="LogModInstallMenuItem"
+                                  Header="Mod installation"
+                                  Height="35"
+                                  IsCheckable="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Click="LogModInstallMenuItem_OnClick" />
+                        <MenuItem x:Name="LogModDeletionMenuItem"
+                                  Header="Mod deletion"
+                                  Height="35"
+                                  IsCheckable="True"
+                                  Style="{StaticResource ToggleMenuItemStyle}"
+                                  Click="LogModDeletionMenuItem_OnClick" />
+                    </MenuItem>
                     <MenuItem Header="Scan for mod config files"
                               Padding="12,6"
                               Click="ScanForModConfigsMenuItem_OnClick" />
