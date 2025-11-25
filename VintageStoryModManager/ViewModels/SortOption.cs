@@ -50,8 +50,8 @@ public sealed class SortOption
         {
             var viewSort = viewSorts[i];
             var targetSort = _sorts[i];
-            if (!string.Equals(viewSort.PropertyName, targetSort.Property, StringComparison.Ordinal) 
-                || viewSort.Direction != targetSort.Direction)
+            var propertyMismatch = !string.Equals(viewSort.PropertyName, targetSort.Property, StringComparison.Ordinal);
+            if (propertyMismatch || viewSort.Direction != targetSort.Direction)
                 return false;
         }
 
