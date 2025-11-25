@@ -68,6 +68,9 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _userReportTooltip;
     private string? _versionWarningMessage;
     
+    // Cached tag display string to avoid repeated string.Join allocations
+    private string? _cachedDatabaseTagsDisplay;
+    
     // Property change batching support
     private int _propertyChangeSuspendCount;
     private readonly HashSet<string> _pendingPropertyChanges = new();
@@ -235,7 +238,19 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public IReadOnlyList<string> DatabaseTags { get; private set; }
 
-    public string DatabaseTagsDisplay => DatabaseTags.Count == 0 ? "—" : string.Join(", ", DatabaseTags);
+    public string DatabaseTagsDisplay
+    {
+        get
+        {
+            var cached = _cachedDatabaseTagsDisplay;
+            if (cached is not null)
+                return cached;
+            
+            cached = DatabaseTags.Count == 0 ? "—" : string.Join(", ", DatabaseTags);
+            _cachedDatabaseTagsDisplay = cached;
+            return cached;
+        }
+    }
 
     public string? ModDatabaseAssetId { get; private set; }
 
@@ -943,6 +958,7 @@ public sealed class ModListItemViewModel : ObservableObject
             if (HasDifferentContent(DatabaseTags, tags))
             {
                 DatabaseTags = tags;
+                _cachedDatabaseTagsDisplay = null; // Invalidate display cache
                 OnPropertyChanged(nameof(DatabaseTags));
                 OnPropertyChanged(nameof(DatabaseTagsDisplay));
             }
@@ -1103,6 +1119,7 @@ public sealed class ModListItemViewModel : ObservableObject
         if (DatabaseTags.Count == 0) return;
 
         DatabaseTags = Array.Empty<string>();
+        _cachedDatabaseTagsDisplay = null; // Invalidate display cache
         OnPropertyChanged(nameof(DatabaseTags));
         OnPropertyChanged(nameof(DatabaseTagsDisplay));
     }
