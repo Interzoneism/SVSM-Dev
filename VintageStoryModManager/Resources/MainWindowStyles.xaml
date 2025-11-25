@@ -422,4 +422,17 @@
         <Setter Property="BorderThickness" Value="0" />
     </Style>
 
+    <!-- DataGrid column TextBlock styles -->
+    <Style x:Key="IMM.DataGridCenteredTextStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="IMM.DataGridCenteredCellStyle" TargetType="{x:Type DataGridCell}"
+           BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
 </ResourceDictionary>
