@@ -151,9 +151,16 @@ internal sealed class TagFilterService
 
         lock (_filterLock)
         {
-            var changed = _selectedInstalledTags.Contains(trimmed)
-                ? _selectedInstalledTags.Remove(trimmed)
-                : _selectedInstalledTags.Add(trimmed);
+            bool changed;
+            if (_selectedInstalledTags.Contains(trimmed))
+            {
+                changed = _selectedInstalledTags.Remove(trimmed);
+            }
+            else
+            {
+                // Add returns true if the item was not already present
+                changed = _selectedInstalledTags.Add(trimmed);
+            }
 
             if (changed)
                 IncrementVersion();
@@ -176,9 +183,16 @@ internal sealed class TagFilterService
 
         lock (_filterLock)
         {
-            var changed = _selectedModDatabaseTags.Contains(trimmed)
-                ? _selectedModDatabaseTags.Remove(trimmed)
-                : _selectedModDatabaseTags.Add(trimmed);
+            bool changed;
+            if (_selectedModDatabaseTags.Contains(trimmed))
+            {
+                changed = _selectedModDatabaseTags.Remove(trimmed);
+            }
+            else
+            {
+                // Add returns true if the item was not already present
+                changed = _selectedModDatabaseTags.Add(trimmed);
+            }
 
             if (changed)
                 IncrementVersion();
