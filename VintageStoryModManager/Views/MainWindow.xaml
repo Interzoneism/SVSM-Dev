@@ -1634,11 +1634,7 @@
                                     <DataGridTemplateColumn x:Name="ModDbInstalledColumn" Header="Installed" Width="85"
                                                             IsReadOnly="True">
                                         <DataGridTemplateColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}"
-                                                   BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                            </Style>
+                                            <StaticResource ResourceKey="IMM.DataGridCenteredCellStyle" />
                                         </DataGridTemplateColumn.CellStyle>
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
@@ -2185,40 +2181,15 @@
                                                                     Binding="{Binding UploaderDisplay}"
                                                                     Width="220"
                                                                     MinWidth="180"
-                                                                    IsReadOnly="True">
-                                                    <DataGridTextColumn.ElementStyle>
-                                                        <Style TargetType="{x:Type TextBlock}">
-                                                            <Setter Property="VerticalAlignment" Value="Center" />
-                                                            <Setter Property="TextAlignment" Value="Center" />
-                                                        </Style>
-                                                    </DataGridTextColumn.ElementStyle>
-                                                    <DataGridTextColumn.CellStyle>
-                                                        <Style TargetType="{x:Type DataGridCell}"
-                                                               BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                            <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                        </Style>
-                                                    </DataGridTextColumn.CellStyle>
-                                                </DataGridTextColumn>
+                                                                    IsReadOnly="True"
+                                                                    ElementStyle="{StaticResource IMM.DataGridCenteredTextStyle}"
+                                                                    CellStyle="{StaticResource IMM.DataGridCenteredCellStyle}" />
                                                 <DataGridTextColumn Header="Version"
                                                                     Width="120"
                                                                     Binding="{Binding Version, FallbackValue=—, TargetNullValue=—}"
-                                                                    IsReadOnly="True">
-                                                    <DataGridTextColumn.ElementStyle>
-                                                        <Style TargetType="{x:Type TextBlock}">
-                                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                                            <Setter Property="VerticalAlignment" Value="Center" />
-                                                            <Setter Property="TextAlignment" Value="Center" />
-                                                        </Style>
-                                                    </DataGridTextColumn.ElementStyle>
-                                                    <DataGridTextColumn.CellStyle>
-                                                        <Style TargetType="{x:Type DataGridCell}"
-                                                               BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                            <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                        </Style>
-                                                    </DataGridTextColumn.CellStyle>
-                                                </DataGridTextColumn>
+                                                                    IsReadOnly="True"
+                                                                    ElementStyle="{StaticResource IMM.DataGridCenteredTextStyle}"
+                                                                    CellStyle="{StaticResource IMM.DataGridCenteredCellStyle}" />
                                                 <DataGridTextColumn Header="VS Version"
                                                                     Width="120"
                                                                     Binding="{Binding GameVersionDisplay}"
@@ -2280,11 +2251,7 @@
                                                         </DataTemplate>
                                                     </DataGridTemplateColumn.CellTemplate>
                                                     <DataGridTemplateColumn.CellStyle>
-                                                        <Style TargetType="{x:Type DataGridCell}"
-                                                               BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                            <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                        </Style>
+                                                        <StaticResource ResourceKey="IMM.DataGridCenteredCellStyle" />
                                                     </DataGridTemplateColumn.CellStyle>
                                                 </DataGridTemplateColumn>
                                             </DataGrid.Columns>
@@ -2609,40 +2576,15 @@
                                                                     Binding="{Binding Uploader}"
                                                                     Width="220"
                                                                     MinWidth="180"
-                                                                    IsReadOnly="True">
-                                                    <DataGridTextColumn.ElementStyle>
-                                                        <Style TargetType="{x:Type TextBlock}">
-                                                            <Setter Property="VerticalAlignment" Value="Center" />
-                                                            <Setter Property="TextAlignment" Value="Center" />
-                                                        </Style>
-                                                    </DataGridTextColumn.ElementStyle>
-                                                    <DataGridTextColumn.CellStyle>
-                                                        <Style TargetType="{x:Type DataGridCell}"
-                                                               BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                            <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                        </Style>
-                                                    </DataGridTextColumn.CellStyle>
-                                                </DataGridTextColumn>
+                                                                    IsReadOnly="True"
+                                                                    ElementStyle="{StaticResource IMM.DataGridCenteredTextStyle}"
+                                                                    CellStyle="{StaticResource IMM.DataGridCenteredCellStyle}" />
                                                 <DataGridTextColumn Header="Version"
                                                                     Width="120"
                                                                     Binding="{Binding Version, FallbackValue=—, TargetNullValue=—}"
-                                                                    IsReadOnly="True">
-                                                    <DataGridTextColumn.ElementStyle>
-                                                        <Style TargetType="{x:Type TextBlock}">
-                                                            <Setter Property="HorizontalAlignment" Value="Center" />
-                                                            <Setter Property="VerticalAlignment" Value="Center" />
-                                                            <Setter Property="TextAlignment" Value="Center" />
-                                                        </Style>
-                                                    </DataGridTextColumn.ElementStyle>
-                                                    <DataGridTextColumn.CellStyle>
-                                                        <Style TargetType="{x:Type DataGridCell}"
-                                                               BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                            <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                        </Style>
-                                                    </DataGridTextColumn.CellStyle>
-                                                </DataGridTextColumn>
+                                                                    IsReadOnly="True"
+                                                                    ElementStyle="{StaticResource IMM.DataGridCenteredTextStyle}"
+                                                                    CellStyle="{StaticResource IMM.DataGridCenteredCellStyle}" />
                                                 <DataGridTextColumn Header="VS Version"
                                                                     Width="120"
                                                                     Binding="{Binding GameVersionDisplay}"
@@ -2704,11 +2646,7 @@
                                                         </DataTemplate>
                                                     </DataGridTemplateColumn.CellTemplate>
                                                     <DataGridTemplateColumn.CellStyle>
-                                                        <Style TargetType="{x:Type DataGridCell}"
-                                                               BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                            <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                        </Style>
+                                                        <StaticResource ResourceKey="IMM.DataGridCenteredCellStyle" />
                                                     </DataGridTemplateColumn.CellStyle>
                                                 </DataGridTemplateColumn>
                                             </DataGrid.Columns>
