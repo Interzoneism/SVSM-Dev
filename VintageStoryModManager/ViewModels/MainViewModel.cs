@@ -633,8 +633,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
             else
             {
-                // Debounce the installed mods search to reduce UI updates during typing
-                TriggerDebouncedInstalledModsSearch();
+                // Only refresh if the search filter state actually changed.
+                // This avoids unnecessary refreshes when clearing an already-empty search
+                // or during tab switches where the search text is cleared.
+                if (hadSearchTokens || hasSearchTokens)
+                    TriggerDebouncedInstalledModsSearch();
             }
         }
     }
