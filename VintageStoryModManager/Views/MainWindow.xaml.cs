@@ -12043,9 +12043,12 @@ public partial class MainWindow : Window
         var previousIsInstalled = ReferenceEquals(previousView, _viewModel.ModsView);
         var previousIsModDb = ReferenceEquals(previousView, _viewModel.SearchResultsView);
         var nextIsInstalled = ReferenceEquals(nextView, _viewModel.ModsView);
-        var nextIsModDb = ReferenceEquals(nextView, _viewModel.SearchResultsView);
 
-        return (previousIsInstalled && nextIsModDb) || (previousIsModDb && nextIsInstalled);
+        // When leaving the Installed mods tab, always clear selection
+        if (previousIsInstalled) return false;
+
+        // When coming back to Installed mods from ModDB, preserve selection
+        return previousIsModDb && nextIsInstalled;
     }
 
     private void AttachToModsView(ICollectionView? modsView, bool preserveState = false)
