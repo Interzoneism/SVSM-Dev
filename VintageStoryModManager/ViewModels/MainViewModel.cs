@@ -3328,29 +3328,46 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             if (cancellationToken.IsCancellationRequested) return;
 
+            // Load cached info for all entries in parallel
+            var cachedInfoTasks = entries
+                .Select(item => _databaseService.TryLoadCachedDatabaseInfoAsync(
+                    item.Entry.ModId, item.Entry.Version, InstalledGameVersion,
+                    _configuration.RequireExactVsVersionMatch, cancellationToken))
+                .ToList();
+
+            var cachedInfoResults = await Task.WhenAll(cachedInfoTasks).ConfigureAwait(false);
+
+            if (cancellationToken.IsCancellationRequested) return;
+
+            // Update entries and view models with cached info in a batched UI update
+            var updatesToApply = new List<(int Index, ModDatabaseInfo Info)>();
             for (var i = 0; i < entries.Count; i++)
             {
-                if (cancellationToken.IsCancellationRequested) return;
-
-                var entry = entries[i].Entry;
-                var cachedInfo = await _databaseService
-                    .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
-                        _configuration.RequireExactVsVersionMatch, cancellationToken)
-                    .ConfigureAwait(false);
-
+                var cachedInfo = cachedInfoResults[i];
                 if (cachedInfo is null) continue;
 
-                entry.UpdateDatabaseInfo(cachedInfo);
+                entries[i].Entry.UpdateDatabaseInfo(cachedInfo);
+                updatesToApply.Add((i, cachedInfo));
+            }
 
-                var capturedInfo = cachedInfo;
-                var viewModel = viewModels[i];
-
+            if (updatesToApply.Count > 0)
+            {
                 await InvokeOnDispatcherAsync(
-                        () => viewModel.UpdateDatabaseInfo(capturedInfo, false),
+                        () =>
+                        {
+                            foreach (var (index, info) in updatesToApply)
+                            {
+                                viewModels[index].UpdateDatabaseInfo(info, false);
+                            }
+                        },
                         cancellationToken)
                     .ConfigureAwait(false);
 
-                QueueLatestReleaseUserReportRefresh(viewModel);
+                // Queue user report refreshes after the batch UI update
+                foreach (var (index, _) in updatesToApply)
+                {
+                    QueueLatestReleaseUserReportRefresh(viewModels[index]);
+                }
             }
 
             if (cancellationToken.IsCancellationRequested) return;
@@ -4404,9 +4421,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ModDatabaseInfo? info;
             try
             {
+                // Pass the already-loaded cached info to avoid re-reading from disk
                 info = await _databaseService
                     .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
-                        _configuration.RequireExactVsVersionMatch)
+                        _configuration.RequireExactVsVersionMatch, cachedInfo, CancellationToken.None)
                     .ConfigureAwait(false);
             }
             catch (Exception)

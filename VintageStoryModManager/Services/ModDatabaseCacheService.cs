@@ -20,6 +20,18 @@ internal sealed class ModDatabaseCacheService
     private static readonly string AnyGameVersionToken = DevConfig.ModDatabaseAnyGameVersionToken;
     private static readonly TimeSpan CacheEntryMaxAge = TimeSpan.FromHours(12);
 
+    /// <summary>
+    ///     Maximum number of entries to keep in the in-memory cache.
+    ///     This is tuned to balance memory usage with cache hit rate.
+    /// </summary>
+    private const int MaxInMemoryCacheSize = 500;
+
+    /// <summary>
+    ///     How long an in-memory cache entry is valid before requiring disk re-read.
+    ///     This is shorter than disk cache expiry to catch file updates.
+    /// </summary>
+    private static readonly TimeSpan InMemoryCacheMaxAge = TimeSpan.FromMinutes(5);
+
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -28,6 +40,13 @@ internal sealed class ModDatabaseCacheService
     };
 
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _fileLocks = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    ///     In-memory cache to avoid repeated disk reads for the same mod.
+    ///     Key is the cache file path, value contains the cached data and metadata.
+    /// </summary>
+    private readonly ConcurrentDictionary<string, InMemoryCacheEntry> _inMemoryCache =
+        new(StringComparer.OrdinalIgnoreCase);
 
     internal static void ClearCacheDirectory()
     {
@@ -44,6 +63,15 @@ internal sealed class ModDatabaseCacheService
         }
     }
 
+    /// <summary>
+    ///     Clears the in-memory cache. Call this when the disk cache is cleared or when
+    ///     memory pressure is high.
+    /// </summary>
+    internal void ClearInMemoryCache()
+    {
+        _inMemoryCache.Clear();
+    }
+
     public async Task<ModDatabaseInfo?> TryLoadAsync(
         string modId,
         string? normalizedGameVersion,
@@ -53,11 +81,42 @@ internal sealed class ModDatabaseCacheService
         CancellationToken cancellationToken)
     {
         var cachePath = GetCacheFilePath(modId, normalizedGameVersion);
-        if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath)) return null;
+        if (string.IsNullOrWhiteSpace(cachePath)) return null;
+
+        // Build a cache key that includes version-specific parameters for lookup
+        var cacheKey = BuildInMemoryCacheKey(cachePath, installedModVersion, requireExactVersionMatch);
+
+        // Try to get from in-memory cache first
+        if (_inMemoryCache.TryGetValue(cacheKey, out var memoryEntry))
+        {
+            if (!IsInMemoryCacheEntryExpired(memoryEntry))
+            {
+                // Return cached result (which may be null if no disk cache existed)
+                return memoryEntry.Result;
+            }
+
+            // Entry expired, remove it
+            _inMemoryCache.TryRemove(cacheKey, out _);
+        }
+
+        // Check if file exists before acquiring lock
+        if (!File.Exists(cachePath))
+        {
+            // Cache the null result to avoid repeated file existence checks
+            TryAddToInMemoryCache(cacheKey, null);
+            return null;
+        }
 
         var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
         try
         {
+            // Double-check file exists after acquiring lock
+            if (!File.Exists(cachePath))
+            {
+                TryAddToInMemoryCache(cacheKey, null);
+                return null;
+            }
+
             await using FileStream stream = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var cached = await JsonSerializer
                 .DeserializeAsync<CachedModDatabaseInfo>(stream, SerializerOptions, cancellationToken)
@@ -66,7 +125,10 @@ internal sealed class ModDatabaseCacheService
             if (cached is null
                 || !IsSupportedSchemaVersion(cached.SchemaVersion)
                 || !IsGameVersionMatch(cached.GameVersion, normalizedGameVersion))
+            {
+                TryAddToInMemoryCache(cacheKey, null);
                 return null;
+            }
 
             if (IsCacheEntryExpired(cached.CachedUtc))
             {
@@ -74,13 +136,20 @@ internal sealed class ModDatabaseCacheService
                                              && !InternetAccessManager.IsInternetAccessDisabled;
 
                 if (!canRefreshExpiredEntry)
-                    return ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion,
+                {
+                    var result = ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion,
                         requireExactVersionMatch);
+                    TryAddToInMemoryCache(cacheKey, result);
+                    return result;
+                }
 
+                // Don't cache null when we're allowing refresh - caller will fetch fresh data
                 return null;
             }
 
-            return ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion, requireExactVersionMatch);
+            var info = ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion, requireExactVersionMatch);
+            TryAddToInMemoryCache(cacheKey, info);
+            return info;
         }
         catch (OperationCanceledException)
         {
@@ -158,6 +227,9 @@ internal sealed class ModDatabaseCacheService
                     if (File.Exists(tempPath)) File.Delete(tempPath);
                 }
             }
+
+            // Invalidate in-memory cache for this mod since we just updated the disk cache
+            InvalidateInMemoryCacheForMod(cachePath);
         }
         catch (OperationCanceledException)
         {
@@ -527,5 +599,110 @@ internal sealed class ModDatabaseCacheService
         public int? Downloads { get; init; }
 
         public DateTime? CreatedUtc { get; init; }
+    }
+
+    /// <summary>
+    ///     Represents an entry in the in-memory cache.
+    /// </summary>
+    private sealed class InMemoryCacheEntry
+    {
+        public required ModDatabaseInfo? Result { get; init; }
+        public required DateTime CreatedUtc { get; init; }
+    }
+
+    private static string BuildInMemoryCacheKey(string cachePath, string? installedModVersion, bool requireExactVersionMatch)
+    {
+        // Include version and match mode in the key since they affect the result
+        var normalizedVersion = string.IsNullOrWhiteSpace(installedModVersion) ? "_" : installedModVersion;
+        var matchMode = requireExactVersionMatch ? "e" : "p";
+        return $"{cachePath}|{normalizedVersion}|{matchMode}";
+    }
+
+    private static bool IsInMemoryCacheEntryExpired(InMemoryCacheEntry entry)
+    {
+        return DateTime.UtcNow - entry.CreatedUtc > InMemoryCacheMaxAge;
+    }
+
+    private void TryAddToInMemoryCache(string key, ModDatabaseInfo? result)
+    {
+        // Simple size limit enforcement: if at capacity, don't add new entries
+        // This is a basic approach; a more sophisticated LRU could be implemented if needed
+        if (_inMemoryCache.Count >= MaxInMemoryCacheSize)
+        {
+            // Evict oldest entries when at capacity
+            EvictOldestCacheEntries();
+        }
+
+        var entry = new InMemoryCacheEntry
+        {
+            Result = result,
+            CreatedUtc = DateTime.UtcNow
+        };
+
+        _inMemoryCache.TryAdd(key, entry);
+    }
+
+    private void EvictOldestCacheEntries()
+    {
+        // Remove expired entries first using a simple scan
+        // This is more efficient than sorting for the common case
+        var now = DateTime.UtcNow;
+        DateTime? oldestTimestamp = null;
+        string? oldestKey = null;
+
+        // First pass: collect keys to remove (to avoid modifying while iterating)
+        var expiredKeys = new List<string>();
+
+        foreach (var kvp in _inMemoryCache)
+        {
+            if (now - kvp.Value.CreatedUtc > InMemoryCacheMaxAge)
+            {
+                expiredKeys.Add(kvp.Key);
+            }
+            else if (oldestTimestamp is null || kvp.Value.CreatedUtc < oldestTimestamp)
+            {
+                oldestTimestamp = kvp.Value.CreatedUtc;
+                oldestKey = kvp.Key;
+            }
+        }
+
+        // Second pass: remove expired entries
+        foreach (var key in expiredKeys)
+        {
+            _inMemoryCache.TryRemove(key, out _);
+        }
+
+        // If still over capacity after removing expired entries, remove oldest entry
+        // This is a simple approach that removes one entry at a time
+        // The cache will naturally stay under limit with repeated calls
+        if (_inMemoryCache.Count >= MaxInMemoryCacheSize && oldestKey != null)
+        {
+            _inMemoryCache.TryRemove(oldestKey, out _);
+        }
+    }
+
+    /// <summary>
+    ///     Invalidates the in-memory cache entry for a specific mod when the disk cache is updated.
+    /// </summary>
+    private void InvalidateInMemoryCacheForMod(string cachePath)
+    {
+        // Build the prefix once for comparison
+        var prefix = cachePath + "|";
+
+        // Collect keys to remove first (to avoid modifying while iterating)
+        var keysToRemove = new List<string>();
+        foreach (var key in _inMemoryCache.Keys)
+        {
+            if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                keysToRemove.Add(key);
+            }
+        }
+
+        // Remove the collected keys
+        foreach (var key in keysToRemove)
+        {
+            _inMemoryCache.TryRemove(key, out _);
+        }
     }
 }

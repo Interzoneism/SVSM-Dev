@@ -149,7 +149,32 @@ public sealed class ModDatabaseService
 
         var normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
         return TryLoadDatabaseInfoAsyncCore(modId, modVersion, normalizedGameVersion, requireExactVersionMatch,
-            cancellationToken);
+            null, cancellationToken);
+    }
+
+    /// <summary>
+    ///     Loads database info for a mod, optionally using pre-loaded cached info to avoid double disk reads.
+    /// </summary>
+    /// <param name="modId">The mod ID to look up.</param>
+    /// <param name="modVersion">The installed mod version.</param>
+    /// <param name="installedGameVersion">The installed game version.</param>
+    /// <param name="requireExactVersionMatch">Whether to require exact version matching.</param>
+    /// <param name="preloadedCachedInfo">Previously loaded cached info to avoid re-reading from disk.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The database info, or null if not found.</returns>
+    public Task<ModDatabaseInfo?> TryLoadDatabaseInfoAsync(
+        string modId,
+        string? modVersion,
+        string? installedGameVersion,
+        bool requireExactVersionMatch,
+        ModDatabaseInfo? preloadedCachedInfo,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(modId)) return Task.FromResult<ModDatabaseInfo?>(null);
+
+        var normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
+        return TryLoadDatabaseInfoAsyncCore(modId, modVersion, normalizedGameVersion, requireExactVersionMatch,
+            preloadedCachedInfo, cancellationToken);
     }
 
     public Task<ModDatabaseInfo?> TryLoadCachedDatabaseInfoAsync(
@@ -216,11 +241,13 @@ public sealed class ModDatabaseService
         string? modVersion,
         string? normalizedGameVersion,
         bool requireExactVersionMatch,
+        ModDatabaseInfo? preloadedCachedInfo,
         CancellationToken cancellationToken)
     {
         var internetDisabled = InternetAccessManager.IsInternetAccessDisabled;
 
-        var cached = await CacheService
+        // Use preloaded cached info if available, otherwise load from disk
+        var cached = preloadedCachedInfo ?? await CacheService
             .TryLoadAsync(
                 modId,
                 normalizedGameVersion,
