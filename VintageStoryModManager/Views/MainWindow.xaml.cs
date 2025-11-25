@@ -283,6 +283,7 @@ public partial class MainWindow : Window
     private readonly ModDatabaseService _modDatabaseService = new();
     private readonly ModUpdateService _modUpdateService = new();
     private readonly DataBackupService _dataBackupService;
+    private readonly ModActivityLoggingService _modActivityLoggingService;
     private readonly Dictionary<ModListItemViewModel, PropertyChangedEventHandler> _selectedModPropertyHandlers = new();
 
     private readonly List<ModListItemViewModel> _selectedMods = new();
@@ -338,6 +339,7 @@ public partial class MainWindow : Window
 
         _userConfiguration = new UserConfigurationService();
         _dataBackupService = new DataBackupService(_userConfiguration.GetConfigurationDirectory());
+        _modActivityLoggingService = new ModActivityLoggingService(_userConfiguration);
 
         InitializeComponent();
 
@@ -357,6 +359,7 @@ public partial class MainWindow : Window
         AutomaticDataBackupsMenuItem.IsChecked = _userConfiguration.AutomaticDataBackupsEnabled;
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
+        UpdateLoggingMenuState();
 
         UpdateThemeMenuSelection(_userConfiguration.ColorTheme);
 
@@ -1490,6 +1493,40 @@ public partial class MainWindow : Window
         _userConfiguration.SetEnableServerOptions(menuItem.IsChecked);
         var isEnabled = _userConfiguration.EnableServerOptions;
         UpdateServerOptionsState(isEnabled);
+    }
+
+    private void LogModUpdateMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        _userConfiguration.SetLogModUpdates(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.LogModUpdates;
+    }
+
+    private void LogModInstallMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        _userConfiguration.SetLogModInstalls(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.LogModInstalls;
+    }
+
+    private void LogModDeletionMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        _userConfiguration.SetLogModDeletions(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.LogModDeletions;
+    }
+
+    private void UpdateLoggingMenuState()
+    {
+        if (LogModUpdateMenuItem is not null)
+            LogModUpdateMenuItem.IsChecked = _userConfiguration.LogModUpdates;
+        if (LogModInstallMenuItem is not null)
+            LogModInstallMenuItem.IsChecked = _userConfiguration.LogModInstalls;
+        if (LogModDeletionMenuItem is not null)
+            LogModDeletionMenuItem.IsChecked = _userConfiguration.LogModDeletions;
     }
 
     private void GenerateServerInstallMacroMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -4556,6 +4593,7 @@ public partial class MainWindow : Window
         }
 
         _userConfiguration.RemoveModConfigPath(mod.ModId, true);
+        _modActivityLoggingService.LogModDeletion(mod.DisplayName ?? mod.ModId ?? "Unknown");
         return true;
     }
 
@@ -4760,6 +4798,7 @@ public partial class MainWindow : Window
 
             var versionText = string.IsNullOrWhiteSpace(release.Version) ? string.Empty : $" {release.Version}";
             _viewModel?.ReportStatus($"Installed {mod.DisplayName}{versionText}.");
+            _modActivityLoggingService.LogModInstall(mod.DisplayName ?? mod.ModId ?? "Unknown", release.Version);
 
             await RefreshModsAsync().ConfigureAwait(true);
 
@@ -11766,6 +11805,7 @@ public partial class MainWindow : Window
 
         var versionSuffix = string.IsNullOrWhiteSpace(release.Version) ? string.Empty : $" {release.Version}";
         _viewModel.ReportStatus($"Installed {modId}{versionSuffix}.");
+        _modActivityLoggingService.LogModInstall(modId, release.Version);
 
         return new PresetModInstallResult(true, false, false, null);
     }
@@ -12743,9 +12783,15 @@ public partial class MainWindow : Window
 
                 requiresRefresh = true;
                 if (useModlistInstallUi)
+                {
                     CompleteModlistInstallStep($"Updated {displayName} to {release.Version}.");
+              _modActivityLoggingService.LogModUpdate(mod.DisplayName ?? mod.ModId ?? "Unknown", mod.Version, release.Version);
+                }
                 else
+                {
                     _viewModel.ReportStatus($"Updated {displayName} to {release.Version}.");
+              _modActivityLoggingService.LogModUpdate(mod.DisplayName ?? mod.ModId ?? "Unknown", mod.Version, release.Version);
+                }
                 await _viewModel.PreserveActivationStateAsync(mod.ModId ?? string.Empty, mod.Version, release.Version, mod.IsActive)
                     .ConfigureAwait(true);
                 var appliedChangelogEntries =
