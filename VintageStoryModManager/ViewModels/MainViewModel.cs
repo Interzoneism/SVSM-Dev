@@ -29,7 +29,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private const string TagsColumnName = "Tags";
     private const string UserReportsColumnName = "UserReports";
     private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
-    private static readonly TimeSpan InstalledModsSearchDebounce = TimeSpan.FromMilliseconds(150);
+    private static readonly TimeSpan InstalledModsSearchDebounceMin = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan InstalledModsSearchDebounceMax = TimeSpan.FromMilliseconds(300);
+    private const int LargeModListThreshold = 200;
+    private const int VeryLargeModListThreshold = 500;
     private static readonly TimeSpan BusyStateReleaseDelay = TimeSpan.FromMilliseconds(600);
     private static readonly TimeSpan FastCheckInterval = TimeSpan.FromMinutes(2);
     private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
@@ -801,7 +804,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsViewingCloudModlists));
         OnPropertyChanged(nameof(IsViewingInstalledMods));
         OnPropertyChanged(nameof(CurrentModsView));
-        
+
         // Defer non-critical property changes to avoid blocking UI thread during tab switch
         Application.Current?.Dispatcher.BeginInvoke(() =>
         {
@@ -1868,12 +1871,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             SelectedSortOption?.Apply(ModsView);
             ModsView.Refresh();
             await UpdateModsStateSnapshotAsync();
-            
+
             // Defer clearing IsLoadingMods until after any events from ModsView.Refresh() are processed.
             // This ensures the guard in ModsView_OnCollectionChanged works correctly during the critical
             // window when CollectionChanged events may be queued but not yet processed.
             await Application.Current.Dispatcher.InvokeAsync(
-                () => { }, 
+                () => { },
                 DispatcherPriority.Background);
         }
         catch (Exception ex)
@@ -1899,7 +1902,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // Initialize progress tracking
         LoadingProgress = 0;
         LoadingStatusText = "Discovering mods...";
-        
+
         var allEntries = new List<ModEntry>();
         var batchSize = InstalledModsIncrementalBatchSize;
         var processedCount = 0;
@@ -1912,27 +1915,27 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             foreach (var entry in batch)
             {
                 ResetCalculatedModState(entry);
-                if (previousEntries.TryGetValue(entry.SourcePath, out var previous)) 
+                if (previousEntries.TryGetValue(entry.SourcePath, out var previous))
                     CopyTransientModState(previous, entry);
                 allEntries.Add(entry);
             }
 
             processedCount += batch.Count;
-            
+
             // Update progress - we don't know total yet, so show a generic loading message
             LoadingStatusText = $"Loading mods... ({processedCount} found)";
-            
+
             // Yield to keep UI responsive
             await Task.Yield();
         }
 
         var entries = allEntries;
-        
+
         // Now we know the total, update status
         LoadingStatusText = $"Processing {entries.Count} mods...";
         LoadingProgress = 50; // Halfway through the process
 
-        if (entries.Count > 0) 
+        if (entries.Count > 0)
             await Task.Run(() => _discoveryService.ApplyLoadStatuses(entries)).ConfigureAwait(true);
 
         LoadingStatusText = $"Updating UI with {entries.Count} mods...";
@@ -1947,7 +1950,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             using (_mods.SuspendNotifications())
             {
                 _mods.Clear();
-                
+
                 foreach (var entry in entries)
                 {
                     _modEntriesBySourcePath[entry.SourcePath] = entry;
@@ -1969,7 +1972,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             UpdateLoadedModsStatus();
         }, CancellationToken.None).ConfigureAwait(true);
-        
+
         // Complete
         LoadingProgress = 100;
         LoadingStatusText = $"Loaded {entries.Count} mods";
@@ -5132,6 +5135,30 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Calculates an adaptive debounce delay based on the collection size.
+    /// Larger collections use longer delays to reduce CPU load during rapid typing.
+    /// </summary>
+    private TimeSpan CalculateAdaptiveSearchDebounce()
+    {
+        var modCount = _mods.Count;
+
+        if (modCount <= LargeModListThreshold)
+        {
+            return InstalledModsSearchDebounceMin;
+        }
+
+        // Scale linearly between min and max based on collection size
+        // At LargeModListThreshold (200) mods: min delay (100ms)
+        // At VeryLargeModListThreshold (500)+ mods: max delay (300ms)
+        var debounceRange = VeryLargeModListThreshold - LargeModListThreshold;
+        var scale = Math.Min(1.0, (modCount - LargeModListThreshold) / (double)debounceRange);
+        var delayMs = InstalledModsSearchDebounceMin.TotalMilliseconds +
+                      (InstalledModsSearchDebounceMax.TotalMilliseconds - InstalledModsSearchDebounceMin.TotalMilliseconds) * scale;
+
+        return TimeSpan.FromMilliseconds(delayMs);
+    }
+
     private void TriggerDebouncedInstalledModsSearch()
     {
         lock (_searchDebounceLock)
@@ -5143,17 +5170,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _pendingSearchCts?.Dispose();
             _pendingSearchCts = new CancellationTokenSource();
 
+            // Calculate adaptive debounce based on collection size
+            var debounceDelay = CalculateAdaptiveSearchDebounce();
+
             // Initialize or restart the debounce timer
             // Note: Pass null to callback as we check _pendingSearchCts inside the callback
             // instead of capturing it in a closure, which prevents stale CTS references
             if (_searchDebounceTimer == null)
             {
                 _searchDebounceTimer = new Timer(OnSearchDebounceTimerElapsed, null,
-                    InstalledModsSearchDebounce, Timeout.InfiniteTimeSpan);
+                    debounceDelay, Timeout.InfiniteTimeSpan);
             }
             else
             {
-                _searchDebounceTimer.Change(InstalledModsSearchDebounce, Timeout.InfiniteTimeSpan);
+                _searchDebounceTimer.Change(debounceDelay, Timeout.InfiniteTimeSpan);
             }
         }
     }
@@ -5186,11 +5216,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (!shouldExecute) return;
 
-        // Execute the search on the UI thread
+        // Execute the search on the UI thread using Input priority for better responsiveness
+        // Input priority ensures search results appear quickly while still yielding to rendering
         if (Application.Current?.Dispatcher is { } dispatcher)
         {
-            dispatcher.BeginInvoke(new Action(() => RefreshModsViewIfNotCancelled(cts)), 
-                DispatcherPriority.Background);
+            dispatcher.BeginInvoke(new Action(() => RefreshModsViewIfNotCancelled(cts)),
+                DispatcherPriority.Input);
         }
         else
         {
