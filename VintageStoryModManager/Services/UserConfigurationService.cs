@@ -173,6 +173,12 @@ public sealed class UserConfigurationService
 
     public bool EnableServerOptions { get; private set; }
 
+    public bool LogModUpdates { get; private set; }
+
+    public bool LogModInstalls { get; private set; }
+
+    public bool LogModDeletions { get; private set; }
+
     public bool AutomaticDataBackupsEnabled { get; private set; }
 
     public bool AutomaticDataBackupsWarningAcknowledged { get; private set; }
@@ -987,6 +993,30 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetLogModUpdates(bool logModUpdates)
+    {
+        if (LogModUpdates == logModUpdates) return;
+
+        LogModUpdates = logModUpdates;
+        Save();
+    }
+
+    public void SetLogModInstalls(bool logModInstalls)
+    {
+        if (LogModInstalls == logModInstalls) return;
+
+        LogModInstalls = logModInstalls;
+        Save();
+    }
+
+    public void SetLogModDeletions(bool logModDeletions)
+    {
+        if (LogModDeletions == logModDeletions) return;
+
+        LogModDeletions = logModDeletions;
+        Save();
+    }
+
     public void SetAutomaticDataBackupsEnabled(bool isEnabled)
     {
         if (AutomaticDataBackupsEnabled == isEnabled) return;
@@ -1348,6 +1378,9 @@ public sealed class UserConfigurationService
             DisableInternetAccess = obj["disableInternetAccess"]?.GetValue<bool?>() ?? false;
             _isModUsageTrackingDisabled = obj["modUsageTrackingDisabled"]?.GetValue<bool?>() ?? false;
             EnableServerOptions = obj["enableServerOptions"]?.GetValue<bool?>() ?? false;
+            LogModUpdates = obj["logModUpdates"]?.GetValue<bool?>() ?? false;
+            LogModInstalls = obj["logModInstalls"]?.GetValue<bool?>() ?? false;
+            LogModDeletions = obj["logModDeletions"]?.GetValue<bool?>() ?? false;
             AutomaticDataBackupsEnabled = obj["automaticDataBackupsEnabled"]?.GetValue<bool?>() ?? false;
             AutomaticDataBackupsWarningAcknowledged =
                 obj["automaticDataBackupsWarningAcknowledged"]?.GetValue<bool?>() ?? false;
@@ -1510,6 +1543,9 @@ public sealed class UserConfigurationService
             DisableAutoRefreshWarningAcknowledged = false;
             DisableInternetAccess = false;
             EnableServerOptions = false;
+            LogModUpdates = false;
+            LogModInstalls = false;
+            LogModDeletions = false;
             AutomaticDataBackupsWarningAcknowledged = false;
             SuppressModlistSavePrompt = false;
             _suppressRefreshCachePrompt = false;
@@ -1574,6 +1610,9 @@ public sealed class UserConfigurationService
                 ["disableInternetAccess"] = DisableInternetAccess,
                 ["modUsageTrackingDisabled"] = _isModUsageTrackingDisabled,
                 ["enableServerOptions"] = EnableServerOptions,
+                ["logModUpdates"] = LogModUpdates,
+                ["logModInstalls"] = LogModInstalls,
+                ["logModDeletions"] = LogModDeletions,
                 ["automaticDataBackupsEnabled"] = AutomaticDataBackupsEnabled,
                 ["automaticDataBackupsWarningAcknowledged"] = AutomaticDataBackupsWarningAcknowledged,
                 ["suppressModlistSavePrompt"] = SuppressModlistSavePrompt,
