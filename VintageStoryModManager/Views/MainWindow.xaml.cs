@@ -12619,6 +12619,11 @@ public partial class MainWindow : Window
         _isModUpdateInProgress = true;
         UpdateSelectedModButtons();
 
+        // Use the modlist install overlay UI for bulk updates when no custom progress factory is provided
+        var useModlistInstallUi = isBulk && progressFactory is null;
+        if (useModlistInstallUi)
+            BeginModlistInstallUi(mods.Count, "Updating mods...");
+
         try
         {
             var results = new List<ModUpdateOperationResult>();
@@ -12628,6 +12633,7 @@ public partial class MainWindow : Window
 
             foreach (var mod in mods)
             {
+                var displayName = mod.DisplayName ?? mod.ModId ?? "Mod";
                 ModReleaseInfo? overrideRelease = null;
                 var hasOverride = releaseOverrides != null
                                   && releaseOverrides.TryGetValue(mod, out overrideRelease);
@@ -12643,6 +12649,8 @@ public partial class MainWindow : Window
                     requiresRefresh = true;
                     if (completionCallback != null && hasOverride && overrideRelease != null)
                         completionCallback(mod, overrideRelease, new ModUpdateResult(false, message));
+                    if (useModlistInstallUi)
+                        CompleteModlistInstallStep($"{displayName}: {message}");
                     continue;
                 }
 
@@ -12680,6 +12688,8 @@ public partial class MainWindow : Window
                         results.Add(ModUpdateOperationResult.Failure(mod, failureMessage));
                         requiresRefresh = true;
                         completionCallback?.Invoke(mod, release, new ModUpdateResult(false, failureMessage));
+                        if (useModlistInstallUi)
+                            CompleteModlistInstallStep($"{displayName}: {failureMessage}");
                         continue;
                     }
 
@@ -12688,8 +12698,8 @@ public partial class MainWindow : Window
                 }
 
                 var descriptor = new ModUpdateDescriptor(
-                    mod.ModId ?? mod.DisplayName ?? "Mod",
-                    mod.DisplayName ?? mod.ModId ?? "Mod",
+                    mod.ModId ?? displayName,
+                    displayName,
                     release.DownloadUri,
                     targetPath,
                     targetIsDirectory,
@@ -12700,8 +12710,16 @@ public partial class MainWindow : Window
                     ExistingPath = existingPath
                 };
 
-                var additionalProgress = progressFactory?.Invoke(mod, release);
-                var progress = CreateModUpdateProgressReporter(mod.DisplayName ?? mod.ModId ?? "Mod", additionalProgress);
+                IProgress<ModUpdateProgress>? progress;
+                if (useModlistInstallUi)
+                {
+                    progress = CreateModlistInstallProgressReporter(displayName);
+                }
+                else
+                {
+                    var additionalProgress = progressFactory?.Invoke(mod, release);
+                    progress = CreateModUpdateProgressReporter(displayName, additionalProgress);
+                }
 
                 var updateResult = await _modUpdateService
                     .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
@@ -12714,14 +12732,20 @@ public partial class MainWindow : Window
                     var failureMessage = string.IsNullOrWhiteSpace(updateResult.ErrorMessage)
                         ? "The update failed."
                         : updateResult.ErrorMessage!;
-                    _viewModel.ReportStatus($"Failed to update {mod.DisplayName}: {failureMessage}", true);
+                    if (useModlistInstallUi)
+                        CompleteModlistInstallStep($"{displayName}: {failureMessage}");
+                    else
+                        _viewModel.ReportStatus($"Failed to update {displayName}: {failureMessage}", true);
                     results.Add(ModUpdateOperationResult.Failure(mod, failureMessage));
                     requiresRefresh = true;
                     continue;
                 }
 
                 requiresRefresh = true;
-                _viewModel.ReportStatus($"Updated {mod.DisplayName} to {release.Version}.");
+                if (useModlistInstallUi)
+                    CompleteModlistInstallStep($"Updated {displayName} to {release.Version}.");
+                else
+                    _viewModel.ReportStatus($"Updated {displayName} to {release.Version}.");
                 await _viewModel.PreserveActivationStateAsync(mod.ModId ?? string.Empty, mod.Version, release.Version, mod.IsActive)
                     .ConfigureAwait(true);
                 var appliedChangelogEntries =
@@ -12745,7 +12769,8 @@ public partial class MainWindow : Window
                         MessageBoxImage.Error);
                 }
 
-            if (abortRequested) _viewModel.ReportStatus(isBulk ? "Bulk update cancelled." : "Update cancelled.");
+            if (abortRequested && !useModlistInstallUi)
+                _viewModel.ReportStatus(isBulk ? "Bulk update cancelled." : "Update cancelled.");
 
             if (results.Count > 0 && showSummary)
             {
@@ -12763,6 +12788,8 @@ public partial class MainWindow : Window
         }
         finally
         {
+            if (useModlistInstallUi)
+                EndModlistInstallUi();
             _isModUpdateInProgress = false;
             UpdateSelectedModButtons();
         }
