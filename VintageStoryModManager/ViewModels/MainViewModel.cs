@@ -32,6 +32,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan InstalledModsSearchDebounceMin = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan InstalledModsSearchDebounceMax = TimeSpan.FromMilliseconds(300);
     private const int LargeModListThreshold = 200;
+    private const int VeryLargeModListThreshold = 500;
     private static readonly TimeSpan BusyStateReleaseDelay = TimeSpan.FromMilliseconds(600);
     private static readonly TimeSpan FastCheckInterval = TimeSpan.FromMinutes(2);
     private static readonly int MaxConcurrentDatabaseRefreshes = DevConfig.MaxConcurrentDatabaseRefreshes;
@@ -5148,9 +5149,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         // Scale linearly between min and max based on collection size
-        // At 200 mods: min delay (100ms)
-        // At 500+ mods: max delay (300ms)
-        var scale = Math.Min(1.0, (modCount - LargeModListThreshold) / 300.0);
+        // At LargeModListThreshold (200) mods: min delay (100ms)
+        // At VeryLargeModListThreshold (500)+ mods: max delay (300ms)
+        var debounceRange = VeryLargeModListThreshold - LargeModListThreshold;
+        var scale = Math.Min(1.0, (modCount - LargeModListThreshold) / (double)debounceRange);
         var delayMs = InstalledModsSearchDebounceMin.TotalMilliseconds +
                       (InstalledModsSearchDebounceMax.TotalMilliseconds - InstalledModsSearchDebounceMin.TotalMilliseconds) * scale;
 

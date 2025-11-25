@@ -24,13 +24,17 @@ internal sealed class TagFilterService
 
     /// <summary>
     ///     Cached array of selected installed tags for efficient filtering.
-    ///     Updated when selection changes to avoid array allocation per filter call.
+    ///     Updated atomically under _filterLock when selection changes.
+    ///     Readers access this without locking (volatile ensures visibility).
+    ///     The array is immutable once published, providing thread-safe reads.
     /// </summary>
     private volatile IReadOnlyList<string> _cachedSelectedInstalledTags = Array.Empty<string>();
 
     /// <summary>
     ///     Cached array of selected mod database tags for efficient filtering.
-    ///     Updated when selection changes to avoid array allocation per filter call.
+    ///     Updated atomically under _filterLock when selection changes.
+    ///     Readers access this without locking (volatile ensures visibility).
+    ///     The array is immutable once published, providing thread-safe reads.
     /// </summary>
     private volatile IReadOnlyList<string> _cachedSelectedModDatabaseTags = Array.Empty<string>();
 
