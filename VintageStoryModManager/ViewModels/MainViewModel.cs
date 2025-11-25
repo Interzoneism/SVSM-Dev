@@ -48,6 +48,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly object _fastCheckTimerLock = new();
     private readonly object _searchDebounceLock = new();
     private readonly HashSet<ModListItemViewModel> _installedModSubscriptions = new();
+    private readonly TagCacheService _tagCache = new();
+    private readonly TagFilterService _tagFilterService;
     private readonly ObservableCollection<TagFilterOptionViewModel> _installedTagFilters = new();
     private readonly Dictionary<string, string> _latestReleaseUserReportEtags = new(StringComparer.OrdinalIgnoreCase);
     private readonly RelayCommand _loadMoreModDatabaseResultsCommand;
@@ -67,8 +69,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly int _newModsRecentMonths;
     private readonly ObservableCollection<ModListItemViewModel> _searchResults = new();
     private readonly HashSet<ModListItemViewModel> _searchResultSubscriptions = new();
-    private readonly List<string> _selectedInstalledTags = new();
-    private readonly List<string> _selectedModDatabaseTags = new();
+    // Tag filtering is now handled by _tagFilterService
     private readonly ClientSettingsStore _settingsStore;
     private readonly RelayCommand _showActivitySortingOptionsCommand;
     private readonly RelayCommand _showCloudModlistsCommand;
@@ -126,7 +127,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _isTagsColumnVisible = true;
     private ModDatabaseAutoLoadMode _lastActivityAutoLoadMode = ModDatabaseAutoLoadMode.RecentlyAdded;
     private ModDatabaseAutoLoadMode _lastDownloadsAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
-    private IReadOnlyList<string> _modDatabaseAvailableTags = Array.Empty<string>();
+    // _modDatabaseAvailableTags is now managed by _tagFilterService
     private int _modDatabaseCurrentResultLimit;
     private CancellationTokenSource? _modDatabaseSearchCts;
     private IDisposable? _modDetailsBusyScope;
@@ -168,6 +169,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         PerformClientSettingsCleanupIfNeeded();
         _discoveryService = new ModDiscoveryService(_settingsStore);
         _databaseService = new ModDatabaseService();
+        _tagFilterService = new TagFilterService(_tagCache);
         _modDatabaseSearchResultLimit = Math.Clamp(modDatabaseSearchResultLimit, 1, MaxModDatabaseResultLimit);
         _modDatabaseCurrentResultLimit = _modDatabaseSearchResultLimit;
         _modDatabaseFetchLimitOptions = new ObservableCollection<int> { 30, 60, 120, 200 };
@@ -2195,15 +2197,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 yield return mod;
     }
 
-    private static IEnumerable<string> EnumerateModTags(IEnumerable<ModListItemViewModel> mods)
-    {
-        foreach (var mod in mods)
-        {
-            if (mod.DatabaseTags is not { Count: > 0 } tags) continue;
-
-            foreach (var tag in tags) yield return tag;
-        }
-    }
+    // EnumerateModTags logic is now handled by TagFilterService.UpdateInstalledAvailableTagsFromMods
 
     private void AttachInstalledMod(ModListItemViewModel mod)
     {
@@ -2680,13 +2674,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             try
             {
-                var tagSnapshot = EnumerateModTags(_mods).ToList();
-                var selectedSnapshot = _selectedInstalledTags.ToList();
-                var normalized = await Task.Run(() => NormalizeAndSortTags(tagSnapshot.Concat(selectedSnapshot)))
-                    .ConfigureAwait(false);
+                // Update tag filter service on background thread
+                await Task.Run(() =>
+                {
+                    _tagFilterService.UpdateInstalledAvailableTagsFromMods(_mods);
+                }).ConfigureAwait(false);
 
                 await InvokeOnDispatcherAsync(
-                        () => ApplyInstalledTagFilters(normalized),
+                        () => ApplyInstalledTagFilters(_tagFilterService.GetInstalledAvailableTags()),
                         CancellationToken.None,
                         DispatcherPriority.ContextIdle)
                     .ConfigureAwait(false);
@@ -2719,15 +2714,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             try
             {
-                var existing = _modDatabaseAvailableTags;
-                var tagSnapshot = EnumerateModTags(_searchResults).ToList();
-                var selectedSnapshot = _selectedModDatabaseTags.ToList();
-                var normalized = await Task
-                    .Run(() => NormalizeAndSortTags(existing.Concat(tagSnapshot).Concat(selectedSnapshot)))
-                    .ConfigureAwait(false);
+                // Update tag filter service on background thread
+                await Task.Run(() =>
+                {
+                    _tagFilterService.UpdateModDatabaseAvailableTagsFromMods(_searchResults);
+                }).ConfigureAwait(false);
 
                 await InvokeOnDispatcherAsync(
-                        () => ApplyNormalizedModDatabaseAvailableTags(normalized),
+                        () => ApplyNormalizedModDatabaseAvailableTags(_tagFilterService.GetModDatabaseAvailableTags()),
                         CancellationToken.None,
                         DispatcherPriority.ContextIdle)
                     .ConfigureAwait(false);
@@ -2752,8 +2746,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (!_isTagsColumnVisible) return;
 
-        var normalized = NormalizeAndSortTags(tags.Concat(_selectedInstalledTags));
-        ApplyInstalledTagFilters(normalized);
+        _tagFilterService.SetInstalledAvailableTags(tags.Concat(_tagFilterService.GetSelectedInstalledTags()));
+        ApplyInstalledTagFilters(_tagFilterService.GetInstalledAvailableTags());
     }
 
     private void ApplyInstalledTagFilters(IReadOnlyList<string> normalized)
@@ -2767,10 +2761,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             _installedTagFilters.Clear();
 
-            var selected = new HashSet<string>(_selectedInstalledTags, StringComparer.OrdinalIgnoreCase);
             foreach (var tag in normalized)
             {
-                var isSelected = selected.Contains(tag);
+                var isSelected = _tagFilterService.IsInstalledTagSelected(tag);
                 var option = new TagFilterOptionViewModel(tag, isSelected);
                 option.PropertyChanged += OnInstalledTagFilterPropertyChanged;
                 _installedTagFilters.Add(option);
@@ -2781,7 +2774,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _suppressInstalledTagFilterSelectionChanges = false;
         }
 
-        SyncSelectedTags(_installedTagFilters, _selectedInstalledTags);
+        SyncSelectedTagsToService(_installedTagFilters, isInstalled: true);
         UpdateHasSelectedTags();
         ModsView.Refresh();
     }
@@ -2790,8 +2783,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (!_isTagsColumnVisible) return;
 
-        var normalized = NormalizeAndSortTags(tags.Concat(_selectedModDatabaseTags));
-        ApplyModDatabaseTagFilters(normalized);
+        _tagFilterService.SetModDatabaseAvailableTags(tags.Concat(_tagFilterService.GetSelectedModDatabaseTags()));
+        ApplyModDatabaseTagFilters(_tagFilterService.GetModDatabaseAvailableTags());
     }
 
     private void ApplyModDatabaseTagFilters(IReadOnlyList<string> normalized)
@@ -2806,10 +2799,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             _modDatabaseTagFilters.Clear();
 
-            var selected = new HashSet<string>(_selectedModDatabaseTags, StringComparer.OrdinalIgnoreCase);
             foreach (var tag in normalized)
             {
-                var isSelected = selected.Contains(tag);
+                var isSelected = _tagFilterService.IsModDatabaseTagSelected(tag);
                 var option = new TagFilterOptionViewModel(tag, isSelected);
                 option.PropertyChanged += OnModDatabaseTagFilterPropertyChanged;
                 _modDatabaseTagFilters.Add(option);
@@ -2820,7 +2812,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _suppressModDatabaseTagFilterSelectionChanges = false;
         }
 
-        SyncSelectedTags(_modDatabaseTagFilters, _selectedModDatabaseTags);
+        SyncSelectedTagsToService(_modDatabaseTagFilters, isInstalled: false);
         UpdateHasSelectedTags();
     }
 
@@ -2828,25 +2820,28 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (!_isTagsColumnVisible) return;
 
-        var normalized = NormalizeAndSortTags(tags.Concat(_selectedModDatabaseTags));
-        ApplyNormalizedModDatabaseAvailableTags(normalized);
+        _tagFilterService.SetModDatabaseAvailableTags(tags.Concat(_tagFilterService.GetSelectedModDatabaseTags()));
+        ApplyNormalizedModDatabaseAvailableTags(_tagFilterService.GetModDatabaseAvailableTags());
     }
 
     private void ApplyNormalizedModDatabaseAvailableTags(IReadOnlyList<string> normalized)
     {
         if (!_isTagsColumnVisible) return;
 
-        if (TagListsEqual(_modDatabaseAvailableTags, normalized)) return;
+        // Check if the new normalized list differs from the current available tags
+        var current = _tagFilterService.GetModDatabaseAvailableTags();
+        if (TagListsEqual(current, normalized)) return;
 
-        _modDatabaseAvailableTags = normalized;
-        ApplyModDatabaseTagFilters(_modDatabaseAvailableTags);
+        _tagFilterService.SetModDatabaseAvailableTags(normalized);
+        ApplyModDatabaseTagFilters(_tagFilterService.GetModDatabaseAvailableTags());
     }
 
     private void UpdateModDatabaseAvailableTagsFromViewModels()
     {
         if (!_isTagsColumnVisible) return;
 
-        ApplyModDatabaseAvailableTags(_modDatabaseAvailableTags.Concat(EnumerateModTags(_searchResults)));
+        _tagFilterService.UpdateModDatabaseAvailableTagsFromMods(_searchResults);
+        ApplyModDatabaseTagFilters(_tagFilterService.GetModDatabaseAvailableTags());
     }
 
     private void OnInstalledTagFilterPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -2856,7 +2851,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (!string.Equals(e.PropertyName, nameof(TagFilterOptionViewModel.IsSelected),
                 StringComparison.Ordinal)) return;
 
-        if (SyncSelectedTags(_installedTagFilters, _selectedInstalledTags))
+        if (SyncSelectedTagsToService(_installedTagFilters, isInstalled: true))
         {
             UpdateHasSelectedTags();
             ModsView.Refresh();
@@ -2870,30 +2865,28 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (!string.Equals(e.PropertyName, nameof(TagFilterOptionViewModel.IsSelected),
                 StringComparison.Ordinal)) return;
 
-        if (SyncSelectedTags(_modDatabaseTagFilters, _selectedModDatabaseTags))
+        if (SyncSelectedTagsToService(_modDatabaseTagFilters, isInstalled: false))
         {
             UpdateHasSelectedTags();
             TriggerModDatabaseSearch();
         }
     }
 
-    private static bool SyncSelectedTags(IEnumerable<TagFilterOptionViewModel> filters, List<string> target)
+    private bool SyncSelectedTagsToService(IEnumerable<TagFilterOptionViewModel> filters, bool isInstalled)
     {
         var newSelection = filters
             .Where(filter => filter.IsSelected)
             .Select(filter => filter.Name)
             .ToList();
 
-        if (TagListsEqual(target, newSelection)) return false;
-
-        target.Clear();
-        target.AddRange(newSelection);
-        return true;
+        return isInstalled
+            ? _tagFilterService.SetSelectedInstalledTags(newSelection)
+            : _tagFilterService.SetSelectedModDatabaseTags(newSelection);
     }
 
     private void UpdateHasSelectedTags()
     {
-        HasSelectedTags = _selectedInstalledTags.Count > 0 || _selectedModDatabaseTags.Count > 0;
+        HasSelectedTags = _tagFilterService.HasSelectedTags;
     }
 
     private static List<string> NormalizeAndSortTags(IEnumerable<string> tags)
@@ -2932,9 +2925,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private IReadOnlyList<string> GetSelectedModDatabaseTagsSnapshot()
     {
-        if (_selectedModDatabaseTags.Count == 0) return Array.Empty<string>();
-
-        return _selectedModDatabaseTags.ToArray();
+        return _tagFilterService.GetSelectedModDatabaseTags();
     }
 
     private static IReadOnlyList<string> CollectModDatabaseTags(IEnumerable<ModDatabaseSearchResult> results)
@@ -2951,71 +2942,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return result.Tags ?? Array.Empty<string>();
     }
 
-    private const int TagFilterLinearSearchThreshold = 3;
-    
-    private static bool ContainsAllTags(IEnumerable<string>? sourceTags, IReadOnlyList<string> requiredTags)
-    {
-        if (requiredTags.Count == 0) return true;
-
-        if (sourceTags is null) return false;
-
-        // Optimization: For a small number of required tags (1-3), use linear search
-        // to avoid HashSet allocation overhead. This is faster for the common case.
-        if (requiredTags.Count <= TagFilterLinearSearchThreshold)
-        {
-            // Use stack-allocated span to avoid heap allocation
-            Span<bool> foundTags = stackalloc bool[requiredTags.Count];
-            var foundCount = 0;
-
-            foreach (var tag in sourceTags)
-            {
-                if (string.IsNullOrWhiteSpace(tag)) continue;
-
-                var trimmed = tag.Trim();
-                if (trimmed.Length == 0) continue;
-
-                // Check if this tag matches any of the required tags
-                for (var i = 0; i < requiredTags.Count; i++)
-                {
-                    if (foundTags[i]) continue; // Already found this required tag
-
-                    if (string.Equals(trimmed, requiredTags[i], StringComparison.OrdinalIgnoreCase))
-                    {
-                        foundTags[i] = true;
-                        foundCount++;
-                        
-                        // Early exit if we've found all required tags
-                        if (foundCount == requiredTags.Count)
-                            return true;
-                        
-                        break; // Move to next source tag
-                    }
-                }
-            }
-
-            return foundCount == requiredTags.Count;
-        }
-
-        // For larger numbers of required tags, use HashSet for better performance
-        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var tag in sourceTags)
-        {
-            if (string.IsNullOrWhiteSpace(tag)) continue;
-
-            var trimmed = tag.Trim();
-            if (trimmed.Length == 0) continue;
-
-            set.Add(trimmed);
-        }
-
-        if (set.Count == 0) return false;
-
-        foreach (var required in requiredTags)
-            if (!set.Contains(required))
-                return false;
-
-        return true;
-    }
+    // ContainsAllTags logic is now handled by TagFilterService.PassesModDatabaseTagFilter
 
     private void TriggerModDatabaseSearch(bool preserveResultLimit = false)
     {
@@ -3201,7 +3128,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                 IReadOnlyList<ModDatabaseSearchResult> filteredResults = requiredTags.Count > 0
                     ? results
-                        .Where(result => ContainsAllTags(GetTagsForResult(result), requiredTags))
+                        .Where(result => _tagFilterService.PassesModDatabaseTagFilter(GetTagsForResult(result).ToList()))
                         .ToList()
                     : results.ToList();
 
@@ -3979,7 +3906,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (item is not ModListItemViewModel mod) return false;
 
-        if (_selectedInstalledTags.Count > 0 && !ContainsAllTags(mod.DatabaseTags, _selectedInstalledTags))
+        if (!_tagFilterService.PassesInstalledTagFilter(mod.DatabaseTags))
             return false;
 
         if (_searchTokens.Length == 0) return true;
