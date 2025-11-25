@@ -4180,7 +4180,7 @@
 
         <Border x:Name="DataBackupOverlay"
                 Grid.RowSpan="3"
-                Margin="0,0,0,8"
+                Margin="0,0,0,-8"
                 Background="#C0000000"
                 Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsDataBackupInProgress, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
                 IsHitTestVisible="True"
