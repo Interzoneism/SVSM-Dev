@@ -16,6 +16,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -327,6 +328,7 @@ public partial class MainWindow : Window
     private CloudModlistListEntry? _selectedCloudModlist;
     private ModListItemViewModel? _selectionAnchor;
     private bool _suppressSortPreferenceSave;
+    private CancellationTokenSource? _sortCts;
     private MainViewModel? _viewModel;
 
 
@@ -2255,7 +2257,7 @@ public partial class MainWindow : Window
         _selectedCloudModlist = null;
         UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
         AttachToModsView(_viewModel.CurrentModsView);
-        RestoreSortPreference();
+        _ = RestoreSortPreferenceAsync();
         UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
         ApplyColumnVisibilityPreferencesToViewModel();
     }
@@ -2265,14 +2267,21 @@ public partial class MainWindow : Window
         if (e.PropertyName == nameof(MainViewModel.SelectedSortOption))
         {
             if (_viewModel != null)
+            {
+                var suppressPreferenceSave = _suppressSortPreferenceSave;
                 Dispatcher.InvokeAsync(() =>
                 {
-                    if (_viewModel != null) UpdateSortPreferenceFromSelectedOption(!_suppressSortPreferenceSave);
+                    if (_viewModel != null) UpdateSortPreferenceFromSelectedOption(!suppressPreferenceSave);
                 }, DispatcherPriority.Background);
+            }
         }
         else if (e.PropertyName == nameof(MainViewModel.IsCompactView))
         {
             if (_viewModel != null) _userConfiguration.SetCompactViewMode(_viewModel.IsCompactView);
+        }
+        else if (e.PropertyName == nameof(MainViewModel.IsSorting))
+        {
+            Mouse.OverrideCursor = _viewModel?.IsSorting == true ? Cursors.Wait : null;
         }
         else if (e.PropertyName == nameof(MainViewModel.UseModDbDesignView))
         {
@@ -2645,7 +2654,7 @@ public partial class MainWindow : Window
         }, DispatcherPriority.Background);
     }
 
-    private void RestoreSortPreference()
+    private async Task RestoreSortPreferenceAsync()
     {
         var viewModel = _viewModel;
         if (viewModel is null) return;
@@ -2653,12 +2662,15 @@ public partial class MainWindow : Window
         var preference = _userConfiguration.GetModListSortPreference();
         var sortMemberPath = preference.SortMemberPath;
         if (!string.IsNullOrWhiteSpace(sortMemberPath))
-            ApplyModListSort(sortMemberPath, preference.Direction, false);
+            await ApplyModListSortAsync(sortMemberPath, preference.Direction, false);
         else
             UpdateSortPreferenceFromSelectedOption(false);
     }
 
-    private void ApplyModListSort(string sortMemberPath, ListSortDirection direction, bool persistPreference)
+    private async Task ApplyModListSortAsync(
+        string sortMemberPath,
+        ListSortDirection direction,
+        bool persistPreference)
     {
         if (_viewModel is null) return;
 
@@ -2674,10 +2686,10 @@ public partial class MainWindow : Window
             option = new SortOption(displayName, sorts);
         }
 
-        ApplySortOption(option, persistPreference);
+        await ApplySortOptionAsync(option, persistPreference);
     }
 
-    private void ApplySortOption(SortOption option, bool persistPreference)
+    private async Task ApplySortOptionAsync(SortOption option, bool persistPreference)
     {
         if (_viewModel is null) return;
 
@@ -2685,21 +2697,32 @@ public partial class MainWindow : Window
         var previousSuppression = _suppressSortPreferenceSave;
         _suppressSortPreferenceSave = !persistPreference;
 
+        var existingCts = Interlocked.Exchange(ref _sortCts, null);
+        existingCts?.Cancel();
+        existingCts?.Dispose();
+
+        var cts = new CancellationTokenSource();
+        _sortCts = cts;
+
         try
         {
-            if (changed)
-            {
-                _viewModel.SelectedSortOption = option;
-            }
-            else
-            {
-                option.Apply(_viewModel.ModsView);
-                UpdateSortPreferenceFromSelectedOption(persistPreference);
-            }
+            _viewModel.SelectedSortOption = option;
+            await _viewModel.ApplySortOptionAsync(cts.Token).ConfigureAwait(true);
+
+            if (!changed) UpdateSortPreferenceFromSelectedOption(persistPreference);
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+        {
+            // Ignore cancellations triggered by rapid re-sorting.
         }
         finally
         {
             _suppressSortPreferenceSave = previousSuppression;
+
+            if (ReferenceEquals(_sortCts, cts)) _sortCts = null;
+            cts.Dispose();
+
+            if (_viewModel?.IsSorting != true) Mouse.OverrideCursor = null;
         }
     }
 
@@ -3831,7 +3854,7 @@ public partial class MainWindow : Window
         return true;
     }
 
-    private void ModsDataGrid_OnSorting(object sender, DataGridSortingEventArgs e)
+    private async void ModsDataGrid_OnSorting(object sender, DataGridSortingEventArgs e)
     {
         if (_viewModel is null) return;
 
@@ -3854,7 +3877,7 @@ public partial class MainWindow : Window
             ? ListSortDirection.Descending
             : ListSortDirection.Ascending;
 
-        ApplyModListSort(sortMemberPath, direction, true);
+        await ApplyModListSortAsync(sortMemberPath, direction, true);
     }
 
     private void ModsDataGrid_OnSelectionChanged(object sender, SelectionChangedEventArgs e)

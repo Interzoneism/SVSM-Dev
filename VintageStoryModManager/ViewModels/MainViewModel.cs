@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Windows.Data;
@@ -82,6 +83,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly string _voteEtagCachePath;
     private readonly object _voteEtagPersistenceLock = new();
 
+    private readonly SemaphoreSlim _sortSemaphore = new(1, 1);
     private readonly SemaphoreSlim _userReportRefreshLimiter =
         new(MaxConcurrentUserReportRefreshes, MaxConcurrentUserReportRefreshes);
 
@@ -146,6 +148,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private int _updatableModsCount;
     private bool _useModDbDesignView;
     private ViewSection _viewSection = ViewSection.InstalledMods;
+    private bool _isSorting;
 
     public MainViewModel(
         string dataDirectory,
@@ -194,7 +197,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _sortOptions = new ObservableCollection<SortOption>(CreateSortOptions());
         SortOptions = new ReadOnlyObservableCollection<SortOption>(_sortOptions);
         SelectedSortOption = SortOptions.FirstOrDefault();
-        SelectedSortOption?.Apply(ModsView);
 
         _excludeInstalledModDatabaseResults = excludeInstalledModDatabaseResults;
         _onlyShowCompatibleModDatabaseResults = onlyShowCompatibleModDatabaseResults;
@@ -278,10 +280,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public SortOption? SelectedSortOption
     {
         get => _selectedSortOption;
-        set
-        {
-            if (SetProperty(ref _selectedSortOption, value)) value?.Apply(ModsView);
-        }
+        set => SetProperty(ref _selectedSortOption, value);
+    }
+
+    public bool IsSorting
+    {
+        get => _isSorting;
+        private set => SetProperty(ref _isSorting, value);
     }
 
     public bool IsBusy
@@ -726,6 +731,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _clientSettingsWatcher.Dispose();
         _modDetailsBusyScope?.Dispose();
         _modDetailsBusyScope = null;
+        _sortSemaphore.Dispose();
         _userReportRefreshLimiter.Dispose();
         _voteService.Dispose();
     }
@@ -1506,7 +1512,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         UpdateActiveCount();
-        SelectedSortOption?.Apply(ModsView);
+        await ApplySortOptionAsync(CancellationToken.None).ConfigureAwait(true);
         ModsView.Refresh();
         SetStatus($"Applied preset \"{preset.Name}\".", false);
         return true;
@@ -1642,7 +1648,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         UpdateActiveCount();
-        ReapplyActiveSortIfNeeded();
+        await ReapplyActiveSortIfNeededAsync(CancellationToken.None).ConfigureAwait(true);
         SetStatus(isActive ? $"Activated {mod.DisplayName}." : $"Deactivated {mod.DisplayName}.", false);
         return new ActivationResult(true, null);
     }
@@ -1778,7 +1784,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         TotalMods = _mods.Count;
         UpdateActiveCount();
-        SelectedSortOption?.Apply(ModsView);
+        await ApplySortOptionAsync(CancellationToken.None).ConfigureAwait(true);
         ModsView.Refresh();
         await UpdateModsStateSnapshotAsync().ConfigureAwait(true);
     }
@@ -1863,7 +1869,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             TotalMods = _mods.Count;
             UpdateActiveCount();
-            SelectedSortOption?.Apply(ModsView);
+            await ApplySortOptionAsync(CancellationToken.None).ConfigureAwait(true);
             ModsView.Refresh();
             await UpdateModsStateSnapshotAsync();
             
@@ -2045,9 +2051,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (modStatesChanged)
             {
                 UpdateActiveCount();
-                ReapplyActiveSortIfNeeded();
             }
         }, CancellationToken.None).ConfigureAwait(true);
+
+        if (modStatesChanged) await ReapplyActiveSortIfNeededAsync(CancellationToken.None).ConfigureAwait(true);
 
         return (true, modStatesChanged);
     }
@@ -4052,15 +4059,170 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             (nameof(ModListItemViewModel.NameSortKey), ListSortDirection.Ascending));
     }
 
-    private void ReapplyActiveSortIfNeeded()
+    public async Task ApplySortOptionAsync(CancellationToken cancellationToken)
+    {
+        var option = SelectedSortOption;
+        if (option is null) return;
+
+        var entered = false;
+
+        try
+        {
+            await _sortSemaphore.WaitAsync(cancellationToken).ConfigureAwait(true);
+            entered = true;
+
+            await InvokeOnDispatcherAsync(() => IsSorting = true, CancellationToken.None).ConfigureAwait(true);
+
+            var snapshot = await InvokeOnDispatcherAsync(
+                () => _mods.ToList(),
+                cancellationToken).ConfigureAwait(true);
+
+            var sortDescriptors = option.SortDescriptions;
+            List<ModListItemViewModel> sorted;
+
+            if (sortDescriptors.Count == 0 || snapshot.Count <= 1)
+            {
+                sorted = snapshot;
+            }
+            else
+            {
+                var descriptors = CreateSortDescriptors(sortDescriptors);
+
+                sorted = await Task
+                    .Run(() => SortModsSnapshot(snapshot, descriptors, cancellationToken), cancellationToken)
+                    .ConfigureAwait(true);
+
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            await InvokeOnDispatcherAsync(
+                () =>
+                {
+                    option.Apply(ModsView);
+                    ApplySortedOrder(_mods, sorted, cancellationToken);
+                },
+                cancellationToken).ConfigureAwait(true);
+        }
+        finally
+        {
+            if (entered) _sortSemaphore.Release();
+            await InvokeOnDispatcherAsync(() => IsSorting = false, CancellationToken.None).ConfigureAwait(true);
+        }
+    }
+
+    private async Task ReapplyActiveSortIfNeededAsync(CancellationToken cancellationToken)
     {
         if (SelectedSortOption?.SortDescriptions is not { Count: > 0 } sorts) return;
 
         var primary = sorts[0];
         if (!IsActiveSortProperty(primary.Property)) return;
 
-        SelectedSortOption.Apply(ModsView);
-        ModsView.Refresh();
+        await ApplySortOptionAsync(cancellationToken).ConfigureAwait(true);
+    }
+
+    private static IReadOnlyList<(PropertyDescriptor Property, ListSortDirection Direction)> CreateSortDescriptors(
+        IReadOnlyList<(string Property, ListSortDirection Direction)> sortDescriptions)
+    {
+        var properties = TypeDescriptor.GetProperties(typeof(ModListItemViewModel));
+        var descriptors = new List<(PropertyDescriptor Property, ListSortDirection Direction)>(sortDescriptions.Count);
+
+        foreach (var sort in sortDescriptions)
+        {
+            var descriptor = properties.Find(sort.Property, true);
+            if (descriptor != null) descriptors.Add((descriptor, sort.Direction));
+        }
+
+        return descriptors;
+    }
+
+    private static List<ModListItemViewModel> SortModsSnapshot(
+        IReadOnlyList<ModListItemViewModel> mods,
+        IReadOnlyList<(PropertyDescriptor Property, ListSortDirection Direction)> descriptors,
+        CancellationToken cancellationToken)
+    {
+        var ordered = mods.ToList();
+        if (ordered.Count <= 1 || descriptors.Count == 0) return ordered;
+
+        var comparer = new ModSortComparer(descriptors);
+        ordered.Sort(comparer);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return ordered;
+    }
+
+    private static void ApplySortedOrder(
+        IList<ModListItemViewModel> target,
+        IReadOnlyList<ModListItemViewModel> sorted,
+        CancellationToken cancellationToken)
+    {
+        var count = Math.Min(target.Count, sorted.Count);
+
+        for (var i = 0; i < count; i++)
+        {
+            if (cancellationToken.IsCancellationRequested) return;
+
+            var desired = sorted[i];
+            if (ReferenceEquals(target[i], desired)) continue;
+
+            var currentIndex = target.IndexOf(desired);
+            if (currentIndex >= 0)
+            {
+                target.Move(currentIndex, i);
+            }
+        }
+    }
+
+    private sealed class ModSortComparer : IComparer<ModListItemViewModel>
+    {
+        private readonly IReadOnlyList<(PropertyDescriptor Property, ListSortDirection Direction)> _descriptors;
+
+        public ModSortComparer(
+            IReadOnlyList<(PropertyDescriptor Property, ListSortDirection Direction)> descriptors)
+        {
+            _descriptors = descriptors;
+        }
+
+        public int Compare(ModListItemViewModel? x, ModListItemViewModel? y)
+        {
+            if (ReferenceEquals(x, y)) return 0;
+            if (x is null) return -1;
+            if (y is null) return 1;
+
+            foreach (var (property, direction) in _descriptors)
+            {
+                var left = property.GetValue(x);
+                var right = property.GetValue(y);
+                var result = ComparePropertyValues(left, right);
+                if (result == 0) continue;
+
+                return direction == ListSortDirection.Descending ? -result : result;
+            }
+
+            return 0;
+        }
+    }
+
+    private static int ComparePropertyValues(object? left, object? right)
+    {
+        if (ReferenceEquals(left, right)) return 0;
+        if (left is null) return -1;
+        if (right is null) return 1;
+
+        if (left is IComparable comparable)
+        {
+            try
+            {
+                return comparable.CompareTo(right);
+            }
+            catch
+            {
+                // Ignore comparer failures and fall back to string comparison.
+            }
+        }
+
+        var leftText = left?.ToString();
+        var rightText = right?.ToString();
+        return string.Compare(leftText, rightText, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsActiveSortProperty(string? propertyName)
