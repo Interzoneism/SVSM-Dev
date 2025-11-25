@@ -644,37 +644,33 @@ internal sealed class ModDatabaseCacheService
 
     private void EvictOldestCacheEntries()
     {
-        // Remove expired entries first
+        // Remove expired entries first using a simple scan
+        // This is more efficient than sorting for the common case
         var now = DateTime.UtcNow;
-        var keysToRemove = new List<string>();
+        DateTime? oldestTimestamp = null;
+        string? oldestKey = null;
+        var expiredCount = 0;
 
         foreach (var kvp in _inMemoryCache)
         {
             if (now - kvp.Value.CreatedUtc > InMemoryCacheMaxAge)
             {
-                keysToRemove.Add(kvp.Key);
+                _inMemoryCache.TryRemove(kvp.Key, out _);
+                expiredCount++;
             }
-        }
-
-        foreach (var key in keysToRemove)
-        {
-            _inMemoryCache.TryRemove(key, out _);
-        }
-
-        // If still over capacity, remove oldest entries until under 75% capacity
-        if (_inMemoryCache.Count >= MaxInMemoryCacheSize)
-        {
-            var targetCount = (int)(MaxInMemoryCacheSize * 0.75);
-            var sortedEntries = _inMemoryCache
-                .OrderBy(kvp => kvp.Value.CreatedUtc)
-                .Take(_inMemoryCache.Count - targetCount)
-                .Select(kvp => kvp.Key)
-                .ToList();
-
-            foreach (var key in sortedEntries)
+            else if (oldestTimestamp is null || kvp.Value.CreatedUtc < oldestTimestamp)
             {
-                _inMemoryCache.TryRemove(key, out _);
+                oldestTimestamp = kvp.Value.CreatedUtc;
+                oldestKey = kvp.Key;
             }
+        }
+
+        // If still over capacity after removing expired entries, remove oldest entry
+        // This is a simple approach that removes one entry at a time
+        // The cache will naturally stay under limit with repeated calls
+        if (_inMemoryCache.Count >= MaxInMemoryCacheSize && oldestKey != null)
+        {
+            _inMemoryCache.TryRemove(oldestKey, out _);
         }
     }
 
@@ -683,15 +679,18 @@ internal sealed class ModDatabaseCacheService
     /// </summary>
     private void InvalidateInMemoryCacheForMod(string cachePath)
     {
+        // Build the prefix once for comparison
+        var prefix = cachePath + "|";
+
         // Remove all entries with keys starting with the cache path
         // This handles all version combinations for the same mod
-        var keysToRemove = _inMemoryCache.Keys
-            .Where(k => k.StartsWith(cachePath + "|", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        foreach (var key in keysToRemove)
+        // Using a single pass to collect and remove in one operation
+        foreach (var key in _inMemoryCache.Keys)
         {
-            _inMemoryCache.TryRemove(key, out _);
+            if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                _inMemoryCache.TryRemove(key, out _);
+            }
         }
     }
 }
