@@ -5012,7 +5012,9 @@ public partial class MainWindow : Window
             [mod] = option.Release
         };
 
-        await UpdateModsAsync(new[] { mod }, false, overrides);
+        // Use isBulk=true to leverage the modlist install UI overlay for smooth progress feedback
+        // and to prevent UI freezing. Pass showSummary=false to skip the bulk changelog dialog.
+        await UpdateModsAsync(new[] { mod }, isBulk: true, overrides, showSummary: false);
     }
 
     private void SelectedModVersionComboBox_OnDropDownOpened(object sender, EventArgs e)
