@@ -1388,9 +1388,14 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         if (tokens.Count == 0) return true;
 
+        // Use ReadOnlySpan for more efficient substring searches
+        var searchIndexSpan = _searchIndex.AsSpan();
+        
         foreach (var token in tokens)
-            if (_searchIndex.IndexOf(token, StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            if (searchIndexSpan.IndexOf(token.AsSpan(), StringComparison.OrdinalIgnoreCase) < 0)
                 return false;
+        }
 
         return true;
     }
