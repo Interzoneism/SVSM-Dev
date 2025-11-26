@@ -3336,7 +3336,7 @@
                 </ui:ProgressRing.Style>
             </ui:ProgressRing>
         </Grid>
-        <Canvas x:Name="ModInfoOverlay" Grid.RowSpan="3" Panel.ZIndex="400">
+        <Canvas x:Name="ModInfoOverlay" Grid.RowSpan="3" Panel.ZIndex="400" d:IsHidden="True">
             <Border Background="{DynamicResource Brush.ModCard.Background.Active}" x:Name="MODINFO_border"
                     BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                     BorderThickness="0"
@@ -3642,7 +3642,7 @@
                 Background="#C0000000"
                 Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsModlistInstallInProgress, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
                 IsHitTestVisible="True"
-                Panel.ZIndex="5500">
+                Panel.ZIndex="5500" d:IsHidden="True">
             <Border HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
