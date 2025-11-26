@@ -435,4 +435,84 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
+    <!-- Add this style to MainWindowStyles.xaml, after the existing styles -->
+
+    <Style x:Key="IMM.ToggleCheckBoxStyle" TargetType="{x:Type CheckBox}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <Grid Background="Transparent">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock x:Name="CheckMark"
+                               Grid.Column="0"
+                               Margin="0,0,8,0"
+                               VerticalAlignment="Center"
+                               FontFamily="{TemplateBinding FontFamily}"
+                               FontSize="16"
+                               Foreground="{TemplateBinding Foreground}"
+                               Text="☐" />
+
+                        <ContentPresenter Grid.Column="1"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="Center"
+                                      RecognizesAccessKey="True" />
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="CheckMark" Property="Text" Value="🗹" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="False">
+                            <Setter TargetName="CheckMark" Property="Text" Value="☐" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Add this style to MainWindowStyles.xaml, after the existing styles -->
+
+    <Style x:Key="IMM.ToggleRadioButtonStyle" TargetType="{x:Type RadioButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RadioButton}">
+                    <Grid Background="Transparent">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock x:Name="RadioMark"
+                               Grid.Column="0"
+                               Margin="0,0,4,0"
+                               VerticalAlignment="Center"
+                               FontFamily="{TemplateBinding FontFamily}"
+                               FontSize="16"
+                               Foreground="{TemplateBinding Foreground}"
+                               Text="○" />
+
+                        <ContentPresenter Grid.Column="1"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="Center"
+                                      RecognizesAccessKey="True" />
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="RadioMark" Property="Text" Value="●" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="False">
+                            <Setter TargetName="RadioMark" Property="Text" Value="○" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

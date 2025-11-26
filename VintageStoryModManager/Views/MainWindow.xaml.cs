@@ -6114,6 +6114,7 @@ public partial class MainWindow : Window
         ClearSelection(true);
     }
 
+
     private void UpdateModlistLoadingUiState()
     {
         var isEnabled = !_isApplyingPreset;
@@ -6122,9 +6123,9 @@ public partial class MainWindow : Window
 
         if (LaunchGameButton != null) LaunchGameButton.IsEnabled = isEnabled;
 
-        if (ModDatabaseTabButton != null) ModDatabaseTabButton.IsEnabled = isEnabled;
+        //if (ModDatabaseTabButton != null) ModDatabaseTabButton.IsEnabled = isEnabled;
 
-        if (ModlistsTabButton != null) ModlistsTabButton.IsEnabled = isEnabled;
+        //if (ModlistsTabButton != null) ModlistsTabButton.IsEnabled = isEnabled;
 
         if (PresetsAndModlistsMenuItem != null) PresetsAndModlistsMenuItem.IsEnabled = isEnabled;
 

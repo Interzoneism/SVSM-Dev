@@ -657,8 +657,8 @@
                                                     AutomationProperties.Name="Clear search"
                                                     Visibility="{Binding DataContext.HasSearchText, RelativeSource={RelativeSource AncestorType=TextBox}, Converter={StaticResource IMM.BooleanToVisibilityConverter}}"
                                                     Command="{Binding DataContext.ClearSearchCommand, RelativeSource={RelativeSource AncestorType=TextBox}}">
-                                                <Path Width="12"
-                                                      Height="12"
+                                                <Path Width="10"
+                                                      Height="10"
                                                       Stretch="Uniform"
                                                       Stroke="{DynamicResource Brush.Text.Primary}"
                                                       StrokeThickness="1.6"
@@ -946,7 +946,7 @@
                 <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
                 <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Normal}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border.Default}" />
-                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="Padding" Value="10,4" />
                 <Setter Property="ui:ControlHelper.CornerRadius" Value="6" />
                 <Setter Property="Template">
