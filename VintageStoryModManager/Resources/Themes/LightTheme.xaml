@@ -243,6 +243,15 @@
     <!-- ===================== -->
     <SolidColorBrush x:Key="Brush.DataGrid.Background" Color="{StaticResource Palette.DataGrid.Background}" />
     <SolidColorBrush x:Key="Brush.ModTabs.Background" Color="{StaticResource Palette.DataGrid.Background}" />
+
+    <!-- ====================================== -->
+    <!-- Middle tab control header formatting. -->
+    <!-- ====================================== -->
+    <SolidColorBrush x:Key="Brush.MiddleTab.Background.Normal" Color="{StaticResource Palette.Panel.Secondary.Background.Solid}" />
+    <SolidColorBrush x:Key="Brush.MiddleTab.Background.Selected" Color="{StaticResource Palette.Panel.Primary.Background.Solid}" />
+    <SolidColorBrush x:Key="Brush.MiddleTab.Border.Normal" Color="{StaticResource Palette.Bevel.Shadow}" />
+    <SolidColorBrush x:Key="Brush.MiddleTab.Border.Selected" Color="{StaticResource Palette.Accent.Primary}" />
+
     <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Alternate" Color="{StaticResource Palette.DataGrid.Row.Background.Alternate}" />
     <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Hover" Color="{StaticResource Palette.DataGrid.Row.Background.Hover}" />
     <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Selected" Color="{StaticResource Palette.DataGrid.Row.Background.Selected}" />

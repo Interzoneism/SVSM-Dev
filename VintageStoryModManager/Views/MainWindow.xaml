@@ -466,7 +466,8 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <TabControl x:Name="MiddleTabControl" Margin="0,-6,0,0">
+            <TabControl x:Name="MiddleTabControl" Margin="0,-6,0,0"
+                        ItemContainerStyle="{StaticResource IMM.MiddleTabItemStyle}">
                 <TabItem x:Name="MainTab" Header="Installed mods">
                     <Grid x:Name="MainGrid" Margin="10,0,0,0" VerticalAlignment="Top">
                         <Grid.RowDefinitions>
@@ -481,47 +482,17 @@
 
                             <TextBox x:Name="MainSearch" MinWidth="200"
                                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                 FontSize="14" VerticalContentAlignment="Center" Margin="0,0,0,7" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Left">
-
-                                <TextBox.Style>
-                                    <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
-                                        <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search installed mods" />
-                                        <Setter Property="Visibility" Value="Visible" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                                <Setter Property="ui:ControlHelper.PlaceholderText"
-                                                    Value="Search Mod Database" />
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsViewingModlistTab}" Value="True">
-                                                <Setter Property="IsEnabled" Value="False" />
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                <Setter Property="ui:ControlHelper.PlaceholderText"
-                                                    Value="Cloud modlist search coming soon" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Style>
-                            </TextBox>
+                                 FontSize="14" VerticalContentAlignment="Center" Margin="0,0,0,7" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Left"
+                                 Style="{StaticResource IMM.SearchTextBoxStyle}"
+                                 ui:ControlHelper.PlaceholderText="Search installed mods" />
                             <Button Content="Refresh"
                                     Margin="0,0,0,7"
                                     ToolTip="Quickly refreshes the current view using cached data if no changes are detected on the online mod page."
                                     Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                                     BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                     Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                                    MinHeight="32" Grid.Column="1" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="82">
-                                <Button.Style>
-                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                        <Setter Property="Padding" Value="6,6,6,6" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsViewingMainTab}" Value="True">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+                                    MinHeight="32" Grid.Column="1" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="82"
+                                    Padding="6,6,6,6" />
                         </Grid>
                         <Border x:Name="MainBorder"
                         Margin="0,0,10,0"
@@ -530,7 +501,7 @@
                         BorderThickness="0,0,0,0"
                         CornerRadius="{Binding (ui:ControlHelper.CornerRadius), ElementName=ModsDataGrid}"
                         SnapsToDevicePixels="True"
-                        Visibility="{Binding IsViewingModlistTab, Converter={StaticResource IMM.VisibleWhenFalseConverter}}" Grid.Row="1">
+                        Grid.Row="1">
                             <DataGrid x:Name="ModsDataGrid"
                                       AutoGenerateColumns="False"
                                       CanUserAddRows="False"
@@ -563,7 +534,7 @@
                                       FontSize="15"
                                       Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                       BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                      IsEnabled="{Binding IsViewingMainTab}" Height="1018" VerticalAlignment="Bottom">
+                                      Height="1018" VerticalAlignment="Bottom">
                                 <DataGrid.Resources>
                                     <Style TargetType="{x:Type ScrollBar}"
                                            BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
@@ -575,9 +546,6 @@
                                     <Style TargetType="{x:Type DataGridColumnHeader}"
                                            BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
                                 </DataGrid.Resources>
-                                <DataGrid.Visibility>
-                                    <Binding Converter="{StaticResource IMM.HiddenWhenFalseConverter}" Path="IsViewingMainTab"/>
-                                </DataGrid.Visibility>
                                 <DataGrid.CellStyle>
                                     <StaticResource ResourceKey="IMM.DataGridCellBaseStyle" />
                                 </DataGrid.CellStyle>
@@ -1153,14 +1121,9 @@
                                 <Style TargetType="{x:Type TextBlock}">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding TotalMods}" Value="0" />
-                                                <Condition Binding="{Binding SearchModDatabase}" Value="False" />
-                                                <Condition Binding="{Binding IsViewingModlistTab}" Value="False" />
-                                            </MultiDataTrigger.Conditions>
+                                        <DataTrigger Binding="{Binding TotalMods}" Value="0">
                                             <Setter Property="Visibility" Value="Visible" />
-                                        </MultiDataTrigger>
+                                        </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </TextBlock.Style>
@@ -1223,28 +1186,15 @@
                                 </DataGrid.CellStyle>
                                 <DataGrid.Style>
                                     <Style TargetType="{x:Type DataGrid}">
-                                        <Setter Property="CanUserSortColumns" Value="True" />
+                                        <Setter Property="CanUserSortColumns" Value="False" />
                                         <Setter Property="IsEnabled" Value="True" />
                                         <Setter Property="Visibility" Value="Visible" />
 
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                                <Setter Property="CanUserSortColumns" Value="False" />
-                                                <Setter Property="Visibility" Value="Visible" />
-                                                <Setter Property="IsEnabled" Value="True" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsViewingModlistTab}" Value="True">
+                                            <DataTrigger Binding="{Binding UseModDbDesignView}" Value="True">
                                                 <Setter Property="Visibility" Value="Collapsed" />
                                                 <Setter Property="IsEnabled" Value="False" />
                                             </DataTrigger>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                                    <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                <Setter Property="IsEnabled" Value="False" />
-                                            </MultiDataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </DataGrid.Style>
@@ -1730,16 +1680,6 @@
                             </DataGrid>
                         </Border>
                         <Grid x:Name="DatabaseControls" Height="48" VerticalAlignment="Top" Margin="0,0,10,0" Grid.RowSpan="1" Grid.ColumnSpan="1">
-                            <Grid.Style>
-                                <Style TargetType="{x:Type Grid}">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Grid.Style>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" MinWidth="614" />
 
@@ -1901,28 +1841,9 @@
                             </StackPanel>
                             <TextBox x:Name="DatabaseSearch" MinWidth="200"
                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                FontSize="14" VerticalContentAlignment="Center" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Left" Grid.RowSpan="2" Margin="0,0,0,7">
-
-                                <TextBox.Style>
-                                    <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource IMM.SearchTextBoxStyle}">
-                                        <Setter Property="ui:ControlHelper.PlaceholderText" Value="Search Mod DB..." />
-                                        <Setter Property="Visibility" Value="Visible" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SearchModDatabase}" Value="True">
-                                                <Setter Property="ui:ControlHelper.PlaceholderText"
-                                                    Value="Search Mod Database" />
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsViewingModlistTab}" Value="True">
-                                                <Setter Property="IsEnabled" Value="False" />
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                <Setter Property="ui:ControlHelper.PlaceholderText"
-                                                    Value="Cloud modlist search coming soon" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Style>
-                            </TextBox>
+                                FontSize="14" VerticalContentAlignment="Center" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Left" Grid.RowSpan="2" Margin="0,0,0,7"
+                                Style="{StaticResource IMM.SearchTextBoxStyle}"
+                                ui:ControlHelper.PlaceholderText="Search Mod Database" />
                         </Grid>
                         <ListView x:Name="ModDatabaseCardsListView"
                       ItemsSource="{Binding CurrentModsView}"
@@ -1944,13 +1865,9 @@
                                 <Style TargetType="{x:Type ListView}">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                                <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
-                                            </MultiDataTrigger.Conditions>
+                                        <DataTrigger Binding="{Binding UseModDbDesignView}" Value="True">
                                             <Setter Property="Visibility" Value="Visible" />
-                                        </MultiDataTrigger>
+                                        </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </ListView.Style>
@@ -2303,7 +2220,7 @@
                     FontWeight="SemiBold" Height="25" VerticalAlignment="Bottom" Margin="0,-1.5,0,0">
                             <Button.Style>
                                 <Style TargetType="{x:Type Button}">
-                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Setter Property="Visibility" Value="Collapsed" />
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="{x:Type Button}">
@@ -2315,7 +2232,6 @@
                                     <Style.Triggers>
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding SearchModDatabase}" Value="True" />
                                                 <Condition Binding="{Binding IsLoadMoreModDatabaseButtonVisible}" Value="True" />
                                                 <Condition Binding="{Binding IsLoadMoreModDatabaseScrollThresholdReached}"
                                                Value="True" />
