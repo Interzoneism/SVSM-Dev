@@ -2809,9 +2809,6 @@
                                         </Border>
                                     </Grid>
                                 </Border>
-            <!-- ============================================================ -->
-            <!-- DATABASE TAB: Mod Database Cards View (Card Layout)          -->
-            <!-- ============================================================ -->
                             </Grid>
                         </TabItem>
                     </TabControl>
@@ -2819,6 +2816,9 @@
                 </Grid>
                 <!-- End: MODLIST TAB Container -->
             </Grid>
+            <!-- ============================================================ -->
+            <!-- DATABASE TAB: Mod Database Cards View (Card Layout)          -->
+            <!-- ============================================================ -->
             <ListView x:Name="ModDatabaseCardsListView"
                       ItemsSource="{Binding CurrentModsView}"
                       Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
