@@ -475,8 +475,6 @@
         </Setter>
     </Style>
 
-    <!-- Add this style to MainWindowStyles.xaml, after the existing styles -->
-
     <Style x:Key="IMM.ToggleRadioButtonStyle" TargetType="{x:Type RadioButton}">
         <Setter Property="Template">
             <Setter.Value>
