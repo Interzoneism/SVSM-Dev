@@ -477,6 +477,9 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
+                <!-- ============================================================ -->
+                <!-- SHARED: Tab Navigation Buttons (All Sections)                -->
+                <!-- ============================================================ -->
                 <StackPanel Grid.Column="0"
                             Orientation="Horizontal"
                             VerticalAlignment="Top" Height="40" Margin="0,30,0,0" Grid.ColumnSpan="2"
@@ -500,6 +503,11 @@
                             FontSize="16"
                             Style="{StaticResource IMM.ModlistsTabButtonStyle}" Margin="5,0,0,0" MinHeight="40" />
                 </StackPanel>
+                <!-- End: Tab Navigation Buttons -->
+
+                <!-- ============================================================ -->
+                <!-- DATABASE TAB: Filter Controls (Mod Database Only)            -->
+                <!-- ============================================================ -->
                 <Grid x:Name="ModDB_radiobuttons" Grid.Column="1" Margin="10,0,0,96" Grid.ColumnSpan="2"
                       HorizontalAlignment="Left" Height="44" VerticalAlignment="Bottom">
                     <Grid.Style>
@@ -667,7 +675,11 @@
                         </Popup>
                     </StackPanel>
                 </Grid>
+                <!-- End: DATABASE TAB Filter Controls -->
 
+                <!-- ============================================================ -->
+                <!-- SHARED: Search Box (MainTab and DatabaseTab)                 -->
+                <!-- ============================================================ -->
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
                             VerticalAlignment="Top" Height="24" Margin="16,20,230,0">
@@ -752,6 +764,7 @@
                         </StackPanel>
                     </Grid>
                 </Grid>
+                <!-- End: SHARED Search Box -->
             </Grid>
             <Grid Margin="0,32,25,0" Grid.RowSpan="2">
                 <Grid.RowDefinitions>
@@ -760,6 +773,10 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
+                <!-- ============================================================ -->
+                <!-- MAIN TAB & DATABASE TAB: Installed Mods and Mod Database     -->
+                <!-- Both tabs share this container with visibility bindings      -->
+                <!-- ============================================================ -->
                 <Border x:Name="Installed_and_ModDB" Grid.Row="1"
                         Margin="0,0,-29,0"
                         Background="Transparent"
@@ -775,6 +792,7 @@
                             CornerRadius="{Binding Path=(ui:ControlHelper.CornerRadius), ElementName=ModsDataGrid}"
                             SnapsToDevicePixels="True">
                         <Grid>
+                             <!-- MAIN TAB: Installed Mods DataGrid -->
                             <DataGrid x:Name="ModsDataGrid"
                                       ItemsSource="{Binding ModsView}"
                                       AutoGenerateColumns="False"
@@ -1384,6 +1402,8 @@
                                                         CellStyle="{StaticResource IMM.DataGridCenteredCellStyle}" />
                                 </DataGrid.Columns>
                             </DataGrid>
+                            <!-- End: MAIN TAB Installed Mods DataGrid -->
+                             <!-- DATABASE TAB: Mod Database DataGrid (List View) -->
                             <DataGrid x:Name="ModDbDataGrid"
                                       ItemsSource="{Binding SearchResultsView}"
                                       AutoGenerateColumns="False"
@@ -1941,8 +1961,10 @@
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
+                            <!-- End: DATABASE TAB Mod Database DataGrid -->
                     </Border>
                 </Border>
+                <!-- End: MAIN TAB & DATABASE TAB Container -->
                 <TextBlock Grid.Row="1"
                            Panel.ZIndex="1"
                            Margin="32"
@@ -1970,6 +1992,9 @@
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
+                <!-- ============================================================ -->
+                <!-- MODLIST TAB: Cloud and Local Modlists                        -->
+                <!-- ============================================================ -->
                 <Grid x:Name="Modlists" Grid.RowSpan="2" Margin="0,0,-29,0">
                     <Grid.Style>
                         <Style TargetType="{x:Type Grid}">
@@ -2787,8 +2812,13 @@
                             </Grid>
                         </TabItem>
                     </TabControl>
+                    <!-- End: MODLIST TAB -->
                 </Grid>
+                <!-- End: MODLIST TAB Container -->
             </Grid>
+            <!-- ============================================================ -->
+            <!-- DATABASE TAB: Mod Database Cards View (Card Layout)          -->
+            <!-- ============================================================ -->
             <ListView x:Name="ModDatabaseCardsListView"
                       ItemsSource="{Binding CurrentModsView}"
                       Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
@@ -3156,6 +3186,7 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
+            <!-- End: DATABASE TAB Mod Database Cards View -->
             <Button Grid.Row="1"
                     Content="Load more pages"
                     Command="{Binding LoadMoreModDatabaseResultsCommand}"
