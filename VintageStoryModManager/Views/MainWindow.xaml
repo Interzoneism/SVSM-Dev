@@ -208,7 +208,7 @@
                     <MenuItem x:Name="ColumnsMenuItem"
                               Header="_Columns"
                               Height="35"
-                              Visibility="{Binding IsViewingInstalledMods, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
+                              Visibility="{Binding IsViewingMainTab, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
                         <MenuItem x:Name="ActiveColumnMenuItem"
                                   Header="_Active"
                                   IsCheckable="True"
@@ -482,19 +482,19 @@
                             VerticalAlignment="Top" Height="40" Margin="0,30,0,0" Grid.ColumnSpan="2"
                             HorizontalAlignment="Left" Width="444">
                     <Button Content="Installed Mods"
-                            Command="{Binding ShowInstalledModsCommand}"
+                            Command="{Binding ShowMainTabCommand}"
                             Width="138"
                             FontSize="16"
                             Style="{StaticResource IMM.InstalledTabButtonStyle}" MinHeight="40" />
                     <Button x:Name="ModDatabaseTabButton"
                             Content="Mod DB"
-                            Command="{Binding ShowModDatabaseCommand}"
+                            Command="{Binding ShowDatabaseTabCommand}"
                             Width="138"
                             FontSize="16"
                             Style="{StaticResource IMM.ModDatabaseTabButtonStyle}" Margin="5,0,0,0" MinHeight="40" />
                     <Button x:Name="ModlistsTabButton"
                             Content="Modlists"
-                            Command="{Binding ShowCloudModlistsCommand}"
+                            Command="{Binding ShowModlistTabCommand}"
                             Click="ModlistsTabButton_OnClick"
                             Width="138"
                             FontSize="16"
@@ -716,7 +716,7 @@
                                                     Value="Search Mod Database" />
                                             <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
+                                        <DataTrigger Binding="{Binding IsViewingModlistTab}" Value="True">
                                             <Setter Property="IsEnabled" Value="False" />
                                             <Setter Property="Visibility" Value="Collapsed" />
                                             <Setter Property="ui:ControlHelper.PlaceholderText"
@@ -742,7 +742,7 @@
                                         <Setter Property="Visibility" Value="Collapsed" />
                                         <Setter Property="Padding" Value="6,6,6,6" />
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsViewingInstalledMods}" Value="True">
+                                            <DataTrigger Binding="{Binding IsViewingMainTab}" Value="True">
                                                 <Setter Property="Visibility" Value="Visible" />
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -767,7 +767,7 @@
                         BorderThickness="0,0,2,2"
                         CornerRadius="{Binding Path=(ui:ControlHelper.CornerRadius), ElementName=ModsDataGrid}"
                         SnapsToDevicePixels="True"
-                        Visibility="{Binding IsViewingCloudModlists, Converter={StaticResource IMM.VisibleWhenFalseConverter}}"
+                        Visibility="{Binding IsViewingModlistTab, Converter={StaticResource IMM.VisibleWhenFalseConverter}}"
                         d:IsHidden="True">
                     <Border Background="{DynamicResource Brush.SunkenSurface.Background}"
                             BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Dark}"
@@ -808,8 +808,8 @@
                                       FontSize="15"
                                       Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                       BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                      Visibility="{Binding IsViewingInstalledMods, Converter={StaticResource IMM.HiddenWhenFalseConverter}}"
-                                      IsEnabled="{Binding IsViewingInstalledMods}">
+                                      Visibility="{Binding IsViewingMainTab, Converter={StaticResource IMM.HiddenWhenFalseConverter}}"
+                                      IsEnabled="{Binding IsViewingMainTab}">
                                 <DataGrid.Resources>
                                     <Style TargetType="{x:Type ScrollBar}"
                                            BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
@@ -1442,7 +1442,7 @@
                                                 <Setter Property="Visibility" Value="Visible" />
                                                 <Setter Property="IsEnabled" Value="True" />
                                             </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
+                                            <DataTrigger Binding="{Binding IsViewingModlistTab}" Value="True">
                                                 <Setter Property="Visibility" Value="Collapsed" />
                                                 <Setter Property="IsEnabled" Value="False" />
                                             </DataTrigger>
@@ -1962,7 +1962,7 @@
                                     <MultiDataTrigger.Conditions>
                                         <Condition Binding="{Binding TotalMods}" Value="0" />
                                         <Condition Binding="{Binding SearchModDatabase}" Value="False" />
-                                        <Condition Binding="{Binding IsViewingCloudModlists}" Value="False" />
+                                        <Condition Binding="{Binding IsViewingModlistTab}" Value="False" />
                                     </MultiDataTrigger.Conditions>
                                     <Setter Property="Visibility" Value="Visible" />
                                 </MultiDataTrigger>
@@ -1975,7 +1975,7 @@
                         <Style TargetType="{x:Type Grid}">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
+                                <DataTrigger Binding="{Binding IsViewingModlistTab}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
                                 </DataTrigger>
                             </Style.Triggers>
@@ -3357,7 +3357,7 @@
                                 <Setter Property="Visibility" Value="Visible" />
                                 <Setter Property="IsHitTestVisible" Value="True" />
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
+                            <DataTrigger Binding="{Binding IsViewingModlistTab}" Value="True">
                                 <Setter Property="Visibility" Value="Collapsed" />
                                 <Setter Property="IsHitTestVisible" Value="False" />
                             </DataTrigger>

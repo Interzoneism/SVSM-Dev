@@ -2359,12 +2359,12 @@ public partial class MainWindow : Window
         {
             if (_viewModel != null) _userConfiguration.SetModDatabaseAutoLoadMode(_viewModel.ModDatabaseAutoLoadMode);
         }
-        else if (e.PropertyName == nameof(MainViewModel.IsViewingCloudModlists))
+        else if (e.PropertyName == nameof(MainViewModel.IsViewingModlistTab))
         {
             if (_viewModel != null)
                 Dispatcher.InvokeAsync(() =>
                 {
-                    if (_viewModel != null) HandleModlistsVisibilityChanged(_viewModel.IsViewingCloudModlists);
+                    if (_viewModel != null) HandleModlistsVisibilityChanged(_viewModel.IsViewingModlistTab);
                 }, DispatcherPriority.Background);
         }
         else if (e.PropertyName == nameof(MainViewModel.IsLoadMoreModDatabaseButtonVisible))
@@ -2429,7 +2429,7 @@ public partial class MainWindow : Window
     private void ModlistsTabControl_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_isUpdatingModlistsTabSelection) return;
-        if (_viewModel?.IsViewingCloudModlists != true) return;
+        if (_viewModel?.IsViewingModlistTab != true) return;
         if (sender is not TabControl tabControl) return;
         if (OnlineModlistsTabItem is null || LocalModlistsTabItem is null) return;
 
@@ -6104,8 +6104,8 @@ public partial class MainWindow : Window
 
     private void SwitchToInstalledModsTab()
     {
-        if (_viewModel?.ShowInstalledModsCommand?.CanExecute(null) == true)
-            _viewModel.ShowInstalledModsCommand.Execute(null);
+        if (_viewModel?.ShowMainTabCommand?.CanExecute(null) == true)
+            _viewModel.ShowMainTabCommand.Execute(null);
     }
 
     private void PrepareForModlistLoad()
@@ -9079,7 +9079,7 @@ public partial class MainWindow : Window
         {
             RefreshLocalModlists(true);
 
-            if (_viewModel?.IsViewingCloudModlists == true && ModlistsTabControl is not null &&
+            if (_viewModel?.IsViewingModlistTab == true && ModlistsTabControl is not null &&
                 OnlineModlistsTabItem is not null &&
                 Equals(ModlistsTabControl.SelectedItem, OnlineModlistsTabItem))
                 _ = RefreshCloudModlistsAsync(true);
@@ -9089,7 +9089,7 @@ public partial class MainWindow : Window
     private async void SaveModlistToCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         await SaveModlistToCloudAsync();
-        if (_viewModel?.IsViewingCloudModlists == true)
+        if (_viewModel?.IsViewingModlistTab == true)
             await RefreshCloudModlistsAsync(true);
         else
             _cloudModlistsLoaded = false;
@@ -9098,7 +9098,7 @@ public partial class MainWindow : Window
     private async void SaveCloudModlistButton_OnClick(object sender, RoutedEventArgs e)
     {
         await SaveModlistToCloudAsync();
-        if (_viewModel?.IsViewingCloudModlists == true) await RefreshCloudModlistsAsync(true);
+        if (_viewModel?.IsViewingModlistTab == true) await RefreshCloudModlistsAsync(true);
     }
 
     private async void ModifyCloudModlistsButton_OnClick(object sender, RoutedEventArgs e)
@@ -9549,7 +9549,7 @@ public partial class MainWindow : Window
             _viewModel?.ReportStatus($"Deleted cloud modlist from {slotLabel}.");
         }, "delete the cloud modlist");
 
-        if (_viewModel?.IsViewingCloudModlists == true)
+        if (_viewModel?.IsViewingModlistTab == true)
             await RefreshCloudModlistsAsync(true);
         else
             _cloudModlistsLoaded = false;
@@ -10469,7 +10469,7 @@ public partial class MainWindow : Window
 
     private async Task UpdateCloudModlistsAfterChangeAsync()
     {
-        if (_viewModel?.IsViewingCloudModlists == true)
+        if (_viewModel?.IsViewingModlistTab == true)
             await RefreshCloudModlistsAsync(true);
         else
             _cloudModlistsLoaded = false;
