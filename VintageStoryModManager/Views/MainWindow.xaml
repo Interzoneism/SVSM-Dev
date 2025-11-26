@@ -3638,11 +3638,11 @@
 
         <Border x:Name="ModlistInstallOverlay"
                 Grid.RowSpan="3"
-                Margin="0,0,0,8"
+                Margin="0,0,0,-8"
                 Background="#C0000000"
                 Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsModlistInstallInProgress, Converter={StaticResource IMM.VisibleWhenTrueConverter}}"
                 IsHitTestVisible="True"
-                Panel.ZIndex="5500" d:IsHidden="True">
+                Panel.ZIndex="5500">
             <Border HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
