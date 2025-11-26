@@ -466,7 +466,8 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <TabControl x:Name="MiddleTabControl" Margin="0,-6,0,0">
+            <TabControl x:Name="MiddleTabControl" Margin="0,-6,0,0"
+                        ItemContainerStyle="{StaticResource IMM.MiddleTabItemStyle}">
                 <TabItem x:Name="MainTab" Header="Installed mods">
                     <Grid x:Name="MainGrid" Margin="10,0,0,0" VerticalAlignment="Top">
                         <Grid.RowDefinitions>
