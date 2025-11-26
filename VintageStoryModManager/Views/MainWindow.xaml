@@ -2313,7 +2313,7 @@
                                         <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2" />
                                     </Border.Effect>
 
-                                    <Grid Height="160"
+                                    <Grid x:Name="LocalModlistsControls" Height="160"
                                           VerticalAlignment="Center"
                                           HorizontalAlignment="Left"
                                           Width="1161">
@@ -2709,7 +2709,7 @@
                                         <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2" />
                                     </Border.Effect>
 
-                                    <Grid Height="151"
+                                    <Grid x:Name="OnlineModlistsButtons" Height="151"
                                           VerticalAlignment="Center"
                                           HorizontalAlignment="Left"
                                           Width="1227"
