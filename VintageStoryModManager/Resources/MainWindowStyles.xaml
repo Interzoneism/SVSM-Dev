@@ -552,10 +552,14 @@
                                     Value="{DynamicResource Brush.MiddleTab.Border.Selected}" />
                             <Setter Property="FontWeight" Value="SemiBold" />
                         </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsSelected" Value="False" />
+                            </MultiTrigger.Conditions>
                             <Setter TargetName="TabBorder" Property="Background"
                                     Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
-                        </Trigger>
+                        </MultiTrigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Subtle}" />
                             <Setter TargetName="TabBorder" Property="Opacity" Value="0.6" />
