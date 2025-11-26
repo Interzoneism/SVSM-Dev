@@ -14,7 +14,7 @@
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
     Title="Simple VS Manager"
-    Height="606" Width="1050"
+    Height="660" Width="886"
     MinWidth="1200" MinHeight="775" WindowStartupLocation="CenterOwner"
     PreviewKeyDown="MainWindow_OnPreviewKeyDown"
     AllowDrop="True"
@@ -394,8 +394,8 @@
 
             <Button x:Name="DiscordButton"
                     Grid.Column="2"
-                    Width="45.4"Width="40"
-                    Height="45"Height="28"
+                    Width="45.4"
+                    Height="45"
                     Padding="0"
                     Margin="8,8,0,0"
                     BorderThickness="0"
@@ -462,13 +462,13 @@
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top" Height="0" Width="0" />
         <Grid x:Name="MIDDLE" Grid.Row="1"
-              Margin="0,10,0,10">
+              Margin="0,10,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <TabControl x:Name="MiddleTabControl" Margin="0,-6,0,0">
                 <TabItem x:Name="MainTab" Header="Installed mods">
-                    <Grid x:Name="MainGrid" Margin="10,0,0,0" VerticalAlignment="Top" Height="678">
+                    <Grid x:Name="MainGrid" Margin="10,0,0,0" VerticalAlignment="Top">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -524,7 +524,7 @@
                             </Button>
                         </Grid>
                         <Border x:Name="MainBorder"
-                        Margin="0,0,10,-388"
+                        Margin="0,0,10,0"
                         Background="Transparent"
                         BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
                         BorderThickness="0,0,0,0"
@@ -1170,7 +1170,7 @@
                 <TabItem x:Name="DatabaseTab" Header="Mod Database">
                     <Grid x:Name="DatabaseGrid" Margin="10,0,0,0">
                         <Border x:Name="DatabaseBorder"
-                    Margin="0,53,0,0"
+                    Margin="0,48,0,0"
                     Background="Transparent"
                     CornerRadius="{Binding (ui:ControlHelper.CornerRadius), ElementName=ModsDataGrid}"
                     SnapsToDevicePixels="True"
@@ -1756,8 +1756,8 @@
                                         <Setter Property="MinHeight" Value="0"/>
                                         <Setter Property="MinWidth" Value="0"/>
                                         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}"/>
-                                        <Setter Property="Background" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}"/>
-                                        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}"/>
+                                        <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Normal}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Primary.Background.Normal}"/>
                                         <Setter Property="BorderThickness" Value="0"/>
                                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                         <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -1813,63 +1813,63 @@
                                         </Setter>
                                     </Style>
                                 </TabControl.Resources>
-                                <TabItem x:Name="Downloads" Header="Downloads" VerticalContentAlignment="Center" UseLayoutRounding="False" HorizontalContentAlignment="Center" Height="20" Padding="5,0,5,0" VerticalAlignment="Top" Margin="0,-4,0,0">
-                                    <Grid Height="40" Width="237" HorizontalAlignment="Left">
-                                        <Border Background="{DynamicResource Brush.Button.Primary.Background.Normal}" CornerRadius="0,10,10,0" Margin="-5,0,0,0" />
+                                <TabItem x:Name="Downloads" Header="Downloads" VerticalContentAlignment="Center" UseLayoutRounding="False" HorizontalContentAlignment="Center" Height="20" Padding="5,0,5,0" VerticalAlignment="Top" Margin="0,-4,0,0" FontSize="12">
+                                    <Grid Height="40" Width="245" HorizontalAlignment="Left">
+                                        <Border Background="{DynamicResource Brush.Button.Primary.Background.Normal}" CornerRadius="0,10,10,0" Margin="-3,0,0,0" />
                                         <RadioButton Content="All time"
                                         GroupName="ModDatabaseAutoLoadMode"
                                         IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" MinWidth="65"
                                         ClickMode="Press"
-                                        Margin="8,6,0,0" HorizontalAlignment="Left" Width="103"
-                                        VerticalContentAlignment="Center" FontSize="10" VerticalAlignment="Top" Height="14"
+                                        Margin="8,6,0,0" HorizontalAlignment="Left" Width="122"
+                                        VerticalContentAlignment="Center" VerticalAlignment="Top" Height="16"
                                         Style="{StaticResource IMM.ToggleRadioButtonStyle}" Foreground="{DynamicResource Brush.Text.Primary}" />
                                         <RadioButton Content="Last 30 days"
                                         GroupName="ModDatabaseAutoLoadMode"
                                         IsChecked="{Binding IsDownloadsLastThirtyDaysMode, Mode=TwoWay}" MinWidth="90"
-                                        ClickMode="Press" Margin="8,20,0,0" HorizontalAlignment="Left" Width="103"
-                                        VerticalContentAlignment="Center" FontSize="10" VerticalAlignment="Top" Height="14"
+                                        ClickMode="Press" Margin="8,20,0,0" HorizontalAlignment="Left" Width="122"
+                                        VerticalContentAlignment="Center" VerticalAlignment="Top" Height="16"
                                         Style="{StaticResource IMM.ToggleRadioButtonStyle}" Foreground="{DynamicResource Brush.Text.Primary}" />
                                         <RadioButton Content="Last 10 days"
                                         GroupName="ModDatabaseAutoLoadMode"
                                         IsChecked="{Binding IsDownloadsLastTenDaysMode, Mode=TwoWay}" MinWidth="90"
-                                        ClickMode="Press" Margin="90,6,0,0" HorizontalAlignment="Left" Width="104"
-                                        VerticalContentAlignment="Center" FontSize="10" VerticalAlignment="Top" Height="14"
+                                        ClickMode="Press" Margin="105,6,0,0" HorizontalAlignment="Left" Width="124"
+                                        VerticalContentAlignment="Center" VerticalAlignment="Top" Height="16"
                                         Style="{StaticResource IMM.ToggleRadioButtonStyle}" Foreground="{DynamicResource Brush.Text.Primary}" />
                                         <RadioButton Content="Added last 30 days"
                                         GroupName="ModDatabaseAutoLoadMode"
                                         IsChecked="{Binding IsAddedLast30DaysMode, Mode=TwoWay}" MinWidth="90"
-                                        ClickMode="Press" Margin="90,20,0,0" HorizontalAlignment="Left" Width="104"
-                                        VerticalContentAlignment="Center" FontSize="10" VerticalAlignment="Top" Height="14"
+                                        ClickMode="Press" Margin="105,20,0,0" HorizontalAlignment="Left" Width="124"
+                                        VerticalContentAlignment="Center" VerticalAlignment="Top" Height="16"
                                         Style="{StaticResource IMM.ToggleRadioButtonStyle}" Foreground="{DynamicResource Brush.Text.Primary}" />
                                     </Grid>
                                 </TabItem>
-                                <TabItem x:Name="Activity" Header="Activity" HorizontalContentAlignment="Center" Height="20" Padding="5,0,5,0" UseLayoutRounding="False" VerticalAlignment="Top" Margin="0,-4,0,0">
+                                <TabItem x:Name="Activity" Header="Activity" HorizontalContentAlignment="Center" Height="20" Padding="5,0,5,0" UseLayoutRounding="False" VerticalAlignment="Top" Margin="0,-4,0,0" FontSize="12">
                                     <Grid HorizontalAlignment="Left" Width="237" Height="40">
                                         <Border Background="{DynamicResource Brush.Button.Primary.Background.Normal}" Height="40" CornerRadius="0,10,10,0" VerticalAlignment="Center" Margin="-3,0,0,0" />
 
                                         <RadioButton x:Name="RecentlyAdded" Content="Recently added"
                                                 GroupName="ModDatabaseAutoLoadMode"
                                                 IsChecked="{Binding IsRecentlyAddedMode, Mode=TwoWay}"
-                                                ClickMode="Press" HorizontalAlignment="Left" Width="103"
-                                                VerticalContentAlignment="Center" Margin="8,6,0,0" FontSize="10" VerticalAlignment="Top" Height="14" 
-                                                Style="{StaticResource IMM.ToggleRadioButtonStyle}" Foreground="{DynamicResource Brush.Text.Primary}" />
+                                                ClickMode="Press" HorizontalAlignment="Left" Width="117"
+                                                VerticalContentAlignment="Center" Margin="8,6,0,0" VerticalAlignment="Top" Height="16" 
+                                                Style="{StaticResource IMM.ToggleRadioButtonStyle}" Foreground="{DynamicResource Brush.Text.Primary}" UseLayoutRounding="True" />
                                         <RadioButton x:Name="RecentlyUpdated" Content="Recently updated"
                                                 GroupName="ModDatabaseAutoLoadMode"
                                                 IsChecked="{Binding IsRecentlyUpdatedMode, Mode=TwoWay}"
-                                                ClickMode="Press" Margin="8,20,0,0" HorizontalAlignment="Left" Width="103"
-                                                VerticalContentAlignment="Center" FontSize="10" VerticalAlignment="Top" Height="14" 
+                                                ClickMode="Press" Margin="8,20,0,0" HorizontalAlignment="Left" Width="117"
+                                                VerticalContentAlignment="Center" VerticalAlignment="Top" Height="16" 
                                                 Style="{StaticResource IMM.ToggleRadioButtonStyle}" Foreground="{DynamicResource Brush.Text.Primary}" />
                                         <RadioButton x:Name="MostTrending" Content="Most trending"
                                                 GroupName="ModDatabaseAutoLoadMode"
                                                 IsChecked="{Binding IsMostTrendingMode, Mode=TwoWay}" MinWidth="100"
-                                                ClickMode="Press" Margin="110,6,0,0" HorizontalAlignment="Left" Width="100"
-                                                VerticalContentAlignment="Center" FontSize="10" VerticalAlignment="Top" Height="14"
+                                                ClickMode="Press" Margin="124,6,0,0" HorizontalAlignment="Left" Width="100"
+                                                VerticalContentAlignment="Center" VerticalAlignment="Top" Height="16"
                                                 Style="{StaticResource IMM.ToggleRadioButtonStyle}" Foreground="{DynamicResource Brush.Text.Primary}" />
                                         <RadioButton x:Name="Random" Content="Random"
                                                 GroupName="ModDatabaseAutoLoadMode"
                                                 IsChecked="{Binding IsRandomMode, Mode=TwoWay}" MinWidth="100"
-                                                ClickMode="Press" Margin="110,20,0,0" HorizontalAlignment="Left" Width="100"
-                                                VerticalContentAlignment="Center" FontSize="10" VerticalAlignment="Top" Height="14"
+                                                ClickMode="Press" Margin="124,20,0,0" HorizontalAlignment="Left" Width="100"
+                                                VerticalContentAlignment="Center" VerticalAlignment="Top" Height="16"
                                                 Style="{StaticResource IMM.ToggleRadioButtonStyle}" Foreground="{DynamicResource Brush.Text.Primary}" />
                                     </Grid>
                                 </TabItem>
@@ -1877,18 +1877,18 @@
                             <StackPanel x:Name="Checkboxes" Margin="524,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Height="34">
                                 <CheckBox Content="Include installed mods"
                                   IsChecked="{Binding IncludeInstalledModDatabaseResults, Mode=TwoWay}"
-                                  FontSize="10"
+                                  FontSize="12"
                                   Style="{StaticResource IMM.ToggleCheckBoxStyle}" Foreground="{DynamicResource Brush.Text.Primary}" Height="16" VerticalAlignment="Center" HorizontalAlignment="Left" />
                                 <CheckBox Content="Only show compatible mods"
                                   IsChecked="{Binding OnlyShowCompatibleModDatabaseResults, Mode=TwoWay}"
-                                  FontSize="10"
+                                  FontSize="12"
                                   HorizontalAlignment="Left"
                                   Style="{StaticResource IMM.ToggleCheckBoxStyle}" Foreground="{DynamicResource Brush.Text.Primary}" Height="15" VerticalAlignment="Center" />
                             </StackPanel>
-                            <StackPanel x:Name="ResultsPerPage" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="687,0,0,0"
+                            <StackPanel x:Name="ResultsPerPage" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="711,0,0,0"
                                 Height="30" Width="174">
                                 <TextBlock Text="Per page"
-                                   FontSize="10"
+                                   FontSize="12"
                                    Foreground="{DynamicResource Brush.Text.Primary}" Width="91" Height="15" HorizontalAlignment="Left" Margin="2,0,0,0" />
                                 <ComboBox ItemsSource="{Binding ModDatabaseFetchLimitOptions}"
                                   SelectedItem="{Binding SelectedModDatabaseFetchLimit, Mode=TwoWay}"
@@ -2293,7 +2293,6 @@
                         <Button x:Name="LoadMorePagesButton"
                     Content="Load more pages"
                     Command="{Binding LoadMoreModDatabaseResultsCommand}"
-                    Margin="546,0,570,-30"
                     Background="Transparent"
                     BorderBrush="Transparent"
                     BorderThickness="0"
@@ -2301,10 +2300,10 @@
                     Foreground="{DynamicResource Brush.Accent.Primary}"
                     Cursor="Hand"
                     FontSize="14"
-                    FontWeight="SemiBold" Height="25" VerticalAlignment="Bottom">
+                    FontWeight="SemiBold" Height="25" VerticalAlignment="Bottom" Margin="0,-1.5,0,0">
                             <Button.Style>
                                 <Style TargetType="{x:Type Button}">
-                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Setter Property="Visibility" Value="Visible" />
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="{x:Type Button}">
