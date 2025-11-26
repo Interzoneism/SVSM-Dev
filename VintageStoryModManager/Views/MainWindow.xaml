@@ -515,7 +515,6 @@
                                       GridLinesVisibility="None"
                                       SelectionUnit="FullRow"
                                       SelectionMode="Single"
-
                                       RowHeaderWidth="0"
                                       BorderThickness="0,1,2,1"
                                       IsSynchronizedWithCurrentItem="False"
@@ -534,7 +533,7 @@
                                       FontSize="15"
                                       Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                       BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                      Height="1018" VerticalAlignment="Bottom">
+                                      Height="559" VerticalAlignment="Center">
                                 <DataGrid.Resources>
                                     <Style TargetType="{x:Type ScrollBar}"
                                            BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
@@ -1116,7 +1115,7 @@
                            VerticalAlignment="Center"
                            FontSize="16"
                            Foreground="{DynamicResource Brush.Text.Primary}"
-                           IsHitTestVisible="False">
+                           IsHitTestVisible="False" Grid.Row="1">
                             <TextBlock.Style>
                                 <Style TargetType="{x:Type TextBlock}">
                                     <Setter Property="Visibility" Value="Collapsed" />
