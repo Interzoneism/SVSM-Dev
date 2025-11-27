@@ -502,7 +502,7 @@
 
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="RadioMark" Property="Text" Value="●" />
+                            <Setter TargetName="RadioMark" Property="Text" Value="◉" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="False">
                             <Setter TargetName="RadioMark" Property="Text" Value="○" />
