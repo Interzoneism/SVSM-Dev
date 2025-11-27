@@ -516,9 +516,9 @@
     <!-- Middle tab control header style -->
     <Style x:Key="IMM.MiddleTabItemStyle" TargetType="{x:Type TabItem}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
-        <Setter Property="Background" Value="{DynamicResource Brush.MiddleTab.Background.Normal}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Normal}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.MiddleTab.Border.Normal}" />
-        <Setter Property="BorderThickness" Value="1,1,1,0" />
+        <Setter Property="BorderThickness" Value="0,0,0,0" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="VerticalContentAlignment" Value="Stretch" />
         <Setter Property="Padding" Value="20,10" />
@@ -537,7 +537,7 @@
                                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                               Margin="{TemplateBinding Padding}"
-                                              TextElement.FontSize="16"
+                                              TextElement.FontSize="14"
                                               RecognizesAccessKey="True" />
                         </Border>
                     </Grid>

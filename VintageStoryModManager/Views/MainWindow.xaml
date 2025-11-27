@@ -31,7 +31,7 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid x:Name="RootGrid" Margin="0,0,0,8" Background="{DynamicResource Brush.Panel.Primary.Background.Solid}">
+    <Grid x:Name="RootGrid" Margin="0,0,0,8">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="33" MinHeight="10" />
@@ -466,9 +466,9 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <TabControl x:Name="MiddleTabControl" Margin="0,-6,0,0"
+            <TabControl x:Name="MiddleTabControl" Margin="0,-6,0,0" Background="Transparent"
                         ItemContainerStyle="{StaticResource IMM.MiddleTabItemStyle}">
-                <TabItem x:Name="MainTab" Header="Installed mods">
+                <TabItem x:Name="MainTab" Header="Installed mods" VerticalAlignment="Bottom" Padding="12,3,12,0" Height="28" Width="120">
                     <Grid x:Name="MainGrid" Margin="10,0,0,0" VerticalAlignment="Top">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -1129,7 +1129,7 @@
                         </TextBlock>
                     </Grid>
                 </TabItem>
-                <TabItem x:Name="DatabaseTab" Header="Mod Database">
+                <TabItem x:Name="DatabaseTab" Header="Mod Database" Width="120" Padding="12,3,12,0" VerticalAlignment="Bottom" Height="28">
                     <Grid x:Name="DatabaseGrid" Margin="10,0,0,0">
                         <Border x:Name="DatabaseBorder"
                     Margin="0,48,0,0"
@@ -1687,7 +1687,7 @@
                                 <RowDefinition />
 
                             </Grid.RowDefinitions>
-                            <TabControl x:Name="SortingTab" Margin="205,0,0,0" Padding="0" Width="308" HorizontalAlignment="Left" TabStripPlacement="Left" Background="{DynamicResource Brush.Panel.Primary.Background.Solid}" UseLayoutRounding="False" VerticalContentAlignment="Bottom" VerticalAlignment="Center">
+                            <TabControl x:Name="SortingTab" Margin="205,0,0,0" Padding="0" Width="335" HorizontalAlignment="Left" TabStripPlacement="Left" Background="{DynamicResource Brush.Panel.Primary.Background.Solid}" UseLayoutRounding="False" VerticalContentAlignment="Bottom" VerticalAlignment="Center">
                                 <TabControl.Resources>
                                     <Style TargetType="{x:Type TabItem}">
                                         <Setter Property="FontSize" Value="10"/>
@@ -1753,8 +1753,8 @@
                                     </Style>
                                 </TabControl.Resources>
                                 <TabItem x:Name="Downloads" Header="Downloads" VerticalContentAlignment="Center" UseLayoutRounding="False" HorizontalContentAlignment="Center" Height="20" Padding="5,0,5,0" VerticalAlignment="Top" Margin="0,-4,0,0" FontSize="12">
-                                    <Grid Height="40" Width="245" HorizontalAlignment="Left">
-                                        <Border Background="{DynamicResource Brush.Button.Primary.Background.Normal}" CornerRadius="0,10,10,0" Margin="-3,0,0,0" />
+                                    <Grid Height="40" Width="255" HorizontalAlignment="Center">
+                                        <Border Background="{DynamicResource Brush.Button.Primary.Background.Normal}" CornerRadius="0,10,10,0" Margin="-3,0,18,0" />
                                         <RadioButton Content="All time"
                                         GroupName="ModDatabaseAutoLoadMode"
                                         IsChecked="{Binding IsTotalDownloadsMode, Mode=TwoWay}" MinWidth="65"
@@ -1783,8 +1783,8 @@
                                     </Grid>
                                 </TabItem>
                                 <TabItem x:Name="Activity" Header="Activity" HorizontalContentAlignment="Center" Height="20" Padding="5,0,5,0" UseLayoutRounding="False" VerticalAlignment="Top" Margin="0,-4,0,0" FontSize="12">
-                                    <Grid HorizontalAlignment="Left" Width="237" Height="40">
-                                        <Border Background="{DynamicResource Brush.Button.Primary.Background.Normal}" Height="40" CornerRadius="0,10,10,0" VerticalAlignment="Center" Margin="-3,0,0,0" />
+                                    <Grid HorizontalAlignment="Left" Width="257" Height="40">
+                                        <Border Background="{DynamicResource Brush.Button.Primary.Background.Normal}" Height="40" CornerRadius="0,10,10,0" VerticalAlignment="Center" Margin="-3,0,20,0" />
 
                                         <RadioButton x:Name="RecentlyAdded" Content="Recently added"
                                                 GroupName="ModDatabaseAutoLoadMode"
@@ -1813,7 +1813,7 @@
                                     </Grid>
                                 </TabItem>
                             </TabControl>
-                            <StackPanel x:Name="Checkboxes" Margin="524,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Height="34">
+                            <StackPanel x:Name="Checkboxes" Margin="533,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Height="34">
                                 <CheckBox Content="Include installed mods"
                                   IsChecked="{Binding IncludeInstalledModDatabaseResults, Mode=TwoWay}"
                                   FontSize="12"
@@ -1824,7 +1824,7 @@
                                   HorizontalAlignment="Left"
                                   Style="{StaticResource IMM.ToggleCheckBoxStyle}" Foreground="{DynamicResource Brush.Text.Primary}" Height="15" VerticalAlignment="Center" />
                             </StackPanel>
-                            <StackPanel x:Name="ResultsPerPage" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="711,0,0,0"
+                            <StackPanel x:Name="ResultsPerPage" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="720,0,0,0"
                                 Height="30" Width="174">
                                 <TextBlock Text="Per page"
                                    FontSize="12"
@@ -2244,8 +2244,8 @@
                         </Button>
                     </Grid>
                 </TabItem>
-                <TabItem x:Name="ModlistTab" Header="Modlists">
-                    <Grid x:Name="ModlistInnerTab">
+                <TabItem x:Name="ModlistTab" Header="Modlists" Width="120" Padding="12,3,12,0" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Center" VerticalAlignment="Bottom" Height="28">
+                    <Grid x:Name="ModlistInnerTab" Width="1411">
                         <TabControl x:Name="ModlistsTabControl"
                                 Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                 BorderThickness="0"
