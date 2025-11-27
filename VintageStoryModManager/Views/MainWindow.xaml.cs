@@ -306,6 +306,7 @@ public partial class MainWindow : Window
     private bool _isDraggingModInfoPanel;
     private bool _isInitializing;
     private bool _isUpdatingModlistsTabSelection;
+    private bool _isUpdatingMiddleTabSelection;
     private bool _isModUpdateInProgress;
     private bool _isModUsageDialogOpen;
     private bool _isRefreshingAfterModlistLoad;
@@ -2353,6 +2354,7 @@ public partial class MainWindow : Window
 
                     UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
                     if (!_viewModel.SearchModDatabase) ClearModDatabaseSelections();
+                    SyncMiddleTabControlToViewModel();
                 }, DispatcherPriority.Background);
         }
         else if (e.PropertyName == nameof(MainViewModel.ModDatabaseAutoLoadMode))
@@ -2364,7 +2366,19 @@ public partial class MainWindow : Window
             if (_viewModel != null)
                 Dispatcher.InvokeAsync(() =>
                 {
-                    if (_viewModel != null) HandleModlistsVisibilityChanged(_viewModel.IsViewingModlistTab);
+                    if (_viewModel != null)
+                    {
+                        HandleModlistsVisibilityChanged(_viewModel.IsViewingModlistTab);
+                        SyncMiddleTabControlToViewModel();
+                    }
+                }, DispatcherPriority.Background);
+        }
+        else if (e.PropertyName == nameof(MainViewModel.IsViewingMainTab))
+        {
+            if (_viewModel != null)
+                Dispatcher.InvokeAsync(() =>
+                {
+                    if (_viewModel != null) SyncMiddleTabControlToViewModel();
                 }, DispatcherPriority.Background);
         }
         else if (e.PropertyName == nameof(MainViewModel.IsLoadMoreModDatabaseButtonVisible))
@@ -2424,6 +2438,57 @@ public partial class MainWindow : Window
         if (LocalModlistsDataGrid is not null) LocalModlistsDataGrid.SelectedItems.Clear();
         SetCloudModlistSelection(null);
         if (CloudModlistsDataGrid != null) CloudModlistsDataGrid.SelectedItem = null;
+    }
+
+    private void MiddleTabControl_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isUpdatingMiddleTabSelection) return;
+        if (_viewModel is null) return;
+        if (sender is not TabControl tabControl) return;
+
+        if (Equals(tabControl.SelectedItem, MainTab))
+        {
+            if (_viewModel.ShowMainTabCommand?.CanExecute(null) == true)
+                _viewModel.ShowMainTabCommand.Execute(null);
+        }
+        else if (Equals(tabControl.SelectedItem, DatabaseTab))
+        {
+            if (_viewModel.ShowDatabaseTabCommand?.CanExecute(null) == true)
+                _viewModel.ShowDatabaseTabCommand.Execute(null);
+        }
+        else if (Equals(tabControl.SelectedItem, ModlistTab))
+        {
+            if (_viewModel.ShowModlistTabCommand?.CanExecute(null) == true)
+                _viewModel.ShowModlistTabCommand.Execute(null);
+        }
+    }
+
+    private void SyncMiddleTabControlToViewModel()
+    {
+        if (MiddleTabControl is null || _viewModel is null) return;
+
+        TabItem? targetTab;
+
+        if (_viewModel.IsViewingMainTab)
+            targetTab = MainTab;
+        else if (_viewModel.SearchModDatabase)
+            targetTab = DatabaseTab;
+        else if (_viewModel.IsViewingModlistTab)
+            targetTab = ModlistTab;
+        else
+            targetTab = MainTab; // Default to MainTab if view section is unknown
+
+        if (targetTab is null || Equals(MiddleTabControl.SelectedItem, targetTab)) return;
+
+        _isUpdatingMiddleTabSelection = true;
+        try
+        {
+            MiddleTabControl.SelectedItem = targetTab;
+        }
+        finally
+        {
+            _isUpdatingMiddleTabSelection = false;
+        }
     }
 
     private void ModlistsTabControl_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
