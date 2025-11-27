@@ -596,7 +596,6 @@
                 <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
                 <Setter Property="BorderBrush" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="Padding" Value="6,3" />
                 <Setter Property="FontFamily" Value="Segoe UI" />
                 <Setter Property="HorizontalContentAlignment" Value="Left" />
                 <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -638,7 +637,7 @@
                                                           HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                           VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
                                             <TextBlock x:Name="PlaceholderTextBlock"
-                                                       Margin="0"
+                                                       Padding="8,0,0,0"
                                                        Text="{TemplateBinding ui:ControlHelper.PlaceholderText}"
                                                        FontFamily="{TemplateBinding FontFamily}"
                                                        FontSize="{TemplateBinding FontSize}"

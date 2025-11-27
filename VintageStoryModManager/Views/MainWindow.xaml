@@ -484,7 +484,7 @@
                                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                  FontSize="14" VerticalContentAlignment="Center" Margin="0,0,0,7" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Left"
                                  Style="{StaticResource IMM.SearchTextBoxStyle}"
-                                 ui:ControlHelper.PlaceholderText="Search installed mods" />
+                                 ui:ControlHelper.PlaceholderText="Search installed mods" Padding="3,3,6,3" UseLayoutRounding="True" Grid.IsSharedSizeScope="True"/>
                             <Button Content="Refresh"
                                     Margin="0,0,0,7"
                                     ToolTip="Quickly refreshes the current view using cached data if no changes are detected on the online mod page."
@@ -1824,25 +1824,24 @@
                                   HorizontalAlignment="Left"
                                   Style="{StaticResource IMM.ToggleCheckBoxStyle}" Foreground="{DynamicResource Brush.Text.Primary}" Height="15" VerticalAlignment="Center" />
                             </StackPanel>
-                            <StackPanel x:Name="ResultsPerPage" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="720,0,0,0"
-                                Height="30" Width="174">
+                            <StackPanel x:Name="ResultsPerPage" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="724,0,0,0" Width="174">
                                 <TextBlock Text="Per page"
                                    FontSize="12"
-                                   Foreground="{DynamicResource Brush.Text.Primary}" Width="91" Height="15" HorizontalAlignment="Left" Margin="2,0,0,0" />
+                                   Foreground="{DynamicResource Brush.Text.Primary}" Width="91" Height="17" HorizontalAlignment="Left" Margin="2,0,0,3" />
                                 <ComboBox ItemsSource="{Binding ModDatabaseFetchLimitOptions}"
                                   SelectedItem="{Binding SelectedModDatabaseFetchLimit, Mode=TwoWay}"
-                                  Width="71"
-                                  Height="16"
+                                  Width="70"
+                                  Height="18"
                                   FontSize="13"
                                   VerticalContentAlignment="Center"
                                   Background="{DynamicResource Brush.ComboBox.Background.Normal}"
-                                  BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}" Padding="6,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Bottom" />
+                                  BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}" Padding="6,0,0,0" HorizontalAlignment="Left" />
                             </StackPanel>
                             <TextBox x:Name="DatabaseSearch" MinWidth="200"
                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                FontSize="14" VerticalContentAlignment="Center" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Left" Grid.RowSpan="2" Margin="0,0,0,7"
+                                FontSize="14" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Left" Grid.RowSpan="2" Margin="0,0,0,7"
                                 Style="{StaticResource IMM.SearchTextBoxStyle}"
-                                ui:ControlHelper.PlaceholderText="Search Mod Database" />
+                                ui:ControlHelper.PlaceholderText="Search Mod Database" Padding="2,3,6,3" />
                         </Grid>
                         <ListView x:Name="ModDatabaseCardsListView"
                       ItemsSource="{Binding CurrentModsView}"

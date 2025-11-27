@@ -255,7 +255,7 @@
     <!-- Menu item style shared by toggle and standard items -->
     <Style x:Key="ToggleMenuItemStyle" TargetType="{x:Type MenuItem}">
         <Setter Property="Background" Value="{DynamicResource Brush.Panel.Primary.Background.Solid}" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderThickness" Value="0,0,0,0" />
         <Setter Property="Padding" Value="12,0,12,0" />
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
         <Setter Property="BorderBrush" Value="Transparent" />
@@ -330,15 +330,15 @@
                                IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
                             <Border Margin="0,0,0,4"
                                     Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
-                                    BorderBrush="{DynamicResource Brush.Accent.Primary}"
-                                    BorderThickness="1"
+                                    BorderBrush="{DynamicResource Brush.Menu.Item.Background.Hover}"
+                                    BorderThickness="2"
                                     MinWidth="{Binding ActualWidth, ElementName=templateRoot}"
                                     SnapsToDevicePixels="True">
                                 <ScrollViewer CanContentScroll="False"
                                               Focusable="False"
                                               HorizontalScrollBarVisibility="Hidden"
                                               VerticalScrollBarVisibility="Auto">
-                                    <ItemsPresenter Margin="2" />
+                                    <ItemsPresenter Margin="4" />
                                 </ScrollViewer>
                             </Border>
                         </Popup>
