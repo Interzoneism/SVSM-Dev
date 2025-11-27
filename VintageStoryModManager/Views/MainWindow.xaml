@@ -14,14 +14,13 @@
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
     Title="Simple VS Manager"
-    Height="766" Width="1412"
-    MinWidth="1200" MinHeight="775" WindowStartupLocation="CenterOwner"
+    Height="760" Width="1200"
+    MinWidth="1200" MinHeight="600" WindowStartupLocation="CenterOwner"
     PreviewKeyDown="MainWindow_OnPreviewKeyDown"
     AllowDrop="True"
     PreviewDragEnter="MainWindow_OnPreviewDragEnter"
     PreviewDragOver="MainWindow_OnPreviewDragOver"
-    PreviewDrop="MainWindow_OnPreviewDrop"
-    Background="{DynamicResource Brush.Window.Shell.Background.Solid}">
+    PreviewDrop="MainWindow_OnPreviewDrop" Background="Transparent">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -31,340 +30,344 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid x:Name="RootGrid" Margin="0,0,0,8">
+    <Grid x:Name="RootGrid" Background="{DynamicResource Brush.MiddleTab.Border.Selected}">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="33" MinHeight="10" />
-            <RowDefinition />
-            <RowDefinition Height="Auto" MinHeight="40" />
+            <RowDefinition Height="33" MinHeight="33" />
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Grid x:Name="TOP" Height="28" VerticalAlignment="Center">
+        <Grid x:Name="TOP" Height="24" VerticalAlignment="Center">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition />
                 <ColumnDefinition Width="Auto" MinWidth="58.97" />
             </Grid.ColumnDefinitions>
 
+            <Border Grid.Column="0" CornerRadius="0,5,5,0" Background="{DynamicResource Brush.Menu.Border}" Grid.ColumnSpan="3" Margin="0,0,8,0">
 
-            <Menu Grid.Column="0"
-                  IsMainMenu="True"
-                  BorderThickness="0"
-                  Background="{DynamicResource Brush.Window.Shell.Background.Solid}"
-                  Foreground="{DynamicResource Brush.Text.Primary}">
-                <Menu.Resources>
-                    <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource ToggleMenuItemStyle}" />
-                </Menu.Resources>
 
-                <MenuItem Header="_File" Height="24">
-                    <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
-                    <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
-                    <MenuItem Header="Set Custom Vintage Story Shortcut" Height="35"
-                              Click="SetCustomShortcutMenuItem_OnClick" />
-                    <MenuItem x:Name="GameProfilesMenuItem"
-                              Header="Game Profiles"
-                              Height="35"
-                              SubmenuOpened="GameProfilesMenuItem_OnSubmenuOpened">
-                        <MenuItem x:Name="CreateGameProfileMenuItem"
-                                  Header="Create new..."
-                                  Height="35"
-                                  Click="CreateGameProfileMenuItem_OnClick" />
-                        <MenuItem x:Name="DeleteGameProfileMenuItem"
-                                  Header="Delete profile..."
-                                  Height="35"
-                                  Click="DeleteGameProfileMenuItem_OnClick" />
-                    </MenuItem>
-                    <MenuItem Header="Restore backup point"
-                              Height="35"
-                              SubmenuOpened="RestoreBackupMenuItem_OnSubmenuOpened">
-                        <MenuItem Header="Loading..." IsEnabled="False" />
-                    </MenuItem>
-                    <MenuItem x:Name="RestoreDataFolderMenuItem"
-                              Header="Restore VintagestoryData backup"
-                              Height="35"
-                              SubmenuOpened="RestoreDataFolderMenuItem_OnSubmenuOpened">
-                        <MenuItem Header="Loading..." IsEnabled="False" />
-                    </MenuItem>
-                    <MenuItem x:Name="AutomaticDataBackupsMenuItem"
-                              Header="Automatically back up VintagestoryData before launch"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              Click="AutomaticDataBackupsMenuItem_OnClick" />
-                    <MenuItem x:Name="DisableAutoRefreshMenuItem"
-                              Header="_Disable auto-refresh"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              Click="DisableAutoRefreshMenuItem_OnClick" />
-                    <Separator />
-                    <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
-                </MenuItem>
-                <MenuItem Header="_Mods" Height="24" SubmenuOpened="ModsMenuItem_OnSubmenuOpened">
-                    <MenuItem Header="_Refresh Mods"
-                              Height="35"
-                              Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
-                    <MenuItem x:Name="UpdateAllModsMenuItem"
-                              Header="{Binding DataContext.UpdateAllModsMenuHeader, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=_Update All Mods}"
-                              Height="35"
-                              Click="UpdateAllModsMenuItem_OnClick" />
-                    <MenuItem Header="Check mods compatibility" Height="35"
-                              Click="CheckModsCompatibilityMenuItem_OnClick" />
-                    <MenuItem x:Name="RequireExactVsVersionMenuItem"
-                              Header="Require exact VS version for compatibility checks"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              Click="RequireExactVsVersionMenuItem_OnClick" />
-                    <MenuItem x:Name="CacheAllVersionsMenuItem"
-                              Header="Cache all versions locally"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              Click="CacheAllVersionsMenuItem_OnClick" />
-                    <MenuItem x:Name="DeleteCachedModsMenuItem"
-                              Header="_Delete Cached Mods"
-                              Height="35"
-                              Click="DeleteCachedModsMenuItem_OnClick" />
-                </MenuItem>
-                <MenuItem x:Name="PresetsAndModlistsMenuItem" Header="_Save &amp; Load" Height="24">
-                    <MenuItem Header="Save _Modlist as an importable PDF..." Height="35"
-                              Click="SaveInstalledModsPdfMenuItem_OnClick" />
-                    <MenuItem Header="Save _Modlist..." Height="35" Click="SaveModlistMenuItem_OnClick" />
-                    <MenuItem Header="Load _Modlist..." Height="35" Click="LoadModlistMenuItem_OnClick" />
-                    <Separator />
-                    <MenuItem Header="_Save Preset..." Height="35" Click="SavePresetMenuItem_OnClick" />
-                    <MenuItem x:Name="LoadPresetMenuItem"
-                              Header="_Load Preset"
-                              Height="35"
-                              SubmenuOpened="LoadPresetMenuItem_OnSubmenuOpened">
-                        <MenuItem x:Name="BrowsePresetMenuItem"
-                                  Header="_Browse..."
-                                  Height="35"
-                                  Click="LoadPresetMenuItem_OnClick" />
-                    </MenuItem>
-                    <Separator />
-                    <MenuItem x:Name="AlwaysClearModlistsMenuItem"
-                              Header="Always clear mods before loading Modlist"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              Click="AlwaysClearModlistsMenuItem_OnClick" />
-                    <MenuItem x:Name="AlwaysAddModlistsMenuItem"
-                              Header="Always add to current mods when loading Modlist"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              Click="AlwaysAddModlistsMenuItem_OnClick" />
-                </MenuItem>
-                <MenuItem Header="_View" Height="24">
-                    <MenuItem Header="_Compact View"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
-                    <MenuItem Header="_Use ModDB design"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}" />
-                    <MenuItem Header="_Themes" Height="35">
-                        <MenuItem x:Name="VintageStoryThemeMenuItem"
-                                  Header="_Vintage Story"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Tag="{x:Static services:ColorTheme.VintageStory}"
-                                  Click="ThemeMenuItem_OnClick" />
-                        <MenuItem x:Name="DarkThemeMenuItem"
-                                  Header="_Dark"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Tag="{x:Static services:ColorTheme.Dark}"
-                                  Click="ThemeMenuItem_OnClick" />
-                        <MenuItem x:Name="LightThemeMenuItem"
-                                  Header="_Light"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Tag="{x:Static services:ColorTheme.Light}"
-                                  Click="ThemeMenuItem_OnClick" />
-                        <MenuItem x:Name="CustomThemeMenuItem"
-                                  Header="_Custom..."
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Tag="{x:Static services:ColorTheme.Custom}"
-                                  Click="ThemeMenuItem_OnClick" />
-                        <MenuItem x:Name="SurpriseMeThemeMenuItem"
-                                  Header="_Surprise me! (In A Bad Way)"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Tag="{x:Static services:ColorTheme.SurpriseMe}"
-                                  Click="ThemeMenuItem_OnClick" />
-                    </MenuItem>
-                    <MenuItem x:Name="ColumnsMenuItem"
-                              Header="_Columns"
-                              Height="35"
-                              Visibility="{Binding IsViewingMainTab, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
-                        <MenuItem x:Name="ActiveColumnMenuItem"
-                                  Header="_Active"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                        <MenuItem x:Name="IconColumnMenuItem"
-                                  Header="_Icon"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                        <MenuItem x:Name="NameColumnMenuItem"
-                                  Header="_Name"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                        <MenuItem x:Name="VersionColumnMenuItem"
-                                  Header="_Version"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                        <MenuItem x:Name="LatestVersionColumnMenuItem"
-                                  Header="Latest _Version"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                        <MenuItem x:Name="AuthorsColumnMenuItem"
-                                  Header="_Authors"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                        <MenuItem x:Name="TagsColumnMenuItem"
-                                  Header="_Tags"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                        <MenuItem x:Name="StatusColumnMenuItem"
-                                  Header="_Status"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                        <MenuItem x:Name="UserReportsColumnMenuItem"
-                                  Header="User _Reports"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                        <MenuItem x:Name="SideColumnMenuItem"
-                                  Header="S_ide"
-                                  IsCheckable="True"
-                                  IsChecked="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Checked="InstalledModsColumnMenuItem_OnChecked"
-                                  Unchecked="InstalledModsColumnMenuItem_OnChecked" />
-                    </MenuItem>
-                </MenuItem>
-                <MenuItem Header="_Help &amp; Advanced" Height="24">
-                    <MenuItem x:Name="ManagerVersionMenuItem"
-                              Header="Version: --"
-                              Padding="12,6"
-                              IsEnabled="False"
-                              Focusable="False"
-                              Opacity="0.75" />
-                    <MenuItem x:Name="GameVersionMenuItem"
-                              Header="Vintage Story: --"
-                              Padding="12,6"
-                              IsEnabled="False"
-                              Focusable="False"
-                              Visibility="Collapsed"
-                              Opacity="0.75" />
-                    <Separator />
-                    <MenuItem Header="Open manager config folder"
-                              Padding="12,6"
-                              Click="ManagerDataFolderMenuItem_OnClick" />
-                    <MenuItem Header="Open _Mod DB page for the manager"
-                              Padding="12,6"
-                              Click="ManagerModDbPageMenuItem_OnClick" />
-                    <MenuItem Header="Menu Guide"
-                              Padding="12,6"
-                              Click="GuideMenuItem_OnClick" />
-                    <MenuItem Header="Help!"
-                              Padding="12,6"
-                              Click="HelpMenuItem_OnClick" />
-                    <MenuItem x:Name="DeveloperProfilesMenuItem"
-                              Header="Developer Profiles"
-                              Padding="12,6"
-                              Visibility="Collapsed" />
-                    <Separator />
-                    <MenuItem x:Name="DisableInternetAccessMenuItem"
-                              Header="_Disable Internet Access"
-                              Height="35"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              Click="DisableInternetAccessMenuItem_OnClick" />
-                    <MenuItem x:Name="EnableServerOptionsMenuItem"
-                              Header="Enable server options"
-                              Padding="12,6"
-                              IsCheckable="True"
-                              Style="{StaticResource ToggleMenuItemStyle}"
-                              Click="EnableServerOptionsMenuItem_OnClick" />
-                    <MenuItem Header="Enable logging for..."
-                              Padding="12,6">
-                        <MenuItem x:Name="LogModUpdateMenuItem"
-                                  Header="Mod update"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Click="LogModUpdateMenuItem_OnClick" />
-                        <MenuItem x:Name="LogModInstallMenuItem"
-                                  Header="Mod installation"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Click="LogModInstallMenuItem_OnClick" />
-                        <MenuItem x:Name="LogModDeletionMenuItem"
-                                  Header="Mod deletion"
-                                  Height="35"
-                                  IsCheckable="True"
-                                  Style="{StaticResource ToggleMenuItemStyle}"
-                                  Click="LogModDeletionMenuItem_OnClick" />
-                    </MenuItem>
-                    <MenuItem Header="Scan for mod config files"
-                              Padding="12,6"
-                              Click="ScanForModConfigsMenuItem_OnClick" />
-                    <MenuItem Header="Clear temporary cache (Safe to use, nothing important is removed)"
-                              Padding="12,6"
-                              Click="ClearAllCachesMenuItem_OnClick" />
-                    <Separator />
-                    <MenuItem Header="Debug: Show all game log lines referencing the selected mod."
-                              Padding="12,6"
-                              Click="ExperimentalModDebuggingMenuItem_OnClick" />
-                    <MenuItem Header="Debug: Show all game log lines found referencing any installed mod"
-                              Padding="12,6"
-                              Click="ExperimentalAllModsDebuggingMenuItem_OnClick" />
-                    <Separator />
-                    <MenuItem Header="Delete all Simple VS Manager files (Uninstall)"
-                              Padding="12,6"
-                              Click="DeleteAllManagerFilesMenuItem_OnClick" />
+                <Menu
+                    IsMainMenu="True"
+                    BorderThickness="0"
+                    Background="Transparent"
+                    Foreground="{DynamicResource Brush.Text.Primary}">
+                    <Menu.Resources>
+                        <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource ToggleMenuItemStyle}" />
+                    </Menu.Resources>
 
-                </MenuItem>
-            </Menu>
+                    <MenuItem Header="_File" Padding="6,0,12,0" Height="24">
+                        <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
+                        <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
+                        <MenuItem Header="Set Custom Vintage Story Shortcut" Height="35"
+                            Click="SetCustomShortcutMenuItem_OnClick" />
+                        <MenuItem x:Name="GameProfilesMenuItem"
+                            Header="Game Profiles"
+                            Height="35"
+                            SubmenuOpened="GameProfilesMenuItem_OnSubmenuOpened">
+                            <MenuItem x:Name="CreateGameProfileMenuItem"
+                                Header="Create new..."
+                                Height="35"
+                                Click="CreateGameProfileMenuItem_OnClick" />
+                            <MenuItem x:Name="DeleteGameProfileMenuItem"
+                                Header="Delete profile..."
+                                Height="35"
+                                Click="DeleteGameProfileMenuItem_OnClick" />
+                        </MenuItem>
+                        <MenuItem Header="Restore backup point"
+                            Height="35"
+                            SubmenuOpened="RestoreBackupMenuItem_OnSubmenuOpened">
+                            <MenuItem Header="Loading..." IsEnabled="False" />
+                        </MenuItem>
+                        <MenuItem x:Name="RestoreDataFolderMenuItem"
+                            Header="Restore VintagestoryData backup"
+                            Height="35"
+                            SubmenuOpened="RestoreDataFolderMenuItem_OnSubmenuOpened">
+                            <MenuItem Header="Loading..." IsEnabled="False" />
+                        </MenuItem>
+                        <MenuItem x:Name="AutomaticDataBackupsMenuItem"
+                            Header="Automatically back up VintagestoryData before launch"
+                            Height="35"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}"
+                            Click="AutomaticDataBackupsMenuItem_OnClick" />
+                        <MenuItem x:Name="DisableAutoRefreshMenuItem"
+                            Header="_Disable auto-refresh"
+                            Height="35"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}"
+                            Click="DisableAutoRefreshMenuItem_OnClick" />
+                        <Separator />
+                        <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
+                    </MenuItem>
+                    <MenuItem Header="_Mods" Height="24" SubmenuOpened="ModsMenuItem_OnSubmenuOpened" Padding="6,0,12,0">
+                        <MenuItem Header="_Refresh Mods"
+                            Height="35"
+                            Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+                        <MenuItem x:Name="UpdateAllModsMenuItem"
+                            Header="{Binding DataContext.UpdateAllModsMenuHeader, FallbackValue=_Update All Mods, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                            Height="35"
+                            Click="UpdateAllModsMenuItem_OnClick" />
+                        <MenuItem Header="Check mods compatibility" Height="35"
+                            Click="CheckModsCompatibilityMenuItem_OnClick" />
+                        <MenuItem x:Name="RequireExactVsVersionMenuItem"
+                            Header="Require exact VS version for compatibility checks"
+                            Height="35"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}"
+                            Click="RequireExactVsVersionMenuItem_OnClick" />
+                        <MenuItem x:Name="CacheAllVersionsMenuItem"
+                            Header="Cache all versions locally"
+                            Height="35"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}"
+                            Click="CacheAllVersionsMenuItem_OnClick" />
+                        <MenuItem x:Name="DeleteCachedModsMenuItem"
+                            Header="_Delete Cached Mods"
+                            Height="35"
+                            Click="DeleteCachedModsMenuItem_OnClick" />
+                    </MenuItem>
+                    <MenuItem x:Name="PresetsAndModlistsMenuItem" Header="_Save &amp; Load" Height="24" Padding="6,0,12,0">
+                        <MenuItem Header="Save _Modlist as an importable PDF..." Height="35"
+                            Click="SaveInstalledModsPdfMenuItem_OnClick" />
+                        <MenuItem Header="Save _Modlist..." Height="35" Click="SaveModlistMenuItem_OnClick" />
+                        <MenuItem Header="Load _Modlist..." Height="35" Click="LoadModlistMenuItem_OnClick" />
+                        <Separator />
+                        <MenuItem Header="_Save Preset..." Height="35" Click="SavePresetMenuItem_OnClick" />
+                        <MenuItem x:Name="LoadPresetMenuItem"
+                            Header="_Load Preset"
+                            Height="35"
+                            SubmenuOpened="LoadPresetMenuItem_OnSubmenuOpened">
+                            <MenuItem x:Name="BrowsePresetMenuItem"
+                                Header="_Browse..."
+                                Height="35"
+                                Click="LoadPresetMenuItem_OnClick" />
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem x:Name="AlwaysClearModlistsMenuItem"
+                            Header="Always clear mods before loading Modlist"
+                            Height="35"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}"
+                            Click="AlwaysClearModlistsMenuItem_OnClick" />
+                        <MenuItem x:Name="AlwaysAddModlistsMenuItem"
+                            Header="Always add to current mods when loading Modlist"
+                            Height="35"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}"
+                            Click="AlwaysAddModlistsMenuItem_OnClick" />
+                    </MenuItem>
+                    <MenuItem Header="_View" Height="24" Padding="6,0,12,0">
+                        <MenuItem Header="_Compact View"
+                            Height="35"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}"
+                            IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
+                        <MenuItem Header="_Use ModDB design"
+                            Height="35"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}"
+                            IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}" />
+                        <MenuItem Header="_Themes" Height="35">
+                            <MenuItem x:Name="VintageStoryThemeMenuItem"
+                                Header="_Vintage Story"
+                                Height="35"
+                                IsCheckable="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Tag="{x:Static services:ColorTheme.VintageStory}"
+                                Click="ThemeMenuItem_OnClick" />
+                            <MenuItem x:Name="DarkThemeMenuItem"
+                                Header="_Dark"
+                                Height="35"
+                                IsCheckable="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Tag="{x:Static services:ColorTheme.Dark}"
+                                Click="ThemeMenuItem_OnClick" />
+                            <MenuItem x:Name="LightThemeMenuItem"
+                                Header="_Light"
+                                Height="35"
+                                IsCheckable="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Tag="{x:Static services:ColorTheme.Light}"
+                                Click="ThemeMenuItem_OnClick" />
+                            <MenuItem x:Name="CustomThemeMenuItem"
+                                Header="_Custom..."
+                                Height="35"
+                                IsCheckable="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Tag="{x:Static services:ColorTheme.Custom}"
+                                Click="ThemeMenuItem_OnClick" />
+                            <MenuItem x:Name="SurpriseMeThemeMenuItem"
+                                Header="_Surprise me! (In A Bad Way)"
+                                Height="35"
+                                IsCheckable="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Tag="{x:Static services:ColorTheme.SurpriseMe}"
+                                Click="ThemeMenuItem_OnClick" />
+                        </MenuItem>
+                        <MenuItem x:Name="ColumnsMenuItem"
+                            Header="_Columns"
+                            Height="35"
+                            Visibility="{Binding IsViewingMainTab, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
+                            <MenuItem x:Name="ActiveColumnMenuItem"
+                                Header="_Active"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Checked="InstalledModsColumnMenuItem_OnChecked"
+                                Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                            <MenuItem x:Name="IconColumnMenuItem"
+                                Header="_Icon"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Checked="InstalledModsColumnMenuItem_OnChecked"
+                                Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                            <MenuItem x:Name="NameColumnMenuItem"
+                                Header="_Name"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Checked="InstalledModsColumnMenuItem_OnChecked"
+                                Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                            <MenuItem x:Name="VersionColumnMenuItem"
+                                Header="_Version"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Checked="InstalledModsColumnMenuItem_OnChecked"
+                                Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                            <MenuItem x:Name="LatestVersionColumnMenuItem"
+                                Header="Latest _Version"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Checked="InstalledModsColumnMenuItem_OnChecked"
+                                Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                            <MenuItem x:Name="AuthorsColumnMenuItem"
+                                Header="_Authors"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Checked="InstalledModsColumnMenuItem_OnChecked"
+                                Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                            <MenuItem x:Name="TagsColumnMenuItem"
+                                Header="_Tags"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Checked="InstalledModsColumnMenuItem_OnChecked"
+                                Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                            <MenuItem x:Name="StatusColumnMenuItem"
+                                Header="_Status"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Checked="InstalledModsColumnMenuItem_OnChecked"
+                                Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                            <MenuItem x:Name="UserReportsColumnMenuItem"
+                                Header="User _Reports"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Checked="InstalledModsColumnMenuItem_OnChecked"
+                                Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                            <MenuItem x:Name="SideColumnMenuItem"
+                                Header="S_ide"
+                                IsCheckable="True"
+                                IsChecked="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Checked="InstalledModsColumnMenuItem_OnChecked"
+                                Unchecked="InstalledModsColumnMenuItem_OnChecked" />
+                        </MenuItem>
+                    </MenuItem>
+                    <MenuItem Header="_Help &amp; Advanced" Height="24" Padding="6,0,12,0">
+                        <MenuItem x:Name="ManagerVersionMenuItem"
+                            Header="Version: --"
+                            Padding="12,6"
+                            IsEnabled="False"
+                            Focusable="False"
+                            Opacity="0.75" />
+                        <MenuItem x:Name="GameVersionMenuItem"
+                            Header="Vintage Story: --"
+                            Padding="12,6"
+                            IsEnabled="False"
+                            Focusable="False"
+                            Visibility="Collapsed"
+                            Opacity="0.75" />
+                        <Separator />
+                        <MenuItem Header="Open manager config folder"
+                            Padding="12,6"
+                            Click="ManagerDataFolderMenuItem_OnClick" />
+                        <MenuItem Header="Open _Mod DB page for the manager"
+                            Padding="12,6"
+                            Click="ManagerModDbPageMenuItem_OnClick" />
+                        <MenuItem Header="Menu Guide"
+                            Padding="12,6"
+                            Click="GuideMenuItem_OnClick" />
+                        <MenuItem Header="Help!"
+                            Padding="12,6"
+                            Click="HelpMenuItem_OnClick" />
+                        <MenuItem x:Name="DeveloperProfilesMenuItem"
+                            Header="Developer Profiles"
+                            Padding="12,6"
+                            Visibility="Collapsed" />
+                        <Separator />
+                        <MenuItem x:Name="DisableInternetAccessMenuItem"
+                            Header="_Disable Internet Access"
+                            Height="35"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}"
+                            Click="DisableInternetAccessMenuItem_OnClick" />
+                        <MenuItem x:Name="EnableServerOptionsMenuItem"
+                            Header="Enable server options"
+                            Padding="12,6"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}"
+                            Click="EnableServerOptionsMenuItem_OnClick" />
+                        <MenuItem Header="Enable logging for..."
+                            Padding="12,6">
+                            <MenuItem x:Name="LogModUpdateMenuItem"
+                                Header="Mod update"
+                                Height="35"
+                                IsCheckable="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Click="LogModUpdateMenuItem_OnClick" />
+                            <MenuItem x:Name="LogModInstallMenuItem"
+                                Header="Mod installation"
+                                Height="35"
+                                IsCheckable="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Click="LogModInstallMenuItem_OnClick" />
+                            <MenuItem x:Name="LogModDeletionMenuItem"
+                                Header="Mod deletion"
+                                Height="35"
+                                IsCheckable="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Click="LogModDeletionMenuItem_OnClick" />
+                        </MenuItem>
+                        <MenuItem Header="Scan for mod config files"
+                            Padding="12,6"
+                            Click="ScanForModConfigsMenuItem_OnClick" />
+                        <MenuItem Header="Clear temporary cache (Safe to use, nothing important is removed)"
+                            Padding="12,6"
+                            Click="ClearAllCachesMenuItem_OnClick" />
+                        <Separator />
+                        <MenuItem Header="Debug: Show all game log lines referencing the selected mod."
+                            Padding="12,6"
+                            Click="ExperimentalModDebuggingMenuItem_OnClick" />
+                        <MenuItem Header="Debug: Show all game log lines found referencing any installed mod"
+                            Padding="12,6"
+                            Click="ExperimentalAllModsDebuggingMenuItem_OnClick" />
+                        <Separator />
+                        <MenuItem Header="Delete all Simple VS Manager files (Uninstall)"
+                            Padding="12,6"
+                            Click="DeleteAllManagerFilesMenuItem_OnClick" />
+
+                    </MenuItem>
+                </Menu>
+
+            </Border>
 
             <StackPanel Grid.Column="1"
                         Margin="4,0,0,0"
@@ -374,77 +377,15 @@
                 <TextBlock x:Name="ManagerUpdateLinkTextBlock"
                            Visibility="Collapsed"
                            Margin="0,0,12,0"
-                           VerticalAlignment="Center">
-                    <Hyperlink NavigateUri="https://mods.vintagestory.at/simplevsmanager"
+                           VerticalAlignment="Center"><Hyperlink NavigateUri="https://mods.vintagestory.at/simplevsmanager"
                                Foreground="{DynamicResource Brush.Text.Emphasis}"
-                               RequestNavigate="ManagerUpdateLink_OnRequestNavigate">
-                        Manager update available!
-                    </Hyperlink>
-                </TextBlock>
+                               RequestNavigate="ManagerUpdateLink_OnRequestNavigate"><Run Text="Manager update available!"/></Hyperlink></TextBlock>
 
                 <TextBlock x:Name="ModUsagePromptTextBlock"
                            Visibility="Collapsed"
-                           VerticalAlignment="Center">
-                    <Hyperlink Foreground="{DynamicResource Brush.Text.Emphasis}"
-                               Click="ModUsagePromptLink_OnClick">
-                        Confirm working mods!
-                    </Hyperlink>
-                </TextBlock>
+                           VerticalAlignment="Center"><Hyperlink Foreground="{DynamicResource Brush.Text.Emphasis}"
+                               Click="ModUsagePromptLink_OnClick"><Run Text="Confirm working mods!"/></Hyperlink></TextBlock>
             </StackPanel>
-
-            <Button x:Name="DiscordButton"
-                    Grid.Column="2"
-                    Width="45.4"
-                    Height="45"
-                    Padding="0"
-                    Margin="8,8,0,0"
-                    BorderThickness="0"
-                    ToolTip="Join the Simple VS Manager Discord"
-                    Click="DiscordButton_OnClick" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Button.Template>
-                    <ControlTemplate TargetType="{x:Type Button}">
-                        <Grid Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
-                            <Grid HorizontalAlignment="Center"
-                                  VerticalAlignment="Center">
-                                <Image x:Name="DiscordIcon"
-                                       Source="/Resources/Discord.png"
-                                       Width="26"
-                                       Height="26"
-                                       Stretch="Uniform" />
-                                <Rectangle x:Name="DiscordNormalOverlay"
-                                           Width="{Binding ActualWidth, ElementName=DiscordIcon}"
-                                           Height="{Binding ActualHeight, ElementName=DiscordIcon}"
-                                           Fill="{DynamicResource Brush.ComboBox.Background.Disabled}">
-                                    <Rectangle.OpacityMask>
-                                        <ImageBrush ImageSource="/Resources/Discord.png"
-                                                    Stretch="Uniform" />
-                                    </Rectangle.OpacityMask>
-                                </Rectangle>
-                                <Rectangle x:Name="DiscordHoverOverlay"
-                                           Width="{Binding ActualWidth, ElementName=DiscordIcon}"
-                                           Height="{Binding ActualHeight, ElementName=DiscordIcon}"
-                                           Visibility="Collapsed"
-                                           Fill="#5865F2">
-                                    <Rectangle.OpacityMask>
-                                        <ImageBrush ImageSource="/Resources/Discord.png"
-                                                    Stretch="Uniform" />
-                                    </Rectangle.OpacityMask>
-                                </Rectangle>
-                            </Grid>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="DiscordHoverOverlay"
-                                        Property="Visibility"
-                                        Value="Visible" />
-                                <Setter TargetName="DiscordNormalOverlay"
-                                        Property="Visibility"
-                                        Value="Collapsed" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
 
 
         </Grid>
@@ -461,32 +402,32 @@
                    Opacity="0.5"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top" Height="0" Width="0" />
-        <Grid x:Name="MIDDLE" Grid.Row="1"
-              Margin="0,10,0,0">
+        <Grid x:Name="MIDDLE" Grid.Row="1" Background="Transparent">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <TabControl x:Name="MiddleTabControl" Margin="0,-6,0,0" Background="Transparent"
+            <TabControl x:Name="MiddleTabControl" Background="Transparent"
                         ItemContainerStyle="{StaticResource IMM.MiddleTabItemStyle}"
                         SelectionChanged="MiddleTabControl_OnSelectionChanged">
-                <TabItem x:Name="MainTab" Header="Installed mods" VerticalAlignment="Bottom" Padding="12,3,12,0" Height="28" Width="120">
-                    <Grid x:Name="MainGrid" Margin="10,0,0,0" VerticalAlignment="Top">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <Grid x:Name="MainControls" Margin="0,0,10,0" Height="48" VerticalAlignment="Top">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition />
-                                <ColumnDefinition Width="Auto" MinWidth="229" />
-                            </Grid.ColumnDefinitions>
+                <TabItem x:Name="MainTab" Header="Installed mods" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="8,6,8,6" Height="Auto" Width="Auto">
+                    <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" BorderThickness="0" CornerRadius="0,8,0,0">
+                        <Grid x:Name="MainGrid" Background="Transparent">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid x:Name="MainControls" Margin="0,0,10,0" Height="48" VerticalAlignment="Top">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="Auto" MinWidth="229" />
+                                </Grid.ColumnDefinitions>
 
-                            <TextBox x:Name="MainSearch" MinWidth="200"
-                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                 FontSize="14" VerticalContentAlignment="Center" Margin="0,0,0,7" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Left"
-                                 Style="{StaticResource IMM.SearchTextBoxStyle}"
-                                 ui:ControlHelper.PlaceholderText="Search installed mods" Padding="3,3,6,3" UseLayoutRounding="True" Grid.IsSharedSizeScope="True"/>
-                            <Button Content="Refresh"
+                                <TextBox x:Name="MainSearch" MinWidth="200"
+                                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                    FontSize="14" VerticalContentAlignment="Center" Height="32" HorizontalAlignment="Left"
+                                    Style="{StaticResource IMM.SearchTextBoxStyle}"
+                                    ui:ControlHelper.PlaceholderText="Search installed mods" Padding="3,3,6,3" UseLayoutRounding="True" Grid.IsSharedSizeScope="True" Margin="10,0,0,0"/>
+                                <Button Content="Refresh"
                                     Margin="0,0,0,7"
                                     ToolTip="Quickly refreshes the current view using cached data if no changes are detected on the online mod page."
                                     Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
@@ -494,644 +435,644 @@
                                     Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                     MinHeight="32" Grid.Column="1" Height="32" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="82"
                                     Padding="6,6,6,6" />
-                        </Grid>
-                        <Border x:Name="MainBorder"
-                        Margin="0,0,10,0"
-                        Background="Transparent"
-                        BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
-                        BorderThickness="0,0,0,0"
-                        CornerRadius="{Binding (ui:ControlHelper.CornerRadius), ElementName=ModsDataGrid}"
-                        SnapsToDevicePixels="True"
-                        Grid.Row="1">
-                            <DataGrid x:Name="ModsDataGrid"
-                                      AutoGenerateColumns="False"
-                                      CanUserAddRows="False"
-                                      CanUserDeleteRows="False"
-                                      IsReadOnly="False"
-                                      CanUserSortColumns="True"
-                                      EnableRowVirtualization="True"
-                                      VirtualizingPanel.IsVirtualizing="True"
-                                      VirtualizingPanel.VirtualizationMode="Recycling"
-                                      ScrollViewer.CanContentScroll="True"
-                                      GridLinesVisibility="None"
-                                      SelectionUnit="FullRow"
-                                      SelectionMode="Single"
-                                      RowHeaderWidth="0"
-                                      BorderThickness="0,1,2,1"
-                                      IsSynchronizedWithCurrentItem="False"
-                                      MinColumnWidth="20"
-                                      SelectionChanged="ModsDataGrid_OnSelectionChanged"
-                                      Foreground="{DynamicResource Brush.Text.Primary}"
-                                      PreviewKeyDown="ModsDataGrid_OnPreviewKeyDown"
-                                      PreviewMouseLeftButtonDown="ModsDataGrid_OnPreviewMouseLeftButtonDown"
-                                      PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
-                                      Sorting="ModsDataGrid_OnSorting"
-                                      RowBackground="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                                      HorizontalGridLinesBrush="Transparent"
-                                      VerticalGridLinesBrush="Transparent"
-                                      HeadersVisibility="Column"
-                                      ui:ControlHelper.CornerRadius="0"
-                                      FontSize="15"
-                                      Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                      BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                      Height="559" VerticalAlignment="Center">
-                                <DataGrid.Resources>
-                                    <Style TargetType="{x:Type ScrollBar}"
-                                           BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
-                                    <Style TargetType="{x:Type Thumb}"
-                                           BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" />
-                                    <Style TargetType="{x:Type TextBlock}">
-                                        <Setter Property="TextWrapping" Value="Wrap" />
-                                    </Style>
-                                    <Style TargetType="{x:Type DataGridColumnHeader}"
-                                           BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
-                                </DataGrid.Resources>
-                                <DataGrid.CellStyle>
-                                    <StaticResource ResourceKey="IMM.DataGridCellBaseStyle" />
-                                </DataGrid.CellStyle>
-                                <DataGrid.RowStyle>
-                                    <Style TargetType="{x:Type DataGridRow}">
-                                        <Setter Property="Background" Value="Transparent" />
-                                        <Setter Property="BorderBrush"
+                            </Grid>
+                            <Border x:Name="MainBorder"
+                                Background="{DynamicResource Brush.DataGrid.Background}"
+                                BorderBrush="{DynamicResource Brush.DataGrid.Background}"
+                                BorderThickness="2,2,0,0"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True"
+                                Grid.Row="1" Margin="6,0,10,0">
+                                <DataGrid x:Name="ModsDataGrid"
+                                    ItemsSource="{Binding ModsView}"
+                                    AutoGenerateColumns="False"
+                                    CanUserAddRows="False"
+                                    CanUserDeleteRows="False"
+                                    IsReadOnly="False"
+                                    CanUserSortColumns="True"
+                                    EnableRowVirtualization="True"
+                                    VirtualizingPanel.IsVirtualizing="True"
+                                    VirtualizingPanel.VirtualizationMode="Recycling"
+                                    ScrollViewer.CanContentScroll="True"
+                                    GridLinesVisibility="None"
+                                    SelectionUnit="FullRow"
+                                    SelectionMode="Single"
+                                    RowHeaderWidth="0"
+                                    BorderThickness="0,1,2,1"
+                                    IsSynchronizedWithCurrentItem="False"
+                                    MinColumnWidth="20"
+                                    SelectionChanged="ModsDataGrid_OnSelectionChanged"
+                                    Foreground="{DynamicResource Brush.Text.Primary}"
+                                    PreviewKeyDown="ModsDataGrid_OnPreviewKeyDown"
+                                    PreviewMouseLeftButtonDown="ModsDataGrid_OnPreviewMouseLeftButtonDown"
+                                    PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
+                                    Sorting="ModsDataGrid_OnSorting"
+                                    RowBackground="{DynamicResource Brush.Button.Primary.Background.Normal}"
+                                    HorizontalGridLinesBrush="Transparent"
+                                    VerticalGridLinesBrush="Transparent"
+                                    HeadersVisibility="Column"
+                                    ui:ControlHelper.CornerRadius="0"
+                                    FontSize="15"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent">
+                                    <DataGrid.Resources>
+                                        <Style TargetType="{x:Type ScrollBar}"
+                                            BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
+                                        <Style TargetType="{x:Type Thumb}"
+                                            BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" />
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Setter Property="TextWrapping" Value="Wrap" />
+                                        </Style>
+                                        <Style TargetType="{x:Type DataGridColumnHeader}"
+                                            BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" />
+                                    </DataGrid.Resources>
+                                    <DataGrid.CellStyle>
+                                        <StaticResource ResourceKey="IMM.DataGridCellBaseStyle" />
+                                    </DataGrid.CellStyle>
+                                    <DataGrid.RowStyle>
+                                        <Style TargetType="{x:Type DataGridRow}">
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Setter Property="BorderBrush"
                                                 Value="{DynamicResource Brush.InstalledMod.Row.Border}" />
-                                        <Setter Property="BorderThickness" Value="0" />
-                                        <Setter Property="Margin" Value="2,2,2,2" />
-                                        <Setter Property="Padding">
-                                            <Setter.Value>
-                                                <MultiBinding
-                                                    Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
-                                                    <Binding Source="{StaticResource IMM.RowPaddingBase}" />
-                                                    <Binding Source="{StaticResource IMM.NormalRowHeightOffset}" />
-                                                </MultiBinding>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type DataGridRow}">
-                                                    <!-- The brushes here come from InstalledMods_Row_* resources in Resources/Themes. -->
-                                                    <Border x:Name="RowBorder"
+                                            <Setter Property="BorderThickness" Value="0" />
+                                            <Setter Property="Margin" Value="2,2,2,2" />
+                                            <Setter Property="Padding">
+                                                <Setter.Value>
+                                                    <MultiBinding
+                                                        Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
+                                                        <Binding Source="{StaticResource IMM.RowPaddingBase}" />
+                                                        <Binding Source="{StaticResource IMM.NormalRowHeightOffset}" />
+                                                    </MultiBinding>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="{x:Type DataGridRow}">
+                                                        <!-- The brushes here come from InstalledMods_Row_* resources in Resources/Themes. -->
+                                                        <Border x:Name="RowBorder"
                                                             Background="{DynamicResource Brush.InstalledMod.Row.Background}"
                                                             BorderBrush="{TemplateBinding BorderBrush}"
                                                             BorderThickness="{TemplateBinding BorderThickness}"
                                                             CornerRadius="8"
                                                             Margin="4,0,4,4"
                                                             SnapsToDevicePixels="True">
-                                                        <Border.Effect>
-                                                            <DropShadowEffect
-                                                                Color="{Binding Color, Source={StaticResource Brush.DataGrid.RowShadow}}"
-                                                                BlurRadius="2" Direction="210" ShadowDepth="2"
-                                                                Opacity="0.5" />
+                                                            <Border.Effect>
+                                                                <DropShadowEffect
+                                                                    Color="{Binding Color, Source={StaticResource Brush.DataGrid.RowShadow}}"
+                                                                    BlurRadius="2" Direction="210" ShadowDepth="2"
+                                                                    Opacity="0.5" />
 
-                                                        </Border.Effect>
-                                                        <Grid>
-                                                            <Border x:Name="SelectionOverlay"
+                                                            </Border.Effect>
+                                                            <Grid>
+                                                                <Border x:Name="SelectionOverlay"
                                                                     Background="{DynamicResource Brush.Accent.Primary}"
                                                                     Opacity="0"
                                                                     CornerRadius="8"
                                                                     IsHitTestVisible="False" />
-                                                            <Border x:Name="HoverOverlay"
+                                                                <Border x:Name="HoverOverlay"
                                                                     Background="{DynamicResource Brush.Button.Primary.Background.Hover}"
                                                                     Opacity="0"
                                                                     CornerRadius="8"
                                                                     IsHitTestVisible="False" />
-                                                            <Border Padding="{TemplateBinding Padding}"
+                                                                <Border Padding="{TemplateBinding Padding}"
                                                                     Background="Transparent"
                                                                     CornerRadius="8">
-                                                                <SelectiveScrollingGrid>
-                                                                    <SelectiveScrollingGrid.ColumnDefinitions>
-                                                                        <ColumnDefinition Width="*" />
-                                                                    </SelectiveScrollingGrid.ColumnDefinitions>
-                                                                    <SelectiveScrollingGrid.RowDefinitions>
-                                                                        <RowDefinition Height="*" />
-                                                                        <RowDefinition Height="Auto" />
-                                                                    </SelectiveScrollingGrid.RowDefinitions>
-                                                                    <DataGridCellsPresenter Grid.Column="0"
+                                                                    <SelectiveScrollingGrid>
+                                                                        <SelectiveScrollingGrid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="*" />
+                                                                        </SelectiveScrollingGrid.ColumnDefinitions>
+                                                                        <SelectiveScrollingGrid.RowDefinitions>
+                                                                            <RowDefinition Height="*" />
+                                                                            <RowDefinition Height="Auto" />
+                                                                        </SelectiveScrollingGrid.RowDefinitions>
+                                                                        <DataGridCellsPresenter Grid.Column="0"
                                                                             SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" />
-                                                                    <DataGridDetailsPresenter Grid.Column="0"
+                                                                        <DataGridDetailsPresenter Grid.Column="0"
                                                                             Grid.Row="1"
                                                                             SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
                                                                             Visibility="{TemplateBinding DetailsVisibility}" />
-                                                                </SelectiveScrollingGrid>
-                                                            </Border>
-                                                        </Grid>
-                                                    </Border>
-                                                    <ControlTemplate.Triggers>
-                                                        <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                                                            <Setter TargetName="RowBorder" Property="Background"
+                                                                    </SelectiveScrollingGrid>
+                                                                </Border>
+                                                            </Grid>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <DataTrigger Binding="{Binding HasErrors}" Value="True">
+                                                                <Setter TargetName="RowBorder" Property="Background"
                                                                     Value="{DynamicResource Brush.Overlay.Warning.Background}" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding HasActivationError}"
-                                                                     Value="True">
-                                                            <Setter TargetName="RowBorder" Property="Background"
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding HasActivationError}"
+                                                                Value="True">
+                                                                <Setter TargetName="RowBorder" Property="Background"
                                                                     Value="{DynamicResource Brush.Overlay.Warning.Background}" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsActive}" Value="False">
-                                                            <Setter TargetName="RowBorder" Property="Background"
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                                                <Setter TargetName="RowBorder" Property="Background"
                                                                     Value="{DynamicResource Brush.ModCard.Background.Disabled}" />
-                                                            <Setter TargetName="RowBorder" Property="Opacity"
+                                                                <Setter TargetName="RowBorder" Property="Opacity"
                                                                     Value="0.5" />
-                                                        </DataTrigger>
-                                                        <Trigger Property="DetailsVisibility" Value="Visible">
-                                                            <Setter TargetName="RowBorder" Property="BorderThickness"
+                                                            </DataTrigger>
+                                                            <Trigger Property="DetailsVisibility" Value="Visible">
+                                                                <Setter TargetName="RowBorder" Property="BorderThickness"
                                                                     Value="2,2,2,2" />
-                                                        </Trigger>
-                                                        <MultiTrigger>
-                                                            <MultiTrigger.Conditions>
-                                                                <Condition Property="IsMouseOver" Value="True" />
-                                                                <Condition Property="IsSelected" Value="False" />
-                                                            </MultiTrigger.Conditions>
-                                                            <Setter TargetName="RowBorder" Property="BorderBrush"
+                                                            </Trigger>
+                                                            <MultiTrigger>
+                                                                <MultiTrigger.Conditions>
+                                                                    <Condition Property="IsMouseOver" Value="True" />
+                                                                    <Condition Property="IsSelected" Value="False" />
+                                                                </MultiTrigger.Conditions>
+                                                                <Setter TargetName="RowBorder" Property="BorderBrush"
                                                                     Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
-                                                        </MultiTrigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <EventSetter Event="UIElement.PreviewMouseLeftButtonDown"
-                                                     Handler="ModsDataGridRow_OnPreviewMouseLeftButtonDown" />
-                                        <EventSetter Event="FrameworkElement.Loaded" Handler="ModsDataGridRow_OnLoaded" />
-                                        <EventSetter Event="FrameworkElement.Unloaded"
-                                                     Handler="ModsDataGridRow_OnUnloaded" />
-                                        <EventSetter Event="UIElement.MouseEnter"
-                                                     Handler="ModsDataGridRow_OnMouseEnter" />
-                                        <EventSetter Event="UIElement.MouseLeave"
-                                                     Handler="ModsDataGridRow_OnMouseLeave" />
-                                        <Style.Triggers>
-                                            <DataTrigger
-                                                Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                                                Value="True">
-                                                <Setter Property="Padding">
-                                                    <Setter.Value>
-                                                        <MultiBinding
-                                                            Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
-                                                            <Binding Source="{StaticResource IMM.RowPaddingBase}" />
-                                                            <Binding
-                                                                Source="{StaticResource IMM.CompactRowHeightOffset}" />
-                                                        </MultiBinding>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                                                <Setter Property="Background"
+                                                            </MultiTrigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <EventSetter Event="UIElement.PreviewMouseLeftButtonDown"
+                                                Handler="ModsDataGridRow_OnPreviewMouseLeftButtonDown" />
+                                            <EventSetter Event="FrameworkElement.Loaded" Handler="ModsDataGridRow_OnLoaded" />
+                                            <EventSetter Event="FrameworkElement.Unloaded"
+                                                Handler="ModsDataGridRow_OnUnloaded" />
+                                            <EventSetter Event="UIElement.MouseEnter"
+                                                Handler="ModsDataGridRow_OnMouseEnter" />
+                                            <EventSetter Event="UIElement.MouseLeave"
+                                                Handler="ModsDataGridRow_OnMouseLeave" />
+                                            <Style.Triggers>
+                                                <DataTrigger
+                                                    Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                    Value="True">
+                                                    <Setter Property="Padding">
+                                                        <Setter.Value>
+                                                            <MultiBinding
+                                                                Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
+                                                                <Binding Source="{StaticResource IMM.RowPaddingBase}" />
+                                                                <Binding
+                                                                    Source="{StaticResource IMM.CompactRowHeightOffset}" />
+                                                            </MultiBinding>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding HasErrors}" Value="True">
+                                                    <Setter Property="Background"
                                                         Value="{DynamicResource Brush.Overlay.Warning.Background}" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding HasActivationError}" Value="True">
-                                                <Setter Property="Background"
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding HasActivationError}" Value="True">
+                                                    <Setter Property="Background"
                                                         Value="{DynamicResource Brush.Overlay.Warning.Background}" />
-                                            </DataTrigger>
-                                            <Trigger Property="IsSelected" Value="True">
-                                                <Setter Property="Background"
+                                                </DataTrigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter Property="Background"
                                                         Value="{DynamicResource Brush.DataGrid.Row.Background.Selected}" />
-                                                <Setter Property="BorderBrush"
+                                                    <Setter Property="BorderBrush"
                                                         Value="{DynamicResource Brush.Accent.Primary}" />
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.RowStyle>
-                                <DataGrid.Columns>
-                                    <DataGridTemplateColumn x:Name="ActiveColumn" Header="Active"
-                                                            SortMemberPath="ActiveSortOrder" Width="90" MinWidth="85">
-                                        <DataGridTemplateColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}"
-                                                   BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                <Setter Property="Padding" Value="0" />
-                                            </Style>
-                                        </DataGridTemplateColumn.CellStyle>
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Grid HorizontalAlignment="Center">
-                                                    <ui:ToggleSwitch
-                                                        IsOn="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                        HorizontalAlignment="Center"
-                                                        Toggled="ActiveToggle_OnToggled"
-                                                        PreviewMouseLeftButtonDown="ActiveToggle_OnPreviewMouseLeftButtonDown"
-                                                        PreviewMouseLeftButtonUp="ActiveToggle_OnPreviewMouseLeftButtonUp"
-                                                        PreviewMouseMove="ActiveToggle_OnPreviewMouseMove"
-                                                        Margin="12,0"
-                                                        OnContent="{x:Null}"
-                                                        OffContent="{x:Null}">
-                                                        <ui:ToggleSwitch.Style>
-                                                            <Style TargetType="{x:Type ui:ToggleSwitch}"
-                                                                   BasedOn="{StaticResource IMM.ToggleSwitchBaseStyle}">
-                                                                <Setter Property="IsEnabled"
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.RowStyle>
+                                    <DataGrid.Columns>
+                                        <DataGridTemplateColumn x:Name="ActiveColumn" Header="Active"
+                                            SortMemberPath="ActiveSortOrder" Width="90" MinWidth="85">
+                                            <DataGridTemplateColumn.CellStyle>
+                                                <Style TargetType="{x:Type DataGridCell}"
+                                                    BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                                    <Setter Property="Padding" Value="0" />
+                                                </Style>
+                                            </DataGridTemplateColumn.CellStyle>
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Grid HorizontalAlignment="Center">
+                                                        <ui:ToggleSwitch
+                                                            IsOn="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            HorizontalAlignment="Center"
+                                                            Toggled="ActiveToggle_OnToggled"
+                                                            PreviewMouseLeftButtonDown="ActiveToggle_OnPreviewMouseLeftButtonDown"
+                                                            PreviewMouseLeftButtonUp="ActiveToggle_OnPreviewMouseLeftButtonUp"
+                                                            PreviewMouseMove="ActiveToggle_OnPreviewMouseMove"
+                                                            Margin="12,0"
+                                                            OnContent="{x:Null}"
+                                                            OffContent="{x:Null}">
+                                                            <ui:ToggleSwitch.Style>
+                                                                <Style TargetType="{x:Type ui:ToggleSwitch}"
+                                                                    BasedOn="{StaticResource IMM.ToggleSwitchBaseStyle}">
+                                                                    <Setter Property="IsEnabled"
                                                                         Value="{Binding CanToggle}" />
-                                                            </Style>
-                                                        </ui:ToggleSwitch.Style>
-                                                    </ui:ToggleSwitch>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTemplateColumn x:Name="IconColumn" Header="Icon" Width="76"
-                                                            IsReadOnly="True">
-                                        <DataGridTemplateColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}"
-                                                   BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Left" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                <Setter Property="Padding" Value="0,0,12,0" />
-                                            </Style>
-                                        </DataGridTemplateColumn.CellStyle>
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Border Width="64" Height="64"
+                                                                </Style>
+                                                            </ui:ToggleSwitch.Style>
+                                                        </ui:ToggleSwitch>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn x:Name="IconColumn" Header="Icon" Width="76"
+                                            IsReadOnly="True">
+                                            <DataGridTemplateColumn.CellStyle>
+                                                <Style TargetType="{x:Type DataGridCell}"
+                                                    BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                                    <Setter Property="Padding" Value="0,0,12,0" />
+                                                </Style>
+                                            </DataGridTemplateColumn.CellStyle>
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Border Width="64" Height="64"
                                                         HorizontalAlignment="Left"
                                                         VerticalAlignment="Center"
                                                         ToolTipService.ShowDuration="60000"
                                                         ToolTipService.InitialShowDelay="200">
-                                                    <ToolTipService.ToolTip>
-                                                        <TextBlock Text="{Binding Tooltip}"
-                                                                   FontFamily="Segoe UI"
-                                                                   FontSize="12"
-                                                                   FontWeight="Normal"
-                                                                   MaxWidth="300"
-                                                                   Foreground="{DynamicResource Brush.ToolTip.Text}"
-                                                                   TextWrapping="Wrap" />
-                                                    </ToolTipService.ToolTip>
-                                                    <Image Source="{Binding Icon}" Stretch="Uniform" Margin="0" />
-                                                </Border>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTextColumn x:Name="NameColumn" Header="Name"
-                                                        Binding="{Binding DisplayName, Mode=OneWay}" Width="220"
-                                                        SortMemberPath="NameSortKey" IsReadOnly="True">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="{x:Type TextBlock}">
-                                                <Setter Property="FontFamily" Value="Segoe UI" />
-                                                <Setter Property="FontWeight" Value="Bold" />
-                                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                                                <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
-                                                <Setter Property="HorizontalAlignment" Value="Stretch" />
-                                                <Setter Property="VerticalAlignment" Value="Center" />
-                                                <Setter Property="TextAlignment" Value="Left" />
-                                                <Setter Property="Margin" Value="15,0,0,0" />
-                                                <Setter Property="ToolTipService.ToolTip">
-                                                    <Setter.Value>
-                                                        <TextBlock Text="{Binding Tooltip}"
-                                                                   FontFamily="Segoe UI"
-                                                                   FontSize="12"
-                                                                   FontWeight="Normal"
-                                                                   MaxWidth="300"
-                                                                   Foreground="{DynamicResource Brush.ToolTip.Text}"
-                                                                   TextWrapping="Wrap" />
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}"
-                                                   BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.CellStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn x:Name="VersionColumn"
-                                                        Header="Version"
-                                                        Binding="{Binding VersionDisplay, Mode=OneWay}"
-                                                        Width="85"
-                                                        IsReadOnly="True"
-                                                        MinWidth="80"
-                                                        ElementStyle="{StaticResource IMM.DataGridCenteredTextStyle}"
-                                                        CellStyle="{StaticResource IMM.DataGridCenteredCellStyle}" />
-                                    <DataGridTextColumn x:Name="LatestVersionColumn" Header="Latest Version"
-                                                        Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}"
-                                                        SortMemberPath="LatestVersionSortKey" Width="140"
-                                                        MinWidth="139" IsReadOnly="True">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="{x:Type TextBlock}">
-                                                <Setter Property="HorizontalAlignment" Value="Center" />
-                                                <Setter Property="VerticalAlignment" Value="Center" />
-                                                <Setter Property="Padding" Value="4,2" />
-                                                <Setter Property="Margin" Value="2" />
-                                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                                                <Setter Property="ToolTip">
-                                                    <Setter.Value>
-                                                        <ToolTip MaxHeight="600"
-                                                                 MaxWidth="300"
-                                                                 Padding="0">
-                                                            <Border MaxHeight="600"
+                                                        <ToolTipService.ToolTip>
+                                                            <TextBlock Text="{Binding Tooltip}"
+                                                                FontFamily="Segoe UI"
+                                                                FontSize="12"
+                                                                FontWeight="Normal"
+                                                                MaxWidth="300"
+                                                                Foreground="{DynamicResource Brush.ToolTip.Text}"
+                                                                TextWrapping="Wrap" />
+                                                        </ToolTipService.ToolTip>
+                                                        <Image Source="{Binding Icon}" Stretch="Uniform" Margin="0" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn x:Name="NameColumn" Header="Name"
+                                            Binding="{Binding DisplayName, Mode=OneWay}" Width="220"
+                                            SortMemberPath="NameSortKey" IsReadOnly="True">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="FontFamily" Value="Segoe UI" />
+                                                    <Setter Property="FontWeight" Value="Bold" />
+                                                    <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                                                    <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
+                                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                    <Setter Property="TextAlignment" Value="Left" />
+                                                    <Setter Property="Margin" Value="15,0,0,0" />
+                                                    <Setter Property="ToolTipService.ToolTip">
+                                                        <Setter.Value>
+                                                            <TextBlock Text="{Binding Tooltip}"
+                                                                FontFamily="Segoe UI"
+                                                                FontSize="12"
+                                                                FontWeight="Normal"
+                                                                MaxWidth="300"
+                                                                Foreground="{DynamicResource Brush.ToolTip.Text}"
+                                                                TextWrapping="Wrap" />
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                            <DataGridTextColumn.CellStyle>
+                                                <Style TargetType="{x:Type DataGridCell}"
+                                                    BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.CellStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn x:Name="VersionColumn"
+                                            Header="Version"
+                                            Binding="{Binding VersionDisplay, Mode=OneWay}"
+                                            Width="85"
+                                            IsReadOnly="True"
+                                            MinWidth="80"
+                                            ElementStyle="{StaticResource IMM.DataGridCenteredTextStyle}"
+                                            CellStyle="{StaticResource IMM.DataGridCenteredCellStyle}" />
+                                        <DataGridTextColumn x:Name="LatestVersionColumn" Header="Latest Version"
+                                            Binding="{Binding LatestDatabaseVersionDisplay, Mode=OneWay}"
+                                            SortMemberPath="LatestVersionSortKey" Width="140"
+                                            MinWidth="139" IsReadOnly="True">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                    <Setter Property="Padding" Value="4,2" />
+                                                    <Setter Property="Margin" Value="2" />
+                                                    <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                                                    <Setter Property="ToolTip">
+                                                        <Setter.Value>
+                                                            <ToolTip MaxHeight="600"
+                                                                MaxWidth="300"
+                                                                Padding="0">
+                                                                <Border MaxHeight="600"
                                                                     MaxWidth="300"
                                                                     ClipToBounds="True">
-                                                                <ItemsControl
-                                                                    ItemsSource="{Binding NewerReleaseChangelogs}">
-                                                                    <ItemsControl.ItemTemplate>
-                                                                        <DataTemplate>
-                                                                            <StackPanel Margin="0,0,0,12"
+                                                                    <ItemsControl
+                                                                        ItemsSource="{Binding NewerReleaseChangelogs}">
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <StackPanel Margin="0,0,0,12"
                                                                                     MaxWidth="300">
-                                                                                <TextBlock Text="{Binding Version}"
-                                                                                    FontWeight="Bold"
-                                                                                    Margin="0,0,0,4"
-                                                                                    Foreground="{DynamicResource Brush.ToolTip.Text}" />
-                                                                                <TextBlock Text="{Binding Changelog}"
-                                                                                    TextWrapping="Wrap"
-                                                                                    Foreground="{DynamicResource Brush.ToolTip.Text}"
-                                                                                    MaxWidth="300" />
-                                                                            </StackPanel>
-                                                                        </DataTemplate>
-                                                                    </ItemsControl.ItemTemplate>
-                                                                </ItemsControl>
-                                                            </Border>
-                                                        </ToolTip>
-                                                    </Setter.Value>
-                                                </Setter>
-                                                <EventSetter Event="FrameworkElement.ToolTipOpening"
-                                                             Handler="LatestVersionTextBlock_OnToolTipOpening" />
-                                                <EventSetter Event="FrameworkElement.ToolTipClosing"
-                                                             Handler="LatestVersionTextBlock_OnToolTipClosing" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding ShouldHighlightLatestVersion}"
-                                                                 Value="True">
-                                                        <Setter Property="Background"
+                                                                                    <TextBlock Text="{Binding Version}"
+                                                                                        FontWeight="Bold"
+                                                                                        Margin="0,0,0,4"
+                                                                                        Foreground="{DynamicResource Brush.ToolTip.Text}" />
+                                                                                    <TextBlock Text="{Binding Changelog}"
+                                                                                        TextWrapping="Wrap"
+                                                                                        Foreground="{DynamicResource Brush.ToolTip.Text}"
+                                                                                        MaxWidth="300" />
+                                                                                </StackPanel>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </Border>
+                                                            </ToolTip>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                    <EventSetter Event="FrameworkElement.ToolTipOpening"
+                                                        Handler="LatestVersionTextBlock_OnToolTipOpening" />
+                                                    <EventSetter Event="FrameworkElement.ToolTipClosing"
+                                                        Handler="LatestVersionTextBlock_OnToolTipClosing" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ShouldHighlightLatestVersion}"
+                                                            Value="True">
+                                                            <Setter Property="Background"
                                                                 Value="{DynamicResource Brush.Accent.Primary}" />
-                                                        <Setter Property="Foreground"
+                                                            <Setter Property="Foreground"
                                                                 Value="{DynamicResource Brush.Text.Primary}" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding HasNewerReleaseChangelogs}"
-                                                                 Value="False">
-                                                        <Setter Property="ToolTip" Value="{x:Null}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}"
-                                                   BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.CellStyle>
-                                    </DataGridTextColumn>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding HasNewerReleaseChangelogs}"
+                                                            Value="False">
+                                                            <Setter Property="ToolTip" Value="{x:Null}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                            <DataGridTextColumn.CellStyle>
+                                                <Style TargetType="{x:Type DataGridCell}"
+                                                    BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.CellStyle>
+                                        </DataGridTextColumn>
 
 
-                                    <DataGridTextColumn x:Name="AuthorsColumn" Header="Authors"
-                                                        Binding="{Binding AuthorsDisplay, Mode=OneWay}" Width="150"
-                                                        IsReadOnly="True">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="{x:Type TextBlock}">
-                                                <Setter Property="TextWrapping" Value="NoWrap" />
-                                                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-                                                <Setter Property="HorizontalAlignment" Value="Stretch" />
-                                                <Setter Property="VerticalAlignment" Value="Center" />
-                                                <Setter Property="TextAlignment" Value="Center" />
-                                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                                                <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
-                                                <Setter Property="ToolTipService.ToolTip">
-                                                    <Setter.Value>
-                                                        <TextBlock Text="{Binding AuthorsDisplay}"
-                                                                   FontFamily="Segoe UI"
-                                                                   FontSize="12"
-                                                                   Foreground="{DynamicResource Brush.ToolTip.Text}"
-                                                                   TextWrapping="Wrap"
-                                                                   MaxWidth="300" />
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                        <DataGridTextColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}"
-                                                   BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTextColumn.CellStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTemplateColumn x:Name="TagsColumn"
-                                                            Header="Tags"
-                                                            Width="280"
-                                                            MinWidth="180"
-                                                            IsReadOnly="True"
-                                                            CanUserSort="False">
-                                        <DataGridTemplateColumn.HeaderTemplate>
-                                            <DataTemplate>
-                                                <Grid Background="Transparent"
-                                                      Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type DataGridColumnHeader}}}">
-                                                    <ToggleButton x:Name="TagsHeaderToggle"
-                                                                  Content="{Binding DataContext.TagsColumnHeader, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                                                                  Style="{StaticResource IMM.TagHeaderToggleButtonStyle}" />
-                                                    <Popup PlacementTarget="{Binding ElementName=TagsHeaderToggle}"
-                                                           Placement="Bottom"
-                                                           IsOpen="{Binding IsChecked, ElementName=TagsHeaderToggle, Mode=TwoWay}"
-                                                           StaysOpen="False"
-                                                           AllowsTransparency="True"
-                                                           Focusable="False">
-                                                        <Border
-                                                            Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
-                                                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                                            BorderThickness="1"
-                                                            CornerRadius="6"
-                                                            Padding="8"
-                                                            MinWidth="440">
-                                                            <ScrollViewer MaxHeight="260"
-                                                                          HorizontalScrollBarVisibility="Disabled"
-                                                                          VerticalScrollBarVisibility="Auto">
-                                                                <ScrollViewer.Resources>
-                                                                    <Style TargetType="{x:Type ScrollBar}"
-                                                                           BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
-                                                                    <Style TargetType="{x:Type Thumb}"
-                                                                           BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" />
-                                                                </ScrollViewer.Resources>
-                                                                <ItemsControl
-                                                                    ItemsPanel="{StaticResource IMM.TagFilterItemsPanelTemplate}"
-                                                                    ItemsSource="{Binding DataContext.InstalledTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
-                                                                    <ItemsControl.ItemTemplate>
-                                                                        <DataTemplate
-                                                                            DataType="{x:Type viewModels:TagFilterOptionViewModel}">
-                                                                            <ToggleButton
-                                                                                Style="{StaticResource IMM.TagFilterToggleButtonStyle}"
-                                                                                Content="{Binding Name}"
-                                                                                IsChecked="{Binding IsSelected, Mode=TwoWay}" />
-                                                                        </DataTemplate>
-                                                                    </ItemsControl.ItemTemplate>
-                                                                </ItemsControl>
-                                                            </ScrollViewer>
-                                                        </Border>
-                                                    </Popup>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.HeaderTemplate>
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Grid>
-                                                    <Border x:Name="TagsContainer"
+                                        <DataGridTextColumn x:Name="AuthorsColumn" Header="Authors"
+                                            Binding="{Binding AuthorsDisplay, Mode=OneWay}" Width="150"
+                                            IsReadOnly="True">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="TextWrapping" Value="NoWrap" />
+                                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                    <Setter Property="TextAlignment" Value="Center" />
+                                                    <Setter Property="ToolTipService.ShowDuration" Value="60000" />
+                                                    <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
+                                                    <Setter Property="ToolTipService.ToolTip">
+                                                        <Setter.Value>
+                                                            <TextBlock Text="{Binding AuthorsDisplay}"
+                                                                FontFamily="Segoe UI"
+                                                                FontSize="12"
+                                                                Foreground="{DynamicResource Brush.ToolTip.Text}"
+                                                                TextWrapping="Wrap"
+                                                                MaxWidth="300" />
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                            <DataGridTextColumn.CellStyle>
+                                                <Style TargetType="{x:Type DataGridCell}"
+                                                    BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.CellStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTemplateColumn x:Name="TagsColumn"
+                                            Header="Tags"
+                                            Width="280"
+                                            MinWidth="180"
+                                            IsReadOnly="True"
+                                            CanUserSort="False">
+                                            <DataGridTemplateColumn.HeaderTemplate>
+                                                <DataTemplate>
+                                                    <Grid Background="Transparent"
+                                                        Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type DataGridColumnHeader}}}">
+                                                        <ToggleButton x:Name="TagsHeaderToggle"
+                                                            Content="{Binding DataContext.TagsColumnHeader, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                            Style="{StaticResource IMM.TagHeaderToggleButtonStyle}" />
+                                                        <Popup PlacementTarget="{Binding ElementName=TagsHeaderToggle}"
+                                                            Placement="Bottom"
+                                                            IsOpen="{Binding IsChecked, ElementName=TagsHeaderToggle, Mode=TwoWay}"
+                                                            StaysOpen="False"
+                                                            AllowsTransparency="True"
+                                                            Focusable="False">
+                                                            <Border
+                                                                Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+                                                                BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                                                                BorderThickness="1"
+                                                                CornerRadius="6"
+                                                                Padding="8"
+                                                                MinWidth="440">
+                                                                <ScrollViewer MaxHeight="260"
+                                                                    HorizontalScrollBarVisibility="Disabled"
+                                                                    VerticalScrollBarVisibility="Auto">
+                                                                    <ScrollViewer.Resources>
+                                                                        <Style TargetType="{x:Type ScrollBar}"
+                                                                            BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
+                                                                        <Style TargetType="{x:Type Thumb}"
+                                                                            BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" />
+                                                                    </ScrollViewer.Resources>
+                                                                    <ItemsControl
+                                                                        ItemsPanel="{StaticResource IMM.TagFilterItemsPanelTemplate}"
+                                                                        ItemsSource="{Binding DataContext.InstalledTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate
+                                                                                DataType="{x:Type viewModels:TagFilterOptionViewModel}">
+                                                                                <ToggleButton
+                                                                                    Style="{StaticResource IMM.TagFilterToggleButtonStyle}"
+                                                                                    Content="{Binding Name}"
+                                                                                    IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </ScrollViewer>
+                                                            </Border>
+                                                        </Popup>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.HeaderTemplate>
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Grid>
+                                                        <Border x:Name="TagsContainer"
                                                             HorizontalAlignment="Stretch"
                                                             VerticalAlignment="Center"
                                                             MaxHeight="{StaticResource IMM.TagRowMaxHeight}"
                                                             ClipToBounds="True">
-                                                        <ItemsControl x:Name="TagsItemsControl"
-                                                                      Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}}"
-                                                                      HorizontalAlignment="Left"
-                                                                      ItemsSource="{Binding DatabaseTags}"
-                                                                      ItemTemplate="{StaticResource IMM.TagBadgeTemplate}"
-                                                                      ItemsPanel="{StaticResource IMM.TagItemsPanelTemplate}" />
-                                                    </Border>
-                                                    <TextBlock x:Name="NoTagsText"
-                                                               Text="—"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center"
-                                                               Visibility="Collapsed" />
-                                                </Grid>
-                                                <DataTemplate.Triggers>
-                                                    <DataTrigger Binding="{Binding DatabaseTags.Count}" Value="0">
-                                                        <Setter TargetName="TagsContainer" Property="Visibility"
+                                                            <ItemsControl x:Name="TagsItemsControl"
+                                                                Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}}"
+                                                                HorizontalAlignment="Left"
+                                                                ItemsSource="{Binding DatabaseTags}"
+                                                                ItemTemplate="{StaticResource IMM.TagBadgeTemplate}"
+                                                                ItemsPanel="{StaticResource IMM.TagItemsPanelTemplate}" />
+                                                        </Border>
+                                                        <TextBlock x:Name="NoTagsText"
+                                                            Text="—"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center"
+                                                            Visibility="Collapsed" />
+                                                    </Grid>
+                                                    <DataTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding DatabaseTags.Count}" Value="0">
+                                                            <Setter TargetName="TagsContainer" Property="Visibility"
                                                                 Value="Collapsed" />
-                                                        <Setter TargetName="NoTagsText" Property="Visibility"
+                                                            <Setter TargetName="NoTagsText" Property="Visibility"
                                                                 Value="Visible" />
-                                                    </DataTrigger>
-                                                    <DataTrigger
-                                                        Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                                                        Value="True">
-                                                        <Setter TargetName="TagsContainer" Property="MaxHeight"
+                                                        </DataTrigger>
+                                                        <DataTrigger
+                                                            Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                            Value="True">
+                                                            <Setter TargetName="TagsContainer" Property="MaxHeight"
                                                                 Value="{StaticResource IMM.TagRowCompactMaxHeight}" />
-                                                    </DataTrigger>
-                                                </DataTemplate.Triggers>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                        <DataGridTemplateColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}"
-                                                   BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTemplateColumn.CellStyle>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTemplateColumn x:Name="StatusColumn" Header="Status" Width="80"
-                                                            IsReadOnly="True" SortMemberPath="StatusSortOrder">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Grid HorizontalAlignment="Center"
-                                                      VerticalAlignment="Center">
-                                                    <Viewbox x:Name="StatusIconViewbox"
-                                                             Width="32"
-                                                             Height="32">
-                                                        <Grid Width="32"
-                                                              Height="32">
-                                                            <Image x:Name="ErrorIcon"
-                                                                   Width="32"
-                                                                   Height="32"
-                                                                   Stretch="Uniform"
-                                                                   Source="/error.png"
-                                                                   Visibility="Collapsed" />
-                                                            <Image x:Name="WarningIcon"
-                                                                   Width="32"
-                                                                   Height="32"
-                                                                   Stretch="Uniform"
-                                                                   Source="/warning.png"
-                                                                   Visibility="Collapsed" />
-                                                        </Grid>
-                                                    </Viewbox>
-                                                </Grid>
-                                                <DataTemplate.Triggers>
-                                                    <DataTrigger
-                                                        Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                                                        Value="True">
-                                                        <Setter TargetName="StatusIconViewbox" Property="Width"
+                                                        </DataTrigger>
+                                                    </DataTemplate.Triggers>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                            <DataGridTemplateColumn.CellStyle>
+                                                <Style TargetType="{x:Type DataGridCell}"
+                                                    BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTemplateColumn.CellStyle>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn x:Name="StatusColumn" Header="Status" Width="80"
+                                            IsReadOnly="True" SortMemberPath="StatusSortOrder">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Grid HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center">
+                                                        <Viewbox x:Name="StatusIconViewbox"
+                                                            Width="32"
+                                                            Height="32">
+                                                            <Grid Width="32"
+                                                                Height="32">
+                                                                <Image x:Name="ErrorIcon"
+                                                                    Width="32"
+                                                                    Height="32"
+                                                                    Stretch="Uniform"
+                                                                    Source="/error.png"
+                                                                    Visibility="Collapsed" />
+                                                                <Image x:Name="WarningIcon"
+                                                                    Width="32"
+                                                                    Height="32"
+                                                                    Stretch="Uniform"
+                                                                    Source="/warning.png"
+                                                                    Visibility="Collapsed" />
+                                                            </Grid>
+                                                        </Viewbox>
+                                                    </Grid>
+                                                    <DataTemplate.Triggers>
+                                                        <DataTrigger
+                                                            Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                            Value="True">
+                                                            <Setter TargetName="StatusIconViewbox" Property="Width"
                                                                 Value="22.5" />
-                                                        <Setter TargetName="StatusIconViewbox" Property="Height"
+                                                            <Setter TargetName="StatusIconViewbox" Property="Height"
                                                                 Value="22.5" />
-                                                        <Setter TargetName="ErrorIcon" Property="Width" Value="22.5" />
-                                                        <Setter TargetName="ErrorIcon" Property="Height" Value="22.5" />
-                                                        <Setter TargetName="WarningIcon" Property="Width" Value="22.5" />
-                                                        <Setter TargetName="WarningIcon" Property="Height" Value="22.5" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding StatusText}" Value="Error">
-                                                        <Setter TargetName="ErrorIcon" Property="Visibility"
+                                                            <Setter TargetName="ErrorIcon" Property="Width" Value="22.5" />
+                                                            <Setter TargetName="ErrorIcon" Property="Height" Value="22.5" />
+                                                            <Setter TargetName="WarningIcon" Property="Width" Value="22.5" />
+                                                            <Setter TargetName="WarningIcon" Property="Height" Value="22.5" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding StatusText}" Value="Error">
+                                                            <Setter TargetName="ErrorIcon" Property="Visibility"
                                                                 Value="Visible" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding StatusText}" Value="Warning">
-                                                        <Setter TargetName="WarningIcon" Property="Visibility"
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding StatusText}" Value="Warning">
+                                                            <Setter TargetName="WarningIcon" Property="Visibility"
                                                                 Value="Visible" />
-                                                    </DataTrigger>
-                                                </DataTemplate.Triggers>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                        <DataGridTemplateColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}"
-                                                   BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="ToolTip" Value="{Binding StatusDetails}" />
-                                            </Style>
-                                        </DataGridTemplateColumn.CellStyle>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTemplateColumn x:Name="UserReportsColumn" Header="User Reports"
-                                                            Width="150" IsReadOnly="True">
-                                        <DataGridTemplateColumn.CellStyle>
-                                            <Style TargetType="{x:Type DataGridCell}"
-                                                   BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                <Setter Property="VerticalContentAlignment" Value="Center" />
-                                            </Style>
-                                        </DataGridTemplateColumn.CellStyle>
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Button
-                                                    Content="{Binding UserReportDisplay}"
-                                                    ToolTip="{Binding UserReportTooltip}"
-                                                    Click="UserReportsButton_OnClick"
-                                                    IsEnabled="{Binding CanSubmitUserReport}"
-                                                    HorizontalAlignment="Stretch" ClipToBounds="True">
-                                                    <Button.Style>
-                                                        <Style TargetType="{x:Type Button}"
-                                                               BasedOn="{StaticResource IMM.UserReportButtonStyle}">
-                                                            <Setter Property="HorizontalAlignment" Value="Stretch" />
-                                                            <Setter Property="Padding" Value="4,0" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsUserReportLoading}"
-                                                                             Value="True">
-                                                                    <Setter Property="Cursor" Value="Wait" />
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding UserReportHasError}"
-                                                                             Value="True">
-                                                                    <Setter Property="Foreground"
+                                                        </DataTrigger>
+                                                    </DataTemplate.Triggers>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                            <DataGridTemplateColumn.CellStyle>
+                                                <Style TargetType="{x:Type DataGridCell}"
+                                                    BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                                    <Setter Property="ToolTip" Value="{Binding StatusDetails}" />
+                                                </Style>
+                                            </DataGridTemplateColumn.CellStyle>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn x:Name="UserReportsColumn" Header="User Reports"
+                                            Width="150" IsReadOnly="True">
+                                            <DataGridTemplateColumn.CellStyle>
+                                                <Style TargetType="{x:Type DataGridCell}"
+                                                    BasedOn="{StaticResource IMM.DataGridCellBaseStyle}">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTemplateColumn.CellStyle>
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button
+                                                        Content="{Binding UserReportDisplay}"
+                                                        ToolTip="{Binding UserReportTooltip}"
+                                                        Click="UserReportsButton_OnClick"
+                                                        IsEnabled="{Binding CanSubmitUserReport}"
+                                                        HorizontalAlignment="Stretch" ClipToBounds="True">
+                                                        <Button.Style>
+                                                            <Style TargetType="{x:Type Button}"
+                                                                BasedOn="{StaticResource IMM.UserReportButtonStyle}">
+                                                                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                                                <Setter Property="Padding" Value="4,0" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsUserReportLoading}"
+                                                                        Value="True">
+                                                                        <Setter Property="Cursor" Value="Wait" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding UserReportHasError}"
+                                                                        Value="True">
+                                                                        <Setter Property="Foreground"
                                                                             Value="{DynamicResource Brush.Text.Emphasis}" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Button.Style>
-                                                </Button>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTextColumn x:Name="SideColumn" Header="Side"
-                                                        Binding="{Binding SideDisplay, Mode=OneWay}"
-                                                        SortMemberPath="SideSortValue"
-                                                        Width="90"
-                                                        MinWidth="80"
-                                                        IsReadOnly="True"
-                                                        ElementStyle="{StaticResource IMM.DataGridCenteredTextStyle}"
-                                                        CellStyle="{StaticResource IMM.DataGridCenteredCellStyle}" />
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </Border>
-                        <TextBlock
-                           Panel.ZIndex="1"
-                           Margin="32"
-                           Text="{Binding NoModsFoundMessage}"
-                           TextWrapping="Wrap"
-                           TextAlignment="Center"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           FontSize="16"
-                           Foreground="{DynamicResource Brush.Text.Primary}"
-                           IsHitTestVisible="False" Grid.Row="1">
-                            <TextBlock.Style>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding TotalMods}" Value="0">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Grid>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn x:Name="SideColumn" Header="Side"
+                                            Binding="{Binding SideDisplay, Mode=OneWay}"
+                                            SortMemberPath="SideSortValue"
+                                            Width="90"
+                                            MinWidth="80"
+                                            IsReadOnly="True"
+                                            ElementStyle="{StaticResource IMM.DataGridCenteredTextStyle}"
+                                            CellStyle="{StaticResource IMM.DataGridCenteredCellStyle}" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
+                            <TextBlock
+                                Panel.ZIndex="1"
+                                Margin="32"
+                                Text="{Binding NoModsFoundMessage}"
+                                TextWrapping="Wrap"
+                                TextAlignment="Center"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontSize="16"
+                                Foreground="{DynamicResource Brush.Text.Primary}"
+                                IsHitTestVisible="False" Grid.Row="1">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TotalMods}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </Border>
                 </TabItem>
-                <TabItem x:Name="DatabaseTab" Header="Mod Database" Width="120" Padding="12,3,12,0" VerticalAlignment="Bottom" Height="28">
-                    <Grid x:Name="DatabaseGrid" Margin="10,0,0,0">
+                <TabItem x:Name="DatabaseTab" Header="Mod Database" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="8,6,8,6" Height="Auto" Width="Auto">
+                    <Grid x:Name="DatabaseGrid" Margin="10,0,10,0" Height="601">
                         <Border x:Name="DatabaseBorder"
                     Margin="0,48,0,0"
                     Background="Transparent"
@@ -1848,7 +1789,7 @@
                       ItemsSource="{Binding CurrentModsView}"
                       Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                       BorderThickness="1,1,1,1"
-                      Margin="0,32,0,0"
+                      Margin="0,48,0,0"
                       ui:ControlHelper.CornerRadius="0"
                       SelectionMode="Single"
                       SelectionChanged="ModDatabaseCardsListView_OnSelectionChanged"
@@ -1862,7 +1803,7 @@
                       FontSize="16">
                             <ListView.Style>
                                 <Style TargetType="{x:Type ListView}">
-                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Setter Property="Visibility" Value="Visible" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding UseModDbDesignView}" Value="True">
                                             <Setter Property="Visibility" Value="Visible" />
@@ -2244,14 +2185,15 @@
                         </Button>
                     </Grid>
                 </TabItem>
-                <TabItem x:Name="ModlistTab" Header="Modlists" Width="120" Padding="12,3,12,0" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Center" VerticalAlignment="Bottom" Height="28">
+                <TabItem x:Name="ModlistTab" Header="Modlists" Width="120" Padding="12,3,12,0" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Center" VerticalAlignment="Center" Height="28">
                     <Grid x:Name="ModlistInnerTab" Width="1411">
                         <TabControl x:Name="ModlistsTabControl"
-                                Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                 BorderThickness="0"
                                 Loaded="ModlistsTabControl_OnLoaded"
                                 ItemContainerStyle="{StaticResource IMM.ModlistsTabItemStyle}"
+                                Background="Transparent"
                                 SelectionChanged="ModlistsTabControl_OnSelectionChanged">
+
                             <TabItem x:Name="LocalModlistsTabItem"
                                  Header="Local">
                                 <Grid x:Name="LocalModlistsGrid">
@@ -2521,7 +2463,7 @@
                                     </TextBlock>
 
                                     <Border x:Name="LocalModlistsControlsBorder" Grid.Row="1"
-                                        Margin="10,10,0,0"
+                                        Margin="10,10,10,0"
                                         Background="{DynamicResource Brush.ModCard.Background.Active}"
                                         CornerRadius="10,10,10,10"
                                         Height="175">
@@ -2654,7 +2596,7 @@
                                                   SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged"
                                                   Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                                   BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                                  RowBackground="{DynamicResource Brush.Panel.Primary.Background.Solid}" Margin="10,2,10,0">
+                                                  RowBackground="{DynamicResource Brush.Panel.Primary.Background.Solid}" Margin="10,2,10,175">
                                         <DataGrid.Resources>
                                             <Style TargetType="{x:Type ScrollBar}"
                                                        BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
@@ -2894,12 +2836,12 @@
                                         </TextBlock.Style>
                                     </TextBlock>
 
-                                    <Border x:Name="OnlineModlistsButtonsBorder" Grid.Row="1"
-                                        Margin="10,0,10,0"
+                                    <Border x:Name="OnlineModlistsButtonsBorder"
+                                        Margin="10,396,10,0"
                                         Background="{DynamicResource Brush.ModCard.Background.Active}"
                                         CornerRadius="10,10,10,10"
-                                        Height="175"
-                                        VerticalAlignment="Center">
+                                        Height="165"
+                                        VerticalAlignment="Top" Grid.RowSpan="2" Grid.Row="1">
                                         <Border.Effect>
                                             <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2" />
                                         </Border.Effect>
@@ -3010,33 +2952,75 @@
                     </Grid>
                 </TabItem>
             </TabControl>
+            <Button x:Name="DiscordButton"
+                    Height="48"
+                    Padding="0"
+                    BorderThickness="0"
+                    ToolTip="Join the Simple VS Manager Discord"
+                    Click="DiscordButton_OnClick" VerticalAlignment="Top" Margin="0,-8,5,0" HorizontalAlignment="Right" Width="48">
+                <Button.Template>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Grid Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
+                            <Grid HorizontalAlignment="Center"
+                                  VerticalAlignment="Center">
+                                <Image x:Name="DiscordIcon"
+                                       Source="/Resources/Discord.png"
+                                       Width="26"
+                                       Height="26"
+                                       Stretch="Uniform" />
+                                <Rectangle x:Name="DiscordNormalOverlay"
+                                           Width="{Binding ActualWidth, ElementName=DiscordIcon}"
+                                           Height="{Binding ActualHeight, ElementName=DiscordIcon}"
+                                           Fill="{DynamicResource Brush.ComboBox.Background.Disabled}">
+                                    <Rectangle.OpacityMask>
+                                        <ImageBrush ImageSource="/Resources/Discord.png"
+                                                    Stretch="Uniform" />
+                                    </Rectangle.OpacityMask>
+                                </Rectangle>
+                                <Rectangle x:Name="DiscordHoverOverlay"
+                                           Width="{Binding ActualWidth, ElementName=DiscordIcon}"
+                                           Height="{Binding ActualHeight, ElementName=DiscordIcon}"
+                                           Visibility="Collapsed"
+                                           Fill="#5865F2">
+                                    <Rectangle.OpacityMask>
+                                        <ImageBrush ImageSource="/Resources/Discord.png"
+                                                    Stretch="Uniform" />
+                                    </Rectangle.OpacityMask>
+                                </Rectangle>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="DiscordHoverOverlay"
+                                        Property="Visibility"
+                                        Value="Visible" />
+                                <Setter TargetName="DiscordNormalOverlay"
+                                        Property="Visibility"
+                                        Value="Collapsed" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
             <!-- ============================================================ -->
             <!-- End: DATABASE TAB Mod Database Cards View -->
         </Grid>
-        <Grid x:Name="BOTTOM" Margin="16,4,16,4" Grid.Row="2">
+        <Grid x:Name="BOTTOM" Margin="8,0,8,8" Grid.Row="2" Background="{DynamicResource Brush.MiddleTab.Background.Selected}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" MinWidth="729" />
             </Grid.ColumnDefinitions>
 
             <Border x:Name="StatusTextBorder"
-                    HorizontalAlignment="Left"
-                    Height="50"
-                    VerticalAlignment="Center"
                     Width="376"
-                    Background="Transparent"
-                    BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
+                    Background="{DynamicResource Brush.SearchBox.Background}"
+                    BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Dark}"
                     BorderThickness="0,0,2,2"
                     CornerRadius="3"
-                    SnapsToDevicePixels="True">
-                <Border Background="{DynamicResource Brush.SunkenSurface.Background}"
-                        BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Dark}"
-                        BorderThickness="2,2,0,0"
-                        CornerRadius="3"
-                        SnapsToDevicePixels="True">
-                    <Grid>
-                        <!-- Regular status message -->
-                        <TextBlock Grid.Column="0"
+                    SnapsToDevicePixels="True" Height="80" HorizontalAlignment="Left" Margin="6,8,0,8">
+                <Grid>
+                    <!-- Regular status message -->
+                    <TextBlock Grid.Column="0"
                                    Text="{Binding StatusMessage}"
                                    TextWrapping="Wrap"
                                    HorizontalAlignment="Center"
@@ -3045,67 +3029,66 @@
                                    Foreground="{DynamicResource Brush.Text.Primary}"
                                    FontWeight="Bold"
                                    Padding="4,2,4,2">
-                            <TextBlock.Style>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
-                                    <Setter Property="Visibility" Value="Visible" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
-                                            <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Emphasis}" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsLoadingMods}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsModlistInstallInProgress}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasStatusMessage}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsErrorStatus}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Emphasis}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsLoadingMods}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsModlistInstallInProgress, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
 
-                        <!-- Loading progress display -->
-                        <StackPanel VerticalAlignment="Center"
+                    <!-- Loading progress display -->
+                    <StackPanel VerticalAlignment="Center"
                                     Margin="8,4">
-                            <StackPanel.Style>
-                                <Style TargetType="{x:Type StackPanel}">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsLoadingMods}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsModlistInstallInProgress}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
+                        <StackPanel.Style>
+                            <Style TargetType="{x:Type StackPanel}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsLoadingMods}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsModlistInstallInProgress, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
 
-                            <TextBlock Text="{Binding LoadingStatusText}"
+                        <TextBlock Text="{Binding LoadingStatusText}"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource Brush.Text.Primary}"
                                        HorizontalAlignment="Center"
                                        Margin="0,0,0,4" />
 
-                            <ProgressBar Value="{Binding LoadingProgress, Mode=OneWay}"
+                        <ProgressBar Value="{Binding LoadingProgress, Mode=OneWay}"
                                          Minimum="0"
                                          Maximum="100"
                                          Height="8"
                                          Foreground="{DynamicResource Brush.Accent.Primary}"
                                          Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
-                        </StackPanel>
-                    </Grid>
-                </Border>
+                    </StackPanel>
+                </Grid>
             </Border>
 
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Top" Margin="0,18,0,0">
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Bottom" Height="32" Width="666" Margin="53,0,0,10">
                 <Button x:Name="UpdateAllButton"
                         Content="{Binding DataContext.UpdateAllButtonLabel, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Update All}"
                         Margin="0,0,4,0"
@@ -3137,8 +3120,8 @@
             <ui:ProgressRing
                 HorizontalAlignment="Left"
                 IsActive="{Binding IsBusy}"
-                Foreground="{DynamicResource Brush.Accent.Primary}" Margin="388,0,0,0" VerticalAlignment="Stretch"
-                Width="40" Height="40">
+                Foreground="{DynamicResource Brush.Accent.Primary}" Margin="391,32,0,10" VerticalAlignment="Stretch"
+                Width="54">
                 <ui:ProgressRing.Style>
                     <Style TargetType="{x:Type ui:ProgressRing}">
                         <Setter Property="Visibility" Value="Visible" />
@@ -3153,6 +3136,7 @@
                     </Style>
                 </ui:ProgressRing.Style>
             </ui:ProgressRing>
+            <Rectangle RadiusY="1" Fill="{DynamicResource Brush.MiddleTab.Background.Selected}" Margin="0,84,0,-1" RadiusX="1" Grid.ColumnSpan="2"/>
         </Grid>
         <Canvas x:Name="ModInfoOverlay" Grid.RowSpan="3" Panel.ZIndex="400" d:IsHidden="True">
             <Border Background="{DynamicResource Brush.ModCard.Background.Active}" x:Name="MODINFO_border"
