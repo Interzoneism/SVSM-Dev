@@ -365,7 +365,7 @@
                             Click="DeleteAllManagerFilesMenuItem_OnClick" />
 
                     </MenuItem>
-                </Menu>
+                    </Menu>
 
             </Border>
 
@@ -386,22 +386,16 @@
                            VerticalAlignment="Center"><Hyperlink Foreground="{DynamicResource Brush.Text.Emphasis}"
                                Click="ModUsagePromptLink_OnClick"><Run Text="Confirm working mods!"/></Hyperlink></TextBlock>
             </StackPanel>
-
-
-        </Grid>
-
-        <TextBlock x:Name="ActiveGameProfileTextBlock"
-                   Grid.Row="1"
-                   Margin="16,8,0,0"
-                   FontSize="17"
-                   FontWeight="SemiBold"
+            <TextBlock x:Name="ActiveGameProfileTextBlock"
+                   FontSize="15"
                    Padding="3,0,0,3"
                    Foreground="{DynamicResource Brush.Text.Primary}"
                    Text="Profile: Default"
-                   Visibility="Collapsed"
-                   Opacity="0.5"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Top" Height="0" Width="0" />
+                   Visibility="Visible"
+                   Opacity="0.5" Margin="338,13,408,-17"/>
+
+
+        </Grid>
         <Grid x:Name="MIDDLE" Grid.Row="1" Background="Transparent">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
@@ -442,7 +436,7 @@
                                 BorderThickness="2,2,0,0"
                                 CornerRadius="4"
                                 SnapsToDevicePixels="True"
-                                Grid.Row="1" Margin="6,0,10,0">
+                                Grid.Row="1" Margin="8,0,8,0">
                                 <DataGrid x:Name="ModsDataGrid"
                                     ItemsSource="{Binding ModsView}"
                                     AutoGenerateColumns="False"
@@ -1071,8 +1065,8 @@
                         </Grid>
                     </Border>
                 </TabItem>
-                <TabItem x:Name="DatabaseTab" Header="Mod Database" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="8,6,8,6" Height="Auto" Width="Auto">
-                    <Border Height="601" Margin="8,0,10,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" >
+                <TabItem x:Name="DatabaseTab" Header="Mod Database" HorizontalAlignment="Center" Padding="8,6,8,6" Height="Auto" Width="Auto">
+                    <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" CornerRadius="0,8,0,0" >
                         <Grid x:Name="DatabaseGrid">
                             <Border x:Name="DatabaseBorder"
                                 Margin="0,48,0,0"
@@ -1082,6 +1076,7 @@
                                 Visibility="Visible">
 
                                 <DataGrid x:Name="ModDbDataGrid"
+                                    ItemsSource="{Binding SearchResultsView}"
                                     AutoGenerateColumns="False"
                                     CanUserAddRows="False"
                                     CanUserDeleteRows="False"
@@ -1111,7 +1106,7 @@
                                     ui:ControlHelper.CornerRadius="0"
                                     FontSize="15"
                                     Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                    BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}" Margin="0,0,2,2">
+                                    BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}">
                                     <DataGrid.Resources>
                                         <Style TargetType="{x:Type ScrollBar}"
                                             BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
@@ -1621,7 +1616,7 @@
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>
-                            <Grid x:Name="DatabaseControls" Height="48" VerticalAlignment="Top" Margin="10,0,0,0" Grid.RowSpan="1" Grid.ColumnSpan="1">
+                            <Grid x:Name="DatabaseControls" Height="48" VerticalAlignment="Top" Margin="10,0,0,0" Grid.RowSpan="1" Grid.ColumnSpan="1" HorizontalAlignment="Left" Width="1174">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" MinWidth="614" />
 
@@ -1790,7 +1785,7 @@
                                 ItemsSource="{Binding CurrentModsView}"
                                 Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                 BorderThickness="1,1,1,1"
-                                Margin="0,48,0,0"
+                                Margin="8,48,8,0"
                                 ui:ControlHelper.CornerRadius="0"
                                 SelectionMode="Single"
                                 SelectionChanged="ModDatabaseCardsListView_OnSelectionChanged"
@@ -1801,10 +1796,10 @@
                                 ScrollViewer.CanContentScroll="True"
                                 VirtualizingPanel.IsVirtualizing="True"
                                 VirtualizingPanel.VirtualizationMode="Recycling" BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                FontSize="16">
+                                FontSize="16" d:ItemsSource="{d:SampleData ItemCount=5}">
                                 <ListView.Style>
                                     <Style TargetType="{x:Type ListView}">
-                                        <Setter Property="Visibility" Value="Visible" />
+                                        <Setter Property="Visibility" Value="Collapsed" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding UseModDbDesignView}" Value="True">
                                                 <Setter Property="Visibility" Value="Visible" />
@@ -2158,10 +2153,10 @@
                                 Foreground="{DynamicResource Brush.Accent.Primary}"
                                 Cursor="Hand"
                                 FontSize="14"
-                                FontWeight="SemiBold" Height="25" VerticalAlignment="Bottom" Margin="0,-1.5,0,0">
+                                FontWeight="SemiBold" Height="50" VerticalAlignment="Bottom">
                                 <Button.Style>
                                     <Style TargetType="{x:Type Button}">
-                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Setter Property="Visibility" Value="Visible" />
                                         <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="{x:Type Button}">
@@ -3013,13 +3008,15 @@
                 <ColumnDefinition Width="Auto" MinWidth="729" />
             </Grid.ColumnDefinitions>
 
+            <Rectangle RadiusY="4.806" Fill="{DynamicResource Brush.MiddleTab.Background.Selected}" Margin="0,91,0,-5" RadiusX="4.806" Grid.ColumnSpan="2"/>
+
             <Border x:Name="StatusTextBorder"
                     Width="376"
                     Background="{DynamicResource Brush.SearchBox.Background}"
                     BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Dark}"
                     BorderThickness="0,0,2,2"
                     CornerRadius="3"
-                    SnapsToDevicePixels="True" Height="80" HorizontalAlignment="Left" Margin="6,8,0,8">
+                    SnapsToDevicePixels="True" Height="80" HorizontalAlignment="Left" Margin="8,8,0,8">
                 <Grid>
                     <!-- Regular status message -->
                     <TextBlock Grid.Column="0"
@@ -3092,7 +3089,7 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Bottom" Height="32" Width="666" Margin="53,0,0,10">
                 <Button x:Name="UpdateAllButton"
-                        Content="{Binding DataContext.UpdateAllButtonLabel, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Update All}"
+                        Content="{Binding DataContext.UpdateAllButtonLabel, FallbackValue=Update All, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                         Margin="0,0,4,0"
                         Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                         BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
@@ -3131,14 +3128,13 @@
                             <DataTrigger Binding="{Binding IsBusy}" Value="False">
                                 <Setter Property="Visibility" Value="Collapsed" />
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsModlistInstallInProgress}" Value="True">
+                            <DataTrigger Binding="{Binding IsModlistInstallInProgress, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
                                 <Setter Property="Visibility" Value="Collapsed" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </ui:ProgressRing.Style>
             </ui:ProgressRing>
-            <Rectangle RadiusY="1" Fill="{DynamicResource Brush.MiddleTab.Background.Selected}" Margin="0,84,0,-1" RadiusX="1" Grid.ColumnSpan="2"/>
         </Grid>
         <Canvas x:Name="ModInfoOverlay" Grid.RowSpan="3" Panel.ZIndex="400" d:IsHidden="True">
             <Border Background="{DynamicResource Brush.ModCard.Background.Active}" x:Name="MODINFO_border"
