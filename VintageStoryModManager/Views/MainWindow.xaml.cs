@@ -2467,7 +2467,7 @@ public partial class MainWindow : Window
     {
         if (MiddleTabControl is null || _viewModel is null) return;
 
-        TabItem? targetTab = null;
+        TabItem? targetTab;
 
         if (_viewModel.IsViewingMainTab)
             targetTab = MainTab;
@@ -2475,6 +2475,8 @@ public partial class MainWindow : Window
             targetTab = DatabaseTab;
         else if (_viewModel.IsViewingModlistTab)
             targetTab = ModlistTab;
+        else
+            targetTab = MainTab; // Default to MainTab if view section is unknown
 
         if (targetTab is null || Equals(MiddleTabControl.SelectedItem, targetTab)) return;
 
