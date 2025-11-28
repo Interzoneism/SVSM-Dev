@@ -6291,10 +6291,6 @@ public partial class MainWindow : Window
 
         if (LaunchGameButton != null) LaunchGameButton.IsEnabled = isEnabled;
 
-        //if (ModDatabaseTabButton != null) ModDatabaseTabButton.IsEnabled = isEnabled;
-
-        //if (ModlistsTabButton != null) ModlistsTabButton.IsEnabled = isEnabled;
-
         if (PresetsAndModlistsMenuItem != null) PresetsAndModlistsMenuItem.IsEnabled = isEnabled;
 
         if (UpdateAllModsMenuItem != null) UpdateAllModsMenuItem.IsEnabled = isEnabled;
@@ -13196,14 +13192,6 @@ public partial class MainWindow : Window
         {
             _isApplyingMultiToggle = false;
         }
-    }
-
-    private void CheckBox_Checked(object sender, RoutedEventArgs e)
-    {
-    }
-
-    private void Button_Click(object sender, RoutedEventArgs e)
-    {
     }
 
     protected override void OnActivated(EventArgs e)
