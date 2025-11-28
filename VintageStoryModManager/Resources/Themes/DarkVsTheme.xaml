@@ -5,6 +5,7 @@
     <!-- ========================================================= -->
     <!-- Palette: base colours used throughout the dark VS theme. -->
     <!-- ========================================================= -->
+    <Color x:Key="Palette.BaseSurface.Brighter">#FF735b43</Color>
     <Color x:Key="Palette.BaseSurface.Shadowed">#FF403529</Color>
     <Color x:Key="Palette.BaseSurface.Raised">#FF4D3D2D</Color>
     <Color x:Key="Palette.BaseSurface.HoverGlow">#FF5A4530</Color>
@@ -131,6 +132,7 @@
     <SolidColorBrush x:Key="Brush.MiddleTab.Background.Selected" Color="{DynamicResource Palette.BaseSurface.Raised}" />
     <SolidColorBrush x:Key="Brush.MiddleTab.Border.Normal" Color="{DynamicResource Palette.Bevel.Shadow}" />
     <SolidColorBrush x:Key="Brush.MiddleTab.Border.Selected" Color="{DynamicResource Palette.Accent.Primary}" />
+    <SolidColorBrush x:Key="Brush.MiddleTab.ModTab.Selected" Color="{DynamicResource Palette.BaseSurface.Brighter}" />
 
     <SolidColorBrush x:Key="Brush.DataGrid.Row.Background.Alternate"
                      Color="{DynamicResource Palette.BaseSurface.Raised}" />

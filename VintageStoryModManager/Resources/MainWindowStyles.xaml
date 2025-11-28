@@ -243,7 +243,7 @@
     </Style>
 
     <Style x:Key="IMM.ModlistsTabButtonStyle"
-           TargetType="{x:Type Button}"
+                  TargetType="{x:Type Button}"
            BasedOn="{StaticResource IMM.ModTabButtonBaseStyle}">
         <Style.Triggers>
             <DataTrigger Binding="{Binding IsViewingCloudModlists}" Value="True">
@@ -331,7 +331,7 @@
                             <Border Margin="0,0,0,4"
                                     Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
                                     BorderBrush="{DynamicResource Brush.Menu.Item.Background.Hover}"
-                                    BorderThickness="2"
+                                    BorderThickness="4"
                                     MinWidth="{Binding ActualWidth, ElementName=templateRoot}"
                                     SnapsToDevicePixels="True">
                                 <ScrollViewer CanContentScroll="False"
@@ -557,9 +557,60 @@
                             <Setter TargetName="TabBorder" Property="Background"
                                     Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
                         </MultiTrigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Subtle}" />
-                            <Setter TargetName="TabBorder" Property="Opacity" Value="0.6" />
+                        <Trigger Property="IsSelected" Value="False">
+                            <Setter Property="Opacity" Value="0.5"> </Setter>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Inner modlists tab control header style -->
+    <Style x:Key="IMM.InnerModlistsTabItemStyle" TargetType="{x:Type TabItem}">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Disabled}" />
+        <Setter Property="BorderThickness" Value="0,0,0,0" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="20,10" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TabItem}">
+                    <Grid SnapsToDevicePixels="True" Background="Transparent">
+                        <Border x:Name="TabBorder"
+                            Margin="0,0,0,-1"
+                            CornerRadius="6,6,0,0"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter x:Name="ContentSite"
+                                          ContentSource="Header"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Margin="{TemplateBinding Padding}"
+                                          TextElement.FontSize="14"
+                                          RecognizesAccessKey="True" />
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Panel.ZIndex" Value="1" />
+                            <Setter TargetName="TabBorder" Property="Background"
+                                Value="{DynamicResource Brush.MiddleTab.ModTab.Selected}" />
+                            <Setter TargetName="TabBorder" Property="BorderBrush"
+                                Value="{DynamicResource Brush.MiddleTab.ModTab.Selected}" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsSelected" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="TabBorder" Property="Background"
+                                Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
+                        </MultiTrigger>
+                        <Trigger Property="IsSelected" Value="False">
+                            <Setter Property="Opacity" Value="0.5"></Setter>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

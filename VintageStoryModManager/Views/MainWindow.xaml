@@ -14,8 +14,8 @@
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
     Title="Simple VS Manager"
-    Height="760" Width="1200"
-    MinWidth="1200" MinHeight="600" WindowStartupLocation="CenterOwner"
+    Height="876" Width="1641"
+    MinWidth="1200" MinHeight="775" WindowStartupLocation="CenterOwner"
     PreviewKeyDown="MainWindow_OnPreviewKeyDown"
     AllowDrop="True"
     PreviewDragEnter="MainWindow_OnPreviewDragEnter"
@@ -30,21 +30,23 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid x:Name="RootGrid" Background="{DynamicResource Brush.MiddleTab.Border.Selected}">
+    <Grid x:Name="RootGrid" Background="{DynamicResource Brush.ComboBox.Background.Disabled}">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="33" MinHeight="33" />
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Grid x:Name="TOP" Height="24" VerticalAlignment="Center">
+        <Grid x:Name="TOP" Height="24" VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition />
-                <ColumnDefinition Width="Auto" MinWidth="58.97" />
+                <ColumnDefinition Width="325" />
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" CornerRadius="0,5,5,0" Background="{DynamicResource Brush.Menu.Border}" Grid.ColumnSpan="3" Margin="0,0,8,0">
+            <Rectangle Height="24" Grid.ColumnSpan="2" Fill="{DynamicResource Brush.Menu.Border}"/>
+
+
+            <Border Grid.Column="0" CornerRadius="0,5,5,0" Background="{DynamicResource Brush.Menu.Border}">
 
 
                 <Menu
@@ -365,15 +367,21 @@
                             Click="DeleteAllManagerFilesMenuItem_OnClick" />
 
                     </MenuItem>
-                    </Menu>
+                </Menu>
 
             </Border>
-
+            <TextBlock x:Name="ActiveGameProfileTextBlock"
+                   FontSize="15"
+                   Padding="3,0,0,3"
+                   Foreground="{DynamicResource Brush.Text.Primary}"
+                   Text="Profile: Default"
+                   Visibility="Collapsed"
+                   Opacity="0.5" Margin="0,1,16,0" Grid.Column="1" HorizontalAlignment="Right" Width="310" FlowDirection="RightToLeft" Height="28" VerticalAlignment="Top"/>
             <StackPanel Grid.Column="1"
                         Margin="4,0,0,0"
                         Orientation="Horizontal"
                         VerticalAlignment="Center"
-                        HorizontalAlignment="Left" Height="0" Width="0">
+                        HorizontalAlignment="Left" Height="Auto" Width="Auto">
                 <TextBlock x:Name="ManagerUpdateLinkTextBlock"
                            Visibility="Collapsed"
                            Margin="0,0,12,0"
@@ -386,13 +394,6 @@
                            VerticalAlignment="Center"><Hyperlink Foreground="{DynamicResource Brush.Text.Emphasis}"
                                Click="ModUsagePromptLink_OnClick"><Run Text="Confirm working mods!"/></Hyperlink></TextBlock>
             </StackPanel>
-            <TextBlock x:Name="ActiveGameProfileTextBlock"
-                   FontSize="15"
-                   Padding="3,0,0,3"
-                   Foreground="{DynamicResource Brush.Text.Primary}"
-                   Text="Profile: Default"
-                   Visibility="Visible"
-                   Opacity="0.5" Margin="338,13,408,-17"/>
 
 
         </Grid>
@@ -402,8 +403,8 @@
             </Grid.RowDefinitions>
             <TabControl x:Name="MiddleTabControl" Background="Transparent"
                         ItemContainerStyle="{StaticResource IMM.MiddleTabItemStyle}"
-                        SelectionChanged="MiddleTabControl_OnSelectionChanged">
-                <TabItem x:Name="MainTab" Header="Installed mods" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="8,6,8,6" Height="Auto" Width="Auto">
+                        SelectionChanged="MiddleTabControl_OnSelectionChanged" BorderThickness="0,0,0,0">
+                <TabItem x:Name="MainTab" Header="Installed mods" Padding="8,6,8,6" Height="Auto" Width="Auto" Foreground="{DynamicResource Brush.Text.Placeholder}" HorizontalContentAlignment="Stretch">
                     <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" BorderThickness="0" CornerRadius="0,8,0,0">
                         <Grid x:Name="MainGrid" Background="Transparent">
                             <Grid.RowDefinitions>
@@ -1065,7 +1066,7 @@
                         </Grid>
                     </Border>
                 </TabItem>
-                <TabItem x:Name="DatabaseTab" Header="Mod Database" HorizontalAlignment="Center" Padding="8,6,8,6" Height="Auto" Width="Auto">
+                <TabItem x:Name="DatabaseTab" Header="Mod Database" Padding="8,6,8,6" Height="Auto" Width="Auto">
                     <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" CornerRadius="0,8,0,0" >
                         <Grid x:Name="DatabaseGrid">
                             <Border x:Name="DatabaseBorder"
@@ -2182,17 +2183,17 @@
                         </Grid>
                     </Border>
                 </TabItem>
-                <TabItem x:Name="ModlistTab" Header="Modlists" Padding="27,6,27,6" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Center" VerticalAlignment="Center">
-                    <Grid x:Name="ModlistInnerTab" Width="1411">
+                <TabItem x:Name="ModlistTab" Header="Modlists" Padding="27,6,27,6" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch" BorderBrush="#00000000">
+                    <Grid x:Name="ModlistInnerTab" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" Margin="8,0,8,0">
                         <TabControl x:Name="ModlistsTabControl"
                                 BorderThickness="0"
                                 Loaded="ModlistsTabControl_OnLoaded"
-                                ItemContainerStyle="{StaticResource IMM.ModlistsTabItemStyle}"
+                                ItemContainerStyle="{DynamicResource IMM.MiddleTabItemStyle}"
                                 Background="Transparent"
-                                SelectionChanged="ModlistsTabControl_OnSelectionChanged">
+                                SelectionChanged="ModlistsTabControl_OnSelectionChanged" Padding="0,0,0,0">
 
-                            <TabItem x:Name="LocalModlistsTabItem"
-                                 Header="Local">
+                            <TabItem Style="{DynamicResource IMM.InnerModlistsTabItemStyle}" x:Name="LocalModlistsTabItem"
+                                 Header="Local" HorizontalContentAlignment="Stretch" Padding="14,4,14,4" VerticalAlignment="Center" BorderBrush="#00000000">
                                 <Grid x:Name="LocalModlistsGrid">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />
@@ -2209,7 +2210,7 @@
                                                   SelectionUnit="FullRow"
                                                   GridLinesVisibility="None"
                                                   RowHeaderWidth="0"
-                                                  BorderThickness="0,1,2,1"
+                                                  BorderThickness="5,5,5,5"
                                                   HorizontalGridLinesBrush="Transparent"
                                                   VerticalGridLinesBrush="Transparent"
                                                   HeadersVisibility="Column"
@@ -2218,8 +2219,7 @@
                                                   Foreground="{DynamicResource Brush.Text.Primary}"
                                                   SelectionChanged="LocalModlistsDataGrid_OnSelectionChanged"
                                                   Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                                  BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                                  RowBackground="{DynamicResource Brush.Panel.Primary.Background.Solid}" Margin="10,2,10,18">
+                                                  RowBackground="{DynamicResource Brush.Panel.Primary.Background.Solid}" Margin="8,0,8,0" BorderBrush="{DynamicResource Brush.MiddleTab.ModTab.Selected}">
                                         <DataGrid.Resources>
                                             <Style TargetType="{x:Type ScrollBar}"
                                                        BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
@@ -2460,18 +2460,10 @@
                                     </TextBlock>
 
                                     <Border x:Name="LocalModlistsControlsBorder" Grid.Row="1"
-                                        Margin="10,10,10,0"
-                                        Background="{DynamicResource Brush.ModCard.Background.Active}"
-                                        CornerRadius="10,10,10,10"
-                                        Height="175">
-                                        <Border.Effect>
-                                            <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2" />
-                                        </Border.Effect>
+                                        Margin="8,0,8,8"
+                                        Background="{DynamicResource Brush.MiddleTab.ModTab.Selected}">
 
-                                        <Grid x:Name="LocalModlistsControls" Height="160"
-                                          VerticalAlignment="Center"
-                                          HorizontalAlignment="Left"
-                                          Width="1161">
+                                        <Grid x:Name="LocalModlistsControls" Margin="0,0,0,8">
                                             <Button x:Name="SaveLocalModlistButton"
                                                 Content="Save Modlist (Local)"
                                                 Padding="12,0,12,0"
@@ -2565,11 +2557,11 @@
                                 </Grid>
                             </TabItem>
                             <TabItem x:Name="OnlineModlistsTabItem"
-                                 Header="Online">
+                                 Header="Online" Padding="10,4,10,4" Style="{DynamicResource IMM.InnerModlistsTabItemStyle}">
                                 <Grid x:Name="OnlineModlistsGrid">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />
-                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
                                     <DataGrid x:Name="CloudModlistsDataGrid"
@@ -2583,7 +2575,7 @@
                                                   IsEnabled="{Binding CanAccessCloudModlists}"
                                                   GridLinesVisibility="None"
                                                   RowHeaderWidth="0"
-                                                  BorderThickness="0,1,2,1"
+                                                  BorderThickness="5,5,5,5"
                                                   HorizontalGridLinesBrush="Transparent"
                                                   VerticalGridLinesBrush="Transparent"
                                                   HeadersVisibility="Column"
@@ -2592,8 +2584,7 @@
                                                   Foreground="{DynamicResource Brush.Text.Primary}"
                                                   SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged"
                                                   Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                                  BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                                  RowBackground="{DynamicResource Brush.Panel.Primary.Background.Solid}" Margin="10,2,10,175">
+                                                  RowBackground="{DynamicResource Brush.Panel.Primary.Background.Solid}" Margin="8,0,8,0" BorderBrush="{DynamicResource Brush.MiddleTab.ModTab.Selected}">
                                         <DataGrid.Resources>
                                             <Style TargetType="{x:Type ScrollBar}"
                                                        BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />
@@ -2813,41 +2804,11 @@
                                         </DataGrid.Columns>
                                     </DataGrid>
 
-                                    <TextBlock x:Name="PlaceholderTextOnline" Grid.Row="0"
-                                           Text="Loading online modlists..."
-                                           FontSize="16"
-                                           Foreground="{DynamicResource Brush.Text.Primary}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           TextAlignment="Center"
-                                           TextWrapping="Wrap">
-                                        <TextBlock.Style>
-                                            <Style TargetType="{x:Type TextBlock}">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding HasCloudModlists}" Value="False">
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-
                                     <Border x:Name="OnlineModlistsButtonsBorder"
-                                        Margin="10,396,10,0"
-                                        Background="{DynamicResource Brush.ModCard.Background.Active}"
-                                        CornerRadius="10,10,10,10"
-                                        Height="165"
-                                        VerticalAlignment="Top" Grid.RowSpan="2" Grid.Row="1">
-                                        <Border.Effect>
-                                            <DropShadowEffect BlurRadius="6" ShadowDepth="3" Direction="270" Opacity="0.2" />
-                                        </Border.Effect>
+                                        Background="{DynamicResource Brush.MiddleTab.ModTab.Selected}" Grid.Row="1" Margin="8,0,8,8">
 
-                                        <Grid x:Name="OnlineModlistsButtons" Height="151"
-                                          VerticalAlignment="Center"
-                                          HorizontalAlignment="Center"
-                                          Width="1180"
-                                          IsEnabled="{Binding CanAccessCloudModlists}">
+                                        <Grid x:Name="OnlineModlistsButtons"
+                                          IsEnabled="{Binding CanAccessCloudModlists}" Margin="0,0,0,8">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="197*"/>
                                                 <ColumnDefinition Width="955*"/>
@@ -2943,6 +2904,25 @@
                                             </Border>
                                         </Grid>
                                     </Border>
+                                    <TextBlock x:Name="PlaceholderTextOnline"
+                                           Text="Loading online modlists..."
+                                           FontSize="16"
+                                           Foreground="{DynamicResource Brush.Text.Primary}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap" Height="21" Width="178">
+                                        <TextBlock.Style>
+                                            <Style TargetType="{x:Type TextBlock}">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasCloudModlists}" Value="False">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </Grid>
                             </TabItem>
                         </TabControl>
@@ -2968,7 +2948,7 @@
                                 <Rectangle x:Name="DiscordNormalOverlay"
                                            Width="{Binding ActualWidth, ElementName=DiscordIcon}"
                                            Height="{Binding ActualHeight, ElementName=DiscordIcon}"
-                                           Fill="{DynamicResource Brush.ComboBox.Background.Disabled}">
+                                           Fill="{DynamicResource Brush.ComboBox.Background.Hover}">
                                     <Rectangle.OpacityMask>
                                         <ImageBrush ImageSource="/Resources/Discord.png"
                                                     Stretch="Uniform" />
@@ -3002,7 +2982,10 @@
             <!-- ============================================================ -->
             <!-- End: DATABASE TAB Mod Database Cards View -->
         </Grid>
-        <Grid x:Name="BOTTOM" Margin="8,0,8,8" Grid.Row="2" Background="{DynamicResource Brush.MiddleTab.Background.Selected}">
+        <Grid x:Name="BOTTOM" Grid.Row="2" Background="{DynamicResource Brush.MiddleTab.Background.Selected}">
+            <Grid.Effect>
+                <DropShadowEffect Direction="90" BlurRadius="15" ShadowDepth="5" Opacity="0.5"/>
+            </Grid.Effect>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition Width="Auto" MinWidth="729" />
