@@ -5,6 +5,38 @@ using Binding = System.Windows.Data.Binding;
 
 namespace VintageStoryModManager.Converters;
 
+/// <summary>
+///     Scales a double value by a multiplier from the parameter.
+/// </summary>
+public class ScaledDoubleConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is not double scale) return Binding.DoNothing;
+
+        var baseValue = ResolveDouble(parameter, culture);
+        return baseValue * scale;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+
+    private static double ResolveDouble(object parameter, CultureInfo culture)
+    {
+        if (parameter is double doubleValue) return doubleValue;
+
+        if (parameter is string doubleString &&
+            double.TryParse(doubleString, NumberStyles.Float, culture, out var parsedValue)) return parsedValue;
+
+        return 0d;
+    }
+}
+
+/// <summary>
+///     Scales a Thickness value by a multiplier from the parameter.
+/// </summary>
 public class ScaledThicknessConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
