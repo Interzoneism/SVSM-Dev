@@ -749,7 +749,12 @@
         </Style.Triggers>
     </Style>
 
-    <!-- Base DataGrid row style for mod database grid (without IsActive trigger) -->
+    <!-- Base DataGrid row style for mod database grid (without IsActive trigger)
+         Note: This style is nearly identical to IMM.ModsDataGridRowBaseStyle, but WPF
+         ControlTemplates cannot be partially inherited. The only difference is the 
+         IsActive DataTrigger in ControlTemplate.Triggers which dims disabled mods.
+         The ModDB grid shows search results that don't have an IsActive property, 
+         so this trigger must be removed. -->
     <Style x:Key="IMM.ModDbDataGridRowBaseStyle" TargetType="{x:Type DataGridRow}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush"
