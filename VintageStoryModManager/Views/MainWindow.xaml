@@ -2588,7 +2588,6 @@
                 </Button.Template>
             </Button>
         </Grid>
-        <!-- End of MIDDLE Section -->
 
         <!-- ============================================================ -->
         <!-- BOTTOM: Status Bar and Action Buttons -->
@@ -2734,7 +2733,6 @@
                 </ui:ProgressRing.Style>
             </ui:ProgressRing>
         </Grid>
-        <!-- End of BOTTOM Section -->
 
         <!-- ============================================================ -->
         <!-- FLOATING OVERLAYS: Mod Info Panel, Modlist Install, Data Backup -->

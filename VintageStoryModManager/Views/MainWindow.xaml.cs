@@ -82,24 +82,31 @@ public partial class MainWindow : Window
     private const string SummaryKeyLinePrefix = "__PREFIX__";
     private const int MaxDataBackupsMenuItems = 15;
     private const int WindowPositionScreenMargin = 50;
-    private const string DiscordInviteUrl = "https://discord.gg/Zhm3QnD2s9";
 
     #endregion
 
     #region Static Configuration
 
+    // URLs
+    private const string DiscordInviteUrl = "https://discord.gg/Zhm3QnD2s9";
+    private static readonly string ManagerModDatabaseUrl = DevConfig.ManagerModDatabaseUrl;
+    private static readonly string ManagerModDatabaseModId = DevConfig.ManagerModDatabaseModId;
+    private static readonly string ModDatabaseUnavailableMessage = DevConfig.ModDatabaseUnavailableMessage;
+
+    // UI multipliers and thresholds
     private static readonly double ModListScrollMultiplier = DevConfig.ModListScrollMultiplier;
     private static readonly double ModDbDesignScrollMultiplier = DevConfig.ModDbDesignScrollMultiplier;
     private static readonly double LoadMoreScrollThreshold = DevConfig.LoadMoreScrollThreshold;
     private static readonly double HoverOverlayOpacity = DevConfig.HoverOverlayOpacity;
     private static readonly double SelectionOverlayOpacity = DevConfig.SelectionOverlayOpacity;
+
+    // Mod info panel positioning
     private static readonly double ModInfoPanelHorizontalOverhang = DevConfig.ModInfoPanelHorizontalOverhang;
     private static readonly double DefaultModInfoPanelLeft = DevConfig.DefaultModInfoPanelLeft;
     private static readonly double DefaultModInfoPanelTop = DevConfig.DefaultModInfoPanelTop;
     private static readonly double DefaultModInfoPanelRightMargin = DevConfig.DefaultModInfoPanelRightMargin;
-    private static readonly string ManagerModDatabaseUrl = DevConfig.ManagerModDatabaseUrl;
-    private static readonly string ManagerModDatabaseModId = DevConfig.ManagerModDatabaseModId;
-    private static readonly string ModDatabaseUnavailableMessage = DevConfig.ModDatabaseUnavailableMessage;
+
+    // Directory names
     private static readonly string PresetDirectoryName = DevConfig.PresetDirectoryName;
     private static readonly string ModListDirectoryName = DevConfig.ModListDirectoryName;
     private static readonly string CloudModListCacheDirectoryName = DevConfig.CloudModListCacheDirectoryName;
