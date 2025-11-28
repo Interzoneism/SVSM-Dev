@@ -30,6 +30,9 @@
         </ResourceDictionary>
     </Window.Resources>
 
+    <!-- ============================================================ -->
+    <!-- Main Window Layout: 3-row grid (TOP menu bar, MIDDLE content, BOTTOM status/actions) -->
+    <!-- ============================================================ -->
     <Grid x:Name="RootGrid" Background="{DynamicResource Brush.ComboBox.Background.Disabled}">
 
         <Grid.RowDefinitions>
@@ -37,6 +40,10 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
+
+        <!-- ============================================================ -->
+        <!-- TOP: Menu Bar and Notification Links -->
+        <!-- ============================================================ -->
         <Grid x:Name="TOP" Height="24" VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="325" />
@@ -45,9 +52,8 @@
 
             <Rectangle Height="24" Grid.ColumnSpan="2" Fill="{DynamicResource Brush.Menu.Border}"/>
 
-
+            <!-- Main Application Menu -->
             <Border Grid.Column="0" CornerRadius="0,5,5,0" Background="{DynamicResource Brush.Menu.Border}">
-
 
                 <Menu
                     IsMainMenu="True"
@@ -370,6 +376,8 @@
                 </Menu>
 
             </Border>
+
+            <!-- Active Game Profile Display (right side of menu bar) -->
             <TextBlock x:Name="ActiveGameProfileTextBlock"
                    FontSize="15"
                    Padding="3,0,0,3"
@@ -377,6 +385,8 @@
                    Text="Profile: Default"
                    Visibility="Collapsed"
                    Opacity="0.5" Margin="0,1,16,0" Grid.Column="1" HorizontalAlignment="Right" Width="310" FlowDirection="RightToLeft" Height="28" VerticalAlignment="Top"/>
+
+            <!-- Notification Links (Update Available, Confirm Working Mods) -->
             <StackPanel Grid.Column="1"
                         Margin="4,0,0,0"
                         Orientation="Horizontal"
@@ -395,8 +405,11 @@
                                Click="ModUsagePromptLink_OnClick"><Run Text="Confirm working mods!"/></Hyperlink></TextBlock>
             </StackPanel>
 
-
         </Grid>
+
+        <!-- ============================================================ -->
+        <!-- MIDDLE: Main Content Area (Installed Mods, Mod Database, Modlists tabs) -->
+        <!-- ============================================================ -->
         <Grid x:Name="MIDDLE" Grid.Row="1" Background="Transparent">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
@@ -404,6 +417,10 @@
             <TabControl x:Name="MiddleTabControl" Background="Transparent"
                         ItemContainerStyle="{StaticResource IMM.MiddleTabItemStyle}"
                         SelectionChanged="MiddleTabControl_OnSelectionChanged" BorderThickness="0,0,0,0">
+
+                <!-- ============================================================ -->
+                <!-- TAB 1: Installed Mods Tab -->
+                <!-- ============================================================ -->
                 <TabItem x:Name="MainTab" Header="Installed mods" Padding="8,6,8,6" Height="Auto" Width="Auto" Foreground="{DynamicResource Brush.Text.Placeholder}" HorizontalContentAlignment="Stretch">
                     <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" BorderThickness="0" CornerRadius="0,8,0,0">
                         <Grid x:Name="MainGrid" Background="Transparent">
@@ -411,6 +428,8 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
+
+                            <!-- Search and Refresh Controls -->
                             <Grid x:Name="MainControls" Margin="0,0,10,0" Height="48" VerticalAlignment="Top">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition />
@@ -939,9 +958,15 @@
                         </Grid>
                     </Border>
                 </TabItem>
+
+                <!-- ============================================================ -->
+                <!-- TAB 2: Mod Database Tab (Browse and Install from ModDB) -->
+                <!-- ============================================================ -->
                 <TabItem x:Name="DatabaseTab" Header="Mod Database" Padding="8,6,8,6" Height="Auto" Width="Auto">
                     <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" CornerRadius="0,8,0,0" >
                         <Grid x:Name="DatabaseGrid">
+
+                            <!-- Mod Database DataGrid View -->
                             <Border x:Name="DatabaseBorder"
                                 Margin="0,48,0,0"
                                 Background="Transparent"
@@ -1935,6 +1960,10 @@
                         </Grid>
                     </Border>
                 </TabItem>
+
+                <!-- ============================================================ -->
+                <!-- TAB 3: Modlists Tab (Local and Online Modlists) -->
+                <!-- ============================================================ -->
                 <TabItem x:Name="ModlistTab" Header="Modlists" Padding="27,6,27,6" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch" BorderBrush="#00000000">
                     <Grid x:Name="ModlistInnerTab" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" Margin="8,0,8,0">
                         <TabControl x:Name="ModlistsTabControl"
@@ -1944,6 +1973,7 @@
                                 Background="Transparent"
                                 SelectionChanged="ModlistsTabControl_OnSelectionChanged" Padding="0,0,0,0">
 
+                            <!-- Local Modlists Sub-Tab -->
                             <TabItem Style="{DynamicResource IMM.InnerModlistsTabItemStyle}" x:Name="LocalModlistsTabItem"
                                  Header="Local" HorizontalContentAlignment="Stretch" Padding="14,4,14,4" VerticalAlignment="Center" BorderBrush="#00000000">
                                 <Grid x:Name="LocalModlistsGrid">
@@ -2219,6 +2249,8 @@
                                     </Border>
                                 </Grid>
                             </TabItem>
+
+                            <!-- Online Modlists Sub-Tab -->
                             <TabItem x:Name="OnlineModlistsTabItem"
                                  Header="Online" Padding="10,4,10,4" Style="{DynamicResource IMM.InnerModlistsTabItemStyle}">
                                 <Grid x:Name="OnlineModlistsGrid">
@@ -2503,6 +2535,8 @@
                     </Grid>
                 </TabItem>
             </TabControl>
+
+            <!-- Discord Button (top-right corner) -->
             <Button x:Name="DiscordButton"
                     Height="48"
                     Padding="0"
@@ -2553,9 +2587,12 @@
                     </ControlTemplate>
                 </Button.Template>
             </Button>
-            <!-- ============================================================ -->
-            <!-- End: DATABASE TAB Mod Database Cards View -->
         </Grid>
+        <!-- End of MIDDLE Section -->
+
+        <!-- ============================================================ -->
+        <!-- BOTTOM: Status Bar and Action Buttons -->
+        <!-- ============================================================ -->
         <Grid x:Name="BOTTOM" Grid.Row="2" Background="{DynamicResource Brush.MiddleTab.Background.Selected}">
             <Grid.Effect>
                 <DropShadowEffect Direction="90" BlurRadius="15" ShadowDepth="5" Opacity="0.5"/>
@@ -2567,6 +2604,7 @@
 
             <Rectangle RadiusY="4.806" Fill="{DynamicResource Brush.MiddleTab.Background.Selected}" Margin="0,91,0,-5" RadiusX="4.806" Grid.ColumnSpan="2"/>
 
+            <!-- Status Message and Loading Progress -->
             <Border x:Name="StatusTextBorder"
                     Width="376"
                     Background="{DynamicResource Brush.SearchBox.Background}"
@@ -2641,6 +2679,7 @@
                 </Grid>
             </Border>
 
+            <!-- Action Buttons (Update All, Open Folders, Launch Game) -->
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
                         HorizontalAlignment="Left"
@@ -2673,6 +2712,8 @@
                         Click="LaunchGameButton_OnClick"
                         FontWeight="Bold" MinHeight="32" MinWidth="150" />
             </StackPanel>
+
+            <!-- Loading Progress Ring -->
             <ui:ProgressRing
                 HorizontalAlignment="Left"
                 IsActive="{Binding IsBusy}"
@@ -2693,6 +2734,13 @@
                 </ui:ProgressRing.Style>
             </ui:ProgressRing>
         </Grid>
+        <!-- End of BOTTOM Section -->
+
+        <!-- ============================================================ -->
+        <!-- FLOATING OVERLAYS: Mod Info Panel, Modlist Install, Data Backup -->
+        <!-- ============================================================ -->
+
+        <!-- Selected Mod Info Panel (Draggable Floating Panel) -->
         <Canvas x:Name="ModInfoOverlay" Grid.RowSpan="3" Panel.ZIndex="400" d:IsHidden="True">
             <Border Background="{DynamicResource Brush.ModCard.Background.Active}" x:Name="MODINFO_border"
                     BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
@@ -2993,6 +3041,7 @@
             </Border>
         </Canvas>
 
+        <!-- Modlist Installation Progress Overlay -->
         <Border x:Name="ModlistInstallOverlay"
                 Grid.RowSpan="3"
                 Margin="0,0,0,-8"
@@ -3037,6 +3086,7 @@
             </Border>
         </Border>
 
+        <!-- Data Backup Progress Overlay -->
         <Border x:Name="DataBackupOverlay"
                 Grid.RowSpan="3"
                 Margin="0,0,0,-8"
