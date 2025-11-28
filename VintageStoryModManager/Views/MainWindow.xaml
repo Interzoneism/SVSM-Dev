@@ -20,7 +20,7 @@
     AllowDrop="True"
     PreviewDragEnter="MainWindow_OnPreviewDragEnter"
     PreviewDragOver="MainWindow_OnPreviewDragOver"
-    PreviewDrop="MainWindow_OnPreviewDrop" Background="Transparent">
+    PreviewDrop="MainWindow_OnPreviewDrop" Background="Transparent" UseLayoutRounding="False">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -36,7 +36,7 @@
     <Grid x:Name="RootGrid" Background="{DynamicResource Brush.ComboBox.Background.Disabled}">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="33" MinHeight="33" />
+            <RowDefinition Height="26" MinHeight="10" />
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -2510,25 +2510,6 @@
                                             </Border>
                                         </Grid>
                                     </Border>
-                                    <TextBlock x:Name="PlaceholderTextOnline"
-                                           Text="Loading online modlists..."
-                                           FontSize="16"
-                                           Foreground="{DynamicResource Brush.Text.Primary}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           TextAlignment="Center"
-                                           TextWrapping="Wrap" Height="21" Width="178">
-                                        <TextBlock.Style>
-                                            <Style TargetType="{x:Type TextBlock}">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding HasCloudModlists}" Value="False">
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
                                 </Grid>
                             </TabItem>
                         </TabControl>
@@ -2542,7 +2523,7 @@
                     Padding="0"
                     BorderThickness="0"
                     ToolTip="Join the Simple VS Manager Discord"
-                    Click="DiscordButton_OnClick" VerticalAlignment="Top" Margin="0,-8,5,0" HorizontalAlignment="Right" Width="48">
+                    Click="DiscordButton_OnClick" VerticalAlignment="Top" Margin="0,-6,5,0" HorizontalAlignment="Right" Width="48">
                 <Button.Template>
                     <ControlTemplate TargetType="{x:Type Button}">
                         <Grid Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
