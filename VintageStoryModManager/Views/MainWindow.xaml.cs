@@ -75,6 +75,7 @@ public partial class MainWindow : Window
     private const string SummaryKeyPatchModPrefix = "__PATCH_MOD__";
     private const string SummaryKeyLinePrefix = "__PREFIX__";
     private const int MaxDataBackupsMenuItems = 15;
+    private const int WindowPositionScreenMargin = 50;
     private static readonly double ModListScrollMultiplier = DevConfig.ModListScrollMultiplier;
     private static readonly double ModDbDesignScrollMultiplier = DevConfig.ModDbDesignScrollMultiplier;
     private static readonly double LoadMoreScrollThreshold = DevConfig.LoadMoreScrollThreshold;
@@ -1432,8 +1433,7 @@ public partial class MainWindow : Window
     {
         // Check if the position is within the bounds of any screen
         // Use a small margin to ensure the title bar is visible
-        const int margin = 50;
-        var point = new System.Drawing.Point((int)left + margin, (int)top + margin);
+        var point = new System.Drawing.Point((int)left + WindowPositionScreenMargin, (int)top + WindowPositionScreenMargin);
 
         foreach (var screen in WinForms.Screen.AllScreens)
         {
