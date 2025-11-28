@@ -69,26 +69,44 @@ using TabControl = System.Windows.Controls.TabControl;
 
 namespace VintageStoryModManager.Views;
 
+/// <summary>
+/// Main application window for Simple VS Manager.
+/// Handles mod browsing, installation, updates, and modlist management.
+/// </summary>
 public partial class MainWindow : Window
 {
+    #region Constants
+
     // Summary key prefixes to avoid collisions between different summary types
     private const string SummaryKeyPatchModPrefix = "__PATCH_MOD__";
     private const string SummaryKeyLinePrefix = "__PREFIX__";
     private const int MaxDataBackupsMenuItems = 15;
     private const int WindowPositionScreenMargin = 50;
+
+    #endregion
+
+    #region Static Configuration
+
+    // URLs
+    private const string DiscordInviteUrl = "https://discord.gg/Zhm3QnD2s9";
+    private static readonly string ManagerModDatabaseUrl = DevConfig.ManagerModDatabaseUrl;
+    private static readonly string ManagerModDatabaseModId = DevConfig.ManagerModDatabaseModId;
+    private static readonly string ModDatabaseUnavailableMessage = DevConfig.ModDatabaseUnavailableMessage;
+
+    // UI multipliers and thresholds
     private static readonly double ModListScrollMultiplier = DevConfig.ModListScrollMultiplier;
     private static readonly double ModDbDesignScrollMultiplier = DevConfig.ModDbDesignScrollMultiplier;
     private static readonly double LoadMoreScrollThreshold = DevConfig.LoadMoreScrollThreshold;
     private static readonly double HoverOverlayOpacity = DevConfig.HoverOverlayOpacity;
     private static readonly double SelectionOverlayOpacity = DevConfig.SelectionOverlayOpacity;
+
+    // Mod info panel positioning
     private static readonly double ModInfoPanelHorizontalOverhang = DevConfig.ModInfoPanelHorizontalOverhang;
     private static readonly double DefaultModInfoPanelLeft = DevConfig.DefaultModInfoPanelLeft;
     private static readonly double DefaultModInfoPanelTop = DevConfig.DefaultModInfoPanelTop;
     private static readonly double DefaultModInfoPanelRightMargin = DevConfig.DefaultModInfoPanelRightMargin;
-    private static readonly string ManagerModDatabaseUrl = DevConfig.ManagerModDatabaseUrl;
-    private const string DiscordInviteUrl = "https://discord.gg/Zhm3QnD2s9";
-    private static readonly string ManagerModDatabaseModId = DevConfig.ManagerModDatabaseModId;
-    private static readonly string ModDatabaseUnavailableMessage = DevConfig.ModDatabaseUnavailableMessage;
+
+    // Directory names
     private static readonly string PresetDirectoryName = DevConfig.PresetDirectoryName;
     private static readonly string ModListDirectoryName = DevConfig.ModListDirectoryName;
     private static readonly string CloudModListCacheDirectoryName = DevConfig.CloudModListCacheDirectoryName;
@@ -152,6 +170,10 @@ public partial class MainWindow : Window
 
     private static readonly PresetLoadOptions StandardPresetLoadOptions = new(true, false, false);
     private static readonly PresetLoadOptions ModListLoadOptions = new(true, true, true);
+
+    #endregion
+
+    #region Dependency Properties
 
     private static readonly DependencyProperty BoundModProperty =
         DependencyProperty.RegisterAttached(
@@ -275,29 +297,57 @@ public partial class MainWindow : Window
         set => SetValue(HasModlistDownloadSpeedProperty, value);
     }
 
+    #endregion
+
+    #region Private Fields
+
+    // Synchronization primitives
     private readonly SemaphoreSlim _backupSemaphore = new(1, 1);
     private readonly SemaphoreSlim _cloudStoreLock = new(1, 1);
+
+    // Menu item collections
     private readonly List<MenuItem> _developerProfileMenuItems = new();
     private readonly List<MenuItem> _gameProfileMenuItems = new();
     private readonly Dictionary<InstalledModsColumn, bool> _installedColumnVisibilityPreferences = new();
+
+    // Services
     private readonly ModCompatibilityCommentsService _modCompatibilityCommentsService = new();
     private readonly ModDatabaseService _modDatabaseService = new();
     private readonly ModUpdateService _modUpdateService = new();
     private readonly DataBackupService _dataBackupService;
     private readonly ModActivityLoggingService _modActivityLoggingService;
-    private readonly Dictionary<ModListItemViewModel, PropertyChangedEventHandler> _selectedModPropertyHandlers = new();
-
-    private readonly List<ModListItemViewModel> _selectedMods = new();
-
     private readonly UserConfigurationService _userConfiguration;
+
+    // Selection tracking
+    private readonly Dictionary<ModListItemViewModel, PropertyChangedEventHandler> _selectedModPropertyHandlers = new();
+    private readonly List<ModListItemViewModel> _selectedMods = new();
+    private readonly List<LocalModlistListEntry> _selectedLocalModlists = new();
+    private CloudModlistListEntry? _selectedCloudModlist;
+    private ModListItemViewModel? _selectionAnchor;
+
+    // Cloud/Firebase state
     private bool _cloudModlistsLoaded;
     private bool _firebaseMigrationAttempted;
     private FirebaseModlistStore? _cloudModlistStore;
+
+    // View state
     private ICollectionView? _currentModsView;
+    private ScrollViewer? _modDatabaseCardsScrollViewer;
+    private ScrollViewer? _modsScrollViewer;
+    private DataGrid? _modsScrollViewerSource;
+    private INotifyCollectionChanged? _modsCollection;
+
+    // Path configuration
     private string? _customShortcutPath;
     private string? _dataDirectory;
     private string? _gameDirectory;
+
+    // Session monitoring
     private GameSessionMonitor? _gameSessionMonitor;
+    private DispatcherTimer? _modsWatcherTimer;
+    private ModUsagePromptData? _modUsagePromptData;
+
+    // UI state flags
     private bool _hasAppliedInitialModInfoPanelPosition;
     private bool _isApplyingMultiToggle;
     private bool _isApplyingPreset;
@@ -312,26 +362,25 @@ public partial class MainWindow : Window
     private bool _isModUsageDialogOpen;
     private bool _isRefreshingAfterModlistLoad;
     private bool _isWindowActive;
-    private ScrollViewer? _modDatabaseCardsScrollViewer;
-    private Point _modInfoDragOffset;
-    private INotifyCollectionChanged? _modsCollection;
-    private ScrollViewer? _modsScrollViewer;
-    private DataGrid? _modsScrollViewerSource;
+    private bool _refreshAfterModlistLoadPending;
+    private bool _localModlistsLoaded;
+    private bool _suppressSortPreferenceSave;
 
-    private DispatcherTimer? _modsWatcherTimer;
-    private ModUsagePromptData? _modUsagePromptData;
+    // Drag state
+    private Point _modInfoDragOffset;
+
+    // Modlist installation state
     private string? _recentLocalModBackupDirectory;
     private List<string>? _recentLocalModBackupModNames;
-    private bool _refreshAfterModlistLoadPending;
     private int _modlistInstallCompletedSteps;
     private int _modlistInstallTotalSteps;
-    private bool _localModlistsLoaded;
-    private readonly List<LocalModlistListEntry> _selectedLocalModlists = new();
-    private CloudModlistListEntry? _selectedCloudModlist;
-    private ModListItemViewModel? _selectionAnchor;
-    private bool _suppressSortPreferenceSave;
+
+    // ViewModel
     private MainViewModel? _viewModel;
 
+    #endregion
+
+    #region Constructor
 
     public MainWindow()
     {
@@ -406,12 +455,20 @@ public partial class MainWindow : Window
         UpdateLocalModlistControlsEnabledState();
     }
 
+    #endregion
+
+    #region Public Properties and Methods
+
     public IAsyncRelayCommand RefreshModsUiCommand { get; }
 
     public void ReportStatus(string message, bool isError = false)
     {
         _viewModel?.ReportStatus(message, isError);
     }
+
+    #endregion
+
+    #region Column Visibility
 
     private void InitializeColumnVisibilityMenu()
     {
@@ -485,6 +542,10 @@ public partial class MainWindow : Window
         foreach (var pair in _installedColumnVisibilityPreferences)
             NotifyViewModelOfInstalledColumnVisibility(pair.Key, pair.Value);
     }
+
+    #endregion
+
+    #region Window Lifecycle Events
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
@@ -1030,6 +1091,10 @@ public partial class MainWindow : Window
         EnsureModInfoPanelWithinBounds(true);
     }
 
+    #endregion
+
+    #region Mod Info Panel (Dragging and Positioning)
+
     private void ModInfoBorder_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is not Border border) return;
@@ -1187,6 +1252,10 @@ public partial class MainWindow : Window
 
         return false;
     }
+
+    #endregion
+
+    #region Menu Event Handlers
 
     private void DisableAutoRefreshMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
@@ -2292,6 +2361,10 @@ public partial class MainWindow : Window
             summarized.Add((line, modName, lineNumber));
         }
     }
+
+    #endregion
+
+    #region ViewModel Initialization
 
     private void InitializeViewModel()
     {
@@ -3958,6 +4031,10 @@ public partial class MainWindow : Window
         normalizedPath = candidate;
         return true;
     }
+
+    #endregion
+
+    #region DataGrid and ListView Event Handlers
 
     private void ModsDataGrid_OnSorting(object sender, DataGridSortingEventArgs e)
     {
@@ -8179,6 +8256,10 @@ public partial class MainWindow : Window
         };
     }
 
+    #endregion
+
+    #region Preset and Modlist Operations
+
     private void SavePresetMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         var presetDirectory = EnsurePresetDirectory();
@@ -10237,6 +10318,10 @@ public partial class MainWindow : Window
         return $"{modId}::{relativePath}::{fileName}::{content}";
     }
 
+    #endregion
+
+    #region Cloud/Firebase Operations
+
     private async Task ExecuteCloudOperationAsync(Func<FirebaseModlistStore, Task> operation, string actionDescription)
     {
         try
@@ -12228,6 +12313,10 @@ public partial class MainWindow : Window
         Dispatcher.Invoke(() => ClearSelection(true));
     }
 
+    #endregion
+
+    #region Mod Selection Handling
+
     private void HandleModRowSelection(ModListItemViewModel mod)
     {
         if (_isApplyingPreset) return;
@@ -13141,6 +13230,10 @@ public partial class MainWindow : Window
         base.OnClosed(e);
     }
 
+    #endregion
+
+    #region Nested Types
+
     private readonly record struct PresetLoadOptions(bool ApplyModStatus, bool ApplyModVersions, bool ForceExclusive);
 
     private enum ModlistLoadMode
@@ -13287,4 +13380,6 @@ public partial class MainWindow : Window
             return new ModUpdateOperationResult(mod, false, true, message, mod.Version, null, null);
         }
     }
+
+    #endregion
 }
