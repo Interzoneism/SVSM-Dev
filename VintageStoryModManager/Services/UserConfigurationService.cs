@@ -123,6 +123,8 @@ public sealed class UserConfigurationService
     private bool _suppressRefreshCachePrompt;
     private string? _suppressRefreshCachePromptVersion;
     private double? _windowHeight;
+    private double? _windowLeft;
+    private double? _windowTop;
     private double? _windowWidth;
 
     public UserConfigurationService()
@@ -220,6 +222,10 @@ public sealed class UserConfigurationService
     public double? WindowWidth => _windowWidth;
 
     public double? WindowHeight => _windowHeight;
+
+    public double? WindowLeft => _windowLeft;
+
+    public double? WindowTop => _windowTop;
 
     public double? ModInfoPanelLeft => _modInfoPanelLeft;
 
@@ -1107,6 +1113,23 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetWindowPosition(double left, double top)
+    {
+        var normalizedLeft = NormalizeWindowCoordinate(left);
+        var normalizedTop = NormalizeWindowCoordinate(top);
+
+        if (!normalizedLeft.HasValue || !normalizedTop.HasValue) return;
+
+        var hasLeftChanged = !_windowLeft.HasValue || Math.Abs(_windowLeft.Value - normalizedLeft.Value) > 0.1;
+        var hasTopChanged = !_windowTop.HasValue || Math.Abs(_windowTop.Value - normalizedTop.Value) > 0.1;
+
+        if (!hasLeftChanged && !hasTopChanged) return;
+
+        _windowLeft = normalizedLeft;
+        _windowTop = normalizedTop;
+        Save();
+    }
+
     public void SetModInfoPanelPosition(double left, double top)
     {
         var normalizedLeft = NormalizeModInfoCoordinate(left);
@@ -1435,6 +1458,8 @@ public sealed class UserConfigurationService
             RequireExactVsVersionMatch = obj["requireExactVsVersionMatch"]?.GetValue<bool?>() ?? false;
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
+            _windowLeft = NormalizeWindowCoordinate(obj["windowLeft"]?.GetValue<double?>());
+            _windowTop = NormalizeWindowCoordinate(obj["windowTop"]?.GetValue<double?>());
             _modInfoPanelLeft = NormalizeModInfoCoordinate(obj["modInfoPanelLeft"]?.GetValue<double?>());
             _modInfoPanelTop = NormalizeModInfoCoordinate(obj["modInfoPanelTop"]?.GetValue<double?>());
 
@@ -1563,6 +1588,8 @@ public sealed class UserConfigurationService
             RequireExactVsVersionMatch = false;
             _windowWidth = null;
             _windowHeight = null;
+            _windowLeft = null;
+            _windowTop = null;
             _modInfoPanelLeft = null;
             _modInfoPanelTop = null;
             CloudUploaderName = null;
@@ -1633,6 +1660,8 @@ public sealed class UserConfigurationService
                 ["requireExactVsVersionMatch"] = RequireExactVsVersionMatch,
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
+                ["windowLeft"] = _windowLeft,
+                ["windowTop"] = _windowTop,
                 ["modInfoPanelLeft"] = _modInfoPanelLeft,
                 ["modInfoPanelTop"] = _modInfoPanelTop,
                 ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(ActiveProfile.BulkUpdateModExclusions),
@@ -1773,6 +1802,16 @@ public sealed class UserConfigurationService
     }
 
     private static double? NormalizeModInfoCoordinate(double? coordinate)
+    {
+        if (!coordinate.HasValue) return null;
+
+        var value = coordinate.Value;
+        if (double.IsNaN(value) || double.IsInfinity(value)) return null;
+
+        return value;
+    }
+
+    private static double? NormalizeWindowCoordinate(double? coordinate)
     {
         if (!coordinate.HasValue) return null;
 
