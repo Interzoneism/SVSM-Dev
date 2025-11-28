@@ -2530,6 +2530,15 @@ public partial class MainWindow : Window
         {
             ApplyPreferredModlistsTabSelection();
             RefreshLocalModlists(false);
+
+            // When opening modlists tab with Online sub-tab already selected, ensure cloud modlists load
+            if (ModlistsTabControl is not null &&
+                OnlineModlistsTabItem is not null &&
+                Equals(ModlistsTabControl.SelectedItem, OnlineModlistsTabItem))
+            {
+                _ = RefreshCloudModlistsAsync(!_cloudModlistsLoaded);
+            }
+
             return;
         }
 
