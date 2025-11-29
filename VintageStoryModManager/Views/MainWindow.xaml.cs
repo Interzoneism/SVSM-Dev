@@ -7343,7 +7343,7 @@ public partial class MainWindow : Window
 
         try
         {
-            // Test if we can write to the selected directory
+            // Ensure the directory exists; creating it also validates write permissions
             Directory.CreateDirectory(selectedPath);
 
             _userConfiguration.SetCustomDataBackupLocation(selectedPath);
