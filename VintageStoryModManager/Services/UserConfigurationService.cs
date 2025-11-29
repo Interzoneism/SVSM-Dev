@@ -185,6 +185,8 @@ public sealed class UserConfigurationService
 
     public bool AutomaticDataBackupsWarningAcknowledged { get; private set; }
 
+    public string? CustomDataBackupLocation { get; private set; }
+
     public bool SuppressModlistSavePrompt { get; private set; }
 
     public bool SuppressRefreshCachePrompt
@@ -1039,6 +1041,24 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetCustomDataBackupLocation(string? path)
+    {
+        var normalized = string.IsNullOrWhiteSpace(path) ? null : NormalizePath(path);
+
+        if (string.Equals(CustomDataBackupLocation, normalized, StringComparison.OrdinalIgnoreCase)) return;
+
+        CustomDataBackupLocation = normalized;
+        Save();
+    }
+
+    public void ClearCustomDataBackupLocation()
+    {
+        if (CustomDataBackupLocation is null) return;
+
+        CustomDataBackupLocation = null;
+        Save();
+    }
+
     public void SetModlistAutoLoadBehavior(ModlistAutoLoadBehavior behavior)
     {
         if (ModlistAutoLoadBehavior == behavior) return;
@@ -1407,6 +1427,7 @@ public sealed class UserConfigurationService
             AutomaticDataBackupsEnabled = obj["automaticDataBackupsEnabled"]?.GetValue<bool?>() ?? false;
             AutomaticDataBackupsWarningAcknowledged =
                 obj["automaticDataBackupsWarningAcknowledged"]?.GetValue<bool?>() ?? false;
+            CustomDataBackupLocation = NormalizePath(GetOptionalString(obj["customDataBackupLocation"]));
             SuppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePrompt = obj["suppressRefreshCachePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePromptVersion = NormalizeVersion(
@@ -1572,6 +1593,7 @@ public sealed class UserConfigurationService
             LogModInstalls = false;
             LogModDeletions = false;
             AutomaticDataBackupsWarningAcknowledged = false;
+            CustomDataBackupLocation = null;
             SuppressModlistSavePrompt = false;
             _suppressRefreshCachePrompt = false;
             _suppressRefreshCachePromptVersion = null;
@@ -1642,6 +1664,7 @@ public sealed class UserConfigurationService
                 ["logModDeletions"] = LogModDeletions,
                 ["automaticDataBackupsEnabled"] = AutomaticDataBackupsEnabled,
                 ["automaticDataBackupsWarningAcknowledged"] = AutomaticDataBackupsWarningAcknowledged,
+                ["customDataBackupLocation"] = CustomDataBackupLocation,
                 ["suppressModlistSavePrompt"] = SuppressModlistSavePrompt,
                 ["suppressRefreshCachePrompt"] = _suppressRefreshCachePrompt,
                 ["suppressRefreshCachePromptVersion"] = _suppressRefreshCachePromptVersion,
