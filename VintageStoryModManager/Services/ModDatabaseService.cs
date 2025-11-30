@@ -843,15 +843,28 @@ public sealed class ModDatabaseService
     {
         if (string.IsNullOrWhiteSpace(candidate.ModId)) return CloneResultWithDetails(candidate, null, null);
 
-        InternetAccessManager.ThrowIfInternetAccessDisabled();
+        // Try to satisfy the request from cache first to avoid re-downloading identical payloads
+        var cachedInfo = await CacheService
+            .TryLoadWithoutExpiryAsync(candidate.ModId, null, null, false, cancellationToken)
+            .ConfigureAwait(false);
+        var cachedDownloads = ExtractLatestReleaseDownloads(cachedInfo);
+
+        // If internet is disabled, return cached data (if any) without throwing
+        if (InternetAccessManager.IsInternetAccessDisabled)
+            return CloneResultWithDetails(candidate, cachedInfo, cachedDownloads);
+
+        var needsRefresh = cachedInfo == null || await CheckIfRefreshNeededAsync(candidate.ModId, null, cancellationToken)
+            .ConfigureAwait(false);
+        if (!needsRefresh)
+            return CloneResultWithDetails(candidate, cachedInfo, cachedDownloads);
 
         await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var info = await TryLoadDatabaseInfoInternalAsync(candidate.ModId, null, null, false, cancellationToken)
                 .ConfigureAwait(false);
-            var latestDownloads = ExtractLatestReleaseDownloads(info);
-            return CloneResultWithDetails(candidate, info, latestDownloads);
+            var latestDownloads = ExtractLatestReleaseDownloads(info ?? cachedInfo);
+            return CloneResultWithDetails(candidate, info ?? cachedInfo, latestDownloads);
         }
         catch (OperationCanceledException)
         {
@@ -859,7 +872,7 @@ public sealed class ModDatabaseService
         }
         catch (Exception)
         {
-            return CloneResultWithDetails(candidate, null, null);
+            return CloneResultWithDetails(candidate, cachedInfo, cachedDownloads);
         }
         finally
         {
