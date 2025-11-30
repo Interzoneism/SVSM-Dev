@@ -39,6 +39,7 @@ public sealed class UserConfigurationService
     private static readonly IReadOnlyDictionary<string, string> VintageStoryPaletteColors =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
+            ["Palette.BaseSurface.Brighter"] = "#FF735B43",
             ["Palette.BaseSurface.Shadowed"] = "#FF403529",
             ["Palette.BaseSurface.Raised"] = "#FF4D3D2D",
             ["Palette.BaseSurface.HoverGlow"] = "#FF5A4530",
@@ -56,6 +57,7 @@ public sealed class UserConfigurationService
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["Palette.Accent.Primary"] = "#FF0078D4",
+            ["Palette.BaseSurface.Brighter"] = "#FF525252",
             ["Palette.BaseSurface.Shadowed"] = "#FF202020",
             ["Palette.BaseSurface.HoverGlow"] = "#FF323232",
             ["Palette.BaseSurface.Raised"] = "#FF2B2B2B",
@@ -72,6 +74,7 @@ public sealed class UserConfigurationService
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["Palette.Accent.Primary"] = "#FF0078D4",
+            ["Palette.BaseSurface.Brighter"] = "#FFA6AAAD",
             ["Palette.BaseSurface.HoverGlow"] = "#FFE0EAF5",
             ["Palette.BaseSurface.Raised"] = "#FFFFFFFF",
             ["Palette.BaseSurface.Shadowed"] = "#FFD0DBE5",

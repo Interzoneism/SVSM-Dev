@@ -21,6 +21,9 @@
     <Color x:Key="Palette.Panel.Primary.Background.Solid">#FFF6F8FB</Color>
     <Color x:Key="Palette.Panel.Secondary.Background.Solid">#FFEFF3F9</Color>
 
+    <!-- Base surfaces -->
+    <Color x:Key="Palette.BaseSurface.Brighter">#FFA6AAAD</Color>
+
     <!-- Buttons & toggles -->
     <Color x:Key="Palette.Button.Primary.Background.Normal">#FFF9FBFF</Color>
     <Color x:Key="Palette.Button.Primary.Background.Hover">#FFE7F0FF</Color>
