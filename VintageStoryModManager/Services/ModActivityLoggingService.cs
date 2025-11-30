@@ -51,6 +51,16 @@ public sealed class ModActivityLoggingService
         AppendLogEntry(message);
     }
 
+    public void LogAppLaunch()
+    {
+        LogLifecycleEvent("App launched");
+    }
+
+    public void LogAppExit()
+    {
+        LogLifecycleEvent("App exited");
+    }
+
     private void AppendLogEntry(string message)
     {
         try
@@ -67,5 +77,12 @@ public sealed class ModActivityLoggingService
         {
             // Logging is best-effort; silently ignore failures.
         }
+    }
+
+    private void LogLifecycleEvent(string message)
+    {
+        if (!_userConfiguration.LogAppLaunchAndExit) return;
+
+        AppendLogEntry(message);
     }
 }
