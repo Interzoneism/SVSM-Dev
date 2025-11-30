@@ -314,7 +314,7 @@ public partial class MainWindow : Window
     private readonly ModCompatibilityCommentsService _modCompatibilityCommentsService = new();
     private readonly ModDatabaseService _modDatabaseService = new();
     private readonly ModUpdateService _modUpdateService = new();
-    private readonly DataBackupService _dataBackupService;
+    private DataBackupService _dataBackupService;
     private readonly ModActivityLoggingService _modActivityLoggingService;
     private readonly UserConfigurationService _userConfiguration;
 
@@ -389,7 +389,9 @@ public partial class MainWindow : Window
             AsyncRelayCommandOptions.AllowConcurrentExecutions);
 
         _userConfiguration = new UserConfigurationService();
-        _dataBackupService = new DataBackupService(_userConfiguration.GetConfigurationDirectory());
+        _dataBackupService = new DataBackupService(
+            _userConfiguration.GetConfigurationDirectory(),
+            _userConfiguration.CustomDataBackupLocation);
         _modActivityLoggingService = new ModActivityLoggingService(_userConfiguration);
 
         InitializeComponent();
@@ -2530,6 +2532,15 @@ public partial class MainWindow : Window
         {
             ApplyPreferredModlistsTabSelection();
             RefreshLocalModlists(false);
+
+            // When opening modlists tab with Online sub-tab already selected, ensure cloud modlists load
+            if (ModlistsTabControl is not null &&
+                OnlineModlistsTabItem is not null &&
+                Equals(ModlistsTabControl.SelectedItem, OnlineModlistsTabItem))
+            {
+                _ = RefreshCloudModlistsAsync(!_cloudModlistsLoaded);
+            }
+
             return;
         }
 
@@ -7147,6 +7158,13 @@ public partial class MainWindow : Window
         openDirectoryMenuItem.Click += OpenDataBackupDirectoryMenuItem_OnClick;
         menuItem.Items.Add(openDirectoryMenuItem);
 
+        var changeBackupLocationMenuItem = new MenuItem
+        {
+            Header = "Change backup location..."
+        };
+        changeBackupLocationMenuItem.Click += ChangeBackupLocationMenuItem_OnClick;
+        menuItem.Items.Add(changeBackupLocationMenuItem);
+
         var deleteBackupsMenuItem = new MenuItem
         {
             Header = "Delete all data folder backups",
@@ -7295,6 +7313,50 @@ public partial class MainWindow : Window
         {
             WpfMessageBox.Show(
                 $"Failed to open the data backup directory:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void ChangeBackupLocationMenuItem_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var currentLocation = _dataBackupService.GetBackupRootDirectory();
+
+        using var dialog = new WinForms.FolderBrowserDialog
+        {
+            Description = "Select a folder where backups will be saved and loaded from.",
+            UseDescriptionForTitle = true,
+            ShowNewFolderButton = true
+        };
+
+        if (!string.IsNullOrWhiteSpace(currentLocation) && Directory.Exists(currentLocation))
+        {
+            dialog.InitialDirectory = currentLocation;
+            dialog.SelectedPath = currentLocation;
+        }
+
+        if (dialog.ShowDialog() != WinForms.DialogResult.OK) return;
+
+        var selectedPath = dialog.SelectedPath;
+        if (string.IsNullOrWhiteSpace(selectedPath)) return;
+
+        try
+        {
+            // Ensure the directory exists; creating it also validates write permissions
+            Directory.CreateDirectory(selectedPath);
+
+            _userConfiguration.SetCustomDataBackupLocation(selectedPath);
+            _dataBackupService = new DataBackupService(
+                _userConfiguration.GetConfigurationDirectory(),
+                _userConfiguration.CustomDataBackupLocation);
+
+            _viewModel?.ReportStatus($"Backup location changed to: {selectedPath}");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            WpfMessageBox.Show(
+                $"Failed to set the backup location:\n{ex.Message}",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
