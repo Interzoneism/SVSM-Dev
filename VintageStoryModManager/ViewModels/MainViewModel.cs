@@ -4317,8 +4317,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         try
         {
-            var (cachedInfo, isCacheFresh) = await _databaseService
-                .TryLoadCachedDatabaseInfoWithFreshnessAsync(entry.ModId, entry.Version, InstalledGameVersion,
+            // Load from cache and check if refresh is needed via version comparison
+            var (cachedInfo, needsRefresh) = await _databaseService
+                .TryLoadCachedDatabaseInfoWithRefreshCheckAsync(entry.ModId, entry.Version, InstalledGameVersion,
                     _configuration.RequireExactVsVersionMatch)
                 .ConfigureAwait(false);
 
@@ -4336,8 +4337,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     return;
                 }
 
-                // Skip network request if cache is fresh (not expired)
-                if (isCacheFresh)
+                // Skip network request if no refresh is needed (version unchanged)
+                if (!needsRefresh)
                 {
                     source = "cache";
                     return;

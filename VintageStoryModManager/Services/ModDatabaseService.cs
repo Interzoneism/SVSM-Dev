@@ -96,12 +96,12 @@ public sealed class ModDatabaseService
         {
             var installedModVersion = modEntry.Version;
 
-            var (cached, isCacheFresh) = await CacheService
-                .TryLoadWithFreshnessAsync(
+            // Always load from cache first
+            var cached = await CacheService
+                .TryLoadWithoutExpiryAsync(
                     modEntry.ModId,
                     normalizedGameVersion,
                     installedModVersion,
-                    !internetDisabled,
                     requireExactVersionMatch,
                     cancellationToken)
                 .ConfigureAwait(false);
@@ -114,8 +114,14 @@ public sealed class ModDatabaseService
                     ModManifestCacheService.UpdateTags(modEntry.ModId, installedModVersion, cached.Tags);
             }
 
-            // Skip network request if internet is disabled or cache is fresh
-            if (internetDisabled || isCacheFresh) return;
+            // Skip network request if internet is disabled
+            if (internetDisabled) return;
+
+            // Check if data has changed using HTTP conditional request
+            var needsRefresh = cached == null || await CheckIfRefreshNeededAsync(
+                modEntry.ModId, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
+
+            if (!needsRefresh) return;
 
             await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
@@ -139,6 +145,73 @@ public sealed class ModDatabaseService
             {
                 semaphore.Release();
             }
+        }
+    }
+
+    /// <summary>
+    ///     Checks if a refresh is needed using HTTP conditional requests.
+    ///     Returns true if data has changed, false if unchanged (304 Not Modified).
+    /// </summary>
+    private async Task<bool> CheckIfRefreshNeededAsync(
+        string modId,
+        string? normalizedGameVersion,
+        CancellationToken cancellationToken)
+    {
+        if (InternetAccessManager.IsInternetAccessDisabled) return false;
+
+        try
+        {
+            // Get cached HTTP headers for conditional request
+            var (lastModified, etag) = await CacheService
+                .GetCachedHttpHeadersAsync(modId, normalizedGameVersion, cancellationToken)
+                .ConfigureAwait(false);
+
+            // If no conditional request headers are cached, we need a full fetch
+            var hasConditionalHeaders = !string.IsNullOrWhiteSpace(lastModified) || !string.IsNullOrWhiteSpace(etag);
+            if (!hasConditionalHeaders) return true;
+
+            var requestUri =
+                string.Format(CultureInfo.InvariantCulture, ApiEndpointFormat, Uri.EscapeDataString(modId));
+            using HttpRequestMessage request = new(HttpMethod.Head, requestUri);
+
+            // Add conditional request headers
+            if (!string.IsNullOrWhiteSpace(etag))
+            {
+                request.Headers.TryAddWithoutValidation("If-None-Match", etag);
+            }
+            if (!string.IsNullOrWhiteSpace(lastModified))
+            {
+                request.Headers.TryAddWithoutValidation("If-Modified-Since", lastModified);
+            }
+
+            using var response = await HttpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                .ConfigureAwait(false);
+
+            // 304 Not Modified means cache is still valid
+            if (response.StatusCode == HttpStatusCode.NotModified)
+            {
+                return false;
+            }
+
+            // 200 OK with conditional headers means data has changed
+            // (Server returned full response instead of 304)
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                return true;
+            }
+
+            // For other status codes (errors, etc.), assume cache is valid to avoid excessive requests
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // On error, assume cache is valid to avoid excessive requests
+            return false;
         }
     }
 
@@ -202,31 +275,44 @@ public sealed class ModDatabaseService
     }
 
     /// <summary>
-    ///     Attempts to load cached database info, also returning whether the cache is fresh (not expired).
+    ///     Attempts to load cached database info and checks if refresh is needed by version comparison.
     /// </summary>
     /// <param name="modId">The mod ID to look up.</param>
     /// <param name="modVersion">The installed mod version.</param>
     /// <param name="installedGameVersion">The installed game version.</param>
     /// <param name="requireExactVersionMatch">Whether to require exact version matching.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A tuple containing the cached info (or null) and whether it is fresh.</returns>
-    public async Task<(ModDatabaseInfo? Info, bool IsFresh)> TryLoadCachedDatabaseInfoWithFreshnessAsync(
+    /// <returns>A tuple containing the cached info (or null) and whether a refresh is needed.</returns>
+    public async Task<(ModDatabaseInfo? Info, bool NeedsRefresh)> TryLoadCachedDatabaseInfoWithRefreshCheckAsync(
         string modId,
         string? modVersion,
         string? installedGameVersion,
         bool requireExactVersionMatch = false,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(modId)) return (null, false);
+        if (string.IsNullOrWhiteSpace(modId)) return (null, true);
 
         var normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
-        return await CacheService.TryLoadWithFreshnessAsync(
+        
+        // Always load from cache first
+        var cached = await CacheService.TryLoadWithoutExpiryAsync(
             modId,
             normalizedGameVersion,
             modVersion,
-            false,
             requireExactVersionMatch,
             cancellationToken).ConfigureAwait(false);
+
+        // If no cache or internet is disabled, return what we have
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            return (cached, false);
+        }
+
+        // Check if refresh is needed using HTTP conditional request
+        var needsRefresh = cached == null || await CheckIfRefreshNeededAsync(
+            modId, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
+
+        return (cached, needsRefresh);
     }
 
     public async Task<string?> TryFetchLatestReleaseVersionAsync(string modId, CancellationToken cancellationToken)
@@ -280,33 +366,37 @@ public sealed class ModDatabaseService
         var internetDisabled = InternetAccessManager.IsInternetAccessDisabled;
 
         ModDatabaseInfo? cached;
-        bool isCacheFresh;
+        bool needsRefresh;
 
         if (preloadedCachedInfo != null)
         {
             // When preloaded cache info is provided, the caller is expected to have already
-            // checked freshness and only call this method when a network refresh is desired.
-            // This avoids duplicate cache reads while maintaining the contract that this
-            // method will attempt a network request unless internet is disabled.
+            // checked if refresh is needed and only call this method when a network refresh is desired.
+            // This avoids duplicate cache reads and version checks.
             cached = preloadedCachedInfo;
-            isCacheFresh = false;
+            needsRefresh = true;
         }
         else
         {
-            // Load from disk and determine freshness
-            (cached, isCacheFresh) = await CacheService
-                .TryLoadWithFreshnessAsync(
+            // Load from disk and check if refresh is needed via HTTP conditional request
+            cached = await CacheService
+                .TryLoadWithoutExpiryAsync(
                     modId,
                     normalizedGameVersion,
                     modVersion,
-                    !internetDisabled,
                     requireExactVersionMatch,
                     cancellationToken)
                 .ConfigureAwait(false);
+
+            if (internetDisabled) return cached;
+
+            // Check if data has changed on the server using HTTP conditional request
+            needsRefresh = cached == null || await CheckIfRefreshNeededAsync(
+                modId, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
         }
 
-        // Skip network request if internet is disabled or cache is fresh
-        if (internetDisabled || isCacheFresh) return cached;
+        // Skip network request if internet is disabled or no refresh needed
+        if (internetDisabled || !needsRefresh) return cached;
 
         var info = await TryLoadDatabaseInfoInternalAsync(modId, modVersion, normalizedGameVersion,
                 requireExactVersionMatch, cancellationToken)
@@ -837,6 +927,18 @@ public sealed class ModDatabaseService
                 .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode) return null;
 
+            // Capture HTTP headers for conditional requests
+            string? lastModified = null;
+            string? etag = null;
+            if (response.Headers.TryGetValues("Last-Modified", out var lastModifiedValues))
+            {
+                lastModified = lastModifiedValues.FirstOrDefault();
+            }
+            if (response.Headers.TryGetValues("ETag", out var etagValues))
+            {
+                etag = etagValues.FirstOrDefault();
+            }
+
             await using var contentStream =
                 await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             using var document = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken)
@@ -890,7 +992,8 @@ public sealed class ModDatabaseService
                 Side = side
             };
 
-            await CacheService.StoreAsync(modId, normalizedGameVersion, info, modVersion, cancellationToken)
+            // Store with HTTP headers for future conditional requests
+            await CacheService.StoreAsync(modId, normalizedGameVersion, info, modVersion, lastModified, etag, cancellationToken)
                 .ConfigureAwait(false);
 
             return info;

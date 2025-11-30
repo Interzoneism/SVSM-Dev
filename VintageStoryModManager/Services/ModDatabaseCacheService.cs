@@ -18,7 +18,9 @@ internal sealed class ModDatabaseCacheService
         DevConfig.ModDatabaseMinimumSupportedCacheSchemaVersion;
 
     private static readonly string AnyGameVersionToken = DevConfig.ModDatabaseAnyGameVersionToken;
-    private static readonly TimeSpan CacheEntryMaxAge = TimeSpan.FromHours(12);
+    // Note: Time-based cache expiry has been removed. Cache invalidation is now based on
+    // version comparison - we always load from cache first, then check if the latest version
+    // has changed before fetching full data from the network.
 
     /// <summary>
     ///     Maximum number of entries to keep in the in-memory cache.
@@ -80,36 +82,36 @@ internal sealed class ModDatabaseCacheService
         bool requireExactVersionMatch,
         CancellationToken cancellationToken)
     {
-        var (info, _) = await TryLoadWithFreshnessAsync(
+        // The allowExpiredEntryRefresh parameter is now unused since we no longer use time-based expiry.
+        // Cache invalidation is based on HTTP conditional requests (ETag/Last-Modified) by the caller.
+        return await TryLoadWithoutExpiryAsync(
             modId,
             normalizedGameVersion,
             installedModVersion,
-            allowExpiredEntryRefresh,
             requireExactVersionMatch,
             cancellationToken).ConfigureAwait(false);
-        return info;
     }
 
     /// <summary>
-    ///     Attempts to load cached mod database info from disk, indicating whether the cache is fresh.
+    ///     Attempts to load cached mod database info from disk.
+    ///     Cache entries are never expired by time - invalidation is based on HTTP conditional
+    ///     requests performed by the caller using <see cref="GetCachedHttpHeadersAsync"/>.
     /// </summary>
     /// <param name="modId">The mod identifier.</param>
     /// <param name="normalizedGameVersion">The normalized game version.</param>
     /// <param name="installedModVersion">The installed mod version.</param>
-    /// <param name="allowExpiredEntryRefresh">Whether to return null for expired entries when internet is available.</param>
     /// <param name="requireExactVersionMatch">Whether to require exact version matching.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A tuple containing the cached mod database info (or null) and whether the cache entry is fresh (not expired).</returns>
-    public async Task<(ModDatabaseInfo? Info, bool IsFresh)> TryLoadWithFreshnessAsync(
+    /// <returns>The cached mod database info, or null if not found.</returns>
+    public async Task<ModDatabaseInfo?> TryLoadWithoutExpiryAsync(
         string modId,
         string? normalizedGameVersion,
         string? installedModVersion,
-        bool allowExpiredEntryRefresh,
         bool requireExactVersionMatch,
         CancellationToken cancellationToken)
     {
         var cachePath = GetCacheFilePath(modId, normalizedGameVersion);
-        if (string.IsNullOrWhiteSpace(cachePath)) return (null, false);
+        if (string.IsNullOrWhiteSpace(cachePath)) return null;
 
         // Build a cache key that includes version-specific parameters for lookup
         var cacheKey = BuildInMemoryCacheKey(cachePath, installedModVersion, requireExactVersionMatch);
@@ -120,13 +122,10 @@ internal sealed class ModDatabaseCacheService
             if (!IsInMemoryCacheEntryExpired(memoryEntry))
             {
                 // Return cached result (which may be null if no disk cache existed)
-                // isFresh is true only when we have actual cached data - null means no cache exists
-                // and we need to fetch from network. The in-memory cache TTL (5 min) is within 
-                // the disk cache TTL (12 hours), so valid in-memory entries are considered fresh.
-                return (memoryEntry.Result, memoryEntry.Result != null);
+                return memoryEntry.Result;
             }
 
-            // Entry expired, remove it
+            // In-memory entry expired, remove it and re-read from disk
             _inMemoryCache.TryRemove(cacheKey, out _);
         }
 
@@ -135,7 +134,7 @@ internal sealed class ModDatabaseCacheService
         {
             // Cache the null result to avoid repeated file existence checks
             TryAddToInMemoryCache(cacheKey, null);
-            return (null, false);
+            return null;
         }
 
         var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
@@ -145,7 +144,7 @@ internal sealed class ModDatabaseCacheService
             if (!File.Exists(cachePath))
             {
                 TryAddToInMemoryCache(cacheKey, null);
-                return (null, false);
+                return null;
             }
 
             await using FileStream stream = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -158,30 +157,13 @@ internal sealed class ModDatabaseCacheService
                 || !IsGameVersionMatch(cached.GameVersion, normalizedGameVersion))
             {
                 TryAddToInMemoryCache(cacheKey, null);
-                return (null, false);
+                return null;
             }
 
-            if (IsCacheEntryExpired(cached.CachedUtc))
-            {
-                var canRefreshExpiredEntry = allowExpiredEntryRefresh
-                                             && !InternetAccessManager.IsInternetAccessDisabled;
-
-                if (!canRefreshExpiredEntry)
-                {
-                    var result = ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion,
-                        requireExactVersionMatch);
-                    TryAddToInMemoryCache(cacheKey, result);
-                    // Cache is expired but returned anyway because refresh was not allowed
-                    return (result, false);
-                }
-
-                // Don't cache null when we're allowing refresh - caller will fetch fresh data
-                return (null, false);
-            }
-
+            // No time-based expiry check - cache is valid until data changes on the server
             var info = ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion, requireExactVersionMatch);
             TryAddToInMemoryCache(cacheKey, info);
-            return (info, true);
+            return info;
         }
         catch (OperationCanceledException)
         {
@@ -189,7 +171,7 @@ internal sealed class ModDatabaseCacheService
         }
         catch (Exception)
         {
-            return (null, false);
+            return null;
         }
         finally
         {
@@ -197,11 +179,110 @@ internal sealed class ModDatabaseCacheService
         }
     }
 
+    /// <summary>
+    ///     Gets the latest version stored in the cache for a mod, used for staleness checking.
+    /// </summary>
+    /// <param name="modId">The mod identifier.</param>
+    /// <param name="normalizedGameVersion">The normalized game version.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The cached latest version, or null if not cached.</returns>
+    public async Task<string?> GetCachedLatestVersionAsync(
+        string modId,
+        string? normalizedGameVersion,
+        CancellationToken cancellationToken)
+    {
+        var cachePath = GetCacheFilePath(modId, normalizedGameVersion);
+        if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath)) return null;
+
+        var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!File.Exists(cachePath)) return null;
+
+            await using FileStream stream = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var cached = await JsonSerializer
+                .DeserializeAsync<CachedModDatabaseInfo>(stream, SerializerOptions, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cached is null || !IsSupportedSchemaVersion(cached.SchemaVersion)) return null;
+
+            // Return the latest version from the first release (they are ordered by version descending)
+            return cached.Releases is { Length: > 0 } ? cached.Releases[0].Version : null;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+        finally
+        {
+            fileLock.Release();
+        }
+    }
+
+    /// <summary>
+    ///     Gets the cached HTTP headers for conditional request validation.
+    /// </summary>
+    /// <param name="modId">The mod identifier.</param>
+    /// <param name="normalizedGameVersion">The normalized game version.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A tuple containing the Last-Modified header and ETag, or nulls if not cached.</returns>
+    public async Task<(string? LastModified, string? ETag)> GetCachedHttpHeadersAsync(
+        string modId,
+        string? normalizedGameVersion,
+        CancellationToken cancellationToken)
+    {
+        var cachePath = GetCacheFilePath(modId, normalizedGameVersion);
+        if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath)) return (null, null);
+
+        var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!File.Exists(cachePath)) return (null, null);
+
+            await using FileStream stream = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var cached = await JsonSerializer
+                .DeserializeAsync<CachedModDatabaseInfo>(stream, SerializerOptions, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cached is null || !IsSupportedSchemaVersion(cached.SchemaVersion)) return (null, null);
+
+            return (cached.LastModifiedHeader, cached.ETag);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return (null, null);
+        }
+        finally
+        {
+            fileLock.Release();
+        }
+    }
+
+    public Task StoreAsync(
+        string modId,
+        string? normalizedGameVersion,
+        ModDatabaseInfo info,
+        string? installedModVersion,
+        CancellationToken cancellationToken)
+    {
+        return StoreAsync(modId, normalizedGameVersion, info, installedModVersion, null, null, cancellationToken);
+    }
+
     public async Task StoreAsync(
         string modId,
         string? normalizedGameVersion,
         ModDatabaseInfo info,
         string? installedModVersion,
+        string? lastModifiedHeader,
+        string? etag,
         CancellationToken cancellationToken)
     {
         if (info is null) return;
@@ -235,7 +316,7 @@ internal sealed class ModDatabaseCacheService
 
             var tempPath = cachePath + ".tmp";
 
-            var cacheModel = CreateCacheModel(modId, normalizedGameVersion, info, tagsByModVersion);
+            var cacheModel = CreateCacheModel(modId, normalizedGameVersion, info, tagsByModVersion, lastModifiedHeader, etag);
 
             await using (FileStream tempStream = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
@@ -316,7 +397,9 @@ internal sealed class ModDatabaseCacheService
         string modId,
         string? normalizedGameVersion,
         ModDatabaseInfo info,
-        IReadOnlyDictionary<string, string[]> tagsByModVersion)
+        IReadOnlyDictionary<string, string[]> tagsByModVersion,
+        string? lastModifiedHeader = null,
+        string? etag = null)
     {
         var releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
         var releaseModels = new List<CachedModRelease>(releases.Count);
@@ -346,6 +429,8 @@ internal sealed class ModDatabaseCacheService
             GameVersion = string.IsNullOrWhiteSpace(normalizedGameVersion)
                 ? AnyGameVersionToken
                 : normalizedGameVersion!,
+            LastModifiedHeader = lastModifiedHeader,
+            ETag = etag,
             Tags = info.Tags?.ToArray() ?? Array.Empty<string>(),
             TagsByModVersion = tagsByModVersion.Count == 0
                 ? new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
@@ -531,14 +616,6 @@ internal sealed class ModDatabaseCacheService
         return gate;
     }
 
-    private static bool IsCacheEntryExpired(DateTime cachedUtc)
-    {
-        if (cachedUtc == default) return true;
-
-        var expirationThreshold = DateTime.UtcNow - CacheEntryMaxAge;
-        return cachedUtc < expirationThreshold;
-    }
-
     private static bool IsSupportedSchemaVersion(int schemaVersion)
     {
         return schemaVersion >= MinimumSupportedCacheSchemaVersion
@@ -580,6 +657,16 @@ internal sealed class ModDatabaseCacheService
         public string GameVersion { get; init; } = AnyGameVersionToken;
 
         public DateTime CachedUtc { get; init; }
+
+        /// <summary>
+        ///     The Last-Modified header value from the HTTP response, used for conditional requests.
+        /// </summary>
+        public string? LastModifiedHeader { get; init; }
+
+        /// <summary>
+        ///     The ETag header value from the HTTP response, used for conditional requests.
+        /// </summary>
+        public string? ETag { get; init; }
 
         public string[] Tags { get; init; } = Array.Empty<string>();
 
