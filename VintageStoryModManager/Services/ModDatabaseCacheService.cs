@@ -120,7 +120,9 @@ internal sealed class ModDatabaseCacheService
             if (!IsInMemoryCacheEntryExpired(memoryEntry))
             {
                 // Return cached result (which may be null if no disk cache existed)
-                // In-memory cache entries are considered fresh since they have their own short TTL
+                // isFresh is true only when we have actual cached data - null means no cache exists
+                // and we need to fetch from network. The in-memory cache TTL (5 min) is within 
+                // the disk cache TTL (12 hours), so valid in-memory entries are considered fresh.
                 return (memoryEntry.Result, memoryEntry.Result != null);
             }
 

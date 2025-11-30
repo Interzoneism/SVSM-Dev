@@ -155,12 +155,16 @@ public sealed class ModDatabaseService
 
     /// <summary>
     ///     Loads database info for a mod, optionally using pre-loaded cached info to avoid double disk reads.
+    ///     When preloaded cache info is provided, callers should first check cache freshness using
+    ///     <see cref="TryLoadCachedDatabaseInfoWithFreshnessAsync"/> and only call this method when
+    ///     a network refresh is desired (i.e., when the cache is stale).
     /// </summary>
     /// <param name="modId">The mod ID to look up.</param>
     /// <param name="modVersion">The installed mod version.</param>
     /// <param name="installedGameVersion">The installed game version.</param>
     /// <param name="requireExactVersionMatch">Whether to require exact version matching.</param>
-    /// <param name="preloadedCachedInfo">Previously loaded cached info to avoid re-reading from disk.</param>
+    /// <param name="preloadedCachedInfo">Previously loaded cached info to avoid re-reading from disk. When provided,
+    /// this method will attempt a network refresh. Pass null to have freshness checked automatically.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The database info, or null if not found.</returns>
     public Task<ModDatabaseInfo?> TryLoadDatabaseInfoAsync(
@@ -280,9 +284,12 @@ public sealed class ModDatabaseService
 
         if (preloadedCachedInfo != null)
         {
-            // Caller has already determined freshness; assume they handle it appropriately
+            // When preloaded cache info is provided, the caller is expected to have already
+            // checked freshness and only call this method when a network refresh is desired.
+            // This avoids duplicate cache reads while maintaining the contract that this
+            // method will attempt a network request unless internet is disabled.
             cached = preloadedCachedInfo;
-            isCacheFresh = false; // Caller should skip calling this method if cache is fresh
+            isCacheFresh = false;
         }
         else
         {
