@@ -96,8 +96,8 @@ public sealed class ModDatabaseService
         {
             var installedModVersion = modEntry.Version;
 
-            var cached = await CacheService
-                .TryLoadAsync(
+            var (cached, isCacheFresh) = await CacheService
+                .TryLoadWithFreshnessAsync(
                     modEntry.ModId,
                     normalizedGameVersion,
                     installedModVersion,
@@ -114,7 +114,8 @@ public sealed class ModDatabaseService
                     ModManifestCacheService.UpdateTags(modEntry.ModId, installedModVersion, cached.Tags);
             }
 
-            if (internetDisabled) return;
+            // Skip network request if internet is disabled or cache is fresh
+            if (internetDisabled || isCacheFresh) return;
 
             await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
@@ -196,6 +197,34 @@ public sealed class ModDatabaseService
             cancellationToken);
     }
 
+    /// <summary>
+    ///     Attempts to load cached database info, also returning whether the cache is fresh (not expired).
+    /// </summary>
+    /// <param name="modId">The mod ID to look up.</param>
+    /// <param name="modVersion">The installed mod version.</param>
+    /// <param name="installedGameVersion">The installed game version.</param>
+    /// <param name="requireExactVersionMatch">Whether to require exact version matching.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A tuple containing the cached info (or null) and whether it is fresh.</returns>
+    public async Task<(ModDatabaseInfo? Info, bool IsFresh)> TryLoadCachedDatabaseInfoWithFreshnessAsync(
+        string modId,
+        string? modVersion,
+        string? installedGameVersion,
+        bool requireExactVersionMatch = false,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(modId)) return (null, false);
+
+        var normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
+        return await CacheService.TryLoadWithFreshnessAsync(
+            modId,
+            normalizedGameVersion,
+            modVersion,
+            false,
+            requireExactVersionMatch,
+            cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<string?> TryFetchLatestReleaseVersionAsync(string modId, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(modId) || InternetAccessManager.IsInternetAccessDisabled) return null;
@@ -246,18 +275,31 @@ public sealed class ModDatabaseService
     {
         var internetDisabled = InternetAccessManager.IsInternetAccessDisabled;
 
-        // Use preloaded cached info if available, otherwise load from disk
-        var cached = preloadedCachedInfo ?? await CacheService
-            .TryLoadAsync(
-                modId,
-                normalizedGameVersion,
-                modVersion,
-                !internetDisabled,
-                requireExactVersionMatch,
-                cancellationToken)
-            .ConfigureAwait(false);
+        ModDatabaseInfo? cached;
+        bool isCacheFresh;
 
-        if (internetDisabled) return cached;
+        if (preloadedCachedInfo != null)
+        {
+            // Caller has already determined freshness; assume they handle it appropriately
+            cached = preloadedCachedInfo;
+            isCacheFresh = false; // Caller should skip calling this method if cache is fresh
+        }
+        else
+        {
+            // Load from disk and determine freshness
+            (cached, isCacheFresh) = await CacheService
+                .TryLoadWithFreshnessAsync(
+                    modId,
+                    normalizedGameVersion,
+                    modVersion,
+                    !internetDisabled,
+                    requireExactVersionMatch,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        // Skip network request if internet is disabled or cache is fresh
+        if (internetDisabled || isCacheFresh) return cached;
 
         var info = await TryLoadDatabaseInfoInternalAsync(modId, modVersion, normalizedGameVersion,
                 requireExactVersionMatch, cancellationToken)

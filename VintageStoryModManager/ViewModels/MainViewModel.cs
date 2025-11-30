@@ -4317,8 +4317,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         try
         {
-            var cachedInfo = await _databaseService
-                .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
+            var (cachedInfo, isCacheFresh) = await _databaseService
+                .TryLoadCachedDatabaseInfoWithFreshnessAsync(entry.ModId, entry.Version, InstalledGameVersion,
                     _configuration.RequireExactVsVersionMatch)
                 .ConfigureAwait(false);
 
@@ -4331,6 +4331,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 releaseCount = cachedInfo.Releases?.Count ?? 0;
 
                 if (InternetAccessManager.IsInternetAccessDisabled)
+                {
+                    source = "cache";
+                    return;
+                }
+
+                // Skip network request if cache is fresh (not expired)
+                if (isCacheFresh)
                 {
                     source = "cache";
                     return;

@@ -80,8 +80,36 @@ internal sealed class ModDatabaseCacheService
         bool requireExactVersionMatch,
         CancellationToken cancellationToken)
     {
+        var (info, _) = await TryLoadWithFreshnessAsync(
+            modId,
+            normalizedGameVersion,
+            installedModVersion,
+            allowExpiredEntryRefresh,
+            requireExactVersionMatch,
+            cancellationToken).ConfigureAwait(false);
+        return info;
+    }
+
+    /// <summary>
+    ///     Attempts to load cached mod database info from disk, indicating whether the cache is fresh.
+    /// </summary>
+    /// <param name="modId">The mod identifier.</param>
+    /// <param name="normalizedGameVersion">The normalized game version.</param>
+    /// <param name="installedModVersion">The installed mod version.</param>
+    /// <param name="allowExpiredEntryRefresh">Whether to return null for expired entries when internet is available.</param>
+    /// <param name="requireExactVersionMatch">Whether to require exact version matching.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A tuple containing the cached mod database info (or null) and whether the cache entry is fresh (not expired).</returns>
+    public async Task<(ModDatabaseInfo? Info, bool IsFresh)> TryLoadWithFreshnessAsync(
+        string modId,
+        string? normalizedGameVersion,
+        string? installedModVersion,
+        bool allowExpiredEntryRefresh,
+        bool requireExactVersionMatch,
+        CancellationToken cancellationToken)
+    {
         var cachePath = GetCacheFilePath(modId, normalizedGameVersion);
-        if (string.IsNullOrWhiteSpace(cachePath)) return null;
+        if (string.IsNullOrWhiteSpace(cachePath)) return (null, false);
 
         // Build a cache key that includes version-specific parameters for lookup
         var cacheKey = BuildInMemoryCacheKey(cachePath, installedModVersion, requireExactVersionMatch);
@@ -92,7 +120,8 @@ internal sealed class ModDatabaseCacheService
             if (!IsInMemoryCacheEntryExpired(memoryEntry))
             {
                 // Return cached result (which may be null if no disk cache existed)
-                return memoryEntry.Result;
+                // In-memory cache entries are considered fresh since they have their own short TTL
+                return (memoryEntry.Result, memoryEntry.Result != null);
             }
 
             // Entry expired, remove it
@@ -104,7 +133,7 @@ internal sealed class ModDatabaseCacheService
         {
             // Cache the null result to avoid repeated file existence checks
             TryAddToInMemoryCache(cacheKey, null);
-            return null;
+            return (null, false);
         }
 
         var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
@@ -114,7 +143,7 @@ internal sealed class ModDatabaseCacheService
             if (!File.Exists(cachePath))
             {
                 TryAddToInMemoryCache(cacheKey, null);
-                return null;
+                return (null, false);
             }
 
             await using FileStream stream = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -127,7 +156,7 @@ internal sealed class ModDatabaseCacheService
                 || !IsGameVersionMatch(cached.GameVersion, normalizedGameVersion))
             {
                 TryAddToInMemoryCache(cacheKey, null);
-                return null;
+                return (null, false);
             }
 
             if (IsCacheEntryExpired(cached.CachedUtc))
@@ -140,16 +169,17 @@ internal sealed class ModDatabaseCacheService
                     var result = ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion,
                         requireExactVersionMatch);
                     TryAddToInMemoryCache(cacheKey, result);
-                    return result;
+                    // Cache is expired but returned anyway because refresh was not allowed
+                    return (result, false);
                 }
 
                 // Don't cache null when we're allowing refresh - caller will fetch fresh data
-                return null;
+                return (null, false);
             }
 
             var info = ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion, requireExactVersionMatch);
             TryAddToInMemoryCache(cacheKey, info);
-            return info;
+            return (info, true);
         }
         catch (OperationCanceledException)
         {
@@ -157,7 +187,7 @@ internal sealed class ModDatabaseCacheService
         }
         catch (Exception)
         {
-            return null;
+            return (null, false);
         }
         finally
         {
