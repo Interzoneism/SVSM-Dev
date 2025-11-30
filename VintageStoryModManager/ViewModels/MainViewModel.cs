@@ -4317,8 +4317,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         try
         {
-            var cachedInfo = await _databaseService
-                .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
+            // Load from cache and check if refresh is needed via version comparison
+            var (cachedInfo, needsRefresh) = await _databaseService
+                .TryLoadCachedDatabaseInfoWithRefreshCheckAsync(entry.ModId, entry.Version, InstalledGameVersion,
                     _configuration.RequireExactVsVersionMatch)
                 .ConfigureAwait(false);
 
@@ -4331,6 +4332,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 releaseCount = cachedInfo.Releases?.Count ?? 0;
 
                 if (InternetAccessManager.IsInternetAccessDisabled)
+                {
+                    source = "cache";
+                    return;
+                }
+
+                // Skip network request if no refresh is needed (version unchanged)
+                if (!needsRefresh)
                 {
                     source = "cache";
                     return;
