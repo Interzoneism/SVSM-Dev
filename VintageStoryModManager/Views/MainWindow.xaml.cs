@@ -413,6 +413,7 @@ public partial class MainWindow : Window
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
         UpdateLoggingMenuState();
+        _modActivityLoggingService.LogAppLaunch();
 
         UpdateThemeMenuSelection(_userConfiguration.ColorTheme);
 
@@ -1081,6 +1082,7 @@ public partial class MainWindow : Window
 
         SaveWindowDimensions();
         SaveUploaderName();
+        _modActivityLoggingService.LogAppExit();
         DisposeCurrentViewModel();
         InternetAccessManager.InternetAccessChanged -= InternetAccessManager_OnInternetAccessChanged;
         DeveloperProfileManager.CurrentProfileChanged -= DeveloperProfileManager_OnCurrentProfileChanged;
@@ -1617,6 +1619,14 @@ public partial class MainWindow : Window
         menuItem.IsChecked = _userConfiguration.LogModDeletions;
     }
 
+    private void LogAppLifecycleMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        _userConfiguration.SetLogAppLaunchAndExit(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.LogAppLaunchAndExit;
+    }
+
     private void UpdateLoggingMenuState()
     {
         if (LogModUpdateMenuItem is not null)
@@ -1625,6 +1635,8 @@ public partial class MainWindow : Window
             LogModInstallMenuItem.IsChecked = _userConfiguration.LogModInstalls;
         if (LogModDeletionMenuItem is not null)
             LogModDeletionMenuItem.IsChecked = _userConfiguration.LogModDeletions;
+        if (LogAppLifecycleMenuItem is not null)
+            LogAppLifecycleMenuItem.IsChecked = _userConfiguration.LogAppLaunchAndExit;
     }
 
     private void GenerateServerInstallMacroMenuItem_OnClick(object sender, RoutedEventArgs e)

@@ -353,6 +353,12 @@
                                 IsCheckable="True"
                                 Style="{StaticResource ToggleMenuItemStyle}"
                                 Click="LogModDeletionMenuItem_OnClick" />
+                            <MenuItem x:Name="LogAppLifecycleMenuItem"
+                                Header="App launch and exit"
+                                Height="35"
+                                IsCheckable="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Click="LogAppLifecycleMenuItem_OnClick" />
                         </MenuItem>
                         <MenuItem Header="Scan for mod config files"
                             Padding="12,6"
