@@ -155,7 +155,7 @@ public sealed class ModDatabaseService
 
     /// <summary>
     ///     Soft expiry time for per-mod cache entries. Cache entries older than this will trigger
-    ///     a check of the lastmodified API value to see if data has changed.
+    ///     a refresh from the network.
     /// </summary>
     private static readonly TimeSpan ModCacheSoftExpiry = TimeSpan.FromMinutes(5);
 
@@ -184,8 +184,8 @@ public sealed class ModDatabaseService
 
     /// <summary>
     ///     Checks if a refresh is needed based on the cached lastmodified value and cache age.
-    ///     Returns true if cache is missing, doesn't have lastmodified, or is hard-expired.
-    ///     Returns false if cache exists with a lastmodified value and hasn't hard-expired.
+    ///     Returns true if cache is missing, soft-expired, or hard-expired.
+    ///     Returns false if cache exists with a lastmodified value and hasn't soft-expired.
     /// </summary>
     private async Task<bool> CheckIfRefreshNeededAsync(
         string modId,
@@ -219,27 +219,14 @@ public sealed class ModDatabaseService
                 return true;
             }
 
-            // If cache is older than soft expiry, check if lastmodified has changed
+            // If cache is older than soft expiry, trigger a refresh
+            // The API's lastmodified field will be checked after fetching fresh data
             if (IsCacheSoftExpired(cachedAt))
             {
-                var currentLastModified = await TryFetchLastModifiedAsync(modId, cancellationToken)
-                    .ConfigureAwait(false);
-
-                // If we couldn't fetch the current lastmodified, assume cache is still valid
-                if (string.IsNullOrWhiteSpace(currentLastModified))
-                {
-                    return false;
-                }
-
-                // If lastmodified has changed, we need to refresh
-                if (!string.Equals(cachedLastModified, currentLastModified, StringComparison.Ordinal))
-                {
-                    return true;
-                }
+                return true;
             }
 
-            // Cache exists with lastmodified, hasn't hard-expired, and either hasn't soft-expired
-            // or the lastmodified value hasn't changed - no refresh needed
+            // Cache exists with lastmodified and hasn't soft-expired or hard-expired - no refresh needed
             return false;
         }
         catch (OperationCanceledException)
@@ -250,49 +237,6 @@ public sealed class ModDatabaseService
         {
             // On error, assume cache is valid to avoid excessive requests
             return false;
-        }
-    }
-
-    /// <summary>
-    ///     Fetches only the lastmodified value from the mod API without downloading full data.
-    /// </summary>
-    private static async Task<string?> TryFetchLastModifiedAsync(
-        string modId,
-        CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(modId) || InternetAccessManager.IsInternetAccessDisabled)
-            return null;
-
-        try
-        {
-            var requestUri =
-                string.Format(CultureInfo.InvariantCulture, ApiEndpointFormat, Uri.EscapeDataString(modId));
-            using HttpRequestMessage request = new(HttpMethod.Get, requestUri);
-            using var response = await HttpClient
-                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (!response.IsSuccessStatusCode) return null;
-
-            await using var contentStream =
-                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            using var document = await JsonDocument
-                .ParseAsync(contentStream, cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
-
-            if (!document.RootElement.TryGetProperty("mod", out var modElement)
-                || modElement.ValueKind != JsonValueKind.Object)
-                return null;
-
-            return GetString(modElement, "lastmodified");
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception)
-        {
-            return null;
         }
     }
 
