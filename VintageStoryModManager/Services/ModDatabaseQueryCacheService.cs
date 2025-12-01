@@ -16,10 +16,19 @@ internal sealed class ModDatabaseQueryCacheService
     private const string QueryCacheDirectoryName = "Query Cache";
 
     /// <summary>
-    ///     Cache expiry time for query results. Results older than this will be refreshed.
+    ///     Cache expiry time for query results. Results older than this will trigger
+    ///     a conditional request to check if data has changed.
     ///     Set to a reasonable duration that balances freshness with network efficiency.
     /// </summary>
     private static readonly TimeSpan QueryCacheExpiry = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    ///     Hard expiry time for query results. Results older than this will always
+    ///     be refreshed from the network, regardless of conditional request results.
+    ///     This ensures data eventually gets refreshed even when the server doesn't
+    ///     support conditional requests (no ETag/Last-Modified headers).
+    /// </summary>
+    private static readonly TimeSpan QueryCacheHardExpiry = TimeSpan.FromHours(1);
 
     /// <summary>
     ///     Maximum number of query cache entries to keep in memory.
@@ -111,15 +120,25 @@ internal sealed class ModDatabaseQueryCacheService
             if (cached is null || cached.SchemaVersion != CacheSchemaVersion)
                 return null;
 
-            // Check if cache has expired
-            if (DateTimeOffset.Now - cached.CachedAt > QueryCacheExpiry)
+            var cacheAge = DateTimeOffset.Now - cached.CachedAt;
+
+            // Check if cache has hard-expired (must refresh regardless)
+            if (cacheAge > QueryCacheHardExpiry)
+            {
+                // Return null to force a full refresh
+                return null;
+            }
+
+            // Check if cache has soft-expired (should validate via conditional request)
+            if (cacheAge > QueryCacheExpiry)
             {
                 // Return the cached data but indicate it's stale (via expired flag)
                 var staleResult = new QueryCacheResult(
                     cached.Results,
                     cached.LastModifiedHeader,
                     cached.ETag,
-                    IsExpired: true);
+                    IsExpired: true,
+                    IsHardExpired: false);
 
                 TryAddToInMemoryCache(cachePath, staleResult);
                 return staleResult;
@@ -129,7 +148,8 @@ internal sealed class ModDatabaseQueryCacheService
                 cached.Results,
                 cached.LastModifiedHeader,
                 cached.ETag,
-                IsExpired: false);
+                IsExpired: false,
+                IsHardExpired: false);
 
             TryAddToInMemoryCache(cachePath, result);
             return result;
@@ -387,11 +407,17 @@ internal sealed class ModDatabaseQueryCacheService
     /// <summary>
     ///     Represents a cached query result loaded from disk or memory.
     /// </summary>
+    /// <param name="Results">The cached search results.</param>
+    /// <param name="LastModifiedHeader">The Last-Modified HTTP header from the original response.</param>
+    /// <param name="ETag">The ETag HTTP header from the original response.</param>
+    /// <param name="IsExpired">True if cache has passed soft expiry (should validate via conditional request).</param>
+    /// <param name="IsHardExpired">True if cache has passed hard expiry (must refresh regardless of validation).</param>
     internal sealed record QueryCacheResult(
         CachedSearchResult[] Results,
         string? LastModifiedHeader,
         string? ETag,
-        bool IsExpired);
+        bool IsExpired,
+        bool IsHardExpired = false);
 
     /// <summary>
     ///     Represents the on-disk format for cached query results.
