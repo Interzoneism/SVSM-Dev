@@ -66,6 +66,18 @@ internal static class ModCacheLocator
     }
 
     /// <summary>
+    ///     Gets the directory where mod database images are cached.
+    /// </summary>
+    /// <returns>The full path to the mod database image cache directory, or null if it cannot be determined.</returns>
+    public static string? GetModDatabaseImageCacheDirectory()
+    {
+        var databaseCacheDirectory = GetModDatabaseCacheDirectory();
+        return databaseCacheDirectory is null
+            ? null
+            : Path.Combine(databaseCacheDirectory, "Images");
+    }
+
+    /// <summary>
     ///     Gets the full cache path for a specific version of a mod.
     /// </summary>
     /// <param name="modId">The unique identifier of the mod.</param>
