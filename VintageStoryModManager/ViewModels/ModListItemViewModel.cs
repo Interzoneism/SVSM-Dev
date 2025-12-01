@@ -1167,8 +1167,6 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public async Task LoadModDatabaseLogoAsync(CancellationToken cancellationToken)
     {
-        if (_modDatabaseLogo is not null) return;
-
         var logoUrl = _modDatabaseLogoUrl;
         if (string.IsNullOrWhiteSpace(logoUrl)) return;
 
@@ -1179,6 +1177,9 @@ public sealed class ModListItemViewModel : ObservableObject
             return;
         }
 
+        // Track whether we need to update the UI (only if _modDatabaseLogo was null)
+        var needsUiUpdate = _modDatabaseLogo is null;
+
         try
         {
             // Try to load from cache first
@@ -1187,29 +1188,35 @@ public sealed class ModListItemViewModel : ObservableObject
 
             if (cachedBytes is { Length: > 0 })
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var cachedImage = CreateBitmapFromBytes(cachedBytes, uri);
-                if (cachedImage is not null)
+                // Image is already cached - only update UI if needed
+                if (needsUiUpdate)
                 {
-                    await InvokeOnDispatcherAsync(
-                            () =>
-                            {
-                                if (_modDatabaseLogo is not null) return;
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                                _modDatabaseLogo = cachedImage;
-                                OnPropertyChanged(nameof(ModDatabasePreviewImage));
-                                OnPropertyChanged(nameof(HasModDatabasePreviewImage));
-                                LogDebug(
-                                    $"Loaded database logo from cache. URL='{FormatValue(_modDatabaseLogoUrl)}'.");
-                            },
-                            cancellationToken)
-                        .ConfigureAwait(false);
-                    return;
+                    var cachedImage = CreateBitmapFromBytes(cachedBytes, uri);
+                    if (cachedImage is not null)
+                    {
+                        await InvokeOnDispatcherAsync(
+                                () =>
+                                {
+                                    if (_modDatabaseLogo is not null) return;
+
+                                    _modDatabaseLogo = cachedImage;
+                                    OnPropertyChanged(nameof(ModDatabasePreviewImage));
+                                    OnPropertyChanged(nameof(HasModDatabasePreviewImage));
+                                    LogDebug(
+                                        $"Loaded database logo from cache. URL='{FormatValue(_modDatabaseLogoUrl)}'.");
+                                },
+                                cancellationToken)
+                            .ConfigureAwait(false);
+                    }
                 }
+
+                // Image is cached, we're done
+                return;
             }
 
-            // If not cached or cache read failed, download from network
+            // If not cached, download from network and cache it (even if logo is already loaded)
             if (InternetAccessManager.IsInternetAccessDisabled) return;
 
             InternetAccessManager.ThrowIfInternetAccessDisabled();
@@ -1236,22 +1243,31 @@ public sealed class ModListItemViewModel : ObservableObject
             // Cache the downloaded image for future use
             await ModImageCacheService.StoreImageAsync(logoUrl, payload, cancellationToken).ConfigureAwait(false);
 
-            var image = CreateBitmapFromBytes(payload, uri);
-            if (image is null) return;
+            // Only update UI if the logo wasn't already set
+            if (needsUiUpdate)
+            {
+                var image = CreateBitmapFromBytes(payload, uri);
+                if (image is null) return;
 
-            await InvokeOnDispatcherAsync(
-                    () =>
-                    {
-                        if (_modDatabaseLogo is not null) return;
+                await InvokeOnDispatcherAsync(
+                        () =>
+                        {
+                            if (_modDatabaseLogo is not null) return;
 
-                        _modDatabaseLogo = image;
-                        OnPropertyChanged(nameof(ModDatabasePreviewImage));
-                        OnPropertyChanged(nameof(HasModDatabasePreviewImage));
-                        LogDebug(
-                            $"Async database logo load complete. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
-                    },
-                    cancellationToken)
-                .ConfigureAwait(false);
+                            _modDatabaseLogo = image;
+                            OnPropertyChanged(nameof(ModDatabasePreviewImage));
+                            OnPropertyChanged(nameof(HasModDatabasePreviewImage));
+                            LogDebug(
+                                $"Async database logo load complete. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
+                        },
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                LogDebug(
+                    $"Cached database logo for future use. URL='{FormatValue(_modDatabaseLogoUrl)}'.");
+            }
         }
         catch (OperationCanceledException)
         {
