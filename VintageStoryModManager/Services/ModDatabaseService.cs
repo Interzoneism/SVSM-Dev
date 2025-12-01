@@ -28,6 +28,7 @@ public sealed class ModDatabaseService
 
     private static readonly HttpClient HttpClient = new();
     private static readonly ModDatabaseCacheService CacheService = new();
+    private static readonly ModDatabaseQueryCacheService QueryCacheService = new();
 
     private static readonly Regex HtmlBreakRegex = new(
         @"<\s*br\s*/?\s*>",
@@ -441,16 +442,19 @@ public sealed class ModDatabaseService
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        InternetAccessManager.ThrowIfInternetAccessDisabled();
-
         var requestLimit = CalculateRequestLimit(maxResults);
         var requestUri = string.Format(
             CultureInfo.InvariantCulture,
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        return await QueryModsAsync(
+        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
+            "mostDownloaded",
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        return await QueryModsWithCacheAsync(
                 requestUri,
+                queryKey,
                 maxResults,
                 Array.Empty<string>(),
                 false,
@@ -467,16 +471,19 @@ public sealed class ModDatabaseService
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        InternetAccessManager.ThrowIfInternetAccessDisabled();
-
         var requestLimit = CalculateRequestLimit(maxResults);
         var requestUri = string.Format(
             CultureInfo.InvariantCulture,
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var candidates = await QueryModsAsync(
+        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
+            "mostDownloaded",
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        var candidates = await QueryModsWithCacheAsync(
                 requestUri,
+                queryKey,
                 requestLimit,
                 Array.Empty<string>(),
                 false,
@@ -513,16 +520,19 @@ public sealed class ModDatabaseService
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        InternetAccessManager.ThrowIfInternetAccessDisabled();
-
         var requestLimit = CalculateRequestLimit(maxResults);
         var requestUri = string.Format(
             CultureInfo.InvariantCulture,
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var candidates = await QueryModsAsync(
+        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
+            "mostDownloaded",
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        var candidates = await QueryModsWithCacheAsync(
                 requestUri,
+                queryKey,
                 requestLimit,
                 Array.Empty<string>(),
                 false,
@@ -560,8 +570,6 @@ public sealed class ModDatabaseService
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        InternetAccessManager.ThrowIfInternetAccessDisabled();
-
         var normalizedMonths = months <= 0 ? DefaultNewModsMonths : Math.Clamp(months, 1, MaxNewModsMonths);
 
         var requestLimit = Math.Clamp(maxResults * 6, Math.Max(maxResults, 60), 150);
@@ -570,8 +578,13 @@ public sealed class ModDatabaseService
             RecentlyCreatedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var candidates = await QueryModsAsync(
+        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
+            "recentlyCreated",
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        var candidates = await QueryModsWithCacheAsync(
                 requestUri,
+                queryKey,
                 requestLimit,
                 Array.Empty<string>(),
                 false,
@@ -604,16 +617,19 @@ public sealed class ModDatabaseService
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        InternetAccessManager.ThrowIfInternetAccessDisabled();
-
         var requestLimit = CalculateRequestLimit(maxResults);
         var requestUri = string.Format(
             CultureInfo.InvariantCulture,
             RecentlyUpdatedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        return await QueryModsAsync(
+        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
+            "recentlyUpdated",
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        return await QueryModsWithCacheAsync(
                 requestUri,
+                queryKey,
                 maxResults,
                 Array.Empty<string>(),
                 false,
@@ -631,16 +647,19 @@ public sealed class ModDatabaseService
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        InternetAccessManager.ThrowIfInternetAccessDisabled();
-
         var requestLimit = CalculateRequestLimit(maxResults);
         var requestUri = string.Format(
             CultureInfo.InvariantCulture,
             RecentlyCreatedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var candidates = await QueryModsAsync(
+        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
+            "recentlyCreated",
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        var candidates = await QueryModsWithCacheAsync(
                 requestUri,
+                queryKey,
                 requestLimit,
                 Array.Empty<string>(),
                 false,
@@ -678,16 +697,19 @@ public sealed class ModDatabaseService
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        InternetAccessManager.ThrowIfInternetAccessDisabled();
-
         var requestLimit = CalculateRequestLimit(maxResults);
         var requestUri = string.Format(
             CultureInfo.InvariantCulture,
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        return await QueryModsAsync(
+        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
+            "mostDownloaded",
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        return await QueryModsWithCacheAsync(
                 requestUri,
+                queryKey,
                 maxResults,
                 Array.Empty<string>(),
                 false,
@@ -705,8 +727,6 @@ public sealed class ModDatabaseService
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        InternetAccessManager.ThrowIfInternetAccessDisabled();
-
         // Fetch a larger pool to randomize from
         var requestLimit = CalculateRequestLimit(maxResults * 10);
         var requestUri = string.Format(
@@ -714,8 +734,13 @@ public sealed class ModDatabaseService
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var candidates = await QueryModsAsync(
+        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
+            "mostDownloaded",
+            requestLimit.ToString(CultureInfo.InvariantCulture));
+
+        var candidates = await QueryModsWithCacheAsync(
                 requestUri,
+                queryKey,
                 requestLimit,
                 Array.Empty<string>(),
                 false,
@@ -769,7 +794,103 @@ public sealed class ModDatabaseService
         Func<IEnumerable<ModDatabaseSearchResult>, IEnumerable<ModDatabaseSearchResult>> orderResults,
         CancellationToken cancellationToken)
     {
-        InternetAccessManager.ThrowIfInternetAccessDisabled();
+        return await QueryModsWithCacheAsync(
+            requestUri,
+            null, // No cache key for token-based queries (search results with tokens)
+            maxResults,
+            tokens,
+            requireTokenMatch,
+            orderResults,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<IReadOnlyList<ModDatabaseSearchResult>> QueryModsWithCacheAsync(
+        string requestUri,
+        string? queryKey,
+        int maxResults,
+        IReadOnlyList<string> tokens,
+        bool requireTokenMatch,
+        Func<IEnumerable<ModDatabaseSearchResult>, IEnumerable<ModDatabaseSearchResult>> orderResults,
+        CancellationToken cancellationToken)
+    {
+        // Only use cache for non-token queries (browsing) with a valid cache key
+        var useCache = !string.IsNullOrWhiteSpace(queryKey) && tokens.Count == 0;
+
+        // Try to load from cache first
+        if (useCache)
+        {
+            var cachedResult = await QueryCacheService.TryLoadAsync(queryKey!, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cachedResult != null)
+            {
+                // If cache is not expired, return cached results immediately
+                if (!cachedResult.IsExpired)
+                {
+                    var cachedResults = cachedResult.Results
+                        .Select(r => r.ToSearchResult())
+                        .ToList();
+
+                    return orderResults(cachedResults)
+                        .Take(maxResults)
+                        .ToArray();
+                }
+
+                // Cache is expired, but we have data. Try a conditional request.
+                // If the server returns 304 Not Modified, we can use the cached data.
+                if (!InternetAccessManager.IsInternetAccessDisabled)
+                {
+                    var notModified = await CheckIfQueryNotModifiedAsync(
+                        requestUri,
+                        cachedResult.LastModifiedHeader,
+                        cachedResult.ETag,
+                        cancellationToken).ConfigureAwait(false);
+
+                    if (notModified)
+                    {
+                        // Data hasn't changed, return cached results
+                        var cachedResults = cachedResult.Results
+                            .Select(r => r.ToSearchResult())
+                            .ToList();
+
+                        // Refresh the cache timestamp by storing the same data
+                        await QueryCacheService.StoreAsync(
+                            queryKey!,
+                            cachedResult.Results,
+                            cachedResult.LastModifiedHeader,
+                            cachedResult.ETag,
+                            cancellationToken).ConfigureAwait(false);
+
+                        return orderResults(cachedResults)
+                            .Take(maxResults)
+                            .ToArray();
+                    }
+                }
+            }
+        }
+
+        // If internet is disabled, return cached results if available (even if expired)
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            if (useCache)
+            {
+                var cachedResult = await QueryCacheService.TryLoadAsync(queryKey!, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (cachedResult != null)
+                {
+                    var cachedResults = cachedResult.Results
+                        .Select(r => r.ToSearchResult())
+                        .ToList();
+
+                    return orderResults(cachedResults)
+                        .Take(maxResults)
+                        .ToArray();
+                }
+            }
+
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
 
         try
         {
@@ -779,6 +900,28 @@ public sealed class ModDatabaseService
                 .ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode) return Array.Empty<ModDatabaseSearchResult>();
+
+            // Capture HTTP headers for caching
+            // Last-Modified can be in either response headers or content headers depending on the server
+            string? lastModified = null;
+            string? etag = null;
+            if (response.Content.Headers.TryGetValues("Last-Modified", out var contentLastModifiedValues))
+            {
+                lastModified = contentLastModifiedValues.FirstOrDefault();
+            }
+            else if (response.Headers.TryGetValues("Last-Modified", out var responseLastModifiedValues))
+            {
+                lastModified = responseLastModifiedValues.FirstOrDefault();
+            }
+            // ETag can also be in either location
+            if (response.Headers.TryGetValues("ETag", out var responseEtagValues))
+            {
+                etag = responseEtagValues.FirstOrDefault();
+            }
+            else if (response.Content.Headers.TryGetValues("ETag", out var contentEtagValues))
+            {
+                etag = contentEtagValues.FirstOrDefault();
+            }
 
             await using var contentStream =
                 await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
@@ -801,9 +944,26 @@ public sealed class ModDatabaseService
 
             if (candidates.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
 
-            return orderResults(candidates)
+            var orderedResults = orderResults(candidates)
                 .Take(maxResults)
                 .ToArray();
+
+            // Store results in cache if using cache
+            if (useCache && orderedResults.Length > 0)
+            {
+                var cachedResults = orderedResults
+                    .Select(CachedSearchResult.FromSearchResult)
+                    .ToArray();
+
+                await QueryCacheService.StoreAsync(
+                    queryKey!,
+                    cachedResults,
+                    lastModified,
+                    etag,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            return orderedResults;
         }
         catch (OperationCanceledException)
         {
@@ -812,6 +972,53 @@ public sealed class ModDatabaseService
         catch (Exception)
         {
             return Array.Empty<ModDatabaseSearchResult>();
+        }
+    }
+
+    /// <summary>
+    ///     Checks if a query result has not been modified using HTTP conditional requests.
+    ///     Returns true if the server returns 304 Not Modified.
+    /// </summary>
+    private static async Task<bool> CheckIfQueryNotModifiedAsync(
+        string requestUri,
+        string? lastModified,
+        string? etag,
+        CancellationToken cancellationToken)
+    {
+        if (InternetAccessManager.IsInternetAccessDisabled) return false;
+
+        // If no conditional request headers, we can't check
+        if (string.IsNullOrWhiteSpace(lastModified) && string.IsNullOrWhiteSpace(etag))
+            return false;
+
+        try
+        {
+            using HttpRequestMessage request = new(HttpMethod.Head, requestUri);
+
+            if (!string.IsNullOrWhiteSpace(etag))
+            {
+                request.Headers.TryAddWithoutValidation("If-None-Match", etag);
+            }
+            if (!string.IsNullOrWhiteSpace(lastModified))
+            {
+                request.Headers.TryAddWithoutValidation("If-Modified-Since", lastModified);
+            }
+
+            using var response = await HttpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                .ConfigureAwait(false);
+
+            // 304 Not Modified means cache is still valid
+            return response.StatusCode == HttpStatusCode.NotModified;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // On error, assume cache is invalid
+            return false;
         }
     }
 
