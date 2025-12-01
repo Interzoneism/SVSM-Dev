@@ -242,15 +242,28 @@ internal sealed class ModDatabaseQueryCacheService
                     .ConfigureAwait(false);
             }
 
+            // Use File.Replace for atomic updates when the target already exists,
+            // otherwise use File.Move for new files
             try
             {
-                File.Move(tempPath, cachePath, true);
+                if (File.Exists(cachePath))
+                {
+                    File.Replace(tempPath, cachePath, null);
+                }
+                else
+                {
+                    File.Move(tempPath, cachePath, true);
+                }
             }
             catch (IOException)
             {
+                // Fallback: try alternative approach if primary method fails
                 try
                 {
-                    File.Replace(tempPath, cachePath, null);
+                    if (File.Exists(cachePath))
+                        File.Replace(tempPath, cachePath, null);
+                    else
+                        File.Move(tempPath, cachePath, true);
                 }
                 finally
                 {

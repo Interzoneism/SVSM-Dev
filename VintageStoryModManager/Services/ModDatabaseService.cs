@@ -892,8 +892,6 @@ public sealed class ModDatabaseService
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
-        InternetAccessManager.ThrowIfInternetAccessDisabled();
-
         try
         {
             using HttpRequestMessage request = new(HttpMethod.Get, requestUri);
@@ -904,15 +902,25 @@ public sealed class ModDatabaseService
             if (!response.IsSuccessStatusCode) return Array.Empty<ModDatabaseSearchResult>();
 
             // Capture HTTP headers for caching
+            // Last-Modified can be in either response headers or content headers depending on the server
             string? lastModified = null;
             string? etag = null;
-            if (response.Headers.TryGetValues("Last-Modified", out var lastModifiedValues))
+            if (response.Content.Headers.TryGetValues("Last-Modified", out var contentLastModifiedValues))
             {
-                lastModified = lastModifiedValues.FirstOrDefault();
+                lastModified = contentLastModifiedValues.FirstOrDefault();
             }
-            if (response.Headers.TryGetValues("ETag", out var etagValues))
+            else if (response.Headers.TryGetValues("Last-Modified", out var responseLastModifiedValues))
             {
-                etag = etagValues.FirstOrDefault();
+                lastModified = responseLastModifiedValues.FirstOrDefault();
+            }
+            // ETag can also be in either location
+            if (response.Headers.TryGetValues("ETag", out var responseEtagValues))
+            {
+                etag = responseEtagValues.FirstOrDefault();
+            }
+            else if (response.Content.Headers.TryGetValues("ETag", out var contentEtagValues))
+            {
+                etag = contentEtagValues.FirstOrDefault();
             }
 
             await using var contentStream =
