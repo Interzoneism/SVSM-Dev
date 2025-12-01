@@ -28,7 +28,6 @@ public sealed class ModDatabaseService
 
     private static readonly HttpClient HttpClient = new();
     private static readonly ModDatabaseCacheService CacheService = new();
-    private static readonly ModDatabaseQueryCacheService QueryCacheService = new();
 
     private static readonly Regex HtmlBreakRegex = new(
         @"<\s*br\s*/?\s*>",
@@ -155,11 +154,25 @@ public sealed class ModDatabaseService
     }
 
     /// <summary>
+    ///     Soft expiry time for per-mod cache entries. Cache entries older than this will trigger
+    ///     a check of the lastmodified API value to see if data has changed.
+    /// </summary>
+    private static readonly TimeSpan ModCacheSoftExpiry = TimeSpan.FromMinutes(5);
+
+    /// <summary>
     ///     Hard expiry time for per-mod cache entries. Cache entries older than this will always
     ///     be refreshed from the network, regardless of the lastmodified value.
     ///     This ensures data eventually gets refreshed even if the API's lastmodified field is not changing.
     /// </summary>
     private static readonly TimeSpan ModCacheHardExpiry = TimeSpan.FromHours(2);
+
+    /// <summary>
+    ///     Checks if a cache entry is soft-expired based on its timestamp.
+    /// </summary>
+    private static bool IsCacheSoftExpired(DateTimeOffset? cachedAt)
+    {
+        return cachedAt.HasValue && DateTimeOffset.Now - cachedAt.Value > ModCacheSoftExpiry;
+    }
 
     /// <summary>
     ///     Checks if a cache entry is hard-expired based on its timestamp.
@@ -188,6 +201,12 @@ public sealed class ModDatabaseService
                 .GetCachedLastModifiedAsync(modId, normalizedGameVersion, cancellationToken)
                 .ConfigureAwait(false);
 
+            // If no cache exists, we need to fetch data
+            if (!cachedAt.HasValue)
+            {
+                return true;
+            }
+
             // If cache is older than hard expiry, force a refresh
             if (IsCacheHardExpired(cachedAt))
             {
@@ -200,7 +219,27 @@ public sealed class ModDatabaseService
                 return true;
             }
 
-            // Cache exists with lastmodified and hasn't hard-expired - no refresh needed
+            // If cache is older than soft expiry, check if lastmodified has changed
+            if (IsCacheSoftExpired(cachedAt))
+            {
+                var currentLastModified = await TryFetchLastModifiedAsync(modId, cancellationToken)
+                    .ConfigureAwait(false);
+
+                // If we couldn't fetch the current lastmodified, assume cache is still valid
+                if (string.IsNullOrWhiteSpace(currentLastModified))
+                {
+                    return false;
+                }
+
+                // If lastmodified has changed, we need to refresh
+                if (!string.Equals(cachedLastModified, currentLastModified, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            // Cache exists with lastmodified, hasn't hard-expired, and either hasn't soft-expired
+            // or the lastmodified value hasn't changed - no refresh needed
             return false;
         }
         catch (OperationCanceledException)
@@ -211,6 +250,49 @@ public sealed class ModDatabaseService
         {
             // On error, assume cache is valid to avoid excessive requests
             return false;
+        }
+    }
+
+    /// <summary>
+    ///     Fetches only the lastmodified value from the mod API without downloading full data.
+    /// </summary>
+    private static async Task<string?> TryFetchLastModifiedAsync(
+        string modId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(modId) || InternetAccessManager.IsInternetAccessDisabled)
+            return null;
+
+        try
+        {
+            var requestUri =
+                string.Format(CultureInfo.InvariantCulture, ApiEndpointFormat, Uri.EscapeDataString(modId));
+            using HttpRequestMessage request = new(HttpMethod.Get, requestUri);
+            using var response = await HttpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode) return null;
+
+            await using var contentStream =
+                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var document = await JsonDocument
+                .ParseAsync(contentStream, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!document.RootElement.TryGetProperty("mod", out var modElement)
+                || modElement.ValueKind != JsonValueKind.Object)
+                return null;
+
+            return GetString(modElement, "lastmodified");
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 
@@ -446,13 +528,8 @@ public sealed class ModDatabaseService
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
-            "mostDownloaded",
-            requestLimit.ToString(CultureInfo.InvariantCulture));
-
-        return await QueryModsWithCacheAsync(
+        return await QueryModsAsync(
                 requestUri,
-                queryKey,
                 maxResults,
                 Array.Empty<string>(),
                 false,
@@ -475,13 +552,8 @@ public sealed class ModDatabaseService
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
-            "mostDownloaded",
-            requestLimit.ToString(CultureInfo.InvariantCulture));
-
-        var candidates = await QueryModsWithCacheAsync(
+        var candidates = await QueryModsAsync(
                 requestUri,
-                queryKey,
                 requestLimit,
                 Array.Empty<string>(),
                 false,
@@ -524,13 +596,8 @@ public sealed class ModDatabaseService
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
-            "mostDownloaded",
-            requestLimit.ToString(CultureInfo.InvariantCulture));
-
-        var candidates = await QueryModsWithCacheAsync(
+        var candidates = await QueryModsAsync(
                 requestUri,
-                queryKey,
                 requestLimit,
                 Array.Empty<string>(),
                 false,
@@ -576,13 +643,8 @@ public sealed class ModDatabaseService
             RecentlyCreatedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
-            "recentlyCreated",
-            requestLimit.ToString(CultureInfo.InvariantCulture));
-
-        var candidates = await QueryModsWithCacheAsync(
+        var candidates = await QueryModsAsync(
                 requestUri,
-                queryKey,
                 requestLimit,
                 Array.Empty<string>(),
                 false,
@@ -621,13 +683,8 @@ public sealed class ModDatabaseService
             RecentlyUpdatedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
-            "recentlyUpdated",
-            requestLimit.ToString(CultureInfo.InvariantCulture));
-
-        return await QueryModsWithCacheAsync(
+        return await QueryModsAsync(
                 requestUri,
-                queryKey,
                 maxResults,
                 Array.Empty<string>(),
                 false,
@@ -651,13 +708,8 @@ public sealed class ModDatabaseService
             RecentlyCreatedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
-            "recentlyCreated",
-            requestLimit.ToString(CultureInfo.InvariantCulture));
-
-        var candidates = await QueryModsWithCacheAsync(
+        var candidates = await QueryModsAsync(
                 requestUri,
-                queryKey,
                 requestLimit,
                 Array.Empty<string>(),
                 false,
@@ -701,13 +753,8 @@ public sealed class ModDatabaseService
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
-            "mostDownloaded",
-            requestLimit.ToString(CultureInfo.InvariantCulture));
-
-        return await QueryModsWithCacheAsync(
+        return await QueryModsAsync(
                 requestUri,
-                queryKey,
                 maxResults,
                 Array.Empty<string>(),
                 false,
@@ -732,13 +779,8 @@ public sealed class ModDatabaseService
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        var queryKey = ModDatabaseQueryCacheService.BuildQueryKey(
-            "mostDownloaded",
-            requestLimit.ToString(CultureInfo.InvariantCulture));
-
-        var candidates = await QueryModsWithCacheAsync(
+        var candidates = await QueryModsAsync(
                 requestUri,
-                queryKey,
                 requestLimit,
                 Array.Empty<string>(),
                 false,
@@ -792,122 +834,9 @@ public sealed class ModDatabaseService
         Func<IEnumerable<ModDatabaseSearchResult>, IEnumerable<ModDatabaseSearchResult>> orderResults,
         CancellationToken cancellationToken)
     {
-        return await QueryModsWithCacheAsync(
-            requestUri,
-            null, // No cache key for token-based queries (search results with tokens)
-            maxResults,
-            tokens,
-            requireTokenMatch,
-            orderResults,
-            cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task<IReadOnlyList<ModDatabaseSearchResult>> QueryModsWithCacheAsync(
-        string requestUri,
-        string? queryKey,
-        int maxResults,
-        IReadOnlyList<string> tokens,
-        bool requireTokenMatch,
-        Func<IEnumerable<ModDatabaseSearchResult>, IEnumerable<ModDatabaseSearchResult>> orderResults,
-        CancellationToken cancellationToken)
-    {
-        // Only use cache for non-token queries (browsing) with a valid cache key
-        var useCache = !string.IsNullOrWhiteSpace(queryKey) && tokens.Count == 0;
-
-        // Try to load from cache first
-        if (useCache)
-        {
-            var cachedResult = await QueryCacheService.TryLoadAsync(queryKey!, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (cachedResult != null)
-            {
-                // If cache is not expired, return cached results immediately
-                if (!cachedResult.IsExpired)
-                {
-                    var cachedResults = cachedResult.Results
-                        .Select(r => r.ToSearchResult())
-                        .ToList();
-
-                    return orderResults(cachedResults)
-                        .Take(maxResults)
-                        .ToArray();
-                }
-
-                // Cache is expired, but we have data. Try a conditional request.
-                // If the server returns 304 Not Modified, we can use the cached data.
-                if (!InternetAccessManager.IsInternetAccessDisabled)
-                {
-                    var notModifiedResult = await CheckIfQueryNotModifiedAsync(
-                        requestUri,
-                        cachedResult.LastModifiedHeader,
-                        cachedResult.ETag,
-                        cancellationToken).ConfigureAwait(false);
-
-                    // notModifiedResult:
-                    // - true: Server confirmed data hasn't changed (304)
-                    // - false: Server says data may have changed (200), need to fetch
-                    // - null: Couldn't verify (no headers or error), use cache without refreshing timestamp
-
-                    if (notModifiedResult == true)
-                    {
-                        // Data hasn't changed, return cached results
-                        var cachedResults = cachedResult.Results
-                            .Select(r => r.ToSearchResult())
-                            .ToList();
-
-                        // Refresh the cache timestamp by storing the same data
-                        await QueryCacheService.StoreAsync(
-                            queryKey!,
-                            cachedResult.Results,
-                            cachedResult.LastModifiedHeader,
-                            cachedResult.ETag,
-                            cancellationToken).ConfigureAwait(false);
-
-                        return orderResults(cachedResults)
-                            .Take(maxResults)
-                            .ToArray();
-                    }
-
-                    if (notModifiedResult == null)
-                    {
-                        // Couldn't verify (no conditional headers or network error).
-                        // Use cached data without refreshing timestamp - the cache will
-                        // eventually expire and trigger a full refresh.
-                        var cachedResults = cachedResult.Results
-                            .Select(r => r.ToSearchResult())
-                            .ToList();
-
-                        return orderResults(cachedResults)
-                            .Take(maxResults)
-                            .ToArray();
-                    }
-
-                    // notModifiedResult == false: Server says data changed, fall through to fetch fresh data
-                }
-            }
-        }
-
-        // If internet is disabled, return cached results if available (even if expired)
+        // If internet is disabled, return empty results
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
-            if (useCache)
-            {
-                var cachedResult = await QueryCacheService.TryLoadAsync(queryKey!, cancellationToken)
-                    .ConfigureAwait(false);
-
-                if (cachedResult != null)
-                {
-                    var cachedResults = cachedResult.Results
-                        .Select(r => r.ToSearchResult())
-                        .ToList();
-
-                    return orderResults(cachedResults)
-                        .Take(maxResults)
-                        .ToArray();
-                }
-            }
-
             return Array.Empty<ModDatabaseSearchResult>();
         }
 
@@ -919,28 +848,6 @@ public sealed class ModDatabaseService
                 .ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode) return Array.Empty<ModDatabaseSearchResult>();
-
-            // Capture HTTP headers for caching
-            // Last-Modified can be in either response headers or content headers depending on the server
-            string? lastModified = null;
-            string? etag = null;
-            if (response.Content.Headers.TryGetValues("Last-Modified", out var contentLastModifiedValues))
-            {
-                lastModified = contentLastModifiedValues.FirstOrDefault();
-            }
-            else if (response.Headers.TryGetValues("Last-Modified", out var responseLastModifiedValues))
-            {
-                lastModified = responseLastModifiedValues.FirstOrDefault();
-            }
-            // ETag can also be in either location
-            if (response.Headers.TryGetValues("ETag", out var responseEtagValues))
-            {
-                etag = responseEtagValues.FirstOrDefault();
-            }
-            else if (response.Content.Headers.TryGetValues("ETag", out var contentEtagValues))
-            {
-                etag = contentEtagValues.FirstOrDefault();
-            }
 
             await using var contentStream =
                 await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
@@ -967,21 +874,6 @@ public sealed class ModDatabaseService
                 .Take(maxResults)
                 .ToArray();
 
-            // Store results in cache if using cache
-            if (useCache && orderedResults.Length > 0)
-            {
-                var cachedResults = orderedResults
-                    .Select(CachedSearchResult.FromSearchResult)
-                    .ToArray();
-
-                await QueryCacheService.StoreAsync(
-                    queryKey!,
-                    cachedResults,
-                    lastModified,
-                    etag,
-                    cancellationToken).ConfigureAwait(false);
-            }
-
             return orderedResults;
         }
         catch (OperationCanceledException)
@@ -991,68 +883,6 @@ public sealed class ModDatabaseService
         catch (Exception)
         {
             return Array.Empty<ModDatabaseSearchResult>();
-        }
-    }
-
-    /// <summary>
-    ///     Checks if a query result has not been modified using HTTP conditional requests.
-    ///     Returns null if no conditional headers are available (cannot verify).
-    ///     Returns true if the server returns 304 Not Modified.
-    ///     Returns false if the server returns 200 OK (data may have changed).
-    /// </summary>
-    private static async Task<bool?> CheckIfQueryNotModifiedAsync(
-        string requestUri,
-        string? lastModified,
-        string? etag,
-        CancellationToken cancellationToken)
-    {
-        if (InternetAccessManager.IsInternetAccessDisabled) return null;
-
-        // If no conditional request headers, we can't check - return null to indicate
-        // the caller should use the cached data without refreshing the timestamp.
-        if (string.IsNullOrWhiteSpace(lastModified) && string.IsNullOrWhiteSpace(etag))
-            return null;
-
-        try
-        {
-            using HttpRequestMessage request = new(HttpMethod.Head, requestUri);
-
-            if (!string.IsNullOrWhiteSpace(etag))
-            {
-                request.Headers.TryAddWithoutValidation("If-None-Match", etag);
-            }
-            if (!string.IsNullOrWhiteSpace(lastModified))
-            {
-                request.Headers.TryAddWithoutValidation("If-Modified-Since", lastModified);
-            }
-
-            using var response = await HttpClient
-                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
-                .ConfigureAwait(false);
-
-            // 304 Not Modified means cache is still valid
-            if (response.StatusCode == HttpStatusCode.NotModified)
-            {
-                return true;
-            }
-
-            // 200 OK means data may have changed
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                return false;
-            }
-
-            // For other status codes (errors, etc.), return null to indicate we couldn't verify
-            return null;
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception)
-        {
-            // On error, return null to indicate we couldn't verify
-            return null;
         }
     }
 
