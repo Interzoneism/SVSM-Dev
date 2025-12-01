@@ -162,6 +162,14 @@ public sealed class ModDatabaseService
     private static readonly TimeSpan ModCacheHardExpiry = TimeSpan.FromHours(2);
 
     /// <summary>
+    ///     Checks if a cache entry is hard-expired based on its timestamp.
+    /// </summary>
+    private static bool IsCacheHardExpired(DateTimeOffset? cachedAt)
+    {
+        return cachedAt.HasValue && DateTimeOffset.Now - cachedAt.Value > ModCacheHardExpiry;
+    }
+
+    /// <summary>
     ///     Checks if a refresh is needed based on the cached lastmodified value and cache age.
     ///     Returns true if cache is missing, doesn't have lastmodified, or is hard-expired.
     ///     Returns false if cache exists with a lastmodified value and hasn't hard-expired.
@@ -181,7 +189,7 @@ public sealed class ModDatabaseService
                 .ConfigureAwait(false);
 
             // If cache is older than hard expiry, force a refresh
-            if (cachedAt.HasValue && DateTimeOffset.Now - cachedAt.Value > ModCacheHardExpiry)
+            if (IsCacheHardExpired(cachedAt))
             {
                 return true;
             }
