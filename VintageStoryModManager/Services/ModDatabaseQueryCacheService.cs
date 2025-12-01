@@ -18,17 +18,18 @@ internal sealed class ModDatabaseQueryCacheService
     /// <summary>
     ///     Cache expiry time for query results. Results older than this will trigger
     ///     a conditional request to check if data has changed.
-    ///     Set to a reasonable duration that balances freshness with network efficiency.
+    ///     Currently set to two hours to align with other mod database caches.
     /// </summary>
-    private static readonly TimeSpan QueryCacheExpiry = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan QueryCacheExpiry = TimeSpan.FromHours(2);
 
     /// <summary>
     ///     Hard expiry time for query results. Results older than this will always
     ///     be refreshed from the network, regardless of conditional request results.
     ///     This ensures data eventually gets refreshed even when the server doesn't
-    ///     support conditional requests (no ETag/Last-Modified headers).
+    ///     support conditional requests (no ETag/Last-Modified headers) and enforces
+    ///     the two-hour cache lifetime.
     /// </summary>
-    private static readonly TimeSpan QueryCacheHardExpiry = TimeSpan.FromHours(1);
+    private static readonly TimeSpan QueryCacheHardExpiry = TimeSpan.FromHours(2);
 
     /// <summary>
     ///     Maximum number of query cache entries to keep in memory.
@@ -328,10 +329,10 @@ internal sealed class ModDatabaseQueryCacheService
 
     private static string? GetQueryCacheDirectory()
     {
-        var managerDirectory = ModCacheLocator.GetManagerDataDirectory();
-        return managerDirectory is null
+        var modDatabaseCacheDirectory = ModCacheLocator.GetModDatabaseCacheDirectory();
+        return modDatabaseCacheDirectory is null
             ? null
-            : Path.Combine(managerDirectory, "Mod Database Cache", QueryCacheDirectoryName);
+            : Path.Combine(modDatabaseCacheDirectory, QueryCacheDirectoryName);
     }
 
     private static string? GetCacheFilePath(string queryKey)
