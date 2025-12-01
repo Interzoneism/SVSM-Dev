@@ -6120,11 +6120,7 @@ public partial class MainWindow : Window
     {
         const string confirmationMessage =
             "This will delete all cache folders used by Simple VS Manager:\n\n" +
-            "• Cached Mods\n" +
-            "• Mod Database Cache\n" +
-            "• Mod Metadata\n" +
-            "• Modlists (Cloud Cache)\n" +
-            "• Firebase Cache\n\n" +
+            "• Temp Cache (contains all cache data)\n\n" +
             "Your settings, modlists and installed mods will NOT be affected.\n\n" +
             "This is useful when experiencing problems with the mod database or cached data.\n\n" +
             "Continue?";
@@ -6156,15 +6152,10 @@ public partial class MainWindow : Window
                 return;
             }
 
-            // Define cache folders to delete
+            // Define cache folders to delete - now all inside Temp Cache
             var cacheFolders = new[]
             {
-                ("Mod Icons", Path.Combine(managerDataDir, "Mod Icons")),
-                ("Cached Mods", Path.Combine(managerDataDir, "Cached Mods")),
-                ("Mod Database Cache", Path.Combine(managerDataDir, "Mod Database Cache")),
-                ("Mod Metadata", Path.Combine(managerDataDir, "Mod Metadata")),
-                ("Modlists (Cloud Cache)", Path.Combine(managerDataDir, "Modlists (Cloud Cache)")),
-                ("Firebase Cache", Path.Combine(managerDataDir, DevConfig.FirebaseCacheDirectoryName))
+                ("Temp Cache", Path.Combine(managerDataDir, "Temp Cache"))
             };
 
             // Delete each cache folder
