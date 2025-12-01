@@ -2012,7 +2012,8 @@ public sealed class ModListItemViewModel : ObservableObject
         var logoUrl = _modDatabaseLogoUrl;
         if (string.IsNullOrWhiteSpace(logoUrl)) return null;
 
-        // Try to load from cache first (synchronous file read)
+        // Only load from cache - do not download from network in synchronous path
+        // Network downloads are handled asynchronously by LoadModDatabaseLogoAsync
         try
         {
             var cachedBytes = ModImageCacheService.TryGetCachedImage(logoUrl);
@@ -2033,11 +2034,11 @@ public sealed class ModListItemViewModel : ObservableObject
         }
         catch (Exception)
         {
-            // Ignore cache read failures, fall back to network
+            // Ignore cache read failures
         }
 
-        // Fall back to network loading
-        return CreateImageFromUri(logoUrl, "Mod database logo", false);
+        // Return null if not cached - async loading will handle downloading and caching
+        return null;
     }
 
     private ImageSource? CreateBitmapFromBytes(byte[] payload, Uri sourceUri)
