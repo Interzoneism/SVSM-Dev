@@ -112,7 +112,7 @@ internal sealed class ModDatabaseQueryCacheService
                 return null;
 
             // Check if cache has expired
-            if (DateTime.UtcNow - cached.CachedUtc > QueryCacheExpiry)
+            if (DateTimeOffset.Now - cached.CachedAt > QueryCacheExpiry)
             {
                 // Return the cached data but indicate it's stale (via expired flag)
                 var staleResult = new QueryCacheResult(
@@ -229,7 +229,7 @@ internal sealed class ModDatabaseQueryCacheService
             var cacheModel = new CachedQueryResult
             {
                 SchemaVersion = CacheSchemaVersion,
-                CachedUtc = DateTime.UtcNow,
+                CachedAt = DateTimeOffset.Now,
                 QueryKey = queryKey,
                 LastModifiedHeader = lastModifiedHeader,
                 ETag = etag,
@@ -334,7 +334,7 @@ internal sealed class ModDatabaseQueryCacheService
 
     private static bool IsInMemoryCacheEntryExpired(InMemoryCacheEntry entry)
     {
-        return DateTime.UtcNow - entry.CreatedUtc > InMemoryCacheMaxAge;
+        return DateTimeOffset.Now - entry.CreatedAt > InMemoryCacheMaxAge;
     }
 
     private void TryAddToInMemoryCache(string key, QueryCacheResult? result)
@@ -347,7 +347,7 @@ internal sealed class ModDatabaseQueryCacheService
         var entry = new InMemoryCacheEntry
         {
             Result = result,
-            CreatedUtc = DateTime.UtcNow
+            CreatedAt = DateTimeOffset.Now
         };
 
         _inMemoryCache.TryAdd(key, entry);
@@ -355,20 +355,20 @@ internal sealed class ModDatabaseQueryCacheService
 
     private void EvictOldestCacheEntries()
     {
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.Now;
         var expiredKeys = new List<string>();
-        DateTime? oldestTimestamp = null;
+        DateTimeOffset? oldestTimestamp = null;
         string? oldestKey = null;
 
         foreach (var kvp in _inMemoryCache)
         {
-            if (now - kvp.Value.CreatedUtc > InMemoryCacheMaxAge)
+            if (now - kvp.Value.CreatedAt > InMemoryCacheMaxAge)
             {
                 expiredKeys.Add(kvp.Key);
             }
-            else if (oldestTimestamp is null || kvp.Value.CreatedUtc < oldestTimestamp)
+            else if (oldestTimestamp is null || kvp.Value.CreatedAt < oldestTimestamp)
             {
-                oldestTimestamp = kvp.Value.CreatedUtc;
+                oldestTimestamp = kvp.Value.CreatedAt;
                 oldestKey = kvp.Key;
             }
         }
@@ -399,7 +399,7 @@ internal sealed class ModDatabaseQueryCacheService
     private sealed class CachedQueryResult
     {
         public int SchemaVersion { get; init; }
-        public DateTime CachedUtc { get; init; }
+        public DateTimeOffset CachedAt { get; init; }
         public string QueryKey { get; init; } = string.Empty;
         public string? LastModifiedHeader { get; init; }
         public string? ETag { get; init; }
@@ -412,7 +412,7 @@ internal sealed class ModDatabaseQueryCacheService
     private sealed class InMemoryCacheEntry
     {
         public required QueryCacheResult? Result { get; init; }
-        public required DateTime CreatedUtc { get; init; }
+        public required DateTimeOffset CreatedAt { get; init; }
     }
 }
 
