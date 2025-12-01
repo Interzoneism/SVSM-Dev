@@ -180,6 +180,61 @@ internal sealed class ModDatabaseCacheService
     }
 
     /// <summary>
+    ///     Attempts to load cached mod database info along with the lastmodified API value and cache timestamp.
+    /// </summary>
+    /// <param name="modId">The mod identifier.</param>
+    /// <param name="normalizedGameVersion">The normalized game version.</param>
+    /// <param name="installedModVersion">The installed mod version.</param>
+    /// <param name="requireExactVersionMatch">Whether to require exact version matching.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A tuple containing the cached info, lastmodified API value, and cache timestamp.</returns>
+    public async Task<(ModDatabaseInfo? Info, string? LastModifiedApiValue, DateTimeOffset? CachedAt)> TryLoadWithLastModifiedAsync(
+        string modId,
+        string? normalizedGameVersion,
+        string? installedModVersion,
+        bool requireExactVersionMatch,
+        CancellationToken cancellationToken)
+    {
+        var cachePath = GetCacheFilePath(modId, normalizedGameVersion);
+        if (string.IsNullOrWhiteSpace(cachePath)) return (null, null, null);
+
+        if (!File.Exists(cachePath)) return (null, null, null);
+
+        var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!File.Exists(cachePath)) return (null, null, null);
+
+            await using FileStream stream = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var cached = await JsonSerializer
+                .DeserializeAsync<CachedModDatabaseInfo>(stream, SerializerOptions, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cached is null
+                || !IsSupportedSchemaVersion(cached.SchemaVersion)
+                || !IsGameVersionMatch(cached.GameVersion, normalizedGameVersion))
+            {
+                return (null, null, null);
+            }
+
+            var info = ConvertToDatabaseInfo(cached, normalizedGameVersion, installedModVersion, requireExactVersionMatch);
+            return (info, cached.LastModifiedApiValue, cached.CachedAt);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return (null, null, null);
+        }
+        finally
+        {
+            fileLock.Release();
+        }
+    }
+
+    /// <summary>
     ///     Gets the latest version stored in the cache for a mod, used for staleness checking.
     /// </summary>
     /// <param name="modId">The mod identifier.</param>
@@ -224,7 +279,52 @@ internal sealed class ModDatabaseCacheService
     }
 
     /// <summary>
+    ///     Gets the cached lastmodified value from the API and cache timestamp for cache invalidation.
+    /// </summary>
+    /// <param name="modId">The mod identifier.</param>
+    /// <param name="normalizedGameVersion">The normalized game version.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A tuple containing the lastmodified API value and cached timestamp, or nulls if not cached.</returns>
+    public async Task<(string? LastModifiedApiValue, DateTimeOffset? CachedAt)> GetCachedLastModifiedAsync(
+        string modId,
+        string? normalizedGameVersion,
+        CancellationToken cancellationToken)
+    {
+        var cachePath = GetCacheFilePath(modId, normalizedGameVersion);
+        if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath)) return (null, null);
+
+        var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!File.Exists(cachePath)) return (null, null);
+
+            await using FileStream stream = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var cached = await JsonSerializer
+                .DeserializeAsync<CachedModDatabaseInfo>(stream, SerializerOptions, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cached is null || !IsSupportedSchemaVersion(cached.SchemaVersion)) return (null, null);
+
+            return (cached.LastModifiedApiValue, cached.CachedAt);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return (null, null);
+        }
+        finally
+        {
+            fileLock.Release();
+        }
+    }
+
+    /// <summary>
     ///     Gets the cached HTTP headers and cache timestamp for conditional request validation.
+    ///     This method is kept for backward compatibility but the lastmodified API value
+    ///     approach via <see cref="GetCachedLastModifiedAsync"/> is preferred.
     /// </summary>
     /// <param name="modId">The mod identifier.</param>
     /// <param name="normalizedGameVersion">The normalized game version.</param>
@@ -273,7 +373,7 @@ internal sealed class ModDatabaseCacheService
         string? installedModVersion,
         CancellationToken cancellationToken)
     {
-        return StoreAsync(modId, normalizedGameVersion, info, installedModVersion, null, null, cancellationToken);
+        return StoreAsync(modId, normalizedGameVersion, info, installedModVersion, null, null, null, cancellationToken);
     }
 
     public async Task StoreAsync(
@@ -283,6 +383,20 @@ internal sealed class ModDatabaseCacheService
         string? installedModVersion,
         string? lastModifiedHeader,
         string? etag,
+        CancellationToken cancellationToken)
+    {
+        await StoreAsync(modId, normalizedGameVersion, info, installedModVersion, lastModifiedHeader, etag, null, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task StoreAsync(
+        string modId,
+        string? normalizedGameVersion,
+        ModDatabaseInfo info,
+        string? installedModVersion,
+        string? lastModifiedHeader,
+        string? etag,
+        string? lastModifiedApiValue,
         CancellationToken cancellationToken)
     {
         if (info is null) return;
@@ -316,7 +430,7 @@ internal sealed class ModDatabaseCacheService
 
             var tempPath = cachePath + ".tmp";
 
-            var cacheModel = CreateCacheModel(modId, normalizedGameVersion, info, tagsByModVersion, lastModifiedHeader, etag);
+            var cacheModel = CreateCacheModel(modId, normalizedGameVersion, info, tagsByModVersion, lastModifiedHeader, etag, lastModifiedApiValue);
 
             await using (FileStream tempStream = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
@@ -399,7 +513,8 @@ internal sealed class ModDatabaseCacheService
         ModDatabaseInfo info,
         IReadOnlyDictionary<string, string[]> tagsByModVersion,
         string? lastModifiedHeader = null,
-        string? etag = null)
+        string? etag = null,
+        string? lastModifiedApiValue = null)
     {
         var releases = info.Releases ?? Array.Empty<ModReleaseInfo>();
         var releaseModels = new List<CachedModRelease>(releases.Count);
@@ -431,6 +546,7 @@ internal sealed class ModDatabaseCacheService
                 : normalizedGameVersion!,
             LastModifiedHeader = lastModifiedHeader,
             ETag = etag,
+            LastModifiedApiValue = lastModifiedApiValue,
             Tags = info.Tags?.ToArray() ?? Array.Empty<string>(),
             TagsByModVersion = tagsByModVersion.Count == 0
                 ? new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
@@ -667,6 +783,11 @@ internal sealed class ModDatabaseCacheService
         ///     The ETag header value from the HTTP response, used for conditional requests.
         /// </summary>
         public string? ETag { get; init; }
+
+        /// <summary>
+        ///     The lastmodified value from the API response JSON, used for cache invalidation.
+        /// </summary>
+        public string? LastModifiedApiValue { get; init; }
 
         public string[] Tags { get; init; } = Array.Empty<string>();
 

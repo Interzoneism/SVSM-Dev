@@ -98,8 +98,8 @@ public sealed class ModDatabaseService
             var installedModVersion = modEntry.Version;
 
             // Always load from cache first
-            var cached = await CacheService
-                .TryLoadWithoutExpiryAsync(
+            var (cached, cachedLastModified, cachedAt) = await CacheService
+                .TryLoadWithLastModifiedAsync(
                     modEntry.ModId,
                     normalizedGameVersion,
                     installedModVersion,
@@ -118,11 +118,16 @@ public sealed class ModDatabaseService
             // Skip network request if internet is disabled
             if (internetDisabled) return;
 
-            // Check if data has changed using HTTP conditional request
-            var needsRefresh = cached == null || await CheckIfRefreshNeededAsync(
-                modEntry.ModId, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
+            // Check if we should fetch from network:
+            // 1. No cache exists
+            // 2. No cached lastmodified value (old cache format)
+            // 3. Cache has hard-expired (> 2 hours)
+            var isHardExpired = cachedAt.HasValue && DateTimeOffset.Now - cachedAt.Value > ModCacheHardExpiry;
+            var needsFetch = cached == null ||
+                             string.IsNullOrWhiteSpace(cachedLastModified) ||
+                             isHardExpired;
 
-            if (!needsRefresh) return;
+            if (!needsFetch) return;
 
             await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
@@ -151,16 +156,15 @@ public sealed class ModDatabaseService
 
     /// <summary>
     ///     Hard expiry time for per-mod cache entries. Cache entries older than this will always
-    ///     be refreshed from the network, regardless of conditional request results.
-    ///     This ensures data eventually gets refreshed even when the server doesn't
-    ///     support conditional requests (no ETag/Last-Modified headers).
+    ///     be refreshed from the network, regardless of the lastmodified value.
+    ///     This ensures data eventually gets refreshed even if the API's lastmodified field is not changing.
     /// </summary>
     private static readonly TimeSpan ModCacheHardExpiry = TimeSpan.FromHours(2);
 
     /// <summary>
-    ///     Checks if a refresh is needed using HTTP conditional requests.
-    ///     Returns true if data has changed, false if unchanged (304 Not Modified)
-    ///     or if we cannot verify (no conditional headers - assume cache is valid).
+    ///     Checks if a refresh is needed based on the cached lastmodified value and cache age.
+    ///     Returns true if cache is missing, doesn't have lastmodified, or is hard-expired.
+    ///     Returns false if cache exists with a lastmodified value and hasn't hard-expired.
     /// </summary>
     private async Task<bool> CheckIfRefreshNeededAsync(
         string modId,
@@ -171,9 +175,9 @@ public sealed class ModDatabaseService
 
         try
         {
-            // Get cached HTTP headers and timestamp for conditional request
-            var (lastModified, etag, cachedAt) = await CacheService
-                .GetCachedHttpHeadersAsync(modId, normalizedGameVersion, cancellationToken)
+            // Get cached lastmodified value and timestamp
+            var (cachedLastModified, cachedAt) = await CacheService
+                .GetCachedLastModifiedAsync(modId, normalizedGameVersion, cancellationToken)
                 .ConfigureAwait(false);
 
             // If cache is older than hard expiry, force a refresh
@@ -182,44 +186,13 @@ public sealed class ModDatabaseService
                 return true;
             }
 
-            // If no conditional request headers are cached, assume cache is still valid.
-            // This avoids re-downloading when the server doesn't support conditional requests.
-            // The cache will be refreshed when it reaches the hard expiry time.
-            var hasConditionalHeaders = !string.IsNullOrWhiteSpace(lastModified) || !string.IsNullOrWhiteSpace(etag);
-            if (!hasConditionalHeaders) return false;
-
-            var requestUri =
-                string.Format(CultureInfo.InvariantCulture, ApiEndpointFormat, Uri.EscapeDataString(modId));
-            using HttpRequestMessage request = new(HttpMethod.Head, requestUri);
-
-            // Add conditional request headers
-            if (!string.IsNullOrWhiteSpace(etag))
-            {
-                request.Headers.TryAddWithoutValidation("If-None-Match", etag);
-            }
-            if (!string.IsNullOrWhiteSpace(lastModified))
-            {
-                request.Headers.TryAddWithoutValidation("If-Modified-Since", lastModified);
-            }
-
-            using var response = await HttpClient
-                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
-                .ConfigureAwait(false);
-
-            // 304 Not Modified means cache is still valid
-            if (response.StatusCode == HttpStatusCode.NotModified)
-            {
-                return false;
-            }
-
-            // 200 OK with conditional headers means data has changed
-            // (Server returned full response instead of 304)
-            if (response.StatusCode == HttpStatusCode.OK)
+            // If no cached lastmodified value exists, we need to fetch data
+            if (string.IsNullOrWhiteSpace(cachedLastModified))
             {
                 return true;
             }
 
-            // For other status codes (errors, etc.), assume cache is valid to avoid excessive requests
+            // Cache exists with lastmodified and hasn't hard-expired - no refresh needed
             return false;
         }
         catch (OperationCanceledException)
@@ -1242,6 +1215,7 @@ public sealed class ModDatabaseService
             if (string.IsNullOrWhiteSpace(logoUrl)) logoUrl = GetString(modElement, "logo");
             var lastReleasedUtc = TryParseDateTime(GetString(modElement, "lastreleased"));
             var createdUtc = TryParseDateTime(GetString(modElement, "created"));
+            var lastModifiedApiValue = GetString(modElement, "lastmodified");
             var releases = BuildReleaseInfos(modElement, normalizedGameVersion, requireExactVersionMatch);
             var latestRelease = releases.Count > 0 ? releases[0] : null;
             var latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
@@ -1275,8 +1249,8 @@ public sealed class ModDatabaseService
                 Side = side
             };
 
-            // Store with HTTP headers for future conditional requests
-            await CacheService.StoreAsync(modId, normalizedGameVersion, info, modVersion, lastModified, etag, cancellationToken)
+            // Store with API lastmodified value for cache invalidation
+            await CacheService.StoreAsync(modId, normalizedGameVersion, info, modVersion, lastModified, etag, lastModifiedApiValue, cancellationToken)
                 .ConfigureAwait(false);
 
             return info;
