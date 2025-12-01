@@ -1999,10 +1999,7 @@ public sealed class ModListItemViewModel : ObservableObject
         // Try to load from cache first (synchronous file read)
         try
         {
-            var cachedBytes = ModImageCacheService.TryGetCachedImageAsync(logoUrl, CancellationToken.None)
-                .ConfigureAwait(false)
-                .GetAwaiter()
-                .GetResult();
+            var cachedBytes = ModImageCacheService.TryGetCachedImage(logoUrl);
 
             if (cachedBytes is { Length: > 0 })
             {
