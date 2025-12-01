@@ -1169,8 +1169,6 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         if (_modDatabaseLogo is not null) return;
 
-        if (InternetAccessManager.IsInternetAccessDisabled) return;
-
         var logoUrl = _modDatabaseLogoUrl;
         if (string.IsNullOrWhiteSpace(logoUrl)) return;
 
@@ -1183,6 +1181,37 @@ public sealed class ModListItemViewModel : ObservableObject
 
         try
         {
+            // Try to load from cache first
+            var cachedBytes = await ModImageCacheService.TryGetCachedImageAsync(logoUrl, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cachedBytes is { Length: > 0 })
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var cachedImage = CreateBitmapFromBytes(cachedBytes, uri);
+                if (cachedImage is not null)
+                {
+                    await InvokeOnDispatcherAsync(
+                            () =>
+                            {
+                                if (_modDatabaseLogo is not null) return;
+
+                                _modDatabaseLogo = cachedImage;
+                                OnPropertyChanged(nameof(ModDatabasePreviewImage));
+                                OnPropertyChanged(nameof(HasModDatabasePreviewImage));
+                                LogDebug(
+                                    $"Loaded database logo from cache. URL='{FormatValue(_modDatabaseLogoUrl)}'.");
+                            },
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                    return;
+                }
+            }
+
+            // If not cached or cache read failed, download from network
+            if (InternetAccessManager.IsInternetAccessDisabled) return;
+
             InternetAccessManager.ThrowIfInternetAccessDisabled();
 
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
@@ -1203,6 +1232,9 @@ public sealed class ModListItemViewModel : ObservableObject
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+
+            // Cache the downloaded image for future use
+            await ModImageCacheService.StoreImageAsync(logoUrl, payload, cancellationToken).ConfigureAwait(false);
 
             var image = CreateBitmapFromBytes(payload, uri);
             if (image is null) return;
@@ -1961,7 +1993,35 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private ImageSource? CreateModDatabaseLogoImage()
     {
-        return CreateImageFromUri(_modDatabaseLogoUrl, "Mod database logo", false);
+        var logoUrl = _modDatabaseLogoUrl;
+        if (string.IsNullOrWhiteSpace(logoUrl)) return null;
+
+        // Try to load from cache first (synchronous file read)
+        try
+        {
+            var cachedBytes = ModImageCacheService.TryGetCachedImage(logoUrl);
+
+            if (cachedBytes is { Length: > 0 })
+            {
+                var uri = TryCreateHttpUri(logoUrl);
+                if (uri is not null)
+                {
+                    var image = CreateBitmapFromBytes(cachedBytes, uri);
+                    if (image is not null)
+                    {
+                        LogDebug($"Loaded database logo from cache for '{FormatValue(logoUrl)}'.");
+                        return image;
+                    }
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore cache read failures, fall back to network
+        }
+
+        // Fall back to network loading
+        return CreateImageFromUri(logoUrl, "Mod database logo", false);
     }
 
     private ImageSource? CreateBitmapFromBytes(byte[] payload, Uri sourceUri)
