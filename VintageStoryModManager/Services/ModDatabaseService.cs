@@ -168,18 +168,20 @@ public sealed class ModDatabaseService
 
     /// <summary>
     ///     Checks if a cache entry is soft-expired based on its timestamp.
+    ///     Returns true if the cache doesn't exist or is older than soft expiry.
     /// </summary>
     private static bool IsCacheSoftExpired(DateTimeOffset? cachedAt)
     {
-        return cachedAt.HasValue && DateTimeOffset.Now - cachedAt.Value > ModCacheSoftExpiry;
+        return !cachedAt.HasValue || DateTimeOffset.Now - cachedAt.Value > ModCacheSoftExpiry;
     }
 
     /// <summary>
     ///     Checks if a cache entry is hard-expired based on its timestamp.
+    ///     Returns true if the cache doesn't exist or is older than hard expiry.
     /// </summary>
     private static bool IsCacheHardExpired(DateTimeOffset? cachedAt)
     {
-        return cachedAt.HasValue && DateTimeOffset.Now - cachedAt.Value > ModCacheHardExpiry;
+        return !cachedAt.HasValue || DateTimeOffset.Now - cachedAt.Value > ModCacheHardExpiry;
     }
 
     /// <summary>
@@ -201,13 +203,7 @@ public sealed class ModDatabaseService
                 .GetCachedLastModifiedAsync(modId, normalizedGameVersion, cancellationToken)
                 .ConfigureAwait(false);
 
-            // If no cache exists, we need to fetch data
-            if (!cachedAt.HasValue)
-            {
-                return true;
-            }
-
-            // If cache is older than hard expiry, force a refresh
+            // If cache is older than hard expiry or doesn't exist, force a refresh
             if (IsCacheHardExpired(cachedAt))
             {
                 return true;
