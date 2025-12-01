@@ -424,7 +424,7 @@ internal sealed class ModDatabaseCacheService
         return new CachedModDatabaseInfo
         {
             SchemaVersion = CacheSchemaVersion,
-            CachedAt = DateTime.Now,
+            CachedAt = DateTimeOffset.Now,
             ModId = modId,
             GameVersion = string.IsNullOrWhiteSpace(normalizedGameVersion)
                 ? AnyGameVersionToken
@@ -656,7 +656,7 @@ internal sealed class ModDatabaseCacheService
 
         public string GameVersion { get; init; } = AnyGameVersionToken;
 
-        public DateTime CachedAt { get; init; }
+        public DateTimeOffset CachedAt { get; init; }
 
         /// <summary>
         ///     The Last-Modified header value from the HTTP response, used for conditional requests.
@@ -726,7 +726,7 @@ internal sealed class ModDatabaseCacheService
     private sealed class InMemoryCacheEntry
     {
         public required ModDatabaseInfo? Result { get; init; }
-        public required DateTime CreatedAt { get; init; }
+        public required DateTimeOffset CreatedAt { get; init; }
     }
 
     private static string BuildInMemoryCacheKey(string cachePath, string? installedModVersion, bool requireExactVersionMatch)
@@ -739,7 +739,7 @@ internal sealed class ModDatabaseCacheService
 
     private static bool IsInMemoryCacheEntryExpired(InMemoryCacheEntry entry)
     {
-        return DateTime.Now - entry.CreatedAt > InMemoryCacheMaxAge;
+        return DateTimeOffset.Now - entry.CreatedAt > InMemoryCacheMaxAge;
     }
 
     private void TryAddToInMemoryCache(string key, ModDatabaseInfo? result)
@@ -755,7 +755,7 @@ internal sealed class ModDatabaseCacheService
         var entry = new InMemoryCacheEntry
         {
             Result = result,
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTimeOffset.Now
         };
 
         _inMemoryCache.TryAdd(key, entry);
@@ -765,8 +765,8 @@ internal sealed class ModDatabaseCacheService
     {
         // Remove expired entries first using a simple scan
         // This is more efficient than sorting for the common case
-        var now = DateTime.Now;
-        DateTime? oldestTimestamp = null;
+        var now = DateTimeOffset.Now;
+        DateTimeOffset? oldestTimestamp = null;
         string? oldestKey = null;
 
         // First pass: collect keys to remove (to avoid modifying while iterating)
