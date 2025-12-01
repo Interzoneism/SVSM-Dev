@@ -18,7 +18,6 @@ internal sealed class ModDatabaseQueryCacheService
     /// <summary>
     ///     Cache expiry time for query results. Results older than this will trigger
     ///     a conditional request to check if data has changed.
-    ///     Currently set to two hours to align with other mod database caches.
     /// </summary>
     private static readonly TimeSpan QueryCacheExpiry = TimeSpan.FromMinutes(5);
 
