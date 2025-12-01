@@ -41,7 +41,7 @@ public static class DevConfig
     public static string PresetDirectoryName { get; } = "Presets";
     public static string ModListDirectoryName { get; } = "Modlists";
     public static string RebuiltModListDirectoryName { get; } = "Rebuilt";
-    public static string CloudModListCacheDirectoryName { get; } = "Modlists (Cloud Cache)";
+    public static string CloudModListCacheDirectoryName { get; } = "Temp Cache/Modlists (Cloud Cache)";
     public static string BackupDirectoryName { get; } = "Backups";
     public static string DataFolderBackupDirectoryName { get; } = "Data Folder Backups";
     public static string DataFolderBackupManifestFileName { get; } = "data-backup.json";
@@ -49,7 +49,7 @@ public static class DevConfig
     public static int AutomaticConfigMaxWordDistance { get; } = 2;
 
     // Mod metadata cache.
-    public static string MetadataFolderName { get; } = "Mod Metadata";
+    public static string MetadataFolderName { get; } = "Temp Cache/Mod Metadata";
     public static string MetadataIndexFileName { get; } = "metadata-index.json";
 
     // Firebase mod list storage.
@@ -59,7 +59,7 @@ public static class DevConfig
     public static string FirebaseLegacyModlistDbUrl { get; } =
         "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
 
-    // Cloud/Firebase cache location (Simple VS Manager/Firebase Cache)
+    // Cloud/Firebase cache location (Simple VS Manager/Temp Cache/Firebase Cache)
     public static string FirebaseBackupDirectory => Path.Combine(GetManagerDirectory(), FirebaseCacheDirectoryName);
 
     // Status log display.
@@ -86,7 +86,7 @@ public static class DevConfig
                                                            
     public static string FirebaseAuthBackupDirectoryName { get; } = "SVSM Backup";
 
-    public static string FirebaseCacheDirectoryName { get; } = "Firebase Cache";
+    public static string FirebaseCacheDirectoryName { get; } = "Temp Cache/Firebase Cache";
 
     // User configuration defaults.
     public static string ConfigurationFileName { get; } = "SimpleVSManagerConfiguration.json";

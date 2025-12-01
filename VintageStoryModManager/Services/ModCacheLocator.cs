@@ -36,7 +36,7 @@ internal static class ModCacheLocator
         var managerDirectory = GetManagerDataDirectory();
         return managerDirectory is null
             ? null
-            : Path.Combine(managerDirectory, "Cached Mods");
+            : Path.Combine(managerDirectory, "Temp Cache", "Cached Mods");
     }
 
     /// <summary>
@@ -62,7 +62,7 @@ internal static class ModCacheLocator
         var managerDirectory = GetManagerDataDirectory();
         return managerDirectory is null
             ? null
-            : Path.Combine(managerDirectory, "Mod Database Cache");
+            : Path.Combine(managerDirectory, "Temp Cache", "Mod Database Cache");
     }
 
     /// <summary>
