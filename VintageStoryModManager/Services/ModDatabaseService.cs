@@ -150,8 +150,17 @@ public sealed class ModDatabaseService
     }
 
     /// <summary>
+    ///     Hard expiry time for per-mod cache entries. Cache entries older than this will always
+    ///     be refreshed from the network, regardless of conditional request results.
+    ///     This ensures data eventually gets refreshed even when the server doesn't
+    ///     support conditional requests (no ETag/Last-Modified headers).
+    /// </summary>
+    private static readonly TimeSpan ModCacheHardExpiry = TimeSpan.FromHours(2);
+
+    /// <summary>
     ///     Checks if a refresh is needed using HTTP conditional requests.
-    ///     Returns true if data has changed, false if unchanged (304 Not Modified).
+    ///     Returns true if data has changed, false if unchanged (304 Not Modified)
+    ///     or if we cannot verify (no conditional headers - assume cache is valid).
     /// </summary>
     private async Task<bool> CheckIfRefreshNeededAsync(
         string modId,
@@ -162,14 +171,22 @@ public sealed class ModDatabaseService
 
         try
         {
-            // Get cached HTTP headers for conditional request
-            var (lastModified, etag) = await CacheService
+            // Get cached HTTP headers and timestamp for conditional request
+            var (lastModified, etag, cachedAt) = await CacheService
                 .GetCachedHttpHeadersAsync(modId, normalizedGameVersion, cancellationToken)
                 .ConfigureAwait(false);
 
-            // If no conditional request headers are cached, we need a full fetch
+            // If cache is older than hard expiry, force a refresh
+            if (cachedAt.HasValue && DateTimeOffset.Now - cachedAt.Value > ModCacheHardExpiry)
+            {
+                return true;
+            }
+
+            // If no conditional request headers are cached, assume cache is still valid.
+            // This avoids re-downloading when the server doesn't support conditional requests.
+            // The cache will be refreshed when it reaches the hard expiry time.
             var hasConditionalHeaders = !string.IsNullOrWhiteSpace(lastModified) || !string.IsNullOrWhiteSpace(etag);
-            if (!hasConditionalHeaders) return true;
+            if (!hasConditionalHeaders) return false;
 
             var requestUri =
                 string.Format(CultureInfo.InvariantCulture, ApiEndpointFormat, Uri.EscapeDataString(modId));
@@ -840,13 +857,18 @@ public sealed class ModDatabaseService
                 // If the server returns 304 Not Modified, we can use the cached data.
                 if (!InternetAccessManager.IsInternetAccessDisabled)
                 {
-                    var notModified = await CheckIfQueryNotModifiedAsync(
+                    var notModifiedResult = await CheckIfQueryNotModifiedAsync(
                         requestUri,
                         cachedResult.LastModifiedHeader,
                         cachedResult.ETag,
                         cancellationToken).ConfigureAwait(false);
 
-                    if (notModified)
+                    // notModifiedResult:
+                    // - true: Server confirmed data hasn't changed (304)
+                    // - false: Server says data may have changed (200), need to fetch
+                    // - null: Couldn't verify (no headers or error), use cache without refreshing timestamp
+
+                    if (notModifiedResult == true)
                     {
                         // Data hasn't changed, return cached results
                         var cachedResults = cachedResult.Results
@@ -865,6 +887,22 @@ public sealed class ModDatabaseService
                             .Take(maxResults)
                             .ToArray();
                     }
+
+                    if (notModifiedResult == null)
+                    {
+                        // Couldn't verify (no conditional headers or network error).
+                        // Use cached data without refreshing timestamp - the cache will
+                        // eventually expire and trigger a full refresh.
+                        var cachedResults = cachedResult.Results
+                            .Select(r => r.ToSearchResult())
+                            .ToList();
+
+                        return orderResults(cachedResults)
+                            .Take(maxResults)
+                            .ToArray();
+                    }
+
+                    // notModifiedResult == false: Server says data changed, fall through to fetch fresh data
                 }
             }
         }
@@ -977,19 +1015,22 @@ public sealed class ModDatabaseService
 
     /// <summary>
     ///     Checks if a query result has not been modified using HTTP conditional requests.
+    ///     Returns null if no conditional headers are available (cannot verify).
     ///     Returns true if the server returns 304 Not Modified.
+    ///     Returns false if the server returns 200 OK (data may have changed).
     /// </summary>
-    private static async Task<bool> CheckIfQueryNotModifiedAsync(
+    private static async Task<bool?> CheckIfQueryNotModifiedAsync(
         string requestUri,
         string? lastModified,
         string? etag,
         CancellationToken cancellationToken)
     {
-        if (InternetAccessManager.IsInternetAccessDisabled) return false;
+        if (InternetAccessManager.IsInternetAccessDisabled) return null;
 
-        // If no conditional request headers, we can't check
+        // If no conditional request headers, we can't check - return null to indicate
+        // the caller should use the cached data without refreshing the timestamp.
         if (string.IsNullOrWhiteSpace(lastModified) && string.IsNullOrWhiteSpace(etag))
-            return false;
+            return null;
 
         try
         {
@@ -1009,7 +1050,19 @@ public sealed class ModDatabaseService
                 .ConfigureAwait(false);
 
             // 304 Not Modified means cache is still valid
-            return response.StatusCode == HttpStatusCode.NotModified;
+            if (response.StatusCode == HttpStatusCode.NotModified)
+            {
+                return true;
+            }
+
+            // 200 OK means data may have changed
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                return false;
+            }
+
+            // For other status codes (errors, etc.), return null to indicate we couldn't verify
+            return null;
         }
         catch (OperationCanceledException)
         {
@@ -1017,8 +1070,8 @@ public sealed class ModDatabaseService
         }
         catch (Exception)
         {
-            // On error, assume cache is invalid
-            return false;
+            // On error, return null to indicate we couldn't verify
+            return null;
         }
     }
 
@@ -1148,15 +1201,25 @@ public sealed class ModDatabaseService
             if (!response.IsSuccessStatusCode) return null;
 
             // Capture HTTP headers for conditional requests
+            // Last-Modified can be in either response headers or content headers depending on the server
             string? lastModified = null;
             string? etag = null;
-            if (response.Headers.TryGetValues("Last-Modified", out var lastModifiedValues))
+            if (response.Content.Headers.TryGetValues("Last-Modified", out var contentLastModifiedValues))
             {
-                lastModified = lastModifiedValues.FirstOrDefault();
+                lastModified = contentLastModifiedValues.FirstOrDefault();
             }
-            if (response.Headers.TryGetValues("ETag", out var etagValues))
+            else if (response.Headers.TryGetValues("Last-Modified", out var responseLastModifiedValues))
             {
-                etag = etagValues.FirstOrDefault();
+                lastModified = responseLastModifiedValues.FirstOrDefault();
+            }
+            // ETag can also be in either location
+            if (response.Headers.TryGetValues("ETag", out var responseEtagValues))
+            {
+                etag = responseEtagValues.FirstOrDefault();
+            }
+            else if (response.Content.Headers.TryGetValues("ETag", out var contentEtagValues))
+            {
+                etag = contentEtagValues.FirstOrDefault();
             }
 
             await using var contentStream =

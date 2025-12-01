@@ -224,33 +224,33 @@ internal sealed class ModDatabaseCacheService
     }
 
     /// <summary>
-    ///     Gets the cached HTTP headers for conditional request validation.
+    ///     Gets the cached HTTP headers and cache timestamp for conditional request validation.
     /// </summary>
     /// <param name="modId">The mod identifier.</param>
     /// <param name="normalizedGameVersion">The normalized game version.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A tuple containing the Last-Modified header and ETag, or nulls if not cached.</returns>
-    public async Task<(string? LastModified, string? ETag)> GetCachedHttpHeadersAsync(
+    /// <returns>A tuple containing the Last-Modified header, ETag, and cached timestamp, or nulls if not cached.</returns>
+    public async Task<(string? LastModified, string? ETag, DateTimeOffset? CachedAt)> GetCachedHttpHeadersAsync(
         string modId,
         string? normalizedGameVersion,
         CancellationToken cancellationToken)
     {
         var cachePath = GetCacheFilePath(modId, normalizedGameVersion);
-        if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath)) return (null, null);
+        if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath)) return (null, null, null);
 
         var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
         try
         {
-            if (!File.Exists(cachePath)) return (null, null);
+            if (!File.Exists(cachePath)) return (null, null, null);
 
             await using FileStream stream = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var cached = await JsonSerializer
                 .DeserializeAsync<CachedModDatabaseInfo>(stream, SerializerOptions, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (cached is null || !IsSupportedSchemaVersion(cached.SchemaVersion)) return (null, null);
+            if (cached is null || !IsSupportedSchemaVersion(cached.SchemaVersion)) return (null, null, null);
 
-            return (cached.LastModifiedHeader, cached.ETag);
+            return (cached.LastModifiedHeader, cached.ETag, cached.CachedAt);
         }
         catch (OperationCanceledException)
         {
@@ -258,7 +258,7 @@ internal sealed class ModDatabaseCacheService
         }
         catch (Exception)
         {
-            return (null, null);
+            return (null, null, null);
         }
         finally
         {
