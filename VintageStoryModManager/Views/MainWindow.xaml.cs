@@ -6125,7 +6125,7 @@ public partial class MainWindow : Window
             "• Mod Metadata\n" +
             "• Modlists (Cloud Cache)\n" +
             "• Firebase Cache\n\n" +
-            "Your settings and installed mods will NOT be affected.\n\n" +
+            "Your settings, modlists and installed mods will NOT be affected.\n\n" +
             "This is useful when experiencing problems with the mod database or cached data.\n\n" +
             "Continue?";
 
