@@ -12,7 +12,7 @@ internal static class ModManifestCacheService
 {
     private static readonly string MetadataFolderName = DevConfig.MetadataFolderName;
     private static readonly string UnifiedCacheFileName = "metadata-cache.json";
-    private static readonly string IconCacheFolderName = "Temp Cache/Mod Icons";
+    private static readonly string IconCacheFolderName = DevConfig.IconCacheFolderName;
 
     private static readonly object CacheLock = new();
     private static UnifiedMetadataCache? _cache;

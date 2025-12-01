@@ -51,6 +51,7 @@ public static class DevConfig
     // Mod metadata cache.
     public static string MetadataFolderName { get; } = "Temp Cache/Mod Metadata";
     public static string MetadataIndexFileName { get; } = "metadata-index.json";
+    public static string IconCacheFolderName { get; } = "Temp Cache/Mod Icons";
 
     // Firebase mod list storage.
     public static string FirebaseModlistDefaultDbUrl { get; } =
