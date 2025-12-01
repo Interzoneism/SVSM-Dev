@@ -189,9 +189,15 @@ public sealed class ModDatabaseService
     ///     Returns true if cache is missing, soft-expired, or hard-expired.
     ///     Returns false if cache exists with a lastmodified value and hasn't soft-expired.
     /// </summary>
+    /// <param name="modId">The mod identifier.</param>
+    /// <param name="normalizedGameVersion">The normalized game version.</param>
+    /// <param name="useSoftExpiry">If true, checks soft expiry (5 min). If false, only checks hard expiry (2 hours).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if refresh is needed, false otherwise.</returns>
     private async Task<bool> CheckIfRefreshNeededAsync(
         string modId,
         string? normalizedGameVersion,
+        bool useSoftExpiry,
         CancellationToken cancellationToken)
     {
         if (InternetAccessManager.IsInternetAccessDisabled) return false;
@@ -215,14 +221,14 @@ public sealed class ModDatabaseService
                 return true;
             }
 
-            // If cache is older than soft expiry, trigger a refresh
+            // If soft expiry checking is enabled and cache is older than soft expiry, trigger a refresh
             // The API's lastmodified field will be checked after fetching fresh data
-            if (IsCacheSoftExpired(cachedAt))
+            if (useSoftExpiry && IsCacheSoftExpired(cachedAt))
             {
                 return true;
             }
 
-            // Cache exists with lastmodified and hasn't soft-expired or hard-expired - no refresh needed
+            // Cache exists with lastmodified and hasn't expired - no refresh needed
             return false;
         }
         catch (OperationCanceledException)
@@ -329,9 +335,10 @@ public sealed class ModDatabaseService
             return (cached, false);
         }
 
-        // Check if refresh is needed using HTTP conditional request
+        // Check if refresh is needed using soft expiry (5 minutes)
+        // This is for direct mod info lookups where freshness is more important
         var needsRefresh = cached == null || await CheckIfRefreshNeededAsync(
-            modId, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
+            modId, normalizedGameVersion, true, cancellationToken).ConfigureAwait(false);
 
         return (cached, needsRefresh);
     }
@@ -411,9 +418,10 @@ public sealed class ModDatabaseService
 
             if (internetDisabled) return cached;
 
-            // Check if data has changed on the server using HTTP conditional request
+            // Check if data has changed on the server using soft expiry (5 minutes)
+            // This is for direct mod info lookups where freshness is more important
             needsRefresh = cached == null || await CheckIfRefreshNeededAsync(
-                modId, normalizedGameVersion, cancellationToken).ConfigureAwait(false);
+                modId, normalizedGameVersion, true, cancellationToken).ConfigureAwait(false);
         }
 
         // Skip network request if internet is disabled or no refresh needed
@@ -864,7 +872,9 @@ public sealed class ModDatabaseService
         if (InternetAccessManager.IsInternetAccessDisabled)
             return CloneResultWithDetails(candidate, cachedInfo, cachedDownloads);
 
-        var needsRefresh = cachedInfo == null || await CheckIfRefreshNeededAsync(candidate.ModId, null, cancellationToken)
+        // For browse/search enrichment, only use hard expiry (2 hours) to avoid unnecessary refetches
+        // This ensures recently browsed mods are served from cache without re-downloading
+        var needsRefresh = cachedInfo == null || await CheckIfRefreshNeededAsync(candidate.ModId, null, false, cancellationToken)
             .ConfigureAwait(false);
         if (!needsRefresh)
             return CloneResultWithDetails(candidate, cachedInfo, cachedDownloads);
