@@ -4264,6 +4264,7 @@ public partial class MainWindow : Window
         _viewModel.IsLoadMoreModDatabaseScrollThresholdReached = isNearBottom;
 
         // Auto-load more results when scrolled near bottom
+        // CanExecute checks prevent multiple simultaneous loads via IsModDatabaseLoading flag
         if (isNearBottom && _viewModel.LoadMoreModDatabaseResultsCommand.CanExecute(null))
         {
             _viewModel.LoadMoreModDatabaseResultsCommand.Execute(null);
