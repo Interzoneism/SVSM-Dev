@@ -1914,18 +1914,6 @@
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                             </ListView>
-                            <!-- Auto-load trigger - no visible button, loads automatically when scrolling -->
-                            <Button x:Name="LoadMorePagesButton"
-                                Content=""
-                                Command="{Binding LoadMoreModDatabaseResultsCommand}"
-                                Background="Transparent"
-                                BorderBrush="Transparent"
-                                BorderThickness="0"
-                                Padding="0"
-                                Foreground="Transparent"
-                                Cursor="Arrow"
-                                FontSize="1"
-                                FontWeight="Normal" Height="1" VerticalAlignment="Bottom" Visibility="Collapsed" />
                         </Grid>
                     </Border>
                 </TabItem>
