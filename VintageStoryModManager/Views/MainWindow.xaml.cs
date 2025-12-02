@@ -4262,6 +4262,12 @@ public partial class MainWindow : Window
         var scrollableHeight = extentHeight - viewportHeight;
         var isNearBottom = scrollableHeight <= 0 || verticalOffset / scrollableHeight >= LoadMoreScrollThreshold;
         _viewModel.IsLoadMoreModDatabaseScrollThresholdReached = isNearBottom;
+
+        // Auto-load more results when scrolled near bottom
+        if (isNearBottom && _viewModel.LoadMoreModDatabaseResultsCommand.CanExecute(null))
+        {
+            _viewModel.LoadMoreModDatabaseResultsCommand.Execute(null);
+        }
     }
 
     private void ModsDataGridRow_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
