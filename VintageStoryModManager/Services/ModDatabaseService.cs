@@ -28,6 +28,7 @@ public sealed class ModDatabaseService
 
     private static readonly HttpClient HttpClient = new();
     private static readonly ModDatabaseCacheService CacheService = new();
+    private static readonly ModDatabaseSearchCacheService SearchCacheService = new();
 
     private static readonly Regex HtmlBreakRegex = new(
         @"<\s*br\s*/?\s*>",
@@ -432,6 +433,198 @@ public sealed class ModDatabaseService
             .ConfigureAwait(false);
 
         return info ?? cached;
+    }
+
+    /// <summary>
+    ///     Searches for mods with result caching to reduce API load during browsing sessions.
+    ///     This is the cached version that should be used by UI components.
+    /// </summary>
+    /// <param name="query">The search query string.</param>
+    /// <param name="maxResults">Maximum number of results to return.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of search results.</returns>
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> SearchModsWithCacheAsync(
+        string query,
+        int maxResults,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query) || maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        // Generate cache key (tags are filtered client-side, so not included in cache key)
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("search", query, maxResults);
+
+        // Try to get from cache first
+        var cached = SearchCacheService.TryGetCachedResults(cacheKey);
+        if (cached != null) return cached;
+
+        // If not in cache or expired, fetch from API
+        var results = await SearchModsAsync(query, maxResults, cancellationToken).ConfigureAwait(false);
+
+        // Store in cache for future requests
+        SearchCacheService.StoreResults(cacheKey, results);
+
+        return results;
+    }
+
+    /// <summary>
+    ///     Gets most downloaded mods with result caching.
+    /// </summary>
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedModsWithCacheAsync(
+        int maxResults,
+        CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("downloads", null, maxResults);
+        var cached = SearchCacheService.TryGetCachedResults(cacheKey);
+        if (cached != null) return cached;
+
+        var results = await GetMostDownloadedModsAsync(maxResults, cancellationToken).ConfigureAwait(false);
+        SearchCacheService.StoreResults(cacheKey, results);
+
+        return results;
+    }
+
+    /// <summary>
+    ///     Gets trending mods with result caching.
+    /// </summary>
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostTrendingModsWithCacheAsync(
+        int maxResults,
+        CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("trending", null, maxResults);
+        var cached = SearchCacheService.TryGetCachedResults(cacheKey);
+        if (cached != null) return cached;
+
+        var results = await GetMostTrendingModsAsync(maxResults, cancellationToken).ConfigureAwait(false);
+        SearchCacheService.StoreResults(cacheKey, results);
+
+        return results;
+    }
+
+    /// <summary>
+    ///     Gets recently updated mods with result caching.
+    /// </summary>
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetRecentlyUpdatedModsWithCacheAsync(
+        int maxResults,
+        CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("updated", null, maxResults);
+        var cached = SearchCacheService.TryGetCachedResults(cacheKey);
+        if (cached != null) return cached;
+
+        var results = await GetRecentlyUpdatedModsAsync(maxResults, cancellationToken).ConfigureAwait(false);
+        SearchCacheService.StoreResults(cacheKey, results);
+
+        return results;
+    }
+
+    /// <summary>
+    ///     Gets recently added mods with result caching.
+    /// </summary>
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetRecentlyAddedModsWithCacheAsync(
+        int maxResults,
+        CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("added", null, maxResults);
+        var cached = SearchCacheService.TryGetCachedResults(cacheKey);
+        if (cached != null) return cached;
+
+        var results = await GetRecentlyAddedModsAsync(maxResults, cancellationToken).ConfigureAwait(false);
+        SearchCacheService.StoreResults(cacheKey, results);
+
+        return results;
+    }
+
+    /// <summary>
+    ///     Gets most downloaded mods from the last 30 days with result caching.
+    /// </summary>
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedModsLastThirtyDaysWithCacheAsync(
+        int maxResults,
+        CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("downloads30d", null, maxResults);
+        var cached = SearchCacheService.TryGetCachedResults(cacheKey);
+        if (cached != null) return cached;
+
+        var results = await GetMostDownloadedModsLastThirtyDaysAsync(maxResults, cancellationToken).ConfigureAwait(false);
+        SearchCacheService.StoreResults(cacheKey, results);
+
+        return results;
+    }
+
+    /// <summary>
+    ///     Gets most downloaded mods from the last 10 days with result caching.
+    /// </summary>
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedModsLastTenDaysWithCacheAsync(
+        int maxResults,
+        CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("downloads10d", null, maxResults);
+        var cached = SearchCacheService.TryGetCachedResults(cacheKey);
+        if (cached != null) return cached;
+
+        var results = await GetMostDownloadedModsLastTenDaysAsync(maxResults, cancellationToken).ConfigureAwait(false);
+        SearchCacheService.StoreResults(cacheKey, results);
+
+        return results;
+    }
+
+    /// <summary>
+    ///     Gets most downloaded new mods with result caching.
+    /// </summary>
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedNewModsWithCacheAsync(
+        int months,
+        int maxResults,
+        CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey($"new{months}m", null, maxResults);
+        var cached = SearchCacheService.TryGetCachedResults(cacheKey);
+        if (cached != null) return cached;
+
+        var results = await GetMostDownloadedNewModsAsync(months, maxResults, cancellationToken).ConfigureAwait(false);
+        SearchCacheService.StoreResults(cacheKey, results);
+
+        return results;
+    }
+
+    /// <summary>
+    ///     Gets random mods with result caching.
+    /// </summary>
+    public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetRandomModsWithCacheAsync(
+        int maxResults,
+        CancellationToken cancellationToken = default)
+    {
+        if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("random", null, maxResults);
+        var cached = SearchCacheService.TryGetCachedResults(cacheKey);
+        if (cached != null) return cached;
+
+        var results = await GetRandomModsAsync(maxResults, cancellationToken).ConfigureAwait(false);
+        SearchCacheService.StoreResults(cacheKey, results);
+
+        return results;
+    }
+
+    /// <summary>
+    ///     Clears the search result cache. Call this when the user explicitly requests a refresh.
+    /// </summary>
+    public void ClearSearchCache()
+    {
+        SearchCacheService.ClearCache();
     }
 
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> SearchModsAsync(string query, int maxResults,
