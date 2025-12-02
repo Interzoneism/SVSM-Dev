@@ -28,7 +28,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private const string NoCompatibleModDatabaseResultsStatusMessage = "No compatible mods found in the mod database.";
     private const string TagsColumnName = "Tags";
     private const string UserReportsColumnName = "UserReports";
-    private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
+    private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(400);
     private static readonly TimeSpan InstalledModsSearchDebounceMin = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan InstalledModsSearchDebounceMax = TimeSpan.FromMilliseconds(300);
     private const int LargeModListThreshold = 200;
@@ -3073,51 +3073,53 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 IReadOnlyList<ModDatabaseSearchResult> results;
                 if (hasSearchTokens)
-                    results = await _databaseService.SearchModsAsync(query, queryLimit, cancellationToken)
+                    results = await _databaseService.SearchModsWithCacheAsync(query, queryLimit, requiredTags, cancellationToken)
                         .ConfigureAwait(false);
                 else
                     results = ModDatabaseAutoLoadMode switch
                     {
                         ModDatabaseAutoLoadMode.DownloadsLastThirtyDays =>
                             await _databaseService
-                                .GetMostDownloadedModsLastThirtyDaysAsync(queryLimit, cancellationToken)
+                                .GetMostDownloadedModsLastThirtyDaysWithCacheAsync(queryLimit, requiredTags, cancellationToken)
                                 .ConfigureAwait(false),
                         ModDatabaseAutoLoadMode.DownloadsLastTenDays =>
                             await _databaseService
-                                .GetMostDownloadedModsLastTenDaysAsync(queryLimit, cancellationToken)
+                                .GetMostDownloadedModsLastTenDaysWithCacheAsync(queryLimit, requiredTags, cancellationToken)
                                 .ConfigureAwait(false),
                         ModDatabaseAutoLoadMode.DownloadsNewModsRecentMonths =>
                             await _databaseService
-                                .GetMostDownloadedNewModsAsync(
+                                .GetMostDownloadedNewModsWithCacheAsync(
                                     _newModsRecentMonths,
                                     queryLimit,
+                                    requiredTags,
                                     cancellationToken)
                                 .ConfigureAwait(false),
                         ModDatabaseAutoLoadMode.AddedLast30Days =>
                             await _databaseService
-                                .GetMostDownloadedNewModsAsync(
+                                .GetMostDownloadedNewModsWithCacheAsync(
                                     1,
                                     queryLimit,
+                                    requiredTags,
                                     cancellationToken)
                                 .ConfigureAwait(false),
                         ModDatabaseAutoLoadMode.RecentlyUpdated =>
                             await _databaseService
-                                .GetRecentlyUpdatedModsAsync(queryLimit, cancellationToken)
+                                .GetRecentlyUpdatedModsWithCacheAsync(queryLimit, requiredTags, cancellationToken)
                                 .ConfigureAwait(false),
                         ModDatabaseAutoLoadMode.RecentlyAdded =>
                             await _databaseService
-                                .GetRecentlyAddedModsAsync(queryLimit, cancellationToken)
+                                .GetRecentlyAddedModsWithCacheAsync(queryLimit, requiredTags, cancellationToken)
                                 .ConfigureAwait(false),
                         ModDatabaseAutoLoadMode.MostTrending =>
                             await _databaseService
-                                .GetMostTrendingModsAsync(queryLimit, cancellationToken)
+                                .GetMostTrendingModsWithCacheAsync(queryLimit, requiredTags, cancellationToken)
                                 .ConfigureAwait(false),
                         ModDatabaseAutoLoadMode.Random =>
                             await _databaseService
-                                .GetRandomModsAsync(queryLimit, cancellationToken)
+                                .GetRandomModsWithCacheAsync(queryLimit, requiredTags, cancellationToken)
                                 .ConfigureAwait(false),
                         _ => await _databaseService
-                            .GetMostDownloadedModsAsync(queryLimit, cancellationToken)
+                            .GetMostDownloadedModsWithCacheAsync(queryLimit, requiredTags, cancellationToken)
                             .ConfigureAwait(false)
                     };
 
