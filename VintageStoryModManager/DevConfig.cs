@@ -51,7 +51,7 @@ public static class DevConfig
     // Mod metadata cache.
     public static string MetadataFolderName { get; } = "Temp Cache/Mod Metadata";
     public static string MetadataIndexFileName { get; } = "metadata-index.json";
-    public static string IconCacheFolderName { get; } = "Temp Cache/Mod Icons";
+    public static string ManifestIconCacheFolderName { get; } = "Temp Cache/Mod Metadata/Icons";
 
     // Firebase mod list storage.
     public static string FirebaseModlistDefaultDbUrl { get; } =
@@ -108,6 +108,8 @@ public static class DevConfig
     public static int ModDatabaseCacheSchemaVersion { get; } = 2;
     public static int ModDatabaseMinimumSupportedCacheSchemaVersion { get; } = 1;
     public static string ModDatabaseAnyGameVersionToken { get; } = "any";
+    public static string ModDatabaseLogoCacheFolderName { get; } = "Temp Cache/Mod Database Cache/Logos";
+    public static string ModDatabaseImageCacheFolderName { get; } = "Temp Cache/Mod Database Cache/Images";
 
     // Mod discovery.
     // Increased from 16 to 32 for faster parallel mod loading with many mods
