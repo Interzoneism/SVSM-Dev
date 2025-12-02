@@ -439,16 +439,19 @@ public sealed class ModDatabaseService
     ///     Searches for mods with result caching to reduce API load during browsing sessions.
     ///     This is the cached version that should be used by UI components.
     /// </summary>
+    /// <param name="query">The search query string.</param>
+    /// <param name="maxResults">Maximum number of results to return.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of search results.</returns>
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> SearchModsWithCacheAsync(
         string query,
         int maxResults,
-        IReadOnlyList<string>? requiredTags = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(query) || maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        // Generate cache key
-        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("search", query, maxResults, requiredTags);
+        // Generate cache key (tags are filtered client-side, so not included in cache key)
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("search", query, maxResults);
 
         // Try to get from cache first
         var cached = SearchCacheService.TryGetCachedResults(cacheKey);
@@ -468,12 +471,11 @@ public sealed class ModDatabaseService
     /// </summary>
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedModsWithCacheAsync(
         int maxResults,
-        IReadOnlyList<string>? requiredTags = null,
         CancellationToken cancellationToken = default)
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("downloads", null, maxResults, requiredTags);
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("downloads", null, maxResults);
         var cached = SearchCacheService.TryGetCachedResults(cacheKey);
         if (cached != null) return cached;
 
@@ -488,12 +490,11 @@ public sealed class ModDatabaseService
     /// </summary>
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostTrendingModsWithCacheAsync(
         int maxResults,
-        IReadOnlyList<string>? requiredTags = null,
         CancellationToken cancellationToken = default)
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("trending", null, maxResults, requiredTags);
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("trending", null, maxResults);
         var cached = SearchCacheService.TryGetCachedResults(cacheKey);
         if (cached != null) return cached;
 
@@ -508,12 +509,11 @@ public sealed class ModDatabaseService
     /// </summary>
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetRecentlyUpdatedModsWithCacheAsync(
         int maxResults,
-        IReadOnlyList<string>? requiredTags = null,
         CancellationToken cancellationToken = default)
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("updated", null, maxResults, requiredTags);
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("updated", null, maxResults);
         var cached = SearchCacheService.TryGetCachedResults(cacheKey);
         if (cached != null) return cached;
 
@@ -528,12 +528,11 @@ public sealed class ModDatabaseService
     /// </summary>
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetRecentlyAddedModsWithCacheAsync(
         int maxResults,
-        IReadOnlyList<string>? requiredTags = null,
         CancellationToken cancellationToken = default)
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("added", null, maxResults, requiredTags);
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("added", null, maxResults);
         var cached = SearchCacheService.TryGetCachedResults(cacheKey);
         if (cached != null) return cached;
 
@@ -548,12 +547,11 @@ public sealed class ModDatabaseService
     /// </summary>
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedModsLastThirtyDaysWithCacheAsync(
         int maxResults,
-        IReadOnlyList<string>? requiredTags = null,
         CancellationToken cancellationToken = default)
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("downloads30d", null, maxResults, requiredTags);
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("downloads30d", null, maxResults);
         var cached = SearchCacheService.TryGetCachedResults(cacheKey);
         if (cached != null) return cached;
 
@@ -568,12 +566,11 @@ public sealed class ModDatabaseService
     /// </summary>
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedModsLastTenDaysWithCacheAsync(
         int maxResults,
-        IReadOnlyList<string>? requiredTags = null,
         CancellationToken cancellationToken = default)
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("downloads10d", null, maxResults, requiredTags);
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("downloads10d", null, maxResults);
         var cached = SearchCacheService.TryGetCachedResults(cacheKey);
         if (cached != null) return cached;
 
@@ -589,12 +586,11 @@ public sealed class ModDatabaseService
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetMostDownloadedNewModsWithCacheAsync(
         int months,
         int maxResults,
-        IReadOnlyList<string>? requiredTags = null,
         CancellationToken cancellationToken = default)
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey($"new{months}m", null, maxResults, requiredTags);
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey($"new{months}m", null, maxResults);
         var cached = SearchCacheService.TryGetCachedResults(cacheKey);
         if (cached != null) return cached;
 
@@ -609,12 +605,11 @@ public sealed class ModDatabaseService
     /// </summary>
     public async Task<IReadOnlyList<ModDatabaseSearchResult>> GetRandomModsWithCacheAsync(
         int maxResults,
-        IReadOnlyList<string>? requiredTags = null,
         CancellationToken cancellationToken = default)
     {
         if (maxResults <= 0) return Array.Empty<ModDatabaseSearchResult>();
 
-        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("random", null, maxResults, requiredTags);
+        var cacheKey = ModDatabaseSearchCacheService.GenerateCacheKey("random", null, maxResults);
         var cached = SearchCacheService.TryGetCachedResults(cacheKey);
         if (cached != null) return cached;
 
