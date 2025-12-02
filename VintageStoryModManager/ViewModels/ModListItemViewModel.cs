@@ -1958,7 +1958,7 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         try
         {
-            using var stream = new MemoryStream(payload, false);
+            using var stream = new MemoryStream(payload);
             var bitmap = new BitmapImage();
             bitmap.BeginInit();
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
