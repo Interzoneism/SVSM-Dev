@@ -772,6 +772,54 @@ internal sealed class SqliteModCacheService : IDisposable
         }
     }
 
+    /// <summary>
+    ///     Gets the full file path to a cached logo image for a mod.
+    /// </summary>
+    public string? GetLogoPath(string modId, string? normalizedGameVersion)
+    {
+        if (!_initialized || _connection is null) return null;
+        if (string.IsNullOrWhiteSpace(modId)) return null;
+
+        var gameVersion = string.IsNullOrWhiteSpace(normalizedGameVersion) ? "any" : normalizedGameVersion;
+
+        lock (_connectionLock)
+        {
+            using var command = _connection.CreateCommand();
+            command.CommandText = @"
+                SELECT logo_filename
+                FROM database_cache
+                WHERE mod_id = $modId AND game_version = $gameVersion
+                LIMIT 1";
+            
+            command.Parameters.AddWithValue("$modId", modId);
+            command.Parameters.AddWithValue("$gameVersion", gameVersion);
+
+            var logoFilename = command.ExecuteScalar() as string;
+            if (string.IsNullOrWhiteSpace(logoFilename)) return null;
+
+            var imagePath = GetImagePath(logoFilename);
+            return !string.IsNullOrWhiteSpace(imagePath) && File.Exists(imagePath) ? imagePath : null;
+        }
+    }
+
+    /// <summary>
+    ///     Attempts to retrieve cached logo image bytes for a mod.
+    /// </summary>
+    public byte[]? TryGetLogoBytes(string modId, string? normalizedGameVersion)
+    {
+        var logoPath = GetLogoPath(modId, normalizedGameVersion);
+        if (string.IsNullOrWhiteSpace(logoPath)) return null;
+
+        try
+        {
+            return File.ReadAllBytes(logoPath);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     #endregion
 
     #region Image Storage
