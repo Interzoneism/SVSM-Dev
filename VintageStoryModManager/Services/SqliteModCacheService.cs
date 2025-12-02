@@ -14,8 +14,8 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 internal sealed class SqliteModCacheService : IDisposable
 {
-    private static readonly int SchemaVersion = 1;
-    private static readonly string DatabaseFileName = "mod-cache.db";
+    private const int SchemaVersion = 1;
+    private const string DatabaseFileName = "mod-cache.db";
     
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -233,7 +233,7 @@ internal sealed class SqliteModCacheService : IDisposable
 
         var normalizedPath = NormalizePath(sourcePath);
         var ticks = ToUniversalTicks(lastWriteTimeUtc);
-        var normalizedVersion = NormalizeVersionOrDefault(version);
+        var normalizedVersion = GetVersionOrDefault(version);
 
         string? iconFilename = null;
         if (iconBytes is { Length: > 0 })
@@ -622,7 +622,7 @@ internal sealed class SqliteModCacheService : IDisposable
                         }
                     }
 
-                    var normalizedVersion = string.IsNullOrWhiteSpace(version) ? "unknown" : VersionStringUtility.Normalize(version) ?? version;
+                    var normalizedVersion = NormalizeVersionWithFallback(version);
                     tagsByVersion[normalizedVersion] = tags.ToArray();
 
                     var updatedJson = JsonSerializer.Serialize(tagsByVersion, SerializerOptions);
@@ -655,7 +655,7 @@ internal sealed class SqliteModCacheService : IDisposable
         if (!_initialized || _connection is null) return Array.Empty<string>();
         if (string.IsNullOrWhiteSpace(modId)) return Array.Empty<string>();
 
-        var normalizedVersion = string.IsNullOrWhiteSpace(version) ? "unknown" : VersionStringUtility.Normalize(version) ?? version;
+        var normalizedVersion = NormalizeVersionWithFallback(version);
 
         lock (_connectionLock)
         {
@@ -787,8 +787,14 @@ internal sealed class SqliteModCacheService : IDisposable
             {
                 imageBytes = await _httpClient.GetByteArrayAsync(imageUrl, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch (OperationCanceledException)
             {
+                // Re-throw cancellation (includes TaskCanceledException for timeout)
+                throw;
+            }
+            catch (System.Net.Http.HttpRequestException)
+            {
+                // Network or HTTP error - image not available
                 return null;
             }
         }
@@ -889,9 +895,15 @@ internal sealed class SqliteModCacheService : IDisposable
 
     #region Helper Methods
 
-    private static string NormalizeVersionOrDefault(string? version, string defaultValue = "unknown")
+    private static string GetVersionOrDefault(string? version, string defaultValue = "unknown")
     {
         return string.IsNullOrWhiteSpace(version) ? defaultValue : version;
+    }
+
+    private static string NormalizeVersionWithFallback(string? version, string defaultValue = "unknown")
+    {
+        if (string.IsNullOrWhiteSpace(version)) return defaultValue;
+        return VersionStringUtility.Normalize(version) ?? version;
     }
 
     private static DateTime? TryParseDateTime(string? dateTimeString)
