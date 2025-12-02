@@ -92,7 +92,8 @@ public static class DevConfig
     // User configuration defaults.
     public static string ConfigurationFileName { get; } = "SimpleVSManagerConfiguration.json";
     public static string ModConfigPathsFileName { get; } = "SimpleVSManagerModConfigPaths.json";
-    public static int DefaultModDatabaseSearchResultLimit { get; } = 30;
+    // VS Launcher analysis shows 45 items is optimal for initial load with incremental loading
+    public static int DefaultModDatabaseSearchResultLimit { get; } = 45;
     public static int DefaultModDatabaseNewModsRecentMonths { get; } = 3;
     public static int MaxModDatabaseNewModsRecentMonths { get; } = 24;
     public static int GameSessionVoteThreshold { get; } = 5;

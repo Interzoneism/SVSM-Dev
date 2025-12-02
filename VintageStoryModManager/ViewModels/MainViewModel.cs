@@ -175,7 +175,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _tagFilterService = new TagFilterService(_tagCache);
         _modDatabaseSearchResultLimit = Math.Clamp(modDatabaseSearchResultLimit, 1, MaxModDatabaseResultLimit);
         _modDatabaseCurrentResultLimit = _modDatabaseSearchResultLimit;
-        _modDatabaseFetchLimitOptions = new ObservableCollection<int> { 30, 60, 120, 200 };
+        _modDatabaseFetchLimitOptions = new ObservableCollection<int> { 10, 30, 45, 60, 120, 200 };
         _selectedModDatabaseFetchLimit = _modDatabaseSearchResultLimit;
         _newModsRecentMonths =
             Math.Clamp(newModsRecentMonths <= 0 ? 1 : newModsRecentMonths, 1, MaxNewModsRecentMonths);
