@@ -28,6 +28,10 @@ internal sealed class SqliteModCacheService : IDisposable
     private readonly object _connectionLock = new();
     private bool _initialized;
     
+    /// <summary>
+    /// Static HttpClient instance for reuse across all image downloads.
+    /// HttpClient is designed to be long-lived and reused, not disposed per request.
+    /// </summary>
     private static readonly System.Net.Http.HttpClient _httpClient = new()
     {
         Timeout = TimeSpan.FromSeconds(10)
@@ -42,6 +46,16 @@ internal sealed class SqliteModCacheService : IDisposable
 
         var dbPath = GetDatabasePath();
         if (string.IsNullOrWhiteSpace(dbPath)) return;
+
+        // Validate path to prevent path injection
+        try
+        {
+            dbPath = Path.GetFullPath(dbPath);
+        }
+        catch (Exception)
+        {
+            return;
+        }
 
         var directory = Path.GetDirectoryName(dbPath);
         if (!string.IsNullOrWhiteSpace(directory))
@@ -262,7 +276,7 @@ internal sealed class SqliteModCacheService : IDisposable
             command.Parameters.AddWithValue("$ticks", ticks);
             command.Parameters.AddWithValue("$manifest", manifestJson);
             command.Parameters.AddWithValue("$icon", (object?)iconFilename ?? DBNull.Value);
-            command.Parameters.AddWithValue("$createdAt", DateTime.UtcNow.ToString("O"));
+            command.Parameters.AddWithValue("$createdAt", DateTimeOffset.UtcNow.ToString("O"));
 
             command.ExecuteNonQuery();
         }
@@ -411,7 +425,7 @@ internal sealed class SqliteModCacheService : IDisposable
             command.Parameters.AddWithValue("$lastModHeader", (object?)lastModifiedHeader ?? DBNull.Value);
             command.Parameters.AddWithValue("$etag", (object?)etag ?? DBNull.Value);
             command.Parameters.AddWithValue("$lastModApi", (object?)lastModifiedApiValue ?? DBNull.Value);
-            command.Parameters.AddWithValue("$cachedAt", DateTimeOffset.Now.ToString("O"));
+            command.Parameters.AddWithValue("$cachedAt", DateTimeOffset.UtcNow.ToString("O"));
 
             command.ExecuteNonQuery();
         }
