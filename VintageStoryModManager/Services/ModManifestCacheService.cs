@@ -12,7 +12,7 @@ internal static class ModManifestCacheService
 {
     private static readonly string MetadataFolderName = DevConfig.MetadataFolderName;
     private static readonly string UnifiedCacheFileName = "metadata-cache.json";
-    private static readonly string IconCacheFolderName = DevConfig.IconCacheFolderName;
+    private static readonly string IconCacheFolderName = DevConfig.ManifestIconCacheFolderName;
 
     private static readonly object CacheLock = new();
     private static UnifiedMetadataCache? _cache;
@@ -89,17 +89,21 @@ internal static class ModManifestCacheService
             }
         }
 
+        ClearIconCache();
+    }
+
+    public static void ClearIconCache()
+    {
         var iconRoot = GetIconCacheRoot();
-        if (!string.IsNullOrWhiteSpace(iconRoot) && Directory.Exists(iconRoot))
+        if (string.IsNullOrWhiteSpace(iconRoot) || !Directory.Exists(iconRoot)) return;
+
+        try
         {
-            try
-            {
-                Directory.Delete(iconRoot, true);
-            }
-            catch (Exception ex)
-            {
-                throw new IOException($"Failed to delete the mod icon cache at {iconRoot}.", ex);
-            }
+            Directory.Delete(iconRoot, true);
+        }
+        catch (Exception ex)
+        {
+            throw new IOException($"Failed to delete the mod icon cache at {iconRoot}.", ex);
         }
     }
 
@@ -289,8 +293,7 @@ internal static class ModManifestCacheService
 
     private static string? GetIconCacheRoot()
     {
-        var baseDirectory = ModCacheLocator.GetManagerDataDirectory();
-        return baseDirectory is null ? null : Path.Combine(baseDirectory, IconCacheFolderName);
+        return ModCacheLocator.GetManifestIconCacheDirectory();
     }
 
     private static string? GetUnifiedCachePath()

@@ -1148,8 +1148,23 @@ public sealed class ModListItemViewModel : ObservableObject
 
         try
         {
-            // Try to load from cache first
-            var cachedBytes = await ModImageCacheService.TryGetCachedImageAsync(logoUrl, cancellationToken)
+            // Try to load from per-mod logo cache first, then fall back to shared image cache
+            var cachedBytes = await ModImageCacheService.TryGetCachedLogoAsync(ModId, logoUrl, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (cachedBytes is { Length: > 0 })
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var cachedImage = CreateBitmapFromBytes(cachedBytes, uri);
+                if (cachedImage is not null)
+                {
+                    await UpdateLogoOnDispatcherAsync(cachedImage, logoUrl, "logo cache", cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                return;
+            }
+
+            cachedBytes = await ModImageCacheService.TryGetCachedImageAsync(logoUrl, cancellationToken)
                 .ConfigureAwait(false);
 
             if (cachedBytes is { Length: > 0 })
@@ -1159,6 +1174,8 @@ public sealed class ModListItemViewModel : ObservableObject
                 var cachedImage = CreateBitmapFromBytes(cachedBytes, uri);
                 if (cachedImage is not null)
                 {
+                    await ModImageCacheService.StoreLogoAsync(ModId, logoUrl, cachedBytes, cancellationToken)
+                        .ConfigureAwait(false);
                     await UpdateLogoOnDispatcherAsync(cachedImage, logoUrl, "cache", cancellationToken).ConfigureAwait(false);
                 }
                 return;
@@ -1189,6 +1206,8 @@ public sealed class ModListItemViewModel : ObservableObject
             cancellationToken.ThrowIfCancellationRequested();
 
             // Store the downloaded image in cache for future use
+            await ModImageCacheService.StoreLogoAsync(ModId, logoUrl, payload, cancellationToken)
+                .ConfigureAwait(false);
             await ModImageCacheService.StoreImageAsync(logoUrl, payload, cancellationToken).ConfigureAwait(false);
 
             // Create and display the image

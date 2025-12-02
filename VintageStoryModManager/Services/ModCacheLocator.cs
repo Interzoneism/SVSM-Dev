@@ -71,10 +71,32 @@ internal static class ModCacheLocator
     /// <returns>The full path to the mod database image cache directory, or null if it cannot be determined.</returns>
     public static string? GetModDatabaseImageCacheDirectory()
     {
-        var databaseCacheDirectory = GetModDatabaseCacheDirectory();
-        return databaseCacheDirectory is null
+        var managerDirectory = GetManagerDataDirectory();
+        return managerDirectory is null
             ? null
-            : Path.Combine(databaseCacheDirectory, "Images");
+            : Path.Combine(managerDirectory, DevConfig.ModDatabaseImageCacheFolderName);
+    }
+
+    /// <summary>
+    ///     Gets the directory where mod database logos are cached.
+    /// </summary>
+    public static string? GetModDatabaseLogoCacheDirectory()
+    {
+        var managerDirectory = GetManagerDataDirectory();
+        return managerDirectory is null
+            ? null
+            : Path.Combine(managerDirectory, DevConfig.ModDatabaseLogoCacheFolderName);
+    }
+
+    /// <summary>
+    ///     Gets the directory where cached manifest icons are stored.
+    /// </summary>
+    public static string? GetManifestIconCacheDirectory()
+    {
+        var managerDirectory = GetManagerDataDirectory();
+        return managerDirectory is null
+            ? null
+            : Path.Combine(managerDirectory, DevConfig.ManifestIconCacheFolderName);
     }
 
     /// <summary>
