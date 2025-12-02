@@ -19,7 +19,7 @@ internal static class ModImageCacheService
     /// <param name="imageUrl">The URL of the image.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The cached image bytes, or null if not cached.</returns>
-    public static async Task<byte[]?> GetCachedImageAsync(string imageUrl, CancellationToken cancellationToken)
+    public static async Task<byte[]?> TryGetCachedImageAsync(string imageUrl, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(imageUrl)) return null;
 
@@ -55,7 +55,7 @@ internal static class ModImageCacheService
     /// <param name="imageUrl">The URL of the image.</param>
     /// <param name="imageBytes">The image data to cache.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    public static async Task CacheImageAsync(string imageUrl, byte[] imageBytes, CancellationToken cancellationToken)
+    public static async Task StoreImageAsync(string imageUrl, byte[] imageBytes, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(imageUrl)) return;
         if (imageBytes is null || imageBytes.Length == 0) return;

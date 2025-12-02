@@ -1132,11 +1132,13 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public async Task LoadModDatabaseLogoAsync(CancellationToken cancellationToken)
     {
+        // Capture the URL once to avoid race conditions
+        var logoUrl = _modDatabaseLogoUrl;
+        
         // Skip if already loaded or no URL available
-        if (_modDatabaseLogo is not null || string.IsNullOrWhiteSpace(_modDatabaseLogoUrl)) 
+        if (_modDatabaseLogo is not null || string.IsNullOrWhiteSpace(logoUrl)) 
             return;
 
-        var logoUrl = _modDatabaseLogoUrl;
         var uri = TryCreateHttpUri(logoUrl);
         if (uri is null)
         {
@@ -1147,7 +1149,7 @@ public sealed class ModListItemViewModel : ObservableObject
         try
         {
             // Try to load from cache first
-            var cachedBytes = await ModImageCacheService.GetCachedImageAsync(logoUrl, cancellationToken)
+            var cachedBytes = await ModImageCacheService.TryGetCachedImageAsync(logoUrl, cancellationToken)
                 .ConfigureAwait(false);
 
             if (cachedBytes is { Length: > 0 })
@@ -1157,7 +1159,7 @@ public sealed class ModListItemViewModel : ObservableObject
                 var cachedImage = CreateBitmapFromBytes(cachedBytes, uri);
                 if (cachedImage is not null)
                 {
-                    await UpdateLogoOnDispatcherAsync(cachedImage, "cache", cancellationToken).ConfigureAwait(false);
+                    await UpdateLogoOnDispatcherAsync(cachedImage, logoUrl, "cache", cancellationToken).ConfigureAwait(false);
                 }
                 return;
             }
@@ -1186,14 +1188,14 @@ public sealed class ModListItemViewModel : ObservableObject
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Cache the downloaded image for future use
-            await ModImageCacheService.CacheImageAsync(logoUrl, payload, cancellationToken).ConfigureAwait(false);
+            // Store the downloaded image in cache for future use
+            await ModImageCacheService.StoreImageAsync(logoUrl, payload, cancellationToken).ConfigureAwait(false);
 
             // Create and display the image
             var image = CreateBitmapFromBytes(payload, uri);
             if (image is not null)
             {
-                await UpdateLogoOnDispatcherAsync(image, "network", cancellationToken).ConfigureAwait(false);
+                await UpdateLogoOnDispatcherAsync(image, logoUrl, "network", cancellationToken).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -1206,17 +1208,18 @@ public sealed class ModListItemViewModel : ObservableObject
         }
     }
 
-    private async Task UpdateLogoOnDispatcherAsync(ImageSource image, string source, CancellationToken cancellationToken)
+    private async Task UpdateLogoOnDispatcherAsync(ImageSource image, string expectedUrl, string source, CancellationToken cancellationToken)
     {
         await InvokeOnDispatcherAsync(
                 () =>
                 {
-                    if (_modDatabaseLogo is null)
+                    // Only update if logo is still null and URL hasn't changed
+                    if (_modDatabaseLogo is null && string.Equals(_modDatabaseLogoUrl, expectedUrl, StringComparison.Ordinal))
                     {
                         _modDatabaseLogo = image;
                         OnPropertyChanged(nameof(ModDatabasePreviewImage));
                         OnPropertyChanged(nameof(HasModDatabasePreviewImage));
-                        LogDebug($"Loaded database logo from {source}. URL='{FormatValue(_modDatabaseLogoUrl)}'.");
+                        LogDebug($"Loaded database logo from {source}. URL='{FormatValue(expectedUrl)}'.");
                     }
                 },
                 cancellationToken)
