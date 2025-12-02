@@ -3291,7 +3291,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                             foreach (var (index, info) in updatesToApply)
                             {
                                 viewModels[index].UpdateDatabaseInfo(info, false);
-                                viewModels[index].EnsureModDatabaseLogoLoaded();
                             }
                         },
                         cancellationToken)
@@ -3327,7 +3326,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         {
                             var viewModel = viewModels[i];
                             viewModel.UpdateDatabaseInfo(info, false);
-                            viewModel.EnsureModDatabaseLogoLoaded();
                             QueueLatestReleaseUserReportRefresh(viewModel);
                         }
                     }
