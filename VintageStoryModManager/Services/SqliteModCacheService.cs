@@ -28,6 +28,11 @@ internal sealed class SqliteModCacheService : IDisposable
     private SqliteConnection? _connection;
     private readonly object _connectionLock = new();
     private bool _initialized;
+    
+    private static readonly System.Net.Http.HttpClient _httpClient = new()
+    {
+        Timeout = TimeSpan.FromSeconds(10)
+    };
 
     /// <summary>
     ///     Initializes the database connection and schema.
@@ -215,7 +220,7 @@ internal sealed class SqliteModCacheService : IDisposable
 
         var normalizedPath = NormalizePath(sourcePath);
         var ticks = ToUniversalTicks(lastWriteTimeUtc);
-        var normalizedVersion = string.IsNullOrWhiteSpace(version) ? "unknown" : version;
+        var normalizedVersion = NormalizeVersionOrDefault(version);
 
         string? iconFilename = null;
         if (iconBytes is { Length: > 0 })
@@ -510,8 +515,8 @@ internal sealed class SqliteModCacheService : IDisposable
                 LogoUrl = null, // Logo is stored as file, not URL
                 DownloadsLastThirtyDays = reader.IsDBNull(12) ? null : reader.GetInt32(12),
                 DownloadsLastTenDays = reader.IsDBNull(13) ? null : reader.GetInt32(13),
-                LastReleasedUtc = reader.IsDBNull(14) ? null : DateTime.Parse(reader.GetString(14)),
-                CreatedUtc = reader.IsDBNull(15) ? null : DateTime.Parse(reader.GetString(15)),
+                LastReleasedUtc = reader.IsDBNull(14) ? null : TryParseDateTime(reader.GetString(14)),
+                CreatedUtc = reader.IsDBNull(15) ? null : TryParseDateTime(reader.GetString(15)),
                 Releases = releases,
                 Side = reader.IsDBNull(17) ? null : reader.GetString(17)
             };
@@ -775,9 +780,7 @@ internal sealed class SqliteModCacheService : IDisposable
             // Download if not cached
             try
             {
-                using var client = new System.Net.Http.HttpClient();
-                client.Timeout = TimeSpan.FromSeconds(10);
-                imageBytes = await client.GetByteArrayAsync(imageUrl, cancellationToken).ConfigureAwait(false);
+                imageBytes = await _httpClient.GetByteArrayAsync(imageUrl, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
             {
@@ -880,6 +883,25 @@ internal sealed class SqliteModCacheService : IDisposable
     #endregion
 
     #region Helper Methods
+
+    private static string NormalizeVersionOrDefault(string? version, string defaultValue = "unknown")
+    {
+        return string.IsNullOrWhiteSpace(version) ? defaultValue : version;
+    }
+
+    private static DateTime? TryParseDateTime(string? dateTimeString)
+    {
+        if (string.IsNullOrWhiteSpace(dateTimeString)) return null;
+        
+        try
+        {
+            return DateTime.Parse(dateTimeString);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
 
     private static string? GetDatabasePath()
     {
