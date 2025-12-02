@@ -18,9 +18,20 @@ internal sealed class ModDatabaseCacheService
         DevConfig.ModDatabaseMinimumSupportedCacheSchemaVersion;
 
     private static readonly string AnyGameVersionToken = DevConfig.ModDatabaseAnyGameVersionToken;
-    // Note: Time-based cache expiry has been removed. Cache invalidation is now based on
-    // version comparison - we always load from cache first, then check if the latest version
-    // has changed before fetching full data from the network.
+
+    /// <summary>
+    ///     Soft expiry time for disk cache entries. Cache entries older than this will trigger
+    ///     a refresh check from the network using conditional requests (lastmodified comparison).
+    ///     Used for direct mod info lookups where freshness is more important.
+    /// </summary>
+    private static readonly TimeSpan DiskCacheSoftExpiry = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    ///     Hard expiry time for disk cache entries. Cache entries older than this will always
+    ///     be refreshed from the network, regardless of the lastmodified value.
+    ///     This ensures data eventually gets refreshed even if the API's lastmodified field is not changing.
+    /// </summary>
+    private static readonly TimeSpan DiskCacheHardExpiry = TimeSpan.FromHours(2);
 
     /// <summary>
     ///     Maximum number of entries to keep in the in-memory cache.
@@ -319,6 +330,83 @@ internal sealed class ModDatabaseCacheService
         {
             fileLock.Release();
         }
+    }
+
+    /// <summary>
+    ///     Checks if a cache entry requires a network refresh based on expiry rules.
+    ///     Returns true if cache is missing, soft-expired, or hard-expired.
+    ///     Returns false if cache exists with a lastmodified value and hasn't expired.
+    ///     If internet access is disabled, always returns false (no refresh needed).
+    /// </summary>
+    /// <param name="modId">The mod identifier.</param>
+    /// <param name="normalizedGameVersion">The normalized game version.</param>
+    /// <param name="useSoftExpiry">If true, checks soft expiry (5 min). If false, only checks hard expiry (2 hours).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if refresh is needed, false otherwise.</returns>
+    public async Task<bool> CheckIfRefreshNeededAsync(
+        string modId,
+        string? normalizedGameVersion,
+        bool useSoftExpiry,
+        CancellationToken cancellationToken)
+    {
+        // If internet is disabled, no refresh is possible
+        if (InternetAccessManager.IsInternetAccessDisabled) return false;
+
+        try
+        {
+            // Get cached lastmodified value and timestamp
+            var (cachedLastModified, cachedAt) = await GetCachedLastModifiedAsync(modId, normalizedGameVersion, cancellationToken)
+                .ConfigureAwait(false);
+
+            // If cache is older than hard expiry or doesn't exist, force a refresh
+            if (IsCacheHardExpired(cachedAt))
+            {
+                return true;
+            }
+
+            // If no cached lastmodified value exists, we need to fetch data
+            if (string.IsNullOrWhiteSpace(cachedLastModified))
+            {
+                return true;
+            }
+
+            // If soft expiry checking is enabled and cache is older than soft expiry, trigger a refresh
+            // The API's lastmodified field will be checked after fetching fresh data
+            if (useSoftExpiry && IsCacheSoftExpired(cachedAt))
+            {
+                return true;
+            }
+
+            // Cache exists with lastmodified and hasn't expired - no refresh needed
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // On error, assume cache is valid to avoid excessive requests
+            return false;
+        }
+    }
+
+    /// <summary>
+    ///     Checks if a cache entry is soft-expired based on its timestamp.
+    ///     Returns true if the cache doesn't exist or is older than soft expiry.
+    /// </summary>
+    private static bool IsCacheSoftExpired(DateTimeOffset? cachedAt)
+    {
+        return !cachedAt.HasValue || DateTimeOffset.Now - cachedAt.Value > DiskCacheSoftExpiry;
+    }
+
+    /// <summary>
+    ///     Checks if a cache entry is hard-expired based on its timestamp.
+    ///     Returns true if the cache doesn't exist or is older than hard expiry.
+    /// </summary>
+    private static bool IsCacheHardExpired(DateTimeOffset? cachedAt)
+    {
+        return !cachedAt.HasValue || DateTimeOffset.Now - cachedAt.Value > DiskCacheHardExpiry;
     }
 
     /// <summary>
