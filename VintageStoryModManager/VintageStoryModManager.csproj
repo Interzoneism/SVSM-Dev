@@ -47,6 +47,8 @@
 	<ItemGroup>
 		<PackageReference Include="BenchmarkDotNet" Version="0.15.6" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.0" />
 		<PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.3.36714.1" />
 		<PackageReference Include="ModernWpfUI" Version="0.9.6" />
 		<PackageReference Include="HtmlAgilityPack" Version="1.11.61" />
