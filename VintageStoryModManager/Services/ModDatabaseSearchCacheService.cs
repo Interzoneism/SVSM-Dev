@@ -83,20 +83,14 @@ internal sealed class ModDatabaseSearchCacheService
     /// <param name="searchType">The type of search (e.g., "search", "trending", "recent").</param>
     /// <param name="query">The search query string (if applicable).</param>
     /// <param name="maxResults">The maximum number of results requested.</param>
-    /// <param name="requiredTags">Optional list of required tag filters.</param>
     /// <returns>A unique cache key for this search configuration.</returns>
     public static string GenerateCacheKey(
         string searchType,
         string? query,
-        int maxResults,
-        IReadOnlyList<string>? requiredTags = null)
+        int maxResults)
     {
         var normalizedQuery = string.IsNullOrWhiteSpace(query) ? "" : query.Trim().ToLowerInvariant();
-        var tagString = requiredTags is { Count: > 0 }
-            ? string.Join(",", requiredTags.OrderBy(t => t, StringComparer.OrdinalIgnoreCase))
-            : "";
-
-        return $"{searchType}|{normalizedQuery}|{maxResults}|{tagString}";
+        return $"{searchType}|{normalizedQuery}|{maxResults}";
     }
 
     /// <summary>
