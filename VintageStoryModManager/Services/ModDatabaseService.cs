@@ -118,16 +118,12 @@ public sealed class ModDatabaseService
             // Skip network request if internet is disabled
             if (internetDisabled) return;
 
-            // Check if we should fetch from network:
-            // 1. No cache exists
-            // 2. No cached lastmodified value (old cache format)
-            // 3. Cache has hard-expired (> 2 hours)
-            var isHardExpired = cachedAt.HasValue && DateTimeOffset.Now - cachedAt.Value > ModCacheHardExpiry;
-            var needsFetch = cached == null ||
-                             string.IsNullOrWhiteSpace(cachedLastModified) ||
-                             isHardExpired;
+            // Check if we should fetch from network using cache service's refresh logic
+            // For bulk population, use hard expiry (2 hours) to avoid unnecessary refetches
+            var needsRefresh = cached == null || await CacheService.CheckIfRefreshNeededAsync(
+                modEntry.ModId, normalizedGameVersion, false, cancellationToken).ConfigureAwait(false);
 
-            if (!needsFetch) return;
+            if (!needsRefresh) return;
 
             await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
@@ -151,95 +147,6 @@ public sealed class ModDatabaseService
             {
                 semaphore.Release();
             }
-        }
-    }
-
-    /// <summary>
-    ///     Soft expiry time for per-mod cache entries. Cache entries older than this will trigger
-    ///     a refresh from the network.
-    /// </summary>
-    private static readonly TimeSpan ModCacheSoftExpiry = TimeSpan.FromMinutes(5);
-
-    /// <summary>
-    ///     Hard expiry time for per-mod cache entries. Cache entries older than this will always
-    ///     be refreshed from the network, regardless of the lastmodified value.
-    ///     This ensures data eventually gets refreshed even if the API's lastmodified field is not changing.
-    /// </summary>
-    private static readonly TimeSpan ModCacheHardExpiry = TimeSpan.FromHours(2);
-
-    /// <summary>
-    ///     Checks if a cache entry is soft-expired based on its timestamp.
-    ///     Returns true if the cache doesn't exist or is older than soft expiry.
-    /// </summary>
-    private static bool IsCacheSoftExpired(DateTimeOffset? cachedAt)
-    {
-        return !cachedAt.HasValue || DateTimeOffset.Now - cachedAt.Value > ModCacheSoftExpiry;
-    }
-
-    /// <summary>
-    ///     Checks if a cache entry is hard-expired based on its timestamp.
-    ///     Returns true if the cache doesn't exist or is older than hard expiry.
-    /// </summary>
-    private static bool IsCacheHardExpired(DateTimeOffset? cachedAt)
-    {
-        return !cachedAt.HasValue || DateTimeOffset.Now - cachedAt.Value > ModCacheHardExpiry;
-    }
-
-    /// <summary>
-    ///     Checks if a refresh is needed based on the cached lastmodified value and cache age.
-    ///     Returns true if cache is missing, soft-expired, or hard-expired.
-    ///     Returns false if cache exists with a lastmodified value and hasn't soft-expired.
-    /// </summary>
-    /// <param name="modId">The mod identifier.</param>
-    /// <param name="normalizedGameVersion">The normalized game version.</param>
-    /// <param name="useSoftExpiry">If true, checks soft expiry (5 min). If false, only checks hard expiry (2 hours).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>True if refresh is needed, false otherwise.</returns>
-    private async Task<bool> CheckIfRefreshNeededAsync(
-        string modId,
-        string? normalizedGameVersion,
-        bool useSoftExpiry,
-        CancellationToken cancellationToken)
-    {
-        if (InternetAccessManager.IsInternetAccessDisabled) return false;
-
-        try
-        {
-            // Get cached lastmodified value and timestamp
-            var (cachedLastModified, cachedAt) = await CacheService
-                .GetCachedLastModifiedAsync(modId, normalizedGameVersion, cancellationToken)
-                .ConfigureAwait(false);
-
-            // If cache is older than hard expiry or doesn't exist, force a refresh
-            if (IsCacheHardExpired(cachedAt))
-            {
-                return true;
-            }
-
-            // If no cached lastmodified value exists, we need to fetch data
-            if (string.IsNullOrWhiteSpace(cachedLastModified))
-            {
-                return true;
-            }
-
-            // If soft expiry checking is enabled and cache is older than soft expiry, trigger a refresh
-            // The API's lastmodified field will be checked after fetching fresh data
-            if (useSoftExpiry && IsCacheSoftExpired(cachedAt))
-            {
-                return true;
-            }
-
-            // Cache exists with lastmodified and hasn't expired - no refresh needed
-            return false;
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception)
-        {
-            // On error, assume cache is valid to avoid excessive requests
-            return false;
         }
     }
 
@@ -338,7 +245,7 @@ public sealed class ModDatabaseService
 
         // Check if refresh is needed using soft expiry (5 minutes)
         // This is for direct mod info lookups where freshness is more important
-        var needsRefresh = cached == null || await CheckIfRefreshNeededAsync(
+        var needsRefresh = cached == null || await CacheService.CheckIfRefreshNeededAsync(
             modId, normalizedGameVersion, true, cancellationToken).ConfigureAwait(false);
 
         return (cached, needsRefresh);
@@ -421,7 +328,7 @@ public sealed class ModDatabaseService
 
             // Check if data has changed on the server using soft expiry (5 minutes)
             // This is for direct mod info lookups where freshness is more important
-            needsRefresh = cached == null || await CheckIfRefreshNeededAsync(
+            needsRefresh = cached == null || await CacheService.CheckIfRefreshNeededAsync(
                 modId, normalizedGameVersion, true, cancellationToken).ConfigureAwait(false);
         }
 
@@ -1067,7 +974,7 @@ public sealed class ModDatabaseService
 
         // For browse/search enrichment, only use hard expiry (2 hours) to avoid unnecessary refetches
         // This ensures recently browsed mods are served from cache without re-downloading
-        var needsRefresh = cachedInfo == null || await CheckIfRefreshNeededAsync(candidate.ModId, null, false, cancellationToken)
+        var needsRefresh = cachedInfo == null || await CacheService.CheckIfRefreshNeededAsync(candidate.ModId, null, false, cancellationToken)
             .ConfigureAwait(false);
         if (!needsRefresh)
             return CloneResultWithDetails(candidate, cachedInfo, cachedDownloads);
