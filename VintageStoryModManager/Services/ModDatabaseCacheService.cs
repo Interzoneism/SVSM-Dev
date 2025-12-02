@@ -11,7 +11,7 @@ namespace VintageStoryModManager.Services;
 internal sealed class ModDatabaseCacheService
 {
     private static readonly object InitLock = new();
-    private static SqliteModCacheService? _sqliteCache;
+    private static volatile SqliteModCacheService? _sqliteCache;
 
     private static SqliteModCacheService GetCache()
     {

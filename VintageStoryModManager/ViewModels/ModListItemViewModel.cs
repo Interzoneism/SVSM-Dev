@@ -25,6 +25,7 @@ namespace VintageStoryModManager.ViewModels;
 public sealed class ModListItemViewModel : ObservableObject
 {
     private static readonly HttpClient HttpClient = new();
+    private static readonly ModDatabaseCacheService DatabaseCache = new();
 
     private readonly Func<ModListItemViewModel, bool, Task<ActivationResult>> _activationHandler;
     private readonly IReadOnlyList<string> _authors;
@@ -1139,8 +1140,7 @@ public sealed class ModListItemViewModel : ObservableObject
         try
         {
             // First, try to load from new SQLite cache (Temp Cache/Images/)
-            var databaseCache = new ModDatabaseCacheService();
-            var logoBytes = databaseCache.TryGetLogoBytes(ModId, _installedGameVersion);
+            var logoBytes = DatabaseCache.TryGetLogoBytes(ModId, _installedGameVersion);
             
             if (logoBytes is { Length: > 0 })
             {
