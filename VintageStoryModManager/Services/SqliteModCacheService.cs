@@ -24,7 +24,6 @@ internal sealed class SqliteModCacheService : IDisposable
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new(StringComparer.OrdinalIgnoreCase);
     private SqliteConnection? _connection;
     private readonly object _connectionLock = new();
     private bool _initialized;
@@ -345,7 +344,7 @@ internal sealed class SqliteModCacheService : IDisposable
         }
 
         // Load existing tags by version
-        var tagsByVersion = await LoadExistingTagsByVersionAsync(modId, gameVersion, cancellationToken).ConfigureAwait(false);
+        var tagsByVersion = LoadExistingTagsByVersion(modId, gameVersion);
         
         // Update tags for installed version if provided
         var normalizedVersion = string.IsNullOrWhiteSpace(installedModVersion) ? null : VersionStringUtility.Normalize(installedModVersion);
@@ -560,14 +559,7 @@ internal sealed class SqliteModCacheService : IDisposable
             DateTimeOffset? cachedAt = null;
             if (!string.IsNullOrWhiteSpace(cachedAtStr))
             {
-                try
-                {
-                    cachedAt = DateTimeOffset.Parse(cachedAtStr);
-                }
-                catch (Exception)
-                {
-                    // Ignore parse errors
-                }
+                cachedAt = DateTimeOffset.TryParse(cachedAtStr, out var result) ? result : null;
             }
 
             return (lastModHeader, etag, lastModApi, cachedAt);
@@ -700,10 +692,9 @@ internal sealed class SqliteModCacheService : IDisposable
         }
     }
 
-    private async Task<Dictionary<string, string[]>> LoadExistingTagsByVersionAsync(
+    private Dictionary<string, string[]> LoadExistingTagsByVersion(
         string modId,
-        string gameVersion,
-        CancellationToken cancellationToken)
+        string gameVersion)
     {
         if (!_initialized || _connection is null) 
             return new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
@@ -893,14 +884,7 @@ internal sealed class SqliteModCacheService : IDisposable
     {
         if (string.IsNullOrWhiteSpace(dateTimeString)) return null;
         
-        try
-        {
-            return DateTime.Parse(dateTimeString);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        return DateTime.TryParse(dateTimeString, out var result) ? result : null;
     }
 
     private static string? GetDatabasePath()
