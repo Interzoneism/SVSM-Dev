@@ -14,32 +14,6 @@ internal static class ModImageCacheService
         new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    ///     Attempts to retrieve a cached image for the given URL synchronously.
-    ///     This method does not use file locking and is intended for UI thread usage
-    ///     where blocking is acceptable but deadlocks must be avoided.
-    /// </summary>
-    /// <param name="imageUrl">The URL of the image.</param>
-    /// <returns>The cached image bytes, or null if not cached.</returns>
-    public static byte[]? TryGetCachedImage(string imageUrl)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrl)) return null;
-
-        var cachePath = GetCachePath(imageUrl);
-        if (string.IsNullOrWhiteSpace(cachePath)) return null;
-
-        if (!File.Exists(cachePath)) return null;
-
-        try
-        {
-            return File.ReadAllBytes(cachePath);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
     ///     Attempts to retrieve a cached image for the given URL.
     /// </summary>
     /// <param name="imageUrl">The URL of the image.</param>
