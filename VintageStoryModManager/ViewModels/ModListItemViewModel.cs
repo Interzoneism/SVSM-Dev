@@ -1132,34 +1132,53 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public async Task LoadModDatabaseLogoAsync(CancellationToken cancellationToken)
     {
-        // Capture the URL once to avoid race conditions
-        var logoUrl = _modDatabaseLogoUrl;
-        
-        // Skip if already loaded or no URL available
-        if (_modDatabaseLogo is not null || string.IsNullOrWhiteSpace(logoUrl)) 
+        // Skip if already loaded
+        if (_modDatabaseLogo is not null) 
             return;
-
-        var uri = TryCreateHttpUri(logoUrl);
-        if (uri is null)
-        {
-            LogDebug($"Skipping logo load - invalid URL: '{FormatValue(logoUrl)}'.");
-            return;
-        }
 
         try
         {
-            // Try to load from cache first
+            // First, try to load from new SQLite cache (Temp Cache/Images/)
+            var databaseCache = new ModDatabaseCacheService();
+            var logoBytes = databaseCache.TryGetLogoBytes(ModId, _installedGameVersion);
+            
+            if (logoBytes is { Length: > 0 })
+            {
+                // Image found in SQLite cache - create and display it
+                cancellationToken.ThrowIfCancellationRequested();
+                var placeholderUri = new Uri("file:///sqlite-cache");
+                var cachedImage = CreateBitmapFromBytes(logoBytes, placeholderUri);
+                if (cachedImage is not null)
+                {
+                    await UpdateLogoOnDispatcherAsync(cachedImage, string.Empty, "sqlite-cache", cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+            }
+
+            // Fallback to URL-based loading for old cache entries
+            var logoUrl = _modDatabaseLogoUrl;
+            if (string.IsNullOrWhiteSpace(logoUrl)) 
+                return;
+
+            var uri = TryCreateHttpUri(logoUrl);
+            if (uri is null)
+            {
+                LogDebug($"Skipping logo load - invalid URL: '{FormatValue(logoUrl)}'.");
+                return;
+            }
+
+            // Try to load from old hash-based cache (Mod Database Cache/Images/)
             var cachedBytes = await ModImageCacheService.TryGetCachedImageAsync(logoUrl, cancellationToken)
                 .ConfigureAwait(false);
 
             if (cachedBytes is { Length: > 0 })
             {
-                // Image found in cache - create and display it
+                // Image found in old cache - create and display it
                 cancellationToken.ThrowIfCancellationRequested();
                 var cachedImage = CreateBitmapFromBytes(cachedBytes, uri);
                 if (cachedImage is not null)
                 {
-                    await UpdateLogoOnDispatcherAsync(cachedImage, logoUrl, "cache", cancellationToken).ConfigureAwait(false);
+                    await UpdateLogoOnDispatcherAsync(cachedImage, logoUrl, "legacy-cache", cancellationToken).ConfigureAwait(false);
                 }
                 return;
             }
@@ -1188,7 +1207,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Store the downloaded image in cache for future use
+            // Store the downloaded image in old cache for compatibility
             await ModImageCacheService.StoreImageAsync(logoUrl, payload, cancellationToken).ConfigureAwait(false);
 
             // Create and display the image

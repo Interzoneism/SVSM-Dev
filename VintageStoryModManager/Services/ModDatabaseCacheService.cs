@@ -215,4 +215,22 @@ internal sealed class ModDatabaseCacheService
             lastModifiedApiValue,
             cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    ///     Gets the full file path to a cached logo image for a mod.
+    /// </summary>
+    public string? GetLogoPath(string modId, string? normalizedGameVersion)
+    {
+        var cache = GetCache();
+        return cache.GetLogoPath(modId, normalizedGameVersion);
+    }
+
+    /// <summary>
+    ///     Attempts to retrieve cached logo image bytes for a mod.
+    /// </summary>
+    public byte[]? TryGetLogoBytes(string modId, string? normalizedGameVersion)
+    {
+        var cache = GetCache();
+        return cache.TryGetLogoBytes(modId, normalizedGameVersion);
+    }
 }
