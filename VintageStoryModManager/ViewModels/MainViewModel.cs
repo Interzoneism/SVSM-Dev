@@ -28,7 +28,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private const string NoCompatibleModDatabaseResultsStatusMessage = "No compatible mods found in the mod database.";
     private const string TagsColumnName = "Tags";
     private const string UserReportsColumnName = "UserReports";
-    private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(320);
+    // Updated to 400ms to match VS Launcher's optimized debounce timing for search queries
+    // This prevents excessive API calls during typing while maintaining responsiveness
+    private static readonly TimeSpan ModDatabaseSearchDebounce = TimeSpan.FromMilliseconds(400);
     private static readonly TimeSpan InstalledModsSearchDebounceMin = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan InstalledModsSearchDebounceMax = TimeSpan.FromMilliseconds(300);
     private const int LargeModListThreshold = 200;
