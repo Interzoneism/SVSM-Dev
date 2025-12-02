@@ -1650,34 +1650,43 @@
 
                                                 <Border x:Name="CardImageContainer"
                                                     CornerRadius="12,12,0,0"
-                                                    ClipToBounds="True">
-                                                    <Border.Style>
-                                                        <Style TargetType="{x:Type Border}">
-                                                            <Setter Property="Background">
-                                                                <Setter.Value>
-                                                                    <ImageBrush
-                                                                        ImageSource="/VintageStoryModManager;component/Resources/mod-default.png"
-                                                                        Stretch="UniformToFill"
-                                                                        AlignmentX="Center"
-                                                                        AlignmentY="Top" />
-                                                                </Setter.Value>
-                                                            </Setter>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding HasModDatabasePreviewImage}"
-                                                                    Value="True">
-                                                                    <Setter Property="Background">
-                                                                        <Setter.Value>
-                                                                            <ImageBrush ImageSource="{Binding ModDatabasePreviewImage}"
-                                                                                Stretch="UniformToFill"
-                                                                                AlignmentX="Center"
-                                                                                AlignmentY="Top" />
-                                                                        </Setter.Value>
-                                                                    </Setter>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Border.Style>
+                                                    ClipToBounds="True"
+                                                    Background="{DynamicResource Brush.DataGrid.Background}">
                                                     <Grid>
+                                                        <!-- Default placeholder image -->
+                                                        <Image Source="/VintageStoryModManager;component/Resources/mod-default.png"
+                                                               Stretch="UniformToFill"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Top">
+                                                            <Image.Style>
+                                                                <Style TargetType="{x:Type Image}">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding HasModDatabasePreviewImage}"
+                                                                            Value="True">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Image.Style>
+                                                        </Image>
+                                                        <!-- Actual mod image with proper binding -->
+                                                        <Image Source="{Binding ModDatabasePreviewImage}"
+                                                               Stretch="UniformToFill"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Top">
+                                                            <Image.Style>
+                                                                <Style TargetType="{x:Type Image}">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding HasModDatabasePreviewImage}"
+                                                                            Value="True">
+                                                                            <Setter Property="Visibility" Value="Visible" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Image.Style>
+                                                        </Image>
                                                         <TextBlock Text="Installed"
                                                             Margin="8"
                                                             Padding="6,2"
