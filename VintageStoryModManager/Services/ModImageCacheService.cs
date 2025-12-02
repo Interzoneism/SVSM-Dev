@@ -50,42 +50,6 @@ internal static class ModImageCacheService
     }
 
     /// <summary>
-    ///     Attempts to retrieve a cached logo for the given mod and URL.
-    /// </summary>
-    public static async Task<byte[]?> TryGetCachedLogoAsync(
-        string modId,
-        string logoUrl,
-        CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(logoUrl)) return null;
-
-        var cachePath = GetLogoCachePath(modId, logoUrl);
-        if (string.IsNullOrWhiteSpace(cachePath)) return null;
-
-        if (!File.Exists(cachePath)) return null;
-
-        var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
-        try
-        {
-            if (!File.Exists(cachePath)) return null;
-
-            return await File.ReadAllBytesAsync(cachePath, cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-        finally
-        {
-            fileLock.Release();
-        }
-    }
-
-    /// <summary>
     ///     Stores an image in the cache.
     /// </summary>
     /// <param name="imageUrl">The URL of the image.</param>
@@ -157,77 +121,6 @@ internal static class ModImageCacheService
     }
 
     /// <summary>
-    ///     Stores a mod logo in the cache alongside metadata entries.
-    /// </summary>
-    public static async Task StoreLogoAsync(
-        string modId,
-        string logoUrl,
-        byte[] imageBytes,
-        CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(logoUrl)) return;
-        if (imageBytes is null || imageBytes.Length == 0) return;
-
-        var cachePath = GetLogoCachePath(modId, logoUrl);
-        if (string.IsNullOrWhiteSpace(cachePath)) return;
-
-        var directory = Path.GetDirectoryName(cachePath);
-        if (string.IsNullOrWhiteSpace(directory)) return;
-
-        try
-        {
-            Directory.CreateDirectory(directory);
-        }
-        catch (Exception)
-        {
-            return;
-        }
-
-        var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
-        try
-        {
-            var tempPath = cachePath + ".tmp";
-            await File.WriteAllBytesAsync(tempPath, imageBytes, cancellationToken).ConfigureAwait(false);
-
-            try
-            {
-                File.Move(tempPath, cachePath, true);
-            }
-            catch (IOException)
-            {
-                try
-                {
-                    File.Replace(tempPath, cachePath, null);
-                }
-                catch (Exception)
-                {
-                    try
-                    {
-                        if (File.Exists(tempPath)) File.Delete(tempPath);
-                    }
-                    catch (Exception)
-                    {
-                        // Ignore cleanup errors
-                    }
-                    throw;
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception)
-        {
-            // Ignore cache storage failures - caching is best effort.
-        }
-        finally
-        {
-            fileLock.Release();
-        }
-    }
-
-    /// <summary>
     ///     Clears all cached images.
     /// </summary>
     internal static void ClearCacheDirectory()
@@ -245,24 +138,6 @@ internal static class ModImageCacheService
         }
     }
 
-    /// <summary>
-    ///     Clears all cached mod database logos without touching other caches.
-    /// </summary>
-    internal static void ClearLogoCacheDirectory()
-    {
-        var cacheDirectory = ModCacheLocator.GetModDatabaseLogoCacheDirectory();
-        if (string.IsNullOrWhiteSpace(cacheDirectory) || !Directory.Exists(cacheDirectory)) return;
-
-        try
-        {
-            Directory.Delete(cacheDirectory, true);
-        }
-        catch (Exception ex)
-        {
-            throw new IOException($"Failed to delete the mod logo cache at {cacheDirectory}.", ex);
-        }
-    }
-
     private static string? GetCachePath(string imageUrl)
     {
         var cacheDirectory = ModCacheLocator.GetModDatabaseImageCacheDirectory();
@@ -272,18 +147,6 @@ internal static class ModImageCacheService
         if (string.IsNullOrWhiteSpace(fileName)) return null;
 
         return Path.Combine(cacheDirectory, fileName);
-    }
-
-    private static string? GetLogoCachePath(string modId, string imageUrl)
-    {
-        var cacheDirectory = ModCacheLocator.GetModDatabaseLogoCacheDirectory();
-        if (string.IsNullOrWhiteSpace(cacheDirectory)) return null;
-
-        var fileName = GenerateCacheFileName(imageUrl);
-        if (string.IsNullOrWhiteSpace(fileName)) return null;
-
-        var safeModId = ModCacheLocator.SanitizeFileName(modId, "mod");
-        return Path.Combine(cacheDirectory, safeModId, fileName);
     }
 
     private static string GenerateCacheFileName(string imageUrl)
