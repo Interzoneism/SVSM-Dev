@@ -56,13 +56,21 @@ public static class LazyThumbnailLoader
     {
         if (element.DataContext is ModListItemViewModel viewModel)
         {
-            _ = viewModel.LoadThumbnailAsync().ContinueWith(
-                task =>
-                {
-                    // Silently ignore any exceptions during thumbnail loading
-                    // Thumbnails are optional UI enhancements
-                },
-                TaskScheduler.Default);
+            // Fire-and-forget: LoadThumbnailAsync handles its own exceptions and UI thread marshalling
+            LoadThumbnailInternalAsync(viewModel);
+        }
+    }
+
+    private static async void LoadThumbnailInternalAsync(ModListItemViewModel viewModel)
+    {
+        try
+        {
+            await viewModel.LoadThumbnailAsync();
+        }
+        catch
+        {
+            // Silently ignore exceptions - thumbnails are optional UI enhancements
+            // LoadThumbnailAsync already handles most exceptions, this is a safety net
         }
     }
 }
