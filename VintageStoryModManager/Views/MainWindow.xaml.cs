@@ -4627,6 +4627,12 @@ public partial class MainWindow : Window
         await DeleteSelectedModsAsync();
     }
 
+    private void CloseModInfoButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ClearSelection(resetAnchor: true);
+        e.Handled = true;
+    }
+
     private async Task DeleteSelectedModsAsync()
     {
         if (_selectedMods.Count == 0) return;

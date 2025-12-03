@@ -2711,6 +2711,38 @@
                                           Opacity="0.1"
                                           Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
                     </Grid.Effect>
+                    <!-- Close Button -->
+                    <Button x:Name="CloseModInfoButton"
+                            Content="✕"
+                            Width="24"
+                            Height="24"
+                            Padding="0"
+                            FontSize="14"
+                            FontWeight="Bold"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Margin="8,8,0,0"
+                            Background="Transparent"
+                            BorderBrush="{DynamicResource Brush.Text.Primary}"
+                            Foreground="{DynamicResource Brush.Text.Primary}"
+                            BorderThickness="1"
+                            ToolTip="Close and deselect mod"
+                            Click="CloseModInfoButton_OnClick"
+                            Cursor="Hand"
+                            Panel.ZIndex="1000">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Opacity" Value="0.7" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Opacity" Value="1.0" />
+                                        <Setter Property="Background" Value="{DynamicResource Brush.Status.Error}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                     <Button x:Name="SelectedModDatabasePageButton"
                             Padding="12,6"
                             Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
