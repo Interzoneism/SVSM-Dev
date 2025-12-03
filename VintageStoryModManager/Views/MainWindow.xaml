@@ -2722,6 +2722,7 @@
                             HorizontalAlignment="Left"
                             VerticalAlignment="Top"
                             Margin="8,8,0,0"
+                            Grid.Column="0"
                             Background="Transparent"
                             BorderBrush="{DynamicResource Brush.Text.Primary}"
                             Foreground="{DynamicResource Brush.Text.Primary}"
