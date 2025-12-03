@@ -1205,14 +1205,7 @@ public sealed class ModListItemViewModel : ObservableObject
         await InvokeOnDispatcherAsync(
                 () =>
                 {
-                    // Only update if logo is still null
-                    // For cached images, skip URL validation (expectedUrl will be empty)
-                    // For network images, verify URL hasn't changed
-                    var shouldUpdate = _modDatabaseLogo is null && 
-                        (string.IsNullOrEmpty(expectedUrl) || 
-                         string.Equals(_modDatabaseLogoUrl, expectedUrl, StringComparison.Ordinal));
-                    
-                    if (shouldUpdate)
+                    if (ShouldUpdateLogo(expectedUrl))
                     {
                         _modDatabaseLogo = image;
                         OnPropertyChanged(nameof(ModDatabasePreviewImage));
@@ -1222,6 +1215,20 @@ public sealed class ModListItemViewModel : ObservableObject
                 },
                 cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    private bool ShouldUpdateLogo(string expectedUrl)
+    {
+        // Only update if logo is still null
+        if (_modDatabaseLogo is not null)
+            return false;
+
+        // For cached images (empty expectedUrl), skip URL validation
+        if (string.IsNullOrEmpty(expectedUrl))
+            return true;
+
+        // For network images, verify URL hasn't changed to prevent race conditions
+        return string.Equals(_modDatabaseLogoUrl, expectedUrl, StringComparison.Ordinal);
     }
 
     private async Task<ImageSource?> TryLoadCachedLogoAsync(CancellationToken cancellationToken)
