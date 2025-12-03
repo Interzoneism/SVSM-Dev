@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
@@ -1134,25 +1135,17 @@ public sealed class ModListItemViewModel : ObservableObject
     public async Task LoadModDatabaseLogoAsync(CancellationToken cancellationToken)
     {
         // Skip if already loaded
-        if (_modDatabaseLogo is not null) 
+        if (_modDatabaseLogo is not null)
             return;
 
         try
         {
-            // Load from SQLite cache (Temp Cache/Images/Thumbnails/)
-            var logoBytes = DatabaseCache.TryGetLogoBytes(ModId, _installedGameVersion);
-            
-            if (logoBytes is { Length: > 0 })
+            var cachedLogo = await TryLoadCachedLogoAsync(cancellationToken).ConfigureAwait(false);
+            if (cachedLogo is not null)
             {
-                // Image found in SQLite cache - create and display it
-                cancellationToken.ThrowIfCancellationRequested();
-                var placeholderUri = new Uri("file:///sqlite-cache");
-                var cachedImage = CreateBitmapFromBytes(logoBytes, placeholderUri);
-                if (cachedImage is not null)
-                {
-                    await UpdateLogoOnDispatcherAsync(cachedImage, string.Empty, "sqlite-cache", cancellationToken).ConfigureAwait(false);
-                    return;
-                }
+                await UpdateLogoOnDispatcherAsync(cachedLogo, string.Empty, "disk-cache", cancellationToken)
+                    .ConfigureAwait(false);
+                return;
             }
 
             // Not cached - download from network if internet is available
@@ -1223,6 +1216,94 @@ public sealed class ModListItemViewModel : ObservableObject
                 },
                 cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    private async Task<ImageSource?> TryLoadCachedLogoAsync(CancellationToken cancellationToken)
+    {
+        // Try the SQLite-backed cache with multiple version keys for resilience
+        var normalizedGameVersion = VersionStringUtility.Normalize(_installedGameVersion);
+        var logoPath = TryGetCachedLogoPath(normalizedGameVersion)
+                       ?? TryGetCachedLogoPath(null)
+                       ?? TryFindThumbnailOnDisk();
+
+        if (string.IsNullOrWhiteSpace(logoPath)) return null;
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return await TryCreateBitmapFromFileAsync(logoPath, cancellationToken).ConfigureAwait(false);
+    }
+
+    private string? TryGetCachedLogoPath(string? normalizedGameVersion)
+    {
+        try
+        {
+            return DatabaseCache.GetLogoPath(ModId, normalizedGameVersion);
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"Failed to resolve cached logo path: {ex.Message}.");
+            return null;
+        }
+    }
+
+    private string? TryFindThumbnailOnDisk()
+    {
+        try
+        {
+            var dataDirectory = ModCacheLocator.GetManagerDataDirectory();
+            if (string.IsNullOrWhiteSpace(dataDirectory)) return null;
+
+            var thumbnailsDirectory = Path.Combine(dataDirectory, "Temp Cache", "Images", "Thumbnails");
+            if (!Directory.Exists(thumbnailsDirectory)) return null;
+
+            var sanitized = SanitizeForFilename(ModId);
+            var pattern = $"{sanitized}_thumbnail*";
+            return Directory.EnumerateFiles(thumbnailsDirectory, pattern).FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"Failed to scan thumbnail cache: {ex.Message}.");
+            return null;
+        }
+    }
+
+    private static string SanitizeForFilename(string value)
+    {
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var buffer = new char[value.Length];
+        for (var i = 0; i < value.Length; i++)
+        {
+            var current = value[i];
+            buffer[i] = invalidChars.Contains(current) ? '_' : current;
+        }
+
+        return new string(buffer);
+    }
+
+    private async Task<ImageSource?> TryCreateBitmapFromFileAsync(string logoPath, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await using var stream = File.OpenRead(logoPath);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+            bitmap.StreamSource = stream;
+            bitmap.EndInit();
+            TryFreezeImageSource(bitmap, $"Cached mod database logo ({logoPath})", LogDebug);
+            return bitmap;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"Failed to load cached logo '{logoPath}': {ex.Message}.");
+            return null;
+        }
     }
 
     public void SetIsActiveSilently(bool isActive)

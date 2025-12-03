@@ -2665,7 +2665,7 @@
         <!-- ============================================================ -->
 
         <!-- Selected Mod Info Panel (Draggable Floating Panel) -->
-        <Canvas x:Name="ModInfoOverlay" Grid.RowSpan="3" Panel.ZIndex="400" d:IsHidden="True">
+        <Canvas x:Name="ModInfoOverlay" Grid.RowSpan="3" Panel.ZIndex="400">
             <Border Background="{DynamicResource Brush.ModCard.Background.Active}" x:Name="MODINFO_border"
                     BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                     BorderThickness="0"
@@ -2679,7 +2679,7 @@
                     LostMouseCapture="ModInfoBorder_OnLostMouseCapture">
                 <Border.Style>
                     <Style TargetType="{x:Type Border}">
-                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Setter Property="Visibility" Value="Visible" />
                         <Setter Property="IsHitTestVisible" Value="False" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding HasSelectedMods}" Value="True">
@@ -2721,16 +2721,16 @@
                                           Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
                     </Grid.Effect>
                     <!-- Close Button -->
-                    <Button x:Name="CloseModInfoButton"
+                    <Button 
                             Content="✕"
-                            Width="24"
-                            Height="24"
+                            Width="16"
+                            Height="16"
                             Padding="0"
-                            FontSize="14"
+                            FontSize="8"
                             FontWeight="Bold"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Top"
-                            Margin="8,8,0,0"
+                            Margin="4,4,0,0"
                             Grid.Column="0"
                             Background="Transparent"
                             Foreground="{DynamicResource Brush.Text.Primary}"
@@ -2897,7 +2897,7 @@
                               SelectedItem="{Binding SelectedMod.SelectedVersionOption, Mode=TwoWay}"
                               SelectionChanged="SelectedModVersionComboBox_OnSelectionChanged"
                               DropDownOpened="SelectedModVersionComboBox_OnDropDownOpened"
-                              VerticalAlignment="Top" HorizontalAlignment="Left" Margin="17,155,0,0" MinHeight="32">
+                              VerticalAlignment="Top" HorizontalAlignment="Left" Margin="23,155,0,0" MinHeight="32">
                         <ComboBox.Resources>
                             <DataTemplate x:Key="SelectedModVersionTemplate"
                                           DataType="{x:Type viewModels:ModVersionOptionViewModel}">
