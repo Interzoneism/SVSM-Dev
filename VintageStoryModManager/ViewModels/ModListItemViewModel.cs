@@ -933,7 +933,7 @@ public sealed class ModListItemViewModel : ObservableObject
     /// Updates database information for this mod with batched property change notifications.
     /// This method must be called from the UI thread (Dispatcher thread).
     /// </summary>
-    public void UpdateDatabaseInfo(ModDatabaseInfo info, bool loadLogoImmediately = true)
+    public void UpdateDatabaseInfo(ModDatabaseInfo info)
     {
         if (info is null) return;
 
@@ -1060,16 +1060,13 @@ public sealed class ModListItemViewModel : ObservableObject
             InitializeVersionWarning(_installedGameVersion);
             UpdateNewerReleaseChangelogs();
 
-            // Handle thumbnail URL
+            // Store thumbnail URL for lazy loading when card becomes visible
             var logoUrl = info.LogoUrl;
             if (!string.Equals(_thumbnailUrl, logoUrl, StringComparison.Ordinal))
             {
                 _thumbnailUrl = logoUrl;
-                if (loadLogoImmediately && !string.IsNullOrWhiteSpace(logoUrl))
-                {
-                    // Trigger async thumbnail loading
-                    _ = LoadThumbnailAsync(logoUrl);
-                }
+                // Note: Thumbnails are now loaded on-demand when cards are displayed,
+                // not immediately on app launch. Call LoadThumbnailAsync() to load.
             }
 
             OnPropertyChanged(nameof(LatestRelease));
@@ -2033,14 +2030,19 @@ public sealed class ModListItemViewModel : ObservableObject
     }
 
     /// <summary>
-    ///     Loads the thumbnail image asynchronously from the cache or downloads it.
+    ///     Loads the thumbnail image asynchronously from the cache or downloads it if needed.
+    ///     Safe to call multiple times - will only load once per URL.
     /// </summary>
-    private async Task LoadThumbnailAsync(string thumbnailUrl)
+    public async Task LoadThumbnailAsync()
     {
+        // Already loaded or no URL available
+        if (ThumbnailImageSource != null || string.IsNullOrWhiteSpace(_thumbnailUrl))
+            return;
+
         try
         {
             // Use singleton thumbnail cache service
-            var thumbnail = await ThumbnailCacheService.Instance.GetThumbnailAsync(ModId, thumbnailUrl);
+            var thumbnail = await ThumbnailCacheService.Instance.GetThumbnailAsync(ModId, _thumbnailUrl);
 
             if (thumbnail != null)
             {
