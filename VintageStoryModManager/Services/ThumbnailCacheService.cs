@@ -104,8 +104,14 @@ public sealed class ThumbnailCacheService : IDisposable
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
         bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.StreamSource = new MemoryStream(imageBytes);
-        bitmap.EndInit();
+        
+        // Use MemoryStream - it will be loaded into bitmap during EndInit with OnLoad cache option
+        using (var stream = new MemoryStream(imageBytes))
+        {
+            bitmap.StreamSource = stream;
+            bitmap.EndInit(); // Stream data is loaded here with OnLoad cache option
+        }
+        
         bitmap.Freeze(); // Make it thread-safe
         return bitmap;
     }
