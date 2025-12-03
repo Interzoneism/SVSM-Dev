@@ -552,7 +552,7 @@ public sealed class ModDatabaseService
             Uri.EscapeDataString(trimmed),
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        return await QueryModsAsync(
+        var candidates = await QueryModsAsync(
                 requestUri,
                 maxResults,
                 tokens,
@@ -562,6 +562,11 @@ public sealed class ModDatabaseService
                     .ThenByDescending(candidate => candidate.Downloads)
                     .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
                 cancellationToken)
+            .ConfigureAwait(false);
+
+        if (candidates.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        return await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -576,7 +581,7 @@ public sealed class ModDatabaseService
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        return await QueryModsAsync(
+        var candidates = await QueryModsAsync(
                 requestUri,
                 maxResults,
                 Array.Empty<string>(),
@@ -585,6 +590,11 @@ public sealed class ModDatabaseService
                     .OrderByDescending(candidate => candidate.Downloads)
                     .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
                 cancellationToken)
+            .ConfigureAwait(false);
+
+        if (candidates.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        return await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -731,7 +741,7 @@ public sealed class ModDatabaseService
             RecentlyUpdatedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        return await QueryModsAsync(
+        var candidates = await QueryModsAsync(
                 requestUri,
                 maxResults,
                 Array.Empty<string>(),
@@ -741,6 +751,11 @@ public sealed class ModDatabaseService
                     .OrderByDescending(candidate => candidate.LastReleasedUtc!.Value)
                     .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
                 cancellationToken)
+            .ConfigureAwait(false);
+
+        if (candidates.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        return await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -801,7 +816,7 @@ public sealed class ModDatabaseService
             MostDownloadedEndpointFormat,
             requestLimit.ToString(CultureInfo.InvariantCulture));
 
-        return await QueryModsAsync(
+        var candidates = await QueryModsAsync(
                 requestUri,
                 maxResults,
                 Array.Empty<string>(),
@@ -811,6 +826,11 @@ public sealed class ModDatabaseService
                     .ThenByDescending(candidate => candidate.Downloads)
                     .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase),
                 cancellationToken)
+            .ConfigureAwait(false);
+
+        if (candidates.Count == 0) return Array.Empty<ModDatabaseSearchResult>();
+
+        return await EnrichWithLatestReleaseDownloadsAsync(candidates, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -847,7 +867,10 @@ public sealed class ModDatabaseService
             (shuffled[i], shuffled[j]) = (shuffled[j], shuffled[i]);
         }
 
-        return shuffled.Take(maxResults).ToArray();
+        var selectedCandidates = shuffled.Take(maxResults).ToList();
+
+        return await EnrichWithLatestReleaseDownloadsAsync(selectedCandidates, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private static bool WasCreatedOnOrAfter(ModDatabaseSearchResult candidate, DateTime thresholdUtc)
