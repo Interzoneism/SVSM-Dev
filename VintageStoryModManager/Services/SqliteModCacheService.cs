@@ -11,7 +11,6 @@ namespace VintageStoryModManager.Services;
 ///     Provides unified SQLite-backed caching for mod manifests and database info.
 ///     Replaces the separate JSON-based ModManifestCacheService and ModDatabaseCacheService.
 ///     Icons are stored in Temp Cache/Images/Icons/ with format "MODNAME_icon".
-///     Thumbnails are stored in Temp Cache/Images/Thumbnails/ with format "MODNAME_thumbnail".
 /// </summary>
 internal sealed class SqliteModCacheService : IDisposable
 {
@@ -28,15 +27,6 @@ internal sealed class SqliteModCacheService : IDisposable
     private SqliteConnection? _connection;
     private readonly object _connectionLock = new();
     private bool _initialized;
-    
-    /// <summary>
-    /// Static HttpClient instance for reuse across all image downloads.
-    /// HttpClient is designed to be long-lived and reused, not disposed per request.
-    /// </summary>
-    private static readonly System.Net.Http.HttpClient _httpClient = new()
-    {
-        Timeout = TimeSpan.FromSeconds(10)
-    };
 
     /// <summary>
     ///     Initializes the database connection and schema.
@@ -117,7 +107,6 @@ internal sealed class SqliteModCacheService : IDisposable
                 comments INTEGER,
                 follows INTEGER,
                 trending_points INTEGER,
-                logo_filename TEXT,
                 downloads_last_30_days INTEGER,
                 downloads_last_10_days INTEGER,
                 last_released_utc TEXT,
@@ -352,13 +341,6 @@ internal sealed class SqliteModCacheService : IDisposable
 
         var gameVersion = string.IsNullOrWhiteSpace(normalizedGameVersion) ? "any" : normalizedGameVersion;
 
-        // Store thumbnail image (logo) if present
-        string? logoFilename = null;
-        if (!string.IsNullOrWhiteSpace(info.LogoUrl))
-        {
-            logoFilename = await StoreImageFromUrlAsync(info.LogoUrl, modId, "thumbnail", cancellationToken).ConfigureAwait(false);
-        }
-
         // Load existing tags by version
         var tagsByVersion = LoadExistingTagsByVersion(modId, gameVersion);
         
@@ -393,14 +375,14 @@ internal sealed class SqliteModCacheService : IDisposable
                 (mod_id, game_version, tags_json, tags_by_version_json,
                  asset_id, mod_page_url, latest_compatible_version, latest_version,
                  required_game_versions_json, downloads, comments, follows, trending_points,
-                 logo_filename, downloads_last_30_days, downloads_last_10_days,
+                 downloads_last_30_days, downloads_last_10_days,
                  last_released_utc, created_utc, releases_json, side,
                  last_modified_header, etag, last_modified_api_value, cached_at)
                 VALUES 
                 ($modId, $gameVersion, $tags, $tagsByVersion,
                  $assetId, $modPageUrl, $latestCompatible, $latestVersion,
                  $requiredGameVersions, $downloads, $comments, $follows, $trendingPoints,
-                 $logo, $downloads30, $downloads10,
+                 $downloads30, $downloads10,
                  $lastReleased, $created, $releases, $side,
                  $lastModHeader, $etag, $lastModApi, $cachedAt)";
             
@@ -417,7 +399,6 @@ internal sealed class SqliteModCacheService : IDisposable
             command.Parameters.AddWithValue("$comments", (object?)info.Comments ?? DBNull.Value);
             command.Parameters.AddWithValue("$follows", (object?)info.Follows ?? DBNull.Value);
             command.Parameters.AddWithValue("$trendingPoints", (object?)info.TrendingPoints ?? DBNull.Value);
-            command.Parameters.AddWithValue("$logo", (object?)logoFilename ?? DBNull.Value);
             command.Parameters.AddWithValue("$downloads30", (object?)info.DownloadsLastThirtyDays ?? DBNull.Value);
             command.Parameters.AddWithValue("$downloads10", (object?)info.DownloadsLastTenDays ?? DBNull.Value);
             command.Parameters.AddWithValue("$lastReleased", (object?)info.LastReleasedUtc?.ToString("O") ?? DBNull.Value);
@@ -453,7 +434,7 @@ internal sealed class SqliteModCacheService : IDisposable
                 SELECT tags_json, tags_by_version_json, asset_id, mod_page_url, 
                        latest_compatible_version, latest_version,
                        required_game_versions_json, downloads, comments, follows, trending_points,
-                       logo_filename, downloads_last_30_days, downloads_last_10_days,
+                       downloads_last_30_days, downloads_last_10_days,
                        last_released_utc, created_utc, releases_json, side, cached_at
                 FROM database_cache
                 WHERE mod_id = $modId AND game_version = $gameVersion
@@ -509,7 +490,7 @@ internal sealed class SqliteModCacheService : IDisposable
                 ? Array.Empty<string>()
                 : JsonSerializer.Deserialize<string[]>(requiredGameVersionsJson, SerializerOptions) ?? Array.Empty<string>();
 
-            var releasesJson = reader.IsDBNull(16) ? null : reader.GetString(16);
+            var releasesJson = reader.IsDBNull(15) ? null : reader.GetString(15);
             var releases = string.IsNullOrWhiteSpace(releasesJson)
                 ? Array.Empty<ModReleaseInfo>()
                 : JsonSerializer.Deserialize<ModReleaseInfo[]>(releasesJson, SerializerOptions) ?? Array.Empty<ModReleaseInfo>();
@@ -527,13 +508,13 @@ internal sealed class SqliteModCacheService : IDisposable
                 Comments = reader.IsDBNull(8) ? null : reader.GetInt32(8),
                 Follows = reader.IsDBNull(9) ? null : reader.GetInt32(9),
                 TrendingPoints = reader.IsDBNull(10) ? null : reader.GetInt32(10),
-                LogoUrl = null, // Logo is stored as file, not URL
-                DownloadsLastThirtyDays = reader.IsDBNull(12) ? null : reader.GetInt32(12),
-                DownloadsLastTenDays = reader.IsDBNull(13) ? null : reader.GetInt32(13),
-                LastReleasedUtc = reader.IsDBNull(14) ? null : TryParseDateTime(reader.GetString(14)),
-                CreatedUtc = reader.IsDBNull(15) ? null : TryParseDateTime(reader.GetString(15)),
+                LogoUrl = null,
+                DownloadsLastThirtyDays = reader.IsDBNull(11) ? null : reader.GetInt32(11),
+                DownloadsLastTenDays = reader.IsDBNull(12) ? null : reader.GetInt32(12),
+                LastReleasedUtc = reader.IsDBNull(13) ? null : TryParseDateTime(reader.GetString(13)),
+                CreatedUtc = reader.IsDBNull(14) ? null : TryParseDateTime(reader.GetString(14)),
                 Releases = releases,
-                Side = reader.IsDBNull(17) ? null : reader.GetString(17)
+                Side = reader.IsDBNull(16) ? null : reader.GetString(16)
             };
         }
     }
@@ -776,136 +757,20 @@ internal sealed class SqliteModCacheService : IDisposable
 
     /// <summary>
     ///     Gets the full file path to a cached logo image for a mod.
+    ///     Logo/thumbnail functionality has been removed - this always returns null.
     /// </summary>
     public string? GetLogoPath(string modId, string? normalizedGameVersion)
     {
-        if (!_initialized || _connection is null) return null;
-        if (string.IsNullOrWhiteSpace(modId)) return null;
-
-        var gameVersion = string.IsNullOrWhiteSpace(normalizedGameVersion) ? "any" : normalizedGameVersion;
-
-        lock (_connectionLock)
-        {
-            using var command = _connection.CreateCommand();
-            command.CommandText = @"
-                SELECT logo_filename
-                FROM database_cache
-                WHERE mod_id = $modId AND game_version = $gameVersion
-                LIMIT 1";
-            
-            command.Parameters.AddWithValue("$modId", modId);
-            command.Parameters.AddWithValue("$gameVersion", gameVersion);
-
-            var logoFilename = command.ExecuteScalar() as string;
-            if (string.IsNullOrWhiteSpace(logoFilename)) return null;
-
-            var imagePath = GetThumbnailPath(logoFilename);
-            return !string.IsNullOrWhiteSpace(imagePath) && File.Exists(imagePath) ? imagePath : null;
-        }
+        return null;
     }
 
     /// <summary>
     ///     Attempts to retrieve cached logo image bytes for a mod.
+    ///     Logo/thumbnail functionality has been removed - this always returns null.
     /// </summary>
     public byte[]? TryGetLogoBytes(string modId, string? normalizedGameVersion)
     {
-        var logoPath = GetLogoPath(modId, normalizedGameVersion);
-        if (string.IsNullOrWhiteSpace(logoPath)) return null;
-
-        try
-        {
-            return File.ReadAllBytes(logoPath);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    #endregion
-
-    #region Image Storage
-
-    private static async Task<string?> StoreImageFromUrlAsync(string imageUrl, string modId, string imageType, CancellationToken cancellationToken)
-    {
-        var imageBytes = await ModImageCacheService.TryGetCachedImageAsync(imageUrl, cancellationToken).ConfigureAwait(false);
-        
-        if (imageBytes is not { Length: > 0 })
-        {
-            // Download if not cached
-            try
-            {
-                imageBytes = await _httpClient.GetByteArrayAsync(imageUrl, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                // Re-throw cancellation (includes TaskCanceledException for timeout)
-                throw;
-            }
-            catch (System.Net.Http.HttpRequestException)
-            {
-                // Network or HTTP error - image not available
-                return null;
-            }
-        }
-
-        if (imageBytes is null or { Length: 0 }) return null;
-
-        var extension = GetImageExtension(imageUrl);
-        var filename = $"{SanitizeForFilename(modId)}_{imageType}{extension}";
-        
-        // Determine path based on image type
-        var imagePath = imageType == "thumbnail" 
-            ? GetThumbnailPath(filename) 
-            : GetIconPath(filename);
-        
-        if (string.IsNullOrWhiteSpace(imagePath)) return null;
-
-        try
-        {
-            var directory = Path.GetDirectoryName(imagePath);
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-            await File.WriteAllBytesAsync(imagePath, imageBytes, cancellationToken).ConfigureAwait(false);
-            return filename;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    private static string GetImageExtension(string imageUrl)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrl)) return ".png";
-
-        try
-        {
-            var urlWithoutQuery = imageUrl;
-            var queryIndex = imageUrl.IndexOf('?', StringComparison.Ordinal);
-            if (queryIndex >= 0)
-            {
-                urlWithoutQuery = imageUrl.Substring(0, queryIndex);
-            }
-
-            var extension = Path.GetExtension(urlWithoutQuery);
-            if (!string.IsNullOrWhiteSpace(extension))
-            {
-                extension = extension.ToLowerInvariant();
-                if (extension is ".png" or ".jpg" or ".jpeg" or ".gif" or ".webp" or ".bmp")
-                {
-                    return extension;
-                }
-            }
-        }
-        catch (Exception)
-        {
-            // Ignore parsing errors
-        }
-
-        return ".png";
+        return null;
     }
 
     #endregion
@@ -937,20 +802,6 @@ internal sealed class SqliteModCacheService : IDisposable
             try
             {
                 Directory.Delete(iconsDir, true);
-            }
-            catch (Exception)
-            {
-                // Ignore cleanup errors
-            }
-        }
-
-        // Clear thumbnails directory
-        var thumbnailsDir = GetThumbnailsDirectory();
-        if (!string.IsNullOrWhiteSpace(thumbnailsDir) && Directory.Exists(thumbnailsDir))
-        {
-            try
-            {
-                Directory.Delete(thumbnailsDir, true);
             }
             catch (Exception)
             {
@@ -998,28 +849,12 @@ internal sealed class SqliteModCacheService : IDisposable
         return Path.Combine(baseDirectory, "Temp Cache", "Images", "Icons");
     }
 
-    private static string? GetThumbnailsDirectory()
-    {
-        var baseDirectory = ModCacheLocator.GetManagerDataDirectory();
-        if (string.IsNullOrWhiteSpace(baseDirectory)) return null;
-
-        return Path.Combine(baseDirectory, "Temp Cache", "Images", "Thumbnails");
-    }
-
     private static string? GetIconPath(string filename)
     {
         var iconsDir = GetIconsDirectory();
         if (string.IsNullOrWhiteSpace(iconsDir)) return null;
 
         return Path.Combine(iconsDir, filename);
-    }
-
-    private static string? GetThumbnailPath(string filename)
-    {
-        var thumbnailsDir = GetThumbnailsDirectory();
-        if (string.IsNullOrWhiteSpace(thumbnailsDir)) return null;
-
-        return Path.Combine(thumbnailsDir, filename);
     }
 
     private static string NormalizePath(string sourcePath)

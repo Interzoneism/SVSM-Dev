@@ -1653,40 +1653,6 @@
                                                     ClipToBounds="True"
                                                     Background="{DynamicResource Brush.DataGrid.Background}">
                                                     <Grid>
-                                                        <!-- Default placeholder image -->
-                                                        <Image Source="/VintageStoryModManager;component/Resources/mod-default.png"
-                                                               Stretch="UniformToFill"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Top">
-                                                            <Image.Style>
-                                                                <Style TargetType="{x:Type Image}">
-                                                                    <Setter Property="Visibility" Value="Visible" />
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding HasModDatabasePreviewImage}"
-                                                                            Value="True">
-                                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Image.Style>
-                                                        </Image>
-                                                        <!-- Actual mod image with proper binding -->
-                                                        <Image Source="{Binding ModDatabasePreviewImage}"
-                                                               Stretch="UniformToFill"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Top">
-                                                            <Image.Style>
-                                                                <Style TargetType="{x:Type Image}">
-                                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding HasModDatabasePreviewImage}"
-                                                                            Value="True">
-                                                                            <Setter Property="Visibility" Value="Visible" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Image.Style>
-                                                        </Image>
                                                         <TextBlock Text="Installed"
                                                             Margin="8"
                                                             Padding="6,2"
