@@ -1219,7 +1219,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private bool ShouldUpdateLogo(string expectedUrl)
     {
-        // Only update if logo is still null
+        // Only update if logo is still null (prevents redundant updates)
         if (_modDatabaseLogo is not null)
             return false;
 
@@ -1228,6 +1228,7 @@ public sealed class ModListItemViewModel : ObservableObject
             return true;
 
         // For network images, verify URL hasn't changed to prevent race conditions
+        // (e.g., UpdateDatabaseInfo changed _modDatabaseLogoUrl while this async load was in progress)
         return string.Equals(_modDatabaseLogoUrl, expectedUrl, StringComparison.Ordinal);
     }
 
