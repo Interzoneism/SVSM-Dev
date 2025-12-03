@@ -6608,6 +6608,15 @@ public partial class MainWindow : Window
             errors.Add(BuildCacheClearErrorMessage("Mod metadata cache", ex));
         }
 
+        try
+        {
+            ThumbnailCacheService.Instance.ClearCache();
+        }
+        catch (Exception ex)
+        {
+            errors.Add(BuildCacheClearErrorMessage("Thumbnail cache", ex));
+        }
+
         var cachedModsDirectory = ModCacheLocator.GetCachedModsDirectory();
         if (!preserveModCache && !string.IsNullOrWhiteSpace(cachedModsDirectory))
             try
