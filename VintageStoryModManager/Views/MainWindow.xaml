@@ -1653,6 +1653,24 @@
                                                     ClipToBounds="True"
                                                     Background="{DynamicResource Brush.DataGrid.Background}">
                                                     <Grid>
+                                                        <!-- Thumbnail image (behind all other content) -->
+                                                        <Image Source="{Binding ThumbnailImageSource}"
+                                                            Stretch="UniformToFill"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center"
+                                                            Opacity="0.9">
+                                                            <Image.Style>
+                                                                <Style TargetType="{x:Type Image}">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding ThumbnailImageSource}" Value="{x:Null}">
+                                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Image.Style>
+                                                        </Image>
+                                                        
                                                         <TextBlock Text="Installed"
                                                             Margin="8"
                                                             Padding="6,2"

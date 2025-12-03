@@ -67,6 +67,10 @@ public sealed class ModListItemViewModel : ObservableObject
     // Cached tag display string to avoid repeated string.Join allocations
     private string? _cachedDatabaseTagsDisplay;
     
+    // Thumbnail image properties
+    private ImageSource? _thumbnailImageSource;
+    private string? _thumbnailUrl;
+    
     // Property change batching support
     private int _propertyChangeSuspendCount;
     private readonly HashSet<string> _pendingPropertyChanges = new();
@@ -280,6 +284,12 @@ public sealed class ModListItemViewModel : ObservableObject
         : "—";
 
     public ImageSource? Icon { get; }
+
+    public ImageSource? ThumbnailImageSource
+    {
+        get => _thumbnailImageSource;
+        private set => SetProperty(ref _thumbnailImageSource, value);
+    }
 
     public string? LatestDatabaseVersion { get; private set; }
 
@@ -1049,6 +1059,18 @@ public sealed class ModListItemViewModel : ObservableObject
             InitializeVersionOptions();
             InitializeVersionWarning(_installedGameVersion);
             UpdateNewerReleaseChangelogs();
+
+            // Handle thumbnail URL
+            var logoUrl = info.LogoUrl;
+            if (!string.Equals(_thumbnailUrl, logoUrl, StringComparison.Ordinal))
+            {
+                _thumbnailUrl = logoUrl;
+                if (loadLogoImmediately && !string.IsNullOrWhiteSpace(logoUrl))
+                {
+                    // Trigger async thumbnail loading
+                    _ = LoadThumbnailAsync(logoUrl);
+                }
+            }
 
             OnPropertyChanged(nameof(LatestRelease));
             OnPropertyChanged(nameof(LatestCompatibleRelease));
@@ -2007,6 +2029,35 @@ public sealed class ModListItemViewModel : ObservableObject
                 base.OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
             }
             _pendingPropertyChanges.Clear();
+        }
+    }
+
+    /// <summary>
+    ///     Loads the thumbnail image asynchronously from the cache or downloads it.
+    /// </summary>
+    private async Task LoadThumbnailAsync(string thumbnailUrl)
+    {
+        try
+        {
+            // Get or create the thumbnail cache service
+            var cacheService = new ThumbnailCacheService();
+            
+            // Load thumbnail on background thread
+            var thumbnail = await Task.Run(async () => 
+                await cacheService.GetThumbnailAsync(ModId, thumbnailUrl));
+
+            if (thumbnail != null)
+            {
+                // Update on UI thread
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    ThumbnailImageSource = thumbnail;
+                });
+            }
+        }
+        catch
+        {
+            // Silently ignore thumbnail loading errors
         }
     }
 
