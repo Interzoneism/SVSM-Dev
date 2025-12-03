@@ -1205,8 +1205,14 @@ public sealed class ModListItemViewModel : ObservableObject
         await InvokeOnDispatcherAsync(
                 () =>
                 {
-                    // Only update if logo is still null and URL hasn't changed
-                    if (_modDatabaseLogo is null && string.Equals(_modDatabaseLogoUrl, expectedUrl, StringComparison.Ordinal))
+                    // Only update if logo is still null
+                    // For cached images, skip URL validation (expectedUrl will be empty)
+                    // For network images, verify URL hasn't changed
+                    var shouldUpdate = _modDatabaseLogo is null && 
+                        (string.IsNullOrEmpty(expectedUrl) || 
+                         string.Equals(_modDatabaseLogoUrl, expectedUrl, StringComparison.Ordinal));
+                    
+                    if (shouldUpdate)
                     {
                         _modDatabaseLogo = image;
                         OnPropertyChanged(nameof(ModDatabasePreviewImage));
