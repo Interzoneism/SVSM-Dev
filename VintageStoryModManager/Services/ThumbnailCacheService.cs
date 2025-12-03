@@ -26,7 +26,7 @@ public sealed class ThumbnailCacheService : IDisposable
 
         // Cache directory: Temp Cache/Images/Thumbnails in Local AppData
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var appFolder = Path.Combine(localAppData, "SimpleVSManager");
+        var appFolder = Path.Combine(localAppData, "Simple VS Manager");
         _cacheDirectory = Path.Combine(appFolder, "Temp Cache", "Images", "Thumbnails");
 
         // Ensure cache directory exists

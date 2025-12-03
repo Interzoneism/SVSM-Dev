@@ -48,11 +48,6 @@ public static class DevConfig
     public static string DataFolderBackupSaveStoreName { get; } = ".saves";
     public static int AutomaticConfigMaxWordDistance { get; } = 2;
 
-    // Mod metadata cache - deprecated, using SQLite now
-    public static string MetadataFolderName { get; } = "Temp Cache/Mod Metadata";
-    public static string MetadataIndexFileName { get; } = "metadata-index.json";
-    // Icon cache folder - deprecated, icons now stored in Temp Cache/Images/Icons/ via SQLite
-    public static string IconCacheFolderName { get; } = "Temp Cache/Mod Icons";
 
     // Firebase mod list storage.
     public static string FirebaseModlistDefaultDbUrl { get; } =
