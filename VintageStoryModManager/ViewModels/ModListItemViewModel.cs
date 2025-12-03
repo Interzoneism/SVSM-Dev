@@ -2056,6 +2056,8 @@ public sealed class ModListItemViewModel : ObservableObject
         catch
         {
             // Silently ignore thumbnail loading errors
+            // Thumbnails are optional UI enhancements and should not affect app functionality
+            // Common errors: network issues, invalid URLs, image format problems
         }
     }
 

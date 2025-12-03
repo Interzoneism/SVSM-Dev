@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using VintageStoryModManager.ViewModels;
 
@@ -55,7 +56,13 @@ public static class LazyThumbnailLoader
     {
         if (element.DataContext is ModListItemViewModel viewModel)
         {
-            _ = viewModel.LoadThumbnailAsync();
+            _ = viewModel.LoadThumbnailAsync().ContinueWith(
+                task =>
+                {
+                    // Silently ignore any exceptions during thumbnail loading
+                    // Thumbnails are optional UI enhancements
+                },
+                TaskScheduler.Default);
         }
     }
 }
