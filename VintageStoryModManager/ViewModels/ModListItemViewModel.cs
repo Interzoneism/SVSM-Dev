@@ -1139,7 +1139,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
         try
         {
-            // First, try to load from new SQLite cache (Temp Cache/Images/)
+            // Load from SQLite cache (Temp Cache/Images/Thumbnails/)
             var logoBytes = DatabaseCache.TryGetLogoBytes(ModId, _installedGameVersion);
             
             if (logoBytes is { Length: > 0 })
@@ -1155,7 +1155,7 @@ public sealed class ModListItemViewModel : ObservableObject
                 }
             }
 
-            // Fallback to URL-based loading for old cache entries
+            // Not cached - download from network if internet is available
             var logoUrl = _modDatabaseLogoUrl;
             if (string.IsNullOrWhiteSpace(logoUrl)) 
                 return;
@@ -1167,23 +1167,6 @@ public sealed class ModListItemViewModel : ObservableObject
                 return;
             }
 
-            // Try to load from old hash-based cache (Mod Database Cache/Images/)
-            var cachedBytes = await ModImageCacheService.TryGetCachedImageAsync(logoUrl, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (cachedBytes is { Length: > 0 })
-            {
-                // Image found in old cache - create and display it
-                cancellationToken.ThrowIfCancellationRequested();
-                var cachedImage = CreateBitmapFromBytes(cachedBytes, uri);
-                if (cachedImage is not null)
-                {
-                    await UpdateLogoOnDispatcherAsync(cachedImage, logoUrl, "legacy-cache", cancellationToken).ConfigureAwait(false);
-                }
-                return;
-            }
-
-            // Not cached - download from network if internet is available
             if (InternetAccessManager.IsInternetAccessDisabled) return;
 
             InternetAccessManager.ThrowIfInternetAccessDisabled();
@@ -1206,9 +1189,6 @@ public sealed class ModListItemViewModel : ObservableObject
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-
-            // Store the downloaded image in old cache for compatibility
-            await ModImageCacheService.StoreImageAsync(logoUrl, payload, cancellationToken).ConfigureAwait(false);
 
             // Create and display the image
             var image = CreateBitmapFromBytes(payload, uri);

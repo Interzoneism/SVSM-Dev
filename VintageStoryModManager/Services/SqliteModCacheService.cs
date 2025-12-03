@@ -10,7 +10,8 @@ namespace VintageStoryModManager.Services;
 /// <summary>
 ///     Provides unified SQLite-backed caching for mod manifests and database info.
 ///     Replaces the separate JSON-based ModManifestCacheService and ModDatabaseCacheService.
-///     Images are stored in Temp Cache/Images/ with filenames stored in the database.
+///     Icons are stored in Temp Cache/Images/Icons/ with format "MODNAME_icon".
+///     Thumbnails are stored in Temp Cache/Images/Thumbnails/ with format "MODNAME_thumbnail".
 /// </summary>
 internal sealed class SqliteModCacheService : IDisposable
 {
@@ -198,7 +199,7 @@ internal sealed class SqliteModCacheService : IDisposable
             var iconFilename = reader.IsDBNull(1) ? null : reader.GetString(1);
             if (!string.IsNullOrWhiteSpace(iconFilename))
             {
-                var iconPath = GetImagePath(iconFilename);
+                var iconPath = GetIconPath(iconFilename);
                 if (!string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath))
                 {
                     try
@@ -238,8 +239,8 @@ internal sealed class SqliteModCacheService : IDisposable
         string? iconFilename = null;
         if (iconBytes is { Length: > 0 })
         {
-            iconFilename = $"{SanitizeForFilename(modId)}_{SanitizeForFilename(normalizedVersion)}_icon.png";
-            var iconPath = GetImagePath(iconFilename);
+            iconFilename = $"{SanitizeForFilename(modId)}_icon.png";
+            var iconPath = GetIconPath(iconFilename);
             if (!string.IsNullOrWhiteSpace(iconPath))
             {
                 try
@@ -311,7 +312,7 @@ internal sealed class SqliteModCacheService : IDisposable
             // Delete icon file if it exists
             if (!string.IsNullOrWhiteSpace(iconFilename))
             {
-                var iconPath = GetImagePath(iconFilename);
+                var iconPath = GetIconPath(iconFilename);
                 if (!string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath))
                 {
                     try
@@ -350,11 +351,11 @@ internal sealed class SqliteModCacheService : IDisposable
 
         var gameVersion = string.IsNullOrWhiteSpace(normalizedGameVersion) ? "any" : normalizedGameVersion;
 
-        // Store logo image if present
+        // Store thumbnail image (logo) if present
         string? logoFilename = null;
         if (!string.IsNullOrWhiteSpace(info.LogoUrl))
         {
-            logoFilename = await StoreImageFromUrlAsync(info.LogoUrl, modId, "logo", cancellationToken).ConfigureAwait(false);
+            logoFilename = await StoreImageFromUrlAsync(info.LogoUrl, modId, "thumbnail", cancellationToken).ConfigureAwait(false);
         }
 
         // Load existing tags by version
@@ -797,7 +798,7 @@ internal sealed class SqliteModCacheService : IDisposable
             var logoFilename = command.ExecuteScalar() as string;
             if (string.IsNullOrWhiteSpace(logoFilename)) return null;
 
-            var imagePath = GetImagePath(logoFilename);
+            var imagePath = GetThumbnailPath(logoFilename);
             return !string.IsNullOrWhiteSpace(imagePath) && File.Exists(imagePath) ? imagePath : null;
         }
     }
@@ -851,7 +852,7 @@ internal sealed class SqliteModCacheService : IDisposable
 
         var extension = GetImageExtension(imageUrl);
         var filename = $"{SanitizeForFilename(modId)}_{suffix}{extension}";
-        var imagePath = GetImagePath(filename);
+        var imagePath = suffix == "thumbnail" ? GetThumbnailPath(filename) : GetIconPath(filename);
         
         if (string.IsNullOrWhiteSpace(imagePath)) return null;
 
@@ -924,13 +925,27 @@ internal sealed class SqliteModCacheService : IDisposable
             command2.ExecuteNonQuery();
         }
 
-        // Clear images directory
-        var imagesDir = GetImagesDirectory();
-        if (!string.IsNullOrWhiteSpace(imagesDir) && Directory.Exists(imagesDir))
+        // Clear icons directory
+        var iconsDir = GetIconsDirectory();
+        if (!string.IsNullOrWhiteSpace(iconsDir) && Directory.Exists(iconsDir))
         {
             try
             {
-                Directory.Delete(imagesDir, true);
+                Directory.Delete(iconsDir, true);
+            }
+            catch (Exception)
+            {
+                // Ignore cleanup errors
+            }
+        }
+
+        // Clear thumbnails directory
+        var thumbnailsDir = GetThumbnailsDirectory();
+        if (!string.IsNullOrWhiteSpace(thumbnailsDir) && Directory.Exists(thumbnailsDir))
+        {
+            try
+            {
+                Directory.Delete(thumbnailsDir, true);
             }
             catch (Exception)
             {
@@ -970,20 +985,36 @@ internal sealed class SqliteModCacheService : IDisposable
         return Path.Combine(cacheDir, DatabaseFileName);
     }
 
-    private static string? GetImagesDirectory()
+    private static string? GetIconsDirectory()
     {
         var baseDirectory = ModCacheLocator.GetManagerDataDirectory();
         if (string.IsNullOrWhiteSpace(baseDirectory)) return null;
 
-        return Path.Combine(baseDirectory, "Temp Cache", "Images");
+        return Path.Combine(baseDirectory, "Temp Cache", "Images", "Icons");
     }
 
-    private static string? GetImagePath(string filename)
+    private static string? GetThumbnailsDirectory()
     {
-        var imagesDir = GetImagesDirectory();
-        if (string.IsNullOrWhiteSpace(imagesDir)) return null;
+        var baseDirectory = ModCacheLocator.GetManagerDataDirectory();
+        if (string.IsNullOrWhiteSpace(baseDirectory)) return null;
 
-        return Path.Combine(imagesDir, filename);
+        return Path.Combine(baseDirectory, "Temp Cache", "Images", "Thumbnails");
+    }
+
+    private static string? GetIconPath(string filename)
+    {
+        var iconsDir = GetIconsDirectory();
+        if (string.IsNullOrWhiteSpace(iconsDir)) return null;
+
+        return Path.Combine(iconsDir, filename);
+    }
+
+    private static string? GetThumbnailPath(string filename)
+    {
+        var thumbnailsDir = GetThumbnailsDirectory();
+        if (string.IsNullOrWhiteSpace(thumbnailsDir)) return null;
+
+        return Path.Combine(thumbnailsDir, filename);
     }
 
     private static string NormalizePath(string sourcePath)

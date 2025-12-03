@@ -121,26 +121,22 @@ internal static class ModImageCacheService
     }
 
     /// <summary>
-    ///     Clears all cached images.
+    ///     Clears all cached images. This is deprecated and kept for compatibility.
+    ///     Images are now managed by SqliteModCacheService.
     /// </summary>
     internal static void ClearCacheDirectory()
     {
-        var cacheDirectory = ModCacheLocator.GetModDatabaseImageCacheDirectory();
-        if (string.IsNullOrWhiteSpace(cacheDirectory) || !Directory.Exists(cacheDirectory)) return;
-
-        try
-        {
-            Directory.Delete(cacheDirectory, true);
-        }
-        catch (Exception ex)
-        {
-            throw new IOException($"Failed to delete the mod image cache at {cacheDirectory}.", ex);
-        }
+        // This method is deprecated - images are now managed by SqliteModCacheService
+        // Kept for backward compatibility in case it's called during migration
     }
 
     private static string? GetCachePath(string imageUrl)
     {
-        var cacheDirectory = ModCacheLocator.GetModDatabaseImageCacheDirectory();
+        // Legacy cache path - still used temporarily during migration
+        var baseDirectory = ModCacheLocator.GetManagerDataDirectory();
+        if (string.IsNullOrWhiteSpace(baseDirectory)) return null;
+
+        var cacheDirectory = Path.Combine(baseDirectory, "Temp Cache", "Mod Database Cache", "Images");
         if (string.IsNullOrWhiteSpace(cacheDirectory)) return null;
 
         var fileName = GenerateCacheFileName(imageUrl);
