@@ -94,13 +94,17 @@ public sealed class ThumbnailCacheService : IDisposable
 
     /// <summary>
     ///     Loads a BitmapImage from a file path.
+    ///     Loads the file contents into memory to avoid file locking issues.
     /// </summary>
     private static BitmapImage LoadImageFromFile(string filePath)
     {
+        // Read file bytes into memory to avoid keeping the file locked
+        var imageBytes = File.ReadAllBytes(filePath);
+        
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
         bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.UriSource = new Uri(filePath, UriKind.Absolute);
+        bitmap.StreamSource = new MemoryStream(imageBytes);
         bitmap.EndInit();
         bitmap.Freeze(); // Make it thread-safe
         return bitmap;
