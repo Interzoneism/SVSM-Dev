@@ -2733,13 +2733,28 @@
                             Margin="4,4,0,0"
                             Grid.Column="0"
                             Background="Transparent"
-                            BorderBrush="Transparent"
                             Foreground="{DynamicResource Brush.Text.Primary}"
-                            BorderThickness="0,0,0,0"
+                            BorderThickness="0"
                             ToolTip="Close and deselect mod"
                             Click="CloseModInfoButton_OnClick"
                             Cursor="Hand"
-                            Panel.ZIndex="1000" SnapsToDevicePixels="True" Focusable="False" IsCancel="True"/>
+                            Panel.ZIndex="1000">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Opacity" Value="0.7" />
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Opacity" Value="1.0" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Status.Error}" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                     <Button x:Name="SelectedModDatabasePageButton"
                             Padding="12,6"
                             Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
