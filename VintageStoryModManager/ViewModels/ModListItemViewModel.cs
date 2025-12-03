@@ -2039,12 +2039,8 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         try
         {
-            // Get or create the thumbnail cache service
-            var cacheService = new ThumbnailCacheService();
-            
-            // Load thumbnail on background thread
-            var thumbnail = await Task.Run(async () => 
-                await cacheService.GetThumbnailAsync(ModId, thumbnailUrl));
+            // Use singleton thumbnail cache service
+            var thumbnail = await ThumbnailCacheService.Instance.GetThumbnailAsync(ModId, thumbnailUrl);
 
             if (thumbnail != null)
             {

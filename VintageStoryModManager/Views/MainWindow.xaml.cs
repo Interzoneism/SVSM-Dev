@@ -6610,8 +6610,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var thumbnailCache = new ThumbnailCacheService();
-            thumbnailCache.ClearCache();
+            ThumbnailCacheService.Instance.ClearCache();
         }
         catch (Exception ex)
         {
