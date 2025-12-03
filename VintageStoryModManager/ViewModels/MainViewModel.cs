@@ -3354,13 +3354,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 await UpdateSearchResultsAsync(viewModels, cancellationToken).ConfigureAwait(false);
             }
 
-            await InvokeOnDispatcherAsync(
-                    () => SetStatus("Loading mod images...", false),
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-            await LoadModDatabaseLogosAsync(viewModels, cancellationToken).ConfigureAwait(false);
-
             if (cancellationToken.IsCancellationRequested) return;
 
             await InvokeOnDispatcherAsync(
@@ -3751,31 +3744,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             SelectedMod = null;
         }, cancellationToken);
-    }
-
-    private async Task LoadModDatabaseLogosAsync(IReadOnlyList<ModListItemViewModel> viewModels,
-        CancellationToken cancellationToken)
-    {
-        if (viewModels.Count == 0) return;
-
-        var tasks = new List<Task>(viewModels.Count);
-        foreach (var viewModel in viewModels)
-        {
-            if (cancellationToken.IsCancellationRequested) break;
-
-            tasks.Add(viewModel.LoadModDatabaseLogoAsync(cancellationToken));
-        }
-
-        if (tasks.Count == 0) return;
-
-        try
-        {
-            await Task.WhenAll(tasks).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            // Swallow cancellation so callers can continue gracefully.
-        }
     }
 
     private Task<HashSet<string>> GetInstalledModIdsAsync(CancellationToken cancellationToken)

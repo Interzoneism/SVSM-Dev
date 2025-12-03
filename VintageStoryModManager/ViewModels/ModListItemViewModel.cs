@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Net.Http;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -25,9 +24,6 @@ namespace VintageStoryModManager.ViewModels;
 /// </summary>
 public sealed class ModListItemViewModel : ObservableObject
 {
-    private static readonly HttpClient HttpClient = new();
-    private static readonly ModDatabaseCacheService DatabaseCache = new();
-
     private readonly Func<ModListItemViewModel, bool, Task<ActivationResult>> _activationHandler;
     private readonly IReadOnlyList<string> _authors;
     private readonly IReadOnlyList<string> _contributors;
@@ -54,8 +50,6 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _latestReleaseUserReportTooltip;
     private string? _loadError;
     private DateTime? _modDatabaseLastUpdatedUtc;
-    private ImageSource? _modDatabaseLogo;
-    private string? _modDatabaseLogoUrl;
     private string? _modDatabaseSide;
     private ICommand? _openModDatabasePageCommand;
     private IReadOnlyList<ModReleaseInfo> _releases;
@@ -126,8 +120,6 @@ public sealed class ModListItemViewModel : ObservableObject
         _databaseComments = databaseInfo?.Comments;
         _databaseRecentDownloads = databaseInfo?.DownloadsLastThirtyDays;
         _databaseTenDayDownloads = databaseInfo?.DownloadsLastTenDays;
-        _modDatabaseLogoUrl = databaseInfo?.LogoUrl;
-        // Logo will be loaded asynchronously via LoadModDatabaseLogoAsync
         ModDatabaseRelevancySortKey = entry.ModDatabaseSearchScore ?? 0;
         _modDatabaseLastUpdatedUtc = databaseInfo?.LastReleasedUtc ?? DetermineLastUpdatedFromReleases(_releases);
         if (_databaseRecentDownloads is null)
@@ -177,7 +169,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _modDatabaseSide = entry.DatabaseInfo?.Side;
 
         Icon = CreateImage(entry.IconBytes, "Icon bytes");
-        LogDebug($"Icon image created: {Icon is not null}. Will fall back to database logo when null.");
+        LogDebug($"Icon image created: {Icon is not null}.");
 
         _isActive = isActive;
         HasErrors = entry.HasErrors;
@@ -287,9 +279,7 @@ public sealed class ModListItemViewModel : ObservableObject
         ? _databaseComments.Value.ToString("N0", CultureInfo.CurrentCulture)
         : "—";
 
-    public ImageSource? ModDatabasePreviewImage => Icon ?? _modDatabaseLogo;
-
-    public bool HasModDatabasePreviewImage => ModDatabasePreviewImage != null;
+    public ImageSource? Icon { get; }
 
     public string? LatestDatabaseVersion { get; private set; }
 
@@ -506,8 +496,6 @@ public sealed class ModListItemViewModel : ObservableObject
     public bool? RequiredOnServer { get; }
 
     public string RequiredOnServerDisplay => RequiredOnServer.HasValue ? RequiredOnServer.Value ? "Yes" : "No" : "—";
-
-    public ImageSource? Icon { get; }
 
     public bool HasErrors { get; }
 
@@ -1006,22 +994,7 @@ public sealed class ModListItemViewModel : ObservableObject
             }
 
             LogDebug(
-                $"UpdateDatabaseInfo invoked. AssetId='{FormatValue(info.AssetId)}', PageUrl='{FormatValue(info.ModPageUrl)}', LogoUrl='{FormatValue(info.LogoUrl)}'.");
-
-            var logoUrl = info.LogoUrl;
-            var logoUrlChanged = !string.Equals(_modDatabaseLogoUrl, logoUrl, StringComparison.Ordinal);
-            if (logoUrlChanged)
-            {
-                _modDatabaseLogoUrl = logoUrl;
-                // Clear the logo when URL changes - it will be loaded async
-                if (_modDatabaseLogo is not null)
-                {
-                    _modDatabaseLogo = null;
-                    OnPropertyChanged(nameof(ModDatabasePreviewImage));
-                    OnPropertyChanged(nameof(HasModDatabasePreviewImage));
-                    LogDebug("Cleared previous database logo for new URL.");
-                }
-            }
+                $"UpdateDatabaseInfo invoked. AssetId='{FormatValue(info.AssetId)}', PageUrl='{FormatValue(info.ModPageUrl)}'.");
 
             if (!string.Equals(ModDatabaseAssetId, info.AssetId, StringComparison.Ordinal))
             {
@@ -1129,194 +1102,6 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             UpdateStatusFromErrors();
             UpdateTooltip();
-        }
-    }
-
-    public async Task LoadModDatabaseLogoAsync(CancellationToken cancellationToken)
-    {
-        // Skip if already loaded
-        if (_modDatabaseLogo is not null)
-            return;
-
-        try
-        {
-            var cachedLogo = await TryLoadCachedLogoAsync(cancellationToken).ConfigureAwait(false);
-            if (cachedLogo is not null)
-            {
-                await UpdateLogoOnDispatcherAsync(cachedLogo, string.Empty, "disk-cache", cancellationToken)
-                    .ConfigureAwait(false);
-                return;
-            }
-
-            // Not cached - download from network if internet is available
-            var logoUrl = _modDatabaseLogoUrl;
-            if (string.IsNullOrWhiteSpace(logoUrl)) 
-                return;
-
-            var uri = TryCreateHttpUri(logoUrl);
-            if (uri is null)
-            {
-                LogDebug($"Skipping logo load - invalid URL: '{FormatValue(logoUrl)}'.");
-                return;
-            }
-
-            if (InternetAccessManager.IsInternetAccessDisabled) return;
-
-            InternetAccessManager.ThrowIfInternetAccessDisabled();
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            using var response = await HttpClient
-                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                LogDebug($"Failed to download logo from '{uri}'. Status: {response.StatusCode}.");
-                return;
-            }
-
-            var payload = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-            if (payload.Length == 0)
-            {
-                LogDebug($"Logo download returned empty data for '{uri}'.");
-                return;
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // Create and display the image
-            var image = CreateBitmapFromBytes(payload, uri);
-            if (image is not null)
-            {
-                await UpdateLogoOnDispatcherAsync(image, logoUrl, "network", cancellationToken).ConfigureAwait(false);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Respect cancellation without surfacing an error
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Failed to load logo: {ex.Message}.");
-        }
-    }
-
-    private async Task UpdateLogoOnDispatcherAsync(ImageSource image, string expectedUrl, string source, CancellationToken cancellationToken)
-    {
-        await InvokeOnDispatcherAsync(
-                () =>
-                {
-                    if (ShouldUpdateLogo(expectedUrl))
-                    {
-                        _modDatabaseLogo = image;
-                        OnPropertyChanged(nameof(ModDatabasePreviewImage));
-                        OnPropertyChanged(nameof(HasModDatabasePreviewImage));
-                        LogDebug($"Loaded database logo from {source}. URL='{FormatValue(expectedUrl)}'.");
-                    }
-                },
-                cancellationToken)
-            .ConfigureAwait(false);
-    }
-
-    private bool ShouldUpdateLogo(string expectedUrl)
-    {
-        // Only update if logo is still null (prevents redundant updates)
-        if (_modDatabaseLogo is not null)
-            return false;
-
-        // For cached images (empty expectedUrl), skip URL validation
-        if (string.IsNullOrEmpty(expectedUrl))
-            return true;
-
-        // For network images, verify URL hasn't changed to prevent race conditions
-        // (e.g., UpdateDatabaseInfo changed _modDatabaseLogoUrl while this async load was in progress)
-        return string.Equals(_modDatabaseLogoUrl, expectedUrl, StringComparison.Ordinal);
-    }
-
-    private async Task<ImageSource?> TryLoadCachedLogoAsync(CancellationToken cancellationToken)
-    {
-        // Try the SQLite-backed cache with multiple version keys for resilience
-        var normalizedGameVersion = VersionStringUtility.Normalize(_installedGameVersion);
-        var logoPath = TryGetCachedLogoPath(normalizedGameVersion)
-                       ?? TryGetCachedLogoPath(null)
-                       ?? TryFindThumbnailOnDisk();
-
-        if (string.IsNullOrWhiteSpace(logoPath)) return null;
-
-        cancellationToken.ThrowIfCancellationRequested();
-        return await TryCreateBitmapFromFileAsync(logoPath, cancellationToken).ConfigureAwait(false);
-    }
-
-    private string? TryGetCachedLogoPath(string? normalizedGameVersion)
-    {
-        try
-        {
-            return DatabaseCache.GetLogoPath(ModId, normalizedGameVersion);
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Failed to resolve cached logo path: {ex.Message}.");
-            return null;
-        }
-    }
-
-    private string? TryFindThumbnailOnDisk()
-    {
-        try
-        {
-            var dataDirectory = ModCacheLocator.GetManagerDataDirectory();
-            if (string.IsNullOrWhiteSpace(dataDirectory)) return null;
-
-            var thumbnailsDirectory = Path.Combine(dataDirectory, "Temp Cache", "Images", "Thumbnails");
-            if (!Directory.Exists(thumbnailsDirectory)) return null;
-
-            var sanitized = SanitizeForFilename(ModId);
-            var pattern = $"{sanitized}_thumbnail*";
-            return Directory.EnumerateFiles(thumbnailsDirectory, pattern).FirstOrDefault();
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Failed to scan thumbnail cache: {ex.Message}.");
-            return null;
-        }
-    }
-
-    private static string SanitizeForFilename(string value)
-    {
-        var invalidChars = Path.GetInvalidFileNameChars();
-        var buffer = new char[value.Length];
-        for (var i = 0; i < value.Length; i++)
-        {
-            var current = value[i];
-            buffer[i] = invalidChars.Contains(current) ? '_' : current;
-        }
-
-        return new string(buffer);
-    }
-
-    private async Task<ImageSource?> TryCreateBitmapFromFileAsync(string logoPath, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await using var stream = File.OpenRead(logoPath);
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-            bitmap.StreamSource = stream;
-            bitmap.EndInit();
-            TryFreezeImageSource(bitmap, $"Cached mod database logo ({logoPath})", LogDebug);
-            return bitmap;
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Failed to load cached logo '{logoPath}': {ex.Message}.");
-            return null;
         }
     }
 
@@ -2046,71 +1831,6 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             // Opening a browser is best-effort; ignore failures.
         }
-    }
-
-    private ImageSource? CreateBitmapFromBytes(byte[] payload, Uri sourceUri)
-    {
-        try
-        {
-            using var stream = new MemoryStream(payload);
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-            bitmap.StreamSource = stream;
-            bitmap.EndInit();
-            TryFreezeImageSource(bitmap, $"Async mod database logo ({sourceUri})", LogDebug);
-            return bitmap;
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Async database logo load failed to create bitmap: {ex.Message}.");
-            return null;
-        }
-    }
-
-    private ImageSource? CreateImageFromUri(string? url, string context, bool enableLogging = true)
-    {
-        var formattedUrl = FormatValue(url);
-        if (enableLogging) LogDebug($"{context}: Attempting to create image from URL {formattedUrl}.");
-
-        var uri = TryCreateHttpUri(url);
-        if (uri == null)
-        {
-            if (enableLogging) LogDebug($"{context}: Unable to resolve absolute URI from {formattedUrl}.");
-            return null;
-        }
-
-        if (enableLogging) LogDebug($"{context}: Resolved URI '{uri}'.");
-
-        if (InternetAccessManager.IsInternetAccessDisabled)
-        {
-            if (enableLogging) LogDebug($"{context}: Skipping image load because internet access is disabled.");
-
-            return null;
-        }
-
-        var image = CreateImageSafely(
-            () =>
-            {
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.UriSource = uri;
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-                bitmap.EndInit();
-                TryFreezeImageSource(bitmap, $"{context} ({uri})", enableLogging ? LogDebug : null);
-                return bitmap;
-            },
-            $"{context} ({uri})",
-            enableLogging);
-
-        if (enableLogging)
-            LogDebug(image is null
-                ? $"{context}: Failed to load image from '{uri}'."
-                : $"{context}: Successfully loaded image from '{uri}'.");
-
-        return image;
     }
 
     private ImageSource? CreateImage(byte[]? bytes, string context)
