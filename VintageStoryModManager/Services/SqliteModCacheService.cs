@@ -757,7 +757,7 @@ internal sealed class SqliteModCacheService : IDisposable
 
     /// <summary>
     ///     Gets the full file path to a cached logo image for a mod.
-    ///     Thumbnails have been removed - this always returns null.
+    ///     Logo/thumbnail functionality has been removed - this always returns null.
     /// </summary>
     public string? GetLogoPath(string modId, string? normalizedGameVersion)
     {
@@ -766,7 +766,7 @@ internal sealed class SqliteModCacheService : IDisposable
 
     /// <summary>
     ///     Attempts to retrieve cached logo image bytes for a mod.
-    ///     Thumbnails have been removed - this always returns null.
+    ///     Logo/thumbnail functionality has been removed - this always returns null.
     /// </summary>
     public byte[]? TryGetLogoBytes(string modId, string? normalizedGameVersion)
     {
