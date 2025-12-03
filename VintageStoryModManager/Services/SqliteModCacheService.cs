@@ -239,6 +239,7 @@ internal sealed class SqliteModCacheService : IDisposable
         string? iconFilename = null;
         if (iconBytes is { Length: > 0 })
         {
+            // Icon is always PNG format from manifest extraction
             iconFilename = $"{SanitizeForFilename(modId)}_icon.png";
             var iconPath = GetIconPath(iconFilename);
             if (!string.IsNullOrWhiteSpace(iconPath))
@@ -825,7 +826,7 @@ internal sealed class SqliteModCacheService : IDisposable
 
     #region Image Storage
 
-    private static async Task<string?> StoreImageFromUrlAsync(string imageUrl, string modId, string suffix, CancellationToken cancellationToken)
+    private static async Task<string?> StoreImageFromUrlAsync(string imageUrl, string modId, string imageType, CancellationToken cancellationToken)
     {
         var imageBytes = await ModImageCacheService.TryGetCachedImageAsync(imageUrl, cancellationToken).ConfigureAwait(false);
         
@@ -851,8 +852,12 @@ internal sealed class SqliteModCacheService : IDisposable
         if (imageBytes is null or { Length: 0 }) return null;
 
         var extension = GetImageExtension(imageUrl);
-        var filename = $"{SanitizeForFilename(modId)}_{suffix}{extension}";
-        var imagePath = suffix == "thumbnail" ? GetThumbnailPath(filename) : GetIconPath(filename);
+        var filename = $"{SanitizeForFilename(modId)}_{imageType}{extension}";
+        
+        // Determine path based on image type
+        var imagePath = imageType == "thumbnail" 
+            ? GetThumbnailPath(filename) 
+            : GetIconPath(filename);
         
         if (string.IsNullOrWhiteSpace(imagePath)) return null;
 
