@@ -1074,17 +1074,19 @@ public sealed class ModListItemViewModel : ObservableObject
                 if (!string.IsNullOrWhiteSpace(_thumbnailUrl))
                 {
                     // Fire and forget - load thumbnail in background
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await LoadThumbnailAsync();
-                        }
-                        catch
-                        {
-                            // Silently ignore errors - thumbnails are optional
-                        }
-                    });
+                    _ = LoadThumbnailInternalAsync();
+                }
+            }
+
+            async Task LoadThumbnailInternalAsync()
+            {
+                try
+                {
+                    await LoadThumbnailAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Silently ignore errors - thumbnails are optional
                 }
             }
 
