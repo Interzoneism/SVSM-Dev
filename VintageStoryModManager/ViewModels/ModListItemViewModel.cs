@@ -171,6 +171,9 @@ public sealed class ModListItemViewModel : ObservableObject
         RequiredOnClient = entry.RequiredOnClient;
         RequiredOnServer = entry.RequiredOnServer;
         _modDatabaseSide = entry.DatabaseInfo?.Side;
+        
+        // Initialize thumbnail URL if database info is available
+        _thumbnailUrl = databaseInfo?.LogoUrl;
 
         Icon = CreateImage(entry.IconBytes, "Icon bytes");
         LogDebug($"Icon image created: {Icon is not null}.");
@@ -1060,13 +1063,14 @@ public sealed class ModListItemViewModel : ObservableObject
             InitializeVersionWarning(_installedGameVersion);
             UpdateNewerReleaseChangelogs();
 
-            // Store thumbnail URL for lazy loading when card becomes visible
+            // Store thumbnail URL and trigger download
             var logoUrl = info.LogoUrl;
             if (!string.Equals(_thumbnailUrl, logoUrl, StringComparison.Ordinal))
             {
                 _thumbnailUrl = logoUrl;
-                // Note: Thumbnails are now loaded on-demand when cards are displayed,
-                // not immediately on app launch. Call LoadThumbnailAsync() to load.
+                // Trigger thumbnail download now that we have the URL
+                // Fire-and-forget: LoadThumbnailAsync handles its own exceptions
+                _ = LoadThumbnailAsync();
             }
 
             OnPropertyChanged(nameof(LatestRelease));
