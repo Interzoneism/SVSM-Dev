@@ -1060,13 +1060,32 @@ public sealed class ModListItemViewModel : ObservableObject
             InitializeVersionWarning(_installedGameVersion);
             UpdateNewerReleaseChangelogs();
 
-            // Store thumbnail URL for lazy loading when card becomes visible
+            // Store thumbnail URL and trigger loading if URL changed
             var logoUrl = info.LogoUrl;
             if (!string.Equals(_thumbnailUrl, logoUrl, StringComparison.Ordinal))
             {
                 _thumbnailUrl = logoUrl;
-                // Note: Thumbnails are now loaded on-demand when cards are displayed,
-                // not immediately on app launch. Call LoadThumbnailAsync() to load.
+                // Clear existing thumbnail if URL changed
+                if (ThumbnailImageSource != null)
+                {
+                    ThumbnailImageSource = null;
+                }
+                // Trigger thumbnail load asynchronously if we have a URL
+                if (!string.IsNullOrWhiteSpace(_thumbnailUrl))
+                {
+                    // Fire and forget - load thumbnail in background
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await LoadThumbnailAsync();
+                        }
+                        catch
+                        {
+                            // Silently ignore errors - thumbnails are optional
+                        }
+                    });
+                }
             }
 
             OnPropertyChanged(nameof(LatestRelease));
