@@ -336,6 +336,8 @@ public sealed class ModListItemViewModel : ObservableObject
             try
             {
                 // Create BitmapImage with async download behavior (most efficient, browser-like)
+                // This approach uses WPF's built-in HTTP stack with automatic caching,
+                // connection pooling, and background downloading - exactly like a web browser.
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.UriSource = uri;
