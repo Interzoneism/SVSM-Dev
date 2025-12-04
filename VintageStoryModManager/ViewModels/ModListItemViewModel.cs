@@ -67,9 +67,9 @@ public sealed class ModListItemViewModel : ObservableObject
     // Cached tag display string to avoid repeated string.Join allocations
     private string? _cachedDatabaseTagsDisplay;
     
-    // Thumbnail image properties
-    private ImageSource? _thumbnailImageSource;
+    // Thumbnail URL and cached image source
     private string? _thumbnailUrl;
+    private ImageSource? _cachedThumbnailImageSource;
     
     // Property change batching support
     private int _propertyChangeSuspendCount;
@@ -288,10 +288,79 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public ImageSource? Icon { get; }
 
+    /// <summary>
+    ///     Gets the thumbnail URI for binding in XAML.
+    ///     Returns a full absolute URI to the mod's thumbnail image, or null if not available.
+    /// </summary>
+    public Uri? ThumbnailUri
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_thumbnailUrl))
+                return null;
+
+            // If the URL is already absolute, use it directly
+            if (Uri.TryCreate(_thumbnailUrl, UriKind.Absolute, out var absoluteUri))
+                return absoluteUri;
+
+            // If it's a relative URL, construct it from the base domain
+            if (Uri.TryCreate("https://mods.vintagestory.at", UriKind.Absolute, out var baseUri))
+            {
+                // Ensure the relative path starts with /
+                var relativePath = _thumbnailUrl.StartsWith("/") ? _thumbnailUrl : "/" + _thumbnailUrl;
+                if (Uri.TryCreate(baseUri, relativePath, out var fullUri))
+                    return fullUri;
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>
+    ///     Gets the thumbnail image source with lazy, async loading and caching.
+    ///     The image downloads asynchronously in the background (browser-like behavior).
+    ///     WPF automatically manages the download, caching, and UI updates.
+    /// </summary>
     public ImageSource? ThumbnailImageSource
     {
-        get => _thumbnailImageSource;
-        private set => SetProperty(ref _thumbnailImageSource, value);
+        get
+        {
+            // Return cached image if available
+            if (_cachedThumbnailImageSource != null)
+                return _cachedThumbnailImageSource;
+
+            var uri = ThumbnailUri;
+            if (uri == null)
+                return null;
+
+            try
+            {
+                // Create BitmapImage with async download behavior (most efficient, browser-like)
+                // This approach uses WPF's built-in HTTP stack with automatic caching,
+                // connection pooling, and background downloading - exactly like a web browser.
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = uri;
+                // OnDemand allows async download - the image downloads in background
+                // and WPF automatically updates the UI when ready
+                bitmap.CacheOption = BitmapCacheOption.OnDemand;
+                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                bitmap.EndInit();
+                
+                // Don't freeze - this allows WPF to update the image asynchronously
+                // as it downloads, just like a browser
+                
+                // Cache the BitmapImage object (not the downloaded data yet)
+                _cachedThumbnailImageSource = bitmap;
+                return bitmap;
+            }
+            catch
+            {
+                // Silently return null if image can't be loaded
+                // This handles network errors, invalid URLs, etc.
+                return null;
+            }
+        }
     }
 
     public string? LatestDatabaseVersion { get; private set; }
@@ -1063,14 +1132,15 @@ public sealed class ModListItemViewModel : ObservableObject
             InitializeVersionWarning(_installedGameVersion);
             UpdateNewerReleaseChangelogs();
 
-            // Store thumbnail URL and trigger download
+            // Store thumbnail URL and notify property changes so UI updates
             var logoUrl = info.LogoUrl;
             if (!string.Equals(_thumbnailUrl, logoUrl, StringComparison.Ordinal))
             {
                 _thumbnailUrl = logoUrl;
-                // Trigger thumbnail download now that we have the URL
-                // Fire-and-forget: LoadThumbnailAsync handles its own exceptions
-                _ = LoadThumbnailAsync();
+                _cachedThumbnailImageSource = null; // Clear cache when URL changes
+                // Notify that thumbnail properties have changed so WPF rebinds
+                OnPropertyChanged(nameof(ThumbnailUri));
+                OnPropertyChanged(nameof(ThumbnailImageSource));
             }
 
             OnPropertyChanged(nameof(LatestRelease));
@@ -2030,50 +2100,6 @@ public sealed class ModListItemViewModel : ObservableObject
                 base.OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
             }
             _pendingPropertyChanges.Clear();
-        }
-    }
-
-    /// <summary>
-    ///     Loads the thumbnail image from cache and downloads if necessary.
-    ///     Safe to call multiple times - will only load once per URL.
-    /// </summary>
-    public async Task LoadThumbnailAsync()
-    {
-        // Already loaded or no URL available
-        if (ThumbnailImageSource != null || string.IsNullOrWhiteSpace(_thumbnailUrl))
-            return;
-
-        try
-        {
-            // First, try to load from cache using only the mod ID (no URL)
-            var thumbnail = ThumbnailCacheService.Instance.GetThumbnailFromCache(ModId);
-
-            if (thumbnail == null && !string.IsNullOrWhiteSpace(_thumbnailUrl))
-            {
-                // Not in cache - download it using the URL (this is the ONLY place URLs are used)
-                var downloaded = await ThumbnailCacheService.Instance.DownloadThumbnailAsync(ModId, _thumbnailUrl);
-                
-                if (downloaded)
-                {
-                    // Now load from cache using only the mod ID
-                    thumbnail = ThumbnailCacheService.Instance.GetThumbnailFromCache(ModId);
-                }
-            }
-
-            if (thumbnail != null)
-            {
-                // Update on UI thread
-                await Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    ThumbnailImageSource = thumbnail;
-                });
-            }
-        }
-        catch
-        {
-            // Silently ignore thumbnail loading errors
-            // Thumbnails are optional UI enhancements and should not affect app functionality
-            // Common errors: network issues, invalid URLs, image format problems
         }
     }
 

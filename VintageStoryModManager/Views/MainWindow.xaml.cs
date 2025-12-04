@@ -394,12 +394,6 @@ public partial class MainWindow : Window
             _userConfiguration.CustomDataBackupLocation);
         _modActivityLoggingService = new ModActivityLoggingService(_userConfiguration);
 
-        // Set up error logging for thumbnail operations
-        ThumbnailCacheService.Instance.SetErrorLogger((message, exception) =>
-        {
-            _modActivityLoggingService.LogErrorOrDebug(message, exception);
-        });
-
         InitializeComponent();
 
         DeveloperProfileManager.CurrentProfileChanged += DeveloperProfileManager_OnCurrentProfileChanged;
@@ -6624,14 +6618,8 @@ public partial class MainWindow : Window
             errors.Add(BuildCacheClearErrorMessage("Mod metadata cache", ex));
         }
 
-        try
-        {
-            ThumbnailCacheService.Instance.ClearCache();
-        }
-        catch (Exception ex)
-        {
-            errors.Add(BuildCacheClearErrorMessage("Thumbnail cache", ex));
-        }
+        // Note: WPF's built-in image caching is now used for thumbnails.
+        // There is no custom thumbnail cache to clear.
 
         var cachedModsDirectory = ModCacheLocator.GetCachedModsDirectory();
         if (!preserveModCache && !string.IsNullOrWhiteSpace(cachedModsDirectory))
