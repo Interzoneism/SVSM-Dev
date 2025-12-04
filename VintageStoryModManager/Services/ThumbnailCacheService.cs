@@ -66,10 +66,29 @@ public sealed class ThumbnailCacheService : IDisposable
             }
             catch
             {
-                // If cached file is corrupted, delete and re-download
-                File.Delete(cachePath);
+                // If cached file is corrupted, delete and re-download (only if internet is enabled)
+                if (!InternetAccessManager.IsInternetAccessDisabled)
+                {
+                    try
+                    {
+                        File.Delete(cachePath);
+                    }
+                    catch
+                    {
+                        // Ignore deletion errors
+                    }
+                }
+                else
+                {
+                    // Can't re-download with internet disabled
+                    return null;
+                }
             }
         }
+        
+        // If internet is disabled, we can't download - only cache was attempted above
+        if (InternetAccessManager.IsInternetAccessDisabled)
+            return null;
 
         // Download the image
         try
