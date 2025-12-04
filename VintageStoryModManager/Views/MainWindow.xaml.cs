@@ -394,6 +394,12 @@ public partial class MainWindow : Window
             _userConfiguration.CustomDataBackupLocation);
         _modActivityLoggingService = new ModActivityLoggingService(_userConfiguration);
 
+        // Set up error logging for thumbnail operations
+        ThumbnailCacheService.Instance.SetErrorLogger((message, exception) =>
+        {
+            _modActivityLoggingService.LogErrorOrDebug(message, exception);
+        });
+
         InitializeComponent();
 
         DeveloperProfileManager.CurrentProfileChanged += DeveloperProfileManager_OnCurrentProfileChanged;
@@ -1627,6 +1633,14 @@ public partial class MainWindow : Window
         menuItem.IsChecked = _userConfiguration.LogAppLaunchAndExit;
     }
 
+    private void LogManagerErrorsAndDebugMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        _userConfiguration.SetLogManagerErrorsAndDebug(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.LogManagerErrorsAndDebug;
+    }
+
     private void UpdateLoggingMenuState()
     {
         if (LogModUpdateMenuItem is not null)
@@ -1637,6 +1651,8 @@ public partial class MainWindow : Window
             LogModDeletionMenuItem.IsChecked = _userConfiguration.LogModDeletions;
         if (LogAppLifecycleMenuItem is not null)
             LogAppLifecycleMenuItem.IsChecked = _userConfiguration.LogAppLaunchAndExit;
+        if (LogManagerErrorsAndDebugMenuItem is not null)
+            LogManagerErrorsAndDebugMenuItem.IsChecked = _userConfiguration.LogManagerErrorsAndDebug;
     }
 
     private void GenerateServerInstallMacroMenuItem_OnClick(object sender, RoutedEventArgs e)

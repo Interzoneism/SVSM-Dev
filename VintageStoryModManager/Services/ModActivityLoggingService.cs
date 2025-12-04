@@ -61,6 +61,19 @@ public sealed class ModActivityLoggingService
         LogLifecycleEvent("App exited");
     }
 
+    /// <summary>
+    ///     Logs a manager error or debug message if logging for errors and debug is enabled.
+    /// </summary>
+    public void LogErrorOrDebug(string message, Exception? exception = null)
+    {
+        if (!_userConfiguration.LogManagerErrorsAndDebug) return;
+
+        var logMessage = exception != null 
+            ? $"{message}: {exception.GetType().Name} - {exception.Message}" 
+            : message;
+        AppendLogEntry($"[ERROR] {logMessage}");
+    }
+
     private void AppendLogEntry(string message)
     {
         try

@@ -360,6 +360,12 @@
                                 IsCheckable="True"
                                 Style="{StaticResource ToggleMenuItemStyle}"
                                 Click="LogAppLifecycleMenuItem_OnClick" />
+                            <MenuItem x:Name="LogManagerErrorsAndDebugMenuItem"
+                                Header="Manager errors and debug"
+                                Height="35"
+                                IsCheckable="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Click="LogManagerErrorsAndDebugMenuItem_OnClick" />
                         </MenuItem>
                         <MenuItem Header="Scan for mod config files"
                             Padding="12,6"

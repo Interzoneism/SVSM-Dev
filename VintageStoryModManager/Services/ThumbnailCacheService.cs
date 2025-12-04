@@ -16,6 +16,7 @@ public sealed class ThumbnailCacheService : IDisposable
     private readonly HttpClient _httpClient;
     private readonly string _cacheDirectory;
     private bool _disposed;
+    private Action<string, Exception?>? _errorLogger;
 
     private ThumbnailCacheService()
     {
@@ -39,6 +40,14 @@ public sealed class ThumbnailCacheService : IDisposable
     public static ThumbnailCacheService Instance => LazyInstance.Value;
 
     /// <summary>
+    ///     Sets the error logger callback for logging thumbnail-related errors.
+    /// </summary>
+    public void SetErrorLogger(Action<string, Exception?>? errorLogger)
+    {
+        _errorLogger = errorLogger;
+    }
+
+    /// <summary>
     ///     Gets the cached thumbnail image for a mod from cache only.
     ///     Does NOT download - thumbnails must be pre-downloaded using DownloadThumbnailAsync.
     /// </summary>
@@ -60,16 +69,18 @@ public sealed class ThumbnailCacheService : IDisposable
             {
                 return LoadImageFromFile(cachePath);
             }
-            catch
+            catch (Exception ex)
             {
+                _errorLogger?.Invoke($"Failed to load thumbnail from cache for mod '{modId}'", ex);
+                
                 // If cached file is corrupted, delete it
                 try
                 {
                     File.Delete(cachePath);
                 }
-                catch
+                catch (Exception deleteEx)
                 {
-                    // Ignore deletion errors
+                    _errorLogger?.Invoke($"Failed to delete corrupted thumbnail cache for mod '{modId}'", deleteEx);
                 }
             }
         }
@@ -102,7 +113,10 @@ public sealed class ThumbnailCacheService : IDisposable
         {
             using var response = await _httpClient.GetAsync(thumbnailUrl, cancellationToken);
             if (!response.IsSuccessStatusCode)
+            {
+                _errorLogger?.Invoke($"Failed to download thumbnail for mod '{modId}' from '{thumbnailUrl}': HTTP {(int)response.StatusCode} {response.ReasonPhrase}", null);
                 return false;
+            }
 
             var imageData = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
@@ -110,8 +124,9 @@ public sealed class ThumbnailCacheService : IDisposable
             await File.WriteAllBytesAsync(cachePath, imageData, cancellationToken);
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _errorLogger?.Invoke($"Exception downloading thumbnail for mod '{modId}' from '{thumbnailUrl}'", ex);
             return false;
         }
     }
@@ -173,15 +188,15 @@ public sealed class ThumbnailCacheService : IDisposable
                 {
                     File.Delete(file);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore individual file deletion errors
+                    _errorLogger?.Invoke($"Failed to delete cached thumbnail file '{file}'", ex);
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore errors
+            _errorLogger?.Invoke($"Failed to enumerate thumbnail cache directory '{_cacheDirectory}'", ex);
         }
     }
 
