@@ -10,7 +10,6 @@
     xmlns:views="clr-namespace:VintageStoryModManager.Views"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
     xmlns:converters="clr-namespace:VintageStoryModManager.Converters"
-    xmlns:helpers="clr-namespace:VintageStoryModManager.Helpers"
     x:Class="VintageStoryModManager.Views.MainWindow"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
@@ -1617,8 +1616,7 @@
                                             Height="480"
                                             Margin="{Binding LayoutTransform.(ScaleTransform.ScaleX), ConverterParameter=0\,0\,16\,16, Converter={StaticResource IMM.ScaledThicknessConverter}, RelativeSource={RelativeSource Mode=Self}}"
                                             CornerRadius="12"
-                                            ClipToBounds="False"
-                                            helpers:LazyThumbnailLoader.LoadThumbnail="True">
+                                            ClipToBounds="False">
                                             <Border.LayoutTransform>
                                                 <ScaleTransform ScaleX="{StaticResource IMM.ModDbCardScale}"
                                                     ScaleY="{StaticResource IMM.ModDbCardScale}" />
