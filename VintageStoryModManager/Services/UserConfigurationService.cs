@@ -186,6 +186,8 @@ public sealed class UserConfigurationService
 
     public bool LogAppLaunchAndExit { get; private set; }
 
+    public bool LogManagerErrorsAndDebug { get; private set; }
+
     public bool AutomaticDataBackupsEnabled { get; private set; }
 
     public bool AutomaticDataBackupsWarningAcknowledged { get; private set; }
@@ -1038,6 +1040,14 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetLogManagerErrorsAndDebug(bool logManagerErrorsAndDebug)
+    {
+        if (LogManagerErrorsAndDebug == logManagerErrorsAndDebug) return;
+
+        LogManagerErrorsAndDebug = logManagerErrorsAndDebug;
+        Save();
+    }
+
     public void SetAutomaticDataBackupsEnabled(bool isEnabled)
     {
         if (AutomaticDataBackupsEnabled == isEnabled) return;
@@ -1438,6 +1448,7 @@ public sealed class UserConfigurationService
             LogModInstalls = obj["logModInstalls"]?.GetValue<bool?>() ?? false;
             LogModDeletions = obj["logModDeletions"]?.GetValue<bool?>() ?? false;
             LogAppLaunchAndExit = obj["logAppLaunchAndExit"]?.GetValue<bool?>() ?? false;
+            LogManagerErrorsAndDebug = obj["logManagerErrorsAndDebug"]?.GetValue<bool?>() ?? false;
             AutomaticDataBackupsEnabled = obj["automaticDataBackupsEnabled"]?.GetValue<bool?>() ?? false;
             AutomaticDataBackupsWarningAcknowledged =
                 obj["automaticDataBackupsWarningAcknowledged"]?.GetValue<bool?>() ?? false;
@@ -1606,6 +1617,8 @@ public sealed class UserConfigurationService
             LogModUpdates = false;
             LogModInstalls = false;
             LogModDeletions = false;
+            LogAppLaunchAndExit = false;
+            LogManagerErrorsAndDebug = false;
             AutomaticDataBackupsWarningAcknowledged = false;
             CustomDataBackupLocation = null;
             SuppressModlistSavePrompt = false;
@@ -1677,6 +1690,7 @@ public sealed class UserConfigurationService
                 ["logModInstalls"] = LogModInstalls,
                 ["logModDeletions"] = LogModDeletions,
                 ["logAppLaunchAndExit"] = LogAppLaunchAndExit,
+                ["logManagerErrorsAndDebug"] = LogManagerErrorsAndDebug,
                 ["automaticDataBackupsEnabled"] = AutomaticDataBackupsEnabled,
                 ["automaticDataBackupsWarningAcknowledged"] = AutomaticDataBackupsWarningAcknowledged,
                 ["customDataBackupLocation"] = CustomDataBackupLocation,
