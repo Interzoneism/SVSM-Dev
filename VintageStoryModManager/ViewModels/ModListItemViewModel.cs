@@ -2030,7 +2030,7 @@ public sealed class ModListItemViewModel : ObservableObject
     }
 
     /// <summary>
-    ///     Loads the thumbnail image asynchronously from the cache or downloads it if needed.
+    ///     Loads the thumbnail image from cache and downloads if necessary.
     ///     Safe to call multiple times - will only load once per URL.
     /// </summary>
     public async Task LoadThumbnailAsync()
@@ -2041,8 +2041,20 @@ public sealed class ModListItemViewModel : ObservableObject
 
         try
         {
-            // Use singleton thumbnail cache service
-            var thumbnail = await ThumbnailCacheService.Instance.GetThumbnailAsync(ModId, _thumbnailUrl);
+            // First, try to load from cache using only the mod ID (no URL)
+            var thumbnail = ThumbnailCacheService.Instance.GetThumbnailFromCache(ModId);
+
+            if (thumbnail == null && !string.IsNullOrWhiteSpace(_thumbnailUrl))
+            {
+                // Not in cache - download it using the URL (this is the ONLY place URLs are used)
+                var downloaded = await ThumbnailCacheService.Instance.DownloadThumbnailAsync(ModId, _thumbnailUrl);
+                
+                if (downloaded)
+                {
+                    // Now load from cache using only the mod ID
+                    thumbnail = ThumbnailCacheService.Instance.GetThumbnailFromCache(ModId);
+                }
+            }
 
             if (thumbnail != null)
             {
