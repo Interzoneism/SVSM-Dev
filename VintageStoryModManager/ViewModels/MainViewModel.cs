@@ -3290,7 +3290,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         {
                             foreach (var (index, info) in updatesToApply)
                             {
-                                viewModels[index].UpdateDatabaseInfo(info, false);
+                                viewModels[index].UpdateDatabaseInfo(info);
                             }
                         },
                         cancellationToken)
@@ -3325,7 +3325,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         if (info != null)
                         {
                             var viewModel = viewModels[i];
-                            viewModel.UpdateDatabaseInfo(info, false);
+                            viewModel.UpdateDatabaseInfo(info);
                             QueueLatestReleaseUserReportRefresh(viewModel);
                         }
                     }
@@ -4295,7 +4295,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             if (cachedInfo != null)
             {
-                await ApplyDatabaseInfoAsync(entry, cachedInfo, false).ConfigureAwait(false);
+                await ApplyDatabaseInfoAsync(entry, cachedInfo).ConfigureAwait(false);
                 tagCount = cachedInfo.Tags?.Count ?? 0;
                 releaseCount = cachedInfo.Releases?.Count ?? 0;
 
@@ -4414,7 +4414,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         await ApplyDatabaseInfoAsync(entry, mergedInfo).ConfigureAwait(false);
     }
 
-    private async Task ApplyDatabaseInfoAsync(ModEntry entry, ModDatabaseInfo info, bool loadLogoImmediately = true)
+    private async Task ApplyDatabaseInfoAsync(ModEntry entry, ModDatabaseInfo info)
     {
         if (info is null) return;
 
@@ -4433,9 +4433,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
                         if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
                         {
-                            viewModel.UpdateDatabaseInfo(preparedInfo, loadLogoImmediately);
+                            viewModel.UpdateDatabaseInfo(preparedInfo);
                             // Defer user report refresh to avoid cascading updates during bulk loading
                             // The user report will be loaded on-demand when visible or when explicitly requested
+                            // Note: Thumbnails are now loaded on-demand via LoadThumbnailAsync() when cards become visible
                         }
                     },
                     CancellationToken.None,
