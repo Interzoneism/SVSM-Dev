@@ -39,25 +39,21 @@ public sealed class ThumbnailCacheService : IDisposable
     public static ThumbnailCacheService Instance => LazyInstance.Value;
 
     /// <summary>
-    ///     Gets the cached thumbnail image for a mod, downloading it if necessary.
+    ///     Gets the cached thumbnail image for a mod from cache only.
+    ///     Does NOT download - thumbnails must be pre-downloaded using DownloadThumbnailAsync.
     /// </summary>
     /// <param name="modId">The mod ID</param>
-    /// <param name="thumbnailUrl">The URL to the thumbnail image</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>A BitmapImage if successful, null otherwise</returns>
-    public async Task<BitmapImage?> GetThumbnailAsync(
-        string modId,
-        string? thumbnailUrl,
-        CancellationToken cancellationToken = default)
+    /// <returns>A BitmapImage if found in cache, null otherwise</returns>
+    public BitmapImage? GetThumbnailFromCache(string modId)
     {
-        if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(thumbnailUrl))
+        if (string.IsNullOrWhiteSpace(modId))
             return null;
 
         // Sanitize mod ID for filename
         var safeModId = SanitizeFileName(modId);
         var cachePath = Path.Combine(_cacheDirectory, $"{safeModId}_thumbnail.png");
 
-        // Try to load from cache first
+        // Try to load from cache
         if (File.Exists(cachePath))
         {
             try
@@ -66,29 +62,57 @@ public sealed class ThumbnailCacheService : IDisposable
             }
             catch
             {
-                // If cached file is corrupted, delete and re-download
-                File.Delete(cachePath);
+                // If cached file is corrupted, delete it
+                try
+                {
+                    File.Delete(cachePath);
+                }
+                catch
+                {
+                    // Ignore deletion errors
+                }
             }
         }
+
+        return null;
+    }
+
+    /// <summary>
+    ///     Downloads a thumbnail from the given URL and saves it to cache.
+    ///     This is the ONLY method that should use thumbnail URLs.
+    /// </summary>
+    /// <param name="modId">The mod ID</param>
+    /// <param name="thumbnailUrl">The URL to download the thumbnail from</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if download was successful, false otherwise</returns>
+    public async Task<bool> DownloadThumbnailAsync(
+        string modId,
+        string thumbnailUrl,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(modId) || string.IsNullOrWhiteSpace(thumbnailUrl))
+            return false;
+
+        // Sanitize mod ID for filename
+        var safeModId = SanitizeFileName(modId);
+        var cachePath = Path.Combine(_cacheDirectory, $"{safeModId}_thumbnail.png");
 
         // Download the image
         try
         {
             using var response = await _httpClient.GetAsync(thumbnailUrl, cancellationToken);
             if (!response.IsSuccessStatusCode)
-                return null;
+                return false;
 
             var imageData = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
             // Save to cache
             await File.WriteAllBytesAsync(cachePath, imageData, cancellationToken);
-
-            // Load and return the image
-            return LoadImageFromFile(cachePath);
+            return true;
         }
         catch
         {
-            return null;
+            return false;
         }
     }
 
