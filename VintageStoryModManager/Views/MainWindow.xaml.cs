@@ -394,12 +394,8 @@ public partial class MainWindow : Window
         _modActivityLoggingService = new ModActivityLoggingService(_userConfiguration);
 
         InitializeComponent();
-
-        var httpClient = new HttpClient();
-        var modApiService = new ModApiService(httpClient);
-        var viewModel = new ModBrowserViewModel(modApiService);
-
-        DataContext = viewModel;
+        
+        InitializeModBrowserView();
 
         DeveloperProfileManager.CurrentProfileChanged += DeveloperProfileManager_OnCurrentProfileChanged;
 
@@ -2407,6 +2403,17 @@ public partial class MainWindow : Window
         RestoreSortPreference();
         UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
         ApplyColumnVisibilityPreferencesToViewModel();
+    }
+
+    private void InitializeModBrowserView()
+    {
+        if (ModBrowserView != null)
+        {
+            var httpClient = new HttpClient();
+            var modApiService = new ModApiService(httpClient);
+            var modBrowserViewModel = new ModBrowserViewModel(modApiService);
+            ModBrowserView.DataContext = modBrowserViewModel;
+        }
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)

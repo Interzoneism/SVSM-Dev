@@ -968,7 +968,11 @@
                 <!-- ============================================================ -->
                 <!-- TAB 2: Mod Database Tab (Browse and Install from ModDB) -->
                 <!-- ============================================================ -->
-                <TabItem x:Name="DatabaseTab" Header="Mod Database" Padding="8,6,8,6" Height="Auto" Width="Auto"/>
+                <TabItem x:Name="DatabaseTab" Header="Mod Database" Padding="8,6,8,6" Height="Auto" Width="Auto">
+                    <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" BorderThickness="0" CornerRadius="0,8,0,0">
+                        <views:ModBrowserView x:Name="ModBrowserView"/>
+                    </Border>
+                </TabItem>
 
                 <!-- ============================================================ -->
                 <!-- TAB 3: Modlists Tab (Local and Online Modlists) -->
