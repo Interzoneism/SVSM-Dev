@@ -18,6 +18,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private CancellationTokenSource? _searchCts;
     private const int DefaultLoadedMods = 45;
     private const int LoadMoreCount = 10;
+    private bool _isInitializing;
 
     #region Observable Properties
 
@@ -113,20 +114,24 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         _modApiService = modApiService;
         _userConfigService = userConfigService;
-
-        // Load saved settings if available
-        if (_userConfigService != null)
-        {
-            _orderBy = _userConfigService.ModBrowserOrderBy;
-            _orderByDirection = _userConfigService.ModBrowserOrderByDirection;
-            _selectedSide = _userConfigService.ModBrowserSelectedSide;
-            _selectedInstalledFilter = _userConfigService.ModBrowserSelectedInstalledFilter;
-            _onlyFavorites = _userConfigService.ModBrowserOnlyFavorites;
-        }
+        _isInitializing = true;
 
         // Subscribe to collection changes for multi-select filters
         SelectedVersions.CollectionChanged += OnFilterCollectionChanged;
         SelectedTags.CollectionChanged += OnFilterCollectionChanged;
+
+        // Load saved settings if available
+        // Use public properties to ensure PropertyChanged events are raised
+        if (_userConfigService != null)
+        {
+            OrderBy = _userConfigService.ModBrowserOrderBy;
+            OrderByDirection = _userConfigService.ModBrowserOrderByDirection;
+            SelectedSide = _userConfigService.ModBrowserSelectedSide;
+            SelectedInstalledFilter = _userConfigService.ModBrowserSelectedInstalledFilter;
+            OnlyFavorites = _userConfigService.ModBrowserOnlyFavorites;
+        }
+
+        _isInitializing = false;
     }
 
     private async void OnFilterCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -452,32 +457,61 @@ public partial class ModBrowserViewModel : ObservableObject
 
     #region Property Changed Handlers
 
-    partial void OnTextFilterChanged(string value) => _ = SearchModsAsync();
-    partial void OnSelectedAuthorChanged(ModAuthor? value) => _ = SearchModsAsync();
+    partial void OnTextFilterChanged(string value)
+    {
+        if (!_isInitializing)
+            _ = SearchModsAsync();
+    }
+
+    partial void OnSelectedAuthorChanged(ModAuthor? value)
+    {
+        if (!_isInitializing)
+            _ = SearchModsAsync();
+    }
+
     partial void OnSelectedSideChanged(string value)
     {
-        _userConfigService?.SetModBrowserSelectedSide(value);
-        _ = SearchModsAsync();
+        if (!_isInitializing)
+        {
+            _userConfigService?.SetModBrowserSelectedSide(value);
+            _ = SearchModsAsync();
+        }
     }
+
     partial void OnSelectedInstalledFilterChanged(string value)
     {
-        _userConfigService?.SetModBrowserSelectedInstalledFilter(value);
-        _ = SearchModsAsync();
+        if (!_isInitializing)
+        {
+            _userConfigService?.SetModBrowserSelectedInstalledFilter(value);
+            _ = SearchModsAsync();
+        }
     }
+
     partial void OnOnlyFavoritesChanged(bool value)
     {
-        _userConfigService?.SetModBrowserOnlyFavorites(value);
-        _ = SearchModsAsync();
+        if (!_isInitializing)
+        {
+            _userConfigService?.SetModBrowserOnlyFavorites(value);
+            _ = SearchModsAsync();
+        }
     }
+
     partial void OnOrderByChanged(string value)
     {
-        _userConfigService?.SetModBrowserOrderBy(value);
-        _ = SearchModsAsync();
+        if (!_isInitializing)
+        {
+            _userConfigService?.SetModBrowserOrderBy(value);
+            _ = SearchModsAsync();
+        }
     }
+
     partial void OnOrderByDirectionChanged(string value)
     {
-        _userConfigService?.SetModBrowserOrderByDirection(value);
-        _ = SearchModsAsync();
+        if (!_isInitializing)
+        {
+            _userConfigService?.SetModBrowserOrderByDirection(value);
+            _ = SearchModsAsync();
+        }
     }
 
     #endregion
