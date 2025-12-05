@@ -2529,25 +2529,7 @@ public partial class MainWindow : Window
         if (mod.Releases == null || mod.Releases.Count == 0)
             return null;
 
-        // Try to find a release compatible with the installed game version
-        var gameVersion = _viewModel?.InstalledGameVersion;
-        if (!string.IsNullOrWhiteSpace(gameVersion))
-        {
-            // Find releases that match the current game version
-            var compatibleReleases = mod.Releases
-                .Where(r => r.Tags != null && r.Tags.Any(t => t.Equals(gameVersion, StringComparison.OrdinalIgnoreCase)))
-                .ToList();
-
-            if (compatibleReleases.Count > 0)
-            {
-                // Return the most recent compatible release
-                return compatibleReleases
-                    .OrderByDescending(r => DateTime.TryParse(r.Created, out var date) ? date : DateTime.MinValue)
-                    .FirstOrDefault();
-            }
-        }
-
-        // If no compatible release found, return the most recent release
+        // Always return the most recent release (latest version)
         return mod.Releases
             .OrderByDescending(r => DateTime.TryParse(r.Created, out var date) ? date : DateTime.MinValue)
             .FirstOrDefault();
