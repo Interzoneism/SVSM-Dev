@@ -5663,6 +5663,226 @@ public partial class MainWindow : Window
         OpenManagerModDatabasePage();
     }
 
+    private void ChangeManagerFolderMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        var currentFolder = ModCacheLocator.GetManagerDataDirectory();
+        if (string.IsNullOrWhiteSpace(currentFolder))
+        {
+            WpfMessageBox.Show(
+                "Cannot determine the current manager data folder location.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        var message = $"Current manager folder:\n{currentFolder}\n\n" +
+                      "This will allow you to move the entire \"Simple VS Manager\" folder to a new location.\n\n" +
+                      "The manager will:\n" +
+                      "• Move all configuration files, cached mods, backups, and presets\n" +
+                      "• Update the configuration to use the new location\n" +
+                      "• Require a restart to complete the change\n\n" +
+                      "Do you want to continue?";
+
+        var result = WpfMessageBox.Show(
+            message,
+            "Change Manager Config and Cache Folder",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes)
+            return;
+
+        // Show folder browser dialog
+        using var dialog = new WinForms.FolderBrowserDialog
+        {
+            Description = "Select the new location for the \"Simple VS Manager\" folder.\n" +
+                          "The folder will be created if it doesn't exist.",
+            ShowNewFolderButton = true,
+            UseDescriptionForTitle = true
+        };
+
+        if (dialog.ShowDialog() != WinForms.DialogResult.OK)
+            return;
+
+        var newParentFolder = dialog.SelectedPath;
+        if (string.IsNullOrWhiteSpace(newParentFolder))
+            return;
+
+        var newManagerFolder = Path.Combine(newParentFolder, "Simple VS Manager");
+
+        // Check if the destination already exists and is not the current folder
+        if (Directory.Exists(newManagerFolder) && 
+            !string.Equals(currentFolder, newManagerFolder, StringComparison.OrdinalIgnoreCase))
+        {
+            var overwriteMessage = $"The folder \"{newManagerFolder}\" already exists.\n\n" +
+                                   "Do you want to merge with the existing folder?\n" +
+                                   "(Existing files with the same name will be overwritten)";
+
+            var overwriteResult = WpfMessageBox.Show(
+                overwriteMessage,
+                "Folder Already Exists",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (overwriteResult != MessageBoxResult.Yes)
+                return;
+        }
+
+        // Confirm the move
+        var confirmMessage = $"Move manager folder from:\n{currentFolder}\n\nTo:\n{newManagerFolder}\n\n" +
+                             "The application will restart after the move is complete.\n\n" +
+                             "Continue?";
+
+        var confirmResult = WpfMessageBox.Show(
+            confirmMessage,
+            "Confirm Move",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirmResult != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            // If moving to the same location, just cancel
+            if (string.Equals(currentFolder, newManagerFolder, StringComparison.OrdinalIgnoreCase))
+            {
+                WpfMessageBox.Show(
+                    "The selected location is the same as the current location.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            // Create the new folder if it doesn't exist
+            Directory.CreateDirectory(newManagerFolder);
+
+            // Move all files and subdirectories
+            MoveDirectoryContents(currentFolder, newManagerFolder);
+
+            // Save the new custom folder path
+            CustomConfigFolderManager.SetCustomConfigFolder(newManagerFolder);
+
+            // Show success message
+            var successMessage = $"Manager folder moved successfully to:\n{newManagerFolder}\n\n" +
+                                 "The application will now restart.";
+
+            WpfMessageBox.Show(
+                successMessage,
+                "Move Complete",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            // Restart the application
+            RestartApplication();
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to move the manager folder:\n\n{ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private static void MoveDirectoryContents(string sourceDir, string targetDir)
+    {
+        // If source and target are the same, nothing to do
+        if (string.Equals(sourceDir, targetDir, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        // Create target directory if it doesn't exist
+        Directory.CreateDirectory(targetDir);
+
+        // Move all files
+        foreach (var file in Directory.GetFiles(sourceDir))
+        {
+            var fileName = Path.GetFileName(file);
+            var targetFile = Path.Combine(targetDir, fileName);
+            
+            try
+            {
+                // Use File.Move for atomic operation when possible
+                if (File.Exists(targetFile))
+                {
+                    // If target exists, delete it first then move
+                    File.Delete(targetFile);
+                }
+                File.Move(file, targetFile);
+            }
+            catch (Exception)
+            {
+                // Fallback to copy if move fails (e.g., across volumes)
+                try
+                {
+                    File.Copy(file, targetFile, overwrite: true);
+                    File.Delete(file);
+                }
+                catch (Exception)
+                {
+                    // If copy also fails, leave the file in source
+                    throw;
+                }
+            }
+        }
+
+        // Move all subdirectories recursively
+        foreach (var directory in Directory.GetDirectories(sourceDir))
+        {
+            var dirName = Path.GetFileName(directory);
+            var targetSubDir = Path.Combine(targetDir, dirName);
+            MoveDirectoryContents(directory, targetSubDir);
+        }
+
+        // Delete the source directory if it's now empty
+        try
+        {
+            if (Directory.GetFiles(sourceDir).Length == 0 && 
+                Directory.GetDirectories(sourceDir).Length == 0)
+            {
+                Directory.Delete(sourceDir, recursive: false);
+            }
+        }
+        catch (Exception)
+        {
+            // If we can't delete the empty source folder, that's okay
+        }
+    }
+
+    private static void RestartApplication()
+    {
+        var currentExecutable = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(currentExecutable))
+        {
+            var mainModule = Process.GetCurrentProcess().MainModule;
+            if (mainModule != null)
+            {
+                currentExecutable = mainModule.FileName;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(currentExecutable))
+        {
+            try
+            {
+                Process.Start(currentExecutable);
+                System.Windows.Application.Current.Shutdown();
+            }
+            catch (Exception)
+            {
+                // If restart fails, just close the application
+                System.Windows.Application.Current.Shutdown();
+            }
+        }
+        else
+        {
+            System.Windows.Application.Current.Shutdown();
+        }
+    }
+
     private void HelpMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         var managerDirectory = _userConfiguration.GetConfigurationDirectory();
