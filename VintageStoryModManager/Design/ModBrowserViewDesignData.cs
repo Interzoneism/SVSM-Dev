@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using VintageStoryModManager.Models;
 
@@ -121,6 +122,7 @@ public sealed class ModBrowserViewDesignData
     }
 
     public ObservableCollection<DownloadableModOnList> ModsList { get; }
+    public IEnumerable<DownloadableModOnList> VisibleMods => ModsList;
     public ObservableCollection<int> FavoriteMods { get; }
     public ObservableCollection<int> InstalledMods { get; }
     public ObservableCollection<GameVersion> AvailableVersions { get; }
