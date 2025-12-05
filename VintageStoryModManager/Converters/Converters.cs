@@ -262,3 +262,27 @@ public class FavoriteButtonVisibilityConverter : IMultiValueConverter
         throw new NotSupportedException();
     }
 }
+
+/// <summary>
+/// Multi-value converter for install button visibility.
+/// Shows button when: card is hovered.
+/// values[0] = IsMouseOver (bool)
+/// </summary>
+public class InstallButtonVisibilityConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 1 || values[0] == DependencyProperty.UnsetValue)
+            return Visibility.Collapsed;
+
+        var isMouseOver = values[0] is bool b && b;
+
+        // Show button only when hovered
+        return isMouseOver ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}

@@ -112,6 +112,15 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         }
     }
 
+    private void InstallButton_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true; // Prevent card click
+        if (sender is FrameworkElement element && element.Tag is int modId)
+        {
+            ViewModel?.InstallModCommand.Execute(modId);
+        }
+    }
+
     private void OpenInBrowserButton_Click(object sender, RoutedEventArgs e)
     {
         e.Handled = true; // Prevent card click
