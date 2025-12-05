@@ -7,8 +7,10 @@
              xmlns:vm="clr-namespace:VintageStoryModManager.ViewModels"
              xmlns:views="clr-namespace:VintageStoryModManager.Views"
              xmlns:ui="http://schemas.modernwpf.com/2019"
+             xmlns:design="clr-namespace:VintageStoryModManager.Design"
              mc:Ignorable="d"
              d:DesignHeight="800" d:DesignWidth="1200"
+             d:DataContext="{d:DesignInstance Type={x:Type design:ModBrowserViewDesignData}, IsDesignTimeCreatable=True}"
              Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
              Loaded="OnViewLoaded">
 
