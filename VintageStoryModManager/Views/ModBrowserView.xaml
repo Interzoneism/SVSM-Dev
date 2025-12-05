@@ -317,12 +317,13 @@
                                     </Grid.RowDefinitions>
 
                                     <!-- Mod Image -->
-                                    <Border Grid.Row="0" Height="192" CornerRadius="7,7,0,0" ClipToBounds="True">
+                                    <Border Grid.Row="0" Height="192" CornerRadius="8,8,0,0" ClipToBounds="True">
                                         <Grid>
                                             <Image Source="{Binding LogoUrl}"
                                                    Stretch="UniformToFill"
                                                    HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"/>
+                                                   VerticalAlignment="Center"
+                                                   ClipToBounds="True"/>
 
                                             <!-- Overlay Buttons -->
                                             <StackPanel Orientation="Horizontal"
