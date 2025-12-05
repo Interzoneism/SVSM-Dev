@@ -266,7 +266,7 @@
                                FontSize="12">
                         <Bold>Open manager config folder</Bold>
                         <Run
-                            Text=" opens the AppData directory where Simple VS Manager keeps its settings, presets, caches, and backups." />
+                            Text=" opens the configuration folder where Simple VS Manager keeps its settings, presets, caches, and backups." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"

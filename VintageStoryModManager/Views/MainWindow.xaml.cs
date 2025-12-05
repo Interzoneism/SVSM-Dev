@@ -2806,7 +2806,7 @@ public partial class MainWindow : Window
         var message =
             "In this tab you can easily save and load Modlists from an online database (Google Firebase), for free." +
             Environment.NewLine + Environment.NewLine +
-            "When you continue, Simple VS Manager will create a firebase-auth.json (basically just a code that identifies you as the owner of your uploaded modlists) file in the AppData/Local/Simple VS Manager folder. " +
+            "When you continue, Simple VS Manager will create a firebase-auth.json (basically just a code that identifies you as the owner of your uploaded modlists) file in its configuration folder. " +
             "If you lose this file you will not be able to delete or modify your uploaded online modlists." +
             Environment.NewLine + Environment.NewLine +
             "You will not need to sign in or provide any account information or do anything really :) Press OK to continue and never show this again!";
@@ -2850,7 +2850,7 @@ public partial class MainWindow : Window
     private bool EnsureUserReportVotingConsent()
     {
         var message =
-            "To enable voting, Simple VS Manager will create a firebase-auth.json (basically just a code that identifies you as the owner of your mod compatibility votes) file in the AppData/Local/Simple VS Manager folder. " +
+            "To enable voting, Simple VS Manager will create a firebase-auth.json (basically just a code that identifies you as the owner of your mod compatibility votes) file in its configuration folder. " +
             "If you lose this file you will not be able to manage or remove your mod compatibility votes." +
             Environment.NewLine + Environment.NewLine +
             "You will not need to sign in or provide any account information or do anything really :) Press OK to continue and never show this again!";
@@ -6598,7 +6598,7 @@ public partial class MainWindow : Window
     private async void DeleteAllManagerFilesMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         const string confirmationMessage =
-            "This will move every file Simple VS Manager created to the Recycle Bin, including its AppData/Simple VS Manager folder, any ModData backups, cached mods, presets, and Firebase authentication tokens.\n\n" +
+            "This will move every file Simple VS Manager created to the Recycle Bin, including its configuration folder, any ModData backups, cached mods, presets, and Firebase authentication tokens.\n\n" +
             "You can restore them from the Recycle Bin if needed. Continue?";
 
         var confirmation = WpfMessageBox.Show(
