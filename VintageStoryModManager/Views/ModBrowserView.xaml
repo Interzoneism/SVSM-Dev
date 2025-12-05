@@ -319,54 +319,55 @@
 
                                         <!-- Mod Image -->
                                         <Border Grid.Row="0" Height="192" CornerRadius="8,8,0,0" ClipToBounds="True">
-                                        <Grid>
-                                            <Image Source="{Binding LogoUrl}"
-                                                   Stretch="UniformToFill"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   ClipToBounds="True"/>
+                                            <Border.Background>
+                                                <ImageBrush ImageSource="{Binding LogoUrl}"
+                                                            Stretch="UniformToFill"
+                                                            AlignmentX="Center"
+                                                            AlignmentY="Center"/>
+                                            </Border.Background>
 
                                             <!-- Overlay Buttons -->
-                                            <StackPanel Orientation="Horizontal"
-                                                        HorizontalAlignment="Left"
-                                                        VerticalAlignment="Top"
-                                                        Margin="8">
-                                                <Button Width="28" Height="28"
-                                                        Opacity="0.9"
-                                                        Click="FavoriteButton_Click"
-                                                        Tag="{Binding ModId}"
-                                                        ToolTip="Toggle favorite"
-                                                        Style="{StaticResource IconButtonStyle}">
-                                                    <Button.Visibility>
-                                                        <MultiBinding Converter="{StaticResource FavoriteButtonVisibility}">
-                                                            <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
-                                                            <Binding Path="ModId"/>
-                                                            <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
-                                                        </MultiBinding>
-                                                    </Button.Visibility>
-                                                    <Path Data="{StaticResource IconStarSolid}"
-                                                          Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center">
-                                                        <Path.Style>
-                                                            <Style TargetType="Path">
-                                                                <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Value="True">
-                                                                        <DataTrigger.Binding>
-                                                                            <MultiBinding Converter="{StaticResource ContainsConverter}">
-                                                                                <Binding Path="ModId"/>
-                                                                                <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
-                                                                            </MultiBinding>
-                                                                        </DataTrigger.Binding>
-                                                                        <Setter Property="Fill" Value="#FBBF24"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Path.Style>
-                                                    </Path>
-                                                </Button>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
+                                            <Grid>
+                                                <StackPanel Orientation="Horizontal"
+                                                            HorizontalAlignment="Left"
+                                                            VerticalAlignment="Top"
+                                                            Margin="8">
+                                                    <Button Width="28" Height="28"
+                                                            Opacity="0.9"
+                                                            Click="FavoriteButton_Click"
+                                                            Tag="{Binding ModId}"
+                                                            ToolTip="Toggle favorite"
+                                                            Style="{StaticResource IconButtonStyle}">
+                                                        <Button.Visibility>
+                                                            <MultiBinding Converter="{StaticResource FavoriteButtonVisibility}">
+                                                                <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
+                                                                <Binding Path="ModId"/>
+                                                                <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                                            </MultiBinding>
+                                                        </Button.Visibility>
+                                                        <Path Data="{StaticResource IconStarSolid}"
+                                                              Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center">
+                                                            <Path.Style>
+                                                                <Style TargetType="Path">
+                                                                    <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Value="True">
+                                                                            <DataTrigger.Binding>
+                                                                                <MultiBinding Converter="{StaticResource ContainsConverter}">
+                                                                                    <Binding Path="ModId"/>
+                                                                                    <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                                                                </MultiBinding>
+                                                                            </DataTrigger.Binding>
+                                                                            <Setter Property="Fill" Value="#FBBF24"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Path.Style>
+                                                        </Path>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
 
                                     <!-- Mod Info -->
                                     <Grid Grid.Row="1" Height="96">
