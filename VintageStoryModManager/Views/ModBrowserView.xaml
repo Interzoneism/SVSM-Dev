@@ -23,6 +23,7 @@
         <converters:IconKeyToGeometryConverter x:Key="IconKeyToGeometry"/>
         <converters:NoResultsVisibilityConverter x:Key="NoResultsVisibility"/>
         <converters:FavoriteButtonVisibilityConverter x:Key="FavoriteButtonVisibility"/>
+        <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility"/>
 
         <!-- Loading Spinner Animation -->
         <Storyboard x:Key="SpinnerAnimation" RepeatBehavior="Forever">
@@ -333,6 +334,7 @@
 
                                             <!-- Overlay Buttons -->
                                             <Grid>
+                                                <!-- Favorite button on top left -->
                                                 <StackPanel Orientation="Horizontal"
                                                             HorizontalAlignment="Left"
                                                             VerticalAlignment="Top"
@@ -364,6 +366,55 @@
                                                                                 </MultiBinding>
                                                                             </DataTrigger.Binding>
                                                                             <Setter Property="Fill" Value="#FBBF24"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Path.Style>
+                                                        </Path>
+                                                    </Button>
+                                                </StackPanel>
+                                                
+                                                <!-- Install button on top right -->
+                                                <StackPanel Orientation="Horizontal"
+                                                            HorizontalAlignment="Right"
+                                                            VerticalAlignment="Top"
+                                                            Margin="8">
+                                                    <Button Width="28" Height="28"
+                                                            Opacity="0.9"
+                                                            Click="InstallButton_Click"
+                                                            Tag="{Binding ModId}"
+                                                            ToolTip="Install mod"
+                                                            Style="{StaticResource IconButtonStyle}">
+                                                        <Button.Visibility>
+                                                            <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
+                                                                <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
+                                                            </MultiBinding>
+                                                        </Button.Visibility>
+                                                        <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center">
+                                                            <Path.Style>
+                                                                <Style TargetType="Path">
+                                                                    <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
+                                                                    <Style.Triggers>
+                                                                        <!-- Show checkmark when installed -->
+                                                                        <DataTrigger Value="True">
+                                                                            <DataTrigger.Binding>
+                                                                                <MultiBinding Converter="{StaticResource ContainsConverter}">
+                                                                                    <Binding Path="ModId"/>
+                                                                                    <Binding Path="DataContext.InstalledMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                                                                </MultiBinding>
+                                                                            </DataTrigger.Binding>
+                                                                            <Setter Property="Data" Value="{StaticResource IconCheck}"/>
+                                                                            <Setter Property="Fill" Value="#10B981"/>
+                                                                        </DataTrigger>
+                                                                        <!-- Show download icon when not installed -->
+                                                                        <DataTrigger Value="False">
+                                                                            <DataTrigger.Binding>
+                                                                                <MultiBinding Converter="{StaticResource ContainsConverter}">
+                                                                                    <Binding Path="ModId"/>
+                                                                                    <Binding Path="DataContext.InstalledMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                                                                </MultiBinding>
+                                                                            </DataTrigger.Binding>
+                                                                            <Setter Property="Data" Value="{StaticResource IconDownload}"/>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>

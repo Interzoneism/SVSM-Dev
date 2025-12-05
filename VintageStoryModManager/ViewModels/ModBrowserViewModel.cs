@@ -78,6 +78,9 @@ public partial class ModBrowserViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<int> _favoriteMods = [];
 
+    [ObservableProperty]
+    private ObservableCollection<int> _installedMods = [];
+
     #endregion
 
     #region Filter Options
@@ -167,6 +170,11 @@ public partial class ModBrowserViewModel : ObservableObject
     /// Checks if a mod is a favorite.
     /// </summary>
     public bool IsModFavorite(int modId) => FavoriteMods.Contains(modId);
+
+    /// <summary>
+    /// Checks if a mod is installed.
+    /// </summary>
+    public bool IsModInstalled(int modId) => InstalledMods.Contains(modId);
 
     #region Commands
 
@@ -299,6 +307,18 @@ public partial class ModBrowserViewModel : ObservableObject
         }
         // Notify the UI that FavoriteMods has changed so MultiBindings re-evaluate
         OnPropertyChanged(nameof(FavoriteMods));
+    }
+
+    [RelayCommand]
+    private void InstallMod(int modId)
+    {
+        // For now, just add to the installed list
+        // In a full implementation, this would trigger the actual installation
+        if (!InstalledMods.Contains(modId))
+        {
+            InstalledMods.Add(modId);
+            OnPropertyChanged(nameof(InstalledMods));
+        }
     }
 
     [RelayCommand]
