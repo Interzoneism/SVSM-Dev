@@ -16,7 +16,7 @@ public partial class ChangeManagerFolderDialog : Window
                       "• Move all configuration files, cached mods, backups, and presets\n" +
                       "• Update the configuration to use the new location\n" +
                       "• Require a restart to complete the change\n\n" +
-                      "Do you want to continue?";
+                      "Do not proceed unless you really need to move the folder. Do you want to continue?";
         
         MessageTextBlock.Text = message;
     }
