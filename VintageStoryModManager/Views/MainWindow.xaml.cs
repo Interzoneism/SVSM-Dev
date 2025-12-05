@@ -5853,7 +5853,7 @@ public partial class MainWindow : Window
     private void HandleResetManagerFolder(string currentFolder)
     {
         // Get the default location
-        var defaultFolder = GetDefaultManagerDataDirectory();
+        var defaultFolder = ModCacheLocator.GetDefaultManagerDataDirectory();
         if (string.IsNullOrWhiteSpace(defaultFolder))
         {
             WpfMessageBox.Show(
@@ -5943,21 +5943,6 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
-    }
-
-    private static string? GetDefaultManagerDataDirectory()
-    {
-        var path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        if (string.IsNullOrWhiteSpace(path))
-            path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        if (string.IsNullOrWhiteSpace(path)) path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-
-        if (string.IsNullOrWhiteSpace(path)) path = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-
-        return string.IsNullOrWhiteSpace(path)
-            ? null
-            : Path.Combine(path, "Simple VS Manager");
     }
 
     private static void RestartApplication()
