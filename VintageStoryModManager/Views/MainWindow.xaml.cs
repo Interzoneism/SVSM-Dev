@@ -376,6 +376,7 @@ public partial class MainWindow : Window
 
     // ViewModel
     private MainViewModel? _viewModel;
+    private ModBrowserViewModel? _modBrowserViewModel;
 
     #endregion
 
@@ -575,6 +576,9 @@ public partial class MainWindow : Window
             await InitializeViewModelAsync(_viewModel).ConfigureAwait(true);
             await EnsureInstalledModsCachedAsync(_viewModel).ConfigureAwait(true);
             await CreateAppStartedBackupAsync().ConfigureAwait(true);
+            
+            // Sync installed mods to ModBrowser after ViewModel is initialized
+            SyncInstalledModsToModBrowser();
         }
 
         await RefreshDeleteCachedModsMenuHeaderAsync();
@@ -2418,12 +2422,53 @@ public partial class MainWindow : Window
             };
             
             var modApiService = new ModApiService(httpClient);
-            var modBrowserViewModel = new ModBrowserViewModel(modApiService, _userConfiguration);
+            _modBrowserViewModel = new ModBrowserViewModel(modApiService, _userConfiguration);
             
             // Set up the installation callback
-            modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
+            _modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
             
-            ModBrowserView.DataContext = modBrowserViewModel;
+            ModBrowserView.DataContext = _modBrowserViewModel;
+        }
+    }
+
+    private void SyncInstalledModsToModBrowser()
+    {
+        if (_modBrowserViewModel == null || _viewModel == null) return;
+
+        // Clear and repopulate the InstalledMods collection
+        _modBrowserViewModel.InstalledMods.Clear();
+        
+        var installedMods = _viewModel.GetInstalledModsSnapshot();
+        foreach (var mod in installedMods)
+        {
+            // Try to parse the ModId as an integer for the ModBrowser
+            if (int.TryParse(mod.ModId, out var modId) && !_modBrowserViewModel.InstalledMods.Contains(modId))
+            {
+                _modBrowserViewModel.InstalledMods.Add(modId);
+            }
+        }
+    }
+    
+    private void AddModToInstalledAndRemoveFromSearch(int modId)
+    {
+        if (_modBrowserViewModel == null) return;
+        
+        if (!_modBrowserViewModel.InstalledMods.Contains(modId))
+        {
+            _modBrowserViewModel.InstalledMods.Add(modId);
+        }
+        
+        // Remove the installed mod from the current search results
+        var modToRemove = _modBrowserViewModel.ModsList.FirstOrDefault(m => m.ModId == modId);
+        if (modToRemove != null)
+        {
+            _modBrowserViewModel.ModsList.Remove(modToRemove);
+            
+            // Clear selection if the removed mod was selected
+            if (ReferenceEquals(_modBrowserViewModel.SelectedMod, modToRemove))
+            {
+                _modBrowserViewModel.SelectedMod = null;
+            }
         }
     }
 
@@ -2507,10 +2552,8 @@ public partial class MainWindow : Window
 
             await RefreshModsAsync().ConfigureAwait(true);
 
-            WpfMessageBox.Show($"{mod.Name}{versionText} has been installed successfully.",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            // Update the ModBrowserViewModel to mark this mod as installed and remove it from search results
+            AddModToInstalledAndRemoveFromSearch(mod.ModId);
         }
         catch (OperationCanceledException)
         {
@@ -3781,6 +3824,9 @@ public partial class MainWindow : Window
 
         if (selectedSourcePaths is { Count: > 0 })
             RestoreSelectionFromSourcePaths(selectedSourcePaths, anchorSourcePath);
+        
+        // Keep ModBrowser in sync with installed mods
+        SyncInstalledModsToModBrowser();
     }
 
     private void RefreshModDetailsOnly()
