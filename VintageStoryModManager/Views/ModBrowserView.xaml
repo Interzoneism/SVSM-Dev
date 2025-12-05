@@ -88,165 +88,170 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- Filter Bar -->
-        <Border Grid.Row="1"
+        <Border
                 Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                Padding="16,8"
+                Padding="10,0,10,0"
                 BorderBrush="{DynamicResource Brush.Border.Default}"
                 BorderThickness="0,0,0,1">
-            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <!-- Text Filter -->
-                <TextBox Width="160" Height="32"
-                         Margin="4"
-                         Text="{Binding TextFilter, UpdateSourceTrigger=PropertyChanged}"
-                         Style="{StaticResource IMM.SearchTextBoxStyle}"
-                         ui:ControlHelper.PlaceholderText="Search..."/>
+            <WrapPanel Orientation="Vertical" Width="1180">
+                <StackPanel Orientation="Horizontal">
+                    <WrapPanel Orientation="Horizontal" Height="40">
+                    <!-- Text Filter -->
+                        <TextBox Width="160" Height="32"
+                            Margin="4"
+                            Text="{Binding TextFilter, UpdateSourceTrigger=PropertyChanged}"
+                            Style="{StaticResource IMM.SearchTextBoxStyle}"
+                            ui:ControlHelper.PlaceholderText="Search..."/>
 
-                <!-- Order By Dropdown -->
-                <ComboBox Width="160" Height="32"
-                          Margin="4,4,0,4"
-                          ItemsSource="{Binding OrderByOptions, Mode=OneTime}"
-                          SelectedValue="{Binding OrderBy}"
-                          SelectedValuePath="Key">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <Path Data="{Binding Icon, Converter={StaticResource IconKeyToGeometry}}" 
-                                      Fill="{DynamicResource Brush.Text.Subtle}" 
-                                      Width="12" Height="12" Stretch="Uniform"
-                                      VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="{Binding Display}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                    <!-- Order By Dropdown -->
+                        <ComboBox Width="160" Height="32"
+                            Margin="4,4,0,4"
+                            ItemsSource="{Binding OrderByOptions, Mode=OneTime}"
+                            SelectedValue="{Binding OrderBy}"
+                            SelectedValuePath="Key">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Data="{Binding Icon, Converter={StaticResource IconKeyToGeometry}}" 
+                                            Fill="{DynamicResource Brush.Text.Subtle}" 
+                                            Width="12" Height="12" Stretch="Uniform"
+                                            VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Display}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
 
-                <!-- Order Direction Toggle -->
-                <Button Width="32" Height="32"
-                        Margin="2,4,4,4"
-                        Style="{StaticResource IconButtonStyle}"
-                        Command="{Binding ToggleOrderDirectionCommand}"
-                        ToolTip="Toggle sort direction">
-                    <Grid>
-                        <Path Data="{StaticResource IconChevronDown}" 
-                              Fill="{DynamicResource Brush.Text.Primary}" 
-                              Width="10" Height="10" Stretch="Uniform">
-                            <Path.Style>
-                                <Style TargetType="Path">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding OrderByDirection}" Value="asc">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Path.Style>
-                        </Path>
-                        <Path Data="{StaticResource IconChevronUp}" 
-                              Fill="{DynamicResource Brush.Text.Primary}" 
-                              Width="16" Height="16" Stretch="Uniform">
-                            <Path.Style>
-                                <Style TargetType="Path">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding OrderByDirection}" Value="asc">
+                    <!-- Order Direction Toggle -->
+                        <Button Width="32" Height="32"
+                            Margin="2,4,4,4"
+                            Style="{StaticResource IconButtonStyle}"
+                            Command="{Binding ToggleOrderDirectionCommand}"
+                            ToolTip="Toggle sort direction">
+                            <Grid>
+                                <Path Data="{StaticResource IconChevronDown}" 
+                                    Fill="{DynamicResource Brush.Text.Primary}" 
+                                    Width="10" Height="10" Stretch="Uniform">
+                                    <Path.Style>
+                                        <Style TargetType="{x:Type Path}">
                                             <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Path.Style>
-                        </Path>
-                    </Grid>
-                </Button>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding OrderByDirection}" Value="asc">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Path.Style>
+                                </Path>
+                                <Path Data="{StaticResource IconChevronUp}" 
+                                    Fill="{DynamicResource Brush.Text.Primary}" 
+                                    Width="16" Height="16" Stretch="Uniform">
+                                    <Path.Style>
+                                        <Style TargetType="{x:Type Path}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding OrderByDirection}" Value="asc">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Path.Style>
+                                </Path>
+                            </Grid>
+                        </Button>
 
-                <!-- Versions Filter using custom multi-select -->
-                <views:MultiSelectDropdown Width="160" Height="32"
-                                           Margin="4"
-                                           ItemsSource="{Binding AvailableVersions}"
-                                           SelectedItems="{Binding SelectedVersions}"
-                                           DisplayMemberPath="Name"
-                                           PlaceholderText="Versions"
-                                           ToolTip="Select game versions to filter"/>
+                    <!-- Favorites Toggle -->
+                        <Button Width="32" Height="32"
+                            Margin="4"
+                            Command="{Binding ToggleFavoriteFilterCommand}"
+                            ToolTip="Show only favorites"
+                            Style="{StaticResource IconButtonStyle}">
+                            <Path Data="{StaticResource IconStarSolid}"
+                                Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center">
+                                <Path.Style>
+                                    <Style TargetType="{x:Type Path}">
+                                        <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding OnlyFavorites}" Value="True">
+                                                <Setter Property="Fill" Value="#FBBF24"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                        </Button>
 
-                <!-- Tags Filter using custom multi-select -->
-                <views:MultiSelectDropdown Width="120" Height="32"
-                                           Margin="4"
-                                           ItemsSource="{Binding AvailableTags}"
-                                           SelectedItems="{Binding SelectedTags}"
-                                           DisplayMemberPath="Name"
-                                           PlaceholderText="Tags"
-                                           ToolTip="Select tags to filter"/>
-
-                <!-- Side Filter -->
-                <ComboBox Width="120" Height="32"
-                          Margin="4"
-                          SelectedValue="{Binding SelectedSide}"
-                          SelectedValuePath="Key"
-                          DisplayMemberPath="Value"
-                          ItemsSource="{Binding SideOptions, Mode=OneTime}"/>
-
-                <!-- Installed Filter -->
-                <ComboBox Width="120" Height="32"
-                          Margin="4"
-                          SelectedValue="{Binding SelectedInstalledFilter}"
-                          SelectedValuePath="Key"
-                          DisplayMemberPath="Value"
-                          ItemsSource="{Binding InstalledFilterOptions, Mode=OneTime}"/>
-
-                <!-- Favorites Toggle -->
-                <Button Width="32" Height="32"
+                        <Button Width="32" Height="32" Margin="4"
+                            Style="{StaticResource IconButtonStyle}"
+                            Command="{Binding SearchModsCommand}"
+                            IsEnabled="{Binding IsSearching, ConverterParameter=invert, Converter={StaticResource BoolToVisibility}}"
+                            ToolTip="Refresh" HorizontalAlignment="Right" HorizontalContentAlignment="Center">
+                            <Path Data="{StaticResource IconRefresh}" 
+                                Style="{StaticResource IconLarge}"/>
+                        </Button>
+                    </WrapPanel>
+                </StackPanel>
+                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left" Height="40">
+                    <!-- Versions Filter using custom multi-select -->
+                    <views:MultiSelectDropdown Width="160" Height="32"
                         Margin="4"
-                        Command="{Binding ToggleFavoriteFilterCommand}"
-                        ToolTip="Show only favorites"
-                        Style="{StaticResource IconButtonStyle}">
-                    <Path Data="{StaticResource IconStarSolid}"
-                          Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center">
-                        <Path.Style>
-                            <Style TargetType="Path">
-                                <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding OnlyFavorites}" Value="True">
-                                        <Setter Property="Fill" Value="#FBBF24"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Path.Style>
-                    </Path>
-                </Button>
+                        ItemsSource="{Binding AvailableVersions}"
+                        SelectedItems="{Binding SelectedVersions}"
+                        DisplayMemberPath="Name"
+                        PlaceholderText="Versions"
+                        ToolTip="Select game versions to filter"/>
 
-                <!-- Clear Filters -->
-                <Button Width="32" Height="32"
+                    <!-- Tags Filter using custom multi-select -->
+                    <views:MultiSelectDropdown Width="120" Height="32"
+                        Margin="4"
+                        ItemsSource="{Binding AvailableTags}"
+                        SelectedItems="{Binding SelectedTags}"
+                        DisplayMemberPath="Name"
+                        PlaceholderText="Tags"
+                        ToolTip="Select tags to filter"/>
+
+                    <!-- Side Filter -->
+                    <ComboBox Width="120" Height="32"
+                        Margin="4"
+                        SelectedValue="{Binding SelectedSide}"
+                        SelectedValuePath="Key"
+                        DisplayMemberPath="Value"
+                        ItemsSource="{Binding SideOptions, Mode=OneTime}"/>
+
+                    <!-- Installed Filter -->
+                    <ComboBox Width="120" Height="32"
+                        Margin="4"
+                        SelectedValue="{Binding SelectedInstalledFilter}"
+                        SelectedValuePath="Key"
+                        DisplayMemberPath="Value"
+                        ItemsSource="{Binding InstalledFilterOptions, Mode=OneTime}"/>
+
+                    <!-- Clear Filters -->
+                    <Button Width="32" Height="32"
                         Margin="4"
                         Style="{StaticResource IconButtonStyle}"
                         Command="{Binding ClearFiltersCommand}"
                         ToolTip="Clear all filters">
-                    <Path Data="{StaticResource IconXCircle}" 
-                          Style="{StaticResource IconLarge}"/>
-                </Button>
-                <Button Width="32" Height="32" Margin="4"
-                            Style="{StaticResource IconButtonStyle}"
-                            Command="{Binding SearchModsCommand}"
-                            IsEnabled="{Binding IsSearching, ConverterParameter=invert, Converter={StaticResource BoolToVisibility}}"
-                            ToolTip="Refresh">
-                    <Path Data="{StaticResource IconRefresh}" 
-                              Style="{StaticResource IconLarge}"/>
-                </Button>
-                <Button Width="32" Margin="4" Height="32" Click="ScrollToTop_Click" ToolTip="Scroll to top"  Style="{StaticResource IconButtonStyle}">
-                    
-                        <Path Data="{StaticResource IconArrowToTop}" 
-              Style="{StaticResource IconMedium}"/>
+                        <Path Data="{StaticResource IconXCircle}" 
+                            Style="{StaticResource IconLarge}"/>
+                    </Button>
+                    <Button Width="32" Margin="4" Height="32" Click="ScrollToTop_Click" ToolTip="Scroll to top"  Style="{StaticResource IconButtonStyle}">
 
-                    
-                </Button>
+                        <Path Data="{StaticResource IconArrowToTop}" 
+                            Style="{StaticResource IconMedium}"/>
+
+
+                    </Button>
+                </WrapPanel>
             </WrapPanel>
         </Border>
 
         <!-- Mod Grid -->
-        <ScrollViewer Grid.Row="2"
+        <ScrollViewer Grid.Row="1"
                       x:Name="ModsScrollViewer"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
