@@ -2411,9 +2411,177 @@ public partial class MainWindow : Window
         {
             var httpClient = new HttpClient();
             var modApiService = new ModApiService(httpClient);
-            var modBrowserViewModel = new ModBrowserViewModel(modApiService);
+            var modBrowserViewModel = new ModBrowserViewModel(modApiService, _userConfiguration);
+            
+            // Set up the installation callback
+            modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
+            
             ModBrowserView.DataContext = modBrowserViewModel;
         }
+    }
+
+    private async Task InstallModFromBrowserAsync(DownloadableMod mod)
+    {
+        if (_isModUpdateInProgress) return;
+
+        if (mod == null || mod.Releases == null || mod.Releases.Count == 0)
+        {
+            WpfMessageBox.Show("No downloadable releases are available for this mod.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        // Select the best release for installation (latest compatible)
+        var release = SelectReleaseForBrowserInstall(mod);
+        if (release == null)
+        {
+            WpfMessageBox.Show("No compatible releases are available for this mod.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (!TryGetInstallTargetPathForBrowserMod(mod, release, out var targetPath, out var errorMessage))
+        {
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+                WpfMessageBox.Show(errorMessage,
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+
+            return;
+        }
+
+        await CreateAutomaticBackupAsync("ModsUpdated").ConfigureAwait(true);
+
+        _isModUpdateInProgress = true;
+        UpdateSelectedModButtons();
+
+        try
+        {
+            var downloadUrl = new Uri($"https://mods.vintagestory.at{release.MainFile}");
+            
+            var descriptor = new ModUpdateDescriptor(
+                mod.ModIdStr ?? mod.ModId.ToString(),
+                mod.Name,
+                downloadUrl,
+                targetPath,
+                false,
+                release.Filename,
+                release.ModVersion,
+                null);
+
+            var progress = new Progress<ModUpdateProgress>(p =>
+                _viewModel?.ReportStatus($"{mod.Name}: {p.Message}"));
+
+            var result = await _modUpdateService
+                .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
+                .ConfigureAwait(true);
+
+            if (!result.Success)
+            {
+                var message = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                    ? "The installation failed."
+                    : result.ErrorMessage!;
+                _viewModel?.ReportStatus($"Failed to install {mod.Name}: {message}", true);
+                WpfMessageBox.Show($"Failed to install {mod.Name}:{Environment.NewLine}{message}",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            var versionText = string.IsNullOrWhiteSpace(release.ModVersion) ? string.Empty : $" {release.ModVersion}";
+            _viewModel?.ReportStatus($"Installed {mod.Name}{versionText}.");
+            _modActivityLoggingService.LogModInstall(mod.Name ?? mod.ModId.ToString(), release.ModVersion);
+
+            await RefreshModsAsync().ConfigureAwait(true);
+
+            WpfMessageBox.Show($"{mod.Name}{versionText} has been installed successfully.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (OperationCanceledException)
+        {
+            _viewModel?.ReportStatus("Installation cancelled.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            _viewModel?.ReportStatus($"Failed to install {mod.Name}: {ex.Message}", true);
+            WpfMessageBox.Show($"Failed to install {mod.Name}:{Environment.NewLine}{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            _isModUpdateInProgress = false;
+            UpdateSelectedModButtons();
+        }
+    }
+
+    private DownloadableModRelease? SelectReleaseForBrowserInstall(DownloadableMod mod)
+    {
+        if (mod.Releases == null || mod.Releases.Count == 0)
+            return null;
+
+        // Always return the most recent release (latest version)
+        return mod.Releases
+            .OrderByDescending(r => DateTime.TryParse(r.Created, out var date) ? date : DateTime.MinValue)
+            .FirstOrDefault();
+    }
+
+    private bool TryGetInstallTargetPathForBrowserMod(DownloadableMod mod, DownloadableModRelease release, 
+        out string fullPath, out string? errorMessage)
+    {
+        fullPath = string.Empty;
+        errorMessage = null;
+
+        if (_dataDirectory is null)
+        {
+            errorMessage =
+                "The VintagestoryData folder is not available. Please verify it from File > Set Data Folder.";
+            return false;
+        }
+
+        var modsDirectory = Path.Combine(_dataDirectory, "Mods");
+
+        try
+        {
+            Directory.CreateDirectory(modsDirectory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
+                                       or NotSupportedException)
+        {
+            errorMessage = $"The Mods folder could not be accessed:{Environment.NewLine}{ex.Message}";
+            return false;
+        }
+
+        var modIdStr = mod.ModIdStr ?? mod.ModId.ToString();
+        var defaultName = string.IsNullOrWhiteSpace(modIdStr) ? "mod" : modIdStr;
+        var versionPart = string.IsNullOrWhiteSpace(release.ModVersion) ? "latest" : release.ModVersion;
+        var fallbackFileName = $"{defaultName}-{versionPart}.zip";
+
+        var releaseFileName = release.Filename;
+        if (string.IsNullOrWhiteSpace(releaseFileName))
+        {
+            releaseFileName = fallbackFileName;
+        }
+        else
+        {
+            releaseFileName = Path.GetFileName(releaseFileName);
+        }
+
+        var sanitizedFileName = SanitizeFileName(releaseFileName, fallbackFileName);
+        if (string.IsNullOrWhiteSpace(Path.GetExtension(sanitizedFileName))) sanitizedFileName += ".zip";
+
+        var candidatePath = Path.Combine(modsDirectory, sanitizedFileName);
+        fullPath = EnsureUniqueFilePath(candidatePath);
+        return true;
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
