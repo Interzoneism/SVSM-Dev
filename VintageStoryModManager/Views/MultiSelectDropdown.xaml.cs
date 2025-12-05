@@ -63,7 +63,11 @@ namespace VintageStoryModManager.Views
         public IEnumerable ItemsSource
         {
             get => (IEnumerable)GetValue(ItemsSourceProperty);
-            set => SetValue(ItemsSourceProperty, value);
+            set
+            {
+                System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.ItemsSource setter called with {value?.GetType().Name}");
+                SetValue(ItemsSourceProperty, value);
+            }
         }
 
         public IList SelectedItems
