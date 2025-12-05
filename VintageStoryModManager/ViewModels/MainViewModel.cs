@@ -62,14 +62,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly Dictionary<string, ModListItemViewModel> _modViewModelsBySourcePath =
         new(StringComparer.OrdinalIgnoreCase);
 
-    private readonly int _newModsRecentMonths;
     private readonly ObservableCollection<ModListItemViewModel> _searchResults = new();
     private readonly HashSet<ModListItemViewModel> _searchResultSubscriptions = new();
     // Tag filtering is now handled by _tagFilterService
     private readonly ClientSettingsStore _settingsStore;
-    private readonly RelayCommand _showActivitySortingOptionsCommand;
     private readonly RelayCommand _showModlistTabCommand;
-    private readonly RelayCommand _showDownloadsSortingOptionsCommand;
     private readonly RelayCommand _showMainTabCommand;
     private readonly RelayCommand _showDatabaseTabCommand;
     private readonly ObservableCollection<SortOption> _sortOptions;
@@ -126,7 +123,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _suppressInstalledTagFilterSelectionChanges;
     private int _totalMods;
     private int _updatableModsCount;
-    private bool _useModDbDesignView;
     private ViewSection _viewSection = ViewSection.MainTab;
 
     public MainViewModel(

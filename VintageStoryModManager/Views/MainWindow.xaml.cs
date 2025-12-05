@@ -332,7 +332,6 @@ public partial class MainWindow : Window
 
     // View state
     private ICollectionView? _currentModsView;
-    private ScrollViewer? _modDatabaseCardsScrollViewer;
     private ScrollViewer? _modsScrollViewer;
     private DataGrid? _modsScrollViewerSource;
     private INotifyCollectionChanged? _modsCollection;
@@ -400,7 +399,7 @@ public partial class MainWindow : Window
         var modApiService = new ModApiService(httpClient);
         var viewModel = new ModBrowserViewModel(modApiService);
 
-        ModBrowser.DataContext = viewModel;
+        DataContext = viewModel;
 
         DeveloperProfileManager.CurrentProfileChanged += DeveloperProfileManager_OnCurrentProfileChanged;
 
