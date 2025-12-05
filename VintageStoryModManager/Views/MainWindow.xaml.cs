@@ -5676,25 +5676,23 @@ public partial class MainWindow : Window
             return;
         }
 
-        var message = $"Current manager folder:\n{currentFolder}\n\n" +
-                      "This will allow you to move the entire \"Simple VS Manager\" folder to a new location.\n\n" +
-                      "The manager will:\n" +
-                      "• Move all configuration files, cached mods, backups, and presets\n" +
-                      "• Update the configuration to use the new location\n" +
-                      "• Require a restart to complete the change\n\n" +
-                      "Do you want to continue?";
+        var dialog = new ChangeManagerFolderDialog(this, currentFolder);
+        var dialogResult = dialog.ShowDialog();
 
-        var result = WpfMessageBox.Show(
-            message,
-            "Change Manager Config and Cache Folder",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
+        if (dialogResult != true)
+            return;
 
-        if (result != MessageBoxResult.Yes)
+        if (dialog.Result == ChangeManagerFolderDialogResult.Reset)
+        {
+            HandleResetManagerFolder(currentFolder);
+            return;
+        }
+
+        if (dialog.Result != ChangeManagerFolderDialogResult.Yes)
             return;
 
         // Show folder browser dialog
-        using var dialog = new WinForms.FolderBrowserDialog
+        using var folderDialog = new WinForms.FolderBrowserDialog
         {
             Description = "Select the new location for the \"Simple VS Manager\" folder.\n" +
                           "The folder will be created if it doesn't exist.",
@@ -5702,10 +5700,10 @@ public partial class MainWindow : Window
             UseDescriptionForTitle = true
         };
 
-        if (dialog.ShowDialog() != WinForms.DialogResult.OK)
+        if (folderDialog.ShowDialog() != WinForms.DialogResult.OK)
             return;
 
-        var newParentFolder = dialog.SelectedPath;
+        var newParentFolder = folderDialog.SelectedPath;
         if (string.IsNullOrWhiteSpace(newParentFolder))
             return;
 
@@ -5850,6 +5848,116 @@ public partial class MainWindow : Window
         {
             // If we can't delete the empty source folder, that's okay
         }
+    }
+
+    private void HandleResetManagerFolder(string currentFolder)
+    {
+        // Get the default location
+        var defaultFolder = GetDefaultManagerDataDirectory();
+        if (string.IsNullOrWhiteSpace(defaultFolder))
+        {
+            WpfMessageBox.Show(
+                "Cannot determine the default manager data folder location.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        // Check if already at default location
+        if (string.Equals(currentFolder, defaultFolder, StringComparison.OrdinalIgnoreCase))
+        {
+            WpfMessageBox.Show(
+                $"Already using the default manager folder location:\n{defaultFolder}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        // Confirm reset
+        var confirmMessage = $"Reset manager folder to default location?\n\n" +
+                             $"Current location:\n{currentFolder}\n\n" +
+                             $"Default location:\n{defaultFolder}\n\n" +
+                             "The manager will:\n" +
+                             "• Move all configuration files, cached mods, backups, and presets\n" +
+                             "• Update the configuration to use the default location\n" +
+                             "• Require a restart to complete the change\n\n" +
+                             "Continue?";
+
+        var confirmResult = WpfMessageBox.Show(
+            confirmMessage,
+            "Reset to Default Location",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (confirmResult != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            // Check if the destination already exists
+            if (Directory.Exists(defaultFolder))
+            {
+                var overwriteMessage = $"The default folder \"{defaultFolder}\" already exists.\n\n" +
+                                       "Do you want to merge with the existing folder?\n" +
+                                       "(Existing files with the same name will be overwritten)";
+
+                var overwriteResult = WpfMessageBox.Show(
+                    overwriteMessage,
+                    "Folder Already Exists",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (overwriteResult != MessageBoxResult.Yes)
+                    return;
+            }
+
+            // Create the default folder if it doesn't exist
+            Directory.CreateDirectory(defaultFolder);
+
+            // Move all files and subdirectories
+            MoveDirectoryContents(currentFolder, defaultFolder);
+
+            // Clear the custom folder configuration to use the default
+            CustomConfigFolderManager.ClearCustomConfigFolder();
+
+            // Show success message
+            var successMessage = $"Manager folder reset to default location:\n{defaultFolder}\n\n" +
+                                 "The application will now restart.";
+
+            WpfMessageBox.Show(
+                successMessage,
+                "Reset Complete",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            // Restart the application
+            RestartApplication();
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                $"Failed to reset the manager folder:\n\n{ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private static string? GetDefaultManagerDataDirectory()
+    {
+        var path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrWhiteSpace(path))
+            path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        if (string.IsNullOrWhiteSpace(path)) path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+        if (string.IsNullOrWhiteSpace(path)) path = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+
+        return string.IsNullOrWhiteSpace(path)
+            ? null
+            : Path.Combine(path, "Simple VS Manager");
     }
 
     private static void RestartApplication()
