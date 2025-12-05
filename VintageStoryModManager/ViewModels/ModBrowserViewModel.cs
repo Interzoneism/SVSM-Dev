@@ -326,6 +326,15 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task InstallModAsync(int modId)
     {
+        // Check if internet access is disabled
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            System.Diagnostics.Debug.WriteLine("Cannot install mod: Internet access is disabled");
+            // Note: In a full implementation, we'd want to show a user-facing message here
+            // but that would require a message service or similar to be passed to the ViewModel
+            return;
+        }
+
         // Fetch full mod details
         var mod = await _modApiService.GetModAsync(modId);
         if (mod == null)
