@@ -472,41 +472,46 @@ public partial class ModBrowserViewModel : ObservableObject
     partial void OnSelectedSideChanged(string value)
     {
         if (!_isInitializing)
+        {
             _userConfigService?.SetModBrowserSelectedSide(value);
-        if (!_isInitializing)
             _ = SearchModsAsync();
+        }
     }
 
     partial void OnSelectedInstalledFilterChanged(string value)
     {
         if (!_isInitializing)
+        {
             _userConfigService?.SetModBrowserSelectedInstalledFilter(value);
-        if (!_isInitializing)
             _ = SearchModsAsync();
+        }
     }
 
     partial void OnOnlyFavoritesChanged(bool value)
     {
         if (!_isInitializing)
+        {
             _userConfigService?.SetModBrowserOnlyFavorites(value);
-        if (!_isInitializing)
             _ = SearchModsAsync();
+        }
     }
 
     partial void OnOrderByChanged(string value)
     {
         if (!_isInitializing)
+        {
             _userConfigService?.SetModBrowserOrderBy(value);
-        if (!_isInitializing)
             _ = SearchModsAsync();
+        }
     }
 
     partial void OnOrderByDirectionChanged(string value)
     {
         if (!_isInitializing)
+        {
             _userConfigService?.SetModBrowserOrderByDirection(value);
-        if (!_isInitializing)
             _ = SearchModsAsync();
+        }
     }
 
     #endregion
