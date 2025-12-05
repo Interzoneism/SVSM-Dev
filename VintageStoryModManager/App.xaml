@@ -11,6 +11,8 @@
                 <ui:ThemeResources />
                 <ui:XamlControlsResources />
                 <ResourceDictionary Source="Resources/Themes/DarkVsTheme.xaml" />
+                <ResourceDictionary Source="Resources/BoxIconsResources.xaml"/>
+                <ResourceDictionary Source="Resources/MainWindowStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <BooleanToVisibilityConverter x:Key="IMM.BooleanToVisibilityConverter" />
