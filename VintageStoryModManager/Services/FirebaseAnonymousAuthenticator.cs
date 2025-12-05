@@ -289,6 +289,12 @@ public sealed class FirebaseAnonymousAuthenticator : IDisposable
 
     private static string? TryGetSecureBaseDirectory()
     {
+        // First check if there's a custom config folder configured
+        var customFolder = CustomConfigFolderManager.GetCustomConfigFolder();
+        if (!string.IsNullOrWhiteSpace(customFolder) && TryEnsureDirectory(customFolder))
+            return customFolder;
+
+        // Fall back to default locations
         foreach (var folder in new[]
                  {
                      Environment.SpecialFolder.LocalApplicationData,
@@ -550,10 +556,27 @@ public sealed class FirebaseAnonymousAuthenticator : IDisposable
     {
         try
         {
+            // First check if there's a custom config folder configured
+            var customFolder = CustomConfigFolderManager.GetCustomConfigFolder();
+            string backupDirectory;
+            
+            if (!string.IsNullOrWhiteSpace(customFolder))
+            {
+                // Use the parent directory of the custom folder for backup
+                // For example, if custom is "D:\MyFolder\Simple VS Manager", backup to "D:\MyFolder\SVSM Backup"
+                var parentDirectory = Path.GetDirectoryName(customFolder);
+                if (!string.IsNullOrWhiteSpace(parentDirectory))
+                {
+                    backupDirectory = Path.Combine(parentDirectory, DevConfig.FirebaseAuthBackupDirectoryName);
+                    return Path.Combine(backupDirectory, StateFileName);
+                }
+            }
+
+            // Fall back to default location in LocalApplicationData
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (string.IsNullOrWhiteSpace(localAppData)) return null;
 
-            var backupDirectory = Path.Combine(localAppData, DevConfig.FirebaseAuthBackupDirectoryName);
+            backupDirectory = Path.Combine(localAppData, DevConfig.FirebaseAuthBackupDirectoryName);
             return Path.Combine(backupDirectory, StateFileName);
         }
         catch
