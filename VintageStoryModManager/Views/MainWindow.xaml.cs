@@ -4705,7 +4705,7 @@ public partial class MainWindow : Window
         }
 
         var errorSourcePathsBeforeFix =
-            _viewModel.GetSourcePathsForModsWithErrors();
+            _viewModel?.GetSourcePathsForModsWithErrors() ?? [];
         var modsToRefresh = new HashSet<string>(errorSourcePathsBeforeFix, StringComparer.OrdinalIgnoreCase);
 
         if (!string.IsNullOrWhiteSpace(mod.SourcePath)) modsToRefresh.Add(mod.SourcePath);
@@ -4723,7 +4723,7 @@ public partial class MainWindow : Window
             {
                 if (dependency.IsGameOrCoreDependency || !processedDependencies.Add(dependency.ModId)) continue;
 
-                var installedDependency = _viewModel.FindInstalledModById(dependency.ModId);
+                var installedDependency = _viewModel?.FindInstalledModById(dependency.ModId);
 
                 var isMissing = mod.MissingDependencies.Any(d =>
                     string.Equals(d.ModId, dependency.ModId, StringComparison.OrdinalIgnoreCase));
@@ -4743,13 +4743,13 @@ public partial class MainWindow : Window
                     if (!result.Success)
                     {
                         failures.Add($"{dependency.Display}: {result.Message}");
-                        _viewModel.ReportStatus($"Failed to install dependency {dependency.Display}: {result.Message}",
+                        _viewModel?.ReportStatus($"Failed to install dependency {dependency.Display}: {result.Message}",
                             true);
                     }
                     else
                     {
                         anySuccess = true;
-                        _viewModel.ReportStatus(result.Message);
+                        _viewModel?.ReportStatus(result.Message);
                     }
 
                     continue;
@@ -4759,7 +4759,7 @@ public partial class MainWindow : Window
                 {
                     installedDependency.IsActive = true;
                     anySuccess = true;
-                    _viewModel.ReportStatus($"Activated dependency {installedDependency.DisplayName}.");
+                    _viewModel?.ReportStatus($"Activated dependency {installedDependency.DisplayName}.");
                 }
             }
         }
@@ -4794,15 +4794,15 @@ public partial class MainWindow : Window
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
-            _viewModel.ReportStatus($"Failed to resolve all dependencies for {mod.DisplayName}.", true);
+            _viewModel?.ReportStatus($"Failed to resolve all dependencies for {mod.DisplayName}.", true);
         }
         else if (anySuccess)
         {
-            _viewModel.ReportStatus($"Resolved dependencies for {mod.DisplayName}.");
+            _viewModel?.ReportStatus($"Resolved dependencies for {mod.DisplayName}.");
         }
         else
         {
-            _viewModel.ReportStatus($"Dependencies for {mod.DisplayName} are already satisfied.");
+            _viewModel?.ReportStatus($"Dependencies for {mod.DisplayName} are already satisfied.");
         }
     }
 
