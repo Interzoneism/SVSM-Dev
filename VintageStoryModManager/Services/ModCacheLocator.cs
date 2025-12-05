@@ -10,10 +10,16 @@ internal static class ModCacheLocator
 {
     /// <summary>
     ///     Gets the manager's data directory in the user's local or application data folder.
+    ///     If a custom folder has been configured, returns that instead.
     /// </summary>
     /// <returns>The full path to the manager's data directory, or null if it cannot be determined.</returns>
     public static string? GetManagerDataDirectory()
     {
+        // Check for custom configuration folder first
+        var customFolder = CustomConfigFolderManager.GetCustomConfigFolder();
+        if (!string.IsNullOrWhiteSpace(customFolder))
+            return customFolder;
+
         var path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         if (string.IsNullOrWhiteSpace(path))
             path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);

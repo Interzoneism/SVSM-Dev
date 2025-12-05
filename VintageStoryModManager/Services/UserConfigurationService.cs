@@ -3082,6 +3082,11 @@ public sealed class UserConfigurationService
 
     private static string GetPreferredConfigurationDirectory()
     {
+        // Check for custom configuration folder first
+        var customFolder = CustomConfigFolderManager.GetCustomConfigFolder();
+        if (!string.IsNullOrWhiteSpace(customFolder))
+            return customFolder;
+
         var localAppData = GetFolder(Environment.SpecialFolder.LocalApplicationData);
         if (!string.IsNullOrWhiteSpace(localAppData)) return Path.Combine(localAppData, "Simple VS Manager");
 
