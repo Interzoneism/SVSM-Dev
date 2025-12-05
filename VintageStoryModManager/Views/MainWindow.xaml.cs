@@ -1,3 +1,10 @@
+using CommunityToolkit.Mvvm.Input;
+using ModernWpf.Controls;
+using QuestPDF;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using SimpleVsManager.Cloud;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -5,8 +12,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
-using System.Net.Http;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -24,25 +31,18 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Windows.Threading;
-using CommunityToolkit.Mvvm.Input;
-using ModernWpf.Controls;
-using QuestPDF;
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
-using SimpleVsManager.Cloud;
 using UglyToad.PdfPig;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
 using VintageStoryModManager.Views.Dialogs;
-using DataFolderBackupProgress = VintageStoryModManager.Services.DataBackupProgress;
-using DataFolderBackupSummary = VintageStoryModManager.Services.DataBackupSummary;
 using YamlDotNet.Core;
 using ButtonBase = System.Windows.Controls.Primitives.ButtonBase;
 using Colors = QuestPDF.Helpers.Colors;
 using ComboBox = System.Windows.Controls.ComboBox;
 using Cursors = System.Windows.Input.Cursors;
+using DataFolderBackupProgress = VintageStoryModManager.Services.DataBackupProgress;
+using DataFolderBackupSummary = VintageStoryModManager.Services.DataBackupSummary;
 using DataFormats = System.Windows.DataFormats;
 using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
@@ -59,13 +59,13 @@ using Point = System.Windows.Point;
 using ProgressBar = System.Windows.Controls.ProgressBar;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 using ScrollBar = System.Windows.Controls.Primitives.ScrollBar;
+using TabControl = System.Windows.Controls.TabControl;
 using TextBoxBase = System.Windows.Controls.Primitives.TextBoxBase;
 using VerticalAlignment = System.Windows.VerticalAlignment;
 using WinForms = System.Windows.Forms;
 using WpfButton = System.Windows.Controls.Button;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 using WpfToolTip = System.Windows.Controls.ToolTip;
-using TabControl = System.Windows.Controls.TabControl;
 
 namespace VintageStoryModManager.Views;
 
@@ -395,6 +395,12 @@ public partial class MainWindow : Window
         _modActivityLoggingService = new ModActivityLoggingService(_userConfiguration);
 
         InitializeComponent();
+
+        var httpClient = new HttpClient();
+        var modApiService = new ModApiService(httpClient);
+        var viewModel = new ModBrowserViewModel(modApiService);
+
+        ModBrowser.DataContext = viewModel;
 
         DeveloperProfileManager.CurrentProfileChanged += DeveloperProfileManager_OnCurrentProfileChanged;
 
@@ -2388,23 +2394,16 @@ public partial class MainWindow : Window
         _viewModel = new MainViewModel(
             _dataDirectory,
             _userConfiguration,
-            _userConfiguration.ModDatabaseSearchResultLimit,
-            _userConfiguration.ModDatabaseNewModsRecentMonths,
-            _userConfiguration.ModDatabaseAutoLoadMode,
-            _gameDirectory,
-            _userConfiguration.ExcludeInstalledModDatabaseResults,
-            _userConfiguration.OnlyShowCompatibleModDatabaseResults)
+            _gameDirectory)
         {
             IsCompactView = _userConfiguration.IsCompactView,
-            UseModDbDesignView = _userConfiguration.UseModDbDesignView
         };
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         DataContext = _viewModel;
         ApplyPlayerIdentityToUiAndCloudStore();
         _cloudModlistsLoaded = false;
         _localModlistsLoaded = false;
-        _selectedCloudModlist = null;
-        UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
+        _selectedCloudModlist = null;;
         AttachToModsView(_viewModel.CurrentModsView);
         RestoreSortPreference();
         UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
@@ -2425,55 +2424,6 @@ public partial class MainWindow : Window
         {
             if (_viewModel != null) _userConfiguration.SetCompactViewMode(_viewModel.IsCompactView);
         }
-        else if (e.PropertyName == nameof(MainViewModel.UseModDbDesignView))
-        {
-            if (_viewModel != null)
-            {
-                _userConfiguration.SetModDbDesignViewMode(_viewModel.UseModDbDesignView);
-
-                Dispatcher.InvokeAsync(() =>
-                {
-                    _modsScrollViewer = null;
-                    _modDatabaseCardsScrollViewer = null;
-                }, DispatcherPriority.Background);
-
-                Dispatcher.InvokeAsync(UpdateLoadMoreScrollThresholdState, DispatcherPriority.Background);
-            }
-        }
-        else if (e.PropertyName == nameof(MainViewModel.ExcludeInstalledModDatabaseResults))
-        {
-            if (_viewModel != null)
-                _userConfiguration.SetExcludeInstalledModDatabaseResults(
-                    _viewModel.ExcludeInstalledModDatabaseResults);
-        }
-        else if (e.PropertyName == nameof(MainViewModel.OnlyShowCompatibleModDatabaseResults))
-        {
-            if (_viewModel != null)
-                _userConfiguration.SetOnlyShowCompatibleModDatabaseResults(
-                    _viewModel.OnlyShowCompatibleModDatabaseResults);
-        }
-        else if (e.PropertyName == nameof(MainViewModel.SelectedModDatabaseFetchLimit))
-        {
-            if (_viewModel != null)
-                _userConfiguration.SetModDatabaseSearchResultLimit(
-                    _viewModel.SelectedModDatabaseFetchLimit);
-        }
-        else if (e.PropertyName == nameof(MainViewModel.SearchModDatabase))
-        {
-            if (_viewModel != null)
-                Dispatcher.InvokeAsync(() =>
-                {
-                    if (_viewModel == null) return;
-
-                    UpdateSearchColumnVisibility(_viewModel.SearchModDatabase);
-                    if (!_viewModel.SearchModDatabase) ClearModDatabaseSelections();
-                    SyncMiddleTabControlToViewModel();
-                }, DispatcherPriority.Background);
-        }
-        else if (e.PropertyName == nameof(MainViewModel.ModDatabaseAutoLoadMode))
-        {
-            if (_viewModel != null) _userConfiguration.SetModDatabaseAutoLoadMode(_viewModel.ModDatabaseAutoLoadMode);
-        }
         else if (e.PropertyName == nameof(MainViewModel.IsViewingModlistTab))
         {
             if (_viewModel != null)
@@ -2493,10 +2443,6 @@ public partial class MainWindow : Window
                 {
                     if (_viewModel != null) SyncMiddleTabControlToViewModel();
                 }, DispatcherPriority.Background);
-        }
-        else if (e.PropertyName == nameof(MainViewModel.IsLoadMoreModDatabaseButtonVisible))
-        {
-            Dispatcher.InvokeAsync(UpdateLoadMoreScrollThresholdState, DispatcherPriority.Background);
         }
         else if (e.PropertyName == nameof(MainViewModel.CurrentModsView))
         {
@@ -2593,8 +2539,6 @@ public partial class MainWindow : Window
 
         if (_viewModel.IsViewingMainTab)
             targetTab = MainTab;
-        else if (_viewModel.SearchModDatabase)
-            targetTab = DatabaseTab;
         else if (_viewModel.IsViewingModlistTab)
             targetTab = ModlistTab;
         else
@@ -3632,7 +3576,7 @@ public partial class MainWindow : Window
         List<string>? selectedSourcePaths = null;
         string? anchorSourcePath = null;
 
-        if (!_viewModel.SearchModDatabase && _selectedMods.Count > 0)
+        if (_selectedMods.Count > 0)
         {
             var dedup = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             selectedSourcePaths = new List<string>(_selectedMods.Count);
@@ -3825,14 +3769,8 @@ public partial class MainWindow : Window
             newViewModel = new MainViewModel(
                 _dataDirectory,
                 _userConfiguration,
-                _userConfiguration.ModDatabaseSearchResultLimit,
-                _userConfiguration.ModDatabaseNewModsRecentMonths,
-                _userConfiguration.ModDatabaseAutoLoadMode,
-                _gameDirectory,
-                _userConfiguration.ExcludeInstalledModDatabaseResults,
-                _userConfiguration.OnlyShowCompatibleModDatabaseResults);
+                _gameDirectory);
             newViewModel.IsCompactView = _userConfiguration.IsCompactView;
-            newViewModel.UseModDbDesignView = _userConfiguration.UseModDbDesignView;
             newViewModel.PropertyChanged += ViewModelOnPropertyChanged;
             _viewModel = newViewModel;
             ApplyColumnVisibilityPreferencesToViewModel();
@@ -4063,12 +4001,6 @@ public partial class MainWindow : Window
     {
         if (_viewModel is null) return;
 
-        if (_viewModel.SearchModDatabase)
-        {
-            e.Handled = true;
-            return;
-        }
-
         var sortMemberPath = e.Column.SortMemberPath;
         if (string.IsNullOrWhiteSpace(sortMemberPath))
         {
@@ -4179,8 +4111,6 @@ public partial class MainWindow : Window
     {
         if (_isApplyingPreset) return true;
 
-        if (_viewModel?.SearchModDatabase == true) return false;
-
         if (e.Key == Key.A && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
         {
             if (ModsDataGrid?.IsVisible == true)
@@ -4228,47 +4158,6 @@ public partial class MainWindow : Window
         if (FindAncestor<ScrollBar>(source) != null) return;
 
         ClearSelection(true);
-    }
-
-    private void ModDatabaseCardsListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (sender is ListView listView)
-        {
-            listView.SelectedIndex = -1;
-            listView.UnselectAll();
-        }
-    }
-
-    private void ModDatabaseCardsListView_OnScrollChanged(object sender, ScrollChangedEventArgs e)
-    {
-        UpdateLoadMoreScrollThresholdState(e.VerticalOffset, e.ViewportHeight, e.ExtentHeight);
-    }
-
-    private void UpdateLoadMoreScrollThresholdState()
-    {
-        if (_viewModel?.SearchModDatabase != true || !_viewModel.UseModDbDesignView) return;
-
-        var scrollViewer = GetModsScrollViewer();
-        if (scrollViewer == null) return;
-
-        UpdateLoadMoreScrollThresholdState(scrollViewer.VerticalOffset, scrollViewer.ViewportHeight,
-            scrollViewer.ExtentHeight);
-    }
-
-    private void UpdateLoadMoreScrollThresholdState(double verticalOffset, double viewportHeight, double extentHeight)
-    {
-        if (_viewModel?.SearchModDatabase != true || !_viewModel.UseModDbDesignView) return;
-
-        var scrollableHeight = extentHeight - viewportHeight;
-        var isNearBottom = scrollableHeight <= 0 || verticalOffset / scrollableHeight >= LoadMoreScrollThreshold;
-        _viewModel.IsLoadMoreModDatabaseScrollThresholdReached = isNearBottom;
-
-        // Auto-load more results when scrolled near bottom
-        // CanExecute checks prevent multiple simultaneous loads via IsModDatabaseLoading flag
-        if (isNearBottom && _viewModel.LoadMoreModDatabaseResultsCommand.CanExecute(null))
-        {
-            _viewModel.LoadMoreModDatabaseResultsCommand.Execute(null);
-        }
     }
 
     private void ModsDataGridRow_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -4411,7 +4300,6 @@ public partial class MainWindow : Window
     private void RefreshHoverOverlayState()
     {
         RefreshRowHoverOverlays(ModsDataGrid);
-        RefreshRowHoverOverlays(ModDbDataGrid);
         RefreshRowHoverOverlays(CloudModlistsDataGrid);
     }
 
@@ -4610,8 +4498,6 @@ public partial class MainWindow : Window
 
     private async void DeleteModButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (_viewModel?.SearchModDatabase == true) return;
-
         if (sender is not WpfButton button) return;
 
         if (button.DataContext is ModListItemViewModel mod)
@@ -4805,8 +4691,6 @@ public partial class MainWindow : Window
     {
         if (_isModUpdateInProgress) return;
 
-        if (_viewModel is null || _viewModel.SearchModDatabase) return;
-
         if (sender is not WpfButton { DataContext: ModListItemViewModel mod }) return;
 
         e.Handled = true;
@@ -4926,8 +4810,6 @@ public partial class MainWindow : Window
     private async void InstallModButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (_isModUpdateInProgress) return;
-
-        if (_viewModel?.SearchModDatabase != true) return;
 
         if (sender is not WpfButton { DataContext: ModListItemViewModel mod }) return;
 
@@ -6334,15 +6216,6 @@ public partial class MainWindow : Window
                 ModsDataGrid.IsEnabled = false;
         }
 
-        if (ModDbDataGrid != null)
-        {
-            if (isEnabled)
-                ModDbDataGrid.ClearValue(IsEnabledProperty);
-            else
-                ModDbDataGrid.IsEnabled = false;
-        }
-
-        if (ModDatabaseCardsListView != null) ModDatabaseCardsListView.IsEnabled = isEnabled;
     }
 
     private async Task RefreshDeleteCachedModsMenuHeaderAsync()
@@ -6589,15 +6462,6 @@ public partial class MainWindow : Window
     private static void ClearManagerCaches(bool preserveModCache)
     {
         var errors = new List<string>();
-
-        try
-        {
-            ModDatabaseCacheService.ClearCacheDirectory();
-        }
-        catch (Exception ex)
-        {
-            errors.Add(BuildCacheClearErrorMessage("Mod database cache", ex));
-        }
 
         try
         {
@@ -9306,35 +9170,6 @@ public partial class MainWindow : Window
         foreach (var ch in value) builder.Append(Array.IndexOf(invalidChars, ch) >= 0 ? '_' : ch);
 
         return builder.ToString();
-    }
-
-    private void BrowseDownloadsButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is not MainViewModel viewModel) return;
-
-        var command = viewModel.ShowDownloadsSortingOptionsCommand;
-        if (command.CanExecute(null)) command.Execute(null);
-    }
-
-    private void BrowseActivityButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is not MainViewModel viewModel) return;
-
-        var command = viewModel.ShowActivitySortingOptionsCommand;
-        if (command.CanExecute(null)) command.Execute(null);
-    }
-
-    private void ModlistsTabButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        Dispatcher.InvokeAsync(() =>
-        {
-            RefreshLocalModlists(true);
-
-            if (_viewModel?.IsViewingModlistTab == true && ModlistsTabControl is not null &&
-                OnlineModlistsTabItem is not null &&
-                Equals(ModlistsTabControl.SelectedItem, OnlineModlistsTabItem))
-                _ = RefreshCloudModlistsAsync(true);
-        }, DispatcherPriority.Background);
     }
 
     private async void SaveModlistToCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -12261,16 +12096,9 @@ public partial class MainWindow : Window
 
         if (sender is not DependencyObject dependencyObject) return;
 
-        var isModListGrid = ReferenceEquals(dependencyObject, ModsDataGrid)
-                            || ReferenceEquals(dependencyObject, ModDbDataGrid);
+        var isModListGrid = ReferenceEquals(dependencyObject, ModsDataGrid);
 
-        var scrollViewer = isModListGrid
-            ? GetModsScrollViewer()
-            : ReferenceEquals(dependencyObject, ModDatabaseCardsListView)
-                ? GetModsScrollViewer()
-                : FindDescendantScrollViewer(dependencyObject);
-
-        if (scrollViewer is null) scrollViewer = GetModsScrollViewer();
+        var scrollViewer = GetModsScrollViewer();;
 
         if (scrollViewer is null) return;
 
@@ -12328,8 +12156,6 @@ public partial class MainWindow : Window
 
     private double GetCurrentScrollMultiplier()
     {
-        if (_viewModel?.SearchModDatabase == true && _viewModel.UseModDbDesignView) return ModDbDesignScrollMultiplier;
-
         return ModListScrollMultiplier;
     }
 
@@ -12444,8 +12270,6 @@ public partial class MainWindow : Window
     {
         if (_isApplyingPreset) return;
 
-        if (_viewModel?.SearchModDatabase == true) return;
-
         var mods = GetModsInViewOrder();
         ClearSelection(true);
 
@@ -12547,25 +12371,11 @@ public partial class MainWindow : Window
                 UpdateSelectedModButtons();
             }
         }
-
-        if (ModDbDataGrid != null)
-        {
-            ModDbDataGrid.SelectedIndex = -1;
-            ModDbDataGrid.SelectedItem = null;
-            ModDbDataGrid.UnselectAll();
-        }
-
-        if (ModDatabaseCardsListView != null)
-        {
-            ModDatabaseCardsListView.SelectedIndex = -1;
-            ModDatabaseCardsListView.SelectedItem = null;
-            ModDatabaseCardsListView.UnselectAll();
-        }
     }
 
     private void RestoreSelectionFromSourcePaths(IReadOnlyList<string> sourcePaths, string? anchorSourcePath)
     {
-        if (_viewModel is null || _viewModel.SearchModDatabase) return;
+        if (_viewModel is null) return;
 
         var resolved = new List<ModListItemViewModel>(sourcePaths.Count);
         foreach (var path in sourcePaths)
@@ -12675,14 +12485,12 @@ public partial class MainWindow : Window
 
     private void RefreshSelectedModFixButton(ModListItemViewModel mod)
     {
-        if (_viewModel?.SearchModDatabase == true) return;
 
         if (_selectedMods.Count == 1 && ReferenceEquals(_selectedMods[0], mod)) UpdateSelectedModFixButton(mod);
     }
 
     private void RefreshSelectedModCopyForServerButton(ModListItemViewModel mod)
     {
-        if (_viewModel?.SearchModDatabase == true) return;
 
         if (_selectedMods.Count == 1 && ReferenceEquals(_selectedMods[0], mod))
             UpdateSelectedModCopyForServerButton(mod);
@@ -12696,7 +12504,6 @@ public partial class MainWindow : Window
 
         if (hasMultipleSelection)
         {
-            UpdateSelectedModInstallButton(null);
             UpdateSelectedModButton(SelectedModDatabasePageButton, null, true);
             UpdateSelectedModButton(SelectedModUpdateButton, null, false, true);
             UpdateSelectedModEditConfigButton(null);
@@ -12705,25 +12512,14 @@ public partial class MainWindow : Window
 
             if (SelectedModDeleteButton is not null)
             {
-                var allowDeletion = _viewModel?.SearchModDatabase != true;
+                var allowDeletion = true;
                 SelectedModDeleteButton.DataContext = null;
                 SelectedModDeleteButton.Visibility = allowDeletion ? Visibility.Visible : Visibility.Collapsed;
                 SelectedModDeleteButton.IsEnabled = allowDeletion;
             }
         }
-        else if (_viewModel?.SearchModDatabase == true)
-        {
-            UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, true);
-            UpdateSelectedModButton(SelectedModUpdateButton, null, false, true);
-            UpdateSelectedModEditConfigButton(null);
-            UpdateSelectedModButton(SelectedModDeleteButton, null, false);
-            UpdateSelectedModInstallButton(singleSelection);
-            UpdateSelectedModFixButton(null);
-            UpdateSelectedModCopyForServerButton(null);
-        }
         else
         {
-            UpdateSelectedModInstallButton(null);
             UpdateSelectedModButton(SelectedModDatabasePageButton, singleSelection, true);
             UpdateSelectedModButton(SelectedModUpdateButton, singleSelection, false, true);
             UpdateSelectedModEditConfigButton(singleSelection);
@@ -12741,23 +12537,6 @@ public partial class MainWindow : Window
 
         var singleSelection = _selectedMods.Count == 1 ? _selectedMods[0] : null;
         UpdateSelectedModCopyForServerButton(isEnabled ? singleSelection : null);
-    }
-
-    private void UpdateSelectedModInstallButton(ModListItemViewModel? mod)
-    {
-        if (SelectedModInstallButton is null) return;
-
-        if (_viewModel?.SearchModDatabase != true || mod is null)
-        {
-            SelectedModInstallButton.DataContext = null;
-            SelectedModInstallButton.Visibility = Visibility.Collapsed;
-            SelectedModInstallButton.IsEnabled = false;
-            return;
-        }
-
-        SelectedModInstallButton.DataContext = mod;
-        SelectedModInstallButton.Visibility = Visibility.Visible;
-        SelectedModInstallButton.IsEnabled = mod.HasDownloadableRelease && !_isModUpdateInProgress;
     }
 
     private void UpdateSelectedModFixButton(ModListItemViewModel? mod)
@@ -12864,19 +12643,8 @@ public partial class MainWindow : Window
 
     private ScrollViewer? GetModsScrollViewer()
     {
-        if (_viewModel?.SearchModDatabase == true && _viewModel.UseModDbDesignView)
-        {
-            if (_modDatabaseCardsScrollViewer != null) return _modDatabaseCardsScrollViewer;
 
-            if (ModDatabaseCardsListView == null) return null;
-
-            _modDatabaseCardsScrollViewer = FindDescendantScrollViewer(ModDatabaseCardsListView);
-            return _modDatabaseCardsScrollViewer;
-        }
-
-        var targetGrid = _viewModel?.SearchModDatabase == true
-            ? ModDbDataGrid
-            : ModsDataGrid;
+        var targetGrid = ModsDataGrid;
 
         if (targetGrid == null) return null;
 

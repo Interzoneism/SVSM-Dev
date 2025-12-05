@@ -18,11 +18,6 @@ internal sealed class TagFilterService
     private readonly HashSet<string> _selectedInstalledTags = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    ///     Currently selected tags for mod database view.
-    /// </summary>
-    private readonly HashSet<string> _selectedModDatabaseTags = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>
     ///     Cached array of selected installed tags for efficient filtering.
     ///     Updated atomically under _filterLock when selection changes.
     ///     Readers access this without locking (volatile ensures visibility).
@@ -30,23 +25,12 @@ internal sealed class TagFilterService
     /// </summary>
     private volatile IReadOnlyList<string> _cachedSelectedInstalledTags = Array.Empty<string>();
 
-    /// <summary>
-    ///     Cached array of selected mod database tags for efficient filtering.
-    ///     Updated atomically under _filterLock when selection changes.
-    ///     Readers access this without locking (volatile ensures visibility).
-    ///     The array is immutable once published, providing thread-safe reads.
-    /// </summary>
-    private volatile IReadOnlyList<string> _cachedSelectedModDatabaseTags = Array.Empty<string>();
 
     /// <summary>
     ///     Cache for all available tags in the installed mods view.
     /// </summary>
     private volatile IReadOnlyList<string> _installedAvailableTags = Array.Empty<string>();
 
-    /// <summary>
-    ///     Cache for all available tags in the mod database view.
-    /// </summary>
-    private volatile IReadOnlyList<string> _modDatabaseAvailableTags = Array.Empty<string>();
 
     /// <summary>
     ///     Version number for change detection.
@@ -72,7 +56,7 @@ internal sealed class TagFilterService
         {
             lock (_filterLock)
             {
-                return _selectedInstalledTags.Count > 0 || _selectedModDatabaseTags.Count > 0;
+                return _selectedInstalledTags.Count > 0 ;
             }
         }
     }
@@ -102,16 +86,6 @@ internal sealed class TagFilterService
         }
     }
 
-    /// <summary>
-    ///     Gets the currently selected mod database tags.
-    /// </summary>
-    public IReadOnlyList<string> GetSelectedModDatabaseTags()
-    {
-        lock (_filterLock)
-        {
-            return _selectedModDatabaseTags.ToArray();
-        }
-    }
 
     /// <summary>
     ///     Updates the selected installed mod tags.
@@ -131,31 +105,6 @@ internal sealed class TagFilterService
             // Update cached array to avoid allocation during filtering
             _cachedSelectedInstalledTags = _selectedInstalledTags.Count > 0
                 ? _selectedInstalledTags.ToArray()
-                : Array.Empty<string>();
-
-            IncrementVersion();
-            return true;
-        }
-    }
-
-    /// <summary>
-    ///     Updates the selected mod database tags.
-    /// </summary>
-    public bool SetSelectedModDatabaseTags(IEnumerable<string>? tags)
-    {
-        lock (_filterLock)
-        {
-            var newTags = NormalizeTags(tags);
-            if (TagSetsEqual(_selectedModDatabaseTags, newTags))
-                return false;
-
-            _selectedModDatabaseTags.Clear();
-            foreach (var tag in newTags)
-                _selectedModDatabaseTags.Add(tag);
-
-            // Update cached array to avoid allocation during filtering
-            _cachedSelectedModDatabaseTags = _selectedModDatabaseTags.Count > 0
-                ? _selectedModDatabaseTags.ToArray()
                 : Array.Empty<string>();
 
             IncrementVersion();
@@ -201,43 +150,6 @@ internal sealed class TagFilterService
         }
     }
 
-    /// <summary>
-    ///     Toggles a tag's selection state for mod database.
-    /// </summary>
-    public bool ToggleModDatabaseTag(string tag)
-    {
-        if (string.IsNullOrWhiteSpace(tag))
-            return false;
-
-        var trimmed = tag.Trim();
-        if (trimmed.Length == 0)
-            return false;
-
-        lock (_filterLock)
-        {
-            bool changed;
-            if (_selectedModDatabaseTags.Contains(trimmed))
-            {
-                changed = _selectedModDatabaseTags.Remove(trimmed);
-            }
-            else
-            {
-                // Add returns true if the item was not already present
-                changed = _selectedModDatabaseTags.Add(trimmed);
-            }
-
-            if (changed)
-            {
-                // Update cached array to avoid allocation during filtering
-                _cachedSelectedModDatabaseTags = _selectedModDatabaseTags.Count > 0
-                    ? _selectedModDatabaseTags.ToArray()
-                    : Array.Empty<string>();
-                IncrementVersion();
-            }
-
-            return changed;
-        }
-    }
 
     /// <summary>
     ///     Clears all selected tags for both views.
@@ -246,15 +158,13 @@ internal sealed class TagFilterService
     {
         lock (_filterLock)
         {
-            if (_selectedInstalledTags.Count == 0 && _selectedModDatabaseTags.Count == 0)
+            if (_selectedInstalledTags.Count == 0)
                 return;
 
             _selectedInstalledTags.Clear();
-            _selectedModDatabaseTags.Clear();
 
             // Update cached arrays
             _cachedSelectedInstalledTags = Array.Empty<string>();
-            _cachedSelectedModDatabaseTags = Array.Empty<string>();
 
             IncrementVersion();
         }
@@ -277,22 +187,6 @@ internal sealed class TagFilterService
     }
 
     /// <summary>
-    ///     Clears selected mod database tags.
-    /// </summary>
-    public void ClearModDatabaseTagSelection()
-    {
-        lock (_filterLock)
-        {
-            if (_selectedModDatabaseTags.Count == 0)
-                return;
-
-            _selectedModDatabaseTags.Clear();
-            _cachedSelectedModDatabaseTags = Array.Empty<string>();
-            IncrementVersion();
-        }
-    }
-
-    /// <summary>
     ///     Filters a mod based on the currently selected installed mod tags.
     ///     Uses cached tag array to avoid allocation per call during filtering.
     /// </summary>
@@ -309,37 +203,12 @@ internal sealed class TagFilterService
     }
 
     /// <summary>
-    ///     Filters a mod based on the currently selected mod database tags.
-    ///     Uses cached tag array to avoid allocation per call during filtering.
-    /// </summary>
-    public bool PassesModDatabaseTagFilter(IReadOnlyList<string>? modTags)
-    {
-        // Read the cached array without locking for better performance during filtering.
-        // The cached array is updated atomically via volatile read/write.
-        var requiredTags = _cachedSelectedModDatabaseTags;
-
-        if (requiredTags.Count == 0)
-            return true;
-
-        return ContainsAllTags(modTags, requiredTags);
-    }
-
-    /// <summary>
     ///     Updates the available tags for installed mods.
     /// </summary>
     public void SetInstalledAvailableTags(IEnumerable<string> tags)
     {
         var sorted = SortAndDeduplicate(tags);
         _installedAvailableTags = sorted;
-    }
-
-    /// <summary>
-    ///     Updates the available tags for the mod database.
-    /// </summary>
-    public void SetModDatabaseAvailableTags(IEnumerable<string> tags)
-    {
-        var sorted = SortAndDeduplicate(tags);
-        _modDatabaseAvailableTags = sorted;
     }
 
     /// <summary>
@@ -361,41 +230,12 @@ internal sealed class TagFilterService
     }
 
     /// <summary>
-    ///     Gets the available tags for the mod database.
-    /// </summary>
-    public IReadOnlyList<string> GetModDatabaseAvailableTags()
-    {
-        // Include selected tags in the result to ensure they're always visible
-        IReadOnlyList<string> selected;
-        lock (_filterLock)
-        {
-            selected = _selectedModDatabaseTags.ToArray();
-        }
-
-        if (selected.Count == 0)
-            return _modDatabaseAvailableTags;
-
-        return MergeTags(_modDatabaseAvailableTags, selected);
-    }
-
-    /// <summary>
     ///     Collects and updates available tags from a collection of mods.
     /// </summary>
     public void UpdateInstalledAvailableTagsFromMods(IEnumerable<ModListItemViewModel> mods)
     {
         var allTags = EnumerateModTags(mods);
         SetInstalledAvailableTags(allTags);
-    }
-
-    /// <summary>
-    ///     Collects and updates available tags from a collection of search result mods.
-    /// </summary>
-    public void UpdateModDatabaseAvailableTagsFromMods(IEnumerable<ModListItemViewModel> mods)
-    {
-        var existingTags = _modDatabaseAvailableTags;
-        var newTags = EnumerateModTags(mods);
-        var merged = existingTags.Concat(newTags);
-        SetModDatabaseAvailableTags(merged);
     }
 
     /// <summary>
@@ -412,19 +252,6 @@ internal sealed class TagFilterService
         }
     }
 
-    /// <summary>
-    ///     Checks if a tag is currently selected for mod database.
-    /// </summary>
-    public bool IsModDatabaseTagSelected(string tag)
-    {
-        if (string.IsNullOrWhiteSpace(tag))
-            return false;
-
-        lock (_filterLock)
-        {
-            return _selectedModDatabaseTags.Contains(tag.Trim());
-        }
-    }
 
     private void IncrementVersion()
     {
