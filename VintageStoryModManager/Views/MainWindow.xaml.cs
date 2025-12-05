@@ -5790,6 +5790,10 @@ public partial class MainWindow : Window
 
     private static void MoveDirectoryContents(string sourceDir, string targetDir)
     {
+        // If source and target are the same, nothing to do
+        if (string.Equals(sourceDir, targetDir, StringComparison.OrdinalIgnoreCase))
+            return;
+
         // Create target directory if it doesn't exist
         Directory.CreateDirectory(targetDir);
 
@@ -5799,12 +5803,30 @@ public partial class MainWindow : Window
             var fileName = Path.GetFileName(file);
             var targetFile = Path.Combine(targetDir, fileName);
             
-            // Skip if source and target are the same
-            if (string.Equals(file, targetFile, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            // Overwrite if exists
-            File.Copy(file, targetFile, overwrite: true);
+            try
+            {
+                // Use File.Move for atomic operation when possible
+                if (File.Exists(targetFile))
+                {
+                    // If target exists, delete it first then move
+                    File.Delete(targetFile);
+                }
+                File.Move(file, targetFile);
+            }
+            catch (Exception)
+            {
+                // Fallback to copy if move fails (e.g., across volumes)
+                try
+                {
+                    File.Copy(file, targetFile, overwrite: true);
+                    File.Delete(file);
+                }
+                catch (Exception)
+                {
+                    // If copy also fails, leave the file in source
+                    throw;
+                }
+            }
         }
 
         // Move all subdirectories recursively
@@ -5812,38 +5834,21 @@ public partial class MainWindow : Window
         {
             var dirName = Path.GetFileName(directory);
             var targetSubDir = Path.Combine(targetDir, dirName);
-            
-            // Skip if source and target are the same
-            if (string.Equals(directory, targetSubDir, StringComparison.OrdinalIgnoreCase))
-                continue;
-
             MoveDirectoryContents(directory, targetSubDir);
         }
 
-        // Delete the source directory only if it's not the same as target
-        if (!string.Equals(sourceDir, targetDir, StringComparison.OrdinalIgnoreCase))
+        // Delete the source directory if it's now empty
+        try
         {
-            try
+            if (Directory.GetFiles(sourceDir).Length == 0 && 
+                Directory.GetDirectories(sourceDir).Length == 0)
             {
-                // Delete all files in source
-                foreach (var file in Directory.GetFiles(sourceDir))
-                {
-                    File.Delete(file);
-                }
-
-                // Delete all subdirectories in source
-                foreach (var directory in Directory.GetDirectories(sourceDir))
-                {
-                    Directory.Delete(directory, recursive: true);
-                }
-
-                // Delete the source directory itself
                 Directory.Delete(sourceDir, recursive: false);
             }
-            catch (Exception)
-            {
-                // If we can't delete the old folder, that's okay - the move was successful
-            }
+        }
+        catch (Exception)
+        {
+            // If we can't delete the empty source folder, that's okay
         }
     }
 
@@ -5852,7 +5857,11 @@ public partial class MainWindow : Window
         var currentExecutable = Environment.ProcessPath;
         if (string.IsNullOrWhiteSpace(currentExecutable))
         {
-            currentExecutable = Process.GetCurrentProcess().MainModule?.FileName;
+            var mainModule = Process.GetCurrentProcess().MainModule;
+            if (mainModule != null)
+            {
+                currentExecutable = mainModule.FileName;
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(currentExecutable))
