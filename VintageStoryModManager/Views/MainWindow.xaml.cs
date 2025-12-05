@@ -2409,7 +2409,14 @@ public partial class MainWindow : Window
     {
         if (ModBrowserView != null)
         {
-            var httpClient = new HttpClient();
+            var httpClient = new HttpClient(new HttpClientHandler
+            {
+                AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
+            })
+            {
+                Timeout = TimeSpan.FromSeconds(30)
+            };
+            
             var modApiService = new ModApiService(httpClient);
             var modBrowserViewModel = new ModBrowserViewModel(modApiService, _userConfiguration);
             

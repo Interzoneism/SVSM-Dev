@@ -1,5 +1,6 @@
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using VintageStoryModManager.Models;
@@ -85,6 +86,12 @@ public class ModApiService : IModApiService
         string orderByOrder = "desc",
         CancellationToken cancellationToken = default)
     {
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            System.Diagnostics.Debug.WriteLine("Internet access is disabled - skipping mod query");
+            return [];
+        }
+
         try
         {
             var queryBuilder = new StringBuilder($"{BaseUrl}/api/mods?");
@@ -140,6 +147,12 @@ public class ModApiService : IModApiService
 
     public async Task<DownloadableMod?> GetModAsync(string modIdStr, CancellationToken cancellationToken = default)
     {
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            System.Diagnostics.Debug.WriteLine("Internet access is disabled - skipping mod fetch");
+            return null;
+        }
+
         try
         {
             var response = await _httpClient.GetStringAsync($"{BaseUrl}/api/mod/{Uri.EscapeDataString(modIdStr)}", cancellationToken);
@@ -161,6 +174,12 @@ public class ModApiService : IModApiService
 
     public async Task<List<ModAuthor>> GetAuthorsAsync(CancellationToken cancellationToken = default)
     {
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            System.Diagnostics.Debug.WriteLine("Internet access is disabled - skipping authors fetch");
+            return [];
+        }
+
         try
         {
             var response = await _httpClient.GetStringAsync($"{BaseUrl}/api/authors", cancellationToken);
@@ -177,6 +196,12 @@ public class ModApiService : IModApiService
 
     public async Task<List<GameVersion>> GetGameVersionsAsync(CancellationToken cancellationToken = default)
     {
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            System.Diagnostics.Debug.WriteLine("Internet access is disabled - skipping game versions fetch");
+            return [];
+        }
+
         try
         {
             var response = await _httpClient.GetStringAsync($"{BaseUrl}/api/gameversions", cancellationToken);
@@ -195,6 +220,12 @@ public class ModApiService : IModApiService
 
     public async Task<List<ModTag>> GetTagsAsync(CancellationToken cancellationToken = default)
     {
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            System.Diagnostics.Debug.WriteLine("Internet access is disabled - skipping tags fetch");
+            return [];
+        }
+
         try
         {
             var response = await _httpClient.GetStringAsync($"{BaseUrl}/api/tags", cancellationToken);
@@ -215,6 +246,12 @@ public class ModApiService : IModApiService
         IProgress<double>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            System.Diagnostics.Debug.WriteLine("Internet access is disabled - skipping mod download");
+            return false;
+        }
+
         try
         {
             using var response = await _httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
