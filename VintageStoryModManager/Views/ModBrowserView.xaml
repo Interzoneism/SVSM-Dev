@@ -310,14 +310,15 @@
                                 <Border.Tag>
                                     <Binding Path="ModId"/>
                                 </Border.Tag>
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
+                                <Border CornerRadius="8" ClipToBounds="True">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
 
-                                    <!-- Mod Image -->
-                                    <Border Grid.Row="0" Height="192" CornerRadius="8,8,0,0" ClipToBounds="True">
+                                        <!-- Mod Image -->
+                                        <Border Grid.Row="0" Height="192" CornerRadius="8,8,0,0" ClipToBounds="True">
                                         <Grid>
                                             <Image Source="{Binding LogoUrl}"
                                                    Stretch="UniformToFill"
@@ -459,6 +460,7 @@
                                         </StackPanel>
                                     </Grid>
                                 </Grid>
+                                </Border>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
