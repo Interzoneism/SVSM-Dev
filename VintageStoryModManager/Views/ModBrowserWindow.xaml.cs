@@ -3,14 +3,14 @@ using System.Windows;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
 
-namespace VintageStoryModManager.ModBrowser;
+namespace VintageStoryModManager.Views;
 
 /// <summary>
-/// Interaction logic for MainWindow.xaml
+/// Interaction logic for ModBrowserWindow.xaml
 /// </summary>
-public partial class MainWindow : Window
+public partial class ModBrowserWindow : Window
 {
-    public MainWindow()
+    public ModBrowserWindow()
     {
         InitializeComponent();
 

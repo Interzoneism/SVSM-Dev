@@ -3,6 +3,9 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
+using Application = System.Windows.Application;
+using Binding = System.Windows.Data.Binding;
+using Color = System.Windows.Media.Color;
 
 namespace VintageStoryModManager.Converters;
 

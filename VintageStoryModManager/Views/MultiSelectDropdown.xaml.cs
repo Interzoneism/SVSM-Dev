@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Brush = System.Windows.Media.Brush;
 
 namespace VintageStoryModManager.Views
 {
@@ -55,9 +56,9 @@ namespace VintageStoryModManager.Views
         public static readonly DependencyProperty DisplayTextBrushProperty =
             DependencyProperty.Register(
                 nameof(DisplayTextBrush),
-                typeof(System.Drawing.Brush),
+                typeof(Brush),
                 typeof(MultiSelectDropdown),
-                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(161, 161, 170)))); // TextSecondaryBrush
+                new PropertyMetadata(new SolidColorBrush(System.Windows.Media.Color.FromRgb(161, 161, 170)))); // TextSecondaryBrush
 
         public IEnumerable ItemsSource
         {
@@ -89,22 +90,22 @@ namespace VintageStoryModManager.Views
             private set => SetValue(DisplayTextProperty, value);
         }
 
-        public System.Drawing.Brush DisplayTextBrush
+        public Brush DisplayTextBrush
         {
-            get => (System.Drawing.Brush)GetValue(DisplayTextBrushProperty);
+            get => (Brush)GetValue(DisplayTextBrushProperty);
             private set => SetValue(DisplayTextBrushProperty, value);
         }
 
         private ObservableCollection<SelectableItem> _selectableItems = [];
-        private System.Drawing.Brush? _textPrimaryBrush;
-        private System.Drawing.Brush? _textSecondaryBrush;
+        private Brush? _textPrimaryBrush;
+        private Brush? _textSecondaryBrush;
 
         // Fallback brushes if resources aren't available
-        private static readonly System.Drawing.Brush FallbackTextPrimaryBrush = new SolidColorBrush(Color.FromRgb(250, 250, 250));
-        private static readonly System.Drawing.Brush FallbackTextSecondaryBrush = new SolidColorBrush(Color.FromRgb(161, 161, 170));
+        private static readonly Brush FallbackTextPrimaryBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(250, 250, 250));
+        private static readonly Brush FallbackTextSecondaryBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(161, 161, 170));
 
-        private System.Drawing.Brush TextPrimaryBrush => _textPrimaryBrush ??= TryFindResource("TextPrimaryBrush") as System.Drawing.Brush ?? FallbackTextPrimaryBrush;
-        private System.Drawing.Brush TextSecondaryBrush => _textSecondaryBrush ??= TryFindResource("TextSecondaryBrush") as System.Drawing.Brush ?? FallbackTextSecondaryBrush;
+        private Brush TextPrimaryBrush => _textPrimaryBrush ??= TryFindResource("TextPrimaryBrush") as Brush ?? FallbackTextPrimaryBrush;
+        private Brush TextSecondaryBrush => _textSecondaryBrush ??= TryFindResource("TextSecondaryBrush") as Brush ?? FallbackTextSecondaryBrush;
 
         public MultiSelectDropdown()
         {
