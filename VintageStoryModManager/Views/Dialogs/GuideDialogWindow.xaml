@@ -280,6 +280,14 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
+                        <Bold>Change manager config and cache folder...</Bold>
+                        <Run
+                            Text=" allows you to move the entire &quot;Simple VS Manager&quot; folder to a new location. This includes all configuration files, cached mods, backups, and presets. The application will automatically restart after the move is complete." />
+                    </TextBlock>
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
                         <Bold>Menu Guide</Bold>
                         <Run Text=" reopens this guide." />
                     </TextBlock>
