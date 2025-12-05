@@ -15,49 +15,62 @@
         <ToggleButton x:Name="DropdownToggle"
                       Click="DropdownToggle_Click"
                       ClickMode="Press"
-                      Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                      BorderBrush="{DynamicResource Brush.Border.Default}"
+                      Background="{DynamicResource Brush.ComboBox.Background.Normal}"
+                      BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}"
                       BorderThickness="1"
-                      Padding="8,0"
+                      Padding="10,4"
                       HorizontalContentAlignment="Stretch">
             <ToggleButton.Template>
                 <ControlTemplate TargetType="ToggleButton">
-                    <Border Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="4">
-                        <Grid Margin="{TemplateBinding Padding}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="BackgroundBorder"
+                                Grid.ColumnSpan="2"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <Grid Margin="{TemplateBinding Padding}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                            <TextBlock x:Name="DisplayText"
-                                       Grid.Column="0"
-                                       Text="{Binding DisplayText, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       Foreground="{Binding DisplayTextBrush, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       VerticalAlignment="Center"
-                                       TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="DisplayText"
+                                           Grid.Column="0"
+                                           Text="{Binding DisplayText, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                           Foreground="{Binding DisplayTextBrush, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
 
-                            <Path x:Name="Arrow"
-                                  Grid.Column="1"
-                                  Fill="{DynamicResource Brush.Text.Subtle}"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Data="M0,0 L4,4 L8,0"
-                                  Margin="8,0,0,0"
-                                  RenderTransformOrigin="0.5,0.5">
-                                <Path.RenderTransform>
-                                    <RotateTransform Angle="0"/>
-                                </Path.RenderTransform>
-                            </Path>
-                        </Grid>
-                    </Border>
+                                <Path x:Name="Arrow"
+                                      Grid.Column="1"
+                                      Width="12"
+                                      Height="6"
+                                      Data="M 0 0 L 1 0 L 0.5 1 Z"
+                                      Stretch="Fill"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Fill="{DynamicResource Brush.ComboBox.Glyph}"
+                                      RenderTransformOrigin="0.5,0.5">
+                                    <Path.RenderTransform>
+                                        <RotateTransform Angle="0"/>
+                                    </Path.RenderTransform>
+                                </Path>
+                            </Grid>
+                        </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Hover}"/>
+                            <Setter TargetName="BackgroundBorder" Property="Background" Value="{DynamicResource Brush.ComboBox.Background.Hover}"/>
+                            <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{DynamicResource Brush.ComboBox.Border.Hover}"/>
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{DynamicResource Brush.ComboBox.Border.Open}"/>
+                            <Setter TargetName="BackgroundBorder" Property="Background" Value="{DynamicResource Brush.ComboBox.Background.Open}"/>
                             <Setter TargetName="Arrow" Property="RenderTransform">
                                 <Setter.Value>
                                     <RotateTransform Angle="180"/>
@@ -76,10 +89,11 @@
                IsOpen="{Binding IsChecked, ElementName=DropdownToggle, Mode=TwoWay}"
                AllowsTransparency="True"
                PopupAnimation="Slide">
-            <Border Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                    BorderBrush="{DynamicResource Brush.Border.Default}"
+            <Border Background="{DynamicResource Brush.ComboBox.Popup.Background}"
+                    BorderBrush="{DynamicResource Brush.ComboBox.Popup.Border}"
                     BorderThickness="1"
-                    CornerRadius="4"
+                    CornerRadius="8"
+                    Padding="4"
                     Margin="0,4,0,0"
                     MaxHeight="200"
                     MinWidth="{Binding ActualWidth, ElementName=DropdownToggle}">
@@ -96,7 +110,7 @@
                                         <Style TargetType="Border">
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Hover}"/>
+                                                    <Setter Property="Background" Value="{DynamicResource Brush.ComboBox.Item.Background.Hover}"/>
                                                 </Trigger>
                                             </Style.Triggers>
                                         </Style>
