@@ -505,6 +505,16 @@ public partial class ModBrowserViewModel : ObservableObject
             filtered = filtered.Where(m => m.Side.Equals(SelectedSide, StringComparison.OrdinalIgnoreCase));
         }
 
+        // Installed filter
+        if (SelectedInstalledFilter == "installed")
+        {
+            filtered = filtered.Where(m => InstalledMods.Contains(m.ModId));
+        }
+        else if (SelectedInstalledFilter == "not-installed")
+        {
+            filtered = filtered.Where(m => !InstalledMods.Contains(m.ModId));
+        }
+
         // Favorites filter
         if (OnlyFavorites)
         {

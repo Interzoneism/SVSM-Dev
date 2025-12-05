@@ -376,6 +376,7 @@ public partial class MainWindow : Window
 
     // ViewModel
     private MainViewModel? _viewModel;
+    private ModBrowserViewModel? _modBrowserViewModel;
 
     #endregion
 
@@ -2418,12 +2419,12 @@ public partial class MainWindow : Window
             };
             
             var modApiService = new ModApiService(httpClient);
-            var modBrowserViewModel = new ModBrowserViewModel(modApiService, _userConfiguration);
+            _modBrowserViewModel = new ModBrowserViewModel(modApiService, _userConfiguration);
             
             // Set up the installation callback
-            modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
+            _modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
             
-            ModBrowserView.DataContext = modBrowserViewModel;
+            ModBrowserView.DataContext = _modBrowserViewModel;
         }
     }
 
@@ -2507,10 +2508,21 @@ public partial class MainWindow : Window
 
             await RefreshModsAsync().ConfigureAwait(true);
 
-            WpfMessageBox.Show($"{mod.Name}{versionText} has been installed successfully.",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            // Update the ModBrowserViewModel to mark this mod as installed and remove it from search results
+            if (_modBrowserViewModel != null)
+            {
+                if (!_modBrowserViewModel.InstalledMods.Contains(mod.ModId))
+                {
+                    _modBrowserViewModel.InstalledMods.Add(mod.ModId);
+                }
+                
+                // Remove the installed mod from the current search results
+                var modToRemove = _modBrowserViewModel.ModsList.FirstOrDefault(m => m.ModId == mod.ModId);
+                if (modToRemove != null)
+                {
+                    _modBrowserViewModel.ModsList.Remove(modToRemove);
+                }
+            }
         }
         catch (OperationCanceledException)
         {
