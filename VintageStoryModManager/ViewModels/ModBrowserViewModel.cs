@@ -133,6 +133,21 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         try
         {
+            // Save selections to config
+            if (_userConfigService != null)
+            {
+                if (sender == SelectedVersions)
+                {
+                    var versionIds = SelectedVersions.Select(v => v.TagId).ToList();
+                    _userConfigService.SetModBrowserSelectedVersionIds(versionIds);
+                }
+                else if (sender == SelectedTags)
+                {
+                    var tagIds = SelectedTags.Select(t => t.TagId).ToList();
+                    _userConfigService.SetModBrowserSelectedTagIds(tagIds);
+                }
+            }
+
             await SearchModsAsync();
         }
         catch (Exception ex)
@@ -171,6 +186,9 @@ public partial class ModBrowserViewModel : ObservableObject
             LoadGameVersionsAsync(),
             LoadTagsAsync()
         );
+
+        // Restore previously selected versions and tags after loading available options
+        RestoreSavedSelections();
 
         await SearchModsAsync();
     }
@@ -340,6 +358,46 @@ public partial class ModBrowserViewModel : ObservableObject
     #endregion
 
     #region Private Methods
+
+    private void RestoreSavedSelections()
+    {
+        if (_userConfigService == null) return;
+
+        // Temporarily unsubscribe to prevent triggering searches while restoring
+        SelectedVersions.CollectionChanged -= OnFilterCollectionChanged;
+        SelectedTags.CollectionChanged -= OnFilterCollectionChanged;
+
+        try
+        {
+            // Restore selected versions
+            var savedVersionIds = _userConfigService.ModBrowserSelectedVersionIds;
+            foreach (var versionId in savedVersionIds)
+            {
+                var version = AvailableVersions.FirstOrDefault(v => v.TagId == versionId);
+                if (version != null && !SelectedVersions.Contains(version))
+                {
+                    SelectedVersions.Add(version);
+                }
+            }
+
+            // Restore selected tags
+            var savedTagIds = _userConfigService.ModBrowserSelectedTagIds;
+            foreach (var tagId in savedTagIds)
+            {
+                var tag = AvailableTags.FirstOrDefault(t => t.TagId == tagId);
+                if (tag != null && !SelectedTags.Contains(tag))
+                {
+                    SelectedTags.Add(tag);
+                }
+            }
+        }
+        finally
+        {
+            // Re-subscribe
+            SelectedVersions.CollectionChanged += OnFilterCollectionChanged;
+            SelectedTags.CollectionChanged += OnFilterCollectionChanged;
+        }
+    }
 
     private async Task LoadAuthorsAsync()
     {
