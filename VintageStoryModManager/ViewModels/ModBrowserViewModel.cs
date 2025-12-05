@@ -19,6 +19,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private const int DefaultLoadedMods = 45;
     private const int LoadMoreCount = 10;
     private bool _isInitializing;
+    private Func<DownloadableMod, Task>? _installModCallback;
 
     #region Observable Properties
 
@@ -135,6 +136,14 @@ public partial class ModBrowserViewModel : ObservableObject
         }
 
         _isInitializing = false;
+    }
+
+    /// <summary>
+    /// Sets the callback to be invoked when a mod needs to be installed.
+    /// </summary>
+    public void SetInstallModCallback(Func<DownloadableMod, Task> callback)
+    {
+        _installModCallback = callback;
     }
 
     private async void OnFilterCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -315,14 +324,29 @@ public partial class ModBrowserViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void InstallMod(int modId)
+    private async Task InstallModAsync(int modId)
     {
-        // For now, just add to the installed list
-        // In a full implementation, this would trigger the actual installation
-        if (!InstalledMods.Contains(modId))
+        // Fetch full mod details
+        var mod = await _modApiService.GetModAsync(modId);
+        if (mod == null)
         {
-            InstalledMods.Add(modId);
-            OnPropertyChanged(nameof(InstalledMods));
+            System.Diagnostics.Debug.WriteLine($"Failed to fetch mod details for modId: {modId}");
+            return;
+        }
+
+        // If a callback is registered, use it (MainWindow will handle the actual installation)
+        if (_installModCallback != null)
+        {
+            await _installModCallback(mod);
+        }
+        else
+        {
+            // Fallback: just mark as installed in the UI
+            if (!InstalledMods.Contains(modId))
+            {
+                InstalledMods.Add(modId);
+                OnPropertyChanged(nameof(InstalledMods));
+            }
         }
     }
 

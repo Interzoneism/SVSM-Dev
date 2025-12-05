@@ -10,6 +10,9 @@ public class DownloadableMod
     [JsonPropertyName("modid")]
     public int ModId { get; set; }
 
+    [JsonPropertyName("modidstr")]
+    public string? ModIdStr { get; set; }
+
     [JsonPropertyName("assetid")]
     public int AssetId { get; set; }
 
