@@ -390,7 +390,8 @@
                                                                 <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
                                                             </MultiBinding>
                                                         </Button.Visibility>
-                                                        <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center">
+                                                        <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
+                                                              Data="{StaticResource IconDownload}">
                                                             <Path.Style>
                                                                 <Style TargetType="Path">
                                                                     <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
@@ -404,17 +405,7 @@
                                                                                 </MultiBinding>
                                                                             </DataTrigger.Binding>
                                                                             <Setter Property="Data" Value="{StaticResource IconCheck}"/>
-                                                                            <Setter Property="Fill" Value="#10B981"/>
-                                                                        </DataTrigger>
-                                                                        <!-- Show download icon when not installed -->
-                                                                        <DataTrigger Value="False">
-                                                                            <DataTrigger.Binding>
-                                                                                <MultiBinding Converter="{StaticResource ContainsConverter}">
-                                                                                    <Binding Path="ModId"/>
-                                                                                    <Binding Path="DataContext.InstalledMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
-                                                                                </MultiBinding>
-                                                                            </DataTrigger.Binding>
-                                                                            <Setter Property="Data" Value="{StaticResource IconDownload}"/>
+                                                                            <Setter Property="Fill" Value="{DynamicResource Brush.Status.Success}"/>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
