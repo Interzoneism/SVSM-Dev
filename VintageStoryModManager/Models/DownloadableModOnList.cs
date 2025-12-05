@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace VintageStoryModManager.Models;
@@ -5,7 +7,7 @@ namespace VintageStoryModManager.Models;
 /// <summary>
 /// Represents a mod listing from the Vintage Story mod database.
 /// </summary>
-public class DownloadableModOnList
+public class DownloadableModOnList : INotifyPropertyChanged
 {
     [JsonPropertyName("modid")]
     public int ModId { get; set; }
@@ -55,6 +57,42 @@ public class DownloadableModOnList
     [JsonPropertyName("lastreleased")]
     public string LastReleased { get; set; } = string.Empty;
 
+    private string _userReportDisplay = "User reports unavailable";
+
+    private string _userReportTooltip = "User reports require a known Vintage Story version.";
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    /// <summary>
+    /// Gets or sets the user report summary display text.
+    /// </summary>
+    public string UserReportDisplay
+    {
+        get => _userReportDisplay;
+        set
+        {
+            if (value == _userReportDisplay) return;
+
+            _userReportDisplay = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the tooltip describing all user report vote options.
+    /// </summary>
+    public string UserReportTooltip
+    {
+        get => _userReportTooltip;
+        set
+        {
+            if (value == _userReportTooltip) return;
+
+            _userReportTooltip = value;
+            OnPropertyChanged();
+        }
+    }
+
     /// <summary>
     /// Gets a formatted download count (e.g., "10K" for 10000+).
     /// </summary>
@@ -80,4 +118,9 @@ public class DownloadableModOnList
         string.IsNullOrEmpty(Logo)
             ? "https://mods.vintagestory.at/web/img/mod-default.png"
             : Logo;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }

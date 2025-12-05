@@ -375,7 +375,7 @@
                                                         </Path>
                                                     </Button>
                                                 </StackPanel>
-                                                
+
                                                 <!-- Install button on top right -->
                                                 <StackPanel Orientation="Horizontal"
                                                             HorizontalAlignment="Right"
@@ -415,6 +415,21 @@
                                                         </Path>
                                                     </Button>
                                                 </StackPanel>
+
+                                                <!-- User report summary on bottom right -->
+                                                <Border HorizontalAlignment="Right"
+                                                        VerticalAlignment="Bottom"
+                                                        Margin="8"
+                                                        Padding="6,4"
+                                                        Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                                                        CornerRadius="6">
+                                                    <TextBlock Text="{Binding UserReportDisplay}"
+                                                               ToolTip="{Binding UserReportTooltip}"
+                                                               Foreground="{DynamicResource Brush.Text.Primary}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="12"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                </Border>
                                             </Grid>
                                         </Border>
 
