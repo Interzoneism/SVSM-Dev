@@ -226,6 +226,16 @@ public sealed class UserConfigurationService
     public ModDatabaseAutoLoadMode ModDatabaseAutoLoadMode { get; private set; } =
         ModDatabaseAutoLoadMode.TotalDownloads;
 
+    public string ModBrowserOrderBy { get; private set; } = "follows";
+
+    public string ModBrowserOrderByDirection { get; private set; } = "desc";
+
+    public string ModBrowserSelectedSide { get; private set; } = "any";
+
+    public string ModBrowserSelectedInstalledFilter { get; private set; } = "all";
+
+    public bool ModBrowserOnlyFavorites { get; private set; }
+
     public double? WindowWidth => _windowWidth;
 
     public double? WindowHeight => _windowHeight;
@@ -1129,6 +1139,54 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetModBrowserOrderBy(string orderBy)
+    {
+        var normalized = string.IsNullOrWhiteSpace(orderBy) ? "follows" : orderBy.Trim();
+
+        if (string.Equals(ModBrowserOrderBy, normalized, StringComparison.Ordinal)) return;
+
+        ModBrowserOrderBy = normalized;
+        Save();
+    }
+
+    public void SetModBrowserOrderByDirection(string direction)
+    {
+        var normalized = string.IsNullOrWhiteSpace(direction) ? "desc" : direction.Trim();
+
+        if (string.Equals(ModBrowserOrderByDirection, normalized, StringComparison.Ordinal)) return;
+
+        ModBrowserOrderByDirection = normalized;
+        Save();
+    }
+
+    public void SetModBrowserSelectedSide(string side)
+    {
+        var normalized = string.IsNullOrWhiteSpace(side) ? "any" : side.Trim();
+
+        if (string.Equals(ModBrowserSelectedSide, normalized, StringComparison.Ordinal)) return;
+
+        ModBrowserSelectedSide = normalized;
+        Save();
+    }
+
+    public void SetModBrowserSelectedInstalledFilter(string filter)
+    {
+        var normalized = string.IsNullOrWhiteSpace(filter) ? "all" : filter.Trim();
+
+        if (string.Equals(ModBrowserSelectedInstalledFilter, normalized, StringComparison.Ordinal)) return;
+
+        ModBrowserSelectedInstalledFilter = normalized;
+        Save();
+    }
+
+    public void SetModBrowserOnlyFavorites(bool onlyFavorites)
+    {
+        if (ModBrowserOnlyFavorites == onlyFavorites) return;
+
+        ModBrowserOnlyFavorites = onlyFavorites;
+        Save();
+    }
+
     public void SetWindowDimensions(double width, double height)
     {
         var normalizedWidth = NormalizeWindowDimension(width);
@@ -1491,6 +1549,11 @@ public sealed class UserConfigurationService
             OnlyShowCompatibleModDatabaseResults =
                 obj["onlyShowCompatibleModDatabaseResults"]?.GetValue<bool?>() ?? false;
             RequireExactVsVersionMatch = obj["requireExactVsVersionMatch"]?.GetValue<bool?>() ?? false;
+            ModBrowserOrderBy = GetOptionalString(obj["modBrowserOrderBy"]) ?? "follows";
+            ModBrowserOrderByDirection = GetOptionalString(obj["modBrowserOrderByDirection"]) ?? "desc";
+            ModBrowserSelectedSide = GetOptionalString(obj["modBrowserSelectedSide"]) ?? "any";
+            ModBrowserSelectedInstalledFilter = GetOptionalString(obj["modBrowserSelectedInstalledFilter"]) ?? "all";
+            ModBrowserOnlyFavorites = obj["modBrowserOnlyFavorites"]?.GetValue<bool?>() ?? false;
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             _windowLeft = NormalizeWindowCoordinate(obj["windowLeft"]?.GetValue<double?>());
@@ -1622,6 +1685,11 @@ public sealed class UserConfigurationService
             ExcludeInstalledModDatabaseResults = false;
             OnlyShowCompatibleModDatabaseResults = false;
             RequireExactVsVersionMatch = false;
+            ModBrowserOrderBy = "follows";
+            ModBrowserOrderByDirection = "desc";
+            ModBrowserSelectedSide = "any";
+            ModBrowserSelectedInstalledFilter = "all";
+            ModBrowserOnlyFavorites = false;
             _windowWidth = null;
             _windowHeight = null;
             _windowLeft = null;
@@ -1696,6 +1764,11 @@ public sealed class UserConfigurationService
                 ["excludeInstalledModDatabaseResults"] = ExcludeInstalledModDatabaseResults,
                 ["onlyShowCompatibleModDatabaseResults"] = OnlyShowCompatibleModDatabaseResults,
                 ["requireExactVsVersionMatch"] = RequireExactVsVersionMatch,
+                ["modBrowserOrderBy"] = ModBrowserOrderBy,
+                ["modBrowserOrderByDirection"] = ModBrowserOrderByDirection,
+                ["modBrowserSelectedSide"] = ModBrowserSelectedSide,
+                ["modBrowserSelectedInstalledFilter"] = ModBrowserSelectedInstalledFilter,
+                ["modBrowserOnlyFavorites"] = ModBrowserOnlyFavorites,
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["windowLeft"] = _windowLeft,
