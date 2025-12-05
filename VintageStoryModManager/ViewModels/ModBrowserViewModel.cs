@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VintageStoryModManager.Models;
@@ -15,6 +17,8 @@ public partial class ModBrowserViewModel : ObservableObject
 {
     private readonly IModApiService _modApiService;
     private readonly UserConfigurationService? _userConfigService;
+    private readonly ModVersionVoteService _voteService;
+    private readonly string? _installedGameVersion;
     private CancellationTokenSource? _searchCts;
     private const int DefaultLoadedMods = 45;
     private const int LoadMoreCount = 10;
@@ -118,6 +122,8 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         _modApiService = modApiService;
         _userConfigService = userConfigService;
+        _voteService = new ModVersionVoteService();
+        _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion(_userConfigService?.GameDirectory);
         _isInitializing = true;
 
         // Subscribe to collection changes for multi-select filters
@@ -256,6 +262,8 @@ public partial class ModBrowserViewModel : ObservableObject
 
             VisibleModsCount = DefaultLoadedMods;
             OnPropertyChanged(nameof(VisibleMods));
+
+            _ = PopulateUserReportsAsync(ModsList.ToList(), token);
         }
         catch (OperationCanceledException)
         {
@@ -504,6 +512,115 @@ public partial class ModBrowserViewModel : ObservableObject
         }
 
         return filtered.ToList();
+    }
+
+    private async Task PopulateUserReportsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
+    {
+        foreach (var mod in mods)
+        {
+            mod.UserReportDisplay = "Loading reports…";
+            mod.UserReportTooltip = "Fetching user reports for this mod version.";
+        }
+
+        foreach (var mod in mods)
+        {
+            if (cancellationToken.IsCancellationRequested) break;
+
+            try
+            {
+                await LoadUserReportAsync(mod, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                mod.UserReportDisplay = "Unavailable";
+                mod.UserReportTooltip = string.Format(
+                    CultureInfo.CurrentCulture,
+                    "Failed to load user reports: {0}",
+                    ex.Message);
+            }
+        }
+    }
+
+    private async Task LoadUserReportAsync(DownloadableModOnList mod, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_installedGameVersion))
+        {
+            mod.UserReportDisplay = "User reports unavailable";
+            mod.UserReportTooltip = "User reports require a known Vintage Story version.";
+            return;
+        }
+
+        var modDetails = await _modApiService.GetModAsync(mod.ModId, cancellationToken);
+        if (modDetails?.Releases is null || modDetails.Releases.Count == 0)
+        {
+            mod.UserReportDisplay = "User reports unavailable";
+            mod.UserReportTooltip = "No releases available to load user reports.";
+            return;
+        }
+
+        var latestRelease = modDetails.Releases
+            .OrderByDescending(r => DateTime.TryParse(r.Created, out var date) ? date : DateTime.MinValue)
+            .FirstOrDefault();
+
+        if (latestRelease is null || string.IsNullOrWhiteSpace(latestRelease.ModVersion))
+        {
+            mod.UserReportDisplay = "User reports unavailable";
+            mod.UserReportTooltip = "Latest release version is unavailable for this mod.";
+            return;
+        }
+
+        var summary = await _voteService.GetVoteSummaryAsync(
+            mod.ModId.ToString(CultureInfo.InvariantCulture),
+            latestRelease.ModVersion,
+            _installedGameVersion,
+            cancellationToken);
+
+        mod.UserReportDisplay = BuildUserReportDisplay(summary);
+        mod.UserReportTooltip = BuildUserReportTooltip(summary, _installedGameVersion);
+    }
+
+    private static string BuildUserReportDisplay(ModVersionVoteSummary? summary)
+    {
+        if (summary is null || summary.TotalVotes == 0) return "No votes";
+
+        var majority = summary.GetMajorityOption();
+        if (majority is null)
+        {
+            return string.Concat(
+                "Mixed (",
+                summary.TotalVotes.ToString(CultureInfo.CurrentCulture),
+                ")");
+        }
+
+        var count = summary.Counts.GetCount(majority.Value);
+        var displayName = majority.Value.ToDisplayString();
+        return string.Concat(
+            displayName,
+            " (",
+            count.ToString(CultureInfo.CurrentCulture),
+            ")");
+    }
+
+    private static string BuildUserReportTooltip(ModVersionVoteSummary? summary, string vintageStoryVersion)
+    {
+        var counts = summary?.Counts ?? ModVersionVoteCounts.Empty;
+        var header = string.IsNullOrWhiteSpace(vintageStoryVersion)
+            ? "User reports:"
+            : string.Format(CultureInfo.CurrentCulture, "User reports for Vintage Story {0}:", vintageStoryVersion);
+
+        return string.Join(Environment.NewLine, new[]
+        {
+            header,
+            string.Format(CultureInfo.CurrentCulture, "Fully functional ({0})", counts.FullyFunctional),
+            string.Format(CultureInfo.CurrentCulture, "No issues noticed ({0})", counts.NoIssuesSoFar),
+            string.Format(CultureInfo.CurrentCulture, "Some issues but works ({0})", counts.SomeIssuesButWorks),
+            string.Format(CultureInfo.CurrentCulture, "Not functional ({0})", counts.NotFunctional),
+            string.Format(CultureInfo.CurrentCulture, "Crashes/Freezes game ({0})", counts.CrashesOrFreezesGame)
+        });
     }
 
     #endregion
