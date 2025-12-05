@@ -2547,8 +2547,10 @@ public partial class MainWindow : Window
             targetTab = MainTab;
         else if (_viewModel.IsViewingModlistTab)
             targetTab = ModlistTab;
+        else if (_viewModel.IsViewingModlistTab)
+            targetTab = ModlistTab;
         else
-            targetTab = MainTab; // Default to MainTab if view section is unknown
+            targetTab = DatabaseTab; // Default to MainTab if view section is unknown
 
         if (targetTab is null || Equals(MiddleTabControl.SelectedItem, targetTab)) return;
 

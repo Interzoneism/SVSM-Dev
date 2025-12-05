@@ -1920,19 +1920,6 @@
                             <TextBlock Text="Fix" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
-                    <Button x:Name="SelectedModInstallButton"
-                            Padding="12,6"
-                            Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                            BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                            Visibility="Visible"
-                            IsEnabled="False"
-                            Click="InstallModButton_OnClick"
-                            ToolTip="{Binding InstallButtonToolTip}" HorizontalAlignment="Center"
-                            VerticalAlignment="Top" Margin="0,10,0,0" Grid.Column="1" MinHeight="32" MinWidth="92">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="Install" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
                     <ComboBox x:Name="SelectedModVersionComboBox"
                               Width="166"
                               Padding="12,6"
