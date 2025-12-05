@@ -9,7 +9,25 @@ using Color = System.Windows.Media.Color;
 
 namespace VintageStoryModManager.Converters;
 
+/// <summary>
+/// Inverts a boolean value.
+/// </summary>
+public class InvertBooleanConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool boolValue)
+            return !boolValue;
+        return false;
+    }
 
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool boolValue)
+            return !boolValue;
+        return false;
+    }
+}
 
 /// <summary>
 /// Converts a null value to Visibility.

@@ -139,7 +139,7 @@ public sealed class ModBrowserViewDesignData
     public ObservableCollection<int> InstalledMods { get; }
     public ObservableCollection<GameVersion> AvailableVersions { get; }
     public ObservableCollection<ModTag> AvailableTags { get; }
-    public ObservableCollection<GameVersion> SelectedVersions { get; }
-    public ObservableCollection<ModTag> SelectedTags { get; }
+    public ObservableCollection<GameVersion> SelectedVersions { get; set; }
+    public ObservableCollection<ModTag> SelectedTags { get; set; }
     public bool IsSearching => false;
 }

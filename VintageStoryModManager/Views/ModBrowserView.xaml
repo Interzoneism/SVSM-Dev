@@ -16,6 +16,7 @@
 
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        <converters:InvertBooleanConverter x:Key="InvertBoolean"/>
         <converters:NullToVisibilityConverter x:Key="NullToVisibility"/>
         <converters:SelectedToBorderBrushConverter x:Key="SelectedToBorder"/>
         <converters:EqualityConverter x:Key="EqualityConverter"/>
@@ -191,7 +192,7 @@
                         <Button Width="32" Height="32" Margin="4"
                             Style="{StaticResource IconButtonStyle}"
                             Command="{Binding SearchModsCommand}"
-                            IsEnabled="{Binding IsSearching, ConverterParameter=invert, Converter={StaticResource BoolToVisibility}}"
+                            IsEnabled="{Binding IsSearching, Converter={StaticResource InvertBoolean}}"
                             ToolTip="Refresh" HorizontalAlignment="Right" HorizontalContentAlignment="Center">
                             <Path Data="{StaticResource IconRefresh}" 
                                 Style="{StaticResource IconLarge}"/>
