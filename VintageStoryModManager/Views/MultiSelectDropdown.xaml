@@ -9,21 +9,14 @@
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
-        <SolidColorBrush x:Key="BackgroundBrush" Color="#09090B"/>
-        <SolidColorBrush x:Key="BorderBrush" Color="#3F3F46"/>
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FAFAFA"/>
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A1A1AA"/>
-        <SolidColorBrush x:Key="HoverBrush" Color="#27272A"/>
-        <SolidColorBrush x:Key="SelectedBrush" Color="#3B82F6"/>
-        <SolidColorBrush x:Key="TagBackgroundBrush" Color="#27272A"/>
     </UserControl.Resources>
 
     <Grid>
         <ToggleButton x:Name="DropdownToggle"
                       Click="DropdownToggle_Click"
                       ClickMode="Press"
-                      Background="{StaticResource BackgroundBrush}"
-                      BorderBrush="{StaticResource BorderBrush}"
+                      Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
+                      BorderBrush="{DynamicResource Brush.Border.Default}"
                       BorderThickness="1"
                       Padding="8,0"
                       HorizontalContentAlignment="Stretch">
@@ -48,7 +41,7 @@
 
                             <Path x:Name="Arrow"
                                   Grid.Column="1"
-                                  Fill="{StaticResource TextSecondaryBrush}"
+                                  Fill="{DynamicResource Brush.Text.Subtle}"
                                   HorizontalAlignment="Center"
                                   VerticalAlignment="Center"
                                   Data="M0,0 L4,4 L8,0"
@@ -62,7 +55,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="{StaticResource HoverBrush}"/>
+                            <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Hover}"/>
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Arrow" Property="RenderTransform">
@@ -83,8 +76,8 @@
                IsOpen="{Binding IsChecked, ElementName=DropdownToggle, Mode=TwoWay}"
                AllowsTransparency="True"
                PopupAnimation="Slide">
-            <Border Background="{StaticResource BackgroundBrush}"
-                    BorderBrush="{StaticResource BorderBrush}"
+            <Border Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
+                    BorderBrush="{DynamicResource Brush.Border.Default}"
                     BorderThickness="1"
                     CornerRadius="4"
                     Margin="0,4,0,0"
@@ -103,7 +96,7 @@
                                         <Style TargetType="Border">
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="{StaticResource HoverBrush}"/>
+                                                    <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Hover}"/>
                                                 </Trigger>
                                             </Style.Triggers>
                                         </Style>
@@ -116,12 +109,12 @@
 
                                         <Border Grid.Column="0"
                                                 Width="16" Height="16"
-                                                BorderBrush="{StaticResource BorderBrush}"
+                                                BorderBrush="{DynamicResource Brush.Border.Default}"
                                                 BorderThickness="1"
                                                 CornerRadius="2"
                                                 Margin="0,0,8,0">
                                             <TextBlock Text="✓"
-                                                       Foreground="{StaticResource SelectedBrush}"
+                                                       Foreground="{DynamicResource Brush.Accent.Primary}"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"
                                                        FontSize="10"
@@ -130,7 +123,7 @@
 
                                         <TextBlock Grid.Column="1"
                                                    Text="{Binding DisplayText}"
-                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   Foreground="{DynamicResource Brush.Text.Primary}"
                                                    VerticalAlignment="Center"/>
                                     </Grid>
                                 </Border>

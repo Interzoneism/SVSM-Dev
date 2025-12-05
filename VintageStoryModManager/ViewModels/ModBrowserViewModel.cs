@@ -14,6 +14,7 @@ namespace VintageStoryModManager.ViewModels;
 public partial class ModBrowserViewModel : ObservableObject
 {
     private readonly IModApiService _modApiService;
+    private readonly UserConfigurationService? _userConfigService;
     private CancellationTokenSource? _searchCts;
     private const int DefaultLoadedMods = 45;
     private const int LoadMoreCount = 10;
@@ -108,9 +109,20 @@ public partial class ModBrowserViewModel : ObservableObject
 
     #endregion
 
-    public ModBrowserViewModel(IModApiService modApiService)
+    public ModBrowserViewModel(IModApiService modApiService, UserConfigurationService? userConfigService = null)
     {
         _modApiService = modApiService;
+        _userConfigService = userConfigService;
+
+        // Load saved settings if available
+        if (_userConfigService != null)
+        {
+            _orderBy = _userConfigService.ModBrowserOrderBy;
+            _orderByDirection = _userConfigService.ModBrowserOrderByDirection;
+            _selectedSide = _userConfigService.ModBrowserSelectedSide;
+            _selectedInstalledFilter = _userConfigService.ModBrowserSelectedInstalledFilter;
+            _onlyFavorites = _userConfigService.ModBrowserOnlyFavorites;
+        }
 
         // Subscribe to collection changes for multi-select filters
         SelectedVersions.CollectionChanged += OnFilterCollectionChanged;
@@ -384,11 +396,31 @@ public partial class ModBrowserViewModel : ObservableObject
 
     partial void OnTextFilterChanged(string value) => _ = SearchModsAsync();
     partial void OnSelectedAuthorChanged(ModAuthor? value) => _ = SearchModsAsync();
-    partial void OnSelectedSideChanged(string value) => _ = SearchModsAsync();
-    partial void OnSelectedInstalledFilterChanged(string value) => _ = SearchModsAsync();
-    partial void OnOnlyFavoritesChanged(bool value) => _ = SearchModsAsync();
-    partial void OnOrderByChanged(string value) => _ = SearchModsAsync();
-    partial void OnOrderByDirectionChanged(string value) => _ = SearchModsAsync();
+    partial void OnSelectedSideChanged(string value)
+    {
+        _userConfigService?.SetModBrowserSelectedSide(value);
+        _ = SearchModsAsync();
+    }
+    partial void OnSelectedInstalledFilterChanged(string value)
+    {
+        _userConfigService?.SetModBrowserSelectedInstalledFilter(value);
+        _ = SearchModsAsync();
+    }
+    partial void OnOnlyFavoritesChanged(bool value)
+    {
+        _userConfigService?.SetModBrowserOnlyFavorites(value);
+        _ = SearchModsAsync();
+    }
+    partial void OnOrderByChanged(string value)
+    {
+        _userConfigService?.SetModBrowserOrderBy(value);
+        _ = SearchModsAsync();
+    }
+    partial void OnOrderByDirectionChanged(string value)
+    {
+        _userConfigService?.SetModBrowserOrderByDirection(value);
+        _ = SearchModsAsync();
+    }
 
     #endregion
 }
