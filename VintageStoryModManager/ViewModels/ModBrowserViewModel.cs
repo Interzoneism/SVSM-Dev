@@ -114,19 +114,20 @@ public partial class ModBrowserViewModel : ObservableObject
         _modApiService = modApiService;
         _userConfigService = userConfigService;
 
-        // Load saved settings if available
-        if (_userConfigService != null)
-        {
-            _orderBy = _userConfigService.ModBrowserOrderBy;
-            _orderByDirection = _userConfigService.ModBrowserOrderByDirection;
-            _selectedSide = _userConfigService.ModBrowserSelectedSide;
-            _selectedInstalledFilter = _userConfigService.ModBrowserSelectedInstalledFilter;
-            _onlyFavorites = _userConfigService.ModBrowserOnlyFavorites;
-        }
-
         // Subscribe to collection changes for multi-select filters
         SelectedVersions.CollectionChanged += OnFilterCollectionChanged;
         SelectedTags.CollectionChanged += OnFilterCollectionChanged;
+
+        // Load saved settings if available
+        // Use public properties to ensure PropertyChanged events are raised
+        if (_userConfigService != null)
+        {
+            OrderBy = _userConfigService.ModBrowserOrderBy;
+            OrderByDirection = _userConfigService.ModBrowserOrderByDirection;
+            SelectedSide = _userConfigService.ModBrowserSelectedSide;
+            SelectedInstalledFilter = _userConfigService.ModBrowserSelectedInstalledFilter;
+            OnlyFavorites = _userConfigService.ModBrowserOnlyFavorites;
+        }
     }
 
     private async void OnFilterCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
