@@ -52,11 +52,11 @@
                                Foreground="{DynamicResource Brush.Text.Emphasis}">
                         <Run Text="Simple VS Manager folder" />
                     </Hyperlink>
-                    <Run Text="- if it's missing or if still not working you can copy the backup from" />
+                    <Run Text="- if it's missing or if still not working you can copy the backup from the" />
                     <Hyperlink x:Name="BackupLink"
                                RequestNavigate="OnBackupHyperlinkRequestNavigate"
                                Foreground="{DynamicResource Brush.Text.Emphasis}">
-                        <Run Text="AppData/Local/Simple VS Manager/Firebase Cache" />
+                        <Run Text="Firebase Cache backup folder" />
                     </Hyperlink>
                     <Run Text="and replace the firebase-auth.json file." />
 

@@ -153,6 +153,11 @@ public static class DevConfig
 
     private static string GetManagerDirectory()
     {
+        // Check for custom configuration folder first
+        var customFolder = VintageStoryModManager.Services.CustomConfigFolderManager.GetCustomConfigFolder();
+        if (!string.IsNullOrWhiteSpace(customFolder))
+            return customFolder;
+
         var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         if (!string.IsNullOrWhiteSpace(local)) return Path.Combine(local, "Simple VS Manager");
 
