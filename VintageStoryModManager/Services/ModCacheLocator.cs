@@ -20,6 +20,16 @@ internal static class ModCacheLocator
         if (!string.IsNullOrWhiteSpace(customFolder))
             return customFolder;
 
+        return GetDefaultManagerDataDirectory();
+    }
+
+    /// <summary>
+    ///     Gets the default manager data directory location without considering custom configuration.
+    ///     This returns the default location in AppData\Local or fallback locations.
+    /// </summary>
+    /// <returns>The full path to the default manager's data directory, or null if it cannot be determined.</returns>
+    public static string? GetDefaultManagerDataDirectory()
+    {
         var path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         if (string.IsNullOrWhiteSpace(path))
             path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
