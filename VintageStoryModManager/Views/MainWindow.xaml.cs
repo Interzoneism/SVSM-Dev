@@ -2447,7 +2447,7 @@ public partial class MainWindow : Window
         if (!TryGetInstallTargetPathForBrowserMod(mod, release, out var targetPath, out var errorMessage))
         {
             if (!string.IsNullOrWhiteSpace(errorMessage))
-                WpfMessageBox.Show(errorMessage!,
+                WpfMessageBox.Show(errorMessage,
                     "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -2581,11 +2581,18 @@ public partial class MainWindow : Window
 
         var modIdStr = mod.ModIdStr ?? mod.ModId.ToString();
         var defaultName = string.IsNullOrWhiteSpace(modIdStr) ? "mod" : modIdStr;
-        var versionPart = string.IsNullOrWhiteSpace(release.ModVersion) ? "latest" : release.ModVersion!;
+        var versionPart = string.IsNullOrWhiteSpace(release.ModVersion) ? "latest" : release.ModVersion;
         var fallbackFileName = $"{defaultName}-{versionPart}.zip";
 
         var releaseFileName = release.Filename;
-        if (!string.IsNullOrWhiteSpace(releaseFileName)) releaseFileName = Path.GetFileName(releaseFileName);
+        if (string.IsNullOrWhiteSpace(releaseFileName))
+        {
+            releaseFileName = fallbackFileName;
+        }
+        else
+        {
+            releaseFileName = Path.GetFileName(releaseFileName);
+        }
 
         var sanitizedFileName = SanitizeFileName(releaseFileName, fallbackFileName);
         if (string.IsNullOrWhiteSpace(Path.GetExtension(sanitizedFileName))) sanitizedFileName += ".zip";
