@@ -18,7 +18,9 @@ public partial class ModBrowserWindow : Window
         // In a larger application, you would use a DI container
         var httpClient = new HttpClient();
         var modApiService = new ModApiService(httpClient);
-        var viewModel = new ModBrowserViewModel(modApiService);
+        var userConfigService = new UserConfigurationService();
+        userConfigService.EnablePersistence();
+        var viewModel = new ModBrowserViewModel(modApiService, userConfigService);
 
         ModBrowser.DataContext = viewModel;
     }

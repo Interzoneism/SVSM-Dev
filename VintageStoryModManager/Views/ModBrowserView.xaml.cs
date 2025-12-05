@@ -19,16 +19,21 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        Loaded += OnControlLoaded;
         Unloaded += OnControlUnloaded;
     }
 
     private ModBrowserViewModel? ViewModel => DataContext as ModBrowserViewModel;
 
-    private void OnControlLoaded(object sender, RoutedEventArgs e)
+    private async void OnViewLoaded(object sender, RoutedEventArgs e)
     {
         // Cache the storyboard reference during initialization
         _spinnerStoryboard = TryFindResource("SpinnerAnimation") as Storyboard;
+        
+        // Initialize the ViewModel
+        if (ViewModel != null)
+        {
+            await ViewModel.InitializeCommand.ExecuteAsync(null);
+        }
     }
 
     private void OnControlUnloaded(object sender, RoutedEventArgs e)
@@ -82,14 +87,6 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
     private void StopSpinnerAnimation()
     {
         _spinnerStoryboard?.Stop(this);
-    }
-
-    private async void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel != null)
-        {
-            await ViewModel.InitializeCommand.ExecuteAsync(null);
-        }
     }
 
     private void ScrollToTop_Click(object sender, RoutedEventArgs e)

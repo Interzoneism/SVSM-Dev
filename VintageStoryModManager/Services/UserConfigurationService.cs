@@ -236,6 +236,10 @@ public sealed class UserConfigurationService
 
     public bool ModBrowserOnlyFavorites { get; private set; }
 
+    public List<string> ModBrowserSelectedVersionIds { get; private set; } = [];
+
+    public List<int> ModBrowserSelectedTagIds { get; private set; } = [];
+
     public double? WindowWidth => _windowWidth;
 
     public double? WindowHeight => _windowHeight;
@@ -1187,6 +1191,32 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetModBrowserSelectedVersionIds(IEnumerable<string> versionIds)
+    {
+        var normalizedIds = versionIds?.Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id.Trim()).ToList() ?? [];
+        
+        // Check if the lists are different
+        if (ModBrowserSelectedVersionIds.Count == normalizedIds.Count && 
+            ModBrowserSelectedVersionIds.SequenceEqual(normalizedIds))
+            return;
+
+        ModBrowserSelectedVersionIds = normalizedIds;
+        Save();
+    }
+
+    public void SetModBrowserSelectedTagIds(IEnumerable<int> tagIds)
+    {
+        var normalizedIds = tagIds?.ToList() ?? [];
+        
+        // Check if the lists are different
+        if (ModBrowserSelectedTagIds.Count == normalizedIds.Count && 
+            ModBrowserSelectedTagIds.SequenceEqual(normalizedIds))
+            return;
+
+        ModBrowserSelectedTagIds = normalizedIds;
+        Save();
+    }
+
     public void SetWindowDimensions(double width, double height)
     {
         var normalizedWidth = NormalizeWindowDimension(width);
@@ -1554,6 +1584,8 @@ public sealed class UserConfigurationService
             ModBrowserSelectedSide = GetOptionalString(obj["modBrowserSelectedSide"]) ?? "any";
             ModBrowserSelectedInstalledFilter = GetOptionalString(obj["modBrowserSelectedInstalledFilter"]) ?? "all";
             ModBrowserOnlyFavorites = obj["modBrowserOnlyFavorites"]?.GetValue<bool?>() ?? false;
+            ModBrowserSelectedVersionIds = LoadStringList(obj["modBrowserSelectedVersionIds"]);
+            ModBrowserSelectedTagIds = LoadIntList(obj["modBrowserSelectedTagIds"]);
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             _windowLeft = NormalizeWindowCoordinate(obj["windowLeft"]?.GetValue<double?>());
@@ -1690,6 +1722,8 @@ public sealed class UserConfigurationService
             ModBrowserSelectedSide = "any";
             ModBrowserSelectedInstalledFilter = "all";
             ModBrowserOnlyFavorites = false;
+            ModBrowserSelectedVersionIds = [];
+            ModBrowserSelectedTagIds = [];
             _windowWidth = null;
             _windowHeight = null;
             _windowLeft = null;
@@ -1769,6 +1803,8 @@ public sealed class UserConfigurationService
                 ["modBrowserSelectedSide"] = ModBrowserSelectedSide,
                 ["modBrowserSelectedInstalledFilter"] = ModBrowserSelectedInstalledFilter,
                 ["modBrowserOnlyFavorites"] = ModBrowserOnlyFavorites,
+                ["modBrowserSelectedVersionIds"] = BuildStringListJson(ModBrowserSelectedVersionIds),
+                ["modBrowserSelectedTagIds"] = BuildIntListJson(ModBrowserSelectedTagIds),
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["windowLeft"] = _windowLeft,
@@ -2027,6 +2063,29 @@ public sealed class UserConfigurationService
         return BuildPaletteJson(_customThemePaletteColors, GetDefaultPalette(ColorTheme.Custom));
     }
 
+    private static JsonArray BuildStringListJson(List<string> strings)
+    {
+        var result = new JsonArray();
+        foreach (var str in strings)
+        {
+            if (!string.IsNullOrWhiteSpace(str))
+            {
+                result.Add(str);
+            }
+        }
+        return result;
+    }
+
+    private static JsonArray BuildIntListJson(List<int> ints)
+    {
+        var result = new JsonArray();
+        foreach (var value in ints)
+        {
+            result.Add(value);
+        }
+        return result;
+    }
+
     private JsonObject BuildGameProfilesJson()
     {
         var result = new JsonObject();
@@ -2156,6 +2215,42 @@ public sealed class UserConfigurationService
 
             _installedColumnVisibility[columnKey] = isVisible.Value;
         }
+    }
+
+    private List<string> LoadStringList(JsonNode? node)
+    {
+        var result = new List<string>();
+
+        if (node is not JsonArray array) return result;
+
+        foreach (var item in array)
+        {
+            var value = GetOptionalString(item);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                result.Add(value.Trim());
+            }
+        }
+
+        return result;
+    }
+
+    private List<int> LoadIntList(JsonNode? node)
+    {
+        var result = new List<int>();
+
+        if (node is not JsonArray array) return result;
+
+        foreach (var item in array)
+        {
+            var value = item?.GetValue<int?>();
+            if (value.HasValue)
+            {
+                result.Add(value.Value);
+            }
+        }
+
+        return result;
     }
 
     private void LoadThemePalette(JsonNode? node)
