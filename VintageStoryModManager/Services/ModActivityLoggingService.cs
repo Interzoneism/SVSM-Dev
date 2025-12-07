@@ -51,6 +51,31 @@ public sealed class ModActivityLoggingService
         AppendLogEntry(message);
     }
 
+    /// <summary>
+    ///     Logs an error or exception if logging for errors and exceptions is enabled.
+    /// </summary>
+    public void LogError(string message, Exception? exception = null)
+    {
+        if (!_userConfiguration.LogErrorsAndExceptions) return;
+
+        var logMessage = exception != null
+            ? $"ERROR: {message} - Exception: {exception.GetType().Name}: {exception.Message}"
+            : $"ERROR: {message}";
+
+        AppendLogEntry(logMessage);
+    }
+
+    /// <summary>
+    ///     Logs a diagnostic message if logging for errors and exceptions is enabled.
+    /// </summary>
+    public void LogDiagnostic(string message)
+    {
+        if (!_userConfiguration.LogErrorsAndExceptions) return;
+
+        var logMessage = $"DIAGNOSTIC: {message}";
+        AppendLogEntry(logMessage);
+    }
+
     public void LogAppLaunch()
     {
         LogLifecycleEvent("App launched");

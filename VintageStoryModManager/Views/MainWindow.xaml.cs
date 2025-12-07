@@ -317,6 +317,7 @@ public partial class MainWindow : Window
     private DataBackupService _dataBackupService;
     private readonly ModActivityLoggingService _modActivityLoggingService;
     private readonly UserConfigurationService _userConfiguration;
+    private ModManagerTraceListener? _traceListener;
 
     // Selection tracking
     private readonly Dictionary<ModListItemViewModel, PropertyChangedEventHandler> _selectedModPropertyHandlers = new();
@@ -415,6 +416,7 @@ public partial class MainWindow : Window
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
         UpdateLoggingMenuState();
+        InitializeTraceListener();
         _modActivityLoggingService.LogAppLaunch();
 
         UpdateThemeMenuSelection(_userConfiguration.ColorTheme);
@@ -624,6 +626,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PathTooLongException)
         {
+            _modActivityLoggingService.LogError("Failed to prepare the Rebuilt modlists folder", ex);
             WpfMessageBox.Show(
                 $"Failed to prepare the Rebuilt modlists folder:\n{ex.Message}",
                 "Simple VS Manager",
@@ -670,6 +673,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
+            _modActivityLoggingService.LogError("Failed to clear cached mod data", ex);
             WpfMessageBox.Show(
                 this,
                 $"Failed to clear cached mod data:\n{ex.Message}",
@@ -992,11 +996,13 @@ public partial class MainWindow : Window
                 }
                 catch (InternetAccessDisabledException ex)
                 {
+                    _modActivityLoggingService.LogError("Internet access disabled during mod usage vote submission", ex);
                     errors.Add(ex.Message);
                     break;
                 }
                 catch (Exception ex)
                 {
+                    _modActivityLoggingService.LogError($"Failed to submit user report vote for {candidate.DisplayLabel}", ex);
                     errors.Add(string.Format(
                         CultureInfo.CurrentCulture,
                         "{0}: {1}",
@@ -1088,6 +1094,14 @@ public partial class MainWindow : Window
         SaveWindowDimensions();
         SaveUploaderName();
         _modActivityLoggingService.LogAppExit();
+        
+        // Clean up trace listener
+        if (_traceListener != null)
+        {
+            System.Diagnostics.Trace.Listeners.Remove(_traceListener);
+            _traceListener = null;
+        }
+        
         DisposeCurrentViewModel();
         InternetAccessManager.InternetAccessChanged -= InternetAccessManager_OnInternetAccessChanged;
         DeveloperProfileManager.CurrentProfileChanged -= DeveloperProfileManager_OnCurrentProfileChanged;
@@ -1632,6 +1646,32 @@ public partial class MainWindow : Window
         menuItem.IsChecked = _userConfiguration.LogAppLaunchAndExit;
     }
 
+    private void LogErrorsAndExceptionsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        _userConfiguration.SetLogErrorsAndExceptions(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.LogErrorsAndExceptions;
+        InitializeTraceListener();
+    }
+
+    private void InitializeTraceListener()
+    {
+        // Remove existing listener if present
+        if (_traceListener != null)
+        {
+            System.Diagnostics.Trace.Listeners.Remove(_traceListener);
+            _traceListener = null;
+        }
+
+        // Add new listener if logging is enabled
+        if (_userConfiguration.LogErrorsAndExceptions)
+        {
+            _traceListener = new ModManagerTraceListener(_modActivityLoggingService);
+            System.Diagnostics.Trace.Listeners.Add(_traceListener);
+        }
+    }
+
     private void UpdateLoggingMenuState()
     {
         if (LogModUpdateMenuItem is not null)
@@ -1642,6 +1682,8 @@ public partial class MainWindow : Window
             LogModDeletionMenuItem.IsChecked = _userConfiguration.LogModDeletions;
         if (LogAppLifecycleMenuItem is not null)
             LogAppLifecycleMenuItem.IsChecked = _userConfiguration.LogAppLaunchAndExit;
+        if (LogErrorsAndExceptionsMenuItem is not null)
+            LogErrorsAndExceptionsMenuItem.IsChecked = _userConfiguration.LogErrorsAndExceptions;
     }
 
     private void GenerateServerInstallMacroMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -2561,6 +2603,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
+            _modActivityLoggingService.LogError($"Failed to install {mod.Name}", ex);
             _viewModel?.ReportStatus($"Failed to install {mod.Name}: {ex.Message}", true);
             WpfMessageBox.Show($"Failed to install {mod.Name}:{Environment.NewLine}{ex.Message}",
                 "Simple VS Manager",
@@ -2927,14 +2970,17 @@ public partial class MainWindow : Window
         }
         catch (IOException ex)
         {
+            _modActivityLoggingService.LogError("Failed to back up Firebase auth state", ex);
             StatusLogService.AppendStatus($"Failed to back up Firebase auth state: {ex.Message}", true);
         }
         catch (UnauthorizedAccessException ex)
         {
+            _modActivityLoggingService.LogError("Failed to back up Firebase auth state", ex);
             StatusLogService.AppendStatus($"Failed to back up Firebase auth state: {ex.Message}", true);
         }
         catch (NotSupportedException ex)
         {
+            _modActivityLoggingService.LogError("Failed to back up Firebase auth state", ex);
             StatusLogService.AppendStatus($"Failed to back up Firebase auth state: {ex.Message}", true);
         }
     }
@@ -3962,6 +4008,7 @@ public partial class MainWindow : Window
 
     private void HandleViewModelInitializationFailure(Exception exception)
     {
+        _modActivityLoggingService.LogError("Failed to initialize view model", exception);
         DisposeCurrentViewModel();
 
         if (_dataDirectory != null) _userConfiguration.ClearDataDirectory();

@@ -362,6 +362,12 @@
                                 IsCheckable="True"
                                 Style="{StaticResource ToggleMenuItemStyle}"
                                 Click="LogAppLifecycleMenuItem_OnClick" />
+                            <MenuItem x:Name="LogErrorsAndExceptionsMenuItem"
+                                Header="Errors and exceptions"
+                                Height="35"
+                                IsCheckable="True"
+                                Style="{StaticResource ToggleMenuItemStyle}"
+                                Click="LogErrorsAndExceptionsMenuItem_OnClick" />
                         </MenuItem>
                         <MenuItem Header="Scan for mod config files"
                             Padding="12,6"
