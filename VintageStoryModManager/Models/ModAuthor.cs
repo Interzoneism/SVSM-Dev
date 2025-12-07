@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using VintageStoryModManager.Services;
 
 namespace VintageStoryModManager.Models;
 
@@ -8,6 +9,7 @@ namespace VintageStoryModManager.Models;
 public class ModAuthor
 {
     [JsonPropertyName("userid")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
     public string UserId { get; set; } = string.Empty;
 
     [JsonPropertyName("name")]
