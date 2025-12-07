@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -145,7 +146,100 @@ namespace VintageStoryModManager.Views
         private void OnItemsSourceCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.OnItemsSourceCollectionChanged: Action={e.Action}");
-            UpdateSelectableItems();
+            
+            // Handle collection changes incrementally to avoid O(n²) performance issues
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    if (e.NewItems != null)
+                    {
+                        var insertIndex = e.NewStartingIndex >= 0 ? e.NewStartingIndex : _selectableItems.Count;
+                        foreach (var item in e.NewItems)
+                        {
+                            var displayText = GetDisplayText(item);
+                            var isSelected = SelectedItems?.Contains(item) == true;
+                            var selectableItem = new SelectableItem
+                            {
+                                Item = item,
+                                DisplayText = displayText,
+                                IsSelected = isSelected
+                            };
+                            
+                            if (insertIndex <= _selectableItems.Count)
+                            {
+                                _selectableItems.Insert(insertIndex, selectableItem);
+                                insertIndex++;
+                            }
+                            else
+                            {
+                                _selectableItems.Add(selectableItem);
+                            }
+                        }
+                        System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown: Added {e.NewItems.Count} items incrementally");
+                    }
+                    break;
+
+                case NotifyCollectionChangedAction.Remove:
+                    if (e.OldItems != null && e.OldStartingIndex >= 0)
+                    {
+                        for (int i = 0; i < e.OldItems.Count; i++)
+                        {
+                            if (e.OldStartingIndex < _selectableItems.Count)
+                            {
+                                _selectableItems.RemoveAt(e.OldStartingIndex);
+                            }
+                        }
+                        System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown: Removed {e.OldItems.Count} items incrementally");
+                    }
+                    break;
+
+                case NotifyCollectionChangedAction.Replace:
+                    if (e.NewItems != null && e.NewStartingIndex >= 0 && e.NewStartingIndex < _selectableItems.Count)
+                    {
+                        for (int i = 0; i < e.NewItems.Count; i++)
+                        {
+                            var index = e.NewStartingIndex + i;
+                            if (index < _selectableItems.Count)
+                            {
+                                var item = e.NewItems[i]!;
+                                var displayText = GetDisplayText(item);
+                                var isSelected = SelectedItems?.Contains(item) == true;
+                                _selectableItems[index] = new SelectableItem
+                                {
+                                    Item = item,
+                                    DisplayText = displayText,
+                                    IsSelected = isSelected
+                                };
+                            }
+                        }
+                        System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown: Replaced {e.NewItems.Count} items incrementally");
+                    }
+                    break;
+
+                case NotifyCollectionChangedAction.Move:
+                    if (e.OldStartingIndex >= 0 && e.NewStartingIndex >= 0 &&
+                        e.OldStartingIndex < _selectableItems.Count)
+                    {
+                        var item = _selectableItems[e.OldStartingIndex];
+                        _selectableItems.RemoveAt(e.OldStartingIndex);
+                        if (e.NewStartingIndex <= _selectableItems.Count)
+                        {
+                            _selectableItems.Insert(e.NewStartingIndex, item);
+                        }
+                        else
+                        {
+                            _selectableItems.Add(item);
+                        }
+                        System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown: Moved item from {e.OldStartingIndex} to {e.NewStartingIndex}");
+                    }
+                    break;
+
+                case NotifyCollectionChangedAction.Reset:
+                    // For Reset, we need to rebuild the entire list
+                    System.Diagnostics.Debug.WriteLine("MultiSelectDropdown: Reset action - rebuilding entire list");
+                    UpdateSelectableItems();
+                    break;
+            }
         }
 
         private static void OnSelectedItemsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -172,7 +266,72 @@ namespace VintageStoryModManager.Views
         private void OnSelectedItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             UpdateDisplayText();
-            UpdateSelectableItems();
+            
+            // Update selection state incrementally instead of rebuilding entire list
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    if (e.NewItems != null)
+                    {
+                        foreach (var item in e.NewItems)
+                        {
+                            var selectableItem = _selectableItems.FirstOrDefault(si => si.Item == item);
+                            if (selectableItem != null)
+                            {
+                                selectableItem.IsSelected = true;
+                            }
+                        }
+                    }
+                    break;
+
+                case NotifyCollectionChangedAction.Remove:
+                    if (e.OldItems != null)
+                    {
+                        foreach (var item in e.OldItems)
+                        {
+                            var selectableItem = _selectableItems.FirstOrDefault(si => si.Item == item);
+                            if (selectableItem != null)
+                            {
+                                selectableItem.IsSelected = false;
+                            }
+                        }
+                    }
+                    break;
+
+                case NotifyCollectionChangedAction.Reset:
+                    // Reset all selection states to false, then set selected ones to true
+                    foreach (var selectableItem in _selectableItems)
+                    {
+                        selectableItem.IsSelected = SelectedItems?.Contains(selectableItem.Item) == true;
+                    }
+                    break;
+
+                case NotifyCollectionChangedAction.Replace:
+                    // Handle replace by removing old and adding new
+                    if (e.OldItems != null)
+                    {
+                        foreach (var item in e.OldItems)
+                        {
+                            var selectableItem = _selectableItems.FirstOrDefault(si => si.Item == item);
+                            if (selectableItem != null)
+                            {
+                                selectableItem.IsSelected = false;
+                            }
+                        }
+                    }
+                    if (e.NewItems != null)
+                    {
+                        foreach (var item in e.NewItems)
+                        {
+                            var selectableItem = _selectableItems.FirstOrDefault(si => si.Item == item);
+                            if (selectableItem != null)
+                            {
+                                selectableItem.IsSelected = true;
+                            }
+                        }
+                    }
+                    break;
+            }
         }
 
         private static void OnPlaceholderTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
