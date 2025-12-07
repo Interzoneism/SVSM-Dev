@@ -375,15 +375,13 @@ public partial class ModBrowserViewModel : ObservableObject
         // If a callback is registered, use it (MainWindow will handle the actual installation)
         if (_installModCallback != null)
         {
+            // The callback will handle installation and updating InstalledMods collection
             await _installModCallback(mod);
-            
-            // After successful installation, add to installed mods and update UI
-            InstalledMods.Add(modId);
-            OnPropertyChanged(nameof(InstalledMods));
         }
         else
         {
-            // Fallback: just mark as installed in the UI
+            // Fallback: just mark as installed in the UI (no actual installation)
+            // This is for testing or when no installation callback is registered
             InstalledMods.Add(modId);
             OnPropertyChanged(nameof(InstalledMods));
         }
