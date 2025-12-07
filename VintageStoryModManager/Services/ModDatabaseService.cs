@@ -229,8 +229,21 @@ public sealed class ModDatabaseService
         {
             throw;
         }
-        catch (Exception)
+        catch (JsonException ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] JSON parse error checking refresh for mod '{modId}': {ex.Message}");
+            // On error, assume cache is valid to avoid excessive requests
+            return false;
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] HTTP request error checking refresh for mod '{modId}': {ex.Message}");
+            // On error, assume cache is valid to avoid excessive requests
+            return false;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Unexpected error checking refresh for mod '{modId}': {ex.Message}");
             // On error, assume cache is valid to avoid excessive requests
             return false;
         }
@@ -370,8 +383,21 @@ public sealed class ModDatabaseService
         {
             throw;
         }
-        catch (Exception)
+        catch (JsonException ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] JSON parse error for mod '{modId}': {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] JSON exception details: {ex}");
+            return null;
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] HTTP request error for mod '{modId}': {ex.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Unexpected error fetching version for mod '{modId}': {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Exception details: {ex}");
             return null;
         }
     }
@@ -820,8 +846,24 @@ public sealed class ModDatabaseService
         {
             throw;
         }
-        catch (Exception)
+        catch (JsonException ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] JSON parse error in search: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Request URI: {requestUri}");
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] JSON exception details: {ex}");
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] HTTP request error in search: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Request URI: {requestUri}");
+            return Array.Empty<ModDatabaseSearchResult>();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Unexpected error in search: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Request URI: {requestUri}");
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Exception details: {ex}");
             return Array.Empty<ModDatabaseSearchResult>();
         }
     }
@@ -881,8 +923,19 @@ public sealed class ModDatabaseService
         {
             throw;
         }
-        catch (Exception)
+        catch (JsonException ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] JSON parse error enriching search result: {ex.Message}");
+            return CloneResultWithDetails(candidate, cachedInfo, cachedDownloads);
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] HTTP request error enriching search result: {ex.Message}");
+            return CloneResultWithDetails(candidate, cachedInfo, cachedDownloads);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Unexpected error enriching search result: {ex.Message}");
             return CloneResultWithDetails(candidate, cachedInfo, cachedDownloads);
         }
         finally
@@ -1037,8 +1090,21 @@ public sealed class ModDatabaseService
         {
             throw;
         }
-        catch (Exception)
+        catch (JsonException ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] JSON parse error loading database info for mod '{modId}': {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] JSON exception details: {ex}");
+            return null;
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] HTTP request error loading database info for mod '{modId}': {ex.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Unexpected error loading database info for mod '{modId}': {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Exception details: {ex}");
             return null;
         }
     }
