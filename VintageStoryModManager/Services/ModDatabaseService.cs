@@ -1248,47 +1248,12 @@ public sealed class ModDatabaseService
             return true;
         }
         
-        // Check for malformed URLs like "https:443/file/123" (missing "//")
+        // Check for malformed URLs like "https:443/file/123" or "http:80/file/123" (missing "//")
         // These occur when the API returns corrupted data
-        if (downloadUrl.StartsWith("https:", StringComparison.OrdinalIgnoreCase) &&
-            !downloadUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        if (TryFixMalformedSchemeUrl(downloadUrl, "https:", out var fixedUrl) ||
+            TryFixMalformedSchemeUrl(downloadUrl, "http:", out fixedUrl))
         {
-            // Treat as relative path after removing the malformed scheme
-            var pathPart = downloadUrl.Substring(6); // Remove "https:"
-            if (pathPart.StartsWith("443", StringComparison.Ordinal))
-            {
-                // Remove port number if present (e.g., "443/file/123" -> "/file/123")
-                pathPart = pathPart.Substring(3);
-            }
-            
-            // Ensure it starts with /
-            if (!pathPart.StartsWith("/", StringComparison.Ordinal))
-                pathPart = "/" + pathPart;
-            
-            var fullUrl = $"{DevConfig.ModDatabaseBaseUrl}{pathPart}";
-            if (!Uri.TryCreate(fullUrl, UriKind.Absolute, out downloadUri))
-                return false;
-            
-            return true;
-        }
-        
-        // Similar check for http
-        if (downloadUrl.StartsWith("http:", StringComparison.OrdinalIgnoreCase) &&
-            !downloadUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
-        {
-            // Treat as relative path after removing the malformed scheme
-            var pathPart = downloadUrl.Substring(5); // Remove "http:"
-            if (pathPart.StartsWith("80", StringComparison.Ordinal))
-            {
-                // Remove port number if present (e.g., "80/file/123" -> "/file/123")
-                pathPart = pathPart.Substring(2);
-            }
-            
-            // Ensure it starts with /
-            if (!pathPart.StartsWith("/", StringComparison.Ordinal))
-                pathPart = "/" + pathPart;
-            
-            var fullUrl = $"{DevConfig.ModDatabaseBaseUrl}{pathPart}";
+            var fullUrl = $"{DevConfig.ModDatabaseBaseUrl}{fixedUrl}";
             if (!Uri.TryCreate(fullUrl, UriKind.Absolute, out downloadUri))
                 return false;
             
@@ -1299,6 +1264,48 @@ public sealed class ModDatabaseService
         if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out downloadUri))
             return false;
         
+        return true;
+    }
+    
+    /// <summary>
+    ///     Attempts to fix malformed URLs that are missing "//" after the scheme.
+    ///     For example, "https:443/file/123" becomes "/file/123"
+    /// </summary>
+    private static bool TryFixMalformedSchemeUrl(string url, string scheme, out string fixedPath)
+    {
+        fixedPath = string.Empty;
+        
+        // Check if URL starts with scheme but not with scheme://
+        if (!url.StartsWith(scheme, StringComparison.OrdinalIgnoreCase) ||
+            url.StartsWith($"{scheme}//", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        
+        // Remove the malformed scheme
+        var pathPart = url.Substring(scheme.Length);
+        
+        // Remove any leading port number (e.g., "443/file" -> "/file", "8080/path" -> "/path")
+        // Match any sequence of digits followed by a non-digit
+        var i = 0;
+        while (i < pathPart.Length && char.IsDigit(pathPart[i]))
+        {
+            i++;
+        }
+        
+        if (i > 0 && i < pathPart.Length)
+        {
+            // Found digits followed by other content, skip the digits
+            pathPart = pathPart.Substring(i);
+        }
+        
+        // Ensure the path starts with /
+        if (!pathPart.StartsWith("/", StringComparison.Ordinal))
+        {
+            pathPart = "/" + pathPart;
+        }
+        
+        fixedPath = pathPart;
         return true;
     }
 
