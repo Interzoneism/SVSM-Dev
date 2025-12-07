@@ -63,7 +63,11 @@ namespace VintageStoryModManager.Views
         public IEnumerable ItemsSource
         {
             get => (IEnumerable)GetValue(ItemsSourceProperty);
-            set => SetValue(ItemsSourceProperty, value);
+            set
+            {
+                System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.ItemsSource setter called with {value?.GetType().Name}");
+                SetValue(ItemsSourceProperty, value);
+            }
         }
 
         public IList SelectedItems
@@ -118,16 +122,20 @@ namespace VintageStoryModManager.Views
         {
             if (d is MultiSelectDropdown dropdown)
             {
+                System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.OnItemsSourceChanged: OldValue={e.OldValue?.GetType().Name}, NewValue={e.NewValue?.GetType().Name}");
+                
                 // Unsubscribe from old collection
                 if (e.OldValue is INotifyCollectionChanged oldCollection)
                 {
                     oldCollection.CollectionChanged -= dropdown.OnItemsSourceCollectionChanged;
+                    System.Diagnostics.Debug.WriteLine("MultiSelectDropdown.OnItemsSourceChanged: Unsubscribed from old collection");
                 }
 
                 // Subscribe to new collection
                 if (e.NewValue is INotifyCollectionChanged newCollection)
                 {
                     newCollection.CollectionChanged += dropdown.OnItemsSourceCollectionChanged;
+                    System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.OnItemsSourceChanged: Subscribed to new collection");
                 }
 
                 dropdown.UpdateSelectableItems();
@@ -136,6 +144,7 @@ namespace VintageStoryModManager.Views
 
         private void OnItemsSourceCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
+            System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.OnItemsSourceCollectionChanged: Action={e.Action}");
             UpdateSelectableItems();
         }
 
@@ -195,11 +204,16 @@ namespace VintageStoryModManager.Views
 
         private void UpdateSelectableItems()
         {
+            System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.UpdateSelectableItems: Clearing {_selectableItems.Count} items");
             _selectableItems.Clear();
 
             if (ItemsSource == null)
+            {
+                System.Diagnostics.Debug.WriteLine("MultiSelectDropdown.UpdateSelectableItems: ItemsSource is null, returning");
                 return;
+            }
 
+            var count = 0;
             foreach (var item in ItemsSource)
             {
                 var displayText = GetDisplayText(item);
@@ -211,7 +225,9 @@ namespace VintageStoryModManager.Views
                     DisplayText = displayText,
                     IsSelected = isSelected
                 });
+                count++;
             }
+            System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.UpdateSelectableItems: Added {count} items to _selectableItems");
         }
 
         private string GetDisplayText(object item)

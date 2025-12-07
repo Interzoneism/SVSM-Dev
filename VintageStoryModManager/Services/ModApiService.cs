@@ -204,16 +204,23 @@ public class ModApiService : IModApiService
 
         try
         {
+            System.Diagnostics.Debug.WriteLine($"Fetching game versions from {BaseUrl}/api/gameversions");
             var response = await _httpClient.GetStringAsync($"{BaseUrl}/api/gameversions", cancellationToken);
+            System.Diagnostics.Debug.WriteLine($"Raw API response (first 500 chars): {(response.Length > 500 ? response.Substring(0, 500) : response)}");
+            
             var result = JsonSerializer.Deserialize<GameVersionsResponse>(response, _jsonOptions);
+            System.Diagnostics.Debug.WriteLine($"Deserialized {result?.GameVersions?.Count ?? 0} game versions");
 
             var versions = result?.GameVersions ?? [];
             // Return in reverse order (most recent first) without modifying original
-            return versions.AsEnumerable().Reverse().ToList();
+            var reversedVersions = versions.AsEnumerable().Reverse().ToList();
+            System.Diagnostics.Debug.WriteLine($"Returning {reversedVersions.Count} game versions");
+            return reversedVersions;
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error fetching game versions: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Error fetching game versions: {ex.GetType().Name} - {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
             return [];
         }
     }
