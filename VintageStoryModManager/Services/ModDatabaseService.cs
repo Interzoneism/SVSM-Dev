@@ -1231,18 +1231,15 @@ public sealed class ModDatabaseService
 
         // The mainfile field contains a relative path (e.g., "/file/123"), so construct the full URL
         Uri? downloadUri;
-        if (Uri.TryCreate(downloadUrl, UriKind.Absolute, out downloadUri))
-        {
-            // Already an absolute URL, use as-is
-        }
-        else if (downloadUrl.StartsWith("/", StringComparison.Ordinal))
+        if (downloadUrl.StartsWith("/", StringComparison.Ordinal))
         {
             // Relative path, construct full URL with base domain
-            var fullUrl = $"https://mods.vintagestory.at{downloadUrl}";
+            var fullUrl = $"{DevConfig.ModDatabaseBaseUrl}{downloadUrl}";
             if (!Uri.TryCreate(fullUrl, UriKind.Absolute, out downloadUri)) return false;
         }
-        else
+        else if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out downloadUri))
         {
+            // Not a valid absolute URL and doesn't start with /
             return false;
         }
 
