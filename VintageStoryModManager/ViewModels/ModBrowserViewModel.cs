@@ -84,8 +84,7 @@ public partial class ModBrowserViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<int> _favoriteMods = [];
 
-    [ObservableProperty]
-    private ObservableCollection<int> _installedMods = [];
+    private Func<int, bool>? _isModInstalledFunc;
 
     #endregion
 
@@ -162,7 +161,23 @@ public partial class ModBrowserViewModel : ObservableObject
         _installModCallback = callback;
     }
 
+
+    /// <summary>
+    /// Sets the function to check if a mod is installed.
+    /// </summary>
+    public void SetInstalledModCheckFunc(Func<int, bool> checkFunc)
+    {
+        _isModInstalledFunc = checkFunc;
+        // Trigger a re-evaluation of installed filter if active
+        if (SelectedInstalledFilter != "all")
+        {
+            _ = SearchModsAsync();
+        }
+    }
+
+
     private void OnFilterCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+
     {
         // Save selections to config
         if (_userConfigService != null)
@@ -201,7 +216,7 @@ public partial class ModBrowserViewModel : ObservableObject
     /// <summary>
     /// Checks if a mod is installed.
     /// </summary>
-    public bool IsModInstalled(int modId) => InstalledMods.Contains(modId);
+    public bool IsModInstalled(int modId) => _isModInstalledFunc?.Invoke(modId) ?? false;
 
     #region Commands
 
@@ -346,7 +361,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private async Task InstallModAsync(int modId)
     {
         // Check if mod is already installed
-        if (InstalledMods.Contains(modId))
+        if (IsModInstalled(modId))
         {
             System.Diagnostics.Debug.WriteLine($"Mod {modId} is already installed - skipping installation");
             return;
@@ -372,18 +387,12 @@ public partial class ModBrowserViewModel : ObservableObject
         // If a callback is registered, use it (MainWindow will handle the actual installation)
         if (_installModCallback != null)
         {
-            // The callback will handle installation and updating InstalledMods collection
+            // The callback will handle installation and the installed state will be reflected
+            // through the _isModInstalledFunc when the UI refreshes
             await _installModCallback(mod);
-        }
-        else
-        {
-            // Fallback: just mark as installed in the UI (no actual installation)
-            // This is for testing or when no installation callback is registered
-            if (!InstalledMods.Contains(modId))
-            {
-                InstalledMods.Add(modId);
-                OnPropertyChanged(nameof(InstalledMods));
-            }
+            
+            // Trigger a search refresh to update the installed filter
+            _ = SearchModsAsync();
         }
     }
 
@@ -540,11 +549,11 @@ public partial class ModBrowserViewModel : ObservableObject
         // Installed filter
         if (SelectedInstalledFilter == "installed")
         {
-            filtered = filtered.Where(m => InstalledMods.Contains(m.ModId));
+            filtered = filtered.Where(m => IsModInstalled(m.ModId));
         }
         else if (SelectedInstalledFilter == "not-installed")
         {
-            filtered = filtered.Where(m => !InstalledMods.Contains(m.ModId));
+            filtered = filtered.Where(m => !IsModInstalled(m.ModId));
         }
 
         // Favorites filter

@@ -578,9 +578,6 @@ public partial class MainWindow : Window
             await InitializeViewModelAsync(_viewModel).ConfigureAwait(true);
             await EnsureInstalledModsCachedAsync(_viewModel).ConfigureAwait(true);
             await CreateAppStartedBackupAsync().ConfigureAwait(true);
-            
-            // Sync installed mods to ModBrowser after ViewModel is initialized
-            SyncInstalledModsToModBrowser();
         }
 
         await RefreshDeleteCachedModsMenuHeaderAsync();
@@ -2473,60 +2470,32 @@ public partial class MainWindow : Window
             // Set up the installation callback
             _modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
             
+            // Set up the installed check function to use the MainViewModel's installed mods
+            _modBrowserViewModel.SetInstalledModCheckFunc(IsModInstalledByModId);
+            
             ModBrowserView.DataContext = _modBrowserViewModel;
         }
     }
-
-    private void SyncInstalledModsToModBrowser()
+    
+    private bool IsModInstalledByModId(int modId)
     {
-        if (_modBrowserViewModel == null || _viewModel == null) return;
-
-        // Clear and repopulate the InstalledMods collection
-        _modBrowserViewModel.InstalledMods.Clear();
+        if (_viewModel == null) return false;
         
         var installedMods = _viewModel.GetInstalledModsSnapshot();
         foreach (var mod in installedMods)
         {
-            // Try to get the numeric mod ID from the ModDatabaseAssetId first
+            // Try to match by ModDatabaseAssetId first
             if (mod.ModDatabaseAssetId != null && int.TryParse(mod.ModDatabaseAssetId, out var assetModId))
             {
-                if (!_modBrowserViewModel.InstalledMods.Contains(assetModId))
-                {
-                    _modBrowserViewModel.InstalledMods.Add(assetModId);
-                }
+                if (assetModId == modId) return true;
             }
-            // Fall back to parsing the ModId as an integer
-            else if (int.TryParse(mod.ModId, out var modId))
+            // Fall back to matching by ModId as integer
+            else if (int.TryParse(mod.ModId, out var parsedModId))
             {
-                if (!_modBrowserViewModel.InstalledMods.Contains(modId))
-                {
-                    _modBrowserViewModel.InstalledMods.Add(modId);
-                }
+                if (parsedModId == modId) return true;
             }
         }
-    }
-    
-    private void AddModToInstalledAndRemoveFromSearch(int modId)
-    {
-        if (_modBrowserViewModel == null) return;
-        
-        if (!_modBrowserViewModel.InstalledMods.Contains(modId))
-        {
-            _modBrowserViewModel.InstalledMods.Add(modId);
-        }
-        
-        // Remove the installed mod from the current search results
-        var modToRemove = _modBrowserViewModel.ModsList.FirstOrDefault(m => m.ModId == modId);
-        if (modToRemove != null)
-        {
-            _modBrowserViewModel.ModsList.Remove(modToRemove);
-            
-            // Clear selection if the removed mod was selected
-            if (ReferenceEquals(_modBrowserViewModel.SelectedMod, modToRemove))
-            {
-                _modBrowserViewModel.SelectedMod = null;
-            }
-        }
+        return false;
     }
 
     private async Task InstallModFromBrowserAsync(DownloadableMod mod)
@@ -2620,8 +2589,8 @@ public partial class MainWindow : Window
 
             await RefreshModsAsync().ConfigureAwait(true);
 
-            // Update the ModBrowserViewModel to mark this mod as installed and remove it from search results
-            AddModToInstalledAndRemoveFromSearch(mod.ModId);
+            // After refresh, the ModBrowserViewModel will automatically reflect the updated installed state
+            // through the IsModInstalledByModId function when filters are re-evaluated
         }
         catch (OperationCanceledException)
         {
@@ -3900,9 +3869,6 @@ public partial class MainWindow : Window
 
         if (selectedSourcePaths is { Count: > 0 })
             RestoreSelectionFromSourcePaths(selectedSourcePaths, anchorSourcePath);
-        
-        // Keep ModBrowser in sync with installed mods
-        SyncInstalledModsToModBrowser();
     }
 
     private void RefreshModDetailsOnly()
