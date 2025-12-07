@@ -334,6 +334,13 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task InstallModAsync(int modId)
     {
+        // Check if mod is already installed
+        if (InstalledMods.Contains(modId))
+        {
+            System.Diagnostics.Debug.WriteLine($"Mod {modId} is already installed - skipping installation");
+            return;
+        }
+
         // Check if internet access is disabled
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
@@ -355,6 +362,13 @@ public partial class ModBrowserViewModel : ObservableObject
         if (_installModCallback != null)
         {
             await _installModCallback(mod);
+            
+            // After successful installation, add to installed mods and update UI
+            if (!InstalledMods.Contains(modId))
+            {
+                InstalledMods.Add(modId);
+                OnPropertyChanged(nameof(InstalledMods));
+            }
         }
         else
         {
