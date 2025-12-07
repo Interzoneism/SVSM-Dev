@@ -161,7 +161,7 @@ public partial class ModBrowserViewModel : ObservableObject
             {
                 if (sender == SelectedVersions)
                 {
-                    var versionIds = SelectedVersions.Select(v => v.TagId).ToList();
+                    var versionIds = SelectedVersions.Select(v => v.TagId.ToString()).ToList();
                     _userConfigService.SetModBrowserSelectedVersionIds(versionIds);
                 }
                 else if (sender == SelectedTags)
@@ -439,10 +439,13 @@ public partial class ModBrowserViewModel : ObservableObject
             var savedVersionIds = _userConfigService.ModBrowserSelectedVersionIds;
             foreach (var versionId in savedVersionIds)
             {
-                var version = AvailableVersions.FirstOrDefault(v => v.TagId == versionId);
-                if (version != null && !SelectedVersions.Contains(version))
+                if (long.TryParse(versionId, out var tagId))
                 {
-                    SelectedVersions.Add(version);
+                    var version = AvailableVersions.FirstOrDefault(v => v.TagId == tagId);
+                    if (version != null && !SelectedVersions.Contains(version))
+                    {
+                        SelectedVersions.Add(version);
+                    }
                 }
             }
 
