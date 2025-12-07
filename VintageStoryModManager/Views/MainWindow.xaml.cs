@@ -2450,6 +2450,12 @@ public partial class MainWindow : Window
         RestoreSortPreference();
         UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
         ApplyColumnVisibilityPreferencesToViewModel();
+        
+        // Now that _viewModel is initialized, set up the ModBrowser's installed check function
+        if (_modBrowserViewModel != null)
+        {
+            _modBrowserViewModel.SetInstalledModCheckFunc(IsModInstalledByModId);
+        }
     }
 
     private void InitializeModBrowserView()
@@ -2470,8 +2476,7 @@ public partial class MainWindow : Window
             // Set up the installation callback
             _modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
             
-            // Set up the installed check function to use the MainViewModel's installed mods
-            _modBrowserViewModel.SetInstalledModCheckFunc(IsModInstalledByModId);
+            // Note: SetInstalledModCheckFunc is called later in InitializeViewModel after _viewModel is created
             
             ModBrowserView.DataContext = _modBrowserViewModel;
         }
@@ -4052,6 +4057,12 @@ public partial class MainWindow : Window
             ApplyPlayerIdentityToUiAndCloudStore();
             AttachToModsView(newViewModel.CurrentModsView);
             await InitializeViewModelAsync(newViewModel);
+            
+            // Update ModBrowser's installed check function with the new ViewModel
+            if (_modBrowserViewModel != null)
+            {
+                _modBrowserViewModel.SetInstalledModCheckFunc(IsModInstalledByModId);
+            }
 
             DisposeViewModel(previousViewModel);
         }
