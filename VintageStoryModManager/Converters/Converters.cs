@@ -304,3 +304,36 @@ public class InstallButtonVisibilityConverter : IMultiValueConverter
         throw new NotSupportedException();
     }
 }
+
+/// <summary>
+/// Converts a UserReportDisplay string to visibility.
+/// Only shows the element when there are actual votes to display.
+/// Hides when loading, no votes, or unavailable.
+/// </summary>
+public class UserReportVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string reportDisplay)
+        {
+            // Hide if loading, no votes, or unavailable
+            if (string.IsNullOrWhiteSpace(reportDisplay) ||
+                reportDisplay.Contains("Loading", StringComparison.OrdinalIgnoreCase) ||
+                reportDisplay.Contains("No votes", StringComparison.OrdinalIgnoreCase) ||
+                reportDisplay.Contains("Unavailable", StringComparison.OrdinalIgnoreCase))
+            {
+                return Visibility.Collapsed;
+            }
+            
+            // Show if it has actual vote data
+            return Visibility.Visible;
+        }
+        
+        return Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}

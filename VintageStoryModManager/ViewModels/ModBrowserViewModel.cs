@@ -161,6 +161,7 @@ public partial class ModBrowserViewModel : ObservableObject
         _installModCallback = callback;
     }
 
+
     /// <summary>
     /// Sets the function to check if a mod is installed.
     /// </summary>
@@ -174,30 +175,29 @@ public partial class ModBrowserViewModel : ObservableObject
         }
     }
 
-    private async void OnFilterCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        try
-        {
-            // Save selections to config
-            if (_userConfigService != null)
-            {
-                if (sender == SelectedVersions)
-                {
-                    var versionIds = SelectedVersions.Select(v => v.TagId.ToString()).ToList();
-                    _userConfigService.SetModBrowserSelectedVersionIds(versionIds);
-                }
-                else if (sender == SelectedTags)
-                {
-                    var tagIds = SelectedTags.Select(t => t.TagId).ToList();
-                    _userConfigService.SetModBrowserSelectedTagIds(tagIds);
-                }
-            }
 
-            await SearchModsAsync();
-        }
-        catch (Exception ex)
+    private void OnFilterCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+
+    {
+        // Save selections to config
+        if (_userConfigService != null)
         {
-            System.Diagnostics.Debug.WriteLine($"Error during filter search: {ex.Message}");
+            if (sender == SelectedVersions)
+            {
+                var versionIds = SelectedVersions.Select(v => v.TagId.ToString()).ToList();
+                _userConfigService.SetModBrowserSelectedVersionIds(versionIds);
+            }
+            else if (sender == SelectedTags)
+            {
+                var tagIds = SelectedTags.Select(t => t.TagId).ToList();
+                _userConfigService.SetModBrowserSelectedTagIds(tagIds);
+            }
+        }
+
+        // Trigger search using fire-and-forget pattern, consistent with other filter handlers
+        if (!_isInitializing)
+        {
+            _ = SearchModsAsync();
         }
     }
 
