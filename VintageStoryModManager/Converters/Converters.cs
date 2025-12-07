@@ -320,8 +320,7 @@ public class UserReportVisibilityConverter : IValueConverter
             if (string.IsNullOrWhiteSpace(reportDisplay) ||
                 reportDisplay.Contains("Loading", StringComparison.OrdinalIgnoreCase) ||
                 reportDisplay.Contains("No votes", StringComparison.OrdinalIgnoreCase) ||
-                reportDisplay.Contains("Unavailable", StringComparison.OrdinalIgnoreCase) ||
-                reportDisplay.Contains("unavailable", StringComparison.OrdinalIgnoreCase))
+                reportDisplay.Contains("Unavailable", StringComparison.OrdinalIgnoreCase))
             {
                 return Visibility.Collapsed;
             }
