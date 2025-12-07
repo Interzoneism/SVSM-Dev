@@ -163,37 +163,24 @@ public class ContainsConverter : IMultiValueConverter
 
 /// <summary>
 /// Inverted ContainsConverter - returns true if collection does NOT contain the item.
+/// Reuses ContainsConverter logic to avoid code duplication.
 /// </summary>
 public class InvertContainsConverter : IMultiValueConverter
 {
+    private static readonly ContainsConverter _baseConverter = new();
+
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (values.Length < 2 || values[0] == DependencyProperty.UnsetValue || values[1] == DependencyProperty.UnsetValue)
-            return true; // If we can't determine, enable the button
-
-        var item = values[0];
-        var collection = values[1];
-
-        if (collection == null)
-            return true; // If collection is null, item is not in it
-
-        // Try to use IList.Contains for better performance
-        if (collection is IList list)
+        var result = _baseConverter.Convert(values, targetType, parameter, culture);
+        
+        // If the base converter returns a boolean, invert it
+        if (result is bool boolResult)
         {
-            return !list.Contains(item);
+            return !boolResult;
         }
-
-        // Fallback to enumeration for other IEnumerable types
-        if (collection is IEnumerable enumerable)
-        {
-            foreach (var obj in enumerable)
-            {
-                if (Equals(obj, item))
-                    return false;
-            }
-        }
-
-        return true; // Not found in collection
+        
+        // If we can't determine, enable the button (return true for IsEnabled)
+        return true;
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
