@@ -111,7 +111,7 @@ public class ModApiService : IModApiService
             {
                 foreach (var version in versionsFilter)
                 {
-                    parameters.Add($"gameversions[]={Uri.EscapeDataString(version.TagId)}");
+                    parameters.Add($"gameversions[]={Uri.EscapeDataString(version.TagId.ToString())}");
                 }
             }
 

@@ -8,7 +8,7 @@ namespace VintageStoryModManager.Models;
 public class GameVersion
 {
     [JsonPropertyName("tagid")]
-    public string TagId { get; set; } = string.Empty;
+    public long TagId { get; set; }
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
