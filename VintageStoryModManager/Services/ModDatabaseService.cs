@@ -1239,7 +1239,7 @@ public sealed class ModDatabaseService
         }
         else if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out downloadUri))
         {
-            // Not a valid absolute URL and doesn't start with /
+            // Not a valid absolute URL
             return false;
         }
 
