@@ -378,20 +378,14 @@ public partial class ModBrowserViewModel : ObservableObject
             await _installModCallback(mod);
             
             // After successful installation, add to installed mods and update UI
-            if (!InstalledMods.Contains(modId))
-            {
-                InstalledMods.Add(modId);
-                OnPropertyChanged(nameof(InstalledMods));
-            }
+            InstalledMods.Add(modId);
+            OnPropertyChanged(nameof(InstalledMods));
         }
         else
         {
             // Fallback: just mark as installed in the UI
-            if (!InstalledMods.Contains(modId))
-            {
-                InstalledMods.Add(modId);
-                OnPropertyChanged(nameof(InstalledMods));
-            }
+            InstalledMods.Add(modId);
+            OnPropertyChanged(nameof(InstalledMods));
         }
     }
 
