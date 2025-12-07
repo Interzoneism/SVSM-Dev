@@ -139,6 +139,16 @@ public partial class ModBrowserViewModel : ObservableObject
             SelectedSide = _userConfigService.ModBrowserSelectedSide;
             SelectedInstalledFilter = _userConfigService.ModBrowserSelectedInstalledFilter;
             OnlyFavorites = _userConfigService.ModBrowserOnlyFavorites;
+            
+            // Restore favorite mods
+            var savedFavorites = _userConfigService.ModBrowserFavoriteMods;
+            foreach (var modId in savedFavorites)
+            {
+                if (!FavoriteMods.Contains(modId))
+                {
+                    FavoriteMods.Add(modId);
+                }
+            }
         }
 
         _isInitializing = false;
@@ -327,6 +337,10 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             FavoriteMods.Add(modId);
         }
+        
+        // Persist favorites to user configuration
+        _userConfigService?.SetModBrowserFavoriteMods(FavoriteMods);
+        
         // Notify the UI that FavoriteMods has changed so MultiBindings re-evaluate
         OnPropertyChanged(nameof(FavoriteMods));
     }
