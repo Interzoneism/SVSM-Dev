@@ -1243,8 +1243,6 @@ public sealed class ModDatabaseService
             return false;
         }
 
-        if (downloadUri is null) return false;
-
         var version = ExtractReleaseVersion(releaseElement);
         if (string.IsNullOrWhiteSpace(version)) return false;
 
