@@ -139,6 +139,16 @@ public partial class ModBrowserViewModel : ObservableObject
             SelectedSide = _userConfigService.ModBrowserSelectedSide;
             SelectedInstalledFilter = _userConfigService.ModBrowserSelectedInstalledFilter;
             OnlyFavorites = _userConfigService.ModBrowserOnlyFavorites;
+            
+            // Restore favorite mods
+            var savedFavorites = _userConfigService.ModBrowserFavoriteMods;
+            foreach (var modId in savedFavorites)
+            {
+                if (!FavoriteMods.Contains(modId))
+                {
+                    FavoriteMods.Add(modId);
+                }
+            }
         }
 
         _isInitializing = false;
@@ -327,6 +337,10 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             FavoriteMods.Add(modId);
         }
+        
+        // Persist favorites to user configuration
+        _userConfigService?.SetModBrowserFavoriteMods(FavoriteMods);
+        
         // Notify the UI that FavoriteMods has changed so MultiBindings re-evaluate
         OnPropertyChanged(nameof(FavoriteMods));
     }
@@ -334,6 +348,13 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task InstallModAsync(int modId)
     {
+        // Check if mod is already installed
+        if (InstalledMods.Contains(modId))
+        {
+            System.Diagnostics.Debug.WriteLine($"Mod {modId} is already installed - skipping installation");
+            return;
+        }
+
         // Check if internet access is disabled
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
@@ -354,11 +375,13 @@ public partial class ModBrowserViewModel : ObservableObject
         // If a callback is registered, use it (MainWindow will handle the actual installation)
         if (_installModCallback != null)
         {
+            // The callback will handle installation and updating InstalledMods collection
             await _installModCallback(mod);
         }
         else
         {
-            // Fallback: just mark as installed in the UI
+            // Fallback: just mark as installed in the UI (no actual installation)
+            // This is for testing or when no installation callback is registered
             if (!InstalledMods.Contains(modId))
             {
                 InstalledMods.Add(modId);

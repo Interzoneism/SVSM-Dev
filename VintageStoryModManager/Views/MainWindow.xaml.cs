@@ -2487,10 +2487,21 @@ public partial class MainWindow : Window
         var installedMods = _viewModel.GetInstalledModsSnapshot();
         foreach (var mod in installedMods)
         {
-            // Try to parse the ModId as an integer for the ModBrowser
-            if (int.TryParse(mod.ModId, out var modId) && !_modBrowserViewModel.InstalledMods.Contains(modId))
+            // Try to get the numeric mod ID from the ModDatabaseAssetId first
+            if (mod.ModDatabaseAssetId != null && int.TryParse(mod.ModDatabaseAssetId, out var assetModId))
             {
-                _modBrowserViewModel.InstalledMods.Add(modId);
+                if (!_modBrowserViewModel.InstalledMods.Contains(assetModId))
+                {
+                    _modBrowserViewModel.InstalledMods.Add(assetModId);
+                }
+            }
+            // Fall back to parsing the ModId as an integer
+            else if (int.TryParse(mod.ModId, out var modId))
+            {
+                if (!_modBrowserViewModel.InstalledMods.Contains(modId))
+                {
+                    _modBrowserViewModel.InstalledMods.Add(modId);
+                }
             }
         }
     }
