@@ -14,9 +14,7 @@ public class FlexibleStringConverter : JsonConverter<string>
         return reader.TokenType switch
         {
             JsonTokenType.String => reader.GetString(),
-            JsonTokenType.Number => reader.TryGetInt64(out var longValue) 
-                ? longValue.ToString() 
-                : reader.GetDouble().ToString(),
+            JsonTokenType.Number => ConvertNumberToString(ref reader),
             JsonTokenType.Null => null,
             JsonTokenType.True => "true",
             JsonTokenType.False => "false",
@@ -24,9 +22,25 @@ public class FlexibleStringConverter : JsonConverter<string>
         };
     }
 
-    public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+    private static string ConvertNumberToString(ref Utf8JsonReader reader)
     {
-        writer.WriteStringValue(value);
+        if (reader.TryGetInt64(out var longValue))
+        {
+            return longValue.ToString();
+        }
+        return reader.GetDouble().ToString();
+    }
+
+    public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
+    {
+        if (value == null)
+        {
+            writer.WriteNullValue();
+        }
+        else
+        {
+            writer.WriteStringValue(value);
+        }
     }
 }
 
@@ -41,9 +55,18 @@ public class FlexibleIntConverter : JsonConverter<int>
         return reader.TokenType switch
         {
             JsonTokenType.Number => reader.GetInt32(),
-            JsonTokenType.String when int.TryParse(reader.GetString(), out var result) => result,
+            JsonTokenType.String => ParseStringToInt(reader.GetString()),
             _ => 0
         };
+    }
+
+    private static int ParseStringToInt(string? value)
+    {
+        if (value != null && int.TryParse(value, out var result))
+        {
+            return result;
+        }
+        return 0;
     }
 
     public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
