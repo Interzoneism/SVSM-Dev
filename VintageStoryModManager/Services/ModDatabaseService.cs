@@ -1285,18 +1285,33 @@ public sealed class ModDatabaseService
         // Remove the malformed scheme
         var pathPart = url.Substring(scheme.Length);
         
+        // If there's no content after the scheme, it's not a valid path
+        if (string.IsNullOrWhiteSpace(pathPart))
+        {
+            return false;
+        }
+        
         // Remove any leading port number (e.g., "443/file" -> "/file", "8080/path" -> "/path")
-        // Match any sequence of digits followed by a non-digit
+        // Match any sequence of digits followed by a non-digit or end of string
         var i = 0;
         while (i < pathPart.Length && char.IsDigit(pathPart[i]))
         {
             i++;
         }
         
-        if (i > 0 && i < pathPart.Length)
+        if (i > 0)
         {
-            // Found digits followed by other content, skip the digits
-            pathPart = pathPart.Substring(i);
+            // Found digits - remove them if followed by content, or return false if it's only digits
+            if (i < pathPart.Length)
+            {
+                // Digits followed by other content, skip the digits
+                pathPart = pathPart.Substring(i);
+            }
+            else
+            {
+                // Only digits after scheme (e.g., "https:443"), treat as invalid
+                return false;
+            }
         }
         
         // Ensure the path starts with /
