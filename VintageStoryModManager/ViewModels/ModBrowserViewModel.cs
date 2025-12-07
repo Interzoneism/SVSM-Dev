@@ -162,30 +162,27 @@ public partial class ModBrowserViewModel : ObservableObject
         _installModCallback = callback;
     }
 
-    private async void OnFilterCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    private void OnFilterCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        try
+        // Save selections to config
+        if (_userConfigService != null)
         {
-            // Save selections to config
-            if (_userConfigService != null)
+            if (sender == SelectedVersions)
             {
-                if (sender == SelectedVersions)
-                {
-                    var versionIds = SelectedVersions.Select(v => v.TagId.ToString()).ToList();
-                    _userConfigService.SetModBrowserSelectedVersionIds(versionIds);
-                }
-                else if (sender == SelectedTags)
-                {
-                    var tagIds = SelectedTags.Select(t => t.TagId).ToList();
-                    _userConfigService.SetModBrowserSelectedTagIds(tagIds);
-                }
+                var versionIds = SelectedVersions.Select(v => v.TagId.ToString()).ToList();
+                _userConfigService.SetModBrowserSelectedVersionIds(versionIds);
             }
-
-            await SearchModsAsync();
+            else if (sender == SelectedTags)
+            {
+                var tagIds = SelectedTags.Select(t => t.TagId).ToList();
+                _userConfigService.SetModBrowserSelectedTagIds(tagIds);
+            }
         }
-        catch (Exception ex)
+
+        // Trigger search using fire-and-forget pattern, consistent with other filter handlers
+        if (!_isInitializing)
         {
-            System.Diagnostics.Debug.WriteLine($"Error during filter search: {ex.Message}");
+            _ = SearchModsAsync();
         }
     }
 
