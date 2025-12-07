@@ -447,6 +447,10 @@ public partial class ModBrowserViewModel : ObservableObject
                         SelectedVersions.Add(version);
                     }
                 }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ModBrowserViewModel] Failed to parse version ID '{versionId}' as long");
+                }
             }
 
             // Restore selected tags
