@@ -2486,18 +2486,20 @@ public partial class MainWindow : Window
     {
         if (_viewModel == null) return false;
         
+        // Use the MainViewModel's canonical method to find installed mods
+        // First try to match by database asset ID
+        var modIdStr = modId.ToString();
         var installedMods = _viewModel.GetInstalledModsSnapshot();
         foreach (var mod in installedMods)
         {
-            // Try to match by ModDatabaseAssetId first
-            if (mod.ModDatabaseAssetId != null && int.TryParse(mod.ModDatabaseAssetId, out var assetModId))
+            if (mod.ModDatabaseAssetId != null && string.Equals(mod.ModDatabaseAssetId, modIdStr, StringComparison.OrdinalIgnoreCase))
             {
-                if (assetModId == modId) return true;
+                return true;
             }
             // Fall back to matching by ModId as integer
-            else if (int.TryParse(mod.ModId, out var parsedModId))
+            if (string.Equals(mod.ModId, modIdStr, StringComparison.OrdinalIgnoreCase))
             {
-                if (parsedModId == modId) return true;
+                return true;
             }
         }
         return false;
@@ -2516,7 +2518,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Select the best release for installation (latest compatible)
+        // Select the best release for installation (using the same logic as UpdateModsAsync)
         var release = SelectReleaseForBrowserInstall(mod);
         if (release == null)
         {
@@ -2558,19 +2560,25 @@ public partial class MainWindow : Window
                 return;
             }
             
+            // Use the same descriptor creation logic as UpdateModsAsync for consistency
             var descriptor = new ModUpdateDescriptor(
                 mod.ModIdStr ?? mod.ModId.ToString(),
                 mod.Name,
                 downloadUrl,
                 targetPath,
-                false,
+                false, // targetIsDirectory - browser installs are always file-based
                 release.Filename,
                 release.ModVersion,
-                null);
+                null) // installedVersion is null for new installations
+            {
+                ExistingPath = null // No existing path for new installations
+            };
 
+            // Use the same progress reporting pattern as UpdateModsAsync
             var progress = new Progress<ModUpdateProgress>(p =>
                 _viewModel?.ReportStatus($"{mod.Name}: {p.Message}"));
 
+            // Use ModUpdateService.UpdateAsync - the same service used by UpdateModsAsync
             var result = await _modUpdateService
                 .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
                 .ConfigureAwait(true);
@@ -2592,6 +2600,7 @@ public partial class MainWindow : Window
             _viewModel?.ReportStatus($"Installed {mod.Name}{versionText}.");
             _modActivityLoggingService.LogModInstall(mod.Name ?? mod.ModId.ToString(), release.ModVersion);
 
+            // Use the same refresh pattern as UpdateModsAsync
             await RefreshModsAsync().ConfigureAwait(true);
 
             // After refresh, the ModBrowserViewModel will automatically reflect the updated installed state
