@@ -14,9 +14,13 @@ public class FlexibleStringConverter : JsonConverter<string>
         return reader.TokenType switch
         {
             JsonTokenType.String => reader.GetString(),
-            JsonTokenType.Number => reader.GetInt64().ToString(),
+            JsonTokenType.Number => reader.TryGetInt64(out var longValue) 
+                ? longValue.ToString() 
+                : reader.GetDouble().ToString(),
             JsonTokenType.Null => null,
-            _ => reader.GetString()
+            JsonTokenType.True => "true",
+            JsonTokenType.False => "false",
+            _ => string.Empty
         };
     }
 
@@ -37,7 +41,7 @@ public class FlexibleIntConverter : JsonConverter<int>
         return reader.TokenType switch
         {
             JsonTokenType.Number => reader.GetInt32(),
-            JsonTokenType.String => int.TryParse(reader.GetString(), out var result) ? result : 0,
+            JsonTokenType.String when int.TryParse(reader.GetString(), out var result) => result,
             _ => 0
         };
     }
