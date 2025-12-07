@@ -2560,7 +2560,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var downloadUrl = new Uri($"https://mods.vintagestory.at{release.MainFile}");
+            var downloadUrl = new Uri($"{DevConfig.ModDatabaseBaseUrl}{release.MainFile}");
             
             var descriptor = new ModUpdateDescriptor(
                 mod.ModIdStr ?? mod.ModId.ToString(),

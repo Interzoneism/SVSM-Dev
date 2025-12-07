@@ -145,6 +145,7 @@ public static class DevConfig
         "https://mods.vintagestory.at/api/mods?sortby=updated&sortdir=d&limit={0}";
 
     public static string ModDatabasePageBaseUrl { get; } = "https://mods.vintagestory.at/show/mod/";
+    public static string ModDatabaseBaseUrl { get; } = "https://mods.vintagestory.at";
     public static int ModDatabaseMaxConcurrentMetadataRequests { get; } = 4;
     public static int ModDatabaseMinimumTotalDownloadsForTrending { get; } = 500;
     public static int ModDatabaseDefaultNewModsMonths { get; } = 3;

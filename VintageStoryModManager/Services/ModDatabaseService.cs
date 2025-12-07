@@ -1227,8 +1227,21 @@ public sealed class ModDatabaseService
         release = default!;
 
         var downloadUrl = GetString(releaseElement, "mainfile");
-        if (string.IsNullOrWhiteSpace(downloadUrl) ||
-            !Uri.TryCreate(downloadUrl, UriKind.Absolute, out var downloadUri)) return false;
+        if (string.IsNullOrWhiteSpace(downloadUrl)) return false;
+
+        // The mainfile field contains a relative path (e.g., "/file/123"), so construct the full URL
+        Uri? downloadUri;
+        if (downloadUrl.StartsWith("/", StringComparison.Ordinal))
+        {
+            // Relative path, construct full URL with base domain
+            var fullUrl = $"{DevConfig.ModDatabaseBaseUrl}{downloadUrl}";
+            if (!Uri.TryCreate(fullUrl, UriKind.Absolute, out downloadUri)) return false;
+        }
+        else if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out downloadUri))
+        {
+            // Not a valid absolute URL
+            return false;
+        }
 
         var version = ExtractReleaseVersion(releaseElement);
         if (string.IsNullOrWhiteSpace(version)) return false;
