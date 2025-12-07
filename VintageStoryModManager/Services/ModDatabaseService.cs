@@ -1221,27 +1221,117 @@ public sealed class ModDatabaseService
         return (int)Math.Round(estimatedDownloads, MidpointRounding.AwayFromZero);
     }
 
+    /// <summary>
+    ///     Safely constructs a download URI from the API's mainfile field, handling both relative paths
+    ///     and malformed URLs that may be returned by the API.
+    /// </summary>
+    /// <param name="mainFileValue">The mainfile value from the API response</param>
+    /// <param name="downloadUri">The constructed URI if successful</param>
+    /// <returns>True if a valid URI was constructed, false otherwise</returns>
+    internal static bool TryCreateDownloadUri(string? mainFileValue, out Uri? downloadUri)
+    {
+        downloadUri = null;
+        
+        if (string.IsNullOrWhiteSpace(mainFileValue))
+            return false;
+        
+        var downloadUrl = mainFileValue.Trim();
+        
+        // Handle relative paths (starting with /)
+        if (downloadUrl.StartsWith("/", StringComparison.Ordinal))
+        {
+            // Relative path, construct full URL with base domain
+            var fullUrl = $"{DevConfig.ModDatabaseBaseUrl}{downloadUrl}";
+            if (!Uri.TryCreate(fullUrl, UriKind.Absolute, out downloadUri))
+                return false;
+            
+            return true;
+        }
+        
+        // Check for malformed URLs like "https:443/file/123" or "http:80/file/123" (missing "//")
+        // These occur when the API returns corrupted data
+        if (TryFixMalformedSchemeUrl(downloadUrl, "https:", out var fixedUrl) ||
+            TryFixMalformedSchemeUrl(downloadUrl, "http:", out fixedUrl))
+        {
+            var fullUrl = $"{DevConfig.ModDatabaseBaseUrl}{fixedUrl}";
+            if (!Uri.TryCreate(fullUrl, UriKind.Absolute, out downloadUri))
+                return false;
+            
+            return true;
+        }
+        
+        // Try to parse as absolute URL
+        if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out downloadUri))
+            return false;
+        
+        return true;
+    }
+    
+    /// <summary>
+    ///     Attempts to fix malformed URLs that are missing "//" after the scheme.
+    ///     For example, "https:443/file/123" becomes "/file/123"
+    /// </summary>
+    private static bool TryFixMalformedSchemeUrl(string url, string scheme, out string fixedPath)
+    {
+        fixedPath = string.Empty;
+        
+        // Check if URL starts with scheme but not with scheme://
+        if (!url.StartsWith(scheme, StringComparison.OrdinalIgnoreCase) ||
+            url.StartsWith($"{scheme}//", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        
+        // Remove the malformed scheme
+        var pathPart = url.Substring(scheme.Length);
+        
+        // If there's no content after the scheme, it's not a valid path
+        if (string.IsNullOrWhiteSpace(pathPart))
+        {
+            return false;
+        }
+        
+        // Remove any leading port number (e.g., "443/file" -> "/file", "8080/path" -> "/path")
+        // Match any sequence of digits followed by a non-digit or end of string
+        var i = 0;
+        while (i < pathPart.Length && char.IsDigit(pathPart[i]))
+        {
+            i++;
+        }
+        
+        if (i > 0)
+        {
+            // Found digits - remove them if followed by content, or return false if it's only digits
+            if (i < pathPart.Length)
+            {
+                // Digits followed by other content, skip the digits
+                pathPart = pathPart.Substring(i);
+            }
+            else
+            {
+                // Only digits after scheme (e.g., "https:443"), treat as invalid
+                return false;
+            }
+        }
+        
+        // Ensure the path starts with /
+        if (!pathPart.StartsWith("/", StringComparison.Ordinal))
+        {
+            pathPart = "/" + pathPart;
+        }
+        
+        fixedPath = pathPart;
+        return true;
+    }
+
     private static bool TryCreateReleaseInfo(JsonElement releaseElement, string? normalizedGameVersion,
         bool requireExactVersionMatch, out ModReleaseInfo release)
     {
         release = default!;
 
         var downloadUrl = GetString(releaseElement, "mainfile");
-        if (string.IsNullOrWhiteSpace(downloadUrl)) return false;
-
-        // The mainfile field contains a relative path (e.g., "/file/123"), so construct the full URL
-        Uri? downloadUri;
-        if (downloadUrl.StartsWith("/", StringComparison.Ordinal))
-        {
-            // Relative path, construct full URL with base domain
-            var fullUrl = $"{DevConfig.ModDatabaseBaseUrl}{downloadUrl}";
-            if (!Uri.TryCreate(fullUrl, UriKind.Absolute, out downloadUri)) return false;
-        }
-        else if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out downloadUri))
-        {
-            // Not a valid absolute URL
+        if (!TryCreateDownloadUri(downloadUrl, out var downloadUri) || downloadUri == null)
             return false;
-        }
 
         var version = ExtractReleaseVersion(releaseElement);
         if (string.IsNullOrWhiteSpace(version)) return false;
