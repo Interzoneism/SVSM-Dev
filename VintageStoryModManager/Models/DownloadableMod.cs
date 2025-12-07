@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using VintageStoryModManager.Services;
 
 namespace VintageStoryModManager.Models;
 
@@ -98,6 +99,7 @@ public class DownloadableModRelease
     public string Filename { get; set; } = string.Empty;
 
     [JsonPropertyName("fileid")]
+    [JsonConverter(typeof(FlexibleIntConverter))]
     public int FileId { get; set; }
 
     [JsonPropertyName("downloads")]
@@ -138,6 +140,7 @@ public class DownloadableModRelease
 public class DownloadableModScreenshot
 {
     [JsonPropertyName("fileid")]
+    [JsonConverter(typeof(FlexibleIntConverter))]
     public int FileId { get; set; }
 
     [JsonPropertyName("mainfile")]

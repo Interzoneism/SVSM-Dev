@@ -57,6 +57,7 @@ public class FlexibleIntConverter : JsonConverter<int>
         {
             JsonTokenType.Number => reader.TryGetInt32(out var intValue) ? intValue : 0,
             JsonTokenType.String => ParseStringToInt(reader.GetString()),
+            JsonTokenType.Null => 0,
             _ => 0
         };
     }
