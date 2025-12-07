@@ -133,9 +133,21 @@ public class ModApiService : IModApiService
 
             return result?.Mods ?? [];
         }
+        catch (JsonException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON deserialization error fetching mods: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON exception details: {ex}");
+            return [];
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] HTTP request error fetching mods: {ex.Message}");
+            return [];
+        }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error fetching mods: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Unexpected error fetching mods: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Exception details: {ex}");
             return [];
         }
     }
@@ -165,9 +177,21 @@ public class ModApiService : IModApiService
 
             return result.Mod;
         }
+        catch (JsonException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON deserialization error fetching mod {modIdStr}: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON exception details: {ex}");
+            return null;
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] HTTP request error fetching mod {modIdStr}: {ex.Message}");
+            return null;
+        }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error fetching mod {modIdStr}: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Unexpected error fetching mod {modIdStr}: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Exception details: {ex}");
             return null;
         }
     }
@@ -187,9 +211,21 @@ public class ModApiService : IModApiService
 
             return result?.Authors ?? [];
         }
+        catch (JsonException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON deserialization error fetching authors: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON exception details: {ex}");
+            return [];
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] HTTP request error fetching authors: {ex.Message}");
+            return [];
+        }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error fetching authors: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Unexpected error fetching authors: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Exception details: {ex}");
             return [];
         }
     }
@@ -217,10 +253,21 @@ public class ModApiService : IModApiService
             System.Diagnostics.Debug.WriteLine($"Returning {reversedVersions.Count} game versions");
             return reversedVersions;
         }
+        catch (JsonException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON deserialization error fetching game versions: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON exception details: {ex}");
+            return [];
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] HTTP request error fetching game versions: {ex.Message}");
+            return [];
+        }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error fetching game versions: {ex.GetType().Name} - {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Unexpected error fetching game versions: {ex.GetType().Name} - {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Stack trace: {ex.StackTrace}");
             return [];
         }
     }
@@ -240,9 +287,21 @@ public class ModApiService : IModApiService
 
             return result?.Tags ?? [];
         }
+        catch (JsonException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON deserialization error fetching tags: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON exception details: {ex}");
+            return [];
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] HTTP request error fetching tags: {ex.Message}");
+            return [];
+        }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error fetching tags: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Unexpected error fetching tags: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Exception details: {ex}");
             return [];
         }
     }
