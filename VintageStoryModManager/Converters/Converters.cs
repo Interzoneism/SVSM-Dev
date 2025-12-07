@@ -162,6 +162,47 @@ public class ContainsConverter : IMultiValueConverter
 }
 
 /// <summary>
+/// Inverted ContainsConverter - returns true if collection does NOT contain the item.
+/// </summary>
+public class InvertContainsConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 2 || values[0] == DependencyProperty.UnsetValue || values[1] == DependencyProperty.UnsetValue)
+            return true; // If we can't determine, enable the button
+
+        var item = values[0];
+        var collection = values[1];
+
+        if (collection == null)
+            return true; // If collection is null, item is not in it
+
+        // Try to use IList.Contains for better performance
+        if (collection is IList list)
+        {
+            return !list.Contains(item);
+        }
+
+        // Fallback to enumeration for other IEnumerable types
+        if (collection is IEnumerable enumerable)
+        {
+            foreach (var obj in enumerable)
+            {
+                if (Equals(obj, item))
+                    return false;
+            }
+        }
+
+        return true; // Not found in collection
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}
+
+/// <summary>
 /// Converts a boolean to a background brush color (for favorite button styling).
 /// </summary>
 public class BooleanToBrushConverter : IValueConverter

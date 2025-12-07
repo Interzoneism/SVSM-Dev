@@ -22,6 +22,7 @@
         <converters:EqualityConverter x:Key="EqualityConverter"/>
         <converters:CountToVisibilityConverter x:Key="CountToVisibility"/>
         <converters:ContainsConverter x:Key="ContainsConverter"/>
+        <converters:InvertContainsConverter x:Key="InvertContainsConverter"/>
         <converters:BooleanToBrushConverter x:Key="BoolToBrush"/>
         <converters:IconKeyToGeometryConverter x:Key="IconKeyToGeometry"/>
         <converters:NoResultsVisibilityConverter x:Key="NoResultsVisibility"/>
@@ -386,14 +387,28 @@
                                                     <Button Width="28" Height="28"
                                                             Opacity="0.9"
                                                             Click="InstallButton_Click"
-                                                            Tag="{Binding ModId}"
-                                                            ToolTip="Install mod"
-                                                            Style="{StaticResource IconButtonStyle}">
+                                                            Tag="{Binding ModId}">
                                                         <Button.Visibility>
                                                             <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
                                                                 <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
                                                             </MultiBinding>
                                                         </Button.Visibility>
+                                                        <Button.IsEnabled>
+                                                            <MultiBinding Converter="{StaticResource InvertContainsConverter}">
+                                                                <Binding Path="ModId"/>
+                                                                <Binding Path="DataContext.InstalledMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                                            </MultiBinding>
+                                                        </Button.IsEnabled>
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource IconButtonStyle}">
+                                                                <Setter Property="ToolTip" Value="Install mod"/>
+                                                                <Style.Triggers>
+                                                                    <Trigger Property="IsEnabled" Value="False">
+                                                                        <Setter Property="ToolTip" Value="Already installed"/>
+                                                                    </Trigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
                                                         <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
                                                               Data="{StaticResource IconDownload}">
                                                             <Path.Style>

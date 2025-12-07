@@ -84,6 +84,9 @@ public partial class ModBrowserViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<int> _favoriteMods = [];
 
+    [ObservableProperty]
+    private ObservableCollection<int> _installedMods = [];
+
     private Func<int, bool>? _isModInstalledFunc;
 
     #endregion
@@ -171,6 +174,24 @@ public partial class ModBrowserViewModel : ObservableObject
         // Note: No need to trigger a search here. The installed check function will be used
         // the next time a search is triggered (either by filter changes or by InitializeAsync).
         // Triggering a search here could cause duplicate searches during initialization.
+    }
+
+    /// <summary>
+    /// Updates the installed mods collection based on the current mods list.
+    /// Should be called after mods are loaded or when installation state changes.
+    /// </summary>
+    public void RefreshInstalledMods()
+    {
+        if (_isModInstalledFunc == null) return;
+
+        InstalledMods.Clear();
+        foreach (var mod in ModsList)
+        {
+            if (_isModInstalledFunc(mod.ModId))
+            {
+                InstalledMods.Add(mod.ModId);
+            }
+        }
     }
 
 
@@ -283,6 +304,9 @@ public partial class ModBrowserViewModel : ObservableObject
             VisibleModsCount = DefaultLoadedMods;
             OnPropertyChanged(nameof(VisibleMods));
 
+            // Update the installed mods collection for UI binding
+            RefreshInstalledMods();
+
             _ = PopulateUserReportsAsync(ModsList.ToList(), token);
         }
         catch (OperationCanceledException)
@@ -388,6 +412,15 @@ public partial class ModBrowserViewModel : ObservableObject
             // The callback will handle installation and the installed state will be reflected
             // through the _isModInstalledFunc when the UI refreshes
             await _installModCallback(mod);
+            
+            // Update the installed mods collection immediately to reflect the change
+            if (_isModInstalledFunc != null && _isModInstalledFunc(modId))
+            {
+                if (!InstalledMods.Contains(modId))
+                {
+                    InstalledMods.Add(modId);
+                }
+            }
             
             // Trigger a search refresh to update the installed filter
             _ = SearchModsAsync();
