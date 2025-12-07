@@ -382,8 +382,11 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             // Fallback: just mark as installed in the UI (no actual installation)
             // This is for testing or when no installation callback is registered
-            InstalledMods.Add(modId);
-            OnPropertyChanged(nameof(InstalledMods));
+            if (!InstalledMods.Contains(modId))
+            {
+                InstalledMods.Add(modId);
+                OnPropertyChanged(nameof(InstalledMods));
+            }
         }
     }
 
