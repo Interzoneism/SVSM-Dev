@@ -168,11 +168,9 @@ public partial class ModBrowserViewModel : ObservableObject
     public void SetInstalledModCheckFunc(Func<int, bool> checkFunc)
     {
         _isModInstalledFunc = checkFunc;
-        // Trigger a re-evaluation of installed filter if active
-        if (SelectedInstalledFilter != "all")
-        {
-            _ = SearchModsAsync();
-        }
+        // Note: No need to trigger a search here. The installed check function will be used
+        // the next time a search is triggered (either by filter changes or by InitializeAsync).
+        // Triggering a search here could cause duplicate searches during initialization.
     }
 
 
