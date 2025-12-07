@@ -27,6 +27,11 @@
 		<FileVersion>$(AppFileVersion)</FileVersion>                   <!-- File version (Details tab) -->
 		<InformationalVersion>$(AppVersion)</InformationalVersion>     <!-- About box/semver -->
 	</PropertyGroup>
+
+	<!-- Enable DEBUG symbol in all configurations so Debug.WriteLine calls are captured by trace listeners -->
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<DefineConstants>$(DefineConstants);TRACE;DEBUG</DefineConstants>
+	</PropertyGroup>
 	<ItemGroup>
 		<None Remove="soil.png" />
 		<None Remove="Views\soilcorrect.png" />
