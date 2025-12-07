@@ -64,11 +64,7 @@ namespace VintageStoryModManager.Views
         public IEnumerable ItemsSource
         {
             get => (IEnumerable)GetValue(ItemsSourceProperty);
-            set
-            {
-                System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.ItemsSource setter called with {value?.GetType().Name}");
-                SetValue(ItemsSourceProperty, value);
-            }
+            set => SetValue(ItemsSourceProperty, value);
         }
 
         public IList SelectedItems
@@ -123,20 +119,16 @@ namespace VintageStoryModManager.Views
         {
             if (d is MultiSelectDropdown dropdown)
             {
-                System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.OnItemsSourceChanged: OldValue={e.OldValue?.GetType().Name}, NewValue={e.NewValue?.GetType().Name}");
-                
                 // Unsubscribe from old collection
                 if (e.OldValue is INotifyCollectionChanged oldCollection)
                 {
                     oldCollection.CollectionChanged -= dropdown.OnItemsSourceCollectionChanged;
-                    System.Diagnostics.Debug.WriteLine("MultiSelectDropdown.OnItemsSourceChanged: Unsubscribed from old collection");
                 }
 
                 // Subscribe to new collection
                 if (e.NewValue is INotifyCollectionChanged newCollection)
                 {
                     newCollection.CollectionChanged += dropdown.OnItemsSourceCollectionChanged;
-                    System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.OnItemsSourceChanged: Subscribed to new collection");
                 }
 
                 dropdown.UpdateSelectableItems();
@@ -145,8 +137,6 @@ namespace VintageStoryModManager.Views
 
         private void OnItemsSourceCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.OnItemsSourceCollectionChanged: Action={e.Action}");
-            
             // Handle collection changes incrementally to avoid O(n²) performance issues
             switch (e.Action)
             {
@@ -175,7 +165,6 @@ namespace VintageStoryModManager.Views
                                 _selectableItems.Add(selectableItem);
                             }
                         }
-                        System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown: Added {e.NewItems.Count} items incrementally");
                     }
                     break;
 
@@ -189,7 +178,6 @@ namespace VintageStoryModManager.Views
                                 _selectableItems.RemoveAt(e.OldStartingIndex);
                             }
                         }
-                        System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown: Removed {e.OldItems.Count} items incrementally");
                     }
                     break;
 
@@ -212,7 +200,6 @@ namespace VintageStoryModManager.Views
                                 };
                             }
                         }
-                        System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown: Replaced {e.NewItems.Count} items incrementally");
                     }
                     break;
 
@@ -230,13 +217,11 @@ namespace VintageStoryModManager.Views
                         {
                             _selectableItems.Add(item);
                         }
-                        System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown: Moved item from {e.OldStartingIndex} to {e.NewStartingIndex}");
                     }
                     break;
 
                 case NotifyCollectionChangedAction.Reset:
                     // For Reset, we need to rebuild the entire list
-                    System.Diagnostics.Debug.WriteLine("MultiSelectDropdown: Reset action - rebuilding entire list");
                     UpdateSelectableItems();
                     break;
             }
@@ -268,6 +253,11 @@ namespace VintageStoryModManager.Views
             UpdateDisplayText();
             
             // Update selection state incrementally instead of rebuilding entire list
+            // Note: Using FirstOrDefault results in O(n) lookup per item, but this is acceptable because:
+            // 1. SelectedItems changes are infrequent and typically involve only a few items
+            // 2. Users rarely select/deselect many items at once (typical case: 1-10 selections)
+            // 3. For 222 items with 5 selections: 5 * 222 = ~1,100 operations (acceptable)
+            // 4. This avoids the complexity of maintaining a separate dictionary lookup structure
             switch (e.Action)
             {
                 case NotifyCollectionChangedAction.Add:
@@ -299,7 +289,7 @@ namespace VintageStoryModManager.Views
                     break;
 
                 case NotifyCollectionChangedAction.Reset:
-                    // Reset all selection states to false, then set selected ones to true
+                    // Reset all selection states
                     foreach (var selectableItem in _selectableItems)
                     {
                         selectableItem.IsSelected = SelectedItems?.Contains(selectableItem.Item) == true;
@@ -363,16 +353,13 @@ namespace VintageStoryModManager.Views
 
         private void UpdateSelectableItems()
         {
-            System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.UpdateSelectableItems: Clearing {_selectableItems.Count} items");
             _selectableItems.Clear();
 
             if (ItemsSource == null)
             {
-                System.Diagnostics.Debug.WriteLine("MultiSelectDropdown.UpdateSelectableItems: ItemsSource is null, returning");
                 return;
             }
 
-            var count = 0;
             foreach (var item in ItemsSource)
             {
                 var displayText = GetDisplayText(item);
@@ -384,9 +371,7 @@ namespace VintageStoryModManager.Views
                     DisplayText = displayText,
                     IsSelected = isSelected
                 });
-                count++;
             }
-            System.Diagnostics.Debug.WriteLine($"MultiSelectDropdown.UpdateSelectableItems: Added {count} items to _selectableItems");
         }
 
         private string GetDisplayText(object item)
