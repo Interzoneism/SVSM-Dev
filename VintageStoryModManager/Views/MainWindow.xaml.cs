@@ -2560,7 +2560,18 @@ public partial class MainWindow : Window
 
         try
         {
-            var downloadUrl = new Uri($"{DevConfig.ModDatabaseBaseUrl}{release.MainFile}");
+            if (!ModDatabaseService.TryCreateDownloadUri(release.MainFile, out var downloadUrl) || downloadUrl == null)
+            {
+                _viewModel?.ReportStatus($"Error: Invalid download URL for {mod.Name}");
+                ModManagerMessageBox.Show(
+                    this,
+                    $"The download URL for this mod version is invalid or malformed.{Environment.NewLine}{Environment.NewLine}" +
+                    $"This is likely a temporary issue with the mod database. Please try again later or contact the mod author.",
+                    "Invalid Download URL",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
             
             var descriptor = new ModUpdateDescriptor(
                 mod.ModIdStr ?? mod.ModId.ToString(),
