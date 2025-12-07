@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -26,9 +27,9 @@ public class FlexibleStringConverter : JsonConverter<string>
     {
         if (reader.TryGetInt64(out var longValue))
         {
-            return longValue.ToString();
+            return longValue.ToString(CultureInfo.InvariantCulture);
         }
-        return reader.GetDouble().ToString();
+        return reader.GetDouble().ToString(CultureInfo.InvariantCulture);
     }
 
     public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
@@ -54,7 +55,7 @@ public class FlexibleIntConverter : JsonConverter<int>
     {
         return reader.TokenType switch
         {
-            JsonTokenType.Number => reader.GetInt32(),
+            JsonTokenType.Number => reader.TryGetInt32(out var intValue) ? intValue : 0,
             JsonTokenType.String => ParseStringToInt(reader.GetString()),
             _ => 0
         };
@@ -62,7 +63,7 @@ public class FlexibleIntConverter : JsonConverter<int>
 
     private static int ParseStringToInt(string? value)
     {
-        if (value != null && int.TryParse(value, out var result))
+        if (value != null && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result))
         {
             return result;
         }
