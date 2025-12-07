@@ -1099,6 +1099,7 @@ public partial class MainWindow : Window
         if (_traceListener != null)
         {
             System.Diagnostics.Trace.Listeners.Remove(_traceListener);
+            _traceListener.Dispose();
             _traceListener = null;
         }
         
@@ -1661,6 +1662,7 @@ public partial class MainWindow : Window
         if (_traceListener != null)
         {
             System.Diagnostics.Trace.Listeners.Remove(_traceListener);
+            _traceListener.Dispose();
             _traceListener = null;
         }
 
@@ -1669,6 +1671,7 @@ public partial class MainWindow : Window
         {
             _traceListener = new ModManagerTraceListener(_modActivityLoggingService);
             System.Diagnostics.Trace.Listeners.Add(_traceListener);
+            _modActivityLoggingService.LogDiagnostic("Error and exception logging enabled");
         }
     }
 
