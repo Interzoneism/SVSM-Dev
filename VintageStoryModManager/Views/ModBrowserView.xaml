@@ -27,6 +27,7 @@
         <converters:NoResultsVisibilityConverter x:Key="NoResultsVisibility"/>
         <converters:FavoriteButtonVisibilityConverter x:Key="FavoriteButtonVisibility"/>
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility"/>
+        <converters:UserReportVisibilityConverter x:Key="UserReportVisibility"/>
 
         <!-- Loading Spinner Animation -->
         <Storyboard x:Key="SpinnerAnimation" RepeatBehavior="Forever">
@@ -423,7 +424,8 @@
                                                         Margin="8"
                                                         Padding="6,4"
                                                         Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                                        CornerRadius="6">
+                                                        CornerRadius="6"
+                                                        Visibility="{Binding UserReportDisplay, Converter={StaticResource UserReportVisibility}}">
                                                     <TextBlock Text="{Binding UserReportDisplay}"
                                                                ToolTip="{Binding UserReportTooltip}"
                                                                Foreground="{DynamicResource Brush.Text.Primary}"
