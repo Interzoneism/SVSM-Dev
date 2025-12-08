@@ -97,7 +97,7 @@
 
         <!-- Filter Bar -->
         <Border
-                Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                Background="{DynamicResource Brush.MiddleTab.Background.Selected}"
                 Padding="10,0,10,0"
                 BorderBrush="{DynamicResource Brush.Border.Default}"
                 BorderThickness="0,0,0,1">
@@ -301,8 +301,8 @@
 
                 <!-- Mods Grid -->
                 <ItemsControl ItemsSource="{Binding VisibleMods}"
-                              Margin="16"
-                              Visibility="{Binding ModsList.Count, Converter={StaticResource CountToVisibility}}">
+                              Margin="16,0,16,16"
+                              Visibility="{Binding ModsList.Count, Converter={StaticResource CountToVisibility}}" Background="{DynamicResource Brush.DataGrid.Background}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <WrapPanel Orientation="Horizontal"

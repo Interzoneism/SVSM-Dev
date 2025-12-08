@@ -424,7 +424,7 @@
 
     <!-- Icon button style for icon-only buttons -->
     <Style x:Key="IconButtonStyle" TargetType="{x:Type Button}">
-        <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Pressed}" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Normal}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Dark}" />
         <Setter Property="BorderThickness" Value="0,0,1,1" />
         <Setter Property="Padding" Value="4" />

@@ -15,10 +15,12 @@
         <ToggleButton x:Name="DropdownToggle"
                       Click="DropdownToggle_Click"
                       ClickMode="Press"
+                      Foreground="{DynamicResource Brush.Text.Primary}"
                       Background="{DynamicResource Brush.ComboBox.Background.Normal}"
-                      BorderBrush="{DynamicResource Brush.ComboBox.Border.Normal}"
-                      BorderThickness="1"
+                      BorderBrush="{DynamicResource Brush.Button.Bevel.Dark}"
+                      BorderThickness="0,0,2,2"
                       Padding="10,4"
+                      Focusable="False"
                       HorizontalContentAlignment="Stretch">
             <ToggleButton.Template>
                 <ControlTemplate TargetType="ToggleButton">
@@ -42,7 +44,7 @@
                                 <TextBlock x:Name="DisplayText"
                                            Grid.Column="0"
                                            Text="{Binding DisplayText, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                           Foreground="{Binding DisplayTextBrush, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                           Foreground="{DynamicResource Brush.Text.Primary}"
                                            VerticalAlignment="Center"
                                            TextTrimming="CharacterEllipsis"/>
 
@@ -66,11 +68,11 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="BackgroundBorder" Property="Background" Value="{DynamicResource Brush.ComboBox.Background.Hover}"/>
-                            <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{DynamicResource Brush.ComboBox.Border.Hover}"/>
+                            <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Dark}"/>
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{DynamicResource Brush.ComboBox.Border.Open}"/>
-                            <Setter TargetName="BackgroundBorder" Property="Background" Value="{DynamicResource Brush.ComboBox.Background.Open}"/>
+                            <Setter TargetName="BackgroundBorder" Property="Background" Value="{DynamicResource Brush.Button.Bevel.Dark}"/>
                             <Setter TargetName="Arrow" Property="RenderTransform">
                                 <Setter.Value>
                                     <RotateTransform Angle="180"/>
