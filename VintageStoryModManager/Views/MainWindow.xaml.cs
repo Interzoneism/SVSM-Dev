@@ -2520,15 +2520,23 @@ public partial class MainWindow : Window
 
     private async Task InstallModFromBrowserAsync(DownloadableMod mod)
     {
-        if (_isModUpdateInProgress) return;
+        System.Diagnostics.Debug.WriteLine($"[MainWindow] InstallModFromBrowserAsync called for mod: {mod.Name} (ID: {mod.ModId})");
+        
+        if (_isModUpdateInProgress)
+        {
+            System.Diagnostics.Debug.WriteLine("[MainWindow] Install already in progress, returning");
+            return;
+        }
 
         // Step 1: Convert the DownloadableMod to ModListItemViewModel
         // This allows us to use all the existing install functions
+        System.Diagnostics.Debug.WriteLine("[MainWindow] Converting DownloadableMod to ModListItemViewModel");
         var modViewModel = ConvertToModListItemViewModel(mod);
 
         // Step 2: Use the EXACT SAME validation logic as the old flow
         if (!modViewModel.HasDownloadableRelease)
         {
+            System.Diagnostics.Debug.WriteLine("[MainWindow] No downloadable releases available");
             WpfMessageBox.Show("No downloadable releases are available for this mod.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
@@ -2537,9 +2545,11 @@ public partial class MainWindow : Window
         }
 
         // Step 3: Use the SAME SelectReleaseForInstall function (Line 5338)
+        System.Diagnostics.Debug.WriteLine("[MainWindow] Selecting release for install");
         var release = SelectReleaseForInstall(modViewModel);
         if (release is null)
         {
+            System.Diagnostics.Debug.WriteLine("[MainWindow] SelectReleaseForInstall returned null");
             WpfMessageBox.Show("No downloadable releases are available for this mod.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,

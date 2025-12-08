@@ -391,6 +391,8 @@
                                                         <Button.Visibility>
                                                             <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
                                                                 <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
+                                                                <Binding Path="ModId"/>
+                                                                <Binding Path="DataContext.InstalledMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
                                                             </MultiBinding>
                                                         </Button.Visibility>
                                                         <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"

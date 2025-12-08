@@ -283,20 +283,41 @@ public class FavoriteButtonVisibilityConverter : IMultiValueConverter
 
 /// <summary>
 /// Multi-value converter for install button visibility.
-/// Shows button when: card is hovered.
-/// values[0] = IsMouseOver (bool)
+/// Shows button when: card is hovered AND mod is not already installed.
+/// values[0] = IsMouseOver (bool), values[1] = ModId (object), values[2] = InstalledMods collection
 /// </summary>
 public class InstallButtonVisibilityConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (values.Length < 1 || values[0] == DependencyProperty.UnsetValue)
+        if (values.Length < 3 || values[0] == DependencyProperty.UnsetValue || 
+            values[1] == DependencyProperty.UnsetValue || values[2] == DependencyProperty.UnsetValue)
             return Visibility.Collapsed;
 
         var isMouseOver = values[0] is bool b && b;
+        var modId = values[1];
+        var installedMods = values[2];
 
-        // Show button only when hovered
-        return isMouseOver ? Visibility.Visible : Visibility.Collapsed;
+        // Check if mod is already installed
+        var isInstalled = false;
+        if (installedMods is IList list && modId != null)
+        {
+            isInstalled = list.Contains(modId);
+        }
+        else if (installedMods is IEnumerable enumerable && modId != null)
+        {
+            foreach (var obj in enumerable)
+            {
+                if (Equals(obj, modId))
+                {
+                    isInstalled = true;
+                    break;
+                }
+            }
+        }
+
+        // Show button only when hovered AND not already installed
+        return isMouseOver && !isInstalled ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)

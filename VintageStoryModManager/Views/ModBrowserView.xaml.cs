@@ -114,10 +114,16 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
 
     private void InstallButton_Click(object sender, RoutedEventArgs e)
     {
+        System.Diagnostics.Debug.WriteLine("[ModBrowserView] InstallButton_Click called");
         e.Handled = true; // Prevent card click
         if (sender is FrameworkElement element && element.Tag is int modId)
         {
+            System.Diagnostics.Debug.WriteLine($"[ModBrowserView] Executing InstallModCommand with modId: {modId}");
             ViewModel?.InstallModCommand.Execute(modId);
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine("[ModBrowserView] Failed to get modId from Tag");
         }
     }
 
