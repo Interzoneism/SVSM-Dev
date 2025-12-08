@@ -17,6 +17,7 @@ public class ModListResponse
 public class ModResponse
 {
     [JsonPropertyName("statuscode")]
+    [JsonConverter(typeof(FlexibleIntConverter))]
     public int StatusCode { get; set; }
 
     [JsonPropertyName("mod")]
