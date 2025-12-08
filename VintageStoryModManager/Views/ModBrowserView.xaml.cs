@@ -38,10 +38,22 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
     private async void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         // Initialize the ViewModel only when the control becomes visible for the first time
-        if (IsVisible && !_isInitialized && ViewModel != null)
+        if (!IsVisible || _isInitialized || ViewModel == null)
+            return;
+
+        // Set flag before awaiting to prevent race conditions from rapid visibility changes
+        _isInitialized = true;
+
+        try
         {
-            _isInitialized = true;
             await ViewModel.InitializeCommand.ExecuteAsync(null);
+        }
+        catch (Exception ex)
+        {
+            // Log the error but don't crash the application
+            System.Diagnostics.Debug.WriteLine($"[ModBrowserView] Error during initialization: {ex.Message}");
+            // Reset flag to allow retry if initialization failed
+            _isInitialized = false;
         }
     }
 
