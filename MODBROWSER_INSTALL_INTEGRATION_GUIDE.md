@@ -1,5 +1,27 @@
 # ModBrowserView Install Integration Guide
 
+## Quick Reference
+
+**Goal:** Connect new ModBrowserView install button to use the exact same functions as the old mod database install flow.
+
+**Strategy:** Create data adapters to convert API models → ViewModels, then call existing install functions.
+
+**Key Files to Modify:**
+- `MainWindow.xaml.cs` - Add adapter methods and refactor `InstallModFromBrowserAsync`
+- `ModListItemViewModel.cs` - May need to add constructor/factory method
+
+**Functions to Reuse (DO NOT duplicate):**
+- `SelectReleaseForInstall()` - Line 5361
+- `TryGetInstallTargetPath()` - Line 7524
+- `CreateAutomaticBackupAsync()`
+- `ModUpdateService.UpdateAsync()`
+
+**Functions to Remove (duplicates):**
+- `SelectReleaseForBrowserInstall()` - Line 2624
+- `TryGetInstallTargetPathForBrowserMod()` - Line 2635
+
+---
+
 ## Overview
 
 This guide explains how to integrate the **new ModBrowserView** with the **existing mod installation flow** used by the old mod database browser. The goal is to achieve **exact same functionality** - when the install button is clicked in the new ModBrowserView, it should trigger the exact same functions and use the same variables as the old mod database install button.
