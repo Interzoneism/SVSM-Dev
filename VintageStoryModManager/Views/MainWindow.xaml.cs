@@ -2658,7 +2658,7 @@ public partial class MainWindow : Window
         // Create ModDatabaseInfo with converted data
         var databaseInfo = new ModDatabaseInfo
         {
-            Tags = (mod.Tags as IReadOnlyList<string>) ?? Array.Empty<string>(),
+            Tags = mod.Tags?.ToArray() ?? Array.Empty<string>(),
             AssetId = mod.AssetId.ToString(),
             ModPageUrl = $"https://mods.vintagestory.at/show/mod/{mod.AssetId}",
             LatestVersion = latestRelease?.Version,
@@ -2730,7 +2730,7 @@ public partial class MainWindow : Window
             Version = release.ModVersion,
             DownloadUri = downloadUri,
             FileName = release.Filename,
-            GameVersionTags = (release.Tags as IReadOnlyList<string>) ?? Array.Empty<string>(),
+            GameVersionTags = release.Tags?.ToArray() ?? Array.Empty<string>(),
             IsCompatibleWithInstalledGame = CheckReleaseCompatibility(release),
             Changelog = release.Changelog,
             Downloads = release.Downloads,
