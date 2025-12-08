@@ -350,11 +350,24 @@ public partial class ModBrowserViewModel : ObservableObject
         var mod = await _modApiService.GetModAsync(modId);
         if (mod == null)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to fetch mod details for modId: {modId}");
+            System.Diagnostics.Debug.WriteLine($"[ModBrowser] Failed to fetch mod details for modId: {modId}");
             return;
         }
         
         System.Diagnostics.Debug.WriteLine($"[ModBrowser] Fetched mod details: {mod.Name}");
+        System.Diagnostics.Debug.WriteLine($"[ModBrowser] Mod has {mod.Releases?.Count ?? 0} releases");
+        
+        if (mod.Releases != null && mod.Releases.Count > 0)
+        {
+            foreach (var release in mod.Releases.Take(3)) // Log first 3 releases
+            {
+                System.Diagnostics.Debug.WriteLine($"[ModBrowser]   Release: {release.ModVersion}, File: {release.MainFile}, Tags: {string.Join(",", release.Tags ?? [])}");
+            }
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModBrowser] WARNING: No releases found for mod {mod.Name}!");
+        }
 
         // If a callback is registered, use it (MainWindow will handle the actual installation)
         if (_installModCallback != null)
