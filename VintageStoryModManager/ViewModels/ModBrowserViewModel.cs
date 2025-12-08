@@ -580,8 +580,12 @@ public partial class ModBrowserViewModel : ObservableObject
 
     private async Task PopulateUserReportsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
     {
-        // Filter to only mods that haven't had their user reports loaded yet
-        var modsToLoad = mods.Where(m => !_userReportsLoaded.Contains(m.ModId)).ToList();
+        // Filter to only mods that haven't had their user reports loaded yet (thread-safe)
+        List<DownloadableModOnList> modsToLoad;
+        lock (_userReportsLoaded)
+        {
+            modsToLoad = mods.Where(m => !_userReportsLoaded.Contains(m.ModId)).ToList();
+        }
         
         if (modsToLoad.Count == 0)
             return;
