@@ -2729,7 +2729,9 @@ public partial class MainWindow : Window
 
         var releaseFileName = release.FileName;
         if (!string.IsNullOrWhiteSpace(releaseFileName))
+        {
             releaseFileName = Path.GetFileName(releaseFileName);
+        }
 
         var sanitizedFileName = SanitizeFileName(releaseFileName, fallbackFileName);
         if (string.IsNullOrWhiteSpace(Path.GetExtension(sanitizedFileName)))
