@@ -14,12 +14,14 @@ namespace VintageStoryModManager.Views;
 public partial class ModBrowserView : System.Windows.Controls.UserControl
 {
     private Storyboard? _spinnerStoryboard;
+    private bool _isInitialized;
 
     public ModBrowserView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         Unloaded += OnControlUnloaded;
+        IsVisibleChanged += OnIsVisibleChanged;
     }
 
     private ModBrowserViewModel? ViewModel => DataContext as ModBrowserViewModel;
@@ -29,10 +31,29 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         // Cache the storyboard reference during initialization
         _spinnerStoryboard = TryFindResource("SpinnerAnimation") as Storyboard;
         
-        // Initialize the ViewModel
-        if (ViewModel != null)
+        // Don't initialize ViewModel here - defer until tab is visible
+        // This prevents unnecessary network requests on application startup
+    }
+
+    private async void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        // Initialize the ViewModel only when the control becomes visible for the first time
+        if (!IsVisible || _isInitialized || ViewModel == null)
+            return;
+
+        // Set flag before awaiting to prevent race conditions from rapid visibility changes
+        _isInitialized = true;
+
+        try
         {
             await ViewModel.InitializeCommand.ExecuteAsync(null);
+        }
+        catch (Exception ex)
+        {
+            // Log the error but don't crash the application
+            System.Diagnostics.Debug.WriteLine($"[ModBrowserView] Error during initialization: {ex.Message}");
+            // Reset flag to allow retry if initialization failed
+            _isInitialized = false;
         }
     }
 
@@ -41,6 +62,9 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         // Clean up resources when the control is unloaded
         StopSpinnerAnimation();
         _spinnerStoryboard = null;
+
+        // Unsubscribe from events
+        IsVisibleChanged -= OnIsVisibleChanged;
 
         if (DataContext is ModBrowserViewModel vm)
         {
