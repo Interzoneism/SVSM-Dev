@@ -512,7 +512,6 @@ public partial class ModBrowserViewModel : ObservableObject
         foreach (var version in versions)
         {
             AvailableVersions.Add(version);
-            System.Diagnostics.Debug.WriteLine($"LoadGameVersionsAsync: Added version {version.Name} (TagId: {version.TagId})");
         }
         System.Diagnostics.Debug.WriteLine($"LoadGameVersionsAsync: Completed. AvailableVersions now has {AvailableVersions.Count} items");
     }
