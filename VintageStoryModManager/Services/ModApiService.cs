@@ -167,15 +167,38 @@ public class ModApiService : IModApiService
 
         try
         {
-            var response = await _httpClient.GetStringAsync($"{BaseUrl}/api/mod/{Uri.EscapeDataString(modIdStr)}", cancellationToken);
+            var url = $"{BaseUrl}/api/mod/{Uri.EscapeDataString(modIdStr)}";
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Fetching mod from: {url}");
+            
+            var response = await _httpClient.GetStringAsync(url, cancellationToken);
+            
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Received response (first 500 chars): {(response.Length > 500 ? response.Substring(0, 500) : response)}");
+            
             var result = JsonSerializer.Deserialize<ModResponse>(response, _jsonOptions);
 
             if (result?.StatusCode != 200)
             {
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] Non-200 status code: {result?.StatusCode}");
                 return null;
             }
 
-            return result.Mod;
+            var mod = result.Mod;
+            if (mod != null)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] Successfully deserialized mod: {mod.Name}");
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] Mod has {mod.Releases?.Count ?? 0} releases");
+                
+                if (mod.Releases == null || mod.Releases.Count == 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ModApiService] WARNING: Mod {mod.Name} has NO releases!");
+                }
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] Deserialized mod is null");
+            }
+            
+            return mod;
         }
         catch (JsonException ex)
         {
