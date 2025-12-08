@@ -2502,6 +2502,10 @@ public partial class MainWindow : Window
         return false;
     }
 
+    /// <summary>
+    /// Installs a mod from the mod browser using the original install flow.
+    /// This uses the proven, stable installation logic from the main window.
+    /// </summary>
     private async Task InstallModFromBrowserAsync(DownloadableMod mod)
     {
         if (_isModUpdateInProgress) return;
@@ -2515,8 +2519,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Select the best release for installation (using the same logic as UpdateModsAsync)
-        var release = SelectReleaseForBrowserInstall(mod);
+        // Convert browser releases to ModReleaseInfo format and select best release
+        var releases = ConvertBrowserReleasesToModReleaseInfo(mod);
+        var release = SelectReleaseForInstall(releases);
         if (release == null)
         {
             WpfMessageBox.Show("No compatible releases are available for this mod.",
@@ -2526,7 +2531,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!TryGetInstallTargetPathForBrowserMod(mod, release, out var targetPath, out var errorMessage))
+        // Determine target installation path using the original logic
+        var modId = mod.ModIdStr ?? mod.ModId.ToString();
+        if (!TryGetInstallTargetPath(modId, release, out var targetPath, out var errorMessage))
         {
             if (!string.IsNullOrWhiteSpace(errorMessage))
                 WpfMessageBox.Show(errorMessage,
@@ -2537,6 +2544,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Create automatic backup before installation (same as original flow)
         await CreateAutomaticBackupAsync("ModsUpdated").ConfigureAwait(true);
 
         _isModUpdateInProgress = true;
@@ -2544,38 +2552,25 @@ public partial class MainWindow : Window
 
         try
         {
-            if (!ModDatabaseService.TryCreateDownloadUri(release.MainFile, out var downloadUrl) || downloadUrl == null)
-            {
-                _viewModel?.ReportStatus($"Error: Invalid download URL for {mod.Name}");
-                ModManagerMessageBox.Show(
-                    this,
-                    $"The download URL for this mod version is invalid or malformed.{Environment.NewLine}{Environment.NewLine}" +
-                    $"This is likely a temporary issue with the mod database. Please try again later or contact the mod author.",
-                    "Invalid Download URL",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return;
-            }
-            
-            // Use the same descriptor creation logic as UpdateModsAsync for consistency
+            // Create descriptor for ModUpdateService (same as original flow)
             var descriptor = new ModUpdateDescriptor(
-                mod.ModIdStr ?? mod.ModId.ToString(),
+                modId,
                 mod.Name,
-                downloadUrl,
+                release.DownloadUri,
                 targetPath,
-                false, // targetIsDirectory - browser installs are always file-based
-                release.Filename,
-                release.ModVersion,
+                false, // TargetIsDirectory = false (ZIP file installation)
+                release.FileName,
+                release.Version,
                 null) // installedVersion is null for new installations
             {
-                ExistingPath = null // No existing path for new installations
+                ExistingPath = null
             };
 
-            // Use the same progress reporting pattern as UpdateModsAsync
+            // Create progress reporter (same as original flow)
             var progress = new Progress<ModUpdateProgress>(p =>
                 _viewModel?.ReportStatus($"{mod.Name}: {p.Message}"));
 
-            // Use ModUpdateService.UpdateAsync - the same service used by UpdateModsAsync
+            // Perform the installation via ModUpdateService (same as original flow)
             var result = await _modUpdateService
                 .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
                 .ConfigureAwait(true);
@@ -2593,15 +2588,12 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var versionText = string.IsNullOrWhiteSpace(release.ModVersion) ? string.Empty : $" {release.ModVersion}";
+            var versionText = string.IsNullOrWhiteSpace(release.Version) ? string.Empty : $" {release.Version}";
             _viewModel?.ReportStatus($"Installed {mod.Name}{versionText}.");
-            _modActivityLoggingService.LogModInstall(mod.Name ?? mod.ModId.ToString(), release.ModVersion);
+            _modActivityLoggingService.LogModInstall(mod.Name ?? mod.ModId.ToString(), release.Version);
 
-            // Use the same refresh pattern as UpdateModsAsync
+            // Refresh mods list to show the newly installed mod (same as original flow)
             await RefreshModsAsync().ConfigureAwait(true);
-
-            // After refresh, the ModBrowserViewModel will automatically reflect the updated installed state
-            // through the IsModInstalledByModId function when filters are re-evaluated
         }
         catch (OperationCanceledException)
         {
@@ -2623,19 +2615,90 @@ public partial class MainWindow : Window
         }
     }
 
-    private DownloadableModRelease? SelectReleaseForBrowserInstall(DownloadableMod mod)
+    /// <summary>
+    /// Converts browser mod releases to ModReleaseInfo format.
+    /// This allows browser mods to use the original SelectReleaseForInstall logic.
+    /// </summary>
+    private static List<ModReleaseInfo> ConvertBrowserReleasesToModReleaseInfo(DownloadableMod browserMod)
     {
-        if (mod.Releases == null || mod.Releases.Count == 0)
-            return null;
+        var convertedReleases = new List<ModReleaseInfo>();
+        var installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion(null);
 
-        // Always return the most recent release (latest version)
-        return mod.Releases
-            .OrderByDescending(r => DateTime.TryParse(r.Created, out var date) ? date : DateTime.MinValue)
-            .FirstOrDefault();
+        foreach (var browserRelease in browserMod.Releases)
+        {
+            // Create download URI from the browser release
+            if (!ModDatabaseService.TryCreateDownloadUri(browserRelease.MainFile, out var downloadUri) || downloadUri == null)
+                continue;
+
+            // Check compatibility with installed game version
+            var isCompatible = IsBrowserReleaseCompatible(browserRelease, installedGameVersion);
+
+            var releaseInfo = new ModReleaseInfo
+            {
+                Version = browserRelease.ModVersion,
+                DownloadUri = downloadUri,
+                FileName = browserRelease.Filename,
+                IsCompatibleWithInstalledGame = isCompatible,
+                GameVersionTags = browserRelease.Tags ?? [],
+                Changelog = browserRelease.Changelog,
+                Downloads = browserRelease.Downloads,
+                CreatedUtc = DateTime.TryParse(browserRelease.Created, out var date) ? date : null
+            };
+
+            convertedReleases.Add(releaseInfo);
+        }
+
+        return convertedReleases;
     }
 
-    private bool TryGetInstallTargetPathForBrowserMod(DownloadableMod mod, DownloadableModRelease release, 
-        out string fullPath, out string? errorMessage)
+    /// <summary>
+    /// Checks if a browser release is compatible with the installed game version.
+    /// </summary>
+    private static bool IsBrowserReleaseCompatible(DownloadableModRelease release, string? installedGameVersion)
+    {
+        if (string.IsNullOrWhiteSpace(installedGameVersion))
+            return false;
+
+        if (release.Tags == null || release.Tags.Count == 0)
+            return true; // No version restrictions
+
+        // Check if any of the release tags match the installed game version
+        return release.Tags.Any(tag =>
+            tag.Equals(installedGameVersion, StringComparison.OrdinalIgnoreCase) ||
+            tag.StartsWith(installedGameVersion, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Selects the best release for installation from a list of releases.
+    /// Uses the same logic as SelectReleaseForInstall but works with a list instead of ModListItemViewModel.
+    /// </summary>
+    private static ModReleaseInfo? SelectReleaseForInstall(List<ModReleaseInfo> releases)
+    {
+        if (releases == null || releases.Count == 0)
+            return null;
+
+        // Sort by creation date (newest first)
+        var sortedReleases = releases.OrderByDescending(r => r.CreatedUtc ?? DateTime.MinValue).ToList();
+
+        var latestRelease = sortedReleases.FirstOrDefault();
+        var latestCompatibleRelease = sortedReleases.FirstOrDefault(r => r.IsCompatibleWithInstalledGame);
+
+        // Apply the same selection logic as the original function
+        if (latestRelease?.IsCompatibleWithInstalledGame == true)
+            return latestRelease;
+
+        if (latestCompatibleRelease != null)
+            return latestCompatibleRelease;
+
+        return latestRelease;
+    }
+
+    /// <summary>
+    /// Overload of TryGetInstallTargetPath that works with a string modId instead of ModListItemViewModel.
+    /// Uses the same logic as the original function.
+    /// </summary>
+    private bool TryGetInstallTargetPath(string modId, ModReleaseInfo release, out string fullPath,
+        out string? errorMessage)
     {
         fullPath = string.Empty;
         errorMessage = null;
@@ -2660,23 +2723,17 @@ public partial class MainWindow : Window
             return false;
         }
 
-        var modIdStr = mod.ModIdStr ?? mod.ModId.ToString();
-        var defaultName = string.IsNullOrWhiteSpace(modIdStr) ? "mod" : modIdStr;
-        var versionPart = string.IsNullOrWhiteSpace(release.ModVersion) ? "latest" : release.ModVersion;
+        var defaultName = string.IsNullOrWhiteSpace(modId) ? "mod" : modId;
+        var versionPart = string.IsNullOrWhiteSpace(release.Version) ? "latest" : release.Version!;
         var fallbackFileName = $"{defaultName}-{versionPart}.zip";
 
-        var releaseFileName = release.Filename;
-        if (string.IsNullOrWhiteSpace(releaseFileName))
-        {
-            releaseFileName = fallbackFileName;
-        }
-        else
-        {
+        var releaseFileName = release.FileName;
+        if (!string.IsNullOrWhiteSpace(releaseFileName))
             releaseFileName = Path.GetFileName(releaseFileName);
-        }
 
         var sanitizedFileName = SanitizeFileName(releaseFileName, fallbackFileName);
-        if (string.IsNullOrWhiteSpace(Path.GetExtension(sanitizedFileName))) sanitizedFileName += ".zip";
+        if (string.IsNullOrWhiteSpace(Path.GetExtension(sanitizedFileName)))
+            sanitizedFileName += ".zip";
 
         var candidatePath = Path.Combine(modsDirectory, sanitizedFileName);
         fullPath = EnsureUniqueFilePath(candidatePath);
