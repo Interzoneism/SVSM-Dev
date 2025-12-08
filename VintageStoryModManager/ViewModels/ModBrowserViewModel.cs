@@ -592,18 +592,25 @@ public partial class ModBrowserViewModel : ObservableObject
             mod.UserReportTooltip = "Fetching user reports for this mod version.";
         }
 
-        foreach (var mod in modsToLoad)
+        // Load user reports in parallel with a concurrency limit
+        const int maxConcurrentLoads = 5;
+        using var semaphore = new SemaphoreSlim(maxConcurrentLoads);
+        var tasks = modsToLoad.Select(async mod =>
         {
-            if (cancellationToken.IsCancellationRequested) break;
-
+            await semaphore.WaitAsync(cancellationToken);
             try
             {
+                if (cancellationToken.IsCancellationRequested) return;
+
                 await LoadUserReportAsync(mod, cancellationToken);
-                _userReportsLoaded.Add(mod.ModId);
+                lock (_userReportsLoaded)
+                {
+                    _userReportsLoaded.Add(mod.ModId);
+                }
             }
             catch (OperationCanceledException)
             {
-                break;
+                // Expected when cancelled
             }
             catch (Exception ex)
             {
@@ -612,9 +619,18 @@ public partial class ModBrowserViewModel : ObservableObject
                     CultureInfo.CurrentCulture,
                     "Failed to load user reports: {0}",
                     ex.Message);
-                _userReportsLoaded.Add(mod.ModId); // Mark as loaded even if failed to avoid retry
+                lock (_userReportsLoaded)
+                {
+                    _userReportsLoaded.Add(mod.ModId); // Mark as loaded even if failed to avoid retry
+                }
             }
-        }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
+
+        await Task.WhenAll(tasks);
     }
 
     private async Task LoadUserReportAsync(DownloadableModOnList mod, CancellationToken cancellationToken)
