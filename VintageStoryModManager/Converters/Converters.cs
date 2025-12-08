@@ -162,6 +162,34 @@ public class ContainsConverter : IMultiValueConverter
 }
 
 /// <summary>
+/// Inverted ContainsConverter - returns true if collection does NOT contain the item.
+/// Reuses ContainsConverter logic to avoid code duplication.
+/// </summary>
+public class InvertContainsConverter : IMultiValueConverter
+{
+    private static readonly ContainsConverter _baseConverter = new();
+
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        var result = _baseConverter.Convert(values, targetType, parameter, culture);
+        
+        // If the base converter returns a boolean, invert it
+        if (result is bool boolResult)
+        {
+            return !boolResult;
+        }
+        
+        // If we can't determine, enable the button (return true for IsEnabled)
+        return true;
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}
+
+/// <summary>
 /// Converts a boolean to a background brush color (for favorite button styling).
 /// </summary>
 public class BooleanToBrushConverter : IValueConverter
