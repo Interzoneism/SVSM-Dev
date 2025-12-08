@@ -39,6 +39,8 @@ public partial class ModBrowserViewModel : ObservableObject
     [ObservableProperty]
     private string _textFilter = string.Empty;
 
+    public bool HasSearchText => !string.IsNullOrWhiteSpace(TextFilter);
+
     [ObservableProperty]
     private ModAuthor? _selectedAuthor;
 
@@ -273,6 +275,12 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             IsSearching = false;
         }
+    }
+
+    [RelayCommand]
+    private void ClearSearch()
+    {
+        TextFilter = string.Empty;
     }
 
     [RelayCommand]
@@ -670,6 +678,7 @@ public partial class ModBrowserViewModel : ObservableObject
 
     partial void OnTextFilterChanged(string value)
     {
+        OnPropertyChanged(nameof(HasSearchText));
         if (!_isInitializing)
             _ = SearchModsAsync();
     }
