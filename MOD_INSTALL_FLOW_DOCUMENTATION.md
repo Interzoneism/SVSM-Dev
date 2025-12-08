@@ -467,8 +467,6 @@ If a mod is already installed:
 
 3. **User Experience:**
    - The install button simply doesn't appear for installed mods
-   - Instead, update/edit/delete buttons are available
-   - The card shows "Installed" badge overlay
 
 ---
 
@@ -563,7 +561,7 @@ When integrating this flow into another mod browser:
 
 ### Required Services
 - `ModUpdateService` for download and installation
-- `ModCacheLocator` for cache management (optional but recommended)
+- `ModCacheLocator` for cache management
 - Progress reporting mechanism (via `IProgress<ModUpdateProgress>`)
 
 ### Required Data

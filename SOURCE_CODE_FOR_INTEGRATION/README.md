@@ -8,61 +8,14 @@ This package contains all the documentation and source code needed to integrate 
 - **MOD_INSTALL_FLOW_DOCUMENTATION.md** - Complete function list and flow documentation (ZIP files only)
 
 ### 2. Source Code Files
-- **ModUpdateService.cs** - Complete service that handles download, validation, and installation
 - **MainWindow_InstallFunctions.cs** - Extracted install-related functions from MainWindow with detailed comments
 
 ## Quick Start Guide
 
 ### Prerequisites
-- .NET 6.0 or higher
 - `System.IO.Compression` namespace for ZIP handling
 - Vintage Story data directory path
 - Network access for downloading mods
-
-### Minimal Integration
-
-```csharp
-using VintageStoryModManager.Services;
-
-// 1. Create the service
-var modUpdateService = new ModUpdateService();
-
-// 2. Prepare the installation descriptor
-var descriptor = new ModUpdateDescriptor(
-    ModId: "yourmodid",
-    DisplayName: "Your Mod Name",
-    DownloadUri: new Uri("https://path-to-mod.zip"),
-    TargetPath: Path.Combine(vintageStoryDataDir, "Mods", "yourmod.zip"),
-    TargetIsDirectory: false,  // ALWAYS false for ZIP installation
-    ReleaseFileName: "yourmod.zip",
-    ReleaseVersion: "1.0.0",
-    InstalledVersion: null  // null for new install, or current version for update
-);
-
-// 3. Optional: Create progress reporter
-var progress = new Progress<ModUpdateProgress>(p => 
-{
-    Console.WriteLine($"Stage: {p.Stage}, Message: {p.Message}");
-});
-
-// 4. Install the mod
-var result = await modUpdateService.UpdateAsync(
-    descriptor, 
-    cacheDownloads: true,  // Recommended for offline support
-    progress: progress
-);
-
-// 5. Check result
-if (result.Success)
-{
-    Console.WriteLine("Mod installed successfully!");
-    // Refresh your mod list here
-}
-else
-{
-    Console.WriteLine($"Installation failed: {result.ErrorMessage}");
-}
-```
 
 ## Important Constraints
 
@@ -91,7 +44,7 @@ For each mod installation, you need:
 ```
 User clicks Install
     ↓
-Select compatible release
+Select latest release
     ↓
 Determine target path (.zip file)
     ↓
@@ -144,43 +97,25 @@ The service reports progress through 5 stages:
 
 Each stage provides a human-readable message for UI display.
 
-## File Structure
-
-```
-SOURCE_CODE_FOR_INTEGRATION/
-├── README.md (this file)
-├── ModUpdateService.cs (complete service)
-└── MainWindow_InstallFunctions.cs (reference implementation)
-
-../MOD_INSTALL_FLOW_DOCUMENTATION.md (detailed documentation)
-```
-
 ## Integration Checklist
 
-- [ ] Copy `ModUpdateService.cs` to your project
 - [ ] Add reference to `System.IO.Compression`
-- [ ] Implement progress reporting (optional)
+- [ ] Implement progress reporting
 - [ ] Get Vintage Story data directory path
 - [ ] Create mod installation UI
 - [ ] Call `ModUpdateService.UpdateAsync` with proper descriptor
 - [ ] Handle success/failure results
 - [ ] Refresh mod list after installation
-- [ ] Test with various mod types and sizes
 
 ## Additional Resources
 
 ### Required Helper Services (from Simple VS Manager)
-The ModUpdateService depends on a few helper services that you may need to implement or adapt:
+The ModUpdateService depends on a few helper services that you need to implement:
 
 1. **ModCacheLocator** - Locates and manages cached mod files
-2. **StatusLogService** - Logs installation events for debugging
-3. **InternetAccessManager** - Checks if internet access is enabled
-4. **ModCacheService** - Higher-level cache operations
+2. **InternetAccessManager** - Checks if internet access is enabled
+3. **ModCacheService** - Higher-level cache operations
 
-These are used internally by ModUpdateService but are not strictly required for basic functionality. You can:
-- Implement stub versions that do nothing
-- Adapt them to your application's architecture
-- Use the full implementations from Simple VS Manager
 
 ### Data Structures
 The following types are used:
@@ -198,22 +133,4 @@ The following types are used:
 For questions or issues with integration:
 1. Review the complete documentation in `MOD_INSTALL_FLOW_DOCUMENTATION.md`
 2. Check the reference implementation in `MainWindow_InstallFunctions.cs`
-3. Refer to the original Simple VS Manager source code
 
-## License
-
-This code is extracted from Simple VS Manager. Please refer to the original repository for license information:
-https://github.com/Interzoneism/Simple-Mod-Manager
-
-## Notes
-
-- This extraction focuses on ZIP-only installation
-- Directory extraction features are excluded
-- The code is provided as a reference and may need adaptation
-- Error handling and UI integration are your responsibility
-- Test thoroughly with your mod browser before releasing
-
----
-
-**Last Updated:** December 2025  
-**Source Version:** Simple VS Manager v1.6.3+
