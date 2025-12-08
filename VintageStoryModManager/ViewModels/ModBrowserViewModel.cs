@@ -361,7 +361,7 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             foreach (var release in mod.Releases.Take(3)) // Log first 3 releases
             {
-                System.Diagnostics.Debug.WriteLine($"[ModBrowser]   Release: {release.ModVersion}, File: {release.MainFile}, Tags: {string.Join(",", release.Tags)}");
+                System.Diagnostics.Debug.WriteLine($"[ModBrowser]   Release: {release.ModVersion}, File: {release.MainFile}, Tags: {string.Join(",", release.Tags ?? [])}");
             }
         }
         else

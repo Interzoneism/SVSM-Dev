@@ -172,7 +172,8 @@ public class ModApiService : IModApiService
             
             var response = await _httpClient.GetStringAsync(url, cancellationToken);
             
-            System.Diagnostics.Debug.WriteLine($"[ModApiService] Received response (first 500 chars): {(response.Length > 500 ? response.Substring(0, 500) : response)}");
+            // Log response metadata instead of full content for performance
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Received response: {response.Length} characters");
             
             var result = JsonSerializer.Deserialize<ModResponse>(response, _jsonOptions);
 
