@@ -601,15 +601,23 @@ public partial class ModBrowserViewModel : ObservableObject
         using var semaphore = new SemaphoreSlim(maxConcurrentLoads);
         var tasks = modsToLoad.Select(async mod =>
         {
-            await semaphore.WaitAsync(cancellationToken);
+            // Check cancellation before acquiring semaphore
+            if (cancellationToken.IsCancellationRequested) return;
+
             try
             {
-                if (cancellationToken.IsCancellationRequested) return;
-
-                await LoadUserReportAsync(mod, cancellationToken);
-                lock (_userReportsLoaded)
+                await semaphore.WaitAsync(cancellationToken);
+                try
                 {
-                    _userReportsLoaded.Add(mod.ModId);
+                    await LoadUserReportAsync(mod, cancellationToken);
+                    lock (_userReportsLoaded)
+                    {
+                        _userReportsLoaded.Add(mod.ModId);
+                    }
+                }
+                finally
+                {
+                    semaphore.Release();
                 }
             }
             catch (OperationCanceledException)
@@ -627,10 +635,6 @@ public partial class ModBrowserViewModel : ObservableObject
                 {
                     _userReportsLoaded.Add(mod.ModId); // Mark as loaded even if failed to avoid retry
                 }
-            }
-            finally
-            {
-                semaphore.Release();
             }
         });
 
