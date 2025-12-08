@@ -429,12 +429,20 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
+
+            <!-- Discord Button (top-right corner) -->
             <TabControl x:Name="MiddleTabControl" Background="Transparent"
                         ItemContainerStyle="{StaticResource IMM.MiddleTabItemStyle}"
                         SelectionChanged="MiddleTabControl_OnSelectionChanged" BorderThickness="0,0,0,0">
 
                 <!-- ============================================================ -->
                 <!-- TAB 1: Installed Mods Tab -->
+
+                <!-- ============================================================ -->
+                <!-- TAB 2: Mod Database Tab (Browse and Install from ModDB) -->
+
+                <!-- ============================================================ -->
+                <!-- TAB 3: Modlists Tab (Local and Online Modlists) -->
                 <!-- ============================================================ -->
                 <TabItem x:Name="MainTab" Header="Installed mods" Padding="8,6,8,6" Height="Auto" Width="Auto" Foreground="{DynamicResource Brush.Text.Placeholder}" HorizontalContentAlignment="Stretch">
                     <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" BorderThickness="0" CornerRadius="0,8,0,0">
@@ -975,16 +983,12 @@
                 </TabItem>
 
                 <!-- ============================================================ -->
-                <!-- TAB 2: Mod Database Tab (Browse and Install from ModDB) -->
-                <!-- ============================================================ -->
                 <TabItem x:Name="DatabaseTab" Header="Mod Database" Padding="8,6,8,6" Height="Auto" Width="Auto">
                     <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" BorderThickness="0" CornerRadius="0,8,0,0">
                         <views:ModBrowserView x:Name="ModBrowserView"/>
                     </Border>
                 </TabItem>
 
-                <!-- ============================================================ -->
-                <!-- TAB 3: Modlists Tab (Local and Online Modlists) -->
                 <!-- ============================================================ -->
                 <TabItem x:Name="ModlistTab" Header="Modlists" Padding="27,6,27,6" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch" BorderBrush="#00000000">
                     <Grid x:Name="ModlistInnerTab" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" Margin="8,0,8,0">
