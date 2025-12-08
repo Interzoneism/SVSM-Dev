@@ -334,6 +334,8 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task InstallModAsync(int modId)
     {
+        System.Diagnostics.Debug.WriteLine($"[ModBrowser] InstallModAsync called with modId: {modId}");
+        
         // Check if internet access is disabled
         if (InternetAccessManager.IsInternetAccessDisabled)
         {
@@ -344,20 +346,25 @@ public partial class ModBrowserViewModel : ObservableObject
         }
 
         // Fetch full mod details
+        System.Diagnostics.Debug.WriteLine($"[ModBrowser] Fetching mod details for modId: {modId}");
         var mod = await _modApiService.GetModAsync(modId);
         if (mod == null)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to fetch mod details for modId: {modId}");
             return;
         }
+        
+        System.Diagnostics.Debug.WriteLine($"[ModBrowser] Fetched mod details: {mod.Name}");
 
         // If a callback is registered, use it (MainWindow will handle the actual installation)
         if (_installModCallback != null)
         {
+            System.Diagnostics.Debug.WriteLine($"[ModBrowser] Calling install callback for mod: {mod.Name}");
             await _installModCallback(mod);
         }
         else
         {
+            System.Diagnostics.Debug.WriteLine($"[ModBrowser] No install callback registered, adding to installed list");
             // Fallback: just mark as installed in the UI
             if (!InstalledMods.Contains(modId))
             {
