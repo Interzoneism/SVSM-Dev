@@ -2522,12 +2522,7 @@ public partial class MainWindow : Window
     {
         if (_isModUpdateInProgress) return;
 
-        // Step 1: Convert the DownloadableMod to ModListItemViewModel
-        // This allows us to use all the existing install functions
-        var modViewModel = ConvertToModListItemViewModel(mod);
-
-        // Step 2: Use the EXACT SAME validation logic as the old flow
-        if (!modViewModel.HasDownloadableRelease)
+        if (mod == null || mod.Releases == null || mod.Releases.Count == 0)
         {
             WpfMessageBox.Show("No downloadable releases are available for this mod.",
                 "Simple VS Manager",
@@ -2536,22 +2531,21 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Step 3: Use the SAME SelectReleaseForInstall function (Line 5338)
-        var release = SelectReleaseForInstall(modViewModel);
-        if (release is null)
+        // Select the best release for installation (latest compatible)
+        var release = SelectReleaseForBrowserInstall(mod);
+        if (release == null)
         {
-            WpfMessageBox.Show("No downloadable releases are available for this mod.",
+            WpfMessageBox.Show("No compatible releases are available for this mod.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
         }
 
-        // Step 4: Use the SAME TryGetInstallTargetPath function (Line 8377)
-        if (!TryGetInstallTargetPath(modViewModel, release, out var targetPath, out var errorMessage))
+        if (!TryGetInstallTargetPathForBrowserMod(mod, release, out var targetPath, out var errorMessage))
         {
             if (!string.IsNullOrWhiteSpace(errorMessage))
-                WpfMessageBox.Show(errorMessage!,
+                WpfMessageBox.Show(errorMessage,
                     "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -2559,59 +2553,52 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Step 5: Use the SAME backup function
         await CreateAutomaticBackupAsync("ModsUpdated").ConfigureAwait(true);
 
-        // Step 6: Set the same flag
         _isModUpdateInProgress = true;
         UpdateSelectedModButtons();
 
         try
         {
-            // Step 7: Create the SAME ModUpdateDescriptor structure
+            var downloadUrl = new Uri($"https://mods.vintagestory.at{release.MainFile}");
+            
             var descriptor = new ModUpdateDescriptor(
-                modViewModel.ModId,                 // Use converted ModId (string)
-                modViewModel.DisplayName,           // Use converted DisplayName
-                release.DownloadUri,                // From converted ModReleaseInfo
-                targetPath,                         // From TryGetInstallTargetPath
-                false,                              // TargetIsDirectory = false (zip-only)
-                release.FileName,                   // From converted ModReleaseInfo
-                release.Version,                    // From converted ModReleaseInfo
-                modViewModel.Version);              // Installed version (null for new install)
+                mod.ModIdStr ?? mod.ModId.ToString(),
+                mod.Name,
+                downloadUrl,
+                targetPath,
+                false,
+                release.Filename,
+                release.ModVersion,
+                null);
 
-            // Step 8: Use the SAME progress reporter
             var progress = new Progress<ModUpdateProgress>(p =>
-                _viewModel?.ReportStatus($"{modViewModel.DisplayName}: {p.Message}"));
+                _viewModel?.ReportStatus($"{mod.Name}: {p.Message}"));
 
-            // Step 9: Call the SAME ModUpdateService.UpdateAsync
             var result = await _modUpdateService
                 .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
                 .ConfigureAwait(true);
 
-            // Step 10: Use the SAME error handling
             if (!result.Success)
             {
                 var message = string.IsNullOrWhiteSpace(result.ErrorMessage)
                     ? "The installation failed."
                     : result.ErrorMessage!;
-                _viewModel?.ReportStatus($"Failed to install {modViewModel.DisplayName}: {message}", true);
-                WpfMessageBox.Show($"Failed to install {modViewModel.DisplayName}:{Environment.NewLine}{message}",
+                _viewModel?.ReportStatus($"Failed to install {mod.Name}: {message}", true);
+                WpfMessageBox.Show($"Failed to install {mod.Name}:{Environment.NewLine}{message}",
                     "Simple VS Manager",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 return;
             }
 
-            // Step 11: Use the SAME success reporting
-            var versionText = string.IsNullOrWhiteSpace(release.Version) ? string.Empty : $" {release.Version}";
-            _viewModel?.ReportStatus($"Installed {modViewModel.DisplayName}{versionText}.");
-            _modActivityLoggingService.LogModInstall(modViewModel.DisplayName ?? modViewModel.ModId ?? "Unknown", release.Version);
+            var versionText = string.IsNullOrWhiteSpace(release.ModVersion) ? string.Empty : $" {release.ModVersion}";
+            _viewModel?.ReportStatus($"Installed {mod.Name}{versionText}.");
+            _modActivityLoggingService.LogModInstall(mod.Name ?? mod.ModId.ToString(), release.ModVersion);
 
-            // Step 12: Use the SAME refresh function
             await RefreshModsAsync().ConfigureAwait(true);
 
-            // Step 13: ModBrowser-specific cleanup
-            // Update the ModBrowserViewModel to mark as installed and remove from search
+            // Update the ModBrowserViewModel to mark this mod as installed and remove it from search results
             AddModToInstalledAndRemoveFromSearch(mod.ModId);
         }
         catch (OperationCanceledException)
@@ -2620,157 +2607,78 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            _modActivityLoggingService.LogError($"Failed to install {modViewModel.DisplayName}", ex);
-            _viewModel?.ReportStatus($"Failed to install {modViewModel.DisplayName}: {ex.Message}", true);
-            WpfMessageBox.Show($"Failed to install {modViewModel.DisplayName}:{Environment.NewLine}{ex.Message}",
+            _modActivityLoggingService.LogError($"Failed to install {mod.Name}", ex);
+            _viewModel?.ReportStatus($"Failed to install {mod.Name}: {ex.Message}", true);
+            WpfMessageBox.Show($"Failed to install {mod.Name}:{Environment.NewLine}{ex.Message}",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
         finally
         {
-            // Step 14: Use the SAME cleanup
             _isModUpdateInProgress = false;
             UpdateSelectedModButtons();
         }
     }
 
-    /// <summary>
-    /// Converts a DownloadableMod from the API to a ModListItemViewModel
-    /// for use with the standard installation flow.
-    /// </summary>
-    private ModListItemViewModel ConvertToModListItemViewModel(DownloadableMod mod)
+    private DownloadableModRelease? SelectReleaseForBrowserInstall(DownloadableMod mod)
     {
-        // Convert releases from API format to internal format
-        var releases = mod.Releases?
-            .Select(ConvertToModReleaseInfo)
-            .Where(r => r != null)
-            .Cast<ModReleaseInfo>()
-            .ToList() ?? new List<ModReleaseInfo>();
-
-        // Determine latest and latest compatible releases
-        var latestRelease = releases.OrderByDescending(r => r.CreatedUtc ?? DateTime.MinValue).FirstOrDefault();
-        var latestCompatibleRelease = releases
-            .Where(r => r.IsCompatibleWithInstalledGame)
-            .OrderByDescending(r => r.CreatedUtc ?? DateTime.MinValue)
-            .FirstOrDefault();
-
-        // Create ModDatabaseInfo with converted data
-        var databaseInfo = new ModDatabaseInfo
-        {
-            Tags = mod.Tags?.ToArray() ?? Array.Empty<string>(),
-            AssetId = mod.AssetId.ToString(),
-            ModPageUrl = $"https://mods.vintagestory.at/show/mod/{mod.AssetId}",
-            LatestVersion = latestRelease?.Version,
-            LatestCompatibleVersion = latestCompatibleRelease?.Version,
-            RequiredGameVersions = releases.SelectMany(r => r.GameVersionTags).Distinct().ToArray(),
-            Downloads = mod.Downloads,
-            Comments = mod.Comments,
-            Follows = mod.Follows,
-            TrendingPoints = mod.TrendingPoints,
-            LogoUrl = !string.IsNullOrWhiteSpace(mod.LogoFile) 
-                ? $"https://mods.vintagestory.at{mod.LogoFile}" 
-                : null,
-            LastReleasedUtc = latestRelease?.CreatedUtc,
-            LatestRelease = latestRelease,
-            LatestCompatibleRelease = latestCompatibleRelease,
-            Releases = releases,
-            Side = mod.Side
-        };
-
-        // Create ModEntry with the mod data
-        var entry = new ModEntry
-        {
-            ModId = mod.ModIdStr ?? mod.ModId.ToString(),
-            Name = mod.Name,
-            Version = null, // Not installed yet
-            Authors = !string.IsNullOrWhiteSpace(mod.Author) 
-                ? new[] { mod.Author } 
-                : Array.Empty<string>(),
-            Website = mod.HomepageUrl,
-            SourcePath = string.Empty,
-            SourceKind = ModSourceKind.ZipArchive,
-            DatabaseInfo = databaseInfo
-        };
-
-        // Create ModListItemViewModel using the constructor
-        // Note: We use a dummy activation handler since this is only for installation
-        var viewModel = new ModListItemViewModel(
-            entry,
-            isActive: false,
-            location: "Mod Database",
-            activationHandler: (_, _) => Task.FromResult(new ActivationResult(false, null)),
-            installedGameVersion: _viewModel?.InstalledGameVersion,
-            isInstalled: false,
-            shouldSkipVersion: null,
-            requireExactVersionMatch: null);
-
-        return viewModel;
-    }
-
-    /// <summary>
-    /// Converts a DownloadableModRelease from the API to a ModReleaseInfo
-    /// for use with the standard installation flow.
-    /// </summary>
-    private ModReleaseInfo? ConvertToModReleaseInfo(DownloadableModRelease release)
-    {
-        if (string.IsNullOrWhiteSpace(release.MainFile))
+        if (mod.Releases == null || mod.Releases.Count == 0)
             return null;
 
-        // Construct the full download URL
-        var downloadUri = new Uri($"https://mods.vintagestory.at{release.MainFile}");
-
-        // Parse the created date
-        DateTime? createdUtc = null;
-        if (DateTime.TryParse(release.Created, out var parsedDate))
-            createdUtc = parsedDate.ToUniversalTime();
-
-        return new ModReleaseInfo
-        {
-            Version = release.ModVersion,
-            DownloadUri = downloadUri,
-            FileName = release.Filename,
-            GameVersionTags = release.Tags?.ToArray() ?? Array.Empty<string>(),
-            IsCompatibleWithInstalledGame = CheckReleaseCompatibility(release),
-            Changelog = release.Changelog,
-            Downloads = release.Downloads,
-            CreatedUtc = createdUtc
-        };
+        // Always return the most recent release (latest version)
+        return mod.Releases
+            .OrderByDescending(r => DateTime.TryParse(r.Created, out var date) ? date : DateTime.MinValue)
+            .FirstOrDefault();
     }
 
-    /// <summary>
-    /// Checks if a release is compatible with the installed game version.
-    /// </summary>
-    private bool CheckReleaseCompatibility(DownloadableModRelease release)
+    private bool TryGetInstallTargetPathForBrowserMod(DownloadableMod mod, DownloadableModRelease release, 
+        out string fullPath, out string? errorMessage)
     {
-        var installedGameVersion = _viewModel?.InstalledGameVersion;
-        if (string.IsNullOrWhiteSpace(installedGameVersion))
-            return true; // Assume compatible if we don't know the game version
+        fullPath = string.Empty;
+        errorMessage = null;
 
-        if (release.Tags == null || release.Tags.Count == 0)
-            return true; // Assume compatible if no version tags
-
-        // Check if any of the release tags match the installed game version
-        // Tags are in format like "v1.19.0", "v1.19.1", etc.
-        foreach (var tag in release.Tags)
+        if (_dataDirectory is null)
         {
-            if (string.IsNullOrWhiteSpace(tag))
-                continue;
-
-            // Normalize both versions for comparison
-            var normalizedTag = tag.TrimStart('v', 'V');
-            var normalizedInstalled = installedGameVersion.TrimStart('v', 'V');
-
-            // Check for exact match or prefix match (e.g., "1.19" matches "1.19.0")
-            if (normalizedTag.Equals(normalizedInstalled, StringComparison.OrdinalIgnoreCase) ||
-                normalizedTag.StartsWith(normalizedInstalled + ".", StringComparison.OrdinalIgnoreCase) ||
-                normalizedInstalled.StartsWith(normalizedTag + ".", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
+            errorMessage =
+                "The VintagestoryData folder is not available. Please verify it from File > Set Data Folder.";
+            return false;
         }
 
-        return false;
+        var modsDirectory = Path.Combine(_dataDirectory, "Mods");
+
+        try
+        {
+            Directory.CreateDirectory(modsDirectory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
+                                       or NotSupportedException)
+        {
+            errorMessage = $"The Mods folder could not be accessed:{Environment.NewLine}{ex.Message}";
+            return false;
+        }
+
+        var modIdStr = mod.ModIdStr ?? mod.ModId.ToString();
+        var defaultName = string.IsNullOrWhiteSpace(modIdStr) ? "mod" : modIdStr;
+        var versionPart = string.IsNullOrWhiteSpace(release.ModVersion) ? "latest" : release.ModVersion;
+        var fallbackFileName = $"{defaultName}-{versionPart}.zip";
+
+        var releaseFileName = release.Filename;
+        if (string.IsNullOrWhiteSpace(releaseFileName))
+        {
+            releaseFileName = fallbackFileName;
+        }
+        else
+        {
+            releaseFileName = Path.GetFileName(releaseFileName);
+        }
+
+        var sanitizedFileName = SanitizeFileName(releaseFileName, fallbackFileName);
+        if (string.IsNullOrWhiteSpace(Path.GetExtension(sanitizedFileName))) sanitizedFileName += ".zip";
+
+        var candidatePath = Path.Combine(modsDirectory, sanitizedFileName);
+        fullPath = EnsureUniqueFilePath(candidatePath);
+        return true;
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
