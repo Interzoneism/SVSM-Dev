@@ -223,14 +223,6 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
-                        <Bold>Use ModDB design</Bold>
-                        <Run
-                            Text=" switches Mod DB browsing between the card-based Mod DB layout (enabled) and the sortable list view (disabled)." />
-                    </TextBlock>
-
-                    <TextBlock Margin="0,8,0,0"
-                               TextWrapping="Wrap"
-                               FontSize="12">
                         <Bold>Themes</Bold>
                         <Run Text=" changes the manager's colour scheme. " />
                         <Bold>Custom…</Bold>

@@ -24,8 +24,6 @@ public static class DevConfig
 
     // Main window behaviour and layout.
     public static double ModListScrollMultiplier { get; } = 0.5;
-    public static double ModDbDesignScrollMultiplier { get; } = 20.0;
-    public static double LoadMoreScrollThreshold { get; } = 0.98;
     public static double HoverOverlayOpacity { get; } = 0.1;
     public static double SelectionOverlayOpacity { get; } = 0.25;
     public static double ModInfoPanelHorizontalOverhang { get; } = 0;

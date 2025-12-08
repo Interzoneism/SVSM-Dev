@@ -95,8 +95,6 @@ public partial class MainWindow : Window
 
     // UI multipliers and thresholds
     private static readonly double ModListScrollMultiplier = DevConfig.ModListScrollMultiplier;
-    private static readonly double ModDbDesignScrollMultiplier = DevConfig.ModDbDesignScrollMultiplier;
-    private static readonly double LoadMoreScrollThreshold = DevConfig.LoadMoreScrollThreshold;
     private static readonly double HoverOverlayOpacity = DevConfig.HoverOverlayOpacity;
     private static readonly double SelectionOverlayOpacity = DevConfig.SelectionOverlayOpacity;
 
@@ -2437,8 +2435,7 @@ public partial class MainWindow : Window
             _userConfiguration,
             _gameDirectory)
         {
-            IsCompactView = _userConfiguration.IsCompactView,
-            UseModDbDesignView = _userConfiguration.UseModDbDesignView,
+            IsCompactView = _userConfiguration.IsCompactView
         };
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         DataContext = _viewModel;
@@ -2699,10 +2696,6 @@ public partial class MainWindow : Window
         else if (e.PropertyName == nameof(MainViewModel.IsCompactView))
         {
             if (_viewModel != null) _userConfiguration.SetCompactViewMode(_viewModel.IsCompactView);
-        }
-        else if (e.PropertyName == nameof(MainViewModel.UseModDbDesignView))
-        {
-            if (_viewModel != null) _userConfiguration.SetModDbDesignViewMode(_viewModel.UseModDbDesignView);
         }
         else if (e.PropertyName == nameof(MainViewModel.IsViewingModlistTab))
         {
@@ -4057,7 +4050,6 @@ public partial class MainWindow : Window
                 _userConfiguration,
                 _gameDirectory);
             newViewModel.IsCompactView = _userConfiguration.IsCompactView;
-            newViewModel.UseModDbDesignView = _userConfiguration.UseModDbDesignView;
             newViewModel.PropertyChanged += ViewModelOnPropertyChanged;
             _viewModel = newViewModel;
             ApplyColumnVisibilityPreferencesToViewModel();

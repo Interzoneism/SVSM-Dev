@@ -160,8 +160,6 @@ public sealed class UserConfigurationService
 
     public bool IsCompactView { get; private set; }
 
-    public bool UseModDbDesignView { get; private set; } = true;
-
     public bool CacheAllVersionsLocally { get; private set; } = true;
 
     public ColorTheme ColorTheme { get; private set; } = ColorTheme.VintageStory;
@@ -992,14 +990,6 @@ public sealed class UserConfigurationService
         Save();
     }
 
-    public void SetModDbDesignViewMode(bool useModDbDesignView)
-    {
-        if (UseModDbDesignView == useModDbDesignView) return;
-
-        UseModDbDesignView = useModDbDesignView;
-        Save();
-    }
-
     public void SetColorTheme(ColorTheme theme, IReadOnlyDictionary<string, string>? paletteOverride = null)
     {
         var paletteChanged = false;
@@ -1539,7 +1529,6 @@ public sealed class UserConfigurationService
             defaultProfile.GameDirectory = rootGameDirectory;
 
             IsCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
-            UseModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? true;
             CacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? true;
             DisableAutoRefresh = obj["disableAutoRefresh"]?.GetValue<bool?>() ?? false;
             DisableAutoRefreshWarningAcknowledged =
@@ -1719,7 +1708,6 @@ public sealed class UserConfigurationService
             ConfigurationVersion = CurrentConfigurationVersion;
             ModManagerVersion = CurrentModManagerVersion;
             IsCompactView = false;
-            UseModDbDesignView = true;
             CacheAllVersionsLocally = true;
             DisableAutoRefresh = false;
             DisableAutoRefreshWarningAcknowledged = false;
@@ -1796,7 +1784,6 @@ public sealed class UserConfigurationService
                 ["gameDirectory"] = GameDirectory,
                 ["activeGameProfile"] = ActiveProfile.Name,
                 ["isCompactView"] = IsCompactView,
-                ["useModDbDesignView"] = UseModDbDesignView,
                 ["cacheAllVersionsLocally"] = CacheAllVersionsLocally,
                 ["disableAutoRefresh"] = DisableAutoRefresh,
                 ["disableAutoRefreshWarningAcknowledged"] = DisableAutoRefreshWarningAcknowledged,

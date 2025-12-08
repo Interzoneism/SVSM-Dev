@@ -111,7 +111,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _isModDetailsStatusActive;
     private bool _isModInfoExpanded = true;
     private bool _isTagsColumnVisible = true;
-    private bool _useModDbDesignView;
     private IDisposable? _modDetailsBusyScope;
     private string? _modsStateFingerprint;
     private int _pendingModDetailsRefreshCount;
@@ -333,12 +332,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public bool IsViewingMainTab => _viewSection == ViewSection.MainTab;
 
     public bool SearchModDatabase => _viewSection == ViewSection.DatabaseTab;
-
-    public bool UseModDbDesignView
-    {
-        get => _useModDbDesignView;
-        set => SetProperty(ref _useModDbDesignView, value);
-    }
 
     public bool HasCloudModlists => _cloudModlists.Count > 0;
 

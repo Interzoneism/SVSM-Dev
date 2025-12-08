@@ -171,11 +171,6 @@
                             IsCheckable="True"
                             Style="{StaticResource ToggleMenuItemStyle}"
                             IsChecked="{Binding IsCompactView, Mode=TwoWay}" />
-                        <MenuItem Header="_Use ModDB design"
-                            Height="35"
-                            IsCheckable="True"
-                            Style="{StaticResource ToggleMenuItemStyle}"
-                            IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}" />
                         <MenuItem Header="_Themes" Height="35">
                             <MenuItem x:Name="VintageStoryThemeMenuItem"
                                 Header="_Vintage Story"
@@ -1749,7 +1744,6 @@
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding SearchModDatabase}" Value="True" />
-                                    <Condition Binding="{Binding UseModDbDesignView}" Value="True" />
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Collapsed" />
                                 <Setter Property="IsHitTestVisible" Value="False" />
