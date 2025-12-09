@@ -27,6 +27,9 @@ public partial class ModBrowserViewModel : ObservableObject
     private Func<DownloadableMod, Task>? _installModCallback;
     private readonly HashSet<int> _userReportsLoaded = new();
     private readonly HashSet<string> _normalizedInstalledModIds = new(StringComparer.OrdinalIgnoreCase);
+    
+    // Cache for raw API results to avoid unnecessary server queries
+    private List<DownloadableModOnList> _cachedApiResults = [];
 
     #region Observable Properties
 
@@ -176,7 +179,8 @@ public partial class ModBrowserViewModel : ObservableObject
                 }
             }
 
-            await SearchModsAsync();
+            // Versions and tags require server query
+            await QueryAndApplyFiltersAsync(forceServerQuery: true);
         }
         catch (Exception ex)
         {
@@ -275,6 +279,15 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task SearchModsAsync()
     {
+        await QueryAndApplyFiltersAsync(forceServerQuery: false);
+    }
+
+    /// <summary>
+    /// Main search method that handles both server-side queries and client-side filtering.
+    /// </summary>
+    /// <param name="forceServerQuery">If true, always queries the server. If false, uses cached results when possible.</param>
+    private async Task QueryAndApplyFiltersAsync(bool forceServerQuery)
+    {
         // Cancel any pending search
         _searchCts?.Cancel();
         _searchCts = new CancellationTokenSource();
@@ -284,30 +297,42 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             IsSearching = true;
 
-            // Add a small delay to debounce rapid typing
-            await Task.Delay(300, token);
+            // Determine if we need to query the server or can use cached results
+            bool needsServerQuery = forceServerQuery || _cachedApiResults.Count == 0;
 
-            if (token.IsCancellationRequested)
-                return;
+            if (needsServerQuery)
+            {
+                // Add a small delay to debounce rapid typing (only for server queries)
+                await Task.Delay(300, token);
 
-            var mods = await _modApiService.QueryModsAsync(
-                textFilter: TextFilter,
-                authorFilter: SelectedAuthor,
-                versionsFilter: SelectedVersions,
-                tagsFilter: SelectedTags,
-                orderBy: OrderBy,
-                orderByOrder: OrderByDirection,
-                cancellationToken: token);
+                if (token.IsCancellationRequested)
+                    return;
 
-            if (token.IsCancellationRequested)
-                return;
+                // Query server with filters that must be server-side
+                // Note: We now exclude OrderBy and OrderByDirection from server query
+                // since we'll sort client-side
+                var mods = await _modApiService.QueryModsAsync(
+                    textFilter: TextFilter,
+                    authorFilter: SelectedAuthor,
+                    versionsFilter: SelectedVersions,
+                    tagsFilter: SelectedTags,
+                    orderBy: "follows", // Use a default for server query
+                    orderByOrder: "desc",
+                    cancellationToken: token);
 
-            // Apply client-side filters
-            var filteredMods = ApplyClientSideFilters(mods);
+                if (token.IsCancellationRequested)
+                    return;
+
+                // Cache the raw results
+                _cachedApiResults = mods;
+            }
+
+            // Apply client-side filters and sorting
+            var filteredAndSortedMods = ApplyClientSideFiltersAndSorting(_cachedApiResults);
 
             ModsList.Clear();
             _userReportsLoaded.Clear(); // Reset user reports tracking
-            foreach (var mod in filteredMods)
+            foreach (var mod in filteredAndSortedMods)
             {
                 ModsList.Add(mod);
             }
@@ -653,7 +678,7 @@ public partial class ModBrowserViewModel : ObservableObject
         return builder.Length == 0 ? null : builder.ToString();
     }
 
-    private List<DownloadableModOnList> ApplyClientSideFilters(List<DownloadableModOnList> mods)
+    private List<DownloadableModOnList> ApplyClientSideFiltersAndSorting(List<DownloadableModOnList> mods)
     {
         foreach (var mod in mods)
         {
@@ -684,7 +709,42 @@ public partial class ModBrowserViewModel : ObservableObject
             filtered = filtered.Where(m => FavoriteMods.Contains(m.ModId));
         }
 
+        // Apply client-side sorting based on OrderBy
+        filtered = ApplySorting(filtered, OrderBy, OrderByDirection);
+
         return filtered.ToList();
+    }
+
+    private IEnumerable<DownloadableModOnList> ApplySorting(IEnumerable<DownloadableModOnList> mods, string orderBy, string direction)
+    {
+        bool ascending = direction == "asc";
+
+        var sorted = orderBy switch
+        {
+            "downloads" => ascending 
+                ? mods.OrderBy(m => m.Downloads) 
+                : mods.OrderByDescending(m => m.Downloads),
+            "comments" => ascending 
+                ? mods.OrderBy(m => m.Comments) 
+                : mods.OrderByDescending(m => m.Comments),
+            "follows" => ascending 
+                ? mods.OrderBy(m => m.Follows) 
+                : mods.OrderByDescending(m => m.Follows),
+            "trendingpoints" => ascending 
+                ? mods.OrderBy(m => m.TrendingPoints) 
+                : mods.OrderByDescending(m => m.TrendingPoints),
+            "lastreleased" => ascending 
+                ? mods.OrderBy(m => m.LastReleased) 
+                : mods.OrderByDescending(m => m.LastReleased),
+            "asset.created" => ascending 
+                ? mods.OrderBy(m => m.LastReleased) // Use LastReleased as fallback
+                : mods.OrderByDescending(m => m.LastReleased),
+            _ => ascending 
+                ? mods.OrderBy(m => m.Follows) 
+                : mods.OrderByDescending(m => m.Follows)
+        };
+
+        return sorted;
     }
 
     private async Task PopulateUserReportsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
@@ -853,13 +913,19 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(HasSearchText));
         if (!_isInitializing)
-            _ = SearchModsAsync();
+        {
+            // Text filter requires server query
+            _ = QueryAndApplyFiltersAsync(forceServerQuery: true);
+        }
     }
 
     partial void OnSelectedAuthorChanged(ModAuthor? value)
     {
         if (!_isInitializing)
-            _ = SearchModsAsync();
+        {
+            // Author filter requires server query
+            _ = QueryAndApplyFiltersAsync(forceServerQuery: true);
+        }
     }
 
     partial void OnSelectedSideChanged(string value)
@@ -867,7 +933,8 @@ public partial class ModBrowserViewModel : ObservableObject
         if (!_isInitializing)
         {
             _userConfigService?.SetModBrowserSelectedSide(value);
-            _ = SearchModsAsync();
+            // Client-side filter - no need to query server
+            _ = QueryAndApplyFiltersAsync(forceServerQuery: false);
         }
     }
 
@@ -876,7 +943,8 @@ public partial class ModBrowserViewModel : ObservableObject
         if (!_isInitializing)
         {
             _userConfigService?.SetModBrowserSelectedInstalledFilter(value);
-            _ = SearchModsAsync();
+            // Client-side filter - no need to query server
+            _ = QueryAndApplyFiltersAsync(forceServerQuery: false);
         }
     }
 
@@ -885,7 +953,8 @@ public partial class ModBrowserViewModel : ObservableObject
         if (!_isInitializing)
         {
             _userConfigService?.SetModBrowserOnlyFavorites(value);
-            _ = SearchModsAsync();
+            // Client-side filter - no need to query server
+            _ = QueryAndApplyFiltersAsync(forceServerQuery: false);
         }
     }
 
@@ -894,7 +963,8 @@ public partial class ModBrowserViewModel : ObservableObject
         if (!_isInitializing)
         {
             _userConfigService?.SetModBrowserOrderBy(value);
-            _ = SearchModsAsync();
+            // Client-side sort - no need to query server
+            _ = QueryAndApplyFiltersAsync(forceServerQuery: false);
         }
     }
 
@@ -903,7 +973,8 @@ public partial class ModBrowserViewModel : ObservableObject
         if (!_isInitializing)
         {
             _userConfigService?.SetModBrowserOrderByDirection(value);
-            _ = SearchModsAsync();
+            // Client-side sort - no need to query server
+            _ = QueryAndApplyFiltersAsync(forceServerQuery: false);
         }
     }
 
