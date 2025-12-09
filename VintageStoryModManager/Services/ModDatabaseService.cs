@@ -1383,7 +1383,7 @@ public sealed class ModDatabaseService
             else if (matchType == 3) // List item
             {
                 // Add newline before list item if not at the start
-                if (result.Length > 0 && !result.ToString().EndsWith('\n'))
+                if (result.Length > 0 && result[result.Length - 1] != '\n')
                 {
                     result.Append('\n');
                 }
