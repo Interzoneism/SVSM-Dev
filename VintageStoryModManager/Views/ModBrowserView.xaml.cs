@@ -186,16 +186,17 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
 
     private async void VersionsDropdown_SelectionChanged(object? sender, EventArgs e)
     {
-        // Trigger search when versions selection changes
-        if (ViewModel != null)
-        {
-            await ViewModel.RefreshSearchAsync();
-        }
+        await TriggerSearchOnSelectionChanged();
     }
 
     private async void TagsDropdown_SelectionChanged(object? sender, EventArgs e)
     {
-        // Trigger search when tags selection changes
+        await TriggerSearchOnSelectionChanged();
+    }
+
+    private async Task TriggerSearchOnSelectionChanged()
+    {
+        // Trigger search when filter selection changes
         if (ViewModel != null)
         {
             await ViewModel.RefreshSearchAsync();
