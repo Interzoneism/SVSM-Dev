@@ -59,12 +59,12 @@
                     IsMainMenu="True"
                     BorderThickness="0"
                     Background="Transparent"
-                    Foreground="{DynamicResource Brush.Text.Primary}" UseLayoutRounding="True">
+                    Foreground="{DynamicResource Brush.Text.Primary}" UseLayoutRounding="True" HorizontalContentAlignment="Center">
                     <Menu.Resources>
                         <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource ToggleMenuItemStyle}" />
                     </Menu.Resources>
 
-                    <MenuItem Header="_File" Padding="6,0,12,0" Height="24" UseLayoutRounding="True">
+                    <MenuItem Header="_File" Padding="6,0,6,0" Height="24" UseLayoutRounding="True" HorizontalContentAlignment="Center">
                         <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
                         <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
                         <MenuItem Header="Set Custom Vintage Story Shortcut" Height="35"
@@ -108,7 +108,7 @@
                         <Separator />
                         <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
                     </MenuItem>
-                    <MenuItem Header="_Mods" Height="24" SubmenuOpened="ModsMenuItem_OnSubmenuOpened" Padding="6,0,12,0" UseLayoutRounding="True">
+                    <MenuItem Header="_Mods" Height="24" SubmenuOpened="ModsMenuItem_OnSubmenuOpened" Padding="6,0,6,0" UseLayoutRounding="True">
                         <MenuItem Header="_Refresh Mods"
                             Height="35"
                             Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
@@ -135,7 +135,7 @@
                             Height="35"
                             Click="DeleteCachedModsMenuItem_OnClick" />
                     </MenuItem>
-                    <MenuItem x:Name="PresetsAndModlistsMenuItem" Header="_Save &amp; Load" Height="24" Padding="6,0,12,0" UseLayoutRounding="True">
+                    <MenuItem x:Name="PresetsAndModlistsMenuItem" Header="_Save &amp; Load" Height="24" Padding="6,0,6,0" UseLayoutRounding="True">
                         <MenuItem Header="Save _Modlist as an importable PDF..." Height="35"
                             Click="SaveInstalledModsPdfMenuItem_OnClick" />
                         <MenuItem Header="Save _Modlist..." Height="35" Click="SaveModlistMenuItem_OnClick" />
@@ -165,7 +165,7 @@
                             Style="{StaticResource ToggleMenuItemStyle}"
                             Click="AlwaysAddModlistsMenuItem_OnClick" />
                     </MenuItem>
-                    <MenuItem Header="_View" Height="24" Padding="6,0,12,0" UseLayoutRounding="True">
+                    <MenuItem Header="_View" Height="24" Padding="6,0,6,0" UseLayoutRounding="True">
                         <MenuItem Header="_Compact View"
                             Height="35"
                             IsCheckable="True"
@@ -289,7 +289,7 @@
                                 Unchecked="InstalledModsColumnMenuItem_OnChecked" />
                         </MenuItem>
                     </MenuItem>
-                    <MenuItem Header="_Help &amp; Advanced" Height="24" Padding="6,0,12,0" UseLayoutRounding="True">
+                    <MenuItem Header="_Help &amp; Advanced" Height="24" Padding="6,0,6,0" UseLayoutRounding="True">
                         <MenuItem x:Name="ManagerVersionMenuItem"
                             Header="Version: --"
                             Padding="12,6"
@@ -1669,28 +1669,13 @@
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
                         HorizontalAlignment="Left"
-                        VerticalAlignment="Bottom" Height="32" Width="666" Margin="53,0,0,10">
+                        VerticalAlignment="Bottom" Height="32" Width="280" Margin="439,0,0,10">
                 <Button x:Name="UpdateAllButton"
                         Content="{Binding DataContext.UpdateAllButtonLabel, FallbackValue=Update All, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                         Margin="0,0,4,0"
                         Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                         BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                         Click="UpdateAllModsMenuItem_OnClick" Padding="6,6,6,6" MinHeight="32" MinWidth="125" />
-                <Button Content="Open Logs Folder"
-                        Margin="0,0,4,0"
-                        Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                        BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                        Click="OpenLogsFolderButton_OnClick" Padding="6,6,6,6" MinHeight="32" MinWidth="125" />
-                <Button Content="Open Config Folder"
-                        Margin="0,0,4,0"
-                        Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                        BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                        Click="OpenConfigFolderButton_OnClick" Padding="6,6,6,6" MinHeight="32" MinWidth="125" />
-                <Button Content="Open Mods Folder"
-                        Margin="0,0,4,0"
-                        Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                        BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                        Click="OpenModFolderButton_OnClick" Padding="6,6,6,6" MinHeight="32" MinWidth="125" />
                 <Button x:Name="LaunchGameButton"
                         Content="Launch Vintage Story"
                         Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
@@ -1718,6 +1703,31 @@
                     </Style>
                 </ui:ProgressRing.Style>
             </ui:ProgressRing>
+            <StackPanel HorizontalAlignment="Left" Orientation="Vertical" VerticalAlignment="Bottom" Margin="395,0,0,10">
+                <StackPanel
+                    Orientation="Horizontal" Height="32" Width="385" Margin="0,0,0,6">
+                    <Button Content="Open Mods folder"
+                        Margin="0,0,4,0"
+                        Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
+                        BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                        Click="OpenModFolderButton_OnClick" Padding="6,6,6,6" MinHeight="32" MinWidth="125" />
+                    <Button
+                    Padding="6,6,6,6" MinHeight="32" MinWidth="125" Margin="0,0,4,0" Content="Open Logs folder" Click="OpenLogsFolderButton_OnClick" BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}" Background="{DynamicResource Brush.Button.Primary.Background.Normal}"/>
+                </StackPanel>
+                <StackPanel
+                    Orientation="Horizontal" Height="32" Width="385">
+                    <Button Content="Open Logs folder"
+                        Margin="0,0,4,0"
+                        Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
+                        BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                        Click="OpenLogsFolderButton_OnClick" Padding="6,6,6,6" MinHeight="32" MinWidth="125" />
+                    <Button Content="Open Config folder"
+                        Margin="0,0,4,0"
+                        Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
+                        BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                        Click="OpenConfigFolderButton_OnClick" Padding="6,6,6,6" MinHeight="32" MinWidth="125" />
+                </StackPanel>
+            </StackPanel>
         </Grid>
 
         <!-- ============================================================ -->
