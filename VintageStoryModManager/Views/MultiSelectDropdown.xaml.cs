@@ -150,16 +150,9 @@ namespace VintageStoryModManager.Views
                 // Check if click is inside popup content
                 bool isClickInPopup = IsDescendantOf(clickedElement, popupChild);
                 
-                // Check if click is on the toggle button
-                bool isClickOnButton = IsDescendantOf(clickedElement, toggleButton);
-                
-                // If click is outside both popup and button, close the popup
-                if (!isClickInPopup && !isClickOnButton)
-                {
-                    DropdownToggle.IsChecked = false;
-                }
-                // If click is on the button, toggle the popup
-                else if (isClickOnButton)
+                // If click is outside the popup content, close it
+                // This includes clicking on the toggle button or anywhere else
+                if (!isClickInPopup)
                 {
                     DropdownToggle.IsChecked = false;
                 }
