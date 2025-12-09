@@ -13,30 +13,12 @@ This is a **WPF desktop application** for managing Vintage Story mods. The appli
 - **Architecture**: MVVM pattern using CommunityToolkit.Mvvm
 - **Language**: C# with nullable reference types enabled
 
-## Repository Structure
-- `VintageStoryModManager/` - Main application code (118 C# files, 23 XAML files)
-  - `Views/` - WPF views and UI components
-  - `ViewModels/` - MVVM view models
-  - `Models/` - Data models
-  - `Services/` - Business logic and service layer
-  - `Converters/` - WPF value converters
-  - `Resources/` - UI resources, themes, and assets
-- `VSFOLDER/` - **Reference only**: Game dependency DLL files (do not modify)
-- `VS_1.21_assets/` - **Reference only**: Vintage Story game assets (JSON for blocktypes, recipes, shapes, etc.)
-- `VS_1.21_Decompiled/` - **Reference only**: Decompiled Vintage Story game source code for API reference
-- `ZZCakeBuild/` - Build automation scripts (do not build or test directly)
-- `.github/` - GitHub configuration and Copilot instructions
-
-**Important**: The folders `VSFOLDER`, `VS_1.21_assets`, and `VS_1.21_Decompiled` are reference code only. Do not search, modify, or include them in changes unless explicitly requested.
-
 ## Build & Test
 
 ### Build Commands
 ```bash
 # Primary build command (recommended)
 dotnet build -nologo -clp:Summary -warnaserror
-
-# The build.sh and build.ps1 scripts run Cake build automation - do not use for regular builds
 ```
 
 ### Test Commands
@@ -54,9 +36,8 @@ dotnet format --verify-no-changes
 ### Important Build Notes
 - **Target Framework**: .NET 8.0 for Windows
 - **Ignore NET7 warnings**: Focus is on NET8; all NET7 compatibility warnings should be ignored
-- **Do not build ZZCakeBuild**: The Cake build project and Program.cs are for automation only
 - **Solution File**: `ImprovedModMenu.sln`
-- **Output**: Windows executable named `VintageStoryModManager.exe`
+- **Output**: Windows executable named `Simple VS Manager.exe`
 
 ## Code Style & Conventions
 
@@ -81,21 +62,6 @@ dotnet format --verify-no-changes
 - Services: Descriptive names in `Services/` folder
 - Models: Business entities in `Models/` folder
 
-## Vintage Story API Integration
-
-### When Working with Vintage Story APIs
-- **Always check** the corresponding file in `VS_1.21_Decompiled/` when:
-  - Using Vintage Story API classes, methods, or properties
-  - Understanding game behavior or mod structure
-  - Implementing features that interact with the game
-- The decompiled source is from the **latest compatible game version** (1.21) and can be fully trusted
-- Game assets in `VS_1.21_assets/` contain accurate JSON schemas for blocks, items, recipes, etc.
-
-### Reference Code Usage
-- Reference code exists to help you understand the Vintage Story ecosystem
-- Only search/reference these folders when explicitly mentioned or when working on game integration features
-- Never modify files in reference folders
-
 ## Security & Best Practices
 
 ### Security Guidelines
@@ -115,21 +81,18 @@ dotnet format --verify-no-changes
 - Optimize UI responsiveness for large mod collections
 - Use async/await for I/O operations
 - Implement lazy loading where appropriate
-- Consider memory usage when loading mod metadata
 
 ## Contributing Workflow
 
 ### Making Changes
-1. Focus on **minimal, surgical changes** to accomplish the goal
+1. Focus on **minimal, surgical changes** to accomplish the goal unless otherwise stated with for example "This is a long standing issue" or "Think hard".
 2. Maintain consistency with existing code patterns
 3. Update related documentation if needed
 4. Test changes thoroughly before committing
 
 ### Testing Requirements
 - Build must succeed without warnings (using `-warnaserror`)
-- Manually test UI changes when applicable
 - Verify no breaking changes to existing functionality
-- Test with actual Vintage Story mod files when relevant
 
 ### Pull Request Standards
 - Clear, descriptive commit messages
