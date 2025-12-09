@@ -100,6 +100,7 @@ namespace VintageStoryModManager.Views
         private ObservableCollection<SelectableItem> _selectableItems = [];
         private Brush? _textPrimaryBrush;
         private Brush? _textSecondaryBrush;
+        private bool _isEventSubscribed = false;
 
         // Fallback brushes if resources aren't available
         private static readonly Brush FallbackTextPrimaryBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(250, 250, 250));
@@ -117,19 +118,27 @@ namespace VintageStoryModManager.Views
             // Subscribe to PreviewMouseDown on the root visual to detect clicks outside
             Loaded += (_, _) =>
             {
-                var window = Window.GetWindow(this);
-                if (window != null)
+                if (!_isEventSubscribed)
                 {
-                    window.PreviewMouseDown += Window_PreviewMouseDown;
+                    var window = Window.GetWindow(this);
+                    if (window != null)
+                    {
+                        window.PreviewMouseDown += Window_PreviewMouseDown;
+                        _isEventSubscribed = true;
+                    }
                 }
             };
             
             Unloaded += (_, _) =>
             {
-                var window = Window.GetWindow(this);
-                if (window != null)
+                if (_isEventSubscribed)
                 {
-                    window.PreviewMouseDown -= Window_PreviewMouseDown;
+                    var window = Window.GetWindow(this);
+                    if (window != null)
+                    {
+                        window.PreviewMouseDown -= Window_PreviewMouseDown;
+                        _isEventSubscribed = false;
+                    }
                 }
             };
         }
