@@ -242,7 +242,7 @@ public partial class ModBrowserViewModel : ObservableObject
             IsSearching = true;
 
             // Add a small delay to debounce rapid typing
-            await Task.Delay(400, token);
+            await Task.Delay(300, token);
 
             if (token.IsCancellationRequested)
                 return;
