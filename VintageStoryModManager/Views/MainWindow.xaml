@@ -59,12 +59,12 @@
                     IsMainMenu="True"
                     BorderThickness="0"
                     Background="Transparent"
-                    Foreground="{DynamicResource Brush.Text.Primary}">
+                    Foreground="{DynamicResource Brush.Text.Primary}" UseLayoutRounding="True">
                     <Menu.Resources>
                         <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource ToggleMenuItemStyle}" />
                     </Menu.Resources>
 
-                    <MenuItem Header="_File" Padding="6,0,12,0" Height="24">
+                    <MenuItem Header="_File" Padding="6,0,12,0" Height="24" UseLayoutRounding="True">
                         <MenuItem Header="Set _Data Folder..." Height="35" Click="SelectDataFolderMenuItem_OnClick" />
                         <MenuItem Header="Set _Game Folder..." Height="35" Click="SelectGameFolderMenuItem_OnClick" />
                         <MenuItem Header="Set Custom Vintage Story Shortcut" Height="35"
@@ -108,7 +108,7 @@
                         <Separator />
                         <MenuItem Header="E_xit" Height="35" Click="ExitMenuItem_OnClick" />
                     </MenuItem>
-                    <MenuItem Header="_Mods" Height="24" SubmenuOpened="ModsMenuItem_OnSubmenuOpened" Padding="6,0,12,0">
+                    <MenuItem Header="_Mods" Height="24" SubmenuOpened="ModsMenuItem_OnSubmenuOpened" Padding="6,0,12,0" UseLayoutRounding="True">
                         <MenuItem Header="_Refresh Mods"
                             Height="35"
                             Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
@@ -135,7 +135,7 @@
                             Height="35"
                             Click="DeleteCachedModsMenuItem_OnClick" />
                     </MenuItem>
-                    <MenuItem x:Name="PresetsAndModlistsMenuItem" Header="_Save &amp; Load" Height="24" Padding="6,0,12,0">
+                    <MenuItem x:Name="PresetsAndModlistsMenuItem" Header="_Save &amp; Load" Height="24" Padding="6,0,12,0" UseLayoutRounding="True">
                         <MenuItem Header="Save _Modlist as an importable PDF..." Height="35"
                             Click="SaveInstalledModsPdfMenuItem_OnClick" />
                         <MenuItem Header="Save _Modlist..." Height="35" Click="SaveModlistMenuItem_OnClick" />
@@ -165,7 +165,7 @@
                             Style="{StaticResource ToggleMenuItemStyle}"
                             Click="AlwaysAddModlistsMenuItem_OnClick" />
                     </MenuItem>
-                    <MenuItem Header="_View" Height="24" Padding="6,0,12,0">
+                    <MenuItem Header="_View" Height="24" Padding="6,0,12,0" UseLayoutRounding="True">
                         <MenuItem Header="_Compact View"
                             Height="35"
                             IsCheckable="True"
@@ -289,7 +289,7 @@
                                 Unchecked="InstalledModsColumnMenuItem_OnChecked" />
                         </MenuItem>
                     </MenuItem>
-                    <MenuItem Header="_Help &amp; Advanced" Height="24" Padding="6,0,12,0">
+                    <MenuItem Header="_Help &amp; Advanced" Height="24" Padding="6,0,12,0" UseLayoutRounding="True">
                         <MenuItem x:Name="ManagerVersionMenuItem"
                             Header="Version: --"
                             Padding="12,6"
@@ -511,7 +511,7 @@
                                     ui:ControlHelper.CornerRadius="0"
                                     FontSize="15"
                                     Background="Transparent"
-                                    BorderBrush="Transparent">
+                                    BorderBrush="Transparent" UseLayoutRounding="True">
                                     <DataGrid.Resources>
                                         <Style TargetType="{x:Type ScrollBar}"
                                             BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" />

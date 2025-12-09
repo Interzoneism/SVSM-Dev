@@ -439,6 +439,7 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="4"
+                            UseLayoutRounding="True"
                             Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
@@ -665,6 +666,7 @@
             Value="{DynamicResource Brush.InstalledMod.Row.Border}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Margin" Value="2,2,2,2" />
+        <Setter Property="UseLayoutRounding" Value="True" />
         <Setter Property="Padding">
             <Setter.Value>
                 <MultiBinding

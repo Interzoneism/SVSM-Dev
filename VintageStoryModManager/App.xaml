@@ -313,6 +313,7 @@
             <Style x:Key="IMM.DataGridScrollBarStyle" TargetType="{x:Type ScrollBar}">
                 <Setter Property="Background" Value="{DynamicResource Brush.ScrollBar.Track}" />
                 <Setter Property="Foreground" Value="{DynamicResource Brush.ScrollBar.Glyph}" />
+                <Setter Property="UseLayoutRounding" Value="True" />
                 <Setter Property="BorderBrush" Value="{DynamicResource Brush.ScrollBar.Track}" />
                 <Setter Property="Template">
                     <Setter.Value>

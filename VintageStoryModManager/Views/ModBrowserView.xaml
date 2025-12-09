@@ -78,6 +78,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Dark}"/>
             <Setter Property="BorderThickness" Value="0,0,2,2"/>
             <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="ClipToBounds" Value="True"/>
             <Style.Triggers>
@@ -109,7 +110,7 @@
                             Margin="4"
                             Text="{Binding TextFilter, UpdateSourceTrigger=PropertyChanged}"
                             Style="{StaticResource IMM.SearchTextBoxStyle}"
-                            ui:ControlHelper.PlaceholderText="Search..."/>
+                            ui:ControlHelper.PlaceholderText="Search..." UseLayoutRounding="True"/>
 
                     <!-- Order By Dropdown -->
                         <ComboBox Width="160" Height="32"
@@ -315,6 +316,7 @@
                             <Border x:Name="ModCardBorder"
                                     Style="{StaticResource ModCardStyle}"
                                     Width="288"
+                                    
                                     Margin="8">
                                 <Border.Tag>
                                     <Binding Path="ModId"/>
