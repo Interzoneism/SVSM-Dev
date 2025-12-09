@@ -295,13 +295,14 @@ public partial class ModBrowserViewModel : ObservableObject
 
         try
         {
-            IsSearching = true;
-
             // Determine if we need to query the server or can use cached results
             bool needsServerQuery = forceServerQuery || _cachedApiResults.Count == 0;
 
+            // Only show loading indicator for server queries
             if (needsServerQuery)
             {
+                IsSearching = true;
+                
                 // Add a small delay to debounce rapid typing (only for server queries)
                 await Task.Delay(300, token);
 
@@ -325,13 +326,15 @@ public partial class ModBrowserViewModel : ObservableObject
 
                 // Cache the raw results
                 _cachedApiResults = mods;
+                
+                // Clear user reports only when we get new data from server
+                _userReportsLoaded.Clear();
             }
 
-            // Apply client-side filters and sorting
+            // Apply client-side filters and sorting (fast, no loading indicator needed)
             var filteredAndSortedMods = ApplyClientSideFiltersAndSorting(_cachedApiResults);
 
             ModsList.Clear();
-            _userReportsLoaded.Clear(); // Reset user reports tracking
             foreach (var mod in filteredAndSortedMods)
             {
                 ModsList.Add(mod);
@@ -340,7 +343,7 @@ public partial class ModBrowserViewModel : ObservableObject
             VisibleModsCount = DefaultLoadedMods;
             OnPropertyChanged(nameof(VisibleMods));
 
-            // Only populate user reports for visible mods + one batch ahead
+            // Only populate user reports for visible mods that don't have them yet
             var modsToLoadReports = ModsList.Take(VisibleModsCount + LoadMoreCount).ToList();
             _ = PopulateUserReportsAsync(modsToLoadReports, token);
         }
