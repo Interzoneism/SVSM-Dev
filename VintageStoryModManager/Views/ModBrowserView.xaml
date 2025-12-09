@@ -107,9 +107,9 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="8,0,0,0">
-                        <!-- Versions Filter using custom multi-select -->
-                        <TextBox Width="160" Height="32"
+                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="8,0,0,0">
+                    <!-- Versions Filter using custom multi-select -->
+                    <TextBox Width="200" Height="32"
                                 Text="{Binding TextFilter, UpdateSourceTrigger=PropertyChanged}"
                                 Style="{StaticResource IMM.SearchTextBoxStyle}"
                                 ui:ControlHelper.PlaceholderText="Search..." UseLayoutRounding="True"/>
@@ -129,6 +129,40 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
+
+                    <!-- Versions Filter using custom multi-select -->
+                    <views:MultiSelectDropdown Width="160" Height="32"
+                            Margin="4"
+                            ItemsSource="{Binding AvailableVersions}"
+                            SelectedItems="{Binding SelectedVersions}"
+                            DisplayMemberPath="Name"
+                            PlaceholderText="Versions"
+                            ToolTip="Select game versions to filter"/>
+
+                    <!-- Tags Filter using custom multi-select -->
+                    <views:MultiSelectDropdown Width="120" Height="32"
+                            Margin="4"
+                            ItemsSource="{Binding AvailableTags}"
+                            SelectedItems="{Binding SelectedTags}"
+                            DisplayMemberPath="Name"
+                            PlaceholderText="Tags"
+                            ToolTip="Select tags to filter"/>
+
+                    <!-- Side Filter -->
+                    <ComboBox Width="120" Height="32"
+                            Margin="4"
+                            SelectedValue="{Binding SelectedSide}"
+                            SelectedValuePath="Key"
+                            DisplayMemberPath="Value"
+                            ItemsSource="{Binding SideOptions, Mode=OneTime}"/>
+
+                    <!-- Installed Filter -->
+                    <ComboBox Width="120" Height="32"
+                            Margin="4"
+                            SelectedValue="{Binding SelectedInstalledFilter}"
+                            SelectedValuePath="Key"
+                            DisplayMemberPath="Value"
+                            ItemsSource="{Binding InstalledFilterOptions, Mode=OneTime}"/>
                     <Button Width="32" Height="32"
                                 Style="{StaticResource IconButtonStyle}"
                                 Command="{Binding ToggleOrderDirectionCommand}"
@@ -165,50 +199,16 @@
                         </Grid>
                     </Button>
 
-                    <!-- Versions Filter using custom multi-select -->
-                        <views:MultiSelectDropdown Width="160" Height="32"
-                            Margin="4"
-                            ItemsSource="{Binding AvailableVersions}"
-                            SelectedItems="{Binding SelectedVersions}"
-                            DisplayMemberPath="Name"
-                            PlaceholderText="Versions"
-                            ToolTip="Select game versions to filter"/>
-
-                        <!-- Tags Filter using custom multi-select -->
-                        <views:MultiSelectDropdown Width="120" Height="32"
-                            Margin="4"
-                            ItemsSource="{Binding AvailableTags}"
-                            SelectedItems="{Binding SelectedTags}"
-                            DisplayMemberPath="Name"
-                            PlaceholderText="Tags"
-                            ToolTip="Select tags to filter"/>
-
-                        <!-- Side Filter -->
-                        <ComboBox Width="120" Height="32"
-                            Margin="4"
-                            SelectedValue="{Binding SelectedSide}"
-                            SelectedValuePath="Key"
-                            DisplayMemberPath="Value"
-                            ItemsSource="{Binding SideOptions, Mode=OneTime}"/>
-
-                        <!-- Installed Filter -->
-                        <ComboBox Width="120" Height="32"
-                            Margin="4"
-                            SelectedValue="{Binding SelectedInstalledFilter}"
-                            SelectedValuePath="Key"
-                            DisplayMemberPath="Value"
-                            ItemsSource="{Binding InstalledFilterOptions, Mode=OneTime}"/>
-
-                        <!-- Clear Filters -->
-                        <Button Width="32" Height="32"
+                    <!-- Clear Filters -->
+                    <Button Width="32" Height="32"
                             Margin="4"
                             Style="{StaticResource IconButtonStyle}"
                             Command="{Binding ClearFiltersCommand}"
                             ToolTip="Clear all filters">
-                            <Path Data="{StaticResource IconXCircle}" 
+                        <Path Data="{StaticResource IconXCircle}" 
                                 Style="{StaticResource IconLarge}"/>
-                        </Button>
-                    </WrapPanel>
+                    </Button>
+                </WrapPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,8,4">
                     <Button Width="32" Height="32"
                                 Command="{Binding ToggleFavoriteFilterCommand}"
