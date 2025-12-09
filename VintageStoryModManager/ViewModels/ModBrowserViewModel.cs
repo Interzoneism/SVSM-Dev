@@ -701,7 +701,8 @@ public partial class ModBrowserViewModel : ObservableObject
 
         foreach (var mod in modsToLoad)
         {
-            mod.UserReportDisplay = "Loading reports…";
+            mod.ShowUserReportBadge = false;
+            mod.UserReportDisplay = string.Empty;
             mod.UserReportTooltip = "Fetching user reports for this mod version.";
         }
 
@@ -735,6 +736,7 @@ public partial class ModBrowserViewModel : ObservableObject
             }
             catch (Exception ex)
             {
+                mod.ShowUserReportBadge = false;
                 mod.UserReportDisplay = "Unavailable";
                 mod.UserReportTooltip = string.Format(
                     CultureInfo.CurrentCulture,
@@ -754,7 +756,8 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(_installedGameVersion))
         {
-            mod.UserReportDisplay = "User reports unavailable";
+            mod.ShowUserReportBadge = false;
+            mod.UserReportDisplay = string.Empty;
             mod.UserReportTooltip = "User reports require a known Vintage Story version.";
             return;
         }
@@ -762,7 +765,8 @@ public partial class ModBrowserViewModel : ObservableObject
         var modDetails = await _modApiService.GetModAsync(mod.ModId, cancellationToken);
         if (modDetails?.Releases is null || modDetails.Releases.Count == 0)
         {
-            mod.UserReportDisplay = "User reports unavailable";
+            mod.ShowUserReportBadge = false;
+            mod.UserReportDisplay = string.Empty;
             mod.UserReportTooltip = "No releases available to load user reports.";
             return;
         }
@@ -773,7 +777,8 @@ public partial class ModBrowserViewModel : ObservableObject
 
         if (latestRelease is null || string.IsNullOrWhiteSpace(latestRelease.ModVersion))
         {
-            mod.UserReportDisplay = "User reports unavailable";
+            mod.ShowUserReportBadge = false;
+            mod.UserReportDisplay = string.Empty;
             mod.UserReportTooltip = "Latest release version is unavailable for this mod.";
             return;
         }
@@ -784,13 +789,15 @@ public partial class ModBrowserViewModel : ObservableObject
             _installedGameVersion,
             cancellationToken);
 
-        mod.UserReportDisplay = BuildUserReportDisplay(summary);
+        var display = BuildUserReportDisplay(summary);
+        mod.ShowUserReportBadge = !string.IsNullOrWhiteSpace(display);
+        mod.UserReportDisplay = display ?? string.Empty;
         mod.UserReportTooltip = BuildUserReportTooltip(summary, _installedGameVersion);
     }
 
-    private static string BuildUserReportDisplay(ModVersionVoteSummary? summary)
+    private static string? BuildUserReportDisplay(ModVersionVoteSummary? summary)
     {
-        if (summary is null || summary.TotalVotes == 0) return "No votes";
+        if (summary is null || summary.TotalVotes == 0) return null;
 
         var majority = summary.GetMajorityOption();
         if (majority is null)
@@ -812,7 +819,17 @@ public partial class ModBrowserViewModel : ObservableObject
 
     private static string BuildUserReportTooltip(ModVersionVoteSummary? summary, string vintageStoryVersion)
     {
-        var counts = summary?.Counts ?? ModVersionVoteCounts.Empty;
+        if (summary is null || summary.TotalVotes == 0)
+        {
+            return string.IsNullOrWhiteSpace(vintageStoryVersion)
+                ? "No user reports yet. Click to share your experience."
+                : string.Format(
+                    CultureInfo.CurrentCulture,
+                    "No user reports yet for Vintage Story {0}. Click to share your experience.",
+                    vintageStoryVersion);
+        }
+
+        var counts = summary.Counts;
         var header = string.IsNullOrWhiteSpace(vintageStoryVersion)
             ? "User reports:"
             : string.Format(CultureInfo.CurrentCulture, "User reports for Vintage Story {0}:", vintageStoryVersion);
