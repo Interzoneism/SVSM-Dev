@@ -1,11 +1,8 @@
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using VintageStoryModManager.Models;
 
 namespace VintageStoryModManager.Services;
@@ -25,7 +22,6 @@ public interface IModApiService
         IEnumerable<ModTag>? tagsFilter = null,
         string orderBy = "follows",
         string orderByOrder = "desc",
-        bool includeLatestRelease = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -37,11 +33,6 @@ public interface IModApiService
     /// Gets a single mod by its string ID.
     /// </summary>
     Task<DownloadableMod?> GetModAsync(string modIdStr, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Gets the latest release for a mod.
-    /// </summary>
-    Task<DownloadableModRelease?> GetLatestReleaseAsync(int modId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets all available authors.
@@ -93,7 +84,6 @@ public class ModApiService : IModApiService
         IEnumerable<ModTag>? tagsFilter = null,
         string orderBy = "follows",
         string orderByOrder = "desc",
-        bool includeLatestRelease = false,
         CancellationToken cancellationToken = default)
     {
         if (InternetAccessManager.IsInternetAccessDisabled)
@@ -141,14 +131,7 @@ public class ModApiService : IModApiService
             var response = await _httpClient.GetStringAsync(queryBuilder.ToString(), cancellationToken);
             var result = JsonSerializer.Deserialize<ModListResponse>(response, _jsonOptions);
 
-            var mods = result?.Mods ?? [];
-
-            if (includeLatestRelease && mods.Count > 0)
-            {
-                await PopulateLatestReleaseInfoAsync(mods, cancellationToken);
-            }
-
-            return mods;
+            return result?.Mods ?? [];
         }
         catch (JsonException ex)
         {
@@ -235,89 +218,6 @@ public class ModApiService : IModApiService
             System.Diagnostics.Debug.WriteLine($"[ModApiService] Exception details: {ex}");
             return null;
         }
-    }
-
-    public async Task<DownloadableModRelease?> GetLatestReleaseAsync(int modId, CancellationToken cancellationToken = default)
-    {
-        if (InternetAccessManager.IsInternetAccessDisabled)
-        {
-            System.Diagnostics.Debug.WriteLine("Internet access is disabled - skipping latest release fetch");
-            return null;
-        }
-
-        try
-        {
-            var url = $"{BaseUrl}/api/mod/{Uri.EscapeDataString(modId.ToString())}/latestrelease";
-            System.Diagnostics.Debug.WriteLine($"[ModApiService] Fetching latest release from: {url}");
-
-            var response = await _httpClient.GetStringAsync(url, cancellationToken);
-
-            System.Diagnostics.Debug.WriteLine($"[ModApiService] Latest release response length: {response.Length} characters");
-
-            var result = JsonSerializer.Deserialize<ModResponse>(response, _jsonOptions);
-
-            if (result?.StatusCode != 200)
-            {
-                System.Diagnostics.Debug.WriteLine($"[ModApiService] Non-200 status code for latest release: {result?.StatusCode}");
-                return null;
-            }
-
-            var latestRelease = result.Mod?.Releases?
-                .OrderByDescending(r => DateTime.TryParse(r.Created, out var date) ? date : DateTime.MinValue)
-                .FirstOrDefault();
-
-            if (latestRelease != null)
-            {
-                System.Diagnostics.Debug.WriteLine(
-                    $"[ModApiService] Latest release for mod {modId}: {latestRelease.ModVersion}");
-            }
-
-            return latestRelease;
-        }
-        catch (JsonException ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON deserialization error fetching latest release for mod {modId}: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON exception details: {ex}");
-            return null;
-        }
-        catch (HttpRequestException ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[ModApiService] HTTP request error fetching latest release for mod {modId}: {ex.Message}");
-            return null;
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[ModApiService] Unexpected error fetching latest release for mod {modId}: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"[ModApiService] Exception details: {ex}");
-            return null;
-        }
-    }
-
-    private async Task PopulateLatestReleaseInfoAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
-    {
-        const int maxConcurrent = 5;
-        using var semaphore = new SemaphoreSlim(maxConcurrent);
-
-        var tasks = mods.Select(async mod =>
-        {
-            try
-            {
-                await semaphore.WaitAsync(cancellationToken);
-
-                var latestRelease = await GetLatestReleaseAsync(mod.ModId, cancellationToken);
-                if (latestRelease != null)
-                {
-                    mod.LatestReleaseVersion = latestRelease.ModVersion;
-                    mod.LatestReleaseTags = latestRelease.Tags?.ToList() ?? [];
-                }
-            }
-            finally
-            {
-                semaphore.Release();
-            }
-        });
-
-        await Task.WhenAll(tasks);
     }
 
     public async Task<List<ModAuthor>> GetAuthorsAsync(CancellationToken cancellationToken = default)

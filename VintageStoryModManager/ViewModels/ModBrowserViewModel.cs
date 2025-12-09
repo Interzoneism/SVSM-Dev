@@ -249,7 +249,6 @@ public partial class ModBrowserViewModel : ObservableObject
                 tagsFilter: SelectedTags,
                 orderBy: OrderBy,
                 orderByOrder: OrderByDirection,
-                includeLatestRelease: true,
                 cancellationToken: token);
 
             if (token.IsCancellationRequested)
@@ -638,39 +637,17 @@ public partial class ModBrowserViewModel : ObservableObject
             return;
         }
 
-        DownloadableModRelease? latestRelease = null;
-
-        if (!string.IsNullOrWhiteSpace(mod.LatestReleaseVersion))
+        var modDetails = await _modApiService.GetModAsync(mod.ModId, cancellationToken);
+        if (modDetails?.Releases is null || modDetails.Releases.Count == 0)
         {
-            latestRelease = new DownloadableModRelease
-            {
-                ModVersion = mod.LatestReleaseVersion!,
-                Tags = mod.LatestReleaseTags.ToList()
-            };
-        }
-        else
-        {
-            latestRelease = await _modApiService.GetLatestReleaseAsync(mod.ModId, cancellationToken);
-            if (latestRelease != null)
-            {
-                mod.LatestReleaseVersion = latestRelease.ModVersion;
-                mod.LatestReleaseTags = latestRelease.Tags?.ToList() ?? [];
-            }
+            mod.UserReportDisplay = "User reports unavailable";
+            mod.UserReportTooltip = "No releases available to load user reports.";
+            return;
         }
 
-        if (latestRelease is null || string.IsNullOrWhiteSpace(latestRelease.ModVersion))
-        {
-            var modDetails = await _modApiService.GetModAsync(mod.ModId, cancellationToken);
-            latestRelease = modDetails?.Releases
-                .OrderByDescending(r => DateTime.TryParse(r.Created, out var date) ? date : DateTime.MinValue)
-                .FirstOrDefault();
-
-            if (latestRelease != null)
-            {
-                mod.LatestReleaseVersion = latestRelease.ModVersion;
-                mod.LatestReleaseTags = latestRelease.Tags?.ToList() ?? [];
-            }
-        }
+        var latestRelease = modDetails.Releases
+            .OrderByDescending(r => DateTime.TryParse(r.Created, out var date) ? date : DateTime.MinValue)
+            .FirstOrDefault();
 
         if (latestRelease is null || string.IsNullOrWhiteSpace(latestRelease.ModVersion))
         {
