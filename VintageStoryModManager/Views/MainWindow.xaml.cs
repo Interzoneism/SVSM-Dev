@@ -2735,8 +2735,8 @@ public partial class MainWindow : Window
             return null;
         }
 
-        // Construct the full download URL
-        var downloadUri = new Uri($"https://mods.vintagestory.at{release.MainFile}");
+        // MainFile already contains the full download URL
+        var downloadUri = new Uri(release.MainFile);
 
         // Parse the created date
         DateTime? createdUtc = null;
