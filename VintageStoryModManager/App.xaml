@@ -816,12 +816,10 @@
                                     <ColumnDefinition Width="30" />
                                 </Grid.ColumnDefinitions>
                                 <Border x:Name="BackgroundBorder"
-                                        Background="{TemplateBinding Background}"
-                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                        BorderThickness="{TemplateBinding BorderThickness}"
-                                        CornerRadius="{TemplateBinding ui:ControlHelper.CornerRadius}"
+                                        BorderThickness="0,0,1,1"
+                                        CornerRadius="8"
                                         Grid.ColumnSpan="2"
-                                        RenderTransformOrigin="0.5,0.5">
+                                        RenderTransformOrigin="0.5,0.5" BorderBrush="{DynamicResource Brush.Button.Bevel.Dark}" Background="{DynamicResource Brush.Button.Primary.Background.Normal}">
                                     <Border.RenderTransform>
                                         <ScaleTransform ScaleX="1" ScaleY="1" />
                                     </Border.RenderTransform>

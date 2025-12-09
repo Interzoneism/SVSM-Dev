@@ -441,8 +441,8 @@
                             CornerRadius="4"
                             UseLayoutRounding="True"
                             Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
                                           RecognizesAccessKey="True" />
                     </Border>
                     <ControlTemplate.Triggers>
