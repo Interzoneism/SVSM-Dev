@@ -2656,26 +2656,18 @@ public partial class MainWindow : Window
     private ModListItemViewModel ConvertToModListItemViewModel(DownloadableMod mod)
     {
         System.Diagnostics.Debug.WriteLine($"[MainWindow] ConvertToModListItemViewModel: Converting mod {mod.Name} (ID: {mod.ModId})");
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] Input mod has {mod.Releases?.Count ?? 0} releases");
-        
-        // Convert releases from API format to internal format
-        var releases = mod.Releases?
-            .Select(ConvertToModReleaseInfo)
-            .Where(r => r != null)
-            .Cast<ModReleaseInfo>()
-            .ToList() ?? new List<ModReleaseInfo>();
 
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] Converted to {releases.Count} ModReleaseInfo objects");
-        
-        // Determine latest and latest compatible releases
-        var latestRelease = releases.OrderByDescending(r => r.CreatedUtc ?? DateTime.MinValue).FirstOrDefault();
-        var latestCompatibleRelease = releases
-            .Where(r => r.IsCompatibleWithInstalledGame)
-            .OrderByDescending(r => r.CreatedUtc ?? DateTime.MinValue)
-            .FirstOrDefault();
-            
+        // Only consider the most recent release with a valid downloadable file
+        var latestRelease = mod.Releases?
+            .OrderByDescending(r => DateTime.TryParse(r.Created, out var created) ? created : DateTime.MinValue)
+            .Select(ConvertToModReleaseInfo)
+            .FirstOrDefault(r => r != null);
+
+        var releases = latestRelease != null
+            ? new List<ModReleaseInfo> { latestRelease }
+            : new List<ModReleaseInfo>();
+
         System.Diagnostics.Debug.WriteLine($"[MainWindow] Latest release: {latestRelease?.Version ?? "null"}");
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] Latest compatible release: {latestCompatibleRelease?.Version ?? "null"}");
 
         // Create ModDatabaseInfo with converted data
         var databaseInfo = new ModDatabaseInfo
@@ -2684,7 +2676,7 @@ public partial class MainWindow : Window
             AssetId = mod.AssetId.ToString(),
             ModPageUrl = $"https://mods.vintagestory.at/show/mod/{mod.AssetId}",
             LatestVersion = latestRelease?.Version,
-            LatestCompatibleVersion = latestCompatibleRelease?.Version,
+            LatestCompatibleVersion = latestRelease?.Version,
             RequiredGameVersions = releases.SelectMany(r => r.GameVersionTags).Distinct().ToArray(),
             Downloads = mod.Downloads,
             Comments = mod.Comments,
@@ -2695,7 +2687,7 @@ public partial class MainWindow : Window
                 : null,
             LastReleasedUtc = latestRelease?.CreatedUtc,
             LatestRelease = latestRelease,
-            LatestCompatibleRelease = latestCompatibleRelease,
+            LatestCompatibleRelease = latestRelease,
             Releases = releases,
             Side = mod.Side
         };
@@ -2736,9 +2728,10 @@ public partial class MainWindow : Window
     /// </summary>
     private ModReleaseInfo? ConvertToModReleaseInfo(DownloadableModRelease release)
     {
-        if (string.IsNullOrWhiteSpace(release.MainFile))
+        if (string.IsNullOrWhiteSpace(release.MainFile) || string.IsNullOrWhiteSpace(release.Filename))
         {
-            System.Diagnostics.Debug.WriteLine($"[MainWindow] ConvertToModReleaseInfo: Skipping release with empty MainFile");
+            System.Diagnostics.Debug.WriteLine(
+                "[MainWindow] ConvertToModReleaseInfo: Skipping release with missing download info (MainFile or Filename is empty)");
             return null;
         }
 
@@ -2750,67 +2743,19 @@ public partial class MainWindow : Window
         if (DateTime.TryParse(release.Created, out var parsedDate))
             createdUtc = parsedDate.ToUniversalTime();
 
-        var isCompatible = CheckReleaseCompatibility(release);
-        
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] ConvertToModReleaseInfo: Version={release.ModVersion}, File={release.Filename}, Compatible={isCompatible}, Tags={string.Join(",", release.Tags ?? [])}");
-        
+        System.Diagnostics.Debug.WriteLine($"[MainWindow] ConvertToModReleaseInfo: Version={release.ModVersion}, File={release.Filename}, Compatible=true, Tags={string.Join(",", release.Tags ?? [])}");
+
         return new ModReleaseInfo
         {
             Version = release.ModVersion,
             DownloadUri = downloadUri,
             FileName = release.Filename,
             GameVersionTags = release.Tags?.ToArray() ?? Array.Empty<string>(),
-            IsCompatibleWithInstalledGame = isCompatible,
+            IsCompatibleWithInstalledGame = true,
             Changelog = release.Changelog,
             Downloads = release.Downloads,
             CreatedUtc = createdUtc
         };
-    }
-
-    /// <summary>
-    /// Checks if a release is compatible with the installed game version.
-    /// </summary>
-    private bool CheckReleaseCompatibility(DownloadableModRelease release)
-    {
-        var installedGameVersion = _viewModel?.InstalledGameVersion;
-        
-        if (string.IsNullOrWhiteSpace(installedGameVersion))
-        {
-            System.Diagnostics.Debug.WriteLine($"[MainWindow] CheckReleaseCompatibility: No installed game version, assuming compatible");
-            return true; // Assume compatible if we don't know the game version
-        }
-
-        if (release.Tags == null || release.Tags.Count == 0)
-        {
-            System.Diagnostics.Debug.WriteLine($"[MainWindow] CheckReleaseCompatibility: No version tags, assuming compatible");
-            return true; // Assume compatible if no version tags
-        }
-
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] CheckReleaseCompatibility: Checking compatibility with installed version {installedGameVersion}");
-        
-        // Check if any of the release tags match the installed game version
-        // Tags are in format like "v1.19.0", "v1.19.1", etc.
-        foreach (var tag in release.Tags)
-        {
-            if (string.IsNullOrWhiteSpace(tag))
-                continue;
-
-            // Normalize both versions for comparison
-            var normalizedTag = tag.TrimStart('v', 'V');
-            var normalizedInstalled = installedGameVersion.TrimStart('v', 'V');
-
-            // Check for exact match or prefix match (e.g., "1.19" matches "1.19.0")
-            if (normalizedTag.Equals(normalizedInstalled, StringComparison.OrdinalIgnoreCase) ||
-                normalizedTag.StartsWith(normalizedInstalled + ".", StringComparison.OrdinalIgnoreCase) ||
-                normalizedInstalled.StartsWith(normalizedTag + ".", StringComparison.OrdinalIgnoreCase))
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainWindow] CheckReleaseCompatibility: Compatible! Tag '{tag}' matches installed '{installedGameVersion}'");
-                return true;
-            }
-        }
-
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] CheckReleaseCompatibility: NOT compatible. Tags: {string.Join(",", release.Tags)}");
-        return false;
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
