@@ -389,12 +389,12 @@
                                                             Click="InstallButton_Click"
                                                             Tag="{Binding ModId}"
                                                             ToolTip="Install mod"
-                                                            Style="{StaticResource IconButtonStyle}">
+                                                            Style="{StaticResource IconButtonStyle}"
+                                                            IsEnabled="{Binding IsInstalled, Converter={StaticResource InvertBoolean}}">
                                                         <Button.Visibility>
                                                             <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
                                                                 <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
-                                                                <Binding Path="ModId"/>
-                                                                <Binding Path="DataContext.InstalledMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                                                <Binding Path="IsInstalled"/>
                                                             </MultiBinding>
                                                         </Button.Visibility>
                                                         <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
@@ -406,10 +406,7 @@
                                                                         <!-- Show checkmark when installed -->
                                                                         <DataTrigger Value="True">
                                                                             <DataTrigger.Binding>
-                                                                                <MultiBinding Converter="{StaticResource ContainsConverter}">
-                                                                                    <Binding Path="ModId"/>
-                                                                                    <Binding Path="DataContext.InstalledMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
-                                                                                </MultiBinding>
+                                                                                <Binding Path="IsInstalled"/>
                                                                             </DataTrigger.Binding>
                                                                             <Setter Property="Data" Value="{StaticResource IconCheck}"/>
                                                                             <Setter Property="Fill" Value="{DynamicResource Brush.Status.Success}"/>

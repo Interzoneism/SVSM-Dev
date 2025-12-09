@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VintageStoryModManager.Models;
@@ -25,6 +26,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private bool _isInitializing;
     private Func<DownloadableMod, Task>? _installModCallback;
     private readonly HashSet<int> _userReportsLoaded = new();
+    private readonly HashSet<string> _normalizedInstalledModIds = new(StringComparer.OrdinalIgnoreCase);
 
     #region Observable Properties
 
@@ -197,7 +199,48 @@ public partial class ModBrowserViewModel : ObservableObject
     /// <summary>
     /// Checks if a mod is installed.
     /// </summary>
-    public bool IsModInstalled(int modId) => InstalledMods.Contains(modId);
+    public bool IsModInstalled(int modId)
+    {
+        return IsModInstalledById(modId.ToString(CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>
+    /// Updates the installed mod cache using the provided identifiers.
+    /// </summary>
+    /// <param name="modIds">A collection of mod identifiers to normalize and track.</param>
+    /// <param name="numericModIds">Optional numeric identifiers for compatibility with existing bindings.</param>
+    public void UpdateInstalledMods(IEnumerable<string> modIds, IEnumerable<int>? numericModIds = null)
+    {
+        _normalizedInstalledModIds.Clear();
+        foreach (var modId in modIds)
+        {
+            AddInstalledModId(modId);
+        }
+
+        InstalledMods.Clear();
+        if (numericModIds != null)
+        {
+            foreach (var modId in numericModIds.Distinct())
+                InstalledMods.Add(modId);
+        }
+
+        RefreshInstalledFlags();
+    }
+
+    /// <summary>
+    /// Adds a single installed mod identifier to the cache and updates the UI state.
+    /// </summary>
+    /// <param name="modId">The mod identifier to add.</param>
+    /// <param name="numericModId">Optional numeric identifier to keep the installed list in sync.</param>
+    public void AddInstalledMod(string modId, int? numericModId = null)
+    {
+        AddInstalledModId(modId);
+
+        if (numericModId.HasValue && !InstalledMods.Contains(numericModId.Value))
+            InstalledMods.Add(numericModId.Value);
+
+        RefreshInstalledFlags();
+    }
 
     #region Commands
 
@@ -222,6 +265,11 @@ public partial class ModBrowserViewModel : ObservableObject
         RestoreSavedSelections();
 
         await SearchModsAsync();
+    }
+
+    public Task RefreshSearchAsync()
+    {
+        return SearchModsAsync();
     }
 
     [RelayCommand]
@@ -389,11 +437,7 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             System.Diagnostics.Debug.WriteLine($"[ModBrowser] No install callback registered, adding to installed list");
             // Fallback: just mark as installed in the UI
-            if (!InstalledMods.Contains(modId))
-            {
-                InstalledMods.Add(modId);
-                OnPropertyChanged(nameof(InstalledMods));
-            }
+            AddInstalledMod(mod.ModIdStr ?? mod.ModId.ToString(CultureInfo.InvariantCulture), modId);
         }
     }
 
@@ -536,8 +580,86 @@ public partial class ModBrowserViewModel : ObservableObject
         }
     }
 
+    private bool IsModInstalled(DownloadableModOnList mod)
+    {
+        foreach (var candidate in GetCandidateModIds(mod))
+        {
+            if (IsModInstalledById(candidate))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsModInstalledById(string? modId)
+    {
+        var normalized = NormalizeModId(modId);
+        if (string.IsNullOrWhiteSpace(normalized)) return false;
+
+        return _normalizedInstalledModIds.Contains(normalized);
+    }
+
+    private void AddInstalledModId(string? modId)
+    {
+        var normalized = NormalizeModId(modId);
+        if (string.IsNullOrWhiteSpace(normalized)) return;
+
+        _normalizedInstalledModIds.Add(normalized);
+    }
+
+    private void RefreshInstalledFlags()
+    {
+        foreach (var mod in ModsList)
+        {
+            mod.IsInstalled = IsModInstalled(mod);
+        }
+    }
+
+    private static IEnumerable<string> GetCandidateModIds(DownloadableModOnList mod)
+    {
+        if (mod.ModId > 0)
+            yield return mod.ModId.ToString(CultureInfo.InvariantCulture);
+
+        if (mod.ModIdStrings is { Count: > 0 })
+        {
+            foreach (var id in mod.ModIdStrings)
+            {
+                if (!string.IsNullOrWhiteSpace(id)) yield return id;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(mod.Name))
+            yield return mod.Name;
+    }
+
+    private static string? NormalizeModId(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+
+        var builder = new StringBuilder(value.Length);
+        foreach (var ch in value)
+        {
+            if (char.IsLetter(ch))
+            {
+                builder.Append(char.ToLowerInvariant(ch));
+            }
+            else if (char.IsDigit(ch))
+            {
+                if (builder.Length == 0) builder.Append('m');
+                builder.Append(ch);
+            }
+        }
+
+        return builder.Length == 0 ? null : builder.ToString();
+    }
+
     private List<DownloadableModOnList> ApplyClientSideFilters(List<DownloadableModOnList> mods)
     {
+        foreach (var mod in mods)
+        {
+            mod.IsInstalled = IsModInstalled(mod);
+        }
+
         var filtered = mods.AsEnumerable();
 
         // Side filter
@@ -549,11 +671,11 @@ public partial class ModBrowserViewModel : ObservableObject
         // Installed filter
         if (SelectedInstalledFilter == "installed")
         {
-            filtered = filtered.Where(m => InstalledMods.Contains(m.ModId));
+            filtered = filtered.Where(m => m.IsInstalled);
         }
         else if (SelectedInstalledFilter == "not-installed")
         {
-            filtered = filtered.Where(m => !InstalledMods.Contains(m.ModId));
+            filtered = filtered.Where(m => !m.IsInstalled);
         }
 
         // Favorites filter

@@ -365,6 +365,7 @@ public partial class MainWindow : Window
     private bool _refreshAfterModlistLoadPending;
     private bool _localModlistsLoaded;
     private bool _suppressSortPreferenceSave;
+    private bool _isModBrowserWatcherSubscribed;
 
     // Drag state
     private Point _modInfoDragOffset;
@@ -2453,6 +2454,7 @@ public partial class MainWindow : Window
         RestoreSortPreference();
         UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
         ApplyColumnVisibilityPreferencesToViewModel();
+        SubscribeModBrowserToDirectoryWatcher();
     }
 
     private void InitializeModBrowserView()
@@ -2472,38 +2474,74 @@ public partial class MainWindow : Window
             
             // Set up the installation callback
             _modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
-            
+
             ModBrowserView.DataContext = _modBrowserViewModel;
         }
+    }
+
+    private void SubscribeModBrowserToDirectoryWatcher()
+    {
+        if (_isModBrowserWatcherSubscribed || _viewModel?.ModsWatcher == null || _modBrowserViewModel == null) return;
+
+        _viewModel.ModsWatcher.ChangesDetected += ModsWatcherOnChangesDetected;
+        _isModBrowserWatcherSubscribed = true;
+    }
+
+    private void UnsubscribeModBrowserFromDirectoryWatcher()
+    {
+        if (!_isModBrowserWatcherSubscribed || _viewModel?.ModsWatcher == null) return;
+
+        _viewModel.ModsWatcher.ChangesDetected -= ModsWatcherOnChangesDetected;
+        _isModBrowserWatcherSubscribed = false;
+    }
+
+    private void ModsWatcherOnChangesDetected(object? sender, EventArgs e)
+    {
+        if (_modBrowserViewModel == null) return;
+
+        Dispatcher.InvokeAsync(async () =>
+        {
+            try
+            {
+                await _modBrowserViewModel.RefreshSearchAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[MainWindow] Failed to refresh mod browser search after directory change: {ex.Message}");
+            }
+        }, DispatcherPriority.Background);
     }
 
     private void SyncInstalledModsToModBrowser()
     {
         if (_modBrowserViewModel == null || _viewModel == null) return;
 
-        // Clear and repopulate the InstalledMods collection
-        _modBrowserViewModel.InstalledMods.Clear();
-        
         var installedMods = _viewModel.GetInstalledModsSnapshot();
+        var installedModIds = new List<string>();
+        var numericInstalledModIds = new List<int>();
+
         foreach (var mod in installedMods)
         {
-            // Try to parse the ModId as an integer for the ModBrowser
-            if (int.TryParse(mod.ModId, out var modId) && !_modBrowserViewModel.InstalledMods.Contains(modId))
+            if (string.IsNullOrWhiteSpace(mod.ModId)) continue;
+
+            installedModIds.Add(mod.ModId);
+
+            if (int.TryParse(mod.ModId, out var modId) && !numericInstalledModIds.Contains(modId))
             {
-                _modBrowserViewModel.InstalledMods.Add(modId);
+                numericInstalledModIds.Add(modId);
             }
         }
+
+        _modBrowserViewModel.UpdateInstalledMods(installedModIds, numericInstalledModIds);
     }
     
     private void AddModToInstalledAndRemoveFromSearch(int modId)
     {
         if (_modBrowserViewModel == null) return;
-        
-        if (!_modBrowserViewModel.InstalledMods.Contains(modId))
-        {
-            _modBrowserViewModel.InstalledMods.Add(modId);
-        }
-        
+
+        _modBrowserViewModel.AddInstalledMod(modId.ToString(CultureInfo.InvariantCulture), modId);
+
         // Remove the installed mod from the current search results
         var modToRemove = _modBrowserViewModel.ModsList.FirstOrDefault(m => m.ModId == modId);
         if (modToRemove != null)
@@ -13744,6 +13782,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        UnsubscribeModBrowserFromDirectoryWatcher();
         StopModsWatcher();
         _backupSemaphore.Dispose();
         _cloudStoreLock.Dispose();

@@ -200,6 +200,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public ICollectionView LocalModlistsView { get; }
 
+    public ModDirectoryWatcher ModsWatcher => _modsWatcher;
+
     public ReadOnlyObservableCollection<TagFilterOptionViewModel> InstalledTagFilters { get; }
 
     public ICollectionView CurrentModsView => _viewSection switch

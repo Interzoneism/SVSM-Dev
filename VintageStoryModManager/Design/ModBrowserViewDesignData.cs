@@ -30,7 +30,8 @@ public sealed class ModBrowserViewDesignData
                 Tags = new List<string> { "UI", "Client" },
                 LastReleased = "2024-11-15",
                 UserReportDisplay = "Fully functional (12)",
-                UserReportTooltip = "Fully functional (12)\nNo issues noticed (4)\nSome issues but works (2)\nNot functional (1)\nCrashes/Freezes game (0)"
+                UserReportTooltip = "Fully functional (12)\nNo issues noticed (4)\nSome issues but works (2)\nNot functional (1)\nCrashes/Freezes game (0)",
+                IsInstalled = true
             },
             new()
             {
@@ -48,7 +49,8 @@ public sealed class ModBrowserViewDesignData
                 Tags = new List<string> { "Storage", "Gameplay" },
                 LastReleased = "2024-11-10",
                 UserReportDisplay = "No issues noticed (8)",
-                UserReportTooltip = "Fully functional (6)\nNo issues noticed (8)\nSome issues but works (1)\nNot functional (0)\nCrashes/Freezes game (0)"
+                UserReportTooltip = "Fully functional (6)\nNo issues noticed (8)\nSome issues but works (1)\nNot functional (0)\nCrashes/Freezes game (0)",
+                IsInstalled = true
             },
             new()
             {
@@ -66,7 +68,8 @@ public sealed class ModBrowserViewDesignData
                 Tags = new List<string> { "Tools", "Admin" },
                 LastReleased = "2024-11-20",
                 UserReportDisplay = "Mixed (6)",
-                UserReportTooltip = "Fully functional (3)\nNo issues noticed (3)\nSome issues but works (3)\nNot functional (1)\nCrashes/Freezes game (0)"
+                UserReportTooltip = "Fully functional (3)\nNo issues noticed (3)\nSome issues but works (3)\nNot functional (1)\nCrashes/Freezes game (0)",
+                IsInstalled = true
             },
             new()
             {
