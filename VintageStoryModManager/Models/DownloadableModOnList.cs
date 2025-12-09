@@ -57,9 +57,11 @@ public class DownloadableModOnList : INotifyPropertyChanged
     [JsonPropertyName("lastreleased")]
     public string LastReleased { get; set; } = string.Empty;
 
-    private string _userReportDisplay = "User reports unavailable";
+    private string _userReportDisplay = string.Empty;
 
     private string _userReportTooltip = "User reports require a known Vintage Story version.";
+
+    private bool _showUserReportBadge;
 
     private bool _isInstalled;
 
@@ -76,6 +78,18 @@ public class DownloadableModOnList : INotifyPropertyChanged
             if (value == _userReportDisplay) return;
 
             _userReportDisplay = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool ShowUserReportBadge
+    {
+        get => _showUserReportBadge;
+        set
+        {
+            if (value == _showUserReportBadge) return;
+
+            _showUserReportBadge = value;
             OnPropertyChanged();
         }
     }

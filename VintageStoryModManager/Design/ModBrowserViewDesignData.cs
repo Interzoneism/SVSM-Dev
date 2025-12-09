@@ -31,6 +31,7 @@ public sealed class ModBrowserViewDesignData
                 LastReleased = "2024-11-15",
                 UserReportDisplay = "Fully functional (12)",
                 UserReportTooltip = "Fully functional (12)\nNo issues noticed (4)\nSome issues but works (2)\nNot functional (1)\nCrashes/Freezes game (0)",
+                ShowUserReportBadge = true,
                 IsInstalled = true
             },
             new()
@@ -50,6 +51,7 @@ public sealed class ModBrowserViewDesignData
                 LastReleased = "2024-11-10",
                 UserReportDisplay = "No issues noticed (8)",
                 UserReportTooltip = "Fully functional (6)\nNo issues noticed (8)\nSome issues but works (1)\nNot functional (0)\nCrashes/Freezes game (0)",
+                ShowUserReportBadge = true,
                 IsInstalled = true
             },
             new()
@@ -69,6 +71,7 @@ public sealed class ModBrowserViewDesignData
                 LastReleased = "2024-11-20",
                 UserReportDisplay = "Mixed (6)",
                 UserReportTooltip = "Fully functional (3)\nNo issues noticed (3)\nSome issues but works (3)\nNot functional (1)\nCrashes/Freezes game (0)",
+                ShowUserReportBadge = true,
                 IsInstalled = true
             },
             new()
@@ -87,7 +90,9 @@ public sealed class ModBrowserViewDesignData
                 Tags = new List<string> { "Gameplay", "Survival" },
                 LastReleased = "2024-10-30",
                 UserReportDisplay = "Some issues but works (3)",
-                UserReportTooltip = "Fully functional (1)\nNo issues noticed (0)\nSome issues but works (3)\nNot functional (0)\nCrashes/Freezes game (0)"
+                UserReportTooltip = "Fully functional (1)\nNo issues noticed (0)\nSome issues but works (3)\nNot functional (0)\nCrashes/Freezes game (0)",
+                ShowUserReportBadge = true,
+                IsInstalled = false
             },
             new()
             {
@@ -123,7 +128,9 @@ public sealed class ModBrowserViewDesignData
                 Tags = new List<string> { "Survival", "Gameplay", "Hardcore" },
                 LastReleased = "2024-11-12",
                 UserReportDisplay = "Crashes/Freezes game (2)",
-                UserReportTooltip = "Fully functional (0)\nNo issues noticed (1)\nSome issues but works (0)\nNot functional (0)\nCrashes/Freezes game (2)"
+                UserReportTooltip = "Fully functional (0)\nNo issues noticed (1)\nSome issues but works (0)\nNot functional (0)\nCrashes/Freezes game (2)",
+                ShowUserReportBadge = true,
+                IsInstalled = false
             }
         };
 
