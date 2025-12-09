@@ -14,7 +14,7 @@
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
     Title="Simple VS Manager"
-    Height="876" Width="1641"
+    Height="719" Width="1558"
     MinWidth="1200" MinHeight="775" WindowStartupLocation="CenterOwner"
     PreviewKeyDown="MainWindow_OnPreviewKeyDown"
     AllowDrop="True"
@@ -985,7 +985,7 @@
                 <!-- ============================================================ -->
                 <TabItem x:Name="DatabaseTab" Header="Mod Database" Padding="8,6,8,6" Height="30" Width="Auto">
                     <Border Margin="8,0,8,0" CornerRadius="0,8,0,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}">
-                        <views:ModBrowserView Background="Transparent" x:Name="ModBrowserView" Height="700" ClipToBounds="True"/>
+                        <views:ModBrowserView Background="Transparent" x:Name="ModBrowserView" ClipToBounds="True"/>
                     </Border>
                 </TabItem>
 
