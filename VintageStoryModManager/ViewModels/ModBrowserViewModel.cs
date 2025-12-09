@@ -375,15 +375,27 @@ public partial class ModBrowserViewModel : ObservableObject
         if (_lastTextFilter != TextFilter) return true;
         if (_lastAuthorFilter != SelectedAuthor) return true;
         
-        // Check versions
-        var currentVersionIds = SelectedVersions.Select(v => v.TagId).OrderBy(id => id).ToList();
-        if (_lastVersionIds == null || !currentVersionIds.SequenceEqual(_lastVersionIds))
+        // Check versions (optimized: check count first)
+        if (_lastVersionIds == null || _lastVersionIds.Count != SelectedVersions.Count)
             return true;
         
-        // Check tags
-        var currentTagIds = SelectedTags.Select(t => t.TagId).OrderBy(id => id).ToList();
-        if (_lastTagIds == null || !currentTagIds.SequenceEqual(_lastTagIds))
+        if (_lastVersionIds.Count > 0)
+        {
+            var currentVersionIds = SelectedVersions.Select(v => v.TagId).OrderBy(id => id).ToList();
+            if (!currentVersionIds.SequenceEqual(_lastVersionIds))
+                return true;
+        }
+        
+        // Check tags (optimized: check count first)
+        if (_lastTagIds == null || _lastTagIds.Count != SelectedTags.Count)
             return true;
+        
+        if (_lastTagIds.Count > 0)
+        {
+            var currentTagIds = SelectedTags.Select(t => t.TagId).OrderBy(id => id).ToList();
+            if (!currentTagIds.SequenceEqual(_lastTagIds))
+                return true;
+        }
         
         return false;
     }
@@ -782,7 +794,9 @@ public partial class ModBrowserViewModel : ObservableObject
                 ? mods.OrderBy(m => m.LastReleased) 
                 : mods.OrderByDescending(m => m.LastReleased),
             "asset.created" => ascending 
-                ? mods.OrderBy(m => m.LastReleased) // Use LastReleased as fallback
+                // Note: DownloadableModOnList doesn't have a Created property, using LastReleased as fallback
+                // This provides a reasonable approximation since mods are typically released soon after creation
+                ? mods.OrderBy(m => m.LastReleased) 
                 : mods.OrderByDescending(m => m.LastReleased),
             _ => ascending 
                 ? mods.OrderBy(m => m.Follows) 
