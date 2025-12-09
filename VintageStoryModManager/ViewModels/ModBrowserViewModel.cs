@@ -176,7 +176,7 @@ public partial class ModBrowserViewModel : ObservableObject
                 }
             }
 
-            await SearchModsAsyncInternal(skipDebounce: true);
+            await SearchModsAsync();
         }
         catch (Exception ex)
         {
@@ -273,12 +273,7 @@ public partial class ModBrowserViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private Task SearchModsAsync()
-    {
-        return SearchModsAsyncInternal(skipDebounce: false);
-    }
-
-    private async Task SearchModsAsyncInternal(bool skipDebounce)
+    private async Task SearchModsAsync()
     {
         // Cancel any pending search
         _searchCts?.Cancel();
@@ -289,14 +284,11 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             IsSearching = true;
 
-            // Add a small delay to debounce rapid typing unless explicitly skipped
-            if (!skipDebounce)
-            {
-                await Task.Delay(300, token);
+            // Add a small delay to debounce rapid typing
+            await Task.Delay(300, token);
 
-                if (token.IsCancellationRequested)
-                    return;
-            }
+            if (token.IsCancellationRequested)
+                return;
 
             var mods = await _modApiService.QueryModsAsync(
                 textFilter: TextFilter,
