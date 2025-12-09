@@ -417,6 +417,9 @@ namespace VintageStoryModManager.Views
                 }
 
                 UpdateDisplayText();
+                
+                // Mark event as handled to prevent popup from closing when clicking items
+                e.Handled = true;
             }
         }
     }
