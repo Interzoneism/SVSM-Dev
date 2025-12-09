@@ -19,8 +19,6 @@ This is a **WPF desktop application** for managing Vintage Story mods. The appli
 ```bash
 # Primary build command (recommended)
 dotnet build -nologo -clp:Summary -warnaserror
-
-# The build.sh and build.ps1 scripts run Cake build automation - do not use for regular builds
 ```
 
 ### Test Commands
