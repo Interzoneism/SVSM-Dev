@@ -101,6 +101,7 @@ namespace VintageStoryModManager.Views
         private Brush? _textPrimaryBrush;
         private Brush? _textSecondaryBrush;
         private bool _isEventSubscribed = false;
+        private bool _suppressNextToggleClick = false;
 
         // Fallback brushes if resources aren't available
         private static readonly Brush FallbackTextPrimaryBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(250, 250, 250));
@@ -160,8 +161,14 @@ namespace VintageStoryModManager.Views
                 bool isClickInPopup = IsDescendantOf(clickedElement, popupChild);
                 bool isClickOnToggle = IsDescendantOf(clickedElement, toggleButton);
 
+                if (isClickOnToggle)
+                {
+                    _suppressNextToggleClick = true;
+                    DropdownToggle.IsChecked = false;
+                    e.Handled = true;
+                }
                 // If click is outside the popup content and toggle button, close it
-                if (!isClickInPopup && !isClickOnToggle)
+                else if (!isClickInPopup)
                 {
                     DropdownToggle.IsChecked = false;
                 }
@@ -453,6 +460,13 @@ namespace VintageStoryModManager.Views
 
         private void DropdownToggle_Click(object sender, RoutedEventArgs e)
         {
+            if (_suppressNextToggleClick)
+            {
+                _suppressNextToggleClick = false;
+                e.Handled = true;
+                return;
+            }
+
             // Refresh selection state when opening
             if (DropdownToggle.IsChecked == true)
             {
