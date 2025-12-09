@@ -102,12 +102,10 @@
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0,0,0,0" />
         <Setter Property="Padding" Value="8,6" />
-        <Setter Property="Foreground"
-                Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
         <Style.Triggers>
             <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Foreground"
-                        Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -928,8 +926,7 @@
             Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Margin" Value="10,2,10,2" />
-        <Setter Property="Foreground"
-            Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
         <Setter Property="Padding">
             <Setter.Value>
                 <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
@@ -1007,8 +1004,7 @@
         </Setter>
         <Style.Triggers>
             <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Foreground"
-                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
             </Trigger>
         </Style.Triggers>
     </Style>
