@@ -199,6 +199,11 @@ public partial class ModBrowserViewModel : ObservableObject
     /// </summary>
     public bool IsModInstalled(int modId) => InstalledMods.Contains(modId);
 
+    public Task RefreshSearchAsync()
+    {
+        return SearchModsAsync();
+    }
+
     #region Commands
 
     [RelayCommand]
