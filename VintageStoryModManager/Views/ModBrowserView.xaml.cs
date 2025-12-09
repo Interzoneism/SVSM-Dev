@@ -26,7 +26,7 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
 
     private ModBrowserViewModel? ViewModel => DataContext as ModBrowserViewModel;
 
-    private async void OnViewLoaded(object sender, RoutedEventArgs e)
+    private void OnViewLoaded(object sender, RoutedEventArgs e)
     {
         // Cache the storyboard reference during initialization
         _spinnerStoryboard = TryFindResource("SpinnerAnimation") as Storyboard;
