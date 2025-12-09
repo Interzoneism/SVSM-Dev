@@ -100,6 +100,7 @@ namespace VintageStoryModManager.Views
         private ObservableCollection<SelectableItem> _selectableItems = [];
         private Brush? _textPrimaryBrush;
         private Brush? _textSecondaryBrush;
+        private bool _isEventSubscribed = false;
 
         // Fallback brushes if resources aren't available
         private static readonly Brush FallbackTextPrimaryBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(250, 250, 250));
@@ -113,6 +114,73 @@ namespace VintageStoryModManager.Views
             InitializeComponent();
             ItemsList.ItemsSource = _selectableItems;
             Loaded += (_, _) => UpdateDisplayText(); // Update after resources are available
+            
+            // Subscribe to PreviewMouseDown on the root visual to detect clicks outside
+            Loaded += (_, _) =>
+            {
+                if (!_isEventSubscribed)
+                {
+                    var window = Window.GetWindow(this);
+                    if (window != null)
+                    {
+                        window.PreviewMouseDown += Window_PreviewMouseDown;
+                        _isEventSubscribed = true;
+                    }
+                }
+            };
+            
+            Unloaded += (_, _) =>
+            {
+                if (_isEventSubscribed)
+                {
+                    var window = Window.GetWindow(this);
+                    if (window != null)
+                    {
+                        window.PreviewMouseDown -= Window_PreviewMouseDown;
+                        _isEventSubscribed = false;
+                    }
+                }
+            };
+        }
+        
+        private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!DropdownPopup.IsOpen)
+                return;
+                
+            // Check if the click is outside the dropdown
+            var popupChild = DropdownPopup.Child;
+            var toggleButton = DropdownToggle;
+            
+            if (popupChild != null && toggleButton != null)
+            {
+                var clickedElement = e.OriginalSource as DependencyObject;
+                
+                // Check if click is inside popup content
+                bool isClickInPopup = IsDescendantOf(clickedElement, popupChild);
+                
+                // If click is outside the popup content, close it
+                // This includes clicking on the toggle button or anywhere else
+                if (!isClickInPopup)
+                {
+                    DropdownToggle.IsChecked = false;
+                }
+            }
+        }
+        
+        private bool IsDescendantOf(DependencyObject? child, DependencyObject parent)
+        {
+            if (child == null || parent == null)
+                return false;
+                
+            DependencyObject current = child;
+            while (current != null)
+            {
+                if (current == parent)
+                    return true;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return false;
         }
 
         private static void OnItemsSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
