@@ -24,6 +24,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private const int LoadMoreCount = 10;
     private bool _isInitializing;
     private Func<DownloadableMod, Task>? _installModCallback;
+    private readonly HashSet<int> _userReportsLoaded = new();
 
     #region Observable Properties
 
@@ -257,6 +258,7 @@ public partial class ModBrowserViewModel : ObservableObject
             var filteredMods = ApplyClientSideFilters(mods);
 
             ModsList.Clear();
+            _userReportsLoaded.Clear(); // Reset user reports tracking
             foreach (var mod in filteredMods)
             {
                 ModsList.Add(mod);
@@ -265,7 +267,9 @@ public partial class ModBrowserViewModel : ObservableObject
             VisibleModsCount = DefaultLoadedMods;
             OnPropertyChanged(nameof(VisibleMods));
 
-            _ = PopulateUserReportsAsync(ModsList.ToList(), token);
+            // Only populate user reports for visible mods + one batch ahead
+            var modsToLoadReports = ModsList.Take(VisibleModsCount + LoadMoreCount).ToList();
+            _ = PopulateUserReportsAsync(modsToLoadReports, token);
         }
         catch (OperationCanceledException)
         {
@@ -286,8 +290,19 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private void LoadMore()
     {
+        var previousCount = VisibleModsCount;
         VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
         OnPropertyChanged(nameof(VisibleMods));
+
+        // Load user reports for newly visible mods + one batch ahead
+        var startIndex = previousCount;
+        var endIndex = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
+        var modsToLoadReports = ModsList.Skip(startIndex).Take(endIndex - startIndex).ToList();
+        
+        if (modsToLoadReports.Any())
+        {
+            _ = PopulateUserReportsAsync(modsToLoadReports, _searchCts?.Token ?? CancellationToken.None);
+        }
     }
 
     [RelayCommand]
@@ -565,23 +580,49 @@ public partial class ModBrowserViewModel : ObservableObject
 
     private async Task PopulateUserReportsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
     {
-        foreach (var mod in mods)
+        // Filter to only mods that haven't had their user reports loaded yet (thread-safe)
+        List<DownloadableModOnList> modsToLoad;
+        lock (_userReportsLoaded)
+        {
+            modsToLoad = mods.Where(m => !_userReportsLoaded.Contains(m.ModId)).ToList();
+        }
+        
+        if (modsToLoad.Count == 0)
+            return;
+
+        foreach (var mod in modsToLoad)
         {
             mod.UserReportDisplay = "Loading reports…";
             mod.UserReportTooltip = "Fetching user reports for this mod version.";
         }
 
-        foreach (var mod in mods)
+        // Load user reports in parallel with a concurrency limit
+        const int maxConcurrentLoads = 5;
+        using var semaphore = new SemaphoreSlim(maxConcurrentLoads);
+        var tasks = modsToLoad.Select(async mod =>
         {
-            if (cancellationToken.IsCancellationRequested) break;
+            // Check cancellation before acquiring semaphore
+            if (cancellationToken.IsCancellationRequested) return;
 
             try
             {
-                await LoadUserReportAsync(mod, cancellationToken);
+                await semaphore.WaitAsync(cancellationToken);
+                try
+                {
+                    await LoadUserReportAsync(mod, cancellationToken);
+                    lock (_userReportsLoaded)
+                    {
+                        _userReportsLoaded.Add(mod.ModId);
+                    }
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
             }
             catch (OperationCanceledException)
             {
-                break;
+                // Expected when cancelled
             }
             catch (Exception ex)
             {
@@ -590,8 +631,14 @@ public partial class ModBrowserViewModel : ObservableObject
                     CultureInfo.CurrentCulture,
                     "Failed to load user reports: {0}",
                     ex.Message);
+                lock (_userReportsLoaded)
+                {
+                    _userReportsLoaded.Add(mod.ModId); // Mark as loaded even if failed to avoid retry
+                }
             }
-        }
+        });
+
+        await Task.WhenAll(tasks);
     }
 
     private async Task LoadUserReportAsync(DownloadableModOnList mod, CancellationToken cancellationToken)
