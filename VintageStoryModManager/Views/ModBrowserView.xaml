@@ -154,7 +154,7 @@
                                 </Path>
                                 <Path Data="{StaticResource IconChevronUp}" 
                                     Fill="{DynamicResource Brush.Text.Primary}" 
-                                    Width="16" Height="16" Stretch="Uniform">
+                                    Width="10" Height="10" Stretch="Uniform">
                                     <Path.Style>
                                         <Style TargetType="{x:Type Path}">
                                             <Setter Property="Visibility" Value="Collapsed"/>

@@ -18,7 +18,7 @@
                       Foreground="{DynamicResource Brush.Text.Primary}"
                       Background="{DynamicResource Brush.ComboBox.Background.Normal}"
                       BorderBrush="{DynamicResource Brush.Button.Bevel.Dark}"
-                      BorderThickness="0,0,2,2"
+                      BorderThickness="0,0,1,1"
                       Padding="10,4"
                       Focusable="False"
                       HorizontalContentAlignment="Stretch">
@@ -71,8 +71,8 @@
                             <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Dark}"/>
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{DynamicResource Brush.ComboBox.Border.Open}"/>
-                            <Setter TargetName="BackgroundBorder" Property="Background" Value="{DynamicResource Brush.Button.Bevel.Dark}"/>
+                            <Setter TargetName="BackgroundBorder" Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Dark}"/>
+                            <Setter TargetName="BackgroundBorder" Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Normal}"/>
                             <Setter TargetName="Arrow" Property="RenderTransform">
                                 <Setter.Value>
                                     <RotateTransform Angle="180"/>
