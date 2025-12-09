@@ -183,4 +183,23 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
             ViewModel?.OpenModInBrowserCommand.Execute(assetId);
         }
     }
+
+    private async void VersionsDropdown_SelectionChanged(object? sender, EventArgs e)
+    {
+        await TriggerSearchOnSelectionChanged();
+    }
+
+    private async void TagsDropdown_SelectionChanged(object? sender, EventArgs e)
+    {
+        await TriggerSearchOnSelectionChanged();
+    }
+
+    private async Task TriggerSearchOnSelectionChanged()
+    {
+        // Trigger search when filter selection changes
+        if (ViewModel != null)
+        {
+            await ViewModel.RefreshSearchAsync();
+        }
+    }
 }

@@ -137,7 +137,8 @@
                             SelectedItems="{Binding SelectedVersions}"
                             DisplayMemberPath="Name"
                             PlaceholderText="Versions"
-                            ToolTip="Select game versions to filter"/>
+                            ToolTip="Select game versions to filter"
+                            SelectionChanged="VersionsDropdown_SelectionChanged"/>
 
                     <!-- Tags Filter using custom multi-select -->
                     <views:MultiSelectDropdown Width="120" Height="32"
@@ -146,7 +147,8 @@
                             SelectedItems="{Binding SelectedTags}"
                             DisplayMemberPath="Name"
                             PlaceholderText="Tags"
-                            ToolTip="Select tags to filter"/>
+                            ToolTip="Select tags to filter"
+                            SelectionChanged="TagsDropdown_SelectionChanged"/>
 
                     <!-- Side Filter -->
                     <ComboBox Width="120" Height="32"
