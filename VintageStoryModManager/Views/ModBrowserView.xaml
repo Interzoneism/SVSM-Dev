@@ -107,96 +107,65 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-
-                <WrapPanel Orientation="Vertical" Margin="0,0,646,0">
-                    <StackPanel Orientation="Horizontal">
-                        <WrapPanel Orientation="Horizontal" Height="40" HorizontalAlignment="Left">
-                            <!-- Text Filter -->
-                            <TextBox Width="160" Height="32"
-                                Margin="4"
+                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="8,0,0,0">
+                        <!-- Versions Filter using custom multi-select -->
+                        <TextBox Width="160" Height="32"
                                 Text="{Binding TextFilter, UpdateSourceTrigger=PropertyChanged}"
                                 Style="{StaticResource IMM.SearchTextBoxStyle}"
                                 ui:ControlHelper.PlaceholderText="Search..." UseLayoutRounding="True"/>
-
-                            <!-- Order By Dropdown -->
-                            <ComboBox Width="160" Height="32"
-                                Margin="4,4,0,4"
+                    <ComboBox Width="160" Height="32"
                                 ItemsSource="{Binding OrderByOptions, Mode=OneTime}"
                                 SelectedValue="{Binding OrderBy}"
-                                SelectedValuePath="Key">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Path Data="{Binding Icon, Converter={StaticResource IconKeyToGeometry}}" 
+                                SelectedValuePath="Key" Margin="4,0,4,0">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{Binding Icon, Converter={StaticResource IconKeyToGeometry}}" 
                                                 Fill="{DynamicResource Brush.Text.Subtle}" 
                                                 Width="12" Height="12" Stretch="Uniform"
                                                 VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                            <TextBlock Text="{Binding Display}" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-
-                            <!-- Order Direction Toggle -->
-                            <Button Width="18" Height="18"
-                                Margin="4,18,4,4"
+                                    <TextBlock Text="{Binding Display}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Width="18" Height="18"
                                 Style="{StaticResource IconButtonStyle}"
                                 Command="{Binding ToggleOrderDirectionCommand}"
                                 ToolTip="Toggle sort direction" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="0,0,0,0">
-                                <Grid>
-                                    <Path Data="{StaticResource IconChevronDown}" 
+                        <Grid>
+                            <Path Data="{StaticResource IconChevronDown}" 
                                         Fill="{DynamicResource Brush.Text.Primary}" 
                                         Width="10" Height="10" Stretch="Uniform">
-                                        <Path.Style>
-                                            <Style TargetType="{x:Type Path}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding OrderByDirection}" Value="asc">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Path.Style>
-                                    </Path>
-                                    <Path Data="{StaticResource IconChevronUp}" 
-                                        Fill="{DynamicResource Brush.Text.Primary}" 
-                                        Width="10" Height="10" Stretch="Uniform">
-                                        <Path.Style>
-                                            <Style TargetType="{x:Type Path}">
+                                <Path.Style>
+                                    <Style TargetType="{x:Type Path}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding OrderByDirection}" Value="asc">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding OrderByDirection}" Value="asc">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Path.Style>
-                                    </Path>
-                                </Grid>
-                            </Button>
-                            <Button Width="32" Height="32"
-                                Margin="4"
-                                Command="{Binding ToggleFavoriteFilterCommand}"
-                                ToolTip="Show only favorites"
-                                Style="{StaticResource IconButtonStyle}">
-                                <Path Data="{StaticResource IconStarSolid}"
-                                    Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center">
-                                    <Path.Style>
-                                        <Style TargetType="{x:Type Path}">
-                                            <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding OnlyFavorites}" Value="True">
-                                                    <Setter Property="Fill" Value="#FBBF24"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Path.Style>
-                                </Path>
-                            </Button>
-                        </WrapPanel>
-                    </StackPanel>
-                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left" Height="40">
-                        <!-- Versions Filter using custom multi-select -->
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                            <Path Data="{StaticResource IconChevronUp}" 
+                                        Fill="{DynamicResource Brush.Text.Primary}" 
+                                        Width="10" Height="10" Stretch="Uniform">
+                                <Path.Style>
+                                    <Style TargetType="{x:Type Path}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding OrderByDirection}" Value="asc">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                        </Grid>
+                    </Button>
+
+                    <!-- Versions Filter using custom multi-select -->
                         <views:MultiSelectDropdown Width="160" Height="32"
                             Margin="4"
                             ItemsSource="{Binding AvailableVersions}"
@@ -240,13 +209,31 @@
                                 Style="{StaticResource IconLarge}"/>
                         </Button>
                     </WrapPanel>
-                </WrapPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,4,4">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,8,4">
+                    <Button Width="32" Height="32"
+                                Command="{Binding ToggleFavoriteFilterCommand}"
+                                ToolTip="Show only favorites"
+                                Style="{StaticResource IconButtonStyle}" Margin="0,0,4,0">
+                        <Path Data="{StaticResource IconStarSolid}"
+                                    Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center">
+                            <Path.Style>
+                                <Style TargetType="{x:Type Path}">
+                                    <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding OnlyFavorites}" Value="True">
+                                            <Setter Property="Fill" Value="#FBBF24"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                    </Button>
+
                     <Button Width="32"
                         Style="{StaticResource IconButtonStyle}"
                         Command="{Binding SearchModsCommand}"
                         IsEnabled="{Binding IsSearching, Converter={StaticResource InvertBoolean}}"
-                        ToolTip="Refresh" HorizontalContentAlignment="Center" Height="32" Margin="0,0,4,0">
+                        ToolTip="Refresh" HorizontalContentAlignment="Center" Height="32" Margin="4,0,4,0">
                         <Path Data="{StaticResource IconRefresh}" 
                             Style="{StaticResource IconLarge}"/>
                     </Button>
@@ -260,286 +247,280 @@
                 </StackPanel>
             </Grid>
         </Border>
-
-        <!-- Mod Grid -->
-        <ScrollViewer Grid.Row="1"
-                      x:Name="ModsScrollViewer"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled"
-                      ScrollChanged="ModsScrollViewer_ScrollChanged">
-            <Grid>
-                <!-- Loading Indicator -->
-                <StackPanel Visibility="{Binding IsSearching, Converter={StaticResource BoolToVisibility}}"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center">
-                    <!-- Loading Spinner Circle -->
-                    <Border Width="48" Height="48"
+        <Border Grid.Row="1" CornerRadius="12,12,12,12" Background="{DynamicResource {x:Static SystemColors.DesktopBrushKey}}" Margin="16,0,16,0"
+                      >
+            <ScrollViewer
+                x:Name="ModsScrollViewer"
+                VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Disabled"
+                ScrollChanged="ModsScrollViewer_ScrollChanged">
+                <Grid>
+                    <!-- Loading Indicator -->
+                    <StackPanel Visibility="{Binding IsSearching, Converter={StaticResource BoolToVisibility}}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                        <!-- Loading Spinner Circle -->
+                        <Border Width="48" Height="48"
                             x:Name="LoadingSpinner"
                             RenderTransformOrigin="0.5,0.5">
-                        <Border.RenderTransform>
-                            <RotateTransform Angle="0"/>
-                        </Border.RenderTransform>
-                        <Ellipse Width="48" Height="48"
-                                 Stroke="{DynamicResource Brush.Accent.Primary}"
-                                 StrokeThickness="4"
-                                 StrokeDashArray="3 2"
-                                 StrokeEndLineCap="Round"/>
-                    </Border>
-                    <TextBlock Text="Loading mods..."
-                               FontSize="14"
-                               Foreground="{DynamicResource Brush.Text.Subtle}"
-                               TextAlignment="Center"
-                               Margin="0,12,0,0"/>
-                </StackPanel>
+                            <Border.RenderTransform>
+                                <RotateTransform Angle="0"/>
+                            </Border.RenderTransform>
+                            <Ellipse Width="48" Height="48"
+                                Stroke="{DynamicResource Brush.Accent.Primary}"
+                                StrokeThickness="4"
+                                StrokeDashArray="3 2"
+                                StrokeEndLineCap="Round"/>
+                        </Border>
+                        <TextBlock Text="Loading mods..."
+                            FontSize="14"
+                            Foreground="{DynamicResource Brush.Text.Subtle}"
+                            TextAlignment="Center"
+                            Margin="0,12,0,0"/>
+                    </StackPanel>
 
-                <!-- No Results -->
-                <TextBlock Text="No mods match your filters"
-                           FontSize="18"
-                           Foreground="{DynamicResource Brush.Text.Subtle}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center">
-                    <TextBlock.Visibility>
-                        <MultiBinding Converter="{StaticResource NoResultsVisibility}">
-                            <Binding Path="IsSearching"/>
-                            <Binding Path="ModsList.Count"/>
-                        </MultiBinding>
-                    </TextBlock.Visibility>
-                </TextBlock>
+                    <!-- No Results -->
+                    <TextBlock Text="No mods match your filters"
+                        FontSize="18"
+                        Foreground="{DynamicResource Brush.Text.Subtle}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                        <TextBlock.Visibility>
+                            <MultiBinding Converter="{StaticResource NoResultsVisibility}">
+                                <Binding Path="IsSearching"/>
+                                <Binding Path="ModsList.Count"/>
+                            </MultiBinding>
+                        </TextBlock.Visibility>
+                    </TextBlock>
 
-                <!-- Mods Grid -->
-                <ItemsControl ItemsSource="{Binding VisibleMods}"
-                              Margin="16,0,16,16"
-                              Visibility="{Binding ModsList.Count, Converter={StaticResource CountToVisibility}}" Background="{DynamicResource Brush.DataGrid.Background}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal"
-                                       HorizontalAlignment="Center"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
+                    <!-- Mods Grid -->
+                    <ItemsControl ItemsSource="{Binding VisibleMods}"
+                        Margin="16,0,16,16"
+                        Visibility="{Binding ModsList.Count, Converter={StaticResource CountToVisibility}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Center"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
 
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border x:Name="ModCardBorder"
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="ModCardBorder"
                                     Style="{StaticResource ModCardStyle}"
                                     Width="288"
                                     
-                                    Margin="8">
-                                <Border.Tag>
-                                    <Binding Path="ModId"/>
-                                </Border.Tag>
-                                <Border CornerRadius="8" ClipToBounds="True">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="*"/>
-                                        </Grid.RowDefinitions>
+                                    Margin="8" Tag="{Binding ModId}">
+                                    <Border CornerRadius="8" ClipToBounds="True">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
 
-                                        <!-- Mod Image -->
-                                        <Border Grid.Row="0" Height="192" CornerRadius="8,8,0,0" ClipToBounds="True">
-                                            <Border.Background>
-                                                <ImageBrush ImageSource="{Binding LogoUrl}"
-                                                            Stretch="UniformToFill"
-                                                            AlignmentX="Center"
-                                                            AlignmentY="Center"/>
-                                            </Border.Background>
+                                            <!-- Mod Image -->
+                                            <Border Grid.Row="0" Height="192" CornerRadius="8,8,0,0" ClipToBounds="True">
+                                                <Border.Background>
+                                                    <ImageBrush ImageSource="{Binding LogoUrl}"
+                                                        Stretch="UniformToFill"
+                                                        AlignmentX="Center"
+                                                        AlignmentY="Center"/>
+                                                </Border.Background>
 
-                                            <!-- Overlay Buttons -->
-                                            <Grid>
-                                                <!-- Favorite button on top left -->
-                                                <StackPanel Orientation="Horizontal"
-                                                            HorizontalAlignment="Left"
-                                                            VerticalAlignment="Top"
-                                                            Margin="8">
-                                                    <Button Width="28" Height="28"
+                                                <!-- Overlay Buttons -->
+                                                <Grid>
+                                                    <!-- Favorite button on top left -->
+                                                    <StackPanel Orientation="Horizontal"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Top"
+                                                        Margin="8">
+                                                        <Button Width="28" Height="28"
                                                             Opacity="0.9"
                                                             Click="FavoriteButton_Click"
                                                             Tag="{Binding ModId}"
                                                             ToolTip="Toggle favorite"
                                                             Style="{StaticResource IconButtonStyle}">
-                                                        <Button.Visibility>
-                                                            <MultiBinding Converter="{StaticResource FavoriteButtonVisibility}">
-                                                                <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
-                                                                <Binding Path="ModId"/>
-                                                                <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
-                                                            </MultiBinding>
-                                                        </Button.Visibility>
-                                                        <Path Data="{StaticResource IconStarSolid}"
-                                                              Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center">
-                                                            <Path.Style>
-                                                                <Style TargetType="Path">
-                                                                    <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Value="True">
-                                                                            <DataTrigger.Binding>
-                                                                                <MultiBinding Converter="{StaticResource ContainsConverter}">
-                                                                                    <Binding Path="ModId"/>
-                                                                                    <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
-                                                                                </MultiBinding>
-                                                                            </DataTrigger.Binding>
-                                                                            <Setter Property="Fill" Value="#FBBF24"/>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Path.Style>
-                                                        </Path>
-                                                    </Button>
-                                                </StackPanel>
+                                                            <Button.Visibility>
+                                                                <MultiBinding Converter="{StaticResource FavoriteButtonVisibility}">
+                                                                    <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
+                                                                    <Binding Path="ModId"/>
+                                                                    <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                                </MultiBinding>
+                                                            </Button.Visibility>
+                                                            <Path Data="{StaticResource IconStarSolid}"
+                                                                Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center">
+                                                                <Path.Style>
+                                                                    <Style TargetType="{x:Type Path}">
+                                                                        <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Value="True">
+                                                                                <DataTrigger.Binding>
+                                                                                    <MultiBinding Converter="{StaticResource ContainsConverter}">
+                                                                                        <Binding Path="ModId"/>
+                                                                                        <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                                                    </MultiBinding>
+                                                                                </DataTrigger.Binding>
+                                                                                <Setter Property="Fill" Value="#FBBF24"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Path.Style>
+                                                            </Path>
+                                                        </Button>
+                                                    </StackPanel>
 
-                                                <!-- Install button on top right -->
-                                                <StackPanel Orientation="Horizontal"
-                                                            HorizontalAlignment="Right"
-                                                            VerticalAlignment="Top"
-                                                            Margin="8">
-                                                    <Button Width="28" Height="28"
+                                                    <!-- Install button on top right -->
+                                                    <StackPanel Orientation="Horizontal"
+                                                        HorizontalAlignment="Right"
+                                                        VerticalAlignment="Top"
+                                                        Margin="8">
+                                                        <Button Width="28" Height="28"
                                                             Opacity="0.9"
                                                             Click="InstallButton_Click"
                                                             Tag="{Binding ModId}"
                                                             ToolTip="Install mod"
                                                             Style="{StaticResource IconButtonStyle}"
                                                             IsEnabled="{Binding IsInstalled, Converter={StaticResource InvertBoolean}}">
-                                                        <Button.Visibility>
-                                                            <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
-                                                                <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
-                                                                <Binding Path="IsInstalled"/>
-                                                            </MultiBinding>
-                                                        </Button.Visibility>
-                                                        <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
-                                                              Data="{StaticResource IconDownload}">
-                                                            <Path.Style>
-                                                                <Style TargetType="Path">
-                                                                    <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
-                                                                    <Style.Triggers>
-                                                                        <!-- Show checkmark when installed -->
-                                                                        <DataTrigger Value="True">
-                                                                            <DataTrigger.Binding>
-                                                                                <Binding Path="IsInstalled"/>
-                                                                            </DataTrigger.Binding>
-                                                                            <Setter Property="Data" Value="{StaticResource IconCheck}"/>
-                                                                            <Setter Property="Fill" Value="{DynamicResource Brush.Status.Success}"/>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Path.Style>
-                                                        </Path>
-                                                    </Button>
-                                                </StackPanel>
+                                                            <Button.Visibility>
+                                                                <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
+                                                                    <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
+                                                                    <Binding Path="IsInstalled"/>
+                                                                </MultiBinding>
+                                                            </Button.Visibility>
+                                                            <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
+                                                                Data="{StaticResource IconDownload}">
+                                                                <Path.Style>
+                                                                    <Style TargetType="{x:Type Path}">
+                                                                        <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
+                                                                        <Style.Triggers>
+                                                                            <!-- Show checkmark when installed -->
+                                                                            <DataTrigger Value="True" Binding="{Binding IsInstalled}">
+                                                                                <Setter Property="Data" Value="{StaticResource IconCheck}"/>
+                                                                                <Setter Property="Fill" Value="{DynamicResource Brush.Status.Success}"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Path.Style>
+                                                            </Path>
+                                                        </Button>
+                                                    </StackPanel>
 
-                                                <!-- User report summary on bottom right -->
-                                                <Border HorizontalAlignment="Right"
+                                                    <!-- User report summary on bottom right -->
+                                                    <Border HorizontalAlignment="Right"
                                                         VerticalAlignment="Bottom"
                                                         Margin="8"
                                                         Padding="6,4"
                                                         Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                                         CornerRadius="6"
                                                         Visibility="{Binding ShowUserReportBadge, Converter={StaticResource BoolToVisibility}}">
-                                                    <TextBlock Text="{Binding UserReportDisplay}"
-                                                               ToolTip="{Binding UserReportTooltip}"
-                                                               Foreground="{DynamicResource Brush.Text.Primary}"
-                                                               FontWeight="SemiBold"
-                                                               FontSize="12"
-                                                               TextTrimming="CharacterEllipsis"/>
-                                                </Border>
-                                            </Grid>
-                                        </Border>
+                                                        <TextBlock Text="{Binding UserReportDisplay}"
+                                                            ToolTip="{Binding UserReportTooltip}"
+                                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                                            FontWeight="SemiBold"
+                                                            FontSize="12"
+                                                            TextTrimming="CharacterEllipsis"/>
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
 
-                                        <!-- Mod Info -->
-                                        <Grid Grid.Row="1" Height="96">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
+                                            <!-- Mod Info -->
+                                            <Grid Grid.Row="1" Height="96">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
 
-                                            <!-- Title & Description -->
-                                            <StackPanel Grid.Column="0" Margin="8">
-                                                <!-- MaxWidth: Card=288 - StatsColumn(80+16)=96 - Separator=1 - Margins=16 = 175 -->
-                                                <StackPanel Orientation="Horizontal" MaxWidth="175">
-                                                    <!-- MaxWidth: 175 - LinkIcon(10+4margin) = 161 -->
-                                                    <TextBlock Foreground="{DynamicResource Brush.Text.Primary}"
-                                                           FontWeight="Bold"
-                                                           FontSize="14"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           MaxWidth="161"
-                                                           Cursor="Hand"
-                                                           MouseLeftButtonDown="OpenInBrowserTitle_Click"
-                                                           Tag="{Binding AssetId}"
-                                                           ToolTip="Open in browser">
-                                                        <TextBlock.Text>
-                                                            <Binding Path="Name"/>
-                                                        </TextBlock.Text>
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Style.Triggers>
-                                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                                        <Setter Property="TextDecorations" Value="Underline"/>
-                                                                    </Trigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                    <Path Data="{StaticResource IconLinkAlt}" 
-                                                      Width="10" Height="10" Stretch="Uniform"
-                                                      Fill="{DynamicResource Brush.Text.Subtle}"
-                                                      VerticalAlignment="Center"
-                                                      Margin="4,0,0,0"/>
+                                                <!-- Title & Description -->
+                                                <StackPanel Grid.Column="0" Margin="8">
+                                                    <!-- MaxWidth: Card=288 - StatsColumn(80+16)=96 - Separator=1 - Margins=16 = 175 -->
+                                                    <StackPanel Orientation="Horizontal" MaxWidth="175">
+                                                        <!-- MaxWidth: 175 - LinkIcon(10+4margin) = 161 -->
+                                                        <TextBlock Foreground="{DynamicResource Brush.Text.Primary}"
+                                                            FontWeight="Bold"
+                                                            FontSize="14"
+                                                            TextTrimming="CharacterEllipsis"
+                                                            MaxWidth="161"
+                                                            Cursor="Hand"
+                                                            MouseLeftButtonDown="OpenInBrowserTitle_Click"
+                                                            Tag="{Binding AssetId}"
+                                                            ToolTip="Open in browser" Text="{Binding Name}">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="{x:Type TextBlock}">
+                                                                    <Style.Triggers>
+                                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                                            <Setter Property="TextDecorations" Value="Underline"/>
+                                                                        </Trigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                        <Path Data="{StaticResource IconLinkAlt}" 
+                                                            Width="10" Height="10" Stretch="Uniform"
+                                                            Fill="{DynamicResource Brush.Text.Subtle}"
+                                                            VerticalAlignment="Center"
+                                                            Margin="4,0,0,0"/>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Summary}"
+                                                        Foreground="{DynamicResource Brush.Text.Subtle}"
+                                                        FontSize="12"
+                                                        TextWrapping="Wrap"
+                                                        MaxHeight="60"
+                                                        TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
-                                                <TextBlock Text="{Binding Summary}"
-                                                       Foreground="{DynamicResource Brush.Text.Subtle}"
-                                                       FontSize="12"
-                                                       TextWrapping="Wrap"
-                                                       MaxHeight="60"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                            </StackPanel>
 
-                                            <!-- Separator -->
-                                            <Border Grid.Column="0"
-                                                Width="1"
-                                                Background="{DynamicResource Brush.Border.Default}"
-                                                HorizontalAlignment="Right"/>
+                                                <!-- Separator -->
+                                                <Border Grid.Column="0"
+                                                    Width="1"
+                                                    Background="{DynamicResource Brush.Border.Default}"
+                                                    HorizontalAlignment="Right"/>
 
-                                            <!-- Stats (now on right) -->
-                                            <StackPanel Grid.Column="1"
+                                                <!-- Stats (now on right) -->
+                                                <StackPanel Grid.Column="1"
                                                     Margin="8"
                                                     Width="80">
-                                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                    <Path Data="{StaticResource IconUser}" 
-                                                      Style="{StaticResource IconSmallSubtle}"/>
-                                                    <!-- MaxWidth: StatsWidth=80 - Icon(12+4margin) = 64 -->
-                                                    <TextBlock Text="{Binding Author}"
-                                                           Foreground="{DynamicResource Brush.Text.Primary}"
-                                                           FontSize="12"
-                                                           MaxWidth="64"
-                                                           TextTrimming="CharacterEllipsis"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                        <Path Data="{StaticResource IconUser}" 
+                                                            Style="{StaticResource IconSmallSubtle}"/>
+                                                        <!-- MaxWidth: StatsWidth=80 - Icon(12+4margin) = 64 -->
+                                                        <TextBlock Text="{Binding Author}"
+                                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                                            FontSize="12"
+                                                            MaxWidth="64"
+                                                            TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                        <Path Data="{StaticResource IconDownload}" 
+                                                            Style="{StaticResource IconSmallSubtle}"/>
+                                                        <TextBlock Text="{Binding FormattedDownloads}"
+                                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                                            FontSize="12"/>
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                        <Path Data="{StaticResource IconHeartSolid}" 
+                                                            Style="{StaticResource IconSmallSubtle}"/>
+                                                        <TextBlock Text="{Binding FormattedFollows}"
+                                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                                            FontSize="12"/>
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                        <Path Data="{StaticResource IconMessage}" 
+                                                            Style="{StaticResource IconSmallSubtle}"/>
+                                                        <TextBlock Text="{Binding FormattedComments}"
+                                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                                            FontSize="12"/>
+                                                    </StackPanel>
                                                 </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                    <Path Data="{StaticResource IconDownload}" 
-                                                      Style="{StaticResource IconSmallSubtle}"/>
-                                                    <TextBlock Text="{Binding FormattedDownloads}"
-                                                           Foreground="{DynamicResource Brush.Text.Primary}"
-                                                           FontSize="12"/>
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                    <Path Data="{StaticResource IconHeartSolid}" 
-                                                      Style="{StaticResource IconSmallSubtle}"/>
-                                                    <TextBlock Text="{Binding FormattedFollows}"
-                                                           Foreground="{DynamicResource Brush.Text.Primary}"
-                                                           FontSize="12"/>
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                    <Path Data="{StaticResource IconMessage}" 
-                                                      Style="{StaticResource IconSmallSubtle}"/>
-                                                    <TextBlock Text="{Binding FormattedComments}"
-                                                           Foreground="{DynamicResource Brush.Text.Primary}"
-                                                           FontSize="12"/>
-                                                </StackPanel>
-                                            </StackPanel>
+                                            </Grid>
                                         </Grid>
-                                    </Grid>
+                                    </Border>
                                 </Border>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </Grid>
-        </ScrollViewer>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Mod Grid -->
     </Grid>
 </UserControl>

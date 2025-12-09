@@ -984,9 +984,7 @@
 
                 <!-- ============================================================ -->
                 <TabItem x:Name="DatabaseTab" Header="Mod Database" Padding="8,6,8,6" Height="Auto" Width="Auto">
-                    <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" BorderThickness="0" CornerRadius="0,8,0,0">
-                        <views:ModBrowserView x:Name="ModBrowserView"/>
-                    </Border>
+                    <views:ModBrowserView x:Name="ModBrowserView" Margin="8,0,8,0"/>
                 </TabItem>
 
                 <!-- ============================================================ -->
