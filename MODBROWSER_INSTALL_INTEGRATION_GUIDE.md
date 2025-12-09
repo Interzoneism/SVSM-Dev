@@ -57,7 +57,7 @@ This guide explains how to integrate the **new ModBrowserView** with the **exist
 - Has its own separate helper methods:
   - `SelectReleaseForBrowserInstall(DownloadableMod)` - returns `DownloadableModRelease`
   - `TryGetInstallTargetPathForBrowserMod(DownloadableMod, DownloadableModRelease, ...)` 
-- Constructs download URL manually: `https://mods.vintagestory.at{release.MainFile}`
+- Uses `MainFile` directly as the download URL provided by the API
 - Uses different property names from the API models
 
 ## Problem Statement
@@ -142,8 +142,8 @@ private ModReleaseInfo? ConvertToModReleaseInfo(DownloadableModRelease release)
     if (string.IsNullOrWhiteSpace(release.MainFile))
         return null;
         
-    // Construct the full download URL
-    var downloadUri = new Uri($"https://mods.vintagestory.at{release.MainFile}");
+    // MainFile already contains the full download URL
+    var downloadUri = new Uri(release.MainFile);
     
     return new ModReleaseInfo
     {
@@ -375,7 +375,7 @@ public void SetReleasesFromApi(List<ModReleaseInfo> releases)
 | `ModListItemViewModel` | `DownloadableMod` | Use adapter method |
 | `ModReleaseInfo` | `DownloadableModRelease` | Use adapter method |
 | `ModId` (string) | `ModId` (int) | `mod.ModIdStr ?? mod.ModId.ToString()` |
-| `DownloadUri` (Uri) | `MainFile` (string) | `new Uri($"https://mods.vintagestory.at{release.MainFile}")` |
+| `DownloadUri` (Uri) | `MainFile` (string) | `new Uri(release.MainFile)` |
 
 ### 2. Property Name Mappings
 
@@ -384,7 +384,7 @@ public void SetReleasesFromApi(List<ModReleaseInfo> releases)
 | `DisplayName` | `Name` |
 | `Version` | `ModVersion` |
 | `FileName` | `Filename` |
-| `DownloadUri` | `MainFile` (needs URL prefix) |
+| `DownloadUri` | `MainFile` (already a full URL) |
 
 ### 3. Release Selection Logic
 
@@ -513,11 +513,10 @@ viewModel.SetReleases(convertedReleases);
 
 **Symptom:** Download fails with 404 error
 
-**Solution:** Ensure proper URL construction:
+**Solution:** Use the download URL provided by the API:
 
 ```csharp
-var downloadUri = new Uri($"https://mods.vintagestory.at{release.MainFile}");
-// Note: MainFile already starts with '/', so don't add another one
+var downloadUri = new Uri(release.MainFile);
 ```
 
 ### Issue 4: Target Path Conflicts

@@ -252,7 +252,7 @@ System.Diagnostics.Debug.WriteLine($"[Integration] Target path: {targetPath}");
 **Fix:** Ensure releases are set and the property is computed correctly
 
 ### Issue: "Download fails with 404"
-**Fix:** Verify URL construction: `new Uri($"https://mods.vintagestory.at{release.MainFile}")`
+**Fix:** Verify URL construction: `new Uri(release.MainFile)`
 
 ### Issue: "Mod still appears in browser after install"
 **Fix:** Ensure `AddModToInstalledAndRemoveFromSearch(mod.ModId)` is called

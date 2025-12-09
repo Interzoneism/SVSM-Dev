@@ -133,7 +133,7 @@ API Model (DownloadableMod)                   Internal Model (ModListItemViewMod
 InstallModFromBrowserAsync
 ├─ SelectReleaseForBrowserInstall()         ← Browser-specific duplicate
 ├─ TryGetInstallTargetPathForBrowserMod()   ← Browser-specific duplicate
-├─ Manual URL: "https://...{release.MainFile}"
+├─ Manual URL: release.MainFile
 └─ ModUpdateService.UpdateAsync()           ← Same ✓
 
 InstallModButton_OnClick
