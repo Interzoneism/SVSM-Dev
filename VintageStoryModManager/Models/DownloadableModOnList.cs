@@ -61,6 +61,8 @@ public class DownloadableModOnList : INotifyPropertyChanged
 
     private string _userReportTooltip = "User reports require a known Vintage Story version.";
 
+    private bool _isInstalled;
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>
@@ -89,6 +91,21 @@ public class DownloadableModOnList : INotifyPropertyChanged
             if (value == _userReportTooltip) return;
 
             _userReportTooltip = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether the mod is installed locally.
+    /// </summary>
+    public bool IsInstalled
+    {
+        get => _isInstalled;
+        set
+        {
+            if (value == _isInstalled) return;
+
+            _isInstalled = value;
             OnPropertyChanged();
         }
     }

@@ -365,6 +365,7 @@ public partial class MainWindow : Window
     private bool _refreshAfterModlistLoadPending;
     private bool _localModlistsLoaded;
     private bool _suppressSortPreferenceSave;
+    private bool _isModBrowserWatcherSubscribed;
 
     // Drag state
     private Point _modInfoDragOffset;
@@ -578,9 +579,9 @@ public partial class MainWindow : Window
             await InitializeViewModelAsync(_viewModel).ConfigureAwait(true);
             await EnsureInstalledModsCachedAsync(_viewModel).ConfigureAwait(true);
             await CreateAppStartedBackupAsync().ConfigureAwait(true);
-
+            
             // Sync installed mods to ModBrowser after ViewModel is initialized
-            await SyncInstalledModsToModBrowserAsync().ConfigureAwait(true);
+            SyncInstalledModsToModBrowser();
         }
 
         await RefreshDeleteCachedModsMenuHeaderAsync();
@@ -2444,7 +2445,6 @@ public partial class MainWindow : Window
             UseModDbDesignView = _userConfiguration.UseModDbDesignView,
         };
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
-        SubscribeToInstalledModsChanged(_viewModel);
         DataContext = _viewModel;
         ApplyPlayerIdentityToUiAndCloudStore();
         _cloudModlistsLoaded = false;
@@ -2454,6 +2454,7 @@ public partial class MainWindow : Window
         RestoreSortPreference();
         UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
         ApplyColumnVisibilityPreferencesToViewModel();
+        SubscribeModBrowserToDirectoryWatcher();
     }
 
     private void InitializeModBrowserView()
@@ -2478,59 +2479,69 @@ public partial class MainWindow : Window
         }
     }
 
-    private void SubscribeToInstalledModsChanged(MainViewModel viewModel)
+    private void SubscribeModBrowserToDirectoryWatcher()
     {
-        viewModel.InstalledModsChanged -= OnInstalledModsChanged;
-        viewModel.InstalledModsChanged += OnInstalledModsChanged;
+        if (_isModBrowserWatcherSubscribed || _viewModel?.ModsWatcher == null || _modBrowserViewModel == null) return;
+
+        _viewModel.ModsWatcher.ChangesDetected += ModsWatcherOnChangesDetected;
+        _isModBrowserWatcherSubscribed = true;
     }
 
-    private async void OnInstalledModsChanged(object? sender, InstalledModsChangedEventArgs e)
+    private void UnsubscribeModBrowserFromDirectoryWatcher()
     {
-        await SyncInstalledModsToModBrowserAsync(e.InstalledMods).ConfigureAwait(true);
+        if (!_isModBrowserWatcherSubscribed || _viewModel?.ModsWatcher == null) return;
+
+        _viewModel.ModsWatcher.ChangesDetected -= ModsWatcherOnChangesDetected;
+        _isModBrowserWatcherSubscribed = false;
     }
 
-    private async Task SyncInstalledModsToModBrowserAsync(
-        IReadOnlyList<ModListItemViewModel>? installedMods = null)
+    private void ModsWatcherOnChangesDetected(object? sender, EventArgs e)
+    {
+        if (_modBrowserViewModel == null) return;
+
+        Dispatcher.InvokeAsync(async () =>
+        {
+            try
+            {
+                await _modBrowserViewModel.RefreshSearchAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[MainWindow] Failed to refresh mod browser search after directory change: {ex.Message}");
+            }
+        }, DispatcherPriority.Background);
+    }
+
+    private void SyncInstalledModsToModBrowser()
     {
         if (_modBrowserViewModel == null || _viewModel == null) return;
 
-        installedMods ??= _viewModel.GetInstalledModsSnapshot();
+        var installedMods = _viewModel.GetInstalledModsSnapshot();
+        var installedModIds = new List<string>();
+        var numericInstalledModIds = new List<int>();
 
-        Task UpdateAsync()
+        foreach (var mod in installedMods)
         {
-            _modBrowserViewModel.InstalledMods.Clear();
+            if (string.IsNullOrWhiteSpace(mod.ModId)) continue;
 
-            foreach (var mod in installedMods)
+            installedModIds.Add(mod.ModId);
+
+            if (int.TryParse(mod.ModId, out var modId) && !numericInstalledModIds.Contains(modId))
             {
-                // Try to parse the ModId as an integer for the ModBrowser
-                if (int.TryParse(mod.ModId, out var modId) && !_modBrowserViewModel.InstalledMods.Contains(modId))
-                {
-                    _modBrowserViewModel.InstalledMods.Add(modId);
-                }
+                numericInstalledModIds.Add(modId);
             }
-
-            return _modBrowserViewModel.RefreshSearchAsync();
         }
 
-        if (Dispatcher.CheckAccess())
-        {
-            await UpdateAsync().ConfigureAwait(true);
-        }
-        else
-        {
-            await Dispatcher.InvokeAsync(UpdateAsync, DispatcherPriority.Background).Task.ConfigureAwait(true);
-        }
+        _modBrowserViewModel.UpdateInstalledMods(installedModIds, numericInstalledModIds);
     }
     
     private void AddModToInstalledAndRemoveFromSearch(int modId)
     {
         if (_modBrowserViewModel == null) return;
-        
-        if (!_modBrowserViewModel.InstalledMods.Contains(modId))
-        {
-            _modBrowserViewModel.InstalledMods.Add(modId);
-        }
-        
+
+        _modBrowserViewModel.AddInstalledMod(modId.ToString(CultureInfo.InvariantCulture), modId);
+
         // Remove the installed mod from the current search results
         var modToRemove = _modBrowserViewModel.ModsList.FirstOrDefault(m => m.ModId == modId);
         if (modToRemove != null)
@@ -3464,7 +3475,6 @@ public partial class MainWindow : Window
         if (viewModel is null) return;
 
         viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
-        viewModel.InstalledModsChanged -= OnInstalledModsChanged;
         viewModel.Dispose();
     }
 
@@ -3983,6 +3993,9 @@ public partial class MainWindow : Window
 
         if (selectedSourcePaths is { Count: > 0 })
             RestoreSelectionFromSourcePaths(selectedSourcePaths, anchorSourcePath);
+        
+        // Keep ModBrowser in sync with installed mods
+        SyncInstalledModsToModBrowser();
     }
 
     private void RefreshModDetailsOnly()
@@ -4159,7 +4172,6 @@ public partial class MainWindow : Window
             newViewModel.IsCompactView = _userConfiguration.IsCompactView;
             newViewModel.UseModDbDesignView = _userConfiguration.UseModDbDesignView;
             newViewModel.PropertyChanged += ViewModelOnPropertyChanged;
-            SubscribeToInstalledModsChanged(newViewModel);
             _viewModel = newViewModel;
             ApplyColumnVisibilityPreferencesToViewModel();
             UpdateGameVersionMenuItem(newViewModel.InstalledGameVersion);
@@ -13770,6 +13782,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        UnsubscribeModBrowserFromDirectoryWatcher();
         StopModsWatcher();
         _backupSemaphore.Dispose();
         _cloudStoreLock.Dispose();

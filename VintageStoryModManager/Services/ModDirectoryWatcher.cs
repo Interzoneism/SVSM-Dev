@@ -23,6 +23,11 @@ public sealed class ModDirectoryWatcher : IDisposable
     private bool _requiresFullRescan;
 
     /// <summary>
+    ///     Occurs when file system changes are detected in the watched directories.
+    /// </summary>
+    public event EventHandler? ChangesDetected;
+
+    /// <summary>
     ///     Initializes a new instance of the <see cref="ModDirectoryWatcher"/> class.
     /// </summary>
     /// <param name="discoveryService">The mod discovery service that provides search paths.</param>
@@ -91,6 +96,8 @@ public sealed class ModDirectoryWatcher : IDisposable
     {
         var searchPaths = _discoveryService.GetSearchPaths();
 
+        var shouldNotifyChanges = false;
+
         lock (_syncRoot)
         {
             if (_disposed) return;
@@ -126,6 +133,7 @@ public sealed class ModDirectoryWatcher : IDisposable
 
                     _watchers[normalized] = watcher;
                     _requiresFullRescan = true;
+                    shouldNotifyChanges = true;
                 }
                 catch (Exception)
                 {
@@ -157,10 +165,13 @@ public sealed class ModDirectoryWatcher : IDisposable
                 }
 
                 _requiresFullRescan = true;
+                shouldNotifyChanges = true;
             }
 
             _isWatching = _watchers.Count > 0;
         }
+
+        if (shouldNotifyChanges) NotifyChangeDetected();
     }
 
     /// <summary>
@@ -193,10 +204,13 @@ public sealed class ModDirectoryWatcher : IDisposable
         var root = TryResolveRootPath(watcher.Path, e.FullPath);
         if (root == null) return;
 
+        var shouldNotify = false;
         lock (_syncRoot)
         {
-            _pendingPaths.Add(root);
+            if (_pendingPaths.Add(root)) shouldNotify = true;
         }
+
+        if (shouldNotify) NotifyChangeDetected();
     }
 
     /// <summary>
@@ -211,10 +225,13 @@ public sealed class ModDirectoryWatcher : IDisposable
         var root = TryResolveRootPath(watcher.Path, e.OldFullPath);
         if (root == null) return;
 
+        var shouldNotify = false;
         lock (_syncRoot)
         {
-            _pendingPaths.Add(root);
+            if (_pendingPaths.Add(root)) shouldNotify = true;
         }
+
+        if (shouldNotify) NotifyChangeDetected();
     }
 
     /// <summary>
@@ -265,6 +282,11 @@ public sealed class ModDirectoryWatcher : IDisposable
         {
             return null;
         }
+    }
+
+    private void NotifyChangeDetected()
+    {
+        ChangesDetected?.Invoke(this, EventArgs.Empty);
     }
 }
 
