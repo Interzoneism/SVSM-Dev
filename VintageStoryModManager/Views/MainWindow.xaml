@@ -444,7 +444,7 @@
                 <!-- ============================================================ -->
                 <!-- TAB 3: Modlists Tab (Local and Online Modlists) -->
                 <!-- ============================================================ -->
-                <TabItem x:Name="MainTab" Header="Installed mods" Padding="8,6,8,6" Height="Auto" Width="Auto" Foreground="{DynamicResource Brush.Text.Placeholder}" HorizontalContentAlignment="Stretch">
+                <TabItem x:Name="MainTab" Header="Installed mods" Padding="8,6,8,6" Height="30" Width="Auto" Foreground="{DynamicResource Brush.Text.Placeholder}" HorizontalContentAlignment="Stretch">
                     <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" BorderThickness="0" CornerRadius="0,8,0,0">
                         <Grid x:Name="MainGrid" Background="Transparent">
                             <Grid.RowDefinitions>
@@ -983,12 +983,12 @@
                 </TabItem>
 
                 <!-- ============================================================ -->
-                <TabItem x:Name="DatabaseTab" Header="Mod Database" Padding="8,6,8,6" Height="Auto" Width="Auto">
+                <TabItem x:Name="DatabaseTab" Header="Mod Database" Padding="8,6,8,6" Height="30" Width="Auto">
                     <views:ModBrowserView x:Name="ModBrowserView" Margin="8,0,8,0"/>
                 </TabItem>
 
                 <!-- ============================================================ -->
-                <TabItem x:Name="ModlistTab" Header="Modlists" Padding="27,6,27,6" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch" BorderBrush="#00000000">
+                <TabItem x:Name="ModlistTab" Header="Modlists" Padding="27,6,27,6" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch" BorderBrush="#00000000" Height="30">
                     <Grid x:Name="ModlistInnerTab" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" Margin="8,0,8,0">
                         <TabControl x:Name="ModlistsTabControl"
                                 BorderThickness="0"

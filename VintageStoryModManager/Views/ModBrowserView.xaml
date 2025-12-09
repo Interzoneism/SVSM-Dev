@@ -101,7 +101,7 @@
                 Background="{DynamicResource Brush.MiddleTab.Background.Selected}"
                 Padding="10,0,10,0"
                 BorderBrush="{DynamicResource Brush.Border.Default}"
-                BorderThickness="0,0,0,1">
+                BorderThickness="0,0,0,1" Margin="0,16,0,4">
             <Grid UseLayoutRounding="False">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -112,7 +112,7 @@
                     <TextBox Width="200" Height="32"
                                 Text="{Binding TextFilter, UpdateSourceTrigger=PropertyChanged}"
                                 Style="{StaticResource IMM.SearchTextBoxStyle}"
-                                ui:ControlHelper.PlaceholderText="Search..." UseLayoutRounding="True"/>
+                                ui:ControlHelper.PlaceholderText="Search..." UseLayoutRounding="True" Margin="0,0,4,0"/>
                     <ComboBox Width="160" Height="32"
                                 ItemsSource="{Binding OrderByOptions, Mode=OneTime}"
                                 SelectedValue="{Binding OrderBy}"
@@ -166,7 +166,7 @@
                     <Button Width="32" Height="32"
                                 Style="{StaticResource IconButtonStyle}"
                                 Command="{Binding ToggleOrderDirectionCommand}"
-                                ToolTip="Toggle sort direction" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="0,0,0,0">
+                                ToolTip="Toggle sort direction" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="0,0,0,0" Margin="4,0,4,0">
                         <Grid>
                             <Path Data="{StaticResource IconChevronDown}" 
                                         Fill="{DynamicResource Brush.Text.Primary}" 
@@ -247,7 +247,7 @@
                 </StackPanel>
             </Grid>
         </Border>
-        <Border Grid.Row="1" CornerRadius="12,12,12,12" Background="{DynamicResource {x:Static SystemColors.DesktopBrushKey}}" Margin="16,0,16,0"
+        <Border Grid.Row="1" CornerRadius="12,12,12,12" Background="{DynamicResource Brush.DataGrid.Background}" Margin="16,0,16,0"
                       >
             <ScrollViewer
                 x:Name="ModsScrollViewer"
