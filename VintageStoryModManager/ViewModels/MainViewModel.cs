@@ -24,6 +24,8 @@ namespace VintageStoryModManager.ViewModels;
 /// </summary>
 public sealed class MainViewModel : ObservableObject, IDisposable
 {
+    public event EventHandler<InstalledModsChangedEventArgs>? InstalledModsChanged;
+
     private const string InternetAccessDisabledStatusMessage = "Enable Internet Access in the File menu to use.";
     private const string TagsColumnName = "Tags";
     private const string UserReportsColumnName = "UserReports";
@@ -1490,6 +1492,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             SelectedSortOption?.Apply(ModsView);
             ModsView.Refresh();
             await UpdateModsStateSnapshotAsync();
+            NotifyInstalledModsChanged();
 
             // Defer clearing IsLoadingMods until after any events from ModsView.Refresh() are processed.
             // This ensures the guard in ModsView_OnCollectionChanged works correctly during the critical
@@ -1783,6 +1786,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         ScheduleInstalledTagFilterRefresh();
         UpdateActiveCount();
+        NotifyInstalledModsChanged();
     }
 
     private void OnSearchResultsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -1861,6 +1865,29 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         foreach (var mod in _searchResultSubscriptions) mod.PropertyChanged -= OnSearchResultPropertyChanged;
 
         _searchResultSubscriptions.Clear();
+    }
+
+    private void NotifyInstalledModsChanged()
+    {
+        if (_disposed) return;
+
+        var dispatcher = Application.Current?.Dispatcher;
+
+        if (dispatcher != null && !dispatcher.CheckAccess())
+        {
+            dispatcher.BeginInvoke(new Action(RaiseInstalledModsChanged), DispatcherPriority.Background);
+            return;
+        }
+
+        RaiseInstalledModsChanged();
+    }
+
+    private void RaiseInstalledModsChanged()
+    {
+        if (_disposed) return;
+
+        var snapshot = GetInstalledModsSnapshot();
+        InstalledModsChanged?.Invoke(this, new InstalledModsChangedEventArgs(snapshot));
     }
 
     private void OnInstalledModPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -4138,4 +4165,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _owner.EndBusyScope();
         }
     }
+}
+
+public sealed class InstalledModsChangedEventArgs : EventArgs
+{
+    public InstalledModsChangedEventArgs(IReadOnlyList<ModListItemViewModel> installedMods)
+    {
+        InstalledMods = installedMods ?? throw new ArgumentNullException(nameof(installedMods));
+    }
+
+    public IReadOnlyList<ModListItemViewModel> InstalledMods { get; }
 }

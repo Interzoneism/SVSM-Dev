@@ -578,9 +578,9 @@ public partial class MainWindow : Window
             await InitializeViewModelAsync(_viewModel).ConfigureAwait(true);
             await EnsureInstalledModsCachedAsync(_viewModel).ConfigureAwait(true);
             await CreateAppStartedBackupAsync().ConfigureAwait(true);
-            
+
             // Sync installed mods to ModBrowser after ViewModel is initialized
-            SyncInstalledModsToModBrowser();
+            await SyncInstalledModsToModBrowserAsync().ConfigureAwait(true);
         }
 
         await RefreshDeleteCachedModsMenuHeaderAsync();
@@ -2444,6 +2444,7 @@ public partial class MainWindow : Window
             UseModDbDesignView = _userConfiguration.UseModDbDesignView,
         };
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
+        SubscribeToInstalledModsChanged(_viewModel);
         DataContext = _viewModel;
         ApplyPlayerIdentityToUiAndCloudStore();
         _cloudModlistsLoaded = false;
@@ -2472,26 +2473,52 @@ public partial class MainWindow : Window
             
             // Set up the installation callback
             _modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
-            
+
             ModBrowserView.DataContext = _modBrowserViewModel;
         }
     }
 
-    private void SyncInstalledModsToModBrowser()
+    private void SubscribeToInstalledModsChanged(MainViewModel viewModel)
+    {
+        viewModel.InstalledModsChanged -= OnInstalledModsChanged;
+        viewModel.InstalledModsChanged += OnInstalledModsChanged;
+    }
+
+    private async void OnInstalledModsChanged(object? sender, InstalledModsChangedEventArgs e)
+    {
+        await SyncInstalledModsToModBrowserAsync(e.InstalledMods).ConfigureAwait(true);
+    }
+
+    private async Task SyncInstalledModsToModBrowserAsync(
+        IReadOnlyList<ModListItemViewModel>? installedMods = null)
     {
         if (_modBrowserViewModel == null || _viewModel == null) return;
 
-        // Clear and repopulate the InstalledMods collection
-        _modBrowserViewModel.InstalledMods.Clear();
-        
-        var installedMods = _viewModel.GetInstalledModsSnapshot();
-        foreach (var mod in installedMods)
+        installedMods ??= _viewModel.GetInstalledModsSnapshot();
+
+        Task UpdateAsync()
         {
-            // Try to parse the ModId as an integer for the ModBrowser
-            if (int.TryParse(mod.ModId, out var modId) && !_modBrowserViewModel.InstalledMods.Contains(modId))
+            _modBrowserViewModel.InstalledMods.Clear();
+
+            foreach (var mod in installedMods)
             {
-                _modBrowserViewModel.InstalledMods.Add(modId);
+                // Try to parse the ModId as an integer for the ModBrowser
+                if (int.TryParse(mod.ModId, out var modId) && !_modBrowserViewModel.InstalledMods.Contains(modId))
+                {
+                    _modBrowserViewModel.InstalledMods.Add(modId);
+                }
             }
+
+            return _modBrowserViewModel.RefreshSearchAsync();
+        }
+
+        if (Dispatcher.CheckAccess())
+        {
+            await UpdateAsync().ConfigureAwait(true);
+        }
+        else
+        {
+            await Dispatcher.InvokeAsync(UpdateAsync, DispatcherPriority.Background).Task.ConfigureAwait(true);
         }
     }
     
@@ -3437,6 +3464,7 @@ public partial class MainWindow : Window
         if (viewModel is null) return;
 
         viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
+        viewModel.InstalledModsChanged -= OnInstalledModsChanged;
         viewModel.Dispose();
     }
 
@@ -3955,9 +3983,6 @@ public partial class MainWindow : Window
 
         if (selectedSourcePaths is { Count: > 0 })
             RestoreSelectionFromSourcePaths(selectedSourcePaths, anchorSourcePath);
-        
-        // Keep ModBrowser in sync with installed mods
-        SyncInstalledModsToModBrowser();
     }
 
     private void RefreshModDetailsOnly()
@@ -4134,6 +4159,7 @@ public partial class MainWindow : Window
             newViewModel.IsCompactView = _userConfiguration.IsCompactView;
             newViewModel.UseModDbDesignView = _userConfiguration.UseModDbDesignView;
             newViewModel.PropertyChanged += ViewModelOnPropertyChanged;
+            SubscribeToInstalledModsChanged(newViewModel);
             _viewModel = newViewModel;
             ApplyColumnVisibilityPreferencesToViewModel();
             UpdateGameVersionMenuItem(newViewModel.InstalledGameVersion);
