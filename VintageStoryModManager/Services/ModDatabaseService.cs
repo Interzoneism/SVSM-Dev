@@ -49,6 +49,14 @@ public sealed class ModDatabaseService
         @"</\s*li\s*>",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+    private static readonly Regex HtmlListOpenRegex = new(
+        @"<\s*(ul|ol)[^>]*>",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    private static readonly Regex HtmlListCloseRegex = new(
+        @"</\s*(ul|ol)\s*>",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
     private static readonly Regex HtmlBlockCloseRegex = new(
         @"</\s*(div|section|article|h[1-6])\s*>",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
@@ -1310,8 +1318,87 @@ public sealed class ModDatabaseService
         text = HtmlBreakRegex.Replace(text, "\n");
         text = HtmlParagraphCloseRegex.Replace(text, "\n\n");
         text = HtmlParagraphOpenRegex.Replace(text, string.Empty);
-        text = HtmlListItemCloseRegex.Replace(text, "\n");
-        text = HtmlListItemOpenRegex.Replace(text, "\u2022 ");
+
+        // Track list nesting depth and add appropriate indentation
+        var nestingLevel = 0;
+        var position = 0;
+        var result = new System.Text.StringBuilder(text.Length);
+        var lastWasListItem = false;
+
+        while (position < text.Length)
+        {
+            var nextListOpen = HtmlListOpenRegex.Match(text, position);
+            var nextListClose = HtmlListCloseRegex.Match(text, position);
+            var nextListItem = HtmlListItemOpenRegex.Match(text, position);
+
+            // Find which tag comes first
+            var nextMatch = (Match?)null;
+            var matchType = 0; // 1 = list open, 2 = list close, 3 = list item
+
+            if (nextListOpen.Success)
+            {
+                nextMatch = nextListOpen;
+                matchType = 1;
+            }
+
+            if (nextListClose.Success && (nextMatch == null || nextListClose.Index < nextMatch.Index))
+            {
+                nextMatch = nextListClose;
+                matchType = 2;
+            }
+
+            if (nextListItem.Success && (nextMatch == null || nextListItem.Index < nextMatch.Index))
+            {
+                nextMatch = nextListItem;
+                matchType = 3;
+            }
+
+            if (nextMatch == null || !nextMatch.Success)
+            {
+                // No more list-related tags, append the rest
+                result.Append(text[position..]);
+                break;
+            }
+
+            // Append text before the match
+            var textBefore = text[position..nextMatch.Index];
+            result.Append(textBefore);
+
+            // Process the match
+            if (matchType == 1) // List open
+            {
+                nestingLevel++;
+                // If we just had a list item and now opening a nested list, add a newline
+                if (lastWasListItem && textBefore.Trim().Length == 0)
+                {
+                    // The nested list should appear on new lines
+                }
+                lastWasListItem = false;
+            }
+            else if (matchType == 2) // List close
+            {
+                if (nestingLevel > 0) nestingLevel--;
+                lastWasListItem = false;
+            }
+            else if (matchType == 3) // List item
+            {
+                // Add newline before list item if not at the start
+                if (result.Length > 0 && result[result.Length - 1] != '\n')
+                {
+                    result.Append('\n');
+                }
+                // Add bullet with indentation based on nesting level
+                var indent = new string(' ', Math.Max(0, nestingLevel - 1) * 2);
+                result.Append(indent);
+                result.Append("\u2022 ");
+                lastWasListItem = true;
+            }
+
+            position = nextMatch.Index + nextMatch.Length;
+        }
+
+        text = result.ToString();
+        text = HtmlListItemCloseRegex.Replace(text, string.Empty);
         text = HtmlBlockCloseRegex.Replace(text, "\n\n");
         text = HtmlTagRegex.Replace(text, string.Empty);
 
@@ -1331,13 +1418,19 @@ public sealed class ModDatabaseService
                 continue;
             }
 
-            var trimmedStart = trimmedEnd.TrimStart();
-            if (trimmedStart.StartsWith("\u2022 ", StringComparison.Ordinal))
-                trimmedStart = "\u2022 " + trimmedStart[2..].Trim();
+            // Don't trim leading spaces from lines with bullets to preserve indentation
+            if (trimmedEnd.TrimStart().StartsWith("\u2022 ", StringComparison.Ordinal))
+            {
+                // Keep leading spaces, but clean up the content after the bullet
+                var startIndex = trimmedEnd.IndexOf('\u2022');
+                var prefix = trimmedEnd[..startIndex];
+                var content = trimmedEnd[(startIndex + 2)..].Trim();
+                normalizedLines.Add(prefix + "\u2022 " + content);
+            }
             else
-                trimmedStart = trimmedStart.Trim();
-
-            normalizedLines.Add(trimmedStart);
+            {
+                normalizedLines.Add(trimmedEnd.Trim());
+            }
         }
 
         while (normalizedLines.Count > 0 && normalizedLines[^1].Length == 0)
