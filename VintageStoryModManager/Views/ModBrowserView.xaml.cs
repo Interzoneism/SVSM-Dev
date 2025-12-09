@@ -183,4 +183,22 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
             ViewModel?.OpenModInBrowserCommand.Execute(assetId);
         }
     }
+
+    private async void VersionsDropdown_SelectionChanged(object? sender, EventArgs e)
+    {
+        // Trigger search when versions selection changes
+        if (ViewModel != null)
+        {
+            await ViewModel.RefreshSearchAsync();
+        }
+    }
+
+    private async void TagsDropdown_SelectionChanged(object? sender, EventArgs e)
+    {
+        // Trigger search when tags selection changes
+        if (ViewModel != null)
+        {
+            await ViewModel.RefreshSearchAsync();
+        }
+    }
 }

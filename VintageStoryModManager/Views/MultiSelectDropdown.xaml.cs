@@ -16,6 +16,10 @@ namespace VintageStoryModManager.Views
     /// </summary>
     public partial class MultiSelectDropdown : System.Windows.Controls.UserControl
     {
+        /// <summary>
+        /// Event raised when the selection changes (items are selected or deselected).
+        /// </summary>
+        public event EventHandler? SelectionChanged;
         public static readonly DependencyProperty ItemsSourceProperty =
             DependencyProperty.Register(
                 nameof(ItemsSource),
@@ -499,6 +503,9 @@ namespace VintageStoryModManager.Views
                 }
 
                 UpdateDisplayText();
+                
+                // Raise SelectionChanged event to notify listeners
+                SelectionChanged?.Invoke(this, EventArgs.Empty);
                 
                 // Mark event as handled to prevent popup from closing when clicking items
                 e.Handled = true;
