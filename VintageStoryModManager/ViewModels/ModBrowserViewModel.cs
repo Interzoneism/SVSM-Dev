@@ -30,6 +30,12 @@ public partial class ModBrowserViewModel : ObservableObject
     
     // Cache for raw API results to avoid unnecessary server queries
     private List<DownloadableModOnList> _cachedApiResults = [];
+    
+    // Track last server query parameters for cache invalidation
+    private string? _lastTextFilter;
+    private ModAuthor? _lastAuthorFilter;
+    private List<long>? _lastVersionIds;
+    private List<int>? _lastTagIds;
 
     #region Observable Properties
 
@@ -295,8 +301,11 @@ public partial class ModBrowserViewModel : ObservableObject
 
         try
         {
+            // Check if server-side filters have changed (cache invalidation)
+            bool serverFiltersChanged = HasServerFiltersChanged();
+            
             // Determine if we need to query the server or can use cached results
-            bool needsServerQuery = forceServerQuery || _cachedApiResults.Count == 0;
+            bool needsServerQuery = forceServerQuery || _cachedApiResults.Count == 0 || serverFiltersChanged;
 
             // Only show loading indicator for server queries
             if (needsServerQuery)
@@ -324,8 +333,9 @@ public partial class ModBrowserViewModel : ObservableObject
                 if (token.IsCancellationRequested)
                     return;
 
-                // Cache the raw results
+                // Cache the raw results and update last query parameters
                 _cachedApiResults = mods;
+                UpdateLastServerFilters();
                 
                 // Clear user reports only when we get new data from server
                 _userReportsLoaded.Clear();
@@ -355,6 +365,38 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             IsSearching = false;
         }
+    }
+    
+    /// <summary>
+    /// Checks if server-side filter parameters have changed since the last query.
+    /// </summary>
+    private bool HasServerFiltersChanged()
+    {
+        if (_lastTextFilter != TextFilter) return true;
+        if (_lastAuthorFilter != SelectedAuthor) return true;
+        
+        // Check versions
+        var currentVersionIds = SelectedVersions.Select(v => v.TagId).OrderBy(id => id).ToList();
+        if (_lastVersionIds == null || !currentVersionIds.SequenceEqual(_lastVersionIds))
+            return true;
+        
+        // Check tags
+        var currentTagIds = SelectedTags.Select(t => t.TagId).OrderBy(id => id).ToList();
+        if (_lastTagIds == null || !currentTagIds.SequenceEqual(_lastTagIds))
+            return true;
+        
+        return false;
+    }
+    
+    /// <summary>
+    /// Updates the cached server filter parameters.
+    /// </summary>
+    private void UpdateLastServerFilters()
+    {
+        _lastTextFilter = TextFilter;
+        _lastAuthorFilter = SelectedAuthor;
+        _lastVersionIds = SelectedVersions.Select(v => v.TagId).OrderBy(id => id).ToList();
+        _lastTagIds = SelectedTags.Select(t => t.TagId).OrderBy(id => id).ToList();
     }
 
     [RelayCommand]
