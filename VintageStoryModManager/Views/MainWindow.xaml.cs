@@ -2735,8 +2735,12 @@ public partial class MainWindow : Window
             return null;
         }
 
-        // Construct the full download URL
-        var downloadUri = new Uri($"https://mods.vintagestory.at{release.MainFile}");
+        if (!TryBuildDownloadUri(release.MainFile, out var downloadUri))
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[MainWindow] ConvertToModReleaseInfo: Unable to parse download uri for MainFile={release.MainFile}");
+            return null;
+        }
 
         // Parse the created date
         DateTime? createdUtc = null;
@@ -2756,6 +2760,28 @@ public partial class MainWindow : Window
             Downloads = release.Downloads,
             CreatedUtc = createdUtc
         };
+    }
+
+    private bool TryBuildDownloadUri(string mainFile, out Uri downloadUri)
+    {
+        if (Uri.TryCreate(mainFile, UriKind.Absolute, out downloadUri))
+            return true;
+
+        if (mainFile.StartsWith("//") &&
+            Uri.TryCreate($"https:{mainFile}", UriKind.Absolute, out downloadUri))
+            return true;
+
+        const string httpsMissingColonPrefix = "https//";
+        if (mainFile.StartsWith(httpsMissingColonPrefix, StringComparison.OrdinalIgnoreCase) &&
+            Uri.TryCreate($"https://{mainFile[httpsMissingColonPrefix.Length..]}", UriKind.Absolute, out downloadUri))
+            return true;
+
+        const string httpMissingColonPrefix = "http//";
+        if (mainFile.StartsWith(httpMissingColonPrefix, StringComparison.OrdinalIgnoreCase) &&
+            Uri.TryCreate($"http://{mainFile[httpMissingColonPrefix.Length..]}", UriKind.Absolute, out downloadUri))
+            return true;
+
+        return Uri.TryCreate($"https://mods.vintagestory.at{mainFile}", UriKind.Absolute, out downloadUri);
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
