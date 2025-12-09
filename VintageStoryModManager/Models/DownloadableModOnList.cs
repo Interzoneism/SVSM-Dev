@@ -57,6 +57,12 @@ public class DownloadableModOnList : INotifyPropertyChanged
     [JsonPropertyName("lastreleased")]
     public string LastReleased { get; set; } = string.Empty;
 
+    [JsonIgnore]
+    public string? LatestReleaseVersion { get; set; }
+
+    [JsonIgnore]
+    public List<string> LatestReleaseTags { get; set; } = [];
+
     private string _userReportDisplay = "User reports unavailable";
 
     private string _userReportTooltip = "User reports require a known Vintage Story version.";
