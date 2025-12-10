@@ -256,6 +256,36 @@ public partial class ModBrowserViewModel : ObservableObject
         RefreshInstalledFlags();
     }
 
+    /// <summary>
+    /// Marks the specified mod's user report data as stale and refreshes it when available.
+    /// </summary>
+    /// <param name="modId">The numeric mod identifier to refresh.</param>
+    /// <param name="summary">An optional vote summary to apply immediately without re-fetching.</param>
+    public void InvalidateUserReport(int modId, ModVersionVoteSummary? summary = null)
+    {
+        lock (_userReportsLoaded)
+        {
+            _userReportsLoaded.Remove(modId);
+        }
+
+        var mod = ModsList.FirstOrDefault(m => m.ModId == modId);
+        if (mod is null)
+            return;
+
+        if (summary is not null)
+        {
+            ApplyUserReportSummary(mod, summary);
+            lock (_userReportsLoaded)
+            {
+                _userReportsLoaded.Add(modId);
+            }
+
+            return;
+        }
+
+        _ = PopulateUserReportsAsync(new[] { mod }, CancellationToken.None);
+    }
+
     #region Commands
 
     [RelayCommand]
@@ -874,6 +904,14 @@ public partial class ModBrowserViewModel : ObservableObject
         mod.ShowUserReportBadge = !string.IsNullOrWhiteSpace(display);
         mod.UserReportDisplay = display ?? string.Empty;
         mod.UserReportTooltip = BuildUserReportTooltip(summary, _installedGameVersion);
+    }
+
+    private void ApplyUserReportSummary(DownloadableModOnList mod, ModVersionVoteSummary summary)
+    {
+        var display = BuildUserReportDisplay(summary);
+        mod.ShowUserReportBadge = !string.IsNullOrWhiteSpace(display);
+        mod.UserReportDisplay = display ?? string.Empty;
+        mod.UserReportTooltip = BuildUserReportTooltip(summary, _installedGameVersion ?? string.Empty);
     }
 
     private static string? BuildUserReportDisplay(ModVersionVoteSummary? summary)
