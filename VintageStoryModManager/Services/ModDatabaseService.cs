@@ -2,7 +2,12 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
-using System.Text.RegularExpressions;
+using HtmlAgilityPack;
+using HtmlDocument = HtmlAgilityPack.HtmlDocument;
+using HtmlEntity = HtmlAgilityPack.HtmlEntity;
+using HtmlNode = HtmlAgilityPack.HtmlNode;
+using HtmlNodeCollection = HtmlAgilityPack.HtmlNodeCollection;
+using HtmlNodeType = HtmlAgilityPack.HtmlNodeType;
 using VintageStoryModManager.Models;
 
 namespace VintageStoryModManager.Services;
@@ -28,42 +33,6 @@ public sealed class ModDatabaseService
 
     private static readonly HttpClient HttpClient = new();
     private static readonly ModDatabaseCacheService CacheService = new();
-
-    private static readonly Regex HtmlBreakRegex = new(
-        @"<\s*br\s*/?\s*>",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-    private static readonly Regex HtmlParagraphOpenRegex = new(
-        @"<\s*p[^>]*>",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-    private static readonly Regex HtmlParagraphCloseRegex = new(
-        @"</\s*p\s*>",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-    private static readonly Regex HtmlListItemOpenRegex = new(
-        @"<\s*li[^>]*>",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-    private static readonly Regex HtmlListItemCloseRegex = new(
-        @"</\s*li\s*>",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-    private static readonly Regex HtmlListOpenRegex = new(
-        @"<\s*(ul|ol)[^>]*>",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-    private static readonly Regex HtmlListCloseRegex = new(
-        @"</\s*(ul|ol)\s*>",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-    private static readonly Regex HtmlBlockCloseRegex = new(
-        @"</\s*(div|section|article|h[1-6])\s*>",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-    private static readonly Regex HtmlTagRegex = new(
-        @"<[^>]+>",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     private static int CalculateRequestLimit(int maxResults)
     {
@@ -1313,96 +1282,116 @@ public sealed class ModDatabaseService
         var text = changelog.Trim();
         if (text.Length == 0) return null;
 
-        text = text.Replace("\r\n", "\n", StringComparison.Ordinal);
-        text = text.Replace('\r', '\n');
-        text = HtmlBreakRegex.Replace(text, "\n");
-        text = HtmlParagraphCloseRegex.Replace(text, "\n\n");
-        text = HtmlParagraphOpenRegex.Replace(text, string.Empty);
+        var document = new HtmlDocument();
+        document.OptionFixNestedTags = true;
+        document.LoadHtml(text);
 
-        // Track list nesting depth and add appropriate indentation
-        var nestingLevel = 0;
-        var position = 0;
-        var result = new System.Text.StringBuilder(text.Length);
-        var lastWasListItem = false;
+        var builder = new System.Text.StringBuilder(text.Length);
 
-        while (position < text.Length)
+        void AppendNodes(HtmlNodeCollection nodes, System.Text.StringBuilder output, int listDepth)
         {
-            var nextListOpen = HtmlListOpenRegex.Match(text, position);
-            var nextListClose = HtmlListCloseRegex.Match(text, position);
-            var nextListItem = HtmlListItemOpenRegex.Match(text, position);
-
-            // Find which tag comes first
-            var nextMatch = (Match?)null;
-            var matchType = 0; // 1 = list open, 2 = list close, 3 = list item
-
-            if (nextListOpen.Success)
+            foreach (var node in nodes)
             {
-                nextMatch = nextListOpen;
-                matchType = 1;
+                AppendNode(node, output, listDepth);
             }
-
-            if (nextListClose.Success && (nextMatch == null || nextListClose.Index < nextMatch.Index))
-            {
-                nextMatch = nextListClose;
-                matchType = 2;
-            }
-
-            if (nextListItem.Success && (nextMatch == null || nextListItem.Index < nextMatch.Index))
-            {
-                nextMatch = nextListItem;
-                matchType = 3;
-            }
-
-            if (nextMatch == null || !nextMatch.Success)
-            {
-                // No more list-related tags, append the rest
-                result.Append(text[position..]);
-                break;
-            }
-
-            // Append text before the match
-            var textBefore = text[position..nextMatch.Index];
-            result.Append(textBefore);
-
-            // Process the match
-            if (matchType == 1) // List open
-            {
-                nestingLevel++;
-                // If we just had a list item and now opening a nested list, add a newline
-                if (lastWasListItem && textBefore.Trim().Length == 0)
-                {
-                    // The nested list should appear on new lines
-                }
-                lastWasListItem = false;
-            }
-            else if (matchType == 2) // List close
-            {
-                if (nestingLevel > 0) nestingLevel--;
-                lastWasListItem = false;
-            }
-            else if (matchType == 3) // List item
-            {
-                // Add newline before list item if not at the start
-                if (result.Length > 0 && result[result.Length - 1] != '\n')
-                {
-                    result.Append('\n');
-                }
-                // Add bullet with indentation based on nesting level
-                var indent = new string(' ', Math.Max(0, nestingLevel - 1) * 2);
-                result.Append(indent);
-                result.Append("\u2022 ");
-                lastWasListItem = true;
-            }
-
-            position = nextMatch.Index + nextMatch.Length;
         }
 
-        text = result.ToString();
-        text = HtmlListItemCloseRegex.Replace(text, string.Empty);
-        text = HtmlBlockCloseRegex.Replace(text, "\n\n");
-        text = HtmlTagRegex.Replace(text, string.Empty);
+        void AppendNode(HtmlNode node, System.Text.StringBuilder output, int listDepth)
+        {
+            switch (node.NodeType)
+            {
+                case HtmlNodeType.Text:
+                    AppendText(output, HtmlEntity.DeEntitize(node.InnerText));
+                    break;
 
-        text = WebUtility.HtmlDecode(text);
+                case HtmlNodeType.Element:
+                    var name = node.Name.ToLowerInvariant();
+
+                    switch (name)
+                    {
+                        case "br":
+                            EnsureEndsWithNewlines(output, 1);
+                            break;
+
+                        case "p":
+                            AppendNodes(node.ChildNodes, output, listDepth);
+                            EnsureEndsWithNewlines(output, 2);
+                            break;
+
+                        case "div":
+                        case "section":
+                        case "article":
+                        case "h1":
+                        case "h2":
+                        case "h3":
+                        case "h4":
+                        case "h5":
+                        case "h6":
+                            AppendNodes(node.ChildNodes, output, listDepth);
+                            EnsureEndsWithNewlines(output, 2);
+                            break;
+
+                        case "ul":
+                        case "ol":
+                            EnsureEndsWithNewlines(output, 1);
+                            AppendNodes(node.ChildNodes, output, listDepth + 1);
+                            EnsureEndsWithNewlines(output, 1);
+                            break;
+
+                        case "li":
+                            EnsureEndsWithNewlines(output, 1);
+                            var indent = new string(' ', Math.Max(0, listDepth - 1) * 2);
+                            output.Append(indent);
+                            output.Append("\u2022 ");
+                            AppendNodes(node.ChildNodes, output, listDepth + 1);
+                            break;
+
+                        default:
+                            AppendNodes(node.ChildNodes, output, listDepth);
+                            break;
+                    }
+
+                    break;
+            }
+        }
+
+        void AppendText(System.Text.StringBuilder output, string value)
+        {
+            if (string.IsNullOrEmpty(value)) return;
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                if (output.Length > 0 && output[^1] != ' ' && output[^1] != '\n')
+                    output.Append(' ');
+
+                return;
+            }
+
+            output.Append(value);
+        }
+
+        void EnsureEndsWithNewlines(System.Text.StringBuilder output, int required)
+        {
+            var current = 0;
+
+            for (var index = output.Length - 1; index >= 0; index--)
+            {
+                if (output[index] != '\n') break;
+
+                current++;
+            }
+
+            var toAdd = required - current;
+            if (toAdd <= 0) return;
+
+            for (var i = 0; i < toAdd; i++) output.Append('\n');
+        }
+
+        AppendNodes(document.DocumentNode.ChildNodes, builder, 0);
+
+        text = builder.ToString();
+        text = text.Replace("\r\n", "\n", StringComparison.Ordinal);
+        text = text.Replace('\r', '\n');
 
         var lines = text.Split('\n');
         var normalizedLines = new List<string>(lines.Length);
