@@ -647,6 +647,22 @@ public partial class ModBrowserViewModel : ObservableObject
             yield return mod.Name;
     }
 
+    private static string? GetPreferredUserReportModId(DownloadableModOnList mod)
+    {
+        if (mod.ModIdStrings is { Count: > 0 })
+        {
+            foreach (var id in mod.ModIdStrings)
+            {
+                if (!string.IsNullOrWhiteSpace(id)) return id;
+            }
+        }
+
+        if (mod.ModId > 0)
+            return mod.ModId.ToString(CultureInfo.InvariantCulture);
+
+        return null;
+    }
+
     private static string? NormalizeModId(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return null;
@@ -798,8 +814,17 @@ public partial class ModBrowserViewModel : ObservableObject
             return;
         }
 
+        var modId = GetPreferredUserReportModId(mod);
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            mod.ShowUserReportBadge = false;
+            mod.UserReportDisplay = string.Empty;
+            mod.UserReportTooltip = "User reports are unavailable for this mod.";
+            return;
+        }
+
         var summary = await _voteService.GetVoteSummaryAsync(
-            mod.ModId.ToString(CultureInfo.InvariantCulture),
+            modId,
             latestRelease.ModVersion,
             _installedGameVersion,
             cancellationToken);
