@@ -82,10 +82,7 @@ public sealed class VotesCacheWatcher : IDisposable
                 {
                     Filter = _cacheFileName,
                     IncludeSubdirectories = false,
-                    NotifyFilter = NotifyFilters.FileName
-                                   | NotifyFilters.LastWrite
-                                   | NotifyFilters.CreationTime
-                                   | NotifyFilters.Size
+                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite
                 };
 
                 watcher.Changed += OnChanged;
@@ -99,6 +96,8 @@ public sealed class VotesCacheWatcher : IDisposable
             catch (Exception)
             {
                 // Ignore watcher creation failures and continue.
+                // This is expected in scenarios where the directory doesn't exist yet
+                // or the application lacks file system permissions.
             }
         }
     }
@@ -130,19 +129,20 @@ public sealed class VotesCacheWatcher : IDisposable
 
         if (!string.Equals(normalized, _normalizedCachePath, StringComparison.OrdinalIgnoreCase)) return;
 
-        bool shouldNotify;
+        EventHandler? handler;
         lock (_syncRoot)
         {
             if (_disposed) return;
 
-            shouldNotify = !_hasPendingChanges;
+            bool shouldNotify = !_hasPendingChanges;
             _hasPendingChanges = true;
+
+            if (!shouldNotify) return;
+
+            handler = CacheChanged;
         }
 
-        if (shouldNotify)
-        {
-            CacheChanged?.Invoke(this, EventArgs.Empty);
-        }
+        handler?.Invoke(this, EventArgs.Empty);
     }
 
     private static string NormalizePath(string value)
