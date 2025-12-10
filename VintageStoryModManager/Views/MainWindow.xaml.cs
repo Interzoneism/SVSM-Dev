@@ -23,7 +23,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -2480,13 +2479,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private Task InitializeModBrowserViewAsync()
-    {
-        if (ModBrowserView is null) return Task.CompletedTask;
-
-        return ModBrowserView.InitializeIfNeededAsync();
-    }
-
     private void SubscribeModBrowserToDirectoryWatcher()
     {
         if (_isModBrowserWatcherSubscribed || _viewModel?.ModsWatcher == null || _modBrowserViewModel == null) return;
@@ -2921,8 +2913,6 @@ public partial class MainWindow : Window
         {
             if (_viewModel.ShowDatabaseTabCommand?.CanExecute(null) == true)
                 _viewModel.ShowDatabaseTabCommand.Execute(null);
-
-            _ = InitializeModBrowserViewAsync();
         }
         else if (Equals(tabControl.SelectedItem, ModlistTab))
         {
@@ -2952,8 +2942,6 @@ public partial class MainWindow : Window
         try
         {
             MiddleTabControl.SelectedItem = targetTab;
-            if (Equals(targetTab, DatabaseTab))
-                _ = InitializeModBrowserViewAsync();
         }
         finally
         {
