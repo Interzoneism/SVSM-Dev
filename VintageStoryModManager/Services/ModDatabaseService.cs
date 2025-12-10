@@ -1279,7 +1279,7 @@ public sealed class ModDatabaseService
     private static readonly string[] BulletSymbols = new[]
     {
         "\u2022 ", // • Level 1: Filled dot (bullet)
-        "\u25E6 ", // ◦ Level 2: White bullet (hollow dot)
+        "\u25E6 ", // ◦ Level 2: White bullet (hollow circle)
         "\u25AA ", // ▪ Level 3: Black small square
         "\u25AB "  // ▫ Level 4+: White small square
     };
@@ -1429,7 +1429,7 @@ public sealed class ModDatabaseService
                 if (trimmedStart.StartsWith(bulletSymbol, StringComparison.Ordinal))
                 {
                     // Keep leading spaces, but clean up the content after the bullet
-                    // Calculate prefix length directly since we know bullet is at start of trimmedStart
+                    // Calculate leading whitespace length by comparing original and trimmed strings
                     var prefixLength = trimmedEnd.Length - trimmedStart.Length;
                     var prefix = trimmedEnd[..prefixLength];
                     var content = trimmedStart[bulletSymbol.Length..].Trim();
