@@ -238,6 +238,8 @@ public sealed class UserConfigurationService
 
     public bool ModBrowserOnlyFavorites { get; private set; }
 
+    public List<int> ModBrowserFavoriteModIds { get; private set; } = [];
+
     public List<string> ModBrowserSelectedVersionIds { get; private set; } = [];
 
     public List<int> ModBrowserSelectedTagIds { get; private set; } = [];
@@ -1201,6 +1203,18 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetModBrowserFavoriteModIds(IEnumerable<int> favoriteIds)
+    {
+        var normalizedIds = favoriteIds?.ToList() ?? [];
+
+        if (ModBrowserFavoriteModIds.Count == normalizedIds.Count &&
+            ModBrowserFavoriteModIds.SequenceEqual(normalizedIds))
+            return;
+
+        ModBrowserFavoriteModIds = normalizedIds;
+        Save();
+    }
+
     public void SetModBrowserSelectedVersionIds(IEnumerable<string> versionIds)
     {
         var normalizedIds = versionIds?.Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id.Trim()).ToList() ?? [];
@@ -1595,6 +1609,7 @@ public sealed class UserConfigurationService
             ModBrowserSelectedSide = GetOptionalString(obj["modBrowserSelectedSide"]) ?? "any";
             ModBrowserSelectedInstalledFilter = GetOptionalString(obj["modBrowserSelectedInstalledFilter"]) ?? "all";
             ModBrowserOnlyFavorites = obj["modBrowserOnlyFavorites"]?.GetValue<bool?>() ?? false;
+            ModBrowserFavoriteModIds = LoadIntList(obj["modBrowserFavoriteModIds"]);
             ModBrowserSelectedVersionIds = LoadStringList(obj["modBrowserSelectedVersionIds"]);
             ModBrowserSelectedTagIds = LoadIntList(obj["modBrowserSelectedTagIds"]);
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
@@ -1733,6 +1748,7 @@ public sealed class UserConfigurationService
             ModBrowserSelectedSide = "any";
             ModBrowserSelectedInstalledFilter = "all";
             ModBrowserOnlyFavorites = false;
+            ModBrowserFavoriteModIds = [];
             ModBrowserSelectedVersionIds = [];
             ModBrowserSelectedTagIds = [];
             _windowWidth = null;
@@ -1815,6 +1831,7 @@ public sealed class UserConfigurationService
                 ["modBrowserSelectedSide"] = ModBrowserSelectedSide,
                 ["modBrowserSelectedInstalledFilter"] = ModBrowserSelectedInstalledFilter,
                 ["modBrowserOnlyFavorites"] = ModBrowserOnlyFavorites,
+                ["modBrowserFavoriteModIds"] = BuildIntListJson(ModBrowserFavoriteModIds),
                 ["modBrowserSelectedVersionIds"] = BuildStringListJson(ModBrowserSelectedVersionIds),
                 ["modBrowserSelectedTagIds"] = BuildIntListJson(ModBrowserSelectedTagIds),
                 ["windowWidth"] = _windowWidth,

@@ -144,7 +144,10 @@ public partial class ModBrowserViewModel : ObservableObject
             SelectedSide = _userConfigService.ModBrowserSelectedSide;
             SelectedInstalledFilter = _userConfigService.ModBrowserSelectedInstalledFilter;
             OnlyFavorites = _userConfigService.ModBrowserOnlyFavorites;
+            FavoriteMods = new ObservableCollection<int>(_userConfigService.ModBrowserFavoriteModIds);
         }
+
+        FavoriteMods.CollectionChanged += OnFavoriteModsCollectionChanged;
 
         _isInitializing = false;
     }
@@ -182,6 +185,17 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             System.Diagnostics.Debug.WriteLine($"Error during filter search: {ex.Message}");
         }
+    }
+
+    private void OnFavoriteModsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (_isInitializing)
+            return;
+
+        _userConfigService?.SetModBrowserFavoriteModIds(FavoriteMods);
+
+        if (OnlyFavorites)
+            _ = SearchModsAsync();
     }
 
     /// <summary>
