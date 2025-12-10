@@ -1342,7 +1342,15 @@ public sealed class ModDatabaseService
                             EnsureEndsWithNewlines(output, 1);
                             var indent = new string(' ', Math.Max(0, listDepth - 1) * 2);
                             output.Append(indent);
-                            output.Append("\u2022 ");
+                            // Use different bullet symbols based on nesting level
+                            var bulletSymbol = listDepth switch
+                            {
+                                1 => "\u2022 ", // • Filled dot (bullet)
+                                2 => "\u25E6 ", // ◦ White bullet (hollow dot)
+                                3 => "\u25AA ", // ▪ Black small square
+                                _ => "\u25AB "  // ▫ White small square
+                            };
+                            output.Append(bulletSymbol);
                             AppendNodes(node.ChildNodes, output, listDepth + 1);
                             break;
 
@@ -1408,15 +1416,25 @@ public sealed class ModDatabaseService
             }
 
             // Don't trim leading spaces from lines with bullets to preserve indentation
-            if (trimmedEnd.TrimStart().StartsWith("\u2022 ", StringComparison.Ordinal))
+            var trimmedStart = trimmedEnd.TrimStart();
+            var bulletSymbols = new[] { "\u2022 ", "\u25E6 ", "\u25AA ", "\u25AB " }; // •, ◦, ▪, ▫
+            var foundBullet = false;
+            
+            foreach (var bulletSymbol in bulletSymbols)
             {
-                // Keep leading spaces, but clean up the content after the bullet
-                var startIndex = trimmedEnd.IndexOf('\u2022');
-                var prefix = trimmedEnd[..startIndex];
-                var content = trimmedEnd[(startIndex + 2)..].Trim();
-                normalizedLines.Add(prefix + "\u2022 " + content);
+                if (trimmedStart.StartsWith(bulletSymbol, StringComparison.Ordinal))
+                {
+                    // Keep leading spaces, but clean up the content after the bullet
+                    var startIndex = trimmedEnd.IndexOf(bulletSymbol[0]);
+                    var prefix = trimmedEnd[..startIndex];
+                    var content = trimmedEnd[(startIndex + 2)..].Trim();
+                    normalizedLines.Add(prefix + bulletSymbol + content);
+                    foundBullet = true;
+                    break;
+                }
             }
-            else
+            
+            if (!foundBullet)
             {
                 normalizedLines.Add(trimmedEnd.Trim());
             }
