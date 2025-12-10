@@ -330,6 +330,8 @@ public partial class ModBrowserViewModel : ObservableObject
             VisibleModsCount = DefaultLoadedMods;
             OnPropertyChanged(nameof(VisibleMods));
 
+            _ = PopulateLogoColorsAsync(ModsList, token);
+
             // Only populate user reports for visible mods + one batch ahead
             var modsToLoadReports = ModsList.Take(VisibleModsCount + LoadMoreCount).ToList();
             _ = PopulateUserReportsAsync(modsToLoadReports, token);
@@ -647,6 +649,22 @@ public partial class ModBrowserViewModel : ObservableObject
             yield return mod.Name;
     }
 
+    private static string? GetPreferredUserReportModId(DownloadableModOnList mod)
+    {
+        if (mod.ModIdStrings is { Count: > 0 })
+        {
+            foreach (var id in mod.ModIdStrings)
+            {
+                if (!string.IsNullOrWhiteSpace(id)) return id;
+            }
+        }
+
+        if (mod.ModId > 0)
+            return mod.ModId.ToString(CultureInfo.InvariantCulture);
+
+        return null;
+    }
+
     private static string? NormalizeModId(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return null;
@@ -700,6 +718,45 @@ public partial class ModBrowserViewModel : ObservableObject
         }
 
         return filtered.ToList();
+    }
+
+    private async Task PopulateLogoColorsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
+    {
+        const int maxConcurrentLoads = 4;
+        using var semaphore = new SemaphoreSlim(maxConcurrentLoads);
+
+        var tasks = mods.Select(async mod =>
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            try
+            {
+                await semaphore.WaitAsync(cancellationToken);
+                try
+                {
+                    var color = await ModImageColorAnalysisService.GetAverageColorAsync(mod.LogoUrl, cancellationToken);
+                    if (color.HasValue)
+                    {
+                        mod.AverageLogoColor = color.Value;
+                    }
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected on cancellation
+            }
+            catch (Exception)
+            {
+                mod.AverageLogoColor = DownloadableModOnList.NeutralLogoColor;
+            }
+        });
+
+        await Task.WhenAll(tasks);
     }
 
     private async Task PopulateUserReportsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
@@ -798,8 +855,17 @@ public partial class ModBrowserViewModel : ObservableObject
             return;
         }
 
+        var modId = GetPreferredUserReportModId(mod);
+        if (string.IsNullOrWhiteSpace(modId))
+        {
+            mod.ShowUserReportBadge = false;
+            mod.UserReportDisplay = string.Empty;
+            mod.UserReportTooltip = "User reports are unavailable for this mod.";
+            return;
+        }
+
         var summary = await _voteService.GetVoteSummaryAsync(
-            mod.ModId.ToString(CultureInfo.InvariantCulture),
+            modId,
             latestRelease.ModVersion,
             _installedGameVersion,
             cancellationToken);
