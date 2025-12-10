@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using CommunityToolkit.Mvvm.ComponentModel;
 using YamlDotNet.Serialization;
 
@@ -16,6 +17,11 @@ public sealed class ModConfigurationViewModel : ObservableObject
     private ModConfigFormat _format;
     private JsonNode? _rootNode;
     private ObservableCollection<ModConfigNodeViewModel> _rootNodes = new();
+    private static readonly JsonSerializerOptions JsonSerializationOptions = new()
+    {
+        WriteIndented = true,
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+    };
 
     public ModConfigurationViewModel(string filePath)
     {
@@ -163,12 +169,7 @@ public sealed class ModConfigurationViewModel : ObservableObject
 
     private static string SerializeJson(JsonNode? node)
     {
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true
-        };
-
-        return node is null ? "null" : node.ToJsonString(options);
+        return node is null ? "null" : node.ToJsonString(JsonSerializationOptions);
     }
 
     private static string SerializeYaml(JsonNode? node)
