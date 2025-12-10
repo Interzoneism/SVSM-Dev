@@ -42,7 +42,6 @@ public sealed class ModVersionVoteService : IDisposable
     private readonly SemaphoreSlim _voteIndexLock = new(1, 1);
     private Dictionary<string, HashSet<string>> _voteIndex = new(StringComparer.OrdinalIgnoreCase);
     private bool _voteIndexLoaded;
-    private bool _voteIndexFailed;
 
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
     private readonly object _disposeLock = new();
@@ -421,10 +420,6 @@ public sealed class ModVersionVoteService : IDisposable
         string versionKey,
         CancellationToken cancellationToken)
     {
-        // If index loading already failed, skip it and assume votes might exist
-        if (_voteIndexFailed)
-            return (false, true);
-
         try
         {
             await EnsureVoteIndexLoadedAsync(session, cancellationToken).ConfigureAwait(false);
@@ -444,22 +439,16 @@ public sealed class ModVersionVoteService : IDisposable
         FirebaseAnonymousAuthenticator.FirebaseAuthSession? session,
         CancellationToken cancellationToken)
     {
-        if (_voteIndexLoaded || _voteIndexFailed) return;
+        if (_voteIndexLoaded) return;
         if (_disposed) throw new ObjectDisposedException(nameof(ModVersionVoteService));
 
         await _voteIndexLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_voteIndexLoaded || _voteIndexFailed) return;
+            if (_voteIndexLoaded) return;
 
             _voteIndex = await FetchVoteIndexAsync(session, cancellationToken).ConfigureAwait(false);
             _voteIndexLoaded = true;
-        }
-        catch
-        {
-            // Mark index as failed so we don't keep retrying on every vote fetch
-            _voteIndexFailed = true;
-            throw;
         }
         finally
         {
