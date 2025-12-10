@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using VintageStoryModManager.ViewModels;
 
 namespace VintageStoryModManager.Services;
@@ -35,6 +36,11 @@ public sealed class UserConfigurationService
 
     private static readonly string CurrentModManagerVersion = ResolveCurrentVersion();
     private static readonly string CurrentConfigurationVersion = CurrentModManagerVersion;
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+    };
 
     private static readonly IReadOnlyDictionary<string, string> VintageStoryPaletteColors =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -1859,12 +1865,7 @@ public sealed class UserConfigurationService
 
             RemoveRedundantRootProfileValues(obj);
 
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true
-            };
-
-            File.WriteAllText(_configurationPath, obj.ToJsonString(options));
+            File.WriteAllText(_configurationPath, obj.ToJsonString(JsonOptions));
             _hasPendingSave = false;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -2818,12 +2819,7 @@ public sealed class UserConfigurationService
                 [ModConfigPathHistoryEntriesPropertyName] = entries
             };
 
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true
-            };
-
-            File.WriteAllText(_modConfigPathsPath, root.ToJsonString(options));
+            File.WriteAllText(_modConfigPathsPath, root.ToJsonString(JsonOptions));
             _hasPendingModConfigPathSave = false;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
