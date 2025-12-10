@@ -1353,7 +1353,7 @@ public sealed class ModDatabaseService
                             output.Append(indent);
                             // Use different bullet symbols based on nesting level (1-indexed)
                             // Clamp to valid range: [0, BulletSymbols.Length - 1]
-                            var bulletIndex = Math.Max(0, Math.Min(listDepth, BulletSymbols.Length) - 1);
+                            var bulletIndex = Math.Clamp(listDepth - 1, 0, BulletSymbols.Length - 1);
                             var bulletSymbol = BulletSymbols[bulletIndex];
                             output.Append(bulletSymbol);
                             AppendNodes(node.ChildNodes, output, listDepth + 1);
@@ -1429,14 +1429,12 @@ public sealed class ModDatabaseService
                 if (trimmedStart.StartsWith(bulletSymbol, StringComparison.Ordinal))
                 {
                     // Keep leading spaces, but clean up the content after the bullet
-                    var startIndex = trimmedEnd.IndexOf(bulletSymbol, StringComparison.Ordinal);
-                    if (startIndex >= 0)
-                    {
-                        var prefix = trimmedEnd[..startIndex];
-                        var content = trimmedEnd[(startIndex + bulletSymbol.Length)..].Trim();
-                        normalizedLines.Add(prefix + bulletSymbol + content);
-                        foundBullet = true;
-                    }
+                    // Calculate prefix length directly since we know bullet is at start of trimmedStart
+                    var prefixLength = trimmedEnd.Length - trimmedStart.Length;
+                    var prefix = trimmedEnd[..prefixLength];
+                    var content = trimmedStart[bulletSymbol.Length..].Trim();
+                    normalizedLines.Add(prefix + bulletSymbol + content);
+                    foundBullet = true;
                     break;
                 }
             }
