@@ -27,6 +27,7 @@
         <converters:NoResultsVisibilityConverter x:Key="NoResultsVisibility"/>
         <converters:FavoriteButtonVisibilityConverter x:Key="FavoriteButtonVisibility"/>
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility"/>
+        <converters:AverageColorToBrushConverter x:Key="AverageColorToBrush"/>
 
         <!-- Loading Spinner Animation -->
         <Storyboard x:Key="SpinnerAnimation" RepeatBehavior="Forever">
@@ -74,7 +75,11 @@
 
         <!-- Mod Card Style using DarkVsTheme -->
         <Style x:Key="ModCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource Brush.DataGrid.Header.Background}"/>
+            <Setter Property="Background">
+                <Setter.Value>
+                    <Binding Path="AverageLogoColor" Converter="{StaticResource AverageColorToBrush}"/>
+                </Setter.Value>
+            </Setter>
             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Dark}"/>
             <Setter Property="BorderThickness" Value="0,0,2,2"/>
             <Setter Property="CornerRadius" Value="8"/>

@@ -330,6 +330,8 @@ public partial class ModBrowserViewModel : ObservableObject
             VisibleModsCount = DefaultLoadedMods;
             OnPropertyChanged(nameof(VisibleMods));
 
+            _ = PopulateLogoColorsAsync(ModsList, token);
+
             // Only populate user reports for visible mods + one batch ahead
             var modsToLoadReports = ModsList.Take(VisibleModsCount + LoadMoreCount).ToList();
             _ = PopulateUserReportsAsync(modsToLoadReports, token);
@@ -700,6 +702,45 @@ public partial class ModBrowserViewModel : ObservableObject
         }
 
         return filtered.ToList();
+    }
+
+    private async Task PopulateLogoColorsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
+    {
+        const int maxConcurrentLoads = 4;
+        using var semaphore = new SemaphoreSlim(maxConcurrentLoads);
+
+        var tasks = mods.Select(async mod =>
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            try
+            {
+                await semaphore.WaitAsync(cancellationToken);
+                try
+                {
+                    var color = await ModImageColorAnalysisService.GetAverageColorAsync(mod.LogoUrl, cancellationToken);
+                    if (color.HasValue)
+                    {
+                        mod.AverageLogoColor = color.Value;
+                    }
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected on cancellation
+            }
+            catch (Exception)
+            {
+                mod.AverageLogoColor = DownloadableModOnList.NeutralLogoColor;
+            }
+        });
+
+        await Task.WhenAll(tasks);
     }
 
     private async Task PopulateUserReportsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
