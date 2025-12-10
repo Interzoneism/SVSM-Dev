@@ -38,6 +38,7 @@ using VintageStoryModManager.ViewModels;
 using VintageStoryModManager.Views.Dialogs;
 using YamlDotNet.Core;
 using ButtonBase = System.Windows.Controls.Primitives.ButtonBase;
+using ModUserReportChangedEventArgs = VintageStoryModManager.ViewModels.MainViewModel.ModUserReportChangedEventArgs;
 using Colors = QuestPDF.Helpers.Colors;
 using ComboBox = System.Windows.Controls.ComboBox;
 using Cursors = System.Windows.Input.Cursors;
@@ -2445,6 +2446,7 @@ public partial class MainWindow : Window
             UseModDbDesignView = _userConfiguration.UseModDbDesignView,
         };
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
+        _viewModel.UserReportVoteSubmitted += OnUserReportVoteSubmitted;
         DataContext = _viewModel;
         ApplyPlayerIdentityToUiAndCloudStore();
         _cloudModlistsLoaded = false;
@@ -2794,6 +2796,23 @@ public partial class MainWindow : Window
             Downloads = release.Downloads,
             CreatedUtc = createdUtc
         };
+    }
+
+    private void OnUserReportVoteSubmitted(object? sender, ModUserReportChangedEventArgs e)
+    {
+        if (_modBrowserViewModel is null) return;
+
+        int parsedId;
+        if (e.NumericModId.HasValue)
+        {
+            parsedId = e.NumericModId.Value;
+        }
+        else if (!int.TryParse(e.ModId, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedId))
+        {
+            return;
+        }
+
+        _modBrowserViewModel.InvalidateUserReport(parsedId, e.Summary);
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -3475,6 +3494,7 @@ public partial class MainWindow : Window
         if (viewModel is null) return;
 
         viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
+        viewModel.UserReportVoteSubmitted -= OnUserReportVoteSubmitted;
         viewModel.Dispose();
     }
 
@@ -4159,7 +4179,11 @@ public partial class MainWindow : Window
         StopGameSessionMonitor();
 
         var previousViewModel = _viewModel;
-        if (previousViewModel is not null) previousViewModel.PropertyChanged -= ViewModelOnPropertyChanged;
+        if (previousViewModel is not null)
+        {
+            previousViewModel.PropertyChanged -= ViewModelOnPropertyChanged;
+            previousViewModel.UserReportVoteSubmitted -= OnUserReportVoteSubmitted;
+        }
 
         MainViewModel? newViewModel = null;
 
@@ -4172,6 +4196,7 @@ public partial class MainWindow : Window
             newViewModel.IsCompactView = _userConfiguration.IsCompactView;
             newViewModel.UseModDbDesignView = _userConfiguration.UseModDbDesignView;
             newViewModel.PropertyChanged += ViewModelOnPropertyChanged;
+            newViewModel.UserReportVoteSubmitted += OnUserReportVoteSubmitted;
             _viewModel = newViewModel;
             ApplyColumnVisibilityPreferencesToViewModel();
             UpdateGameVersionMenuItem(newViewModel.InstalledGameVersion);
@@ -4190,6 +4215,7 @@ public partial class MainWindow : Window
             {
                 _viewModel = previousViewModel;
                 previousViewModel.PropertyChanged += ViewModelOnPropertyChanged;
+                previousViewModel.UserReportVoteSubmitted += OnUserReportVoteSubmitted;
                 DataContext = previousViewModel;
                 ApplyPlayerIdentityToUiAndCloudStore();
                 AttachToModsView(previousViewModel.CurrentModsView);

@@ -126,6 +126,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private int _updatableModsCount;
     private ViewSection _viewSection = ViewSection.MainTab;
 
+    public event EventHandler<ModUserReportChangedEventArgs>? UserReportVoteSubmitted;
+
     public MainViewModel(
         string dataDirectory,
         UserConfigurationService configuration,
@@ -2146,6 +2148,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             StoreUserReportEtag(mod.ModId, mod.UserReportModVersion, etag);
 
+            if (Summary is not null)
+                RaiseUserReportVoteSubmitted(mod, Summary);
+
             return Summary;
         }
         catch (InternetAccessDisabledException)
@@ -2163,6 +2168,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 true);
             throw;
         }
+    }
+
+    private void RaiseUserReportVoteSubmitted(ModListItemViewModel mod, ModVersionVoteSummary summary)
+    {
+        int? numericId = null;
+        if (int.TryParse(mod.ModId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedId))
+            numericId = parsedId;
+
+        UserReportVoteSubmitted?.Invoke(
+            this,
+            new ModUserReportChangedEventArgs(mod.ModId, mod.UserReportModVersion, numericId, summary));
     }
 
     private async Task<ModVersionVoteSummary?> RefreshUserReportCoreAsync(
@@ -3949,6 +3965,29 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             return null;
         }
+    }
+
+    public sealed class ModUserReportChangedEventArgs : EventArgs
+    {
+        public ModUserReportChangedEventArgs(
+            string modId,
+            string? modVersion,
+            int? numericModId,
+            ModVersionVoteSummary summary)
+        {
+            ModId = modId;
+            ModVersion = modVersion;
+            NumericModId = numericModId;
+            Summary = summary ?? throw new ArgumentNullException(nameof(summary));
+        }
+
+        public string ModId { get; }
+
+        public string? ModVersion { get; }
+
+        public int? NumericModId { get; }
+
+        public ModVersionVoteSummary Summary { get; }
     }
 
     private static DateTime? TryGetLastWriteTimeUtc(string? path, ModSourceKind kind)
