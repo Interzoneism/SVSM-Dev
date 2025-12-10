@@ -992,7 +992,7 @@
                 <!-- ============================================================ -->
                 <TabItem x:Name="ModlistTab" Header="Modlists" Padding="27,6,27,6" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch" BorderBrush="#00000000" Height="30">
                     <Border Margin="8,0,8,0" Background="{DynamicResource Brush.MiddleTab.Background.Selected}" CornerRadius="0,8,0,0">
-                        <Grid x:Name="ModlistInnerTab" Height="700" ClipToBounds="True">
+                        <Grid x:Name="ModlistInnerTab" ClipToBounds="True">
                             <TabControl x:Name="ModlistsTabControl"
                                 BorderThickness="0"
                                 Loaded="ModlistsTabControl_OnLoaded"
