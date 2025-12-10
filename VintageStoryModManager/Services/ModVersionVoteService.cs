@@ -826,10 +826,10 @@ public sealed class ModVersionVoteService : IDisposable
 
     private async Task PersistVoteCacheAsync(CancellationToken cancellationToken = default)
     {
+        await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+
         try
         {
-            await _cacheLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-
             var directory = Path.GetDirectoryName(VoteCachePath);
             if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
 
@@ -847,7 +847,7 @@ public sealed class ModVersionVoteService : IDisposable
         }
         finally
         {
-            if (_cacheLock.CurrentCount == 0) _cacheLock.Release();
+            _cacheLock.Release();
         }
     }
 
