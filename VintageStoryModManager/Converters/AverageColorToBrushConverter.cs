@@ -26,20 +26,21 @@ public class AverageColorToBrushConverter : IValueConverter
         }
 
         var baseColor = Color.FromArgb(255, color.R, color.G, color.B);
-        var accentColor = Color.FromArgb(
-            255,
-            (byte)Math.Min(byte.MaxValue, baseColor.R + 16),
-            (byte)Math.Min(byte.MaxValue, baseColor.G + 16),
-            (byte)Math.Min(byte.MaxValue, baseColor.B + 16));
+
+        var fallbackColor = fallbackBrush switch
+        {
+            SolidColorBrush solidColorBrush => solidColorBrush.Color,
+            _ => (Color)System.Windows.Media.ColorConverter.ConvertFromString("#5a4530")!
+        };
 
         var gradientBrush = new LinearGradientBrush
         {
-            StartPoint = new Point(0, 1),
-            EndPoint = new Point(0, 0),
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(0, 1),
             GradientStops =
             {
-                new GradientStop(Color.FromArgb(220, baseColor.R, baseColor.G, baseColor.B), 0),
-                new GradientStop(Color.FromArgb(235, accentColor.R, accentColor.G, accentColor.B), 1)
+                new GradientStop(Color.FromArgb(255, baseColor.R, baseColor.G, baseColor.B), 0),
+                new GradientStop(Color.FromArgb(255, fallbackColor.R, fallbackColor.G, fallbackColor.B), 0.25)
             }
         };
 
