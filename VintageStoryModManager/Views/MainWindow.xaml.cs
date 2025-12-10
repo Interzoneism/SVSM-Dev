@@ -347,6 +347,7 @@ public partial class MainWindow : Window
     private GameSessionMonitor? _gameSessionMonitor;
     private DispatcherTimer? _modsWatcherTimer;
     private ModUsagePromptData? _modUsagePromptData;
+    private VotesCacheWatcher? _votesCacheWatcher;
 
     // UI state flags
     private bool _hasAppliedInitialModInfoPanelPosition;
@@ -2478,7 +2479,47 @@ public partial class MainWindow : Window
             _modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
 
             ModBrowserView.DataContext = _modBrowserViewModel;
+
+            // Set up votes cache watcher to refresh user reports when cache changes
+            InitializeVotesCacheWatcher();
         }
+    }
+
+    private void InitializeVotesCacheWatcher()
+    {
+        try
+        {
+            var cachePath = ModVersionVoteService.GetVoteCachePath();
+            _votesCacheWatcher = new VotesCacheWatcher(cachePath);
+            _votesCacheWatcher.CacheChanged += OnVotesCacheChanged;
+            _votesCacheWatcher.EnsureWatcher();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[MainWindow] Failed to initialize votes cache watcher: {ex.Message}");
+        }
+    }
+
+    private void OnVotesCacheChanged(object? sender, EventArgs e)
+    {
+        if (_modBrowserViewModel == null) return;
+
+        Dispatcher.InvokeAsync(() =>
+        {
+            try
+            {
+                if (_votesCacheWatcher?.TryConsumePendingChanges() == true)
+                {
+                    _modBrowserViewModel.InvalidateAllVisibleUserReports();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[MainWindow] Failed to refresh mod browser user reports after cache change: {ex.Message}");
+            }
+        }, DispatcherPriority.Background);
     }
 
     private void SubscribeModBrowserToDirectoryWatcher()
@@ -13810,6 +13851,7 @@ public partial class MainWindow : Window
     {
         UnsubscribeModBrowserFromDirectoryWatcher();
         StopModsWatcher();
+        _votesCacheWatcher?.Dispose();
         _backupSemaphore.Dispose();
         _cloudStoreLock.Dispose();
         _cloudModlistStore?.Dispose();

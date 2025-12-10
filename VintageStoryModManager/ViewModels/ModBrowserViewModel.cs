@@ -286,6 +286,35 @@ public partial class ModBrowserViewModel : ObservableObject
         _ = PopulateUserReportsAsync(new[] { mod }, CancellationToken.None);
     }
 
+    /// <summary>
+    /// Invalidates and refreshes user reports for all visible/loaded mods in the browser.
+    /// This should be called when the votes cache file changes.
+    /// </summary>
+    public void InvalidateAllVisibleUserReports()
+    {
+        List<DownloadableModOnList> visibleMods;
+        lock (_userReportsLoaded)
+        {
+            // Get all visible mods that have loaded user reports
+            visibleMods = ModsList
+                .Take(VisibleModsCount)
+                .Where(m => _userReportsLoaded.Contains(m.ModId))
+                .ToList();
+
+            // Clear the loaded tracking for these mods
+            foreach (var mod in visibleMods)
+            {
+                _userReportsLoaded.Remove(mod.ModId);
+            }
+        }
+
+        if (visibleMods.Count == 0)
+            return;
+
+        // Refresh user reports for all visible mods
+        _ = PopulateUserReportsAsync(visibleMods, CancellationToken.None);
+    }
+
     #region Commands
 
     [RelayCommand]
