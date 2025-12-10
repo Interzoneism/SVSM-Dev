@@ -784,8 +784,13 @@ public partial class ModBrowserViewModel : ObservableObject
             return;
         }
 
+        // Use the string ModId from the mod details if available, otherwise fall back to numeric ID
+        var modIdForVotes = !string.IsNullOrWhiteSpace(modDetails.ModIdStr)
+            ? modDetails.ModIdStr
+            : mod.ModId.ToString(CultureInfo.InvariantCulture);
+
         var summary = await _voteService.GetVoteSummaryAsync(
-            mod.ModId.ToString(CultureInfo.InvariantCulture),
+            modIdForVotes,
             latestRelease.ModVersion,
             _installedGameVersion,
             cancellationToken);
