@@ -34,8 +34,8 @@ public class AverageColorToBrushConverter : IValueConverter
 
         var gradientBrush = new LinearGradientBrush
         {
-            StartPoint = new Point(0, 0),
-            EndPoint = new Point(0, 1),
+            StartPoint = new Point(0, 1),
+            EndPoint = new Point(0, 0),
             GradientStops =
             {
                 new GradientStop(Color.FromArgb(220, baseColor.R, baseColor.G, baseColor.B), 0),
