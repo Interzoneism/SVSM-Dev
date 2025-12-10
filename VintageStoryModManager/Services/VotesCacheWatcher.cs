@@ -18,6 +18,12 @@ public sealed class VotesCacheWatcher : IDisposable
     /// <summary>
     ///     Occurs when changes are detected in the votes cache file.
     /// </summary>
+    /// <remarks>
+    ///     This event provides immediate notification of cache changes, unlike ClientSettingsWatcher
+    ///     which uses polling via TryConsumePendingChanges(). The immediate notification is needed
+    ///     to ensure the UI updates vote counts promptly after a user submits a vote, providing
+    ///     better user experience compared to a polling-based approach.
+    /// </remarks>
     public event EventHandler? CacheChanged;
 
     public VotesCacheWatcher(string cachePath)
