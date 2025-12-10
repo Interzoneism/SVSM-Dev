@@ -1425,7 +1425,7 @@ public sealed class ModDatabaseService
                 if (trimmedStart.StartsWith(bulletSymbol, StringComparison.Ordinal))
                 {
                     // Keep leading spaces, but clean up the content after the bullet
-                    var startIndex = trimmedEnd.IndexOf(bulletSymbol[0]);
+                    var startIndex = trimmedEnd.IndexOf(bulletSymbol, StringComparison.Ordinal);
                     var prefix = trimmedEnd[..startIndex];
                     var content = trimmedEnd[(startIndex + 2)..].Trim();
                     normalizedLines.Add(prefix + bulletSymbol + content);
