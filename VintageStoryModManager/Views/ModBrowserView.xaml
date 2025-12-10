@@ -108,15 +108,14 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="8,0,0,0">
-                    <!-- Versions Filter using custom multi-select -->
                     <TextBox Width="200" Height="32"
                                 Text="{Binding TextFilter, UpdateSourceTrigger=PropertyChanged}"
                                 Style="{StaticResource IMM.SearchTextBoxStyle}"
-                                ui:ControlHelper.PlaceholderText="Search..." UseLayoutRounding="True" Margin="0,0,4,0"/>
+                                ui:ControlHelper.PlaceholderText="Search..." UseLayoutRounding="True" Margin="0,0,4,0" Padding="3,0,0,0"/>
                     <ComboBox Width="160" Height="32"
                                 ItemsSource="{Binding OrderByOptions, Mode=OneTime}"
                                 SelectedValue="{Binding OrderBy}"
-                                SelectedValuePath="Key" Margin="4,0,4,0">
+                                SelectedValuePath="Key" Margin="4,0,4,0" VerticalContentAlignment="Center" UseLayoutRounding="True">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -138,7 +137,7 @@
                             DisplayMemberPath="Name"
                             PlaceholderText="Versions"
                             ToolTip="Select game versions to filter"
-                            SelectionChanged="VersionsDropdown_SelectionChanged"/>
+                            SelectionChanged="VersionsDropdown_SelectionChanged" UseLayoutRounding="True"/>
 
                     <!-- Tags Filter using custom multi-select -->
                     <views:MultiSelectDropdown Width="120" Height="32"
@@ -148,7 +147,7 @@
                             DisplayMemberPath="Name"
                             PlaceholderText="Tags"
                             ToolTip="Select tags to filter"
-                            SelectionChanged="TagsDropdown_SelectionChanged"/>
+                            SelectionChanged="TagsDropdown_SelectionChanged" UseLayoutRounding="True"/>
 
                     <!-- Side Filter -->
                     <ComboBox Width="120" Height="32"
@@ -156,19 +155,19 @@
                             SelectedValue="{Binding SelectedSide}"
                             SelectedValuePath="Key"
                             DisplayMemberPath="Value"
-                            ItemsSource="{Binding SideOptions, Mode=OneTime}"/>
+                            ItemsSource="{Binding SideOptions, Mode=OneTime}" UseLayoutRounding="True" VerticalContentAlignment="Center"/>
 
                     <!-- Installed Filter -->
-                    <ComboBox Width="120" Height="32"
+                    <ComboBox Width="150" Height="32"
                             Margin="4"
                             SelectedValue="{Binding SelectedInstalledFilter}"
                             SelectedValuePath="Key"
                             DisplayMemberPath="Value"
-                            ItemsSource="{Binding InstalledFilterOptions, Mode=OneTime}"/>
+                            ItemsSource="{Binding InstalledFilterOptions, Mode=OneTime}" UseLayoutRounding="True" VerticalContentAlignment="Center"/>
                     <Button Width="32" Height="32"
                                 Style="{StaticResource IconButtonStyle}"
                                 Command="{Binding ToggleOrderDirectionCommand}"
-                                ToolTip="Toggle sort direction" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="0,0,0,0" Margin="4,0,4,0">
+                                ToolTip="Toggle sort direction" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="0,0,0,0" Margin="4,0,4,0" UseLayoutRounding="True">
                         <Grid>
                             <Path Data="{StaticResource IconChevronDown}" 
                                         Fill="{DynamicResource Brush.Text.Primary}" 
@@ -206,7 +205,7 @@
                             Margin="4"
                             Style="{StaticResource IconButtonStyle}"
                             Command="{Binding ClearFiltersCommand}"
-                            ToolTip="Clear all filters">
+                            ToolTip="Clear all filters" UseLayoutRounding="True">
                         <Path Data="{StaticResource IconXCircle}" 
                                 Style="{StaticResource IconLarge}"/>
                     </Button>
@@ -215,7 +214,7 @@
                     <Button Width="32" Height="32"
                                 Command="{Binding ToggleFavoriteFilterCommand}"
                                 ToolTip="Show only favorites"
-                                Style="{StaticResource IconButtonStyle}" Margin="0,0,4,0">
+                                Style="{StaticResource IconButtonStyle}" Margin="0,0,4,0" UseLayoutRounding="True">
                         <Path Data="{StaticResource IconStarSolid}"
                                     Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center">
                             <Path.Style>
@@ -235,11 +234,11 @@
                         Style="{StaticResource IconButtonStyle}"
                         Command="{Binding SearchModsCommand}"
                         IsEnabled="{Binding IsSearching, Converter={StaticResource InvertBoolean}}"
-                        ToolTip="Refresh" HorizontalContentAlignment="Center" Height="32" Margin="4,0,4,0">
+                        ToolTip="Refresh" HorizontalContentAlignment="Center" Height="32" Margin="4,0,4,0" UseLayoutRounding="True">
                         <Path Data="{StaticResource IconRefresh}" 
                             Style="{StaticResource IconLarge}"/>
                     </Button>
-                    <Button Width="32" Height="32" Click="ScrollToTop_Click" ToolTip="Scroll to top"  Style="{StaticResource IconButtonStyle}" Margin="4,0,0,0">
+                    <Button Width="32" Height="32" Click="ScrollToTop_Click" ToolTip="Scroll to top"  Style="{StaticResource IconButtonStyle}" Margin="4,0,0,0" UseLayoutRounding="True">
 
                         <Path Data="{StaticResource IconArrowToTop}" 
                                 Style="{StaticResource IconMedium}"/>

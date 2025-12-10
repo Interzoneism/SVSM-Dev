@@ -639,7 +639,7 @@
                                                           HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                           VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
                                             <TextBlock x:Name="PlaceholderTextBlock"
-                                                       Padding="8,0,0,0"
+                                                       Padding="4,0,0,0"
                                                        Text="{TemplateBinding ui:ControlHelper.PlaceholderText}"
                                                        FontFamily="{TemplateBinding FontFamily}"
                                                        FontSize="{TemplateBinding FontSize}"
