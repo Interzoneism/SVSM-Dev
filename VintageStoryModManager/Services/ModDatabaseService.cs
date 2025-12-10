@@ -1352,7 +1352,8 @@ public sealed class ModDatabaseService
                             var indent = new string(' ', Math.Max(0, listDepth - 1) * 2);
                             output.Append(indent);
                             // Use different bullet symbols based on nesting level (1-indexed)
-                            var bulletIndex = Math.Min(listDepth, BulletSymbols.Length) - 1;
+                            // Clamp to valid range: [0, BulletSymbols.Length - 1]
+                            var bulletIndex = Math.Max(0, Math.Min(listDepth, BulletSymbols.Length) - 1);
                             var bulletSymbol = BulletSymbols[bulletIndex];
                             output.Append(bulletSymbol);
                             AppendNodes(node.ChildNodes, output, listDepth + 1);
