@@ -1275,6 +1275,15 @@ public sealed class ModDatabaseService
         return string.IsNullOrWhiteSpace(text) ? null : text;
     }
 
+    // Bullet symbols for different nesting levels in changelogs
+    private static readonly string[] BulletSymbols = new[]
+    {
+        "\u2022 ", // • Level 1: Filled dot (bullet)
+        "\u25E6 ", // ◦ Level 2: White bullet (hollow dot)
+        "\u25AA ", // ▪ Level 3: Black small square
+        "\u25AB "  // ▫ Level 4+: White small square
+    };
+
     private static string? ConvertChangelogToPlainText(string? changelog)
     {
         if (string.IsNullOrWhiteSpace(changelog)) return null;
@@ -1342,14 +1351,9 @@ public sealed class ModDatabaseService
                             EnsureEndsWithNewlines(output, 1);
                             var indent = new string(' ', Math.Max(0, listDepth - 1) * 2);
                             output.Append(indent);
-                            // Use different bullet symbols based on nesting level
-                            var bulletSymbol = listDepth switch
-                            {
-                                1 => "\u2022 ", // • Filled dot (bullet)
-                                2 => "\u25E6 ", // ◦ White bullet (hollow dot)
-                                3 => "\u25AA ", // ▪ Black small square
-                                _ => "\u25AB "  // ▫ White small square
-                            };
+                            // Use different bullet symbols based on nesting level (1-indexed)
+                            var bulletIndex = Math.Min(listDepth, BulletSymbols.Length) - 1;
+                            var bulletSymbol = BulletSymbols[bulletIndex];
                             output.Append(bulletSymbol);
                             AppendNodes(node.ChildNodes, output, listDepth + 1);
                             break;
@@ -1417,10 +1421,9 @@ public sealed class ModDatabaseService
 
             // Don't trim leading spaces from lines with bullets to preserve indentation
             var trimmedStart = trimmedEnd.TrimStart();
-            var bulletSymbols = new[] { "\u2022 ", "\u25E6 ", "\u25AA ", "\u25AB " }; // •, ◦, ▪, ▫
             var foundBullet = false;
             
-            foreach (var bulletSymbol in bulletSymbols)
+            foreach (var bulletSymbol in BulletSymbols)
             {
                 if (trimmedStart.StartsWith(bulletSymbol, StringComparison.Ordinal))
                 {
