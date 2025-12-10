@@ -1430,10 +1430,13 @@ public sealed class ModDatabaseService
                 {
                     // Keep leading spaces, but clean up the content after the bullet
                     var startIndex = trimmedEnd.IndexOf(bulletSymbol, StringComparison.Ordinal);
-                    var prefix = trimmedEnd[..startIndex];
-                    var content = trimmedEnd[(startIndex + bulletSymbol.Length)..].Trim();
-                    normalizedLines.Add(prefix + bulletSymbol + content);
-                    foundBullet = true;
+                    if (startIndex >= 0)
+                    {
+                        var prefix = trimmedEnd[..startIndex];
+                        var content = trimmedEnd[(startIndex + bulletSymbol.Length)..].Trim();
+                        normalizedLines.Add(prefix + bulletSymbol + content);
+                        foundBullet = true;
+                    }
                     break;
                 }
             }
