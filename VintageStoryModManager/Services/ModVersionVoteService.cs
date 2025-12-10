@@ -421,7 +421,9 @@ public sealed class ModVersionVoteService : IDisposable
         string versionKey,
         CancellationToken cancellationToken)
     {
-        // If index loading already failed, skip it and assume votes might exist
+        // If index loading already failed, skip it and assume votes might exist.
+        // Return (indexAvailable: false, hasVotes: true) to bypass the index optimization
+        // and fetch votes directly from Firebase.
         if (_voteIndexFailed)
             return (false, true);
 
@@ -434,8 +436,10 @@ public sealed class ModVersionVoteService : IDisposable
 
             return (true, hasVotes);
         }
-        catch
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or OperationCanceledException)
         {
+            // Index loading failed - return (indexAvailable: false, hasVotes: true)
+            // to skip the optimization and fetch votes directly.
             return (false, true);
         }
     }
@@ -455,9 +459,10 @@ public sealed class ModVersionVoteService : IDisposable
             _voteIndex = await FetchVoteIndexAsync(session, cancellationToken).ConfigureAwait(false);
             _voteIndexLoaded = true;
         }
-        catch
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
         {
-            // Mark index as failed so we don't keep retrying on every vote fetch
+            // Mark index as failed so we don't keep retrying on every vote fetch.
+            // This is expected when Firebase rules don't allow reading at the parent level.
             _voteIndexFailed = true;
             throw;
         }
