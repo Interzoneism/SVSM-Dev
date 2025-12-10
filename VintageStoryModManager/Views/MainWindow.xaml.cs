@@ -356,6 +356,7 @@ public partial class MainWindow : Window
     private bool _isCloudModlistRefreshInProgress;
     private bool _isDependencyResolutionRefreshPending;
     private bool _isDraggingModInfoPanel;
+    private bool _hasMainWindowLoaded;
     private bool _isInitializing;
     private bool _isUpdatingModlistsTabSelection;
     private bool _isUpdatingMiddleTabSelection;
@@ -364,6 +365,7 @@ public partial class MainWindow : Window
     private bool _isRefreshingAfterModlistLoad;
     private bool _isWindowActive;
     private bool _refreshAfterModlistLoadPending;
+    private bool _pendingModBrowserInitializationRequest;
     private bool _localModlistsLoaded;
     private bool _suppressSortPreferenceSave;
     private bool _isModBrowserWatcherSubscribed;
@@ -559,6 +561,14 @@ public partial class MainWindow : Window
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         Loaded -= MainWindow_Loaded;
+
+        _hasMainWindowLoaded = true;
+
+        if (_pendingModBrowserInitializationRequest && Equals(MiddleTabControl?.SelectedItem, DatabaseTab))
+        {
+            _pendingModBrowserInitializationRequest = false;
+            _ = InitializeModBrowserViewAsync();
+        }
 
         ApplyStoredModInfoPanelPosition();
 
@@ -2922,7 +2932,7 @@ public partial class MainWindow : Window
             if (_viewModel.ShowDatabaseTabCommand?.CanExecute(null) == true)
                 _viewModel.ShowDatabaseTabCommand.Execute(null);
 
-            _ = InitializeModBrowserViewAsync();
+            RequestModBrowserInitialization();
         }
         else if (Equals(tabControl.SelectedItem, ModlistTab))
         {
@@ -2944,7 +2954,7 @@ public partial class MainWindow : Window
         else if (_viewModel.IsViewingModlistTab)
             targetTab = ModlistTab;
         else
-            targetTab = DatabaseTab; // Default to MainTab if view section is unknown
+            targetTab = MainTab; // Default to MainTab if view section is unknown
 
         if (targetTab is null || Equals(MiddleTabControl.SelectedItem, targetTab)) return;
 
@@ -2953,7 +2963,7 @@ public partial class MainWindow : Window
         {
             MiddleTabControl.SelectedItem = targetTab;
             if (Equals(targetTab, DatabaseTab))
-                _ = InitializeModBrowserViewAsync();
+                RequestModBrowserInitialization();
         }
         finally
         {
@@ -2996,6 +3006,18 @@ public partial class MainWindow : Window
 
         _userConfiguration.SetPreferredModlistsTab(ModlistsTabSelection.Online);
         _ = RefreshCloudModlistsAsync(!_cloudModlistsLoaded);
+    }
+
+    private void RequestModBrowserInitialization()
+    {
+        if (!_hasMainWindowLoaded)
+        {
+            _pendingModBrowserInitializationRequest = true;
+            return;
+        }
+
+        _pendingModBrowserInitializationRequest = false;
+        _ = InitializeModBrowserViewAsync();
     }
 
     private void ModlistsTabControl_OnLoaded(object sender, RoutedEventArgs e)
