@@ -123,12 +123,17 @@ public partial class ModBrowserViewModel : ObservableObject
 
     #endregion
 
-    public ModBrowserViewModel(IModApiService modApiService, UserConfigurationService? userConfigService = null)
+    public ModBrowserViewModel(
+        IModApiService modApiService,
+        UserConfigurationService? userConfigService = null,
+        string? installedGameVersion = null)
     {
         _modApiService = modApiService;
         _userConfigService = userConfigService;
         _voteService = new ModVersionVoteService();
-        _installedGameVersion = VintageStoryVersionLocator.GetInstalledVersion(_userConfigService?.GameDirectory);
+        _installedGameVersion = string.IsNullOrWhiteSpace(installedGameVersion)
+            ? VintageStoryVersionLocator.GetInstalledVersion(_userConfigService?.GameDirectory)
+            : VersionStringUtility.Normalize(installedGameVersion);
         _isInitializing = true;
 
         // Subscribe to collection changes for multi-select filters

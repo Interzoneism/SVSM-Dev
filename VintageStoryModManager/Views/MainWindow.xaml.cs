@@ -2470,7 +2470,10 @@ public partial class MainWindow : Window
             };
             
             var modApiService = new ModApiService(httpClient);
-            _modBrowserViewModel = new ModBrowserViewModel(modApiService, _userConfiguration);
+            _modBrowserViewModel = new ModBrowserViewModel(
+                modApiService,
+                _userConfiguration,
+                _viewModel?.InstalledGameVersion);
             
             // Set up the installation callback
             _modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
