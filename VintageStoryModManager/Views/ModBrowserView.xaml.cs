@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -21,7 +22,6 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         Unloaded += OnControlUnloaded;
-        IsVisibleChanged += OnIsVisibleChanged;
     }
 
     private ModBrowserViewModel? ViewModel => DataContext as ModBrowserViewModel;
@@ -30,18 +30,18 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
     {
         // Cache the storyboard reference during initialization
         _spinnerStoryboard = TryFindResource("SpinnerAnimation") as Storyboard;
-        
-        // Don't initialize ViewModel here - defer until tab is visible
-        // This prevents unnecessary network requests on application startup
     }
 
-    private async void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    public async Task InitializeIfNeededAsync()
     {
-        // Initialize the ViewModel only when the control becomes visible for the first time
-        if (!IsVisible || _isInitialized || ViewModel == null)
+        if (_isInitialized)
             return;
 
-        // Set flag before awaiting to prevent race conditions from rapid visibility changes
+        _spinnerStoryboard ??= TryFindResource("SpinnerAnimation") as Storyboard;
+
+        if (ViewModel == null)
+            return;
+
         _isInitialized = true;
 
         try
@@ -64,8 +64,6 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         _spinnerStoryboard = null;
 
         // Unsubscribe from events
-        IsVisibleChanged -= OnIsVisibleChanged;
-
         if (DataContext is ModBrowserViewModel vm)
         {
             vm.PropertyChanged -= OnViewModelPropertyChanged;
