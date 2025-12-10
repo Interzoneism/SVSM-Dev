@@ -39,8 +39,8 @@ public class AverageColorToBrushConverter : IValueConverter
             EndPoint = new Point(0, 1),
             GradientStops =
             {
-                new GradientStop(Color.FromArgb(255, baseColor.R, baseColor.G, baseColor.B), 0),
-                new GradientStop(Color.FromArgb(255, fallbackColor.R, fallbackColor.G, fallbackColor.B), 0.25)
+                new GradientStop(Color.FromArgb(255, baseColor.R, baseColor.G, baseColor.B), 0.8),
+                new GradientStop(Color.FromArgb(255, fallbackColor.R, fallbackColor.G, fallbackColor.B), 0.9)
             }
         };
 

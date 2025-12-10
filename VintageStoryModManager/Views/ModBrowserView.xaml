@@ -12,7 +12,7 @@
              d:DesignHeight="786" d:DesignWidth="1311"
              d:DataContext="{d:DesignInstance Type={x:Type design:ModBrowserViewDesignData}, IsDesignTimeCreatable=True}"
              Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
-             Loaded="OnViewLoaded">
+             Loaded="OnViewLoaded" Padding="1,0,0,0">
 
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
@@ -81,14 +81,15 @@
                 </Setter.Value>
             </Setter>
             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Dark}"/>
-            <Setter Property="BorderThickness" Value="0,0,2,2"/>
+            <Setter Property="BorderThickness" Value="1,1,2,2"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="UseLayoutRounding" Value="True"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="ClipToBounds" Value="True"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Hover}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Light}"/>
+                    <Setter Property="BorderThickness" Value="2,2,1,1"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
