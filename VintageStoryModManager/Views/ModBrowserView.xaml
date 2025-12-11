@@ -98,7 +98,7 @@
         <Style x:Key="InfoBoxStyle" TargetType="{x:Type Grid}">
             <Setter Property="Background">
                 <Setter.Value>
-                    <Binding Path="AverageLogoColorAlt" Converter="{StaticResource AverageColorToBrushAlt}" ConverterParameter="Background"/>
+                    <Binding Path="AverageLogoColor" Converter="{StaticResource AverageColorToBrushAlt}" ConverterParameter="Background"/>
                 </Setter.Value>
             </Setter>
         </Style>
