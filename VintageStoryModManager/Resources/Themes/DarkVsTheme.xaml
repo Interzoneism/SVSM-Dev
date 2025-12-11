@@ -206,6 +206,8 @@
     <!-- ============================== -->
     <!-- Miscellaneous global brushes. -->
     <!-- ============================== -->
+    <SolidColorBrush x:Key="Brush.White" Color="White" />
+    <SolidColorBrush x:Key="Brush.Black" Color="Black" />
     <SolidColorBrush x:Key="Brush.Border.Default" Color="{DynamicResource Palette.BaseSurface.Raised}" />
     <SolidColorBrush x:Key="Brush.Border.Hover" Color="{DynamicResource Palette.Text.Primary}" Opacity="0" />
     <SolidColorBrush x:Key="Brush.ScrollBar.Thumb" Color="{DynamicResource Palette.BaseSurface.HoverGlow}" />

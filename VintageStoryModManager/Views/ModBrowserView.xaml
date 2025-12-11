@@ -28,6 +28,7 @@
         <converters:FavoriteButtonVisibilityConverter x:Key="FavoriteButtonVisibility"/>
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility"/>
         <converters:AverageColorToBrushConverter x:Key="AverageColorToBrush"/>
+        <converters:AverageColorToBrushAltConverter x:Key="AverageColorToBrushAlt"/>
 
 
         <!-- Loading Spinner Animation -->
@@ -98,7 +99,7 @@
         <Style x:Key="InfoBoxStyle" TargetType="{x:Type Grid}">
             <Setter Property="Background">
                 <Setter.Value>
-                    <Binding Path="AverageLogoColor" Converter="{StaticResource AverageColorToBrush}" ConverterParameter="Background"/>
+                    <Binding Path="AverageLogoColor" Converter="{StaticResource AverageColorToBrushAlt}" ConverterParameter="Background"/>
                 </Setter.Value>
             </Setter>
         </Style>
@@ -340,11 +341,11 @@
                                                     <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
                                                     <Image Source="{Binding LogoUrl}"
 
-               Stretch="Uniform"
-               HorizontalAlignment="Stretch"
-               VerticalAlignment="Top"
-               SnapsToDevicePixels="True"
-               UseLayoutRounding="True"/>
+                                                       Stretch="Uniform"
+                                                       HorizontalAlignment="Stretch"
+                                                       VerticalAlignment="Top"
+                                                       SnapsToDevicePixels="True"
+                                                       UseLayoutRounding="True"/>
 
 
                                                     <!-- Overlay Buttons -->

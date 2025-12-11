@@ -13,7 +13,7 @@ namespace VintageStoryModManager.Converters;
 /// <summary>
 /// Converts an analyzed logo color into a brush suitable for card backgrounds.
 /// </summary>
-public class AverageColorToBrushConverter : IValueConverter
+public class AverageColorToBrushAltConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -39,8 +39,8 @@ public class AverageColorToBrushConverter : IValueConverter
             EndPoint = new Point(0, 1),
             GradientStops =
             {
-                new GradientStop(Color.FromArgb(255, baseColor.R, baseColor.G, baseColor.B), 0.72),
-                new GradientStop(Color.FromArgb(255, fallbackColor.R, fallbackColor.G, fallbackColor.B), 0.72)
+                new GradientStop(Color.FromArgb(200, baseColor.R, baseColor.G, baseColor.B), 0),
+                new GradientStop(Color.FromArgb(200, fallbackColor.R, fallbackColor.G, fallbackColor.B), 0.3)
             }
         };
 
