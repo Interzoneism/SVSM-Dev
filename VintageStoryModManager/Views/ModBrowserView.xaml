@@ -28,7 +28,7 @@
         <converters:FavoriteButtonVisibilityConverter x:Key="FavoriteButtonVisibility"/>
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility"/>
         <converters:AverageColorToBrushConverter x:Key="AverageColorToBrush"/>
-        <converters:AverageColorToBrushAltConverter x:Key="AverageColorToBrushAlt"/>
+
 
         <!-- Loading Spinner Animation -->
         <Storyboard x:Key="SpinnerAnimation" RepeatBehavior="Forever">
@@ -98,7 +98,7 @@
         <Style x:Key="InfoBoxStyle" TargetType="{x:Type Grid}">
             <Setter Property="Background">
                 <Setter.Value>
-                    <Binding Path="AverageLogoColorAlt" Converter="{StaticResource AverageColorToBrushAlt}" ConverterParameter="Background"/>
+                    <Binding Path="AverageLogoColor" Converter="{StaticResource AverageColorToBrush}" ConverterParameter="Background"/>
                 </Setter.Value>
             </Setter>
         </Style>
