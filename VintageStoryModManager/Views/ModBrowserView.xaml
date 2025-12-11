@@ -321,7 +321,7 @@
                                     <Border CornerRadius="8" ClipToBounds="True">
                                         <Grid>
                                             <Grid.RowDefinitions>
-                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="96"/>
                                             </Grid.RowDefinitions>
 
@@ -431,7 +431,7 @@
                                             </Grid>
 
                                             <!-- Mod Info -->
-                                            <Grid Grid.Row="1" Height="96" VerticalAlignment="Bottom">
+                                            <Grid Grid.Row="1" Height="96">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
@@ -440,7 +440,7 @@
                                                     <Border CornerRadius="0,0,8,8" ClipToBounds="True">
                                                         <Border.Background>
                                                             <VisualBrush Visual="{Binding ElementName=ModImage}" Stretch="UniformToFill"
-                                                                AlignmentX="Center" AlignmentY="Bottom"/>
+                                                                AlignmentX="Center" AlignmentY="Top"/>
                                                         </Border.Background>
                                                         <Border.Effect>
                                                             <BlurEffect Radius="8"/>
@@ -448,7 +448,7 @@
                                                     </Border>
                                                     <Border Background="{DynamicResource Brush.Panel.Primary.Background}"
                                                         CornerRadius="0,0,8,8"
-                                                        Opacity="0.5" />
+                                                        Opacity="0.2"/>
                                                 </Grid>
 
                                                 <!-- Title & Description -->
