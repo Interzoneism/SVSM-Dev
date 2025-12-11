@@ -328,7 +328,7 @@
                                             <!-- Mod Image -->
 
                                             <!-- Mod Info -->
-                                            <Border x:Name="Thumbnail" Grid.Row="1" CornerRadius="8,8,0,0" ClipToBounds="True" Height="342" VerticalAlignment="Top">
+                                            <Border x:Name="Thumbnail" Grid.Row="0" CornerRadius="8,8,0,0" ClipToBounds="True" Height="342" VerticalAlignment="Top">
                                                 <Border.Background>
                                                     <ImageBrush ImageSource="{Binding LogoUrl}"
                                                         Stretch="UniformToFill"
@@ -428,7 +428,7 @@
                                                 <!-- Title & Description -->
                                                 <StackPanel Grid.Column="0" Margin="8">
                                                     <!-- MaxWidth: Card=288 - StatsColumn(80+16)=96 - Separator=1 - Margins=16 = 175 -->
-                                                    <StackPanel Orientation="Horizontal" MaxWidth="175">
+                                                    <StackPanel Orientation="Horizontal" MaxWidth="175" HorizontalAlignment="Left">
                                                         <!-- MaxWidth: 175 - LinkIcon(10+4margin) = 161 -->
                                                         <TextBlock Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontWeight="Bold"
@@ -438,7 +438,7 @@
                                                             Cursor="Hand"
                                                             MouseLeftButtonDown="OpenInBrowserTitle_Click"
                                                             Tag="{Binding AssetId}"
-                                                            ToolTip="Open in browser" Text="{Binding Name}">
+                                                            ToolTip="Open in browser" Text="{Binding Name}" HorizontalAlignment="Left">
                                                             <TextBlock.Style>
                                                                 <Style TargetType="{x:Type TextBlock}">
                                                                     <Style.Triggers>
@@ -508,7 +508,7 @@
                                             </Grid>
                                             <Border x:Name="UserReports" HorizontalAlignment="Right"
                                                         VerticalAlignment="Bottom"
-                                                        Margin="0,0,8,8"
+                                                        Margin="0,0,8,104"
                                                         Padding="6,4"
                                                         Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                                         CornerRadius="6"
