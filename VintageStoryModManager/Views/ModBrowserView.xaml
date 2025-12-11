@@ -315,9 +315,9 @@
                             <DataTemplate>
                                 <Border x:Name="ModCardBorder"
                                     Style="{StaticResource ModCardStyle}"
-                                    Width="288"
+                                    Width="342"
                                     
-                                    Margin="8" Tag="{Binding ModId}">
+                                    Margin="8" Tag="{Binding ModId}" Height="342">
                                     <Border CornerRadius="8" ClipToBounds="True">
                                         <Grid>
                                             <Grid.RowDefinitions>
@@ -326,7 +326,9 @@
                                             </Grid.RowDefinitions>
 
                                             <!-- Mod Image -->
-                                            <Border Grid.Row="0" Height="192" CornerRadius="8,8,0,0" ClipToBounds="True">
+
+                                            <!-- Mod Info -->
+                                            <Border x:Name="Thumbnail" Grid.Row="1" CornerRadius="8,8,0,0" ClipToBounds="True" Height="342" VerticalAlignment="Top">
                                                 <Border.Background>
                                                     <ImageBrush ImageSource="{Binding LogoUrl}"
                                                         Stretch="UniformToFill"
@@ -413,25 +415,11 @@
                                                     </StackPanel>
 
                                                     <!-- User report summary on bottom right -->
-                                                    <Border HorizontalAlignment="Right"
-                                                        VerticalAlignment="Bottom"
-                                                        Margin="8"
-                                                        Padding="6,4"
-                                                        Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                                                        CornerRadius="6"
-                                                        Visibility="Visible">
-                                                        <TextBlock Text="{Binding UserReportDisplay}"
-                                                            ToolTip="{Binding UserReportTooltip}"
-                                                            Foreground="{DynamicResource Brush.Text.Primary}"
-                                                            FontWeight="SemiBold"
-                                                            FontSize="12"
-                                                            TextTrimming="CharacterEllipsis"/>
-                                                    </Border>
                                                 </Grid>
                                             </Border>
 
                                             <!-- Mod Info -->
-                                            <Grid Grid.Row="1" Height="96">
+                                            <Grid x:Name="Infobox" Grid.Row="0" Height="96" VerticalAlignment="Bottom">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
@@ -518,6 +506,20 @@
                                                     </StackPanel>
                                                 </StackPanel>
                                             </Grid>
+                                            <Border x:Name="UserReports" HorizontalAlignment="Right"
+                                                        VerticalAlignment="Bottom"
+                                                        Margin="0,0,8,8"
+                                                        Padding="6,4"
+                                                        Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                                                        CornerRadius="6"
+                                                        Visibility="Visible">
+                                                <TextBlock Text="{Binding UserReportDisplay}"
+                                                            ToolTip="{Binding UserReportTooltip}"
+                                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                                            FontWeight="SemiBold"
+                                                            FontSize="12"
+                                                            TextTrimming="CharacterEllipsis"/>
+                                            </Border>
                                         </Grid>
                                     </Border>
                                 </Border>
