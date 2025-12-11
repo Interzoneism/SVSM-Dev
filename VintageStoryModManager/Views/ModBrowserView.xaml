@@ -28,6 +28,7 @@
         <converters:FavoriteButtonVisibilityConverter x:Key="FavoriteButtonVisibility"/>
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility"/>
         <converters:AverageColorToBrushConverter x:Key="AverageColorToBrush"/>
+        <converters:AverageColorToBrushAltConverter x:Key="AverageColorToBrushAlt"/>
 
         <!-- Loading Spinner Animation -->
         <Storyboard x:Key="SpinnerAnimation" RepeatBehavior="Forever">
@@ -92,6 +93,14 @@
                     <Setter Property="BorderThickness" Value="2,2,1,1"/>
                 </Trigger>
             </Style.Triggers>
+        </Style>
+
+        <Style x:Key="InfoBoxStyle" TargetType="{x:Type Grid}">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <Binding Path="AverageLogoColorAlt" Converter="{StaticResource AverageColorToBrushAlt}" ConverterParameter="Background"/>
+                </Setter.Value>
+            </Setter>
         </Style>
 
     </UserControl.Resources>
@@ -330,11 +339,13 @@
                                                 <Grid Padding="0,0,0,96">
                                                     <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
                                                     <Image Source="{Binding LogoUrl}"
+
                Stretch="Uniform"
                HorizontalAlignment="Stretch"
                VerticalAlignment="Center"
                SnapsToDevicePixels="True"
                UseLayoutRounding="True"/>
+
 
                                                     <!-- Overlay Buttons -->
                                                     <Grid>
@@ -420,7 +431,7 @@
                                             </Border>
 
                                             <!-- Mod Info -->
-                                            <Grid x:Name="Infobox" Grid.Row="0" Height="96" VerticalAlignment="Bottom">
+                                            <Grid Style="{DynamicResource InfoBoxStyle}" x:Name="Infobox" Grid.Row="0" Height="96" VerticalAlignment="Bottom">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>

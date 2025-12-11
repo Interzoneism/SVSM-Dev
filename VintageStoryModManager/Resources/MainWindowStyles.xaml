@@ -474,7 +474,6 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
-    <!-- Add this style to MainWindowStyles.xaml, after the existing styles -->
 
     <Style x:Key="IMM.ToggleCheckBoxStyle" TargetType="{x:Type CheckBox}">
         <Setter Property="Template">

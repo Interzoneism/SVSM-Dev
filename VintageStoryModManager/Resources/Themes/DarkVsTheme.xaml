@@ -546,4 +546,5 @@
             </ControlTemplate>
         </Style.Resources>
     </Style>
+    <SolidColorBrush x:Key="InfoBoxBack" Color="{DynamicResource Palette.BaseSurface.Shadowed}" Opacity="0.8"/>
 </ResourceDictionary>
