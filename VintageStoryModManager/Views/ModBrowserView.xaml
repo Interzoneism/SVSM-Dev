@@ -316,23 +316,23 @@
                                 <Border x:Name="ModCardBorder"
                                     Style="{StaticResource ModCardStyle}"
                                     Width="288"
-                                    
+
                                     Margin="8" Tag="{Binding ModId}">
                                     <Border CornerRadius="8" ClipToBounds="True">
                                         <Grid>
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="96"/>
                                             </Grid.RowDefinitions>
 
                                             <!-- Mod Image -->
-                                            <Border Grid.Row="0" Height="192" CornerRadius="8,8,0,0" ClipToBounds="True">
-                                                <Border.Background>
-                                                    <ImageBrush ImageSource="{Binding LogoUrl}"
-                                                        Stretch="UniformToFill"
-                                                        AlignmentX="Center"
-                                                        AlignmentY="Center"/>
-                                                </Border.Background>
+                                            <Grid Grid.Row="0" Grid.RowSpan="2" ClipToBounds="True">
+                                                <Image x:Name="ModImage"
+                                                    Width="{Binding ActualWidth, ElementName=ModCardBorder}"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Top"
+                                                    Stretch="Uniform"
+                                                    Source="{Binding LogoUrl}"/>
 
                                                 <!-- Overlay Buttons -->
                                                 <Grid>
@@ -428,7 +428,7 @@
                                                             TextTrimming="CharacterEllipsis"/>
                                                     </Border>
                                                 </Grid>
-                                            </Border>
+                                            </Grid>
 
                                             <!-- Mod Info -->
                                             <Grid Grid.Row="1" Height="96">
@@ -436,6 +436,20 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
+                                                <Grid Grid.ColumnSpan="2" IsHitTestVisible="False">
+                                                    <Border CornerRadius="0,0,8,8" ClipToBounds="True">
+                                                        <Border.Background>
+                                                            <VisualBrush Visual="{Binding ElementName=ModImage}" Stretch="UniformToFill"
+                                                                AlignmentX="Center" AlignmentY="Top"/>
+                                                        </Border.Background>
+                                                        <Border.Effect>
+                                                            <BlurEffect Radius="8"/>
+                                                        </Border.Effect>
+                                                    </Border>
+                                                    <Border Background="{DynamicResource Brush.Panel.Primary.Background}"
+                                                        CornerRadius="0,0,8,8"
+                                                        Opacity="0.2"/>
+                                                </Grid>
 
                                                 <!-- Title & Description -->
                                                 <StackPanel Grid.Column="0" Margin="8">
@@ -461,7 +475,7 @@
                                                                 </Style>
                                                             </TextBlock.Style>
                                                         </TextBlock>
-                                                        <Path Data="{StaticResource IconLinkAlt}" 
+                                                        <Path Data="{StaticResource IconLinkAlt}"
                                                             Width="10" Height="10" Stretch="Uniform"
                                                             Fill="{DynamicResource Brush.Text.Subtle}"
                                                             VerticalAlignment="Center"
@@ -486,7 +500,7 @@
                                                     Margin="8"
                                                     Width="80">
                                                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                        <Path Data="{StaticResource IconUser}" 
+                                                        <Path Data="{StaticResource IconUser}"
                                                             Style="{StaticResource IconSmallSubtle}"/>
                                                         <!-- MaxWidth: StatsWidth=80 - Icon(12+4margin) = 64 -->
                                                         <TextBlock Text="{Binding Author}"
@@ -496,21 +510,21 @@
                                                             TextTrimming="CharacterEllipsis"/>
                                                     </StackPanel>
                                                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                        <Path Data="{StaticResource IconDownload}" 
+                                                        <Path Data="{StaticResource IconDownload}"
                                                             Style="{StaticResource IconSmallSubtle}"/>
                                                         <TextBlock Text="{Binding FormattedDownloads}"
                                                             Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontSize="12"/>
                                                     </StackPanel>
                                                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                        <Path Data="{StaticResource IconHeartSolid}" 
+                                                        <Path Data="{StaticResource IconHeartSolid}"
                                                             Style="{StaticResource IconSmallSubtle}"/>
                                                         <TextBlock Text="{Binding FormattedFollows}"
                                                             Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontSize="12"/>
                                                     </StackPanel>
                                                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                        <Path Data="{StaticResource IconMessage}" 
+                                                        <Path Data="{StaticResource IconMessage}"
                                                             Style="{StaticResource IconSmallSubtle}"/>
                                                         <TextBlock Text="{Binding FormattedComments}"
                                                             Foreground="{DynamicResource Brush.Text.Primary}"
