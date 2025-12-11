@@ -321,19 +321,20 @@
                                     <Border CornerRadius="8" ClipToBounds="True">
                                         <Grid>
                                             <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
 
                                             <!-- Mod Image -->
 
                                             <!-- Mod Info -->
-                                            <Border x:Name="Thumbnail" Grid.Row="0" CornerRadius="8,8,0,0" ClipToBounds="True" Height="342" VerticalAlignment="Top">
+                                            <Border x:Name="Thumbnail" Grid.Row="0" CornerRadius="8,8,0,0" ClipToBounds="True" Width="342" VerticalAlignment="Stretch" Height="342">
                                                 <Border.Background>
                                                     <ImageBrush ImageSource="{Binding LogoUrl}"
                                                         Stretch="UniformToFill"
+                                                                
                                                         AlignmentX="Center"
-                                                        AlignmentY="Center"/>
+                                                        AlignmentY="Top"/>
                                                 </Border.Background>
 
                                                 <!-- Overlay Buttons -->
