@@ -337,12 +337,12 @@
 
                                             <Border x:Name="Thumbnail" Grid.Row="0" CornerRadius="8,8,0,0" ClipToBounds="True" Width="342" VerticalAlignment="Stretch" Height="342">
                                                 <Grid>
-                                                    <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
+                                                    <!-- Image scaled to fill container (mimics object-fit: cover from website) -->
                                                     <Image Source="{Binding LogoUrl}"
 
-               Stretch="Uniform"
-               HorizontalAlignment="Stretch"
-               VerticalAlignment="Top"
+               Stretch="UniformToFill"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
                SnapsToDevicePixels="True"
                UseLayoutRounding="True"/>
 
