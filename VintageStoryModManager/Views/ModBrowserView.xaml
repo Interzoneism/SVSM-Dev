@@ -328,94 +328,119 @@
                                             <!-- Mod Image -->
 
                                             <!-- Mod Info -->
-                                            <Border x:Name="Thumbnail" Grid.Row="0" CornerRadius="8,8,0,0" ClipToBounds="True" Width="342" VerticalAlignment="Stretch" Height="342">
-                                                <Border.Background>
-                                                    <ImageBrush ImageSource="{Binding LogoUrl}"
-                                                        Stretch="UniformToFill"
-                                                                
-                                                        AlignmentX="Center"
-                                                        AlignmentY="Top"/>
-                                                </Border.Background>
-
-                                                <!-- Overlay Buttons -->
+                                            <Border x:Name="Thumbnail" Grid.Row="0" CornerRadius="8,8,0,0" ClipToBounds="True" Width="342" VerticalAlignment="Top" Height="342">
                                                 <Grid>
-                                                    <!-- Favorite button on top left -->
-                                                    <StackPanel Orientation="Horizontal"
-                                                        HorizontalAlignment="Left"
+                                                    <Image Source="{Binding LogoUrl}"
+                                                        Stretch="Uniform"
+                                                        HorizontalAlignment="Center"
                                                         VerticalAlignment="Top"
-                                                        Margin="8">
-                                                        <Button Width="28" Height="28"
-                                                            Opacity="0.9"
-                                                            Click="FavoriteButton_Click"
-                                                            Tag="{Binding ModId}"
-                                                            ToolTip="Toggle favorite"
-                                                            Style="{StaticResource IconButtonStyle}">
-                                                            <Button.Visibility>
-                                                                <MultiBinding Converter="{StaticResource FavoriteButtonVisibility}">
-                                                                    <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
-                                                                    <Binding Path="ModId"/>
-                                                                    <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
-                                                                </MultiBinding>
-                                                            </Button.Visibility>
-                                                            <Path Data="{StaticResource IconStarSolid}"
-                                                                Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center">
-                                                                <Path.Style>
-                                                                    <Style TargetType="{x:Type Path}">
-                                                                        <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Value="True">
-                                                                                <DataTrigger.Binding>
-                                                                                    <MultiBinding Converter="{StaticResource ContainsConverter}">
-                                                                                        <Binding Path="ModId"/>
-                                                                                        <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
-                                                                                    </MultiBinding>
-                                                                                </DataTrigger.Binding>
-                                                                                <Setter Property="Fill" Value="#FBBF24"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </Path.Style>
-                                                            </Path>
-                                                        </Button>
-                                                    </StackPanel>
+                                                        Width="{Binding ActualWidth, ElementName=ModCardBorder}"/>
 
-                                                    <!-- Install button on top right -->
-                                                    <StackPanel Orientation="Horizontal"
-                                                        HorizontalAlignment="Right"
-                                                        VerticalAlignment="Top"
-                                                        Margin="8">
-                                                        <Button Width="28" Height="28"
-                                                            Opacity="0.9"
-                                                            Click="InstallButton_Click"
-                                                            Tag="{Binding ModId}"
-                                                            ToolTip="Install mod"
-                                                            Style="{StaticResource IconButtonStyle}"
-                                                            IsEnabled="{Binding IsInstalled, Converter={StaticResource InvertBoolean}}">
-                                                            <Button.Visibility>
-                                                                <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
-                                                                    <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
-                                                                    <Binding Path="IsInstalled"/>
-                                                                </MultiBinding>
-                                                            </Button.Visibility>
-                                                            <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
-                                                                Data="{StaticResource IconDownload}">
-                                                                <Path.Style>
-                                                                    <Style TargetType="{x:Type Path}">
-                                                                        <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
-                                                                        <Style.Triggers>
-                                                                            <!-- Show checkmark when installed -->
-                                                                            <DataTrigger Value="True" Binding="{Binding IsInstalled}">
-                                                                                <Setter Property="Data" Value="{StaticResource IconCheck}"/>
-                                                                                <Setter Property="Fill" Value="{DynamicResource Brush.Status.Success}"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </Path.Style>
-                                                            </Path>
-                                                        </Button>
-                                                    </StackPanel>
+                                                    <!-- Overlay Buttons -->
+                                                    <Grid>
+                                                        <!-- Favorite button on top left -->
+                                                        <StackPanel Orientation="Horizontal"
+                                                            HorizontalAlignment="Left"
+                                                            VerticalAlignment="Top"
+                                                            Margin="8">
+                                                            <Button Width="28" Height="28"
+                                                                Opacity="0.9"
+                                                                Click="FavoriteButton_Click"
+                                                                Tag="{Binding ModId}"
+                                                                ToolTip="Toggle favorite"
+                                                                Style="{StaticResource IconButtonStyle}">
+                                                                <Button.Visibility>
+                                                                    <MultiBinding Converter="{StaticResource FavoriteButtonVisibility}">
+                                                                        <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
+                                                                        <Binding Path="ModId"/>
+                                                                        <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                                    </MultiBinding>
+                                                                </Button.Visibility>
+                                                                <Path Data="{StaticResource IconStarSolid}"
+                                                                    Fill="{DynamicResource Brush.Icon.Primary}"
+                                                                    Stretch="Uniform"
+                                                                    Width="16"
+                                                                    Height="16"/>
+                                                            </Button>
+                                                            <Button Width="28" Height="28"
+                                                                Opacity="0.9"
+                                                                Click="QueueInstallButton_Click"
+                                                                Tag="{Binding ModId}"
+                                                                ToolTip="Queue/Toggle Install"
+                                                                Style="{StaticResource IconButtonStyle}">
+                                                                <Button.Visibility>
+                                                                    <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
+                                                                        <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
+                                                                        <Binding Path="IsInstalled"/>
+                                                                    </MultiBinding>
+                                                                </Button.Visibility>
+                                                                <Path Data="{StaticResource IconAdd}"
+                                                                    Fill="{DynamicResource Brush.Icon.Primary}"
+                                                                    Stretch="Uniform"
+                                                                    Width="16"
+                                                                    Height="16"/>
+                                                            </Button>
+                                                        </StackPanel>
 
-                                                    <!-- User report summary on bottom right -->
+                                                        <!-- Download button on top right -->
+                                                        <StackPanel Orientation="Horizontal"
+                                                            HorizontalAlignment="Right"
+                                                            VerticalAlignment="Top"
+                                                            Margin="8">
+                                                            <Button Width="28" Height="28"
+                                                                Opacity="0.9"
+                                                                Click="FavoriteButton_Click"
+                                                                Tag="{Binding ModId}"
+                                                                ToolTip="Toggle favorite"
+                                                                Style="{StaticResource IconButtonStyle}">
+                                                                <Button.Visibility>
+                                                                    <MultiBinding Converter="{StaticResource FavoriteButtonVisibility}">
+                                                                        <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
+                                                                        <Binding Path="ModId"/>
+                                                                        <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                                    </MultiBinding>
+                                                                </Button.Visibility>
+                                                                <Path Data="{StaticResource IconStarSolid}"
+                                                                    Fill="{DynamicResource Brush.Icon.Primary}"
+                                                                    Stretch="Uniform"
+                                                                    Width="16"
+                                                                    Height="16"/>
+                                                            </Button>
+                                                            <Button Width="28" Height="28"
+                                                                Opacity="0.9"
+                                                                Click="OpenModDetailsButton_Click"
+                                                                Tag="{Binding ModId}"
+                                                                ToolTip="View details"
+                                                                Style="{StaticResource IconButtonStyle}">
+                                                                <Button.Visibility>
+                                                                    <Binding Path="IsMouseOver" ElementName="ModCardBorder" Converter="{StaticResource BoolToVisibility}"/>
+                                                                </Button.Visibility>
+                                                                <Path Data="{StaticResource IconInfoSolid}"
+                                                                    Fill="{DynamicResource Brush.Icon.Primary}"
+                                                                    Stretch="Uniform"
+                                                                    Width="16"
+                                                                    Height="16"/>
+                                                            </Button>
+                                                        </StackPanel>
+
+                                                        <!-- Install indicator bottom right -->
+                                                        <Border
+                                                            HorizontalAlignment="Right"
+                                                            VerticalAlignment="Bottom"
+                                                            Margin="8"
+                                                            CornerRadius="4"
+                                                            Background="{DynamicResource Brush.Background.Acrylic}"
+                                                            Visibility="{Binding IsQueued, Converter={StaticResource BoolToVisibility}}">
+                                                            <StackPanel Orientation="Horizontal" Margin="8,4,8,4" VerticalAlignment="Center">
+                                                                <Path Data="{StaticResource IconInstall}"
+                                                                    Style="{StaticResource IconSmall}"/>
+                                                                <TextBlock Text="Queued"
+                                                                    Margin="4,0,0,0"
+                                                                    VerticalAlignment="Center"
+                                                                    Foreground="{DynamicResource Brush.Text.Primary}"/>
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </Grid>
                                                 </Grid>
                                             </Border>
 
