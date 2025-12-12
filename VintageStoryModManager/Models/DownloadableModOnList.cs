@@ -172,7 +172,7 @@ public class DownloadableModOnList : INotifyPropertyChanged
     /// <summary>
     /// Gets the database-hosted logo URL.
     /// </summary>
-    public string LogoUrl => LogoFileDatabase ?? string.Empty;
+    public string LogoUrl => LogoFileDatabase ?? Logo ?? string.Empty;
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
