@@ -558,6 +558,7 @@ internal sealed class ModDatabaseCacheService
             Follows = info.Follows,
             TrendingPoints = info.TrendingPoints,
             LogoUrl = info.LogoUrl,
+            LogoUrlSource = info.LogoUrlSource,
             DownloadsLastThirtyDays = info.DownloadsLastThirtyDays,
             DownloadsLastTenDays = info.DownloadsLastTenDays,
             LastReleasedUtc = info.LastReleasedUtc,
@@ -604,6 +605,7 @@ internal sealed class ModDatabaseCacheService
             Follows = cached.Follows,
             TrendingPoints = cached.TrendingPoints,
             LogoUrl = cached.LogoUrl,
+            LogoUrlSource = cached.LogoUrlSource,
             DownloadsLastThirtyDays = cached.DownloadsLastThirtyDays,
             DownloadsLastTenDays = cached.DownloadsLastTenDays,
             LastReleasedUtc = cached.LastReleasedUtc,
@@ -806,6 +808,8 @@ internal sealed class ModDatabaseCacheService
         public int? TrendingPoints { get; init; }
 
         public string? LogoUrl { get; init; }
+
+        public string? LogoUrlSource { get; init; }
 
         public int? DownloadsLastThirtyDays { get; init; }
 

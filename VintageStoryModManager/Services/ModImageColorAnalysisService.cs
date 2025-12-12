@@ -14,7 +14,10 @@ internal static class ModImageColorAnalysisService
     private static readonly HttpClient HttpClient = new();
     private static readonly ConcurrentDictionary<string, Color> ColorCache = new(StringComparer.OrdinalIgnoreCase);
 
-    public static async Task<Color?> GetAverageColorAsync(string imageUrl, CancellationToken cancellationToken)
+    public static async Task<Color?> GetAverageColorAsync(
+        string imageUrl,
+        ModImageCacheDescriptor? descriptor,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(imageUrl)) return null;
 
@@ -25,7 +28,7 @@ internal static class ModImageColorAnalysisService
 
         try
         {
-            var imageBytes = await TryGetImageBytesAsync(imageUrl, cancellationToken).ConfigureAwait(false);
+            var imageBytes = await TryGetImageBytesAsync(imageUrl, descriptor, cancellationToken).ConfigureAwait(false);
             if (imageBytes == null || imageBytes.Length == 0) return null;
 
             var calculatedColor = await Task.Run(() => CalculateAverageColor(imageBytes), cancellationToken).ConfigureAwait(false);
@@ -46,22 +49,27 @@ internal static class ModImageColorAnalysisService
         }
     }
 
-    private static async Task<byte[]?> TryGetImageBytesAsync(string imageUrl, CancellationToken cancellationToken)
+    private static async Task<byte[]?> TryGetImageBytesAsync(
+        string imageUrl,
+        ModImageCacheDescriptor? descriptor,
+        CancellationToken cancellationToken)
     {
-        var cached = ModImageCacheService.TryGetCachedImage(imageUrl);
+        var cached = ModImageCacheService.TryGetCachedImage(imageUrl, descriptor);
         if (cached?.Length > 0)
         {
             return cached;
         }
 
-        cached = await ModImageCacheService.TryGetCachedImageAsync(imageUrl, cancellationToken).ConfigureAwait(false);
+        cached = await ModImageCacheService
+            .TryGetCachedImageAsync(imageUrl, cancellationToken, descriptor)
+            .ConfigureAwait(false);
         if (cached?.Length > 0)
         {
             return cached;
         }
 
         var downloaded = await HttpClient.GetByteArrayAsync(imageUrl, cancellationToken).ConfigureAwait(false);
-        _ = ModImageCacheService.StoreImageAsync(imageUrl, downloaded, cancellationToken);
+        _ = ModImageCacheService.StoreImageAsync(imageUrl, downloaded, cancellationToken, descriptor);
         return downloaded;
     }
 

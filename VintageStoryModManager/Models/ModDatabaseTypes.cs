@@ -67,6 +67,8 @@ public sealed class ModDatabaseInfo
 
     public string? LogoUrl { get; init; }
 
+    public string? LogoUrlSource { get; init; }
+
     public int? DownloadsLastThirtyDays { get; init; }
 
     public int? DownloadsLastTenDays { get; init; }
@@ -118,6 +120,8 @@ public sealed class ModDatabaseSearchResult
     public string? Side { get; init; }
 
     public string? LogoUrl { get; init; }
+
+    public string? LogoUrlSource { get; init; }
 
     public DateTime? LastReleasedUtc { get; init; }
 

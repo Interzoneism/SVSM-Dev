@@ -2751,6 +2751,12 @@ public partial class MainWindow : Window
         System.Diagnostics.Debug.WriteLine($"[MainWindow] Latest release: {latestRelease?.Version ?? "null"}");
 
         // Create ModDatabaseInfo with converted data
+        var logoUrlSource = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
+            ? "logofiledb"
+            : !string.IsNullOrWhiteSpace(mod.LogoFile)
+                ? "logofile"
+                : null;
+
         var databaseInfo = new ModDatabaseInfo
         {
             Tags = mod.Tags?.ToArray() ?? Array.Empty<string>(),
@@ -2764,6 +2770,7 @@ public partial class MainWindow : Window
             Follows = mod.Follows,
             TrendingPoints = mod.TrendingPoints,
             LogoUrl = mod.LogoFileDatabase,
+            LogoUrlSource = logoUrlSource,
             LastReleasedUtc = latestRelease?.CreatedUtc,
             LatestRelease = latestRelease,
             LatestCompatibleRelease = latestRelease,
