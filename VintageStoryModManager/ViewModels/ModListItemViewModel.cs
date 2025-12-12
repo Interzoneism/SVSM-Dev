@@ -53,6 +53,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _loadError;
     private DateTime? _modDatabaseLastUpdatedUtc;
     private ImageSource? _modDatabaseLogo;
+    private string? _modDatabaseLogoSource;
     private string? _modDatabaseLogoUrl;
     private string? _modDatabaseSide;
     private ICommand? _openModDatabasePageCommand;
@@ -124,6 +125,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _databaseComments = databaseInfo?.Comments;
         _databaseRecentDownloads = databaseInfo?.DownloadsLastThirtyDays;
         _databaseTenDayDownloads = databaseInfo?.DownloadsLastTenDays;
+        _modDatabaseLogoSource = databaseInfo?.LogoUrlSource;
         _modDatabaseLogoUrl = databaseInfo?.LogoUrl;
         _modDatabaseLogo = CreateModDatabaseLogoImage();
         LogDebug(
@@ -1009,7 +1011,9 @@ public sealed class ModListItemViewModel : ObservableObject
                 $"UpdateDatabaseInfo invoked. AssetId='{FormatValue(info.AssetId)}', PageUrl='{FormatValue(info.ModPageUrl)}', LogoUrl='{FormatValue(info.LogoUrl)}'.");
 
             var logoUrl = info.LogoUrl;
+            var logoSource = info.LogoUrlSource;
             var logoUrlChanged = !string.Equals(_modDatabaseLogoUrl, logoUrl, StringComparison.Ordinal);
+            _modDatabaseLogoSource = logoSource ?? _modDatabaseLogoSource;
             if (logoUrlChanged)
             {
                 _modDatabaseLogoUrl = logoUrl;
@@ -1036,6 +1040,7 @@ public sealed class ModListItemViewModel : ObservableObject
             else if (loadLogoImmediately && Icon is null && _modDatabaseLogo is null &&
                      !string.IsNullOrWhiteSpace(_modDatabaseLogoUrl))
             {
+                _modDatabaseLogoSource = logoSource ?? _modDatabaseLogoSource;
                 _modDatabaseLogo = CreateModDatabaseLogoImage();
                 OnPropertyChanged(nameof(ModDatabasePreviewImage));
                 OnPropertyChanged(nameof(HasModDatabasePreviewImage));
@@ -1183,7 +1188,8 @@ public sealed class ModListItemViewModel : ObservableObject
         try
         {
             // Try to load from cache first
-            var cachedBytes = await ModImageCacheService.TryGetCachedImageAsync(logoUrl, cancellationToken)
+            var cachedBytes = await ModImageCacheService
+                .TryGetCachedImageAsync(logoUrl, cancellationToken, GetModLogoCacheDescriptor())
                 .ConfigureAwait(false);
 
             if (cachedBytes is { Length: > 0 })
@@ -1241,7 +1247,9 @@ public sealed class ModListItemViewModel : ObservableObject
             cancellationToken.ThrowIfCancellationRequested();
 
             // Cache the downloaded image for future use
-            await ModImageCacheService.StoreImageAsync(logoUrl, payload, cancellationToken).ConfigureAwait(false);
+            await ModImageCacheService
+                .StoreImageAsync(logoUrl, payload, cancellationToken, GetModLogoCacheDescriptor())
+                .ConfigureAwait(false);
 
             // Only update UI if the logo wasn't already set
             if (needsUiUpdate)
@@ -2015,7 +2023,7 @@ public sealed class ModListItemViewModel : ObservableObject
         // Try to load from cache first (synchronous file read)
         try
         {
-            var cachedBytes = ModImageCacheService.TryGetCachedImage(logoUrl);
+            var cachedBytes = ModImageCacheService.TryGetCachedImage(logoUrl, GetModLogoCacheDescriptor());
 
             if (cachedBytes is { Length: > 0 })
             {
@@ -2038,6 +2046,11 @@ public sealed class ModListItemViewModel : ObservableObject
 
         // Fall back to network loading
         return CreateImageFromUri(logoUrl, "Mod database logo", false);
+    }
+
+    private ModImageCacheDescriptor GetModLogoCacheDescriptor()
+    {
+        return new ModImageCacheDescriptor(ModId, DisplayName, _modDatabaseLogoSource);
     }
 
     private ImageSource? CreateBitmapFromBytes(byte[] payload, Uri sourceUri)

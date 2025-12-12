@@ -794,7 +794,9 @@ public partial class ModBrowserViewModel : ObservableObject
                 await semaphore.WaitAsync(cancellationToken);
                 try
                 {
-                    var color = await ModImageColorAnalysisService.GetAverageColorAsync(mod.LogoUrl, cancellationToken);
+                    var cacheDescriptor = CreateLogoCacheDescriptor(mod);
+                    var color = await ModImageColorAnalysisService
+                        .GetAverageColorAsync(mod.LogoUrl, cacheDescriptor, cancellationToken);
                     if (color.HasValue)
                     {
                         mod.AverageLogoColor = color.Value;
@@ -816,6 +818,21 @@ public partial class ModBrowserViewModel : ObservableObject
         });
 
         await Task.WhenAll(tasks);
+    }
+
+    private static ModImageCacheDescriptor CreateLogoCacheDescriptor(DownloadableModOnList mod)
+    {
+        var source = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
+            ? "logofiledb"
+            : !string.IsNullOrWhiteSpace(mod.Logo)
+                ? "logofile"
+                : null;
+
+        var modIdentifier = mod.ModIdStrings?.FirstOrDefault(id => !string.IsNullOrWhiteSpace(id))
+                           ?? mod.UrlAlias
+                           ?? mod.Name;
+
+        return new ModImageCacheDescriptor(modIdentifier, mod.Name, source);
     }
 
     private async Task PopulateUserReportsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)

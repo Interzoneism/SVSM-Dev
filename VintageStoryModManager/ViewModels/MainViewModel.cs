@@ -2748,6 +2748,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             Follows = result.Follows,
             TrendingPoints = result.TrendingPoints,
             LogoUrl = result.LogoUrl,
+            LogoUrlSource = result.LogoUrlSource,
             LastReleasedUtc = result.LastReleasedUtc,
             Side = result.Side
         };
@@ -3405,6 +3406,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             Follows = source.Follows,
             TrendingPoints = source.TrendingPoints,
             LogoUrl = source.LogoUrl,
+            LogoUrlSource = source.LogoUrlSource,
             DownloadsLastThirtyDays = source.DownloadsLastThirtyDays,
             DownloadsLastTenDays = source.DownloadsLastTenDays,
             LastReleasedUtc = source.LastReleasedUtc,
@@ -3480,6 +3482,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             Follows = cachedInfo.Follows ?? offlineInfo.Follows,
             TrendingPoints = cachedInfo.TrendingPoints ?? offlineInfo.TrendingPoints,
             LogoUrl = cachedInfo.LogoUrl ?? offlineInfo.LogoUrl,
+            LogoUrlSource = cachedInfo.LogoUrlSource ?? offlineInfo.LogoUrlSource,
             DownloadsLastThirtyDays = cachedInfo.DownloadsLastThirtyDays ?? offlineInfo.DownloadsLastThirtyDays,
             LastReleasedUtc = offlineInfo.LastReleasedUtc ?? cachedInfo.LastReleasedUtc,
             CreatedUtc = cachedInfo.CreatedUtc ?? offlineInfo.CreatedUtc,
