@@ -170,14 +170,9 @@ public class DownloadableModOnList : INotifyPropertyChanged
         Comments > 10000 ? $"{Comments / 1000}K" : Comments.ToString();
 
     /// <summary>
-    /// Gets the logo URL or default image.
+    /// Gets the database-hosted logo URL.
     /// </summary>
-    public string LogoUrl =>
-        string.IsNullOrEmpty(LogoFileDatabase)
-            ? string.IsNullOrEmpty(Logo)
-                ? "https://mods.vintagestory.at/web/img/mod-default.png"
-                : Logo
-            : LogoFileDatabase;
+    public string LogoUrl => LogoFileDatabase ?? string.Empty;
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {

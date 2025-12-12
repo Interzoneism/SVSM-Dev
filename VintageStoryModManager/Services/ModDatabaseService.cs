@@ -1020,8 +1020,6 @@ public sealed class ModDatabaseService
             var trendingPoints = GetNullableInt(modElement, "trendingpoints");
             var side = GetString(modElement, "side");
             var logoUrl = GetString(modElement, "logofiledb");
-            if (string.IsNullOrWhiteSpace(logoUrl)) logoUrl = GetString(modElement, "logofile");
-            if (string.IsNullOrWhiteSpace(logoUrl)) logoUrl = GetString(modElement, "logo");
             var lastReleasedUtc = TryParseDateTime(GetString(modElement, "lastreleased"));
             var createdUtc = TryParseDateTime(GetString(modElement, "created"));
             var lastModifiedApiValue = GetString(modElement, "lastmodified");
@@ -1475,8 +1473,6 @@ public sealed class ModDatabaseService
         var urlAlias = GetString(element, "urlalias");
         var side = GetString(element, "side");
         var logo = GetString(element, "logofiledb");
-        if (string.IsNullOrWhiteSpace(logo)) logo = GetString(element, "logo");
-        if (string.IsNullOrWhiteSpace(logo)) logo = GetString(element, "logofile");
 
         var tags = GetStringList(element, "tags");
         var downloads = GetInt(element, "downloads");

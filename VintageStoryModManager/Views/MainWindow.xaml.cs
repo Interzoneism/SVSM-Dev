@@ -2763,11 +2763,7 @@ public partial class MainWindow : Window
             Comments = mod.Comments,
             Follows = mod.Follows,
             TrendingPoints = mod.TrendingPoints,
-            LogoUrl = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
-                ? mod.LogoFileDatabase
-                : string.IsNullOrWhiteSpace(mod.LogoFile)
-                    ? null
-                    : $"https://mods.vintagestory.at{mod.LogoFile}",
+            LogoUrl = mod.LogoFileDatabase,
             LastReleasedUtc = latestRelease?.CreatedUtc,
             LatestRelease = latestRelease,
             LatestCompatibleRelease = latestRelease,
