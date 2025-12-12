@@ -29,7 +29,7 @@
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility"/>
         <converters:AverageColorToBrushConverter x:Key="AverageColorToBrush"/>
         <converters:AverageColorToBrushAltConverter x:Key="AverageColorToBrushAlt"/>
-
+        <converters:HeightToMarginConverter x:Key="HeightToMargin"/>
 
         <!-- Loading Spinner Animation -->
         <Storyboard x:Key="SpinnerAnimation" RepeatBehavior="Forever">
@@ -339,28 +339,35 @@
                                             <Border x:Name="Thumbnail" Grid.Row="0" CornerRadius="8,8,0,0" ClipToBounds="True" Width="342" VerticalAlignment="Stretch" Height="342">
                                                 <Grid>
                                                     <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
-                                                    <Image Source="{Binding LogoUrl}"
-
+                                                    <Image 
+                                                       x:Name="ThumbImage"
+                                                       Source="{Binding LogoUrl}"
                                                        Stretch="Uniform"
-                                                       HorizontalAlignment="Stretch"
+                                                       HorizontalAlignment="Center"
                                                        VerticalAlignment="Top"
                                                        SnapsToDevicePixels="True"
-                                                       UseLayoutRounding="True"/>
+                                                       UseLayoutRounding="True">
+                                                        <Image.Margin>
+                                                            <Binding Path="ActualHeight"
+                                                             RelativeSource="{RelativeSource Self}"
+                                                             Converter="{StaticResource HeightToMargin}"/>
+                                                        </Image.Margin>
+                                                    </Image>
 
 
                                                     <!-- Overlay Buttons -->
                                                     <Grid>
                                                         <!-- Favorite button on top left -->
                                                         <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
-                        Margin="8">
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Top"
+                                                        Margin="8">
                                                             <Button Width="28" Height="28"
-                        Opacity="0.9"
-                        Click="FavoriteButton_Click"
-                        Tag="{Binding ModId}"
-                        ToolTip="Toggle favorite"
-                        Style="{StaticResource IconButtonStyle}">
+                                                            Opacity="0.9"
+                                                            Click="FavoriteButton_Click"
+                                                            Tag="{Binding ModId}"
+                                                            ToolTip="Toggle favorite"
+                                                            Style="{StaticResource IconButtonStyle}">
                                                                 <Button.Visibility>
                                                                     <MultiBinding Converter="{StaticResource FavoriteButtonVisibility}">
                                                                         <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
@@ -392,16 +399,16 @@
 
                                                         <!-- Install button on top right -->
                                                         <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Top"
-                        Margin="8">
+                                                        HorizontalAlignment="Right"
+                                                        VerticalAlignment="Top"
+                                                        Margin="8">
                                                             <Button Width="28" Height="28"
-                        Opacity="0.9"
-                        Click="InstallButton_Click"
-                        Tag="{Binding ModId}"
-                        ToolTip="Install mod"
-                        Style="{StaticResource IconButtonStyle}"
-                        IsEnabled="{Binding IsInstalled, Converter={StaticResource InvertBoolean}}">
+                                                            Opacity="0.9"
+                                                            Click="InstallButton_Click"
+                                                            Tag="{Binding ModId}"
+                                                            ToolTip="Install mod"
+                                                            Style="{StaticResource IconButtonStyle}"
+                                                            IsEnabled="{Binding IsInstalled, Converter={StaticResource InvertBoolean}}">
                                                                 <Button.Visibility>
                                                                     <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
                                                                         <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
