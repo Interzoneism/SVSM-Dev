@@ -53,6 +53,9 @@ public class DownloadableModOnList : INotifyPropertyChanged
     [JsonPropertyName("logo")]
     public string? Logo { get; set; }
 
+    [JsonPropertyName("logofiledb")]
+    public string? LogoFileDatabase { get; set; }
+
     [JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = [];
 
@@ -170,9 +173,11 @@ public class DownloadableModOnList : INotifyPropertyChanged
     /// Gets the logo URL or default image.
     /// </summary>
     public string LogoUrl =>
-        string.IsNullOrEmpty(Logo)
-            ? "https://mods.vintagestory.at/web/img/mod-default.png"
-            : Logo;
+        string.IsNullOrEmpty(LogoFileDatabase)
+            ? string.IsNullOrEmpty(Logo)
+                ? "https://mods.vintagestory.at/web/img/mod-default.png"
+                : Logo
+            : LogoFileDatabase;
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {

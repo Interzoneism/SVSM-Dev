@@ -34,6 +34,9 @@ public class DownloadableMod
     [JsonPropertyName("logofile")]
     public string? LogoFile { get; set; }
 
+    [JsonPropertyName("logofiledb")]
+    public string? LogoFileDatabase { get; set; }
+
     [JsonPropertyName("homepageurl")]
     public string? HomepageUrl { get; set; }
 
