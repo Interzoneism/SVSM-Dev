@@ -1019,7 +1019,8 @@ public sealed class ModDatabaseService
             var follows = GetNullableInt(modElement, "follows");
             var trendingPoints = GetNullableInt(modElement, "trendingpoints");
             var side = GetString(modElement, "side");
-            var logoUrl = GetString(modElement, "logofile");
+            var logoUrl = GetString(modElement, "logofiledb");
+            if (string.IsNullOrWhiteSpace(logoUrl)) logoUrl = GetString(modElement, "logofile");
             if (string.IsNullOrWhiteSpace(logoUrl)) logoUrl = GetString(modElement, "logo");
             var lastReleasedUtc = TryParseDateTime(GetString(modElement, "lastreleased"));
             var createdUtc = TryParseDateTime(GetString(modElement, "created"));
@@ -1473,7 +1474,8 @@ public sealed class ModDatabaseService
         var assetId = TryGetAssetId(element);
         var urlAlias = GetString(element, "urlalias");
         var side = GetString(element, "side");
-        var logo = GetString(element, "logo");
+        var logo = GetString(element, "logofiledb");
+        if (string.IsNullOrWhiteSpace(logo)) logo = GetString(element, "logo");
         if (string.IsNullOrWhiteSpace(logo)) logo = GetString(element, "logofile");
 
         var tags = GetStringList(element, "tags");
