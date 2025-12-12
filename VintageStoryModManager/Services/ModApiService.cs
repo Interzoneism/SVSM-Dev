@@ -131,7 +131,20 @@ public class ModApiService : IModApiService
             var response = await _httpClient.GetStringAsync(queryBuilder.ToString(), cancellationToken);
             var result = JsonSerializer.Deserialize<ModListResponse>(response, _jsonOptions);
 
-            return result?.Mods ?? [];
+            if (result?.Mods is not null)
+            {
+                foreach (var mod in result.Mods)
+                {
+                    if (string.IsNullOrWhiteSpace(mod.LogoFileDatabase) && !string.IsNullOrWhiteSpace(mod.Logo))
+                    {
+                        mod.LogoFileDatabase = mod.Logo;
+                    }
+                }
+
+                return result.Mods;
+            }
+
+            return [];
         }
         catch (JsonException ex)
         {
