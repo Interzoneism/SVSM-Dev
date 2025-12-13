@@ -27,7 +27,9 @@ internal static class ModImageCacheService
         if (string.IsNullOrWhiteSpace(imageUrl)) return null;
 
         var cachePath = GetCachePath(imageUrl, descriptor, out var legacyPath);
-        var resolvedPath = ResolveCachePath(cachePath, legacyPath);
+
+        var resolvedPath = ResolveCachePath(cachePath, legacyPath, descriptor is not null);
+
         if (string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath)) return null;
 
         try
@@ -55,7 +57,10 @@ internal static class ModImageCacheService
         if (string.IsNullOrWhiteSpace(imageUrl)) return null;
 
         var cachePath = GetCachePath(imageUrl, descriptor, out var legacyPath);
-        var resolvedPath = ResolveCachePath(cachePath, legacyPath);
+
+        var resolvedPath = await ResolveCachePathAsync(cachePath, legacyPath, descriptor is not null, cancellationToken)
+            .ConfigureAwait(false);
+
         if (string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath)) return null;
 
         var fileLock = await AcquireLockAsync(resolvedPath, cancellationToken).ConfigureAwait(false);
@@ -195,10 +200,74 @@ internal static class ModImageCacheService
         return Path.Combine(cacheDirectory, fileName);
     }
 
-    private static string ResolveCachePath(string? preferredPath, string? legacyPath)
+    private static string ResolveCachePath(string? preferredPath, string? legacyPath, bool attemptMigration)
     {
         if (!string.IsNullOrWhiteSpace(preferredPath) && File.Exists(preferredPath)) return preferredPath;
 
+        if (attemptMigration
+            && !string.IsNullOrWhiteSpace(preferredPath)
+            && !File.Exists(preferredPath)
+            && !string.IsNullOrWhiteSpace(legacyPath)
+            && File.Exists(legacyPath))
+        {
+            try
+            {
+                var directory = Path.GetDirectoryName(preferredPath);
+                if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+
+                File.Copy(legacyPath, preferredPath, false);
+                return preferredPath;
+            }
+            catch (Exception)
+            {
+                // Ignore migration failures, fall back to legacy path if available.
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(legacyPath) && File.Exists(legacyPath)) return legacyPath;
+
+        return preferredPath ?? legacyPath ?? string.Empty;
+    }
+
+    private static async Task<string> ResolveCachePathAsync(
+        string? preferredPath,
+        string? legacyPath,
+        bool attemptMigration,
+        CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(preferredPath) && File.Exists(preferredPath)) return preferredPath;
+
+        if (attemptMigration
+            && !string.IsNullOrWhiteSpace(preferredPath)
+            && !File.Exists(preferredPath)
+            && !string.IsNullOrWhiteSpace(legacyPath)
+            && File.Exists(legacyPath))
+        {
+            var fileLock = await AcquireLockAsync(preferredPath, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                if (File.Exists(preferredPath)) return preferredPath;
+
+                var directory = Path.GetDirectoryName(preferredPath);
+                if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+
+                File.Copy(legacyPath, preferredPath, false);
+                return preferredPath;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                // Ignore migration failures, fall back to legacy path if available.
+            }
+            finally
+            {
+                fileLock.Release();
+            }
+        }
+      
         if (!string.IsNullOrWhiteSpace(legacyPath) && File.Exists(legacyPath)) return legacyPath;
 
         return preferredPath ?? legacyPath ?? string.Empty;
