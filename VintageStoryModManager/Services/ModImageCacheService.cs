@@ -27,7 +27,9 @@ internal static class ModImageCacheService
         if (string.IsNullOrWhiteSpace(imageUrl)) return null;
 
         var cachePath = GetCachePath(imageUrl, descriptor, out var legacyPath);
+
         var resolvedPath = ResolveCachePath(cachePath, legacyPath, descriptor is not null);
+
         if (string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath)) return null;
 
         try
@@ -55,8 +57,10 @@ internal static class ModImageCacheService
         if (string.IsNullOrWhiteSpace(imageUrl)) return null;
 
         var cachePath = GetCachePath(imageUrl, descriptor, out var legacyPath);
+
         var resolvedPath = await ResolveCachePathAsync(cachePath, legacyPath, descriptor is not null, cancellationToken)
             .ConfigureAwait(false);
+
         if (string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath)) return null;
 
         var fileLock = await AcquireLockAsync(resolvedPath, cancellationToken).ConfigureAwait(false);
@@ -263,7 +267,7 @@ internal static class ModImageCacheService
                 fileLock.Release();
             }
         }
-
+      
         if (!string.IsNullOrWhiteSpace(legacyPath) && File.Exists(legacyPath)) return legacyPath;
 
         return preferredPath ?? legacyPath ?? string.Empty;
