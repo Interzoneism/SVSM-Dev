@@ -2754,7 +2754,7 @@ public partial class MainWindow : Window
         var logoUrlSource = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
             ? "logofiledb"
             : !string.IsNullOrWhiteSpace(mod.LogoFile)
-                ? "logofile"
+                ? "logofiledb"
                 : null;
 
         var databaseInfo = new ModDatabaseInfo

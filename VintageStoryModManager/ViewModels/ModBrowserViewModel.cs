@@ -833,7 +833,7 @@ public partial class ModBrowserViewModel : ObservableObject
         var source = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
             ? "logofiledb"
             : !string.IsNullOrWhiteSpace(mod.Logo)
-                ? "logofile"
+                ? "logofiledb"
                 : null;
 
         var modIdentifier = mod.ModIdStrings?.FirstOrDefault(id => !string.IsNullOrWhiteSpace(id))

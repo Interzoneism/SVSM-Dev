@@ -28,10 +28,10 @@ public class DownloadableMod
     [JsonPropertyName("urlalias")]
     public string? UrlAlias { get; set; }
 
-    [JsonPropertyName("logofilename")]
+    [JsonPropertyName("logofiledb")]
     public string? LogoFilename { get; set; }
 
-    [JsonPropertyName("logofile")]
+    [JsonPropertyName("logofiledb")]
     public string? LogoFile { get; set; }
 
     [JsonPropertyName("logofiledb")]
