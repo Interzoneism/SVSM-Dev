@@ -23,6 +23,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private CancellationTokenSource? _searchCts;
     private const int DefaultLoadedMods = 45;
     private const int LoadMoreCount = 10;
+    private const int PrefetchBufferCount = 15;
     private bool _isInitializing;
     private Func<DownloadableMod, Task>? _installModCallback;
     private readonly HashSet<int> _userReportsLoaded = new();
@@ -203,6 +204,12 @@ public partial class ModBrowserViewModel : ObservableObject
     /// </summary>
     public IEnumerable<DownloadableModOnList> VisibleMods =>
         ModsList.Take(VisibleModsCount);
+
+    private List<DownloadableModOnList> GetPrefetchMods()
+    {
+        var maxCount = Math.Min(VisibleModsCount + PrefetchBufferCount, ModsList.Count);
+        return ModsList.Take(maxCount).ToList();
+    }
 
 
     /// <summary>
@@ -389,11 +396,11 @@ public partial class ModBrowserViewModel : ObservableObject
             VisibleModsCount = DefaultLoadedMods;
             OnPropertyChanged(nameof(VisibleMods));
 
-            _ = PopulateLogoColorsAsync(ModsList, token);
+            var modsToPrefetch = GetPrefetchMods();
+            _ = PopulateLogoColorsAsync(modsToPrefetch, token);
 
-            // Only populate user reports for visible mods + one batch ahead
-            var modsToLoadReports = ModsList.Take(VisibleModsCount + LoadMoreCount).ToList();
-            _ = PopulateUserReportsAsync(modsToLoadReports, token);
+            // Only populate user reports for visible mods + prefetch buffer
+            _ = PopulateUserReportsAsync(modsToPrefetch, token);
         }
         catch (OperationCanceledException)
         {
@@ -418,14 +425,15 @@ public partial class ModBrowserViewModel : ObservableObject
         VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
         OnPropertyChanged(nameof(VisibleMods));
 
-        // Load user reports for newly visible mods + one batch ahead
-        var startIndex = previousCount;
-        var endIndex = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
-        var modsToLoadReports = ModsList.Skip(startIndex).Take(endIndex - startIndex).ToList();
-        
-        if (modsToLoadReports.Any())
+        // Load metadata for newly visible mods + prefetch buffer
+        var prefetchEndIndex = Math.Min(VisibleModsCount + PrefetchBufferCount, ModsList.Count);
+        var modsToPrefetch = ModsList.Skip(previousCount).Take(prefetchEndIndex - previousCount).ToList();
+
+        if (modsToPrefetch.Any())
         {
-            _ = PopulateUserReportsAsync(modsToLoadReports, _searchCts?.Token ?? CancellationToken.None);
+            var token = _searchCts?.Token ?? CancellationToken.None;
+            _ = PopulateLogoColorsAsync(modsToPrefetch, token);
+            _ = PopulateUserReportsAsync(modsToPrefetch, token);
         }
     }
 
