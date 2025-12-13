@@ -942,6 +942,7 @@ public sealed class ModDatabaseService
             UrlAlias = source.UrlAlias,
             Side = source.Side,
             LogoUrl = source.LogoUrl,
+            LogoUrlSource = source.LogoUrlSource,
             LastReleasedUtc = source.LastReleasedUtc,
             CreatedUtc = info?.CreatedUtc ?? source.CreatedUtc,
             Score = source.Score,
