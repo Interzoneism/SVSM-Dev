@@ -24,6 +24,9 @@ public partial class ModBrowserViewModel : ObservableObject
     private const int DefaultLoadedMods = 45;
     private const int LoadMoreCount = 10;
     private const int PrefetchBufferCount = 15;
+    private const double TitleWeight = 6.0;
+    private const double AuthorWeight = 4.5;
+    private const double SummaryWeight = 2.5;
     private bool _isInitializing;
     private Func<DownloadableMod, Task>? _installModCallback;
     private readonly HashSet<int> _userReportsLoaded = new();
@@ -94,6 +97,9 @@ public partial class ModBrowserViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<int> _installedMods = [];
 
+    [ObservableProperty]
+    private bool _useRelevantSearchResults = true;
+
     #endregion
 
     #region Filter Options
@@ -147,6 +153,7 @@ public partial class ModBrowserViewModel : ObservableObject
             SelectedInstalledFilter = _userConfigService.ModBrowserSelectedInstalledFilter;
             OnlyFavorites = _userConfigService.ModBrowserOnlyFavorites;
             FavoriteMods = new ObservableCollection<int>(_userConfigService.ModBrowserFavoriteModIds);
+            UseRelevantSearchResults = _userConfigService.ModBrowserRelevantSearch;
         }
 
         FavoriteMods.CollectionChanged += OnFavoriteModsCollectionChanged;
@@ -387,6 +394,11 @@ public partial class ModBrowserViewModel : ObservableObject
             // Apply client-side filters
             var filteredMods = ApplyClientSideFilters(mods);
 
+            if (ShouldApplyRelevantSorting())
+            {
+                filteredMods = SortByRelevance(filteredMods, TextFilter);
+            }
+
             ModsList.Clear();
             _userReportsLoaded.Clear(); // Reset user reports tracking
             _modsWithLoadedLogos.Clear(); // Reset logo tracking
@@ -457,6 +469,12 @@ public partial class ModBrowserViewModel : ObservableObject
     private void ToggleFavoriteFilter()
     {
         OnlyFavorites = !OnlyFavorites;
+    }
+
+    [RelayCommand]
+    private void ToggleRelevantSearchResults()
+    {
+        UseRelevantSearchResults = !UseRelevantSearchResults;
     }
 
     [RelayCommand]
@@ -789,6 +807,97 @@ public partial class ModBrowserViewModel : ObservableObject
         }
 
         return filtered.ToList();
+    }
+
+    private bool ShouldApplyRelevantSorting()
+    {
+        return UseRelevantSearchResults && !string.IsNullOrWhiteSpace(TextFilter);
+    }
+
+    private List<DownloadableModOnList> SortByRelevance(IEnumerable<DownloadableModOnList> mods, string query)
+    {
+        var searchTerms = ExtractSearchTerms(query);
+        if (searchTerms.Count == 0)
+        {
+            return mods.ToList();
+        }
+
+        var normalizedPhrase = string.Join(' ', searchTerms);
+
+        return mods
+            .Select((mod, index) => new
+            {
+                Mod = mod,
+                Score = CalculateRelevanceScore(mod, searchTerms, normalizedPhrase),
+                Index = index
+            })
+            .OrderByDescending(entry => entry.Score)
+            .ThenBy(entry => entry.Index)
+            .Select(entry => entry.Mod)
+            .ToList();
+    }
+
+    private static List<string> ExtractSearchTerms(string query)
+    {
+        return query
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(term => term.Length > 0)
+            .Take(10)
+            .ToList();
+    }
+
+    private double CalculateRelevanceScore(DownloadableModOnList mod, IReadOnlyList<string> terms, string normalizedPhrase)
+    {
+        double score = 0;
+
+        foreach (var term in terms)
+        {
+            score += ScoreField(mod.Name, term, TitleWeight);
+            score += ScoreField(mod.Author, term, AuthorWeight);
+            score += ScoreField(mod.Summary, term, SummaryWeight);
+        }
+
+        score += ScoreField(mod.Name, normalizedPhrase, TitleWeight * 1.25);
+        score += ScoreField(mod.Author, normalizedPhrase, AuthorWeight * 1.15);
+        score += ScoreField(mod.Summary, normalizedPhrase, SummaryWeight * 0.9);
+
+        return score;
+    }
+
+    private static double ScoreField(string? field, string term, double weight)
+    {
+        if (string.IsNullOrWhiteSpace(field) || string.IsNullOrWhiteSpace(term))
+        {
+            return 0;
+        }
+
+        double score = 0;
+        var searchIndex = 0;
+        while (searchIndex < field.Length)
+        {
+            var matchIndex = field.IndexOf(term, searchIndex, StringComparison.OrdinalIgnoreCase);
+            if (matchIndex < 0)
+            {
+                break;
+            }
+
+            score += weight;
+
+            if (matchIndex == 0 || char.IsWhiteSpace(field[matchIndex - 1]))
+            {
+                score += weight * 0.5;
+            }
+
+            var endIndex = matchIndex + term.Length;
+            if (endIndex == field.Length || char.IsWhiteSpace(field[endIndex]))
+            {
+                score += weight * 0.25;
+            }
+
+            searchIndex = endIndex;
+        }
+
+        return score;
     }
 
     private async Task PopulateLogoColorsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
@@ -1150,6 +1259,15 @@ public partial class ModBrowserViewModel : ObservableObject
         if (!_isInitializing)
         {
             _userConfigService?.SetModBrowserOrderByDirection(value);
+            _ = SearchModsAsync();
+        }
+    }
+
+    partial void OnUseRelevantSearchResultsChanged(bool value)
+    {
+        if (!_isInitializing)
+        {
+            _userConfigService?.SetModBrowserRelevantSearch(value);
             _ = SearchModsAsync();
         }
     }
