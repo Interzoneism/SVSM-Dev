@@ -356,24 +356,41 @@
                                             </Grid.RowDefinitions>
 
 
-                                            <Border x:Name="Thumbnail" Grid.Row="0" CornerRadius="8,8,0,0" ClipToBounds="True" Width="342" VerticalAlignment="Stretch" Height="342">
-                                                <Grid>
+                                            <Border Grid.Row="0"
+                                                    Width="342"
+                                                    Height="342"
+                                                    CornerRadius="10"
+                                                    Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+                                                    BorderBrush="{DynamicResource Brush.Border.Default}"
+                                                    BorderThickness="1"
+                                                    Padding="6"
+                                                    SnapsToDevicePixels="True">
+                                                <Border x:Name="Thumbnail"
+                                                        CornerRadius="8"
+                                                        ClipToBounds="True"
+                                                        Background="{DynamicResource Brush.Panel.Primary.Background.Solid}">
+                                                    <Grid>
                                                     <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
-                                                    <Image
+                                                    <Rectangle
                                                        x:Name="ThumbImage"
-                                                       Source="{Binding LogoUrl}"
                                                        Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}, ConverterParameter=invert}"
-                                                       Stretch="Uniform"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Top"
+                                                       HorizontalAlignment="Stretch"
+                                                       VerticalAlignment="Stretch"
+                                                       RadiusX="8" RadiusY="8"
                                                        SnapsToDevicePixels="True"
-                                                        UseLayoutRounding="True">
-                                                        <Image.Margin>
+                                                       UseLayoutRounding="True">
+                                                        <Rectangle.Fill>
+                                                            <ImageBrush
+                                                               ImageSource="{Binding LogoUrl}"
+                                                               Stretch="Uniform"
+                                                               AlignmentY="Top"/>
+                                                        </Rectangle.Fill>
+                                                        <Rectangle.Margin>
                                                             <Binding Path="ActualHeight"
                                                              RelativeSource="{RelativeSource Self}"
                                                              Converter="{StaticResource HeightToMargin}"/>
-                                                        </Image.Margin>
-                                                    </Image>
+                                                        </Rectangle.Margin>
+                                                    </Rectangle>
 
                                                     <Viewbox
                                                        Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
@@ -471,9 +488,10 @@
                                                             </Button>
                                                         </StackPanel>
 
-                                                        
+
                                                     </Grid>
-                                                </Grid>
+                                                    </Grid>
+                                                </Border>
                                             </Border>
 
                                             <!-- Mod Info -->
