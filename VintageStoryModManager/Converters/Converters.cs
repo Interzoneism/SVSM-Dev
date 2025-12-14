@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Application = System.Windows.Application;
 using Binding = System.Windows.Data.Binding;
 using Color = System.Windows.Media.Color;
@@ -198,6 +199,34 @@ public class IconKeyToGeometryConverter : IValueConverter
         }
 
         return null;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}
+
+/// <summary>
+/// Converts a non-empty string into an <see cref="ImageSource"/>.
+/// Returns <c>null</c> when the input is null, whitespace, or cannot be converted.
+/// </summary>
+public class StringToImageSourceConverter : IValueConverter
+{
+    public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is not string path || string.IsNullOrWhiteSpace(path))
+            return null;
+
+        try
+        {
+            var uri = new Uri(path, UriKind.RelativeOrAbsolute);
+            return new BitmapImage(uri);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

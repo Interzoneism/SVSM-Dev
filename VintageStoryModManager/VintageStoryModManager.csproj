@@ -47,6 +47,7 @@
                         <Link>Resources\mod-default.png</Link>
                 </Resource>
                 <Resource Include="Resources\Discord.png" />
+                <Resource Include="Resources\Fonts\Goudament.ttf" />
         </ItemGroup>
 
 	<ItemGroup>
