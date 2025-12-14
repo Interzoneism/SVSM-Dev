@@ -2753,9 +2753,7 @@ public partial class MainWindow : Window
         // Create ModDatabaseInfo with converted data
         var logoUrlSource = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
             ? "logofiledb"
-            : !string.IsNullOrWhiteSpace(mod.LogoFile)
-                ? "logofiledb"
-                : null;
+            : null;
 
         var databaseInfo = new ModDatabaseInfo
         {
