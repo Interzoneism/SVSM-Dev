@@ -32,6 +32,7 @@
         <converters:HeightToMarginConverter x:Key="HeightToMargin"/>
         <converters:ModNameAbbreviationConverter x:Key="ModNameAbbreviationConverter"/>
         <converters:StringNullOrWhiteSpaceToVisibilityConverter x:Key="StringNullOrWhiteSpaceToVisibility"/>
+        <converters:StringToImageSourceConverter x:Key="StringToImageSource"/>
 
         <!-- Loading Spinner Animation -->
         <Storyboard x:Key="SpinnerAnimation" RepeatBehavior="Forever">
@@ -381,7 +382,7 @@
                                                        UseLayoutRounding="True">
                                                         <Rectangle.Fill>
                                                             <ImageBrush
-                                                               ImageSource="{Binding LogoUrl}"
+                                                               ImageSource="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
                                                                Stretch="Uniform"
                                                                AlignmentY="Top"/>
                                                         </Rectangle.Fill>
