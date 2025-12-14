@@ -86,7 +86,7 @@
                 </Setter.Value>
             </Setter>
             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Dark}"/>
-            <Setter Property="BorderThickness" Value="1,1,2,2"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="UseLayoutRounding" Value="True"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -94,7 +94,7 @@
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Light}"/>
-                    <Setter Property="BorderThickness" Value="2,2,1,1"/>
+                    <Setter Property="BorderThickness" Value="0"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -346,168 +346,138 @@
                             <DataTemplate>
                                 <Border x:Name="ModCardBorder"
                                     Style="{StaticResource ModCardStyle}"
-                                    Width="342"
-                                    
-                                    Margin="8" Tag="{Binding ModId}" Height="342">
-                                    <Border CornerRadius="8" ClipToBounds="True">
+                                    Width="342" 
+                                    Height="342"
+                                    Margin="8" 
+                                    Tag="{Binding ModId}" >
+                                    <Grid>
+                                        <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
+                                        <Rectangle
+                                            x:Name="ThumbImage"
+                                            Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
+                                            RadiusX="8" RadiusY="8"
+                                            SnapsToDevicePixels="True"
+                                            UseLayoutRounding="True">
+                                            <Rectangle.Fill>
+                                                <ImageBrush
+                                                    ImageSource="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
+                                                    Stretch="Uniform"
+                                                    AlignmentY="Top"/>
+                                            </Rectangle.Fill>
+                                        </Rectangle>
+
+                                        <Viewbox
+                                            Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
+                                            Stretch="Uniform"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center">
+                                            <TextBlock
+                                                Text="{Binding Name, Converter={StaticResource ModNameAbbreviationConverter}}"
+                                                FontFamily="pack://application:,,,/Resources/Fonts/Goudament.ttf#Goudament"
+                                                FontWeight="Bold"
+                                                Foreground="{DynamicResource Brush.Text.Primary}"
+                                                TextAlignment="Center"
+                                                TextWrapping="NoWrap"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                        </Viewbox>
+
+
+                                        <!-- Overlay Buttons -->
                                         <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="*"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-
-
-                                            <Border Grid.Row="0"
-                                                    Width="342"
-                                                    Height="342"
-                                                    CornerRadius="10"
-                                                    Background="Transparent"
-                                                    BorderBrush="{DynamicResource Brush.Border.Default}"
-                                                    BorderThickness="1"
-                                                    Padding="0,0,0,0"
-                                                    SnapsToDevicePixels="True">
-                                                <Border x:Name="Thumbnail"
-                                                        CornerRadius="8"
-                                                        ClipToBounds="True"
-                                                        Background="{DynamicResource Brush.Panel.Primary.Background.Solid}" Padding="0,0,0,0">
-                                                    <Grid>
-                                                    <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
-                                                    <Rectangle
-                                                       x:Name="ThumbImage"
-                                                       Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}, ConverterParameter=invert}"
-                                                       HorizontalAlignment="Stretch"
-                                                       VerticalAlignment="Stretch"
-                                                       RadiusX="8" RadiusY="8"
-                                                       SnapsToDevicePixels="True"
-                                                       UseLayoutRounding="True">
-                                                        <Rectangle.Fill>
-                                                            <ImageBrush
-                                                               ImageSource="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
-                                                               Stretch="Uniform"
-                                                               AlignmentY="Top"/>
-                                                        </Rectangle.Fill>
-                                                        <Rectangle.Margin>
-                                                            <Binding Path="ActualHeight"
-                                                             RelativeSource="{RelativeSource Self}"
-                                                             Converter="{StaticResource HeightToMargin}"/>
-                                                        </Rectangle.Margin>
-                                                    </Rectangle>
-
-                                                    <Viewbox
-                                                       Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
-                                                       Stretch="Uniform"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       Margin="8">
-                                                        <TextBlock
-                                                           Text="{Binding Name, Converter={StaticResource ModNameAbbreviationConverter}}"
-                                                           FontFamily="pack://application:,,,/Resources/Fonts/Goudament.ttf#Goudament"
-                                                           FontWeight="Bold"
-                                                           Foreground="{DynamicResource Brush.Text.Primary}"
-                                                           TextAlignment="Center"
-                                                           TextWrapping="NoWrap"
-                                                           VerticalAlignment="Center"
-                                                           HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                                    </Viewbox>
-
-
-                                                    <!-- Overlay Buttons -->
-                                                    <Grid>
-                                                        <!-- Favorite button on top left -->
-                                                        <StackPanel Orientation="Horizontal"
+                                            <!-- Favorite button on top left -->
+                                            <StackPanel Orientation="Horizontal"
                                                         HorizontalAlignment="Left"
                                                         VerticalAlignment="Top"
                                                         Margin="8">
-                                                            <Button Width="28" Height="28"
+                                                <Button Width="28" Height="28"
                                                             Opacity="0.9"
                                                             Click="FavoriteButton_Click"
                                                             Tag="{Binding ModId}"
                                                             ToolTip="Toggle favorite"
                                                             Style="{StaticResource IconButtonStyle}">
-                                                                <Button.Visibility>
-                                                                    <MultiBinding Converter="{StaticResource FavoriteButtonVisibility}">
-                                                                        <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
-                                                                        <Binding Path="ModId"/>
-                                                                        <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
-                                                                    </MultiBinding>
-                                                                </Button.Visibility>
-                                                                <Path Data="{StaticResource IconStarSolid}"
+                                                    <Button.Visibility>
+                                                        <MultiBinding Converter="{StaticResource FavoriteButtonVisibility}">
+                                                            <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
+                                                            <Binding Path="ModId"/>
+                                                            <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                        </MultiBinding>
+                                                    </Button.Visibility>
+                                                    <Path Data="{StaticResource IconStarSolid}"
                           Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center">
-                                                                    <Path.Style>
-                                                                        <Style TargetType="{x:Type Path}">
-                                                                            <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
-                                                                            <Style.Triggers>
-                                                                                <DataTrigger Value="True">
-                                                                                    <DataTrigger.Binding>
-                                                                                        <MultiBinding Converter="{StaticResource ContainsConverter}">
-                                                                                            <Binding Path="ModId"/>
-                                                                                            <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
-                                                                                        </MultiBinding>
-                                                                                    </DataTrigger.Binding>
-                                                                                    <Setter Property="Fill" Value="#FBBF24"/>
-                                                                                </DataTrigger>
-                                                                            </Style.Triggers>
-                                                                        </Style>
-                                                                    </Path.Style>
-                                                                </Path>
-                                                            </Button>
-                                                        </StackPanel>
+                                                        <Path.Style>
+                                                            <Style TargetType="{x:Type Path}">
+                                                                <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Value="True">
+                                                                        <DataTrigger.Binding>
+                                                                            <MultiBinding Converter="{StaticResource ContainsConverter}">
+                                                                                <Binding Path="ModId"/>
+                                                                                <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                                            </MultiBinding>
+                                                                        </DataTrigger.Binding>
+                                                                        <Setter Property="Fill" Value="#FBBF24"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Path.Style>
+                                                    </Path>
+                                                </Button>
+                                            </StackPanel>
 
-                                                        <!-- Install button on top right -->
-                                                        <StackPanel Orientation="Horizontal"
+                                            <!-- Install button on top right -->
+                                            <StackPanel Orientation="Horizontal"
                                                         HorizontalAlignment="Right"
                                                         VerticalAlignment="Top"
                                                         Margin="8">
-                                                            <Button Width="28" Height="28"
+                                                <Button Width="28" Height="28"
                                                             Opacity="0.9"
                                                             Click="InstallButton_Click"
                                                             Tag="{Binding ModId}"
                                                             ToolTip="Install mod"
                                                             Style="{StaticResource IconButtonStyle}"
                                                             IsEnabled="{Binding IsInstalled, Converter={StaticResource InvertBoolean}}">
-                                                                <Button.Visibility>
-                                                                    <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
-                                                                        <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
-                                                                        <Binding Path="IsInstalled"/>
-                                                                    </MultiBinding>
-                                                                </Button.Visibility>
-                                                                <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
+                                                    <Button.Visibility>
+                                                        <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
+                                                            <Binding Path="IsMouseOver" ElementName="ModCardBorder"/>
+                                                            <Binding Path="IsInstalled"/>
+                                                        </MultiBinding>
+                                                    </Button.Visibility>
+                                                    <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
                           Data="{StaticResource IconDownload}">
-                                                                    <Path.Style>
-                                                                        <Style TargetType="{x:Type Path}">
-                                                                            <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
-                                                                            <Style.Triggers>
-                                                                                <!-- Show checkmark when installed -->
-                                                                                <DataTrigger Value="True" Binding="{Binding IsInstalled}">
-                                                                                    <Setter Property="Data" Value="{StaticResource IconCheck}"/>
-                                                                                    <Setter Property="Fill" Value="{DynamicResource Brush.Status.Success}"/>
-                                                                                </DataTrigger>
-                                                                            </Style.Triggers>
-                                                                        </Style>
-                                                                    </Path.Style>
-                                                                </Path>
-                                                            </Button>
-                                                        </StackPanel>
+                                                        <Path.Style>
+                                                            <Style TargetType="{x:Type Path}">
+                                                                <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
+                                                                <Style.Triggers>
+                                                                    <!-- Show checkmark when installed -->
+                                                                    <DataTrigger Value="True" Binding="{Binding IsInstalled}">
+                                                                        <Setter Property="Data" Value="{StaticResource IconCheck}"/>
+                                                                        <Setter Property="Fill" Value="{DynamicResource Brush.Status.Success}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Path.Style>
+                                                    </Path>
+                                                </Button>
+                                            </StackPanel>
 
 
-                                                    </Grid>
-                                                    </Grid>
-                                                </Border>
-                                            </Border>
+                                        </Grid>
 
-                                            <!-- Mod Info -->
-                                            <Grid Style="{DynamicResource InfoBoxStyle}" x:Name="Infobox" Grid.Row="0" Height="113" VerticalAlignment="Bottom">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
 
-                                                <!-- Title & Description -->
-                                                <StackPanel Grid.Column="0" Margin="8,16,8,8">
-                                                    <!-- MaxWidth: Card=288 - StatsColumn(80+16)=96 - Separator=1 - Margins=16 = 175 -->
-                                                    <StackPanel Orientation="Horizontal" MaxWidth="175" HorizontalAlignment="Left">
-                                                        <!-- MaxWidth: 175 - LinkIcon(10+4margin) = 161 -->
-                                                        <TextBlock Foreground="{DynamicResource Brush.Text.Primary}"
+                                        <!-- Mod Info -->
+                                        <Grid Style="{DynamicResource InfoBoxStyle}" x:Name="Infobox" Grid.Row="0" Height="113" VerticalAlignment="Bottom">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Title & Description -->
+                                            <StackPanel Grid.Column="0" Margin="8,16,8,8">
+                                                <!-- MaxWidth: Card=288 - StatsColumn(80+16)=96 - Separator=1 - Margins=16 = 175 -->
+                                                <StackPanel Orientation="Horizontal" MaxWidth="175" HorizontalAlignment="Left">
+                                                    <!-- MaxWidth: 175 - LinkIcon(10+4margin) = 161 -->
+                                                    <TextBlock Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontWeight="Bold"
                                                             FontSize="16"
                                                             TextTrimming="CharacterEllipsis"
@@ -516,85 +486,85 @@
                                                             MouseLeftButtonDown="OpenInBrowserTitle_Click"
                                                             Tag="{Binding AssetId}"
                                                             ToolTip="Open in browser" Text="{Binding Name}" HorizontalAlignment="Left">
-                                                            <TextBlock.Style>
-                                                                <Style TargetType="{x:Type TextBlock}">
-                                                                    <Style.Triggers>
-                                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                                            <Setter Property="TextDecorations" Value="Underline"/>
-                                                                        </Trigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBlock.Style>
-                                                        </TextBlock>
-                                                        <Path Data="{StaticResource IconLinkAlt}" 
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="{x:Type TextBlock}">
+                                                                <Style.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter Property="TextDecorations" Value="Underline"/>
+                                                                    </Trigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <Path Data="{StaticResource IconLinkAlt}" 
                                                             Width="10" Height="10" Stretch="Uniform"
                                                             Fill="{DynamicResource Brush.Text.Subtle}"
                                                             VerticalAlignment="Center"
                                                             Margin="4,0,0,0"/>
-                                                    </StackPanel>
-                                                    <TextBlock Text="{Binding Summary}"
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Summary}"
                                                         Foreground="{DynamicResource Brush.Text.Subtle}"
                                                         FontSize="12"
                                                         TextWrapping="Wrap"
                                                         MaxHeight="60"
                                                         TextTrimming="CharacterEllipsis"/>
-                                                </StackPanel>
+                                            </StackPanel>
 
-                                                
 
-                                                <!-- Stats -->
-                                                <StackPanel Grid.Column="1"
+
+                                            <!-- Stats -->
+                                            <StackPanel Grid.Column="1"
                                                     Margin="8,16,8,8"
                                                     Width="80">
-                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                        <Path Data="{StaticResource IconUser}" 
+                                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                    <Path Data="{StaticResource IconUser}" 
                                                             Style="{StaticResource IconSmallSubtle}"/>
-                                                        <!-- MaxWidth: StatsWidth=80 - Icon(12+4margin) = 64 -->
-                                                        <TextBlock Text="{Binding Author}"
+                                                    <!-- MaxWidth: StatsWidth=80 - Icon(12+4margin) = 64 -->
+                                                    <TextBlock Text="{Binding Author}"
                                                             Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontSize="12"
                                                             MaxWidth="64"
                                                             TextTrimming="CharacterEllipsis"/>
-                                                    </StackPanel>
-                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                        <Path Data="{StaticResource IconDownload}" 
-                                                            Style="{StaticResource IconSmallSubtle}"/>
-                                                        <TextBlock Text="{Binding FormattedDownloads}"
-                                                            Foreground="{DynamicResource Brush.Text.Primary}"
-                                                            FontSize="12"/>
-                                                    </StackPanel>
-                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                        <Path Data="{StaticResource IconHeartSolid}" 
-                                                            Style="{StaticResource IconSmallSubtle}"/>
-                                                        <TextBlock Text="{Binding FormattedFollows}"
-                                                            Foreground="{DynamicResource Brush.Text.Primary}"
-                                                            FontSize="12"/>
-                                                    </StackPanel>
-                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                        <Path Data="{StaticResource IconMessage}" 
-                                                            Style="{StaticResource IconSmallSubtle}"/>
-                                                        <TextBlock Text="{Binding FormattedComments}"
-                                                            Foreground="{DynamicResource Brush.Text.Primary}"
-                                                            FontSize="12"/>
-                                                    </StackPanel>
                                                 </StackPanel>
-                                            </Grid>
-                                            <Border x:Name="UserReports" HorizontalAlignment="Right"
+                                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                    <Path Data="{StaticResource IconDownload}" 
+                                                            Style="{StaticResource IconSmallSubtle}"/>
+                                                    <TextBlock Text="{Binding FormattedDownloads}"
+                                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                                            FontSize="12"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                    <Path Data="{StaticResource IconHeartSolid}" 
+                                                            Style="{StaticResource IconSmallSubtle}"/>
+                                                    <TextBlock Text="{Binding FormattedFollows}"
+                                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                                            FontSize="12"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                    <Path Data="{StaticResource IconMessage}" 
+                                                            Style="{StaticResource IconSmallSubtle}"/>
+                                                    <TextBlock Text="{Binding FormattedComments}"
+                                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                                            FontSize="12"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Border x:Name="UserReports" HorizontalAlignment="Right"
                                                         VerticalAlignment="Bottom"
                                                         Margin="0,0,8,121"
                                                         Padding="6,4"
                                                         Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                                         CornerRadius="6"
                                                         Visibility="Hidden">
-                                                <TextBlock Text="{Binding UserReportDisplay}"
+                                            <TextBlock Text="{Binding UserReportDisplay}"
                                                             ToolTip="{Binding UserReportTooltip}"
                                                             Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontWeight="SemiBold"
                                                             FontSize="12"
                                                             TextTrimming="CharacterEllipsis"/>
-                                            </Border>
-                                        </Grid>
-                                    </Border>
+                                        </Border>
+
+                                    </Grid>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
