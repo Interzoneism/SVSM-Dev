@@ -29,12 +29,6 @@ public class DownloadableMod
     public string? UrlAlias { get; set; }
 
     [JsonPropertyName("logofiledb")]
-    public string? LogoFilename { get; set; }
-
-    [JsonPropertyName("logofiledb")]
-    public string? LogoFile { get; set; }
-
-    [JsonPropertyName("logofiledb")]
     public string? LogoFileDatabase { get; set; }
 
     [JsonPropertyName("homepageurl")]
