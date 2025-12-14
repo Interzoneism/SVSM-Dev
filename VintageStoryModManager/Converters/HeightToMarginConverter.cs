@@ -27,7 +27,7 @@ public class HeightToMarginConverter : IValueConverter
             double diff = target - actualHeight;
             double margin = diff > 0 ? diff / 2.0 : 0.0;
 
-            return new Thickness(8, margin, 8, 0); // top only
+            return new Thickness(0, margin, 0, 0); // top only
         }
 
         return new Thickness(0);

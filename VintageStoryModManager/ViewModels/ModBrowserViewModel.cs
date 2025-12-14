@@ -868,9 +868,7 @@ public partial class ModBrowserViewModel : ObservableObject
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                var modIdentifier = mod.AssetId > 0
-                    ? mod.AssetId.ToString(CultureInfo.InvariantCulture)
-                    : mod.ModId.ToString(CultureInfo.InvariantCulture);
+                var modIdentifier = mod.ModId;
 
                 var modDetails = await _modApiService.GetModAsync(modIdentifier, cancellationToken);
 

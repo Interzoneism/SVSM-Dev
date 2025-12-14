@@ -439,14 +439,14 @@
                                             </Border>
 
                                             <!-- Mod Info -->
-                                            <Grid Style="{DynamicResource InfoBoxStyle}" x:Name="Infobox" Grid.Row="0" Height="96" VerticalAlignment="Bottom">
+                                            <Grid Style="{DynamicResource InfoBoxStyle}" x:Name="Infobox" Grid.Row="0" Height="113" VerticalAlignment="Bottom">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
 
                                                 <!-- Title & Description -->
-                                                <StackPanel Grid.Column="0" Margin="8">
+                                                <StackPanel Grid.Column="0" Margin="8,16,8,8">
                                                     <!-- MaxWidth: Card=288 - StatsColumn(80+16)=96 - Separator=1 - Margins=16 = 175 -->
                                                     <StackPanel Orientation="Horizontal" MaxWidth="175" HorizontalAlignment="Left">
                                                         <!-- MaxWidth: 175 - LinkIcon(10+4margin) = 161 -->
@@ -491,7 +491,7 @@
 
                                                 <!-- Stats (now on right) -->
                                                 <StackPanel Grid.Column="1"
-                                                    Margin="8"
+                                                    Margin="8,16,8,8"
                                                     Width="80">
                                                     <StackPanel Orientation="Horizontal" Margin="0,2">
                                                         <Path Data="{StaticResource IconUser}" 
@@ -528,7 +528,7 @@
                                             </Grid>
                                             <Border x:Name="UserReports" HorizontalAlignment="Right"
                                                         VerticalAlignment="Bottom"
-                                                        Margin="0,0,8,104"
+                                                        Margin="0,0,8,121"
                                                         Padding="6,4"
                                                         Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                                         CornerRadius="6"
