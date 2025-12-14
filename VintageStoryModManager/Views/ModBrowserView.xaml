@@ -452,7 +452,7 @@
                                                         <!-- MaxWidth: 175 - LinkIcon(10+4margin) = 161 -->
                                                         <TextBlock Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontWeight="Bold"
-                                                            FontSize="14"
+                                                            FontSize="16"
                                                             TextTrimming="CharacterEllipsis"
                                                             MaxWidth="161"
                                                             Cursor="Hand"

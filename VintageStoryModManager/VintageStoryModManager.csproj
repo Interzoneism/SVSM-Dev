@@ -63,6 +63,7 @@
 
 	<ItemGroup>
 		<Folder Include="Benchmarks\" />
+		<Folder Include="Resources\Fonts\" />
 	</ItemGroup>
 
 	<ItemGroup>
