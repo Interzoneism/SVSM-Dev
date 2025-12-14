@@ -371,21 +371,26 @@
                                                         Background="{DynamicResource Brush.Panel.Primary.Background.Solid}">
                                                     <Grid>
                                                     <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
-                                                    <Image
+                                                    <Rectangle
                                                        x:Name="ThumbImage"
-                                                       Source="{Binding LogoUrl}"
                                                        Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}, ConverterParameter=invert}"
-                                                       Stretch="Uniform"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Top"
+                                                       HorizontalAlignment="Stretch"
+                                                       VerticalAlignment="Stretch"
+                                                       RadiusX="8" RadiusY="8"
                                                        SnapsToDevicePixels="True"
-                                                        UseLayoutRounding="True">
-                                                        <Image.Margin>
+                                                       UseLayoutRounding="True">
+                                                        <Rectangle.Fill>
+                                                            <ImageBrush
+                                                               ImageSource="{Binding LogoUrl}"
+                                                               Stretch="Uniform"
+                                                               AlignmentY="Top"/>
+                                                        </Rectangle.Fill>
+                                                        <Rectangle.Margin>
                                                             <Binding Path="ActualHeight"
                                                              RelativeSource="{RelativeSource Self}"
                                                              Converter="{StaticResource HeightToMargin}"/>
-                                                        </Image.Margin>
-                                                    </Image>
+                                                        </Rectangle.Margin>
+                                                    </Rectangle>
 
                                                     <Viewbox
                                                        Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
