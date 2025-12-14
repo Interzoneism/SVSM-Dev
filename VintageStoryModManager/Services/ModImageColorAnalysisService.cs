@@ -101,14 +101,51 @@ internal static class ModImageColorAnalysisService
         long totalG = 0;
         long totalB = 0;
         long totalA = 0;
+        double weightedR = 0;
+        double weightedG = 0;
+        double weightedB = 0;
+        double weightedA = 0;
+        double weightSum = 0;
         var pixelCount = formatted.PixelWidth * formatted.PixelHeight;
 
         for (var i = 0; i < pixels.Length; i += 4)
         {
-            totalB += pixels[i];
-            totalG += pixels[i + 1];
-            totalR += pixels[i + 2];
-            totalA += pixels[i + 3];
+            var b = pixels[i];
+            var g = pixels[i + 1];
+            var r = pixels[i + 2];
+            var a = pixels[i + 3];
+
+            totalB += b;
+            totalG += g;
+            totalR += r;
+            totalA += a;
+
+            var alphaFactor = a / 255.0;
+            if (alphaFactor <= 0.01)
+            {
+                continue;
+            }
+
+            var rNorm = r / 255.0;
+            var gNorm = g / 255.0;
+            var bNorm = b / 255.0;
+
+            var max = Math.Max(rNorm, Math.Max(gNorm, bNorm));
+            var min = Math.Min(rNorm, Math.Min(gNorm, bNorm));
+            var brightness = max;
+            var saturation = max <= 0 ? 0 : (max - min) / max; // HSV saturation
+
+            if (saturation < 0.15 || brightness < 0.05)
+            {
+                continue; // Ignore nearly grayscale or very dark pixels
+            }
+
+            var weight = saturation * (0.2 + 0.8 * brightness) * alphaFactor;
+            weightSum += weight;
+            weightedR += r * weight;
+            weightedG += g * weight;
+            weightedB += b * weight;
+            weightedA += a * weight;
         }
 
         if (pixelCount == 0)
@@ -116,17 +153,33 @@ internal static class ModImageColorAnalysisService
             return null;
         }
 
-        var avgA = totalA / pixelCount;
-        var avgR = totalR / pixelCount;
-        var avgG = totalG / pixelCount;
-        var avgB = totalB / pixelCount;
+        if (weightSum > 0)
+        {
+            var avgA = weightedA / weightSum;
+            var avgR = weightedR / weightSum;
+            var avgG = weightedG / weightSum;
+            var avgB = weightedB / weightSum;
 
-        var alpha = avgA == 0 ? byte.MaxValue : (byte)Math.Min(byte.MaxValue, avgA);
+            var alpha = avgA <= 0 ? byte.MaxValue : (byte)Math.Min(byte.MaxValue, avgA);
+
+            return Color.FromArgb(
+                alpha,
+                (byte)Math.Min(byte.MaxValue, avgR),
+                (byte)Math.Min(byte.MaxValue, avgG),
+                (byte)Math.Min(byte.MaxValue, avgB));
+        }
+
+        var fallbackAvgA = totalA / pixelCount;
+        var fallbackAvgR = totalR / pixelCount;
+        var fallbackAvgG = totalG / pixelCount;
+        var fallbackAvgB = totalB / pixelCount;
+
+        var fallbackAlpha = fallbackAvgA == 0 ? byte.MaxValue : (byte)Math.Min(byte.MaxValue, fallbackAvgA);
 
         return Color.FromArgb(
-            alpha,
-            (byte)Math.Min(byte.MaxValue, avgR),
-            (byte)Math.Min(byte.MaxValue, avgG),
-            (byte)Math.Min(byte.MaxValue, avgB));
+            fallbackAlpha,
+            (byte)Math.Min(byte.MaxValue, fallbackAvgR),
+            (byte)Math.Min(byte.MaxValue, fallbackAvgG),
+            (byte)Math.Min(byte.MaxValue, fallbackAvgB));
     }
 }
