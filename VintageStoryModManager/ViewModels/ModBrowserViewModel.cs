@@ -27,6 +27,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private bool _isInitializing;
     private Func<DownloadableMod, Task>? _installModCallback;
     private readonly HashSet<int> _userReportsLoaded = new();
+    private readonly HashSet<int> _modsWithLoadedLogos = new();
     private readonly HashSet<string> _normalizedInstalledModIds = new(StringComparer.OrdinalIgnoreCase);
 
     #region Observable Properties
@@ -388,6 +389,7 @@ public partial class ModBrowserViewModel : ObservableObject
 
             ModsList.Clear();
             _userReportsLoaded.Clear(); // Reset user reports tracking
+            _modsWithLoadedLogos.Clear(); // Reset logo tracking
             foreach (var mod in filteredMods)
             {
                 ModsList.Add(mod);
@@ -397,6 +399,7 @@ public partial class ModBrowserViewModel : ObservableObject
             OnPropertyChanged(nameof(VisibleMods));
 
             var modsToPrefetch = GetPrefetchMods();
+            await PopulateModThumbnailsAsync(modsToPrefetch, token);
             _ = PopulateLogoColorsAsync(modsToPrefetch, token);
 
             // Only populate user reports for visible mods + prefetch buffer
@@ -419,7 +422,7 @@ public partial class ModBrowserViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void LoadMore()
+    private async Task LoadMore()
     {
         var previousCount = VisibleModsCount;
         VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
@@ -432,6 +435,7 @@ public partial class ModBrowserViewModel : ObservableObject
         if (modsToPrefetch.Any())
         {
             var token = _searchCts?.Token ?? CancellationToken.None;
+            await PopulateModThumbnailsAsync(modsToPrefetch, token);
             _ = PopulateLogoColorsAsync(modsToPrefetch, token);
             _ = PopulateUserReportsAsync(modsToPrefetch, token);
         }
@@ -797,6 +801,12 @@ public partial class ModBrowserViewModel : ObservableObject
             if (cancellationToken.IsCancellationRequested)
                 return;
 
+            if (string.IsNullOrWhiteSpace(mod.LogoUrl))
+            {
+                mod.AverageLogoColor = DownloadableModOnList.NeutralLogoColor;
+                return;
+            }
+
             try
             {
                 await semaphore.WaitAsync(cancellationToken);
@@ -828,13 +838,79 @@ public partial class ModBrowserViewModel : ObservableObject
         await Task.WhenAll(tasks);
     }
 
+    private async Task PopulateModThumbnailsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
+    {
+        List<DownloadableModOnList> modsToLoad;
+        lock (_modsWithLoadedLogos)
+        {
+            modsToLoad = mods
+                .Where(mod => string.IsNullOrWhiteSpace(mod.LogoFileDatabase) && !_modsWithLoadedLogos.Contains(mod.ModId))
+                .ToList();
+
+            foreach (var mod in modsToLoad)
+            {
+                _modsWithLoadedLogos.Add(mod.ModId);
+            }
+        }
+
+        if (modsToLoad.Count == 0)
+            return;
+
+        const int maxConcurrentLoads = 4;
+        using var semaphore = new SemaphoreSlim(maxConcurrentLoads);
+
+        var tasks = modsToLoad.Select(async mod =>
+        {
+            var logoUpdated = false;
+            try
+            {
+                await semaphore.WaitAsync(cancellationToken);
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                var modIdentifier = mod.AssetId > 0
+                    ? mod.AssetId.ToString(CultureInfo.InvariantCulture)
+                    : mod.ModId.ToString(CultureInfo.InvariantCulture);
+
+                var modDetails = await _modApiService.GetModAsync(modIdentifier, cancellationToken);
+
+                var logoUrl = modDetails?.LogoFileDatabase;
+                if (!string.IsNullOrWhiteSpace(logoUrl))
+                {
+                    mod.LogoFileDatabase = logoUrl;
+                    logoUpdated = true;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                // Ignore individual failures; logos can be retried later if needed.
+            }
+            finally
+            {
+                semaphore.Release();
+
+                if (!logoUpdated)
+                {
+                    lock (_modsWithLoadedLogos)
+                    {
+                        _modsWithLoadedLogos.Remove(mod.ModId);
+                    }
+                }
+            }
+        });
+
+        await Task.WhenAll(tasks);
+    }
+
     private static ModImageCacheDescriptor CreateLogoCacheDescriptor(DownloadableModOnList mod)
     {
         var source = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
             ? "logofiledb"
-            : !string.IsNullOrWhiteSpace(mod.Logo)
-                ? "logofiledb"
-                : null;
+            : null;
 
         var modIdentifier = mod.ModIdStrings?.FirstOrDefault(id => !string.IsNullOrWhiteSpace(id))
                            ?? mod.UrlAlias

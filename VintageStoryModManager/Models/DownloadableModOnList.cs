@@ -53,8 +53,21 @@ public class DownloadableModOnList : INotifyPropertyChanged
     [JsonPropertyName("logo")]
     public string? Logo { get; set; }
 
+    private string? _logoFileDatabase;
+
     [JsonPropertyName("logofiledb")]
-    public string? LogoFileDatabase { get; set; }
+    public string? LogoFileDatabase
+    {
+        get => _logoFileDatabase;
+        set
+        {
+            if (value == _logoFileDatabase) return;
+
+            _logoFileDatabase = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(LogoUrl));
+        }
+    }
 
     [JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = [];
@@ -172,7 +185,7 @@ public class DownloadableModOnList : INotifyPropertyChanged
     /// <summary>
     /// Gets the database-hosted logo URL.
     /// </summary>
-    public string LogoUrl => LogoFileDatabase ?? Logo ?? string.Empty;
+    public string LogoUrl => LogoFileDatabase ?? string.Empty;
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
