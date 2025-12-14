@@ -360,15 +360,15 @@
                                                     Width="342"
                                                     Height="342"
                                                     CornerRadius="10"
-                                                    Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+                                                    Background="Transparent"
                                                     BorderBrush="{DynamicResource Brush.Border.Default}"
                                                     BorderThickness="1"
-                                                    Padding="6"
+                                                    Padding="0,0,0,0"
                                                     SnapsToDevicePixels="True">
                                                 <Border x:Name="Thumbnail"
                                                         CornerRadius="8"
                                                         ClipToBounds="True"
-                                                        Background="{DynamicResource Brush.Panel.Primary.Background.Solid}">
+                                                        Background="{DynamicResource Brush.Panel.Primary.Background.Solid}" Padding="0,0,0,0">
                                                     <Grid>
                                                     <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
                                                     <Rectangle
