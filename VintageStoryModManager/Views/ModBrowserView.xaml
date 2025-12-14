@@ -566,7 +566,7 @@
                                                         Padding="6,4"
                                                         Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                                         CornerRadius="6"
-                                                        Visibility="Visible">
+                                                        Visibility="Hidden">
                                                 <TextBlock Text="{Binding UserReportDisplay}"
                                                             ToolTip="{Binding UserReportTooltip}"
                                                             Foreground="{DynamicResource Brush.Text.Primary}"
