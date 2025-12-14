@@ -17,7 +17,9 @@ public class AverageColorToBrushAltConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        var fallbackBrush = Application.Current.TryFindResource("Brush.Black") as Brush;
+        var otherBrush = Application.Current.TryFindResource("Brush.Panel.Primary.Background.Solid") as Brush;
+        otherBrush ??= new SolidColorBrush(DownloadableModOnList.AltLogoColor);
+        var fallbackBrush = Application.Current.TryFindResource("Brush.ModCard.NoThumb") as Brush;
         fallbackBrush ??= new SolidColorBrush(DownloadableModOnList.NeutralLogoColor);
 
         if (value is not Color color || color.A == 0 || color == DownloadableModOnList.NeutralLogoColor)
@@ -33,6 +35,12 @@ public class AverageColorToBrushAltConverter : IValueConverter
             _ => (Color)System.Windows.Media.ColorConverter.ConvertFromString("#5a4530")!
         };
 
+        var otherColor = otherBrush switch
+        {
+            SolidColorBrush solidColorBrush => solidColorBrush.Color,
+            _ => (Color)System.Windows.Media.ColorConverter.ConvertFromString("#5a4530")!
+        };
+
         var gradientBrush = new LinearGradientBrush
         {
             StartPoint = new Point(0, 0),
@@ -40,7 +48,7 @@ public class AverageColorToBrushAltConverter : IValueConverter
             GradientStops =
             {
                 new GradientStop(Color.FromArgb(220, baseColor.R, baseColor.G, baseColor.B), 0),
-                new GradientStop(Color.FromArgb(150, fallbackColor.R, fallbackColor.G, fallbackColor.B), 0.3)
+                new GradientStop(Color.FromArgb(180, otherColor.R, otherColor.G, otherColor.B), 0.3)
             }
         };
 

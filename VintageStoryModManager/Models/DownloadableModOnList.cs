@@ -80,6 +80,8 @@ public class DownloadableModOnList : INotifyPropertyChanged
     /// </summary>
     public static readonly Color NeutralLogoColor = Color.FromRgb(26, 26, 28);
 
+    public static readonly Color AltLogoColor = Color.FromRgb(26, 26, 28);
+
     private string _userReportDisplay = string.Empty;
 
     private string _userReportTooltip = "User reports require a known Vintage Story version.";
