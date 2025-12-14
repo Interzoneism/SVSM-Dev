@@ -30,6 +30,8 @@
         <converters:AverageColorToBrushConverter x:Key="AverageColorToBrush"/>
         <converters:AverageColorToBrushAltConverter x:Key="AverageColorToBrushAlt"/>
         <converters:HeightToMarginConverter x:Key="HeightToMargin"/>
+        <converters:ModNameAbbreviationConverter x:Key="ModNameAbbreviationConverter"/>
+        <converters:StringNullOrWhiteSpaceToVisibilityConverter x:Key="StringNullOrWhiteSpaceToVisibility"/>
 
         <!-- Loading Spinner Animation -->
         <Storyboard x:Key="SpinnerAnimation" RepeatBehavior="Forever">
@@ -339,20 +341,38 @@
                                             <Border x:Name="Thumbnail" Grid.Row="0" CornerRadius="8,8,0,0" ClipToBounds="True" Width="342" VerticalAlignment="Stretch" Height="342">
                                                 <Grid>
                                                     <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
-                                                    <Image 
+                                                    <Image
                                                        x:Name="ThumbImage"
                                                        Source="{Binding LogoUrl}"
+                                                       Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}, ConverterParameter=invert}"
                                                        Stretch="Uniform"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Top"
                                                        SnapsToDevicePixels="True"
-                                                       UseLayoutRounding="True">
+                                                        UseLayoutRounding="True">
                                                         <Image.Margin>
                                                             <Binding Path="ActualHeight"
                                                              RelativeSource="{RelativeSource Self}"
                                                              Converter="{StaticResource HeightToMargin}"/>
                                                         </Image.Margin>
                                                     </Image>
+
+                                                    <Viewbox
+                                                       Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
+                                                       Stretch="Uniform"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8">
+                                                        <TextBlock
+                                                           Text="{Binding Name, Converter={StaticResource ModNameAbbreviationConverter}}"
+                                                           FontFamily="pack://application:,,,/Resources/Fonts/Goudament.ttf#Goudament"
+                                                           FontWeight="Bold"
+                                                           Foreground="{DynamicResource Brush.Text.Primary}"
+                                                           TextAlignment="Center"
+                                                           TextWrapping="NoWrap"
+                                                           VerticalAlignment="Center"
+                                                           HorizontalAlignment="Center"/>
+                                                    </Viewbox>
 
 
                                                     <!-- Overlay Buttons -->
