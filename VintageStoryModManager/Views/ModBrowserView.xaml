@@ -107,6 +107,16 @@
             </Setter>
         </Style>
 
+        <Style x:Key="ThumbRectangle" TargetType="{x:Type Rectangle}">
+            <Setter Property="Margin">
+                <Setter.Value>
+                    <Binding Path="ActualHeight"
+                     RelativeSource="{RelativeSource Self}"
+                     Converter="{StaticResource HeightToMargin}"
+                     ConverterParameter="226" />
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -349,22 +359,28 @@
                                     Width="342" 
                                     Height="342"
                                     Margin="8" 
-                                    Tag="{Binding ModId}" >
+                                    Tag="{Binding ModId}">
                                     <Grid>
                                         <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
-                                        <Rectangle
-                                            x:Name="ThumbImage"
-                                            Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
-                                            RadiusX="8" RadiusY="8"
-                                            SnapsToDevicePixels="True"
-                                            UseLayoutRounding="True">
-                                            <Rectangle.Fill>
-                                                <ImageBrush
-                                                    ImageSource="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
-                                                    Stretch="Uniform"
-                                                    AlignmentY="Top"/>
-                                            </Rectangle.Fill>
-                                        </Rectangle>
+
+                                        
+                                            <Rectangle
+                                                x:Name="ThumbImage"
+                                                Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
+                                                RadiusX="8" RadiusY="8"
+                                                SnapsToDevicePixels="True"
+                                                UseLayoutRounding="True"
+                                                StrokeThickness="0">
+                                                <Rectangle.Fill>
+                                                    <ImageBrush
+                                                        ImageSource="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
+                                                        Stretch="Uniform"
+                                                        AlignmentY="Top"
+                                                    />
+                                                </Rectangle.Fill>
+                                            </Rectangle>
+
+                                        
 
                                         <Viewbox
                                             Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
