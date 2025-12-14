@@ -244,6 +244,8 @@ public sealed class UserConfigurationService
 
     public bool ModBrowserOnlyFavorites { get; private set; }
 
+    public bool ModBrowserRelevantSearch { get; private set; } = true;
+
     public List<int> ModBrowserFavoriteModIds { get; private set; } = [];
 
     public List<string> ModBrowserSelectedVersionIds { get; private set; } = [];
@@ -1209,6 +1211,14 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetModBrowserRelevantSearch(bool enabled)
+    {
+        if (ModBrowserRelevantSearch == enabled) return;
+
+        ModBrowserRelevantSearch = enabled;
+        Save();
+    }
+
     public void SetModBrowserFavoriteModIds(IEnumerable<int> favoriteIds)
     {
         var normalizedIds = favoriteIds?.ToList() ?? [];
@@ -1615,6 +1625,7 @@ public sealed class UserConfigurationService
             ModBrowserSelectedSide = GetOptionalString(obj["modBrowserSelectedSide"]) ?? "any";
             ModBrowserSelectedInstalledFilter = GetOptionalString(obj["modBrowserSelectedInstalledFilter"]) ?? "all";
             ModBrowserOnlyFavorites = obj["modBrowserOnlyFavorites"]?.GetValue<bool?>() ?? false;
+            ModBrowserRelevantSearch = obj["modBrowserRelevantSearch"]?.GetValue<bool?>() ?? true;
             ModBrowserFavoriteModIds = LoadIntList(obj["modBrowserFavoriteModIds"]);
             ModBrowserSelectedVersionIds = LoadStringList(obj["modBrowserSelectedVersionIds"]);
             ModBrowserSelectedTagIds = LoadIntList(obj["modBrowserSelectedTagIds"]);
@@ -1754,6 +1765,7 @@ public sealed class UserConfigurationService
             ModBrowserSelectedSide = "any";
             ModBrowserSelectedInstalledFilter = "all";
             ModBrowserOnlyFavorites = false;
+            ModBrowserRelevantSearch = true;
             ModBrowserFavoriteModIds = [];
             ModBrowserSelectedVersionIds = [];
             ModBrowserSelectedTagIds = [];
@@ -1837,6 +1849,7 @@ public sealed class UserConfigurationService
                 ["modBrowserSelectedSide"] = ModBrowserSelectedSide,
                 ["modBrowserSelectedInstalledFilter"] = ModBrowserSelectedInstalledFilter,
                 ["modBrowserOnlyFavorites"] = ModBrowserOnlyFavorites,
+                ["modBrowserRelevantSearch"] = ModBrowserRelevantSearch,
                 ["modBrowserFavoriteModIds"] = BuildIntListJson(ModBrowserFavoriteModIds),
                 ["modBrowserSelectedVersionIds"] = BuildStringListJson(ModBrowserSelectedVersionIds),
                 ["modBrowserSelectedTagIds"] = BuildIntListJson(ModBrowserSelectedTagIds),

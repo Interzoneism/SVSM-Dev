@@ -222,6 +222,24 @@
                     <Button Width="32" Height="32"
                             Margin="4"
                             Style="{StaticResource IconButtonStyle}"
+                            Command="{Binding ToggleRelevantSearchResultsCommand}"
+                            ToolTip="Relevant Search Results" UseLayoutRounding="True">
+                        <Path Data="{StaticResource IconSearch}">
+                            <Path.Style>
+                                <Style TargetType="Path" BasedOn="{StaticResource IconLarge}">
+                                    <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding UseRelevantSearchResults}" Value="True">
+                                            <Setter Property="Fill" Value="{DynamicResource Brush.Accent.Primary}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                    </Button>
+                    <Button Width="32" Height="32"
+                            Margin="4"
+                            Style="{StaticResource IconButtonStyle}"
                             Command="{Binding ClearFiltersCommand}"
                             ToolTip="Clear all filters" UseLayoutRounding="True">
                         <Path Data="{StaticResource IconXCircle}" 
