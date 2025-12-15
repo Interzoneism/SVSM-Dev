@@ -189,9 +189,31 @@ public class ModApiService : IModApiService
                 System.Diagnostics.Debug.WriteLine($"[ModApiService] Successfully deserialized mod: {mod.Name}");
                 System.Diagnostics.Debug.WriteLine($"[ModApiService] Mod has {mod.Releases?.Count ?? 0} releases");
                 
+                // Filter out releases with invalid file IDs (null was converted to 0)
+                if (mod.Releases != null)
+                {
+                    var removedCount = mod.Releases.RemoveAll(r => r.FileId <= 0);
+                    
+                    if (removedCount > 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[ModApiService] Filtered out {removedCount} releases with invalid file IDs");
+                    }
+                }
+                
+                // Filter out screenshots with invalid file IDs (null was converted to 0)
+                if (mod.Screenshots != null)
+                {
+                    var removedCount = mod.Screenshots.RemoveAll(s => s.FileId <= 0);
+                    
+                    if (removedCount > 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[ModApiService] Filtered out {removedCount} screenshots with invalid file IDs");
+                    }
+                }
+                
                 if (mod.Releases == null || mod.Releases.Count == 0)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[ModApiService] WARNING: Mod {mod.Name} has NO releases!");
+                    System.Diagnostics.Debug.WriteLine($"[ModApiService] WARNING: Mod {mod.Name} has NO valid releases!");
                 }
             }
             else
