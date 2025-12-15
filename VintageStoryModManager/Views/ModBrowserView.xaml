@@ -91,13 +91,12 @@
             <Setter Property="BorderThickness" Value="1,1,0,0" />
             <Setter Property="CornerRadius" Value="8,8,8,8" />
             <Setter Property="UseLayoutRounding" Value="True" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="ClipToBounds" Value="True" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
             <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Light}" />
-                    <Setter Property="BorderThickness" Value="0" />
-                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True" />
             </Style.Triggers>
         </Style>
 
@@ -466,8 +465,8 @@
                                                 <Image
                                                     x:Name="ThumbImage"
                                                     Grid.Row="0"
-                                                    
                                                     MinHeight="229"
+                                                    RenderOptions.BitmapScalingMode="HighQuality"
                                                     Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
                                                     Stretch="Uniform"
                                                     Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" />
@@ -476,14 +475,10 @@
                                                     <VisualBrush>
                                                         <VisualBrush.Visual>
                                                             <Border
-                                                                
                                                                 Width="{Binding ElementName=container, Path=ActualWidth}"
                                                                 Height="{Binding ElementName=container, Path=ActualHeight}"
                                                                 Background="White"
-                                                                
-                                                                CornerRadius="8" >
-                                                                
-                                                            </Border>
+                                                                CornerRadius="8" />
                                                         </VisualBrush.Visual>
                                                     </VisualBrush>
                                                 </WrapPanel.OpacityMask>
@@ -620,15 +615,15 @@
                                                 </Grid.ColumnDefinitions>
 
                                                 <!--  Title & Description  -->
-                                                <StackPanel Grid.Column="0" Margin="18,18,4,8">
+                                                <StackPanel Grid.Column="0" Margin="18,8,4,8">
                                                     <!--  MaxWidth: Card=288 - StatsColumn(80+16)=96 - Separator=1 - Margins=16 = 175  -->
                                                     <StackPanel
-                                                        MaxWidth="200"
+                                                        MaxWidth="210"
                                                         HorizontalAlignment="Left"
                                                         Orientation="Horizontal">
                                                         <!--  MaxWidth: 175 - LinkIcon(10+4margin) = 161  -->
                                                         <TextBlock
-                                                            MaxWidth="175"
+                                                            MaxWidth="190"
                                                             HorizontalAlignment="Left"
                                                             Cursor="Hand"
                                                             FontSize="21"
@@ -703,7 +698,7 @@
                                         </Border>
 
 
-                                        
+
                                         <Border
                                             x:Name="UserReports"
                                             Grid.Row="0"
