@@ -440,20 +440,24 @@ public partial class ModBrowserViewModel : ObservableObject
     private async Task LoadMore()
     {
         var previousCount = VisibleModsCount;
-        VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
-        OnPropertyChanged(nameof(VisibleMods));
+        var newVisibleCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
 
-        // Load metadata for newly visible mods + prefetch buffer
-        var prefetchEndIndex = Math.Min(VisibleModsCount + PrefetchBufferCount, ModsList.Count);
+        // Load metadata for newly visible mods + prefetch buffer BEFORE increasing visibility
+        var prefetchEndIndex = Math.Min(newVisibleCount + PrefetchBufferCount, ModsList.Count);
         var modsToPrefetch = ModsList.Skip(previousCount).Take(prefetchEndIndex - previousCount).ToList();
 
         if (modsToPrefetch.Any())
         {
             var token = _searchCts?.Token ?? CancellationToken.None;
+            // Populate colors and thumbnails before showing to prevent flash
+            await PopulateLogoColorsAsync(modsToPrefetch, token);
             await PopulateModThumbnailsAsync(modsToPrefetch, token);
-            _ = PopulateLogoColorsAsync(modsToPrefetch, token);
             _ = PopulateUserReportsAsync(modsToPrefetch, token);
         }
+
+        // Now increase the visible count after metadata is loaded
+        VisibleModsCount = newVisibleCount;
+        OnPropertyChanged(nameof(VisibleMods));
     }
 
     [RelayCommand]
