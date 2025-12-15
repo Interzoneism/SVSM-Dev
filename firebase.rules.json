@@ -44,6 +44,7 @@
     },
 
     "compatVotes": {
+      ".read": true,
       "$modKey": {
         "$versionKey": {
           "users": {
