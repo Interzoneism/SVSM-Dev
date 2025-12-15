@@ -187,6 +187,28 @@
                             Header="_Delete Cached Mods" />
                     </MenuItem>
                     <MenuItem
+                        Height="24"
+                        Padding="6,0,6,0"
+                        Header="_Folders"
+                        UseLayoutRounding="True">
+                        <MenuItem
+                            Height="35"
+                            Click="OpenModFolderButton_OnClick"
+                            Header="Open _Mods folder" />
+                        <MenuItem
+                            Height="35"
+                            Click="OpenLogsFolderButton_OnClick"
+                            Header="Open _Logs folder" />
+                        <MenuItem
+                            Height="35"
+                            Click="OpenConfigFolderButton_OnClick"
+                            Header="Open _Config folder" />
+                        <MenuItem
+                            Height="35"
+                            Click="ManagerDataFolderMenuItem_OnClick"
+                            Header="Open _Simple VS Manager folder" />
+                    </MenuItem>
+                    <MenuItem
                         x:Name="PresetsAndModlistsMenuItem"
                         Height="24"
                         Padding="6,0,6,0"
@@ -403,10 +425,6 @@
                             Opacity="0.75"
                             Visibility="Collapsed" />
                         <Separator />
-                        <MenuItem
-                            Padding="12,6"
-                            Click="ManagerDataFolderMenuItem_OnClick"
-                            Header="Open manager config folder" />
                         <MenuItem
                             Padding="12,6"
                             Click="ManagerModDbPageMenuItem_OnClick"
@@ -2001,50 +2019,6 @@
                     </Style>
                 </ui:ProgressRing.Style>
             </ui:ProgressRing>
-            <StackPanel
-                Margin="395,0,0,10"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Bottom"
-                Orientation="Vertical">
-                <StackPanel
-                    Width="385"
-                    Height="32"
-                    Margin="0,0,0,6"
-                    Orientation="Horizontal">
-                    <Button
-                        MinWidth="125"
-                        MinHeight="32"
-                        Margin="0,0,4,0"
-                        Padding="6,6,6,6"
-                        Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                        BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                        Click="OpenModFolderButton_OnClick"
-                        Content="Open Mods folder" />
-                </StackPanel>
-                <StackPanel
-                    Width="385"
-                    Height="32"
-                    Orientation="Horizontal">
-                    <Button
-                        MinWidth="125"
-                        MinHeight="32"
-                        Margin="0,0,4,0"
-                        Padding="6,6,6,6"
-                        Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                        BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                        Click="OpenLogsFolderButton_OnClick"
-                        Content="Open Logs folder" />
-                    <Button
-                        MinWidth="125"
-                        MinHeight="32"
-                        Margin="0,0,4,0"
-                        Padding="6,6,6,6"
-                        Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                        BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                        Click="OpenConfigFolderButton_OnClick"
-                        Content="Open Config folder" />
-                </StackPanel>
-            </StackPanel>
         </Grid>
 
         <!--  ============================================================  -->
