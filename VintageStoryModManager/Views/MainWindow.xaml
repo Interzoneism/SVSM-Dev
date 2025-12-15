@@ -1966,7 +1966,7 @@
                     Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
                     BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                     Click="UpdateAllModsMenuItem_OnClick"
-                    Content="{Binding DataContext.UpdateAllButtonLabel, FallbackValue=Update All, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+                    Content="{Binding DataContext.UpdateAllButtonLabel, FallbackValue=Manage Updates, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
                 <Button
                     x:Name="LaunchGameButton"
                     MinWidth="150"
@@ -2020,15 +2020,6 @@
                         BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                         Click="OpenModFolderButton_OnClick"
                         Content="Open Mods folder" />
-                    <Button
-                        MinWidth="125"
-                        MinHeight="32"
-                        Margin="0,0,4,0"
-                        Padding="6,6,6,6"
-                        Background="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                        BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
-                        Click="OpenLogsFolderButton_OnClick"
-                        Content="Open Logs folder" />
                 </StackPanel>
                 <StackPanel
                     Width="385"
