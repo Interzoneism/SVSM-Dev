@@ -31,8 +31,6 @@
         <converters:NoResultsVisibilityConverter x:Key="NoResultsVisibility" />
         <converters:FavoriteButtonVisibilityConverter x:Key="FavoriteButtonVisibility" />
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility" />
-        <converters:AverageColorToBrushConverter x:Key="AverageColorToBrush" />
-        <converters:AverageColorToBrushAltConverter x:Key="AverageColorToBrushAlt" />
         <converters:HeightToMarginConverter x:Key="HeightToMargin" />
         <converters:ModNameAbbreviationConverter x:Key="ModNameAbbreviationConverter" />
         <converters:StringNullOrWhiteSpaceToVisibilityConverter x:Key="StringNullOrWhiteSpaceToVisibility" />

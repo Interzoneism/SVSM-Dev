@@ -402,25 +402,18 @@ public partial class ModBrowserViewModel : ObservableObject
             ModsList.Clear();
             _userReportsLoaded.Clear(); // Reset user reports tracking
             _modsWithLoadedLogos.Clear(); // Reset logo tracking
-
-            // Calculate how many mods to prefetch and populate their metadata
-            var modsToPrefetch = filteredMods.Take(Math.Min(DefaultLoadedMods + PrefetchBufferCount, filteredMods.Count)).ToList();
-            
-            // Populate colors and thumbnails BEFORE adding to ModsList to prevent flash
-            await PopulateLogoColorsAsync(modsToPrefetch, token);
-            await PopulateModThumbnailsAsync(modsToPrefetch, token);
-
-            // Add all filtered mods to the list
             foreach (var mod in filteredMods)
             {
                 ModsList.Add(mod);
             }
 
-            // Set visible count and notify after mods are in the list
             VisibleModsCount = DefaultLoadedMods;
             OnPropertyChanged(nameof(VisibleMods));
 
-            // Only populate user reports for visible mods + prefetch buffer (async is fine for these)
+            var modsToPrefetch = GetPrefetchMods();
+            await PopulateModThumbnailsAsync(modsToPrefetch, token);
+
+            // Only populate user reports for visible mods + prefetch buffer
             _ = PopulateUserReportsAsync(modsToPrefetch, token);
         }
         catch (OperationCanceledException)
@@ -443,24 +436,19 @@ public partial class ModBrowserViewModel : ObservableObject
     private async Task LoadMore()
     {
         var previousCount = VisibleModsCount;
-        var newVisibleCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
+        VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
+        OnPropertyChanged(nameof(VisibleMods));
 
-        // Load metadata for newly visible mods + prefetch buffer BEFORE increasing visibility
-        var prefetchEndIndex = Math.Min(newVisibleCount + PrefetchBufferCount, ModsList.Count);
+        // Load metadata for newly visible mods + prefetch buffer
+        var prefetchEndIndex = Math.Min(VisibleModsCount + PrefetchBufferCount, ModsList.Count);
         var modsToPrefetch = ModsList.Skip(previousCount).Take(prefetchEndIndex - previousCount).ToList();
 
         if (modsToPrefetch.Any())
         {
             var token = _searchCts?.Token ?? CancellationToken.None;
-            // Populate colors and thumbnails before showing to prevent flash
-            await PopulateLogoColorsAsync(modsToPrefetch, token);
             await PopulateModThumbnailsAsync(modsToPrefetch, token);
             _ = PopulateUserReportsAsync(modsToPrefetch, token);
         }
-
-        // Now increase the visible count after metadata is loaded
-        VisibleModsCount = newVisibleCount;
-        OnPropertyChanged(nameof(VisibleMods));
     }
 
     [RelayCommand]
@@ -910,53 +898,6 @@ public partial class ModBrowserViewModel : ObservableObject
         return score;
     }
 
-    private async Task PopulateLogoColorsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
-    {
-        const int maxConcurrentLoads = 4;
-        using var semaphore = new SemaphoreSlim(maxConcurrentLoads);
-
-        var tasks = mods.Select(async mod =>
-        {
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            if (string.IsNullOrWhiteSpace(mod.LogoUrl))
-            {
-                mod.AverageLogoColor = DownloadableModOnList.NeutralLogoColor;
-                return;
-            }
-
-            try
-            {
-                await semaphore.WaitAsync(cancellationToken);
-                try
-                {
-                    var cacheDescriptor = CreateLogoCacheDescriptor(mod);
-                    var color = await ModImageColorAnalysisService
-                        .GetAverageColorAsync(mod.LogoUrl, cacheDescriptor, cancellationToken);
-                    if (color.HasValue)
-                    {
-                        mod.AverageLogoColor = color.Value;
-                    }
-                }
-                finally
-                {
-                    semaphore.Release();
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Expected on cancellation
-            }
-            catch (Exception)
-            {
-                mod.AverageLogoColor = DownloadableModOnList.NeutralLogoColor;
-            }
-        });
-
-        await Task.WhenAll(tasks);
-    }
-
     private async Task PopulateModThumbnailsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
     {
         List<DownloadableModOnList> modsToLoad;
@@ -1021,19 +962,6 @@ public partial class ModBrowserViewModel : ObservableObject
         });
 
         await Task.WhenAll(tasks);
-    }
-
-    private static ModImageCacheDescriptor CreateLogoCacheDescriptor(DownloadableModOnList mod)
-    {
-        var source = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
-            ? "logofiledb"
-            : null;
-
-        var modIdentifier = mod.ModIdStrings?.FirstOrDefault(id => !string.IsNullOrWhiteSpace(id))
-                           ?? mod.UrlAlias
-                           ?? mod.Name;
-
-        return new ModImageCacheDescriptor(modIdentifier, mod.Name, source);
     }
 
     private async Task PopulateUserReportsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
