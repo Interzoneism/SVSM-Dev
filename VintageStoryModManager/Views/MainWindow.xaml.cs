@@ -6323,7 +6323,7 @@ public partial class MainWindow : Window
         try
         {
             // Only delete if the directory is empty
-            if (Directory.Exists(directory) && !Directory.EnumerateFileSystemEntries(directory).Any())
+            if (Directory.Exists(directory) && Directory.GetFileSystemEntries(directory).Length == 0)
             {
                 Directory.Delete(directory, recursive: false);
             }
@@ -6378,7 +6378,7 @@ public partial class MainWindow : Window
                 Directory.Move(currentBackupFolder, newBackupFolder);
             }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        catch (Exception)
         {
             // If move fails, try to copy files instead
             try
