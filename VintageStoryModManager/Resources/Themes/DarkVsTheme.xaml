@@ -173,7 +173,7 @@
     <SolidColorBrush x:Key="Brush.ModDetails.Shadow" Color="{DynamicResource Palette.BaseSurface.Shadowed}"
                      Opacity="0.7" />
     <LinearGradientBrush x:Key="Brush.ModCard.NoThumb" StartPoint="0,1" EndPoint="0,0">
-        <GradientStop Color="{DynamicResource Palette.BaseSurface.Shadowed}" Offset="0" />
+        <GradientStop Color="{DynamicResource Palette.Interactive.DisabledSurface}" Offset="0.33" />
         <GradientStop Color="{DynamicResource Palette.BaseSurface.Raised}" Offset="0.5" />
         <GradientStop Color="{DynamicResource Palette.BaseSurface.Brighter}" Offset="1" />
     </LinearGradientBrush>
