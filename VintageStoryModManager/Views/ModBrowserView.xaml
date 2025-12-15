@@ -447,6 +447,38 @@
                                             Opacity="0.8"
                                             ShadowDepth="2" />
                                     </Border.Effect>
+                                    <Border.Triggers>
+                                        <EventTrigger RoutedEvent="Border.MouseEnter">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation
+                                                        Storyboard.TargetName="ModCardHoverOverlay"
+                                                        Storyboard.TargetProperty="Opacity"
+                                                        To="0.15"
+                                                        Duration="0:0:0.25">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <CubicEase EasingMode="EaseInOut" />
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                        <EventTrigger RoutedEvent="Border.MouseLeave">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation
+                                                        Storyboard.TargetName="ModCardHoverOverlay"
+                                                        Storyboard.TargetProperty="Opacity"
+                                                        To="0"
+                                                        Duration="0:0:0.25">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <CubicEase EasingMode="EaseInOut" />
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Border.Triggers>
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="*" />
@@ -486,7 +518,15 @@
 
                                         </Grid>
 
-
+                                        <!--  Hover Overlay  -->
+                                        <Border
+                                            x:Name="ModCardHoverOverlay"
+                                            Grid.Row="0"
+                                            Grid.RowSpan="2"
+                                            Background="{DynamicResource Brush.Button.Primary.Background.Hover}"
+                                            CornerRadius="8"
+                                            IsHitTestVisible="False"
+                                            Opacity="0" />
 
                                         <Viewbox
                                             Grid.Row="0"
