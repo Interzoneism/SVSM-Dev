@@ -89,7 +89,7 @@ public sealed class ModBrowserViewDesignData
                 Comments = 98,
                 Side = "Both",
                 Type = "Code Mod",
-                Logo = "https://moddbcdn.vintagestory.at/FGC_BaseLogo3_269a752ee7019392af64934678cab2f5.png",
+                LogoFileDatabase = "https://moddbcdn.vintagestory.at/thumbnail2_594aaea088bc90b76bef20fedb95b70a.png",
                 Tags = new List<string> { "Gameplay", "Survival" },
                 LastReleased = "2024-10-30",
                 UserReportDisplay = "Some issues but works (3)",
