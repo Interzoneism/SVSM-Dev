@@ -54,7 +54,7 @@
             Height="24"
             VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="325" />
+                <ColumnDefinition Width="500" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
