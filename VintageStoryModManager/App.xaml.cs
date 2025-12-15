@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
+using System.Runtime.ExceptionServices;
 using VintageStoryModManager.Services;
 using VintageStoryModManager.Views.Dialogs;
 using Application = System.Windows.Application;
@@ -24,6 +25,7 @@ public partial class App : Application
     public App()
     {
         DispatcherUnhandledException += OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.FirstChanceException += OnFirstChanceException;
     }
 
     protected override void OnStartup(StartupEventArgs e)
@@ -49,12 +51,32 @@ public partial class App : Application
     {
         base.OnExit(e);
 
+        AppDomain.CurrentDomain.FirstChanceException -= OnFirstChanceException;
+
         if (_instanceMutex != null)
         {
             if (_ownsMutex) _instanceMutex.ReleaseMutex();
             _instanceMutex.Dispose();
             _instanceMutex = null;
             _ownsMutex = false;
+        }
+    }
+
+    private static void OnFirstChanceException(object? sender, FirstChanceExceptionEventArgs e)
+    {
+        if (e.Exception is not InvalidOperationException)
+        {
+            return;
+        }
+
+        try
+        {
+            Debug.WriteLine($"[FirstChance] InvalidOperationException: {e.Exception.Message}");
+            Debug.WriteLine(e.Exception.StackTrace);
+        }
+        catch
+        {
+            // Debug logging should never block application startup.
         }
     }
 
