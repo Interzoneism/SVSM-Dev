@@ -412,7 +412,6 @@ public partial class ModBrowserViewModel : ObservableObject
 
             var modsToPrefetch = GetPrefetchMods();
             await PopulateModThumbnailsAsync(modsToPrefetch, token);
-            _ = PopulateLogoColorsAsync(modsToPrefetch, token);
 
             // Only populate user reports for visible mods + prefetch buffer
             _ = PopulateUserReportsAsync(modsToPrefetch, token);
@@ -448,7 +447,6 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             var token = _searchCts?.Token ?? CancellationToken.None;
             await PopulateModThumbnailsAsync(modsToPrefetch, token);
-            _ = PopulateLogoColorsAsync(modsToPrefetch, token);
             _ = PopulateUserReportsAsync(modsToPrefetch, token);
         }
     }
@@ -900,53 +898,6 @@ public partial class ModBrowserViewModel : ObservableObject
         return score;
     }
 
-    private async Task PopulateLogoColorsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
-    {
-        const int maxConcurrentLoads = 4;
-        using var semaphore = new SemaphoreSlim(maxConcurrentLoads);
-
-        var tasks = mods.Select(async mod =>
-        {
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            if (string.IsNullOrWhiteSpace(mod.LogoUrl))
-            {
-                mod.AverageLogoColor = DownloadableModOnList.NeutralLogoColor;
-                return;
-            }
-
-            try
-            {
-                await semaphore.WaitAsync(cancellationToken);
-                try
-                {
-                    var cacheDescriptor = CreateLogoCacheDescriptor(mod);
-                    var color = await ModImageColorAnalysisService
-                        .GetAverageColorAsync(mod.LogoUrl, cacheDescriptor, cancellationToken);
-                    if (color.HasValue)
-                    {
-                        mod.AverageLogoColor = color.Value;
-                    }
-                }
-                finally
-                {
-                    semaphore.Release();
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Expected on cancellation
-            }
-            catch (Exception)
-            {
-                mod.AverageLogoColor = DownloadableModOnList.NeutralLogoColor;
-            }
-        });
-
-        await Task.WhenAll(tasks);
-    }
-
     private async Task PopulateModThumbnailsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
     {
         List<DownloadableModOnList> modsToLoad;
@@ -1011,19 +962,6 @@ public partial class ModBrowserViewModel : ObservableObject
         });
 
         await Task.WhenAll(tasks);
-    }
-
-    private static ModImageCacheDescriptor CreateLogoCacheDescriptor(DownloadableModOnList mod)
-    {
-        var source = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
-            ? "logofiledb"
-            : null;
-
-        var modIdentifier = mod.ModIdStrings?.FirstOrDefault(id => !string.IsNullOrWhiteSpace(id))
-                           ?? mod.UrlAlias
-                           ?? mod.Name;
-
-        return new ModImageCacheDescriptor(modIdentifier, mod.Name, source);
     }
 
     private async Task PopulateUserReportsAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)

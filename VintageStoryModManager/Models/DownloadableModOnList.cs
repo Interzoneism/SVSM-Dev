@@ -1,8 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using System.Windows.Media;
-using Color = System.Windows.Media.Color;
 
 namespace VintageStoryModManager.Models;
 
@@ -75,13 +73,6 @@ public class DownloadableModOnList : INotifyPropertyChanged
     [JsonPropertyName("lastreleased")]
     public string LastReleased { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Default color used when a logo has not been analyzed yet or cannot be processed.
-    /// </summary>
-    public static readonly Color NeutralLogoColor = Color.FromRgb(26, 26, 28);
-
-    public static readonly Color AltLogoColor = Color.FromRgb(26, 26, 28);
-
     private string _userReportDisplay = string.Empty;
 
     private string _userReportTooltip = "User reports require a known Vintage Story version.";
@@ -89,8 +80,6 @@ public class DownloadableModOnList : INotifyPropertyChanged
     private bool _showUserReportBadge;
 
     private bool _isInstalled;
-
-    private Color _averageLogoColor = NeutralLogoColor;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -147,21 +136,6 @@ public class DownloadableModOnList : INotifyPropertyChanged
             if (value == _isInstalled) return;
 
             _isInstalled = value;
-            OnPropertyChanged();
-        }
-    }
-
-    /// <summary>
-    /// Gets or sets the analyzed average logo color for UI theming.
-    /// </summary>
-    public Color AverageLogoColor
-    {
-        get => _averageLogoColor;
-        set
-        {
-            if (value == _averageLogoColor) return;
-
-            _averageLogoColor = value;
             OnPropertyChanged();
         }
     }
