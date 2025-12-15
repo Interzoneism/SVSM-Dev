@@ -33,6 +33,7 @@
         <converters:ModNameAbbreviationConverter x:Key="ModNameAbbreviationConverter"/>
         <converters:StringNullOrWhiteSpaceToVisibilityConverter x:Key="StringNullOrWhiteSpaceToVisibility"/>
         <converters:StringToImageSourceConverter x:Key="StringToImageSource"/>
+        <converters:ThumbnailLayoutConverter x:Key="ThumbnailLayoutConverter"/>
 
         <!-- Loading Spinner Animation -->
         <Storyboard x:Key="SpinnerAnimation" RepeatBehavior="Forever">
@@ -361,29 +362,50 @@
                                     Margin="8" 
                                     Tag="{Binding ModId}">
                                     <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="113"/>
+                                        </Grid.RowDefinitions>
                                         <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
 
                                         
-                                            <Rectangle
-                                                x:Name="ThumbImage"
-                                                Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
-                                                RadiusX="8" RadiusY="8"
-                                                SnapsToDevicePixels="True"
-                                                UseLayoutRounding="True"
-                                                StrokeThickness="0"
-                                                Margin="0,0,0,113">
-                                                <Rectangle.Fill>
-                                                    <ImageBrush
-                                                        ImageSource="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
-                                                        Stretch="Uniform"
-                                                        AlignmentY="Center"
-                                                    />
-                                                </Rectangle.Fill>
-                                            </Rectangle>
+                                        <Grid x:Name="ThumbContainer" Grid.Row="0" ClipToBounds="True">
+                                            <Grid.RowSpan>
+                                                <MultiBinding Converter="{StaticResource ThumbnailLayoutConverter}" ConverterParameter="RowSpan">
+                                                    <Binding ElementName="ThumbImage" Path="Source.PixelWidth"/>
+                                                    <Binding ElementName="ThumbImage" Path="Source.PixelHeight"/>
+                                                </MultiBinding>
+                                            </Grid.RowSpan>
+                                            <Border CornerRadius="8" ClipToBounds="True">
+                                                <Image
+                                                    x:Name="ThumbImage"
+                                                    Grid.Row="0"
+                                                    Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
+                                                    SnapsToDevicePixels="True"
+                                                    UseLayoutRounding="True"
+                                                    HorizontalAlignment="Stretch"
+                                                    Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}">
+                                                    <Image.Stretch>
+                                                        <MultiBinding Converter="{StaticResource ThumbnailLayoutConverter}" ConverterParameter="Stretch">
+                                                            <Binding Path="Source.PixelWidth" RelativeSource="{RelativeSource Self}"/>
+                                                            <Binding Path="Source.PixelHeight" RelativeSource="{RelativeSource Self}"/>
+                                                        </MultiBinding>
+                                                    </Image.Stretch>
+                                                    <Image.VerticalAlignment>
+                                                        <MultiBinding Converter="{StaticResource ThumbnailLayoutConverter}" ConverterParameter="VerticalAlignment">
+                                                            <Binding Path="Source.PixelWidth" RelativeSource="{RelativeSource Self}"/>
+                                                            <Binding Path="Source.PixelHeight" RelativeSource="{RelativeSource Self}"/>
+                                                        </MultiBinding>
+                                                    </Image.VerticalAlignment>
+                                                </Image>
+                                            </Border>
+                                        </Grid>
 
                                         
 
                                         <Viewbox
+                                            Grid.Row="0"
+                                            Grid.RowSpan="2"
                                             Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
                                             Stretch="Uniform"
                                             HorizontalAlignment="Center"
@@ -401,7 +423,7 @@
 
 
                                         <!-- Overlay Buttons -->
-                                        <Grid>
+                                        <Grid Grid.Row="0" Grid.RowSpan="2">
                                             <!-- Favorite button on top left -->
                                             <StackPanel Orientation="Horizontal"
                                                         HorizontalAlignment="Left"
@@ -483,7 +505,7 @@
 
 
                                         <!-- Mod Info -->
-                                        <Grid Style="{DynamicResource InfoBoxStyle}" x:Name="Infobox" Grid.Row="0" Height="113" VerticalAlignment="Bottom">
+                                        <Grid Style="{DynamicResource InfoBoxStyle}" x:Name="Infobox" Grid.Row="1" Height="113" VerticalAlignment="Bottom">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
@@ -568,7 +590,8 @@
                                         </Grid>
                                         <Border x:Name="UserReports" HorizontalAlignment="Right"
                                                         VerticalAlignment="Bottom"
-                                                        Margin="0,0,8,121"
+                                                        Grid.Row="0"
+                                                        Margin="0,0,8,8"
                                                         Padding="6,4"
                                                         Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                                         CornerRadius="6"
