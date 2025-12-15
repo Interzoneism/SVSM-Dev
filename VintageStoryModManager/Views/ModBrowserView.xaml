@@ -368,7 +368,7 @@
                                         </Grid.RowDefinitions>
                                         <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
 
-                                        
+
                                         <Grid x:Name="ThumbContainer" Grid.Row="0" ClipToBounds="True">
                                             <Grid.RowSpan>
                                                 <MultiBinding Converter="{StaticResource ThumbnailLayoutConverter}" ConverterParameter="RowSpan">
@@ -387,21 +387,21 @@
                                                     Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}">
                                                     <Image.Stretch>
                                                         <MultiBinding Converter="{StaticResource ThumbnailLayoutConverter}" ConverterParameter="Stretch">
-                                                            <Binding Path="Source.PixelWidth" RelativeSource="{RelativeSource Self}"/>
-                                                            <Binding Path="Source.PixelHeight" RelativeSource="{RelativeSource Self}"/>
+                                                            <Binding Path="Source.PixelWidth" RelativeSource="{RelativeSource Mode=Self}"/>
+                                                            <Binding Path="Source.PixelHeight" RelativeSource="{RelativeSource Mode=Self}"/>
                                                         </MultiBinding>
                                                     </Image.Stretch>
                                                     <Image.VerticalAlignment>
                                                         <MultiBinding Converter="{StaticResource ThumbnailLayoutConverter}" ConverterParameter="VerticalAlignment">
-                                                            <Binding Path="Source.PixelWidth" RelativeSource="{RelativeSource Self}"/>
-                                                            <Binding Path="Source.PixelHeight" RelativeSource="{RelativeSource Self}"/>
+                                                            <Binding Path="Source.PixelWidth" RelativeSource="{RelativeSource Mode=Self}"/>
+                                                            <Binding Path="Source.PixelHeight" RelativeSource="{RelativeSource Mode=Self}"/>
                                                         </MultiBinding>
                                                     </Image.VerticalAlignment>
                                                 </Image>
                                             </Border>
                                         </Grid>
 
-                                        
+
 
                                         <Viewbox
                                             Grid.Row="0"
@@ -512,15 +512,15 @@
                                             </Grid.ColumnDefinitions>
 
                                             <!-- Title & Description -->
-                                            <StackPanel Grid.Column="0" Margin="8,16,8,8">
+                                            <StackPanel Grid.Column="0" Margin="18,18,4,8">
                                                 <!-- MaxWidth: Card=288 - StatsColumn(80+16)=96 - Separator=1 - Margins=16 = 175 -->
-                                                <StackPanel Orientation="Horizontal" MaxWidth="175" HorizontalAlignment="Left">
+                                                <StackPanel Orientation="Horizontal" MaxWidth="200" HorizontalAlignment="Left">
                                                     <!-- MaxWidth: 175 - LinkIcon(10+4margin) = 161 -->
                                                     <TextBlock Foreground="{DynamicResource Brush.Text.Primary}"
-                                                            FontWeight="Bold"
-                                                            FontSize="16"
+                                                            FontWeight="Light"
+                                                            FontSize="21"
                                                             TextTrimming="CharacterEllipsis"
-                                                            MaxWidth="161"
+                                                            MaxWidth="175"
                                                             Cursor="Hand"
                                                             MouseLeftButtonDown="OpenInBrowserTitle_Click"
                                                             Tag="{Binding AssetId}"
@@ -535,18 +535,13 @@
                                                             </Style>
                                                         </TextBlock.Style>
                                                     </TextBlock>
-                                                    <Path Data="{StaticResource IconLinkAlt}" 
-                                                            Width="10" Height="10" Stretch="Uniform"
-                                                            Fill="{DynamicResource Brush.Text.Subtle}"
-                                                            VerticalAlignment="Center"
-                                                            Margin="4,0,0,0"/>
+                                                    
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding Summary}"
                                                         Foreground="{DynamicResource Brush.Text.Subtle}"
-                                                        FontSize="12"
                                                         TextWrapping="Wrap"
                                                         MaxHeight="60"
-                                                        TextTrimming="CharacterEllipsis"/>
+                                                        TextTrimming="CharacterEllipsis" FontWeight="Normal"/>
                                             </StackPanel>
 
 
