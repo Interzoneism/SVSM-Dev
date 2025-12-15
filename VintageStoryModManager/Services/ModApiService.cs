@@ -192,26 +192,22 @@ public class ModApiService : IModApiService
                 // Filter out releases with invalid file IDs (null was converted to 0)
                 if (mod.Releases != null)
                 {
-                    var originalCount = mod.Releases.Count;
-                    mod.Releases = mod.Releases.Where(r => r.FileId > 0).ToList();
-                    var filteredCount = originalCount - mod.Releases.Count;
+                    var removedCount = mod.Releases.RemoveAll(r => r.FileId <= 0);
                     
-                    if (filteredCount > 0)
+                    if (removedCount > 0)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[ModApiService] Filtered out {filteredCount} releases with invalid file IDs");
+                        System.Diagnostics.Debug.WriteLine($"[ModApiService] Filtered out {removedCount} releases with invalid file IDs");
                     }
                 }
                 
                 // Filter out screenshots with invalid file IDs (null was converted to 0)
                 if (mod.Screenshots != null)
                 {
-                    var originalCount = mod.Screenshots.Count;
-                    mod.Screenshots = mod.Screenshots.Where(s => s.FileId > 0).ToList();
-                    var filteredCount = originalCount - mod.Screenshots.Count;
+                    var removedCount = mod.Screenshots.RemoveAll(s => s.FileId <= 0);
                     
-                    if (filteredCount > 0)
+                    if (removedCount > 0)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[ModApiService] Filtered out {filteredCount} screenshots with invalid file IDs");
+                        System.Diagnostics.Debug.WriteLine($"[ModApiService] Filtered out {removedCount} screenshots with invalid file IDs");
                     }
                 }
                 
