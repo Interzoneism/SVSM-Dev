@@ -87,9 +87,9 @@
         <!--  Mod Card Style using DarkVsTheme  -->
         <Style x:Key="ModCardStyle" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource Brush.ModCard.NoThumb}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Dark}" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.ModCard.Border.Gradient}" />
+            <Setter Property="BorderThickness" Value="1,1,0,0" />
+            <Setter Property="CornerRadius" Value="8,8,8,8" />
             <Setter Property="UseLayoutRounding" Value="True" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="ClipToBounds" Value="True" />
@@ -437,8 +437,17 @@
                                     Width="344"
                                     Height="344"
                                     Margin="8"
+                                    ClipToBounds="False"
                                     Style="{StaticResource ModCardStyle}"
-                                    Tag="{Binding ModId}">
+                                    Tag="{Binding ModId}"
+                                    UseLayoutRounding="True">
+                                    <Border.Effect>
+                                        <DropShadowEffect
+                                            BlurRadius="8"
+                                            Direction="320"
+                                            Opacity="0.8"
+                                            ShadowDepth="2" />
+                                    </Border.Effect>
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="*" />
@@ -457,20 +466,24 @@
                                                 <Image
                                                     x:Name="ThumbImage"
                                                     Grid.Row="0"
-                                                    SnapsToDevicePixels="True"
+                                                    
+                                                    MinHeight="229"
                                                     Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
                                                     Stretch="Uniform"
-                                                    UseLayoutRounding="True"
                                                     Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" />
                                                 <WrapPanel.OpacityMask>
 
                                                     <VisualBrush>
                                                         <VisualBrush.Visual>
                                                             <Border
+                                                                
                                                                 Width="{Binding ElementName=container, Path=ActualWidth}"
                                                                 Height="{Binding ElementName=container, Path=ActualHeight}"
                                                                 Background="White"
-                                                                CornerRadius="8" />
+                                                                
+                                                                CornerRadius="8" >
+                                                                
+                                                            </Border>
                                                         </VisualBrush.Visual>
                                                     </VisualBrush>
                                                 </WrapPanel.OpacityMask>
@@ -596,6 +609,7 @@
                                         <Border
                                             Grid.Row="1"
                                             Height="115"
+                                            Margin="0,0,0,-1"
                                             VerticalAlignment="Bottom"
                                             Background="{DynamicResource Brush.ModCard.InfoBox}"
                                             CornerRadius="0,0,8,8">
@@ -689,7 +703,7 @@
                                         </Border>
 
 
-                                        <!--  Mod Info  -->
+                                        
                                         <Border
                                             x:Name="UserReports"
                                             Grid.Row="0"
