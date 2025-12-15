@@ -26,7 +26,7 @@ public sealed class ModBrowserViewDesignData
                 Comments = 142,
                 Side = "Client",
                 Type = "Code Mod",
-                LogoFileDatabase = "https://moddbcdn.vintagestory.at/modicon+moddb_38004456c73bfbdcd8636366ccf1e538.png",
+                LogoFileDatabase = "https://moddbcdn.vintagestory.at/playercorpse_86bd2916a59eeddb4b02df4d78a66304.png",
                 Logo = "https://moddbcdn.vintagestory.at/playercorpse_86bd2916a59eeddb4b02df4d78a66304.png",
                 Tags = new List<string> { "UI", "Client" },
                 LastReleased = "2024-11-15",

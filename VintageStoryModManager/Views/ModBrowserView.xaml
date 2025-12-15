@@ -365,10 +365,11 @@
                                                     <Binding ElementName="ThumbImage" Path="Source.PixelHeight"/>
                                                 </MultiBinding>
                                             </Grid.RowSpan>
-                                            <Border CornerRadius="8" ClipToBounds="True">
+                                            <WrapPanel Name ="container">
                                                 <Image
                                                     x:Name="ThumbImage"
                                                     Grid.Row="0"
+                                                    MinHeight="229"
                                                     Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
                                                     SnapsToDevicePixels="True"
                                                     UseLayoutRounding="True"
@@ -387,7 +388,17 @@
                                                         </MultiBinding>
                                                     </Image.VerticalAlignment>
                                                 </Image>
-                                            </Border>
+                                                <WrapPanel.OpacityMask>
+                                                    <VisualBrush >
+                                                        <VisualBrush.Visual>
+                                                            <Border Height="{Binding ElementName=container, Path=ActualHeight}" 
+                                                            Width="{Binding ElementName=container, Path=ActualWidth}"
+                                                            Background="White" CornerRadius="8" />
+                                                        </VisualBrush.Visual>
+                                                    </VisualBrush>
+                                                </WrapPanel.OpacityMask>
+                                            </WrapPanel>
+
                                         </Grid>
 
 
@@ -490,21 +501,19 @@
 
 
                                         </Grid>
+                                        <Border Grid.Row="1" CornerRadius="0,0,8,8" Height="115" VerticalAlignment="Bottom" Background="{DynamicResource Brush.ModCard.InfoBox}">
+                                            <Grid x:Name="Infobox" >
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
 
-
-                                        <!-- Mod Info -->
-                                        <Grid x:Name="Infobox" Grid.Row="1" Height="115" VerticalAlignment="Bottom" Background="{DynamicResource Brush.ModCard.InfoBox}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <!-- Title & Description -->
-                                            <StackPanel Grid.Column="0" Margin="18,18,4,8">
-                                                <!-- MaxWidth: Card=288 - StatsColumn(80+16)=96 - Separator=1 - Margins=16 = 175 -->
-                                                <StackPanel Orientation="Horizontal" MaxWidth="200" HorizontalAlignment="Left">
-                                                    <!-- MaxWidth: 175 - LinkIcon(10+4margin) = 161 -->
-                                                    <TextBlock Foreground="{DynamicResource Brush.Text.Primary}"
+                                                <!-- Title & Description -->
+                                                <StackPanel Grid.Column="0" Margin="18,18,4,8">
+                                                    <!-- MaxWidth: Card=288 - StatsColumn(80+16)=96 - Separator=1 - Margins=16 = 175 -->
+                                                    <StackPanel Orientation="Horizontal" MaxWidth="200" HorizontalAlignment="Left">
+                                                        <!-- MaxWidth: 175 - LinkIcon(10+4margin) = 161 -->
+                                                        <TextBlock Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontWeight="Light"
                                                             FontSize="21"
                                                             TextTrimming="CharacterEllipsis"
@@ -513,64 +522,68 @@
                                                             MouseLeftButtonDown="OpenInBrowserTitle_Click"
                                                             Tag="{Binding AssetId}"
                                                             ToolTip="Open in browser" Text="{Binding Name}" HorizontalAlignment="Left">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="{x:Type TextBlock}">
-                                                                <Style.Triggers>
-                                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                                        <Setter Property="TextDecorations" Value="Underline"/>
-                                                                    </Trigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                    
-                                                </StackPanel>
-                                                <TextBlock Text="{Binding Summary}"
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="{x:Type TextBlock}">
+                                                                    <Style.Triggers>
+                                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                                            <Setter Property="TextDecorations" Value="Underline"/>
+                                                                        </Trigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Summary}"
                                                         Foreground="{DynamicResource Brush.Text.Subtle}"
                                                         TextWrapping="Wrap"
                                                         MaxHeight="60"
                                                         TextTrimming="CharacterEllipsis" FontWeight="Normal"/>
-                                            </StackPanel>
+                                                </StackPanel>
 
 
 
-                                            <!-- Stats -->
-                                            <StackPanel Grid.Column="1"
+                                                <!-- Stats -->
+                                                <StackPanel Grid.Column="1"
                                                     Margin="8,16,8,8"
                                                     Width="80">
-                                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                    <Path Data="{StaticResource IconUser}" 
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                        <Path Data="{StaticResource IconUser}" 
                                                             Style="{StaticResource IconSmallSubtle}"/>
-                                                    <!-- MaxWidth: StatsWidth=80 - Icon(12+4margin) = 64 -->
-                                                    <TextBlock Text="{Binding Author}"
+                                                        <!-- MaxWidth: StatsWidth=80 - Icon(12+4margin) = 64 -->
+                                                        <TextBlock Text="{Binding Author}"
                                                             Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontSize="12"
                                                             MaxWidth="64"
                                                             TextTrimming="CharacterEllipsis"/>
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                    <Path Data="{StaticResource IconDownload}" 
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                        <Path Data="{StaticResource IconDownload}" 
                                                             Style="{StaticResource IconSmallSubtle}"/>
-                                                    <TextBlock Text="{Binding FormattedDownloads}"
+                                                        <TextBlock Text="{Binding FormattedDownloads}"
                                                             Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontSize="12"/>
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                    <Path Data="{StaticResource IconHeartSolid}" 
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                        <Path Data="{StaticResource IconHeartSolid}" 
                                                             Style="{StaticResource IconSmallSubtle}"/>
-                                                    <TextBlock Text="{Binding FormattedFollows}"
+                                                        <TextBlock Text="{Binding FormattedFollows}"
                                                             Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontSize="12"/>
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                    <Path Data="{StaticResource IconMessage}" 
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                        <Path Data="{StaticResource IconMessage}" 
                                                             Style="{StaticResource IconSmallSubtle}"/>
-                                                    <TextBlock Text="{Binding FormattedComments}"
+                                                        <TextBlock Text="{Binding FormattedComments}"
                                                             Foreground="{DynamicResource Brush.Text.Primary}"
                                                             FontSize="12"/>
+                                                    </StackPanel>
                                                 </StackPanel>
-                                            </StackPanel>
-                                        </Grid>
+                                            </Grid>
+                                        </Border>
+
+
+                                        <!-- Mod Info -->
                                         <Border x:Name="UserReports" HorizontalAlignment="Right"
                                                         VerticalAlignment="Bottom"
                                                         Grid.Row="0"
