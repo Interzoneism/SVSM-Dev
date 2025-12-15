@@ -42,7 +42,7 @@
                     TextWrapping="Wrap"><Run Text="If you are experiencing any problems, have any suggestions or just want to ask a question, join the" /><Run Text=" " /><Hyperlink
                         x:Name="DiscordLink"
                         Foreground="{DynamicResource Brush.Text.Emphasis}"
-                        RequestNavigate="OnBackupHyperlinkRequestNavigate">
+                        RequestNavigate="OnDiscordLinkRequestNavigate">
                         <Run Text="Discord server!" />
                     </Hyperlink></TextBlock>
                 <TextBlock FontSize="12" TextWrapping="Wrap"><Run Text="Most issues can be solved by deleting the temp cache (See Help and Advanced menu)" />
