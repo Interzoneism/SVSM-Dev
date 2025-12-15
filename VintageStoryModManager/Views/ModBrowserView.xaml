@@ -618,16 +618,21 @@
                                                         Width="14"
                                                         Height="14"
                                                         VerticalAlignment="Center"
-                                                        Data="{StaticResource IconDownload}"
                                                         Stretch="Uniform">
                                                         <Path.Style>
                                                             <Style TargetType="{x:Type Path}">
+                                                                <Setter Property="Data" Value="{StaticResource IconDownload}" />
                                                                 <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}" />
                                                                 <Style.Triggers>
                                                                     <!--  Show checkmark when installed  -->
                                                                     <DataTrigger Binding="{Binding IsInstalled}" Value="True">
                                                                         <Setter Property="Data" Value="{StaticResource IconCheck}" />
                                                                         <Setter Property="Fill" Value="{DynamicResource Brush.Status.Success}" />
+                                                                    </DataTrigger>
+                                                                    <!--  Show download icon when not installed  -->
+                                                                    <DataTrigger Binding="{Binding IsInstalled}" Value="False">
+                                                                        <Setter Property="Data" Value="{StaticResource IconDownload}" />
+                                                                        <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}" />
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
                                                             </Style>
