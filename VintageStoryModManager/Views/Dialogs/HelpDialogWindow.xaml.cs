@@ -17,6 +17,9 @@ public partial class HelpDialogWindow : Window
     {
         InitializeComponent();
 
+        DiscordLink.NavigateUri = TryCreateUri(DevConfig.DiscordInviteUrl);
+        DiscordLink.ToolTip = DevConfig.DiscordInviteUrl;
+
         ConfigureCachedModsHyperlink(ModDBlink, cachedModsDirectory, true);
         ConfigureFirebaseHyperlink(FirebaseFileHyperlink, managerDirectory, true);
         ConfigureHyperlinkCommon(BackupLink, DevConfig.FirebaseBackupDirectory, true);
@@ -78,6 +81,38 @@ public partial class HelpDialogWindow : Window
     private void OnCachedModsHyperlinkRequestNavigate(object sender, RequestNavigateEventArgs e)
     {
         HandleHyperlinkNavigation(sender, e);
+    }
+
+    private void OnDiscordLinkRequestNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        e.Handled = true;
+
+        if (InternetAccessManager.IsInternetAccessDisabled)
+        {
+            WpfMessageBox.Show(this,
+                "Enable Internet Access in the File menu to open Discord.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = DevConfig.DiscordInviteUrl,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(this,
+                $"Failed to open Discord:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     // NEW: Open the manager's Mod DB page exactly like the Help menu item.

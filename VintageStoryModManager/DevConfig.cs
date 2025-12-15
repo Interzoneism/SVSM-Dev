@@ -34,6 +34,7 @@ public static class DevConfig
     public static double DefaultModInfoPanelRightMargin { get; } = 40.0;
     public static string ManagerModDatabaseUrl { get; } = "https://mods.vintagestory.at/simplevsmanager";
     public static string ManagerModDatabaseModId { get; } = "5545";
+    public static string DiscordInviteUrl { get; } = "https://discord.gg/Zhm3QnD2s9";
 
     public static string ModDatabaseUnavailableMessage { get; } =
         "Could not reach the online Mod Database, please check your internet connection";
@@ -60,8 +61,32 @@ public static class DevConfig
     public static string FirebaseLegacyModlistDbUrl { get; } =
         "https://simple-vs-manager-default-rtdb.europe-west1.firebasedatabase.app";
 
-    // Cloud/Firebase cache location (Simple VS Manager/Temp Cache/Firebase Cache)
-    public static string FirebaseBackupDirectory => Path.Combine(GetManagerDirectory(), FirebaseCacheDirectoryName);
+    // Cloud/Firebase cache backup location (SVSM Backup folder)
+    public static string FirebaseBackupDirectory
+    {
+        get
+        {
+            var customFolder = VintageStoryModManager.Services.CustomConfigFolderManager.GetCustomConfigFolder();
+            if (!string.IsNullOrWhiteSpace(customFolder))
+            {
+                var parentDirectory = Path.GetDirectoryName(customFolder);
+                if (!string.IsNullOrWhiteSpace(parentDirectory))
+                {
+                    return Path.Combine(parentDirectory, FirebaseAuthBackupDirectoryName);
+                }
+            }
+
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (!string.IsNullOrWhiteSpace(localAppData))
+                return Path.Combine(localAppData, FirebaseAuthBackupDirectoryName);
+
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            if (!string.IsNullOrWhiteSpace(appData))
+                return Path.Combine(appData, FirebaseAuthBackupDirectoryName);
+
+            return Path.Combine(AppContext.BaseDirectory, FirebaseAuthBackupDirectoryName);
+        }
+    }
 
     // Status log display.
     public static string StatusTimestampFormat { get; } = "yyyy-MM-dd HH:mm:ss.fff";
