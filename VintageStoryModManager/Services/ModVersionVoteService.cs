@@ -87,7 +87,7 @@ public sealed class ModVersionVoteService : IDisposable
         InternetAccessManager.ThrowIfInternetAccessDisabled();
 
         var session = await _authenticator
-            .TryGetExistingSessionAsync(cancellationToken)
+            .GetSessionAsync(cancellationToken)
             .ConfigureAwait(false);
 
         var (Summary, _) = await GetVoteSummaryWithEtagAsync(
@@ -117,7 +117,7 @@ public sealed class ModVersionVoteService : IDisposable
         InternetAccessManager.ThrowIfInternetAccessDisabled();
 
         var session = await _authenticator
-            .TryGetExistingSessionAsync(cancellationToken)
+            .GetSessionAsync(cancellationToken)
             .ConfigureAwait(false);
 
         return await GetVoteSummaryInternalAsync(
@@ -145,7 +145,7 @@ public sealed class ModVersionVoteService : IDisposable
         InternetAccessManager.ThrowIfInternetAccessDisabled();
 
         var session = await _authenticator
-            .TryGetExistingSessionAsync(cancellationToken)
+            .GetSessionAsync(cancellationToken)
             .ConfigureAwait(false);
 
         return await GetVoteSummaryWithEtagAsync(
