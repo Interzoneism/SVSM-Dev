@@ -6323,11 +6323,9 @@ public partial class MainWindow : Window
         try
         {
             // Only delete if the directory is empty
-            if (Directory.Exists(directory) &&
-                Directory.GetFiles(directory, "*", SearchOption.AllDirectories).Length == 0 &&
-                Directory.GetDirectories(directory, "*", SearchOption.AllDirectories).Length == 0)
+            if (Directory.Exists(directory) && !Directory.EnumerateFileSystemEntries(directory).Any())
             {
-                Directory.Delete(directory, recursive: true);
+                Directory.Delete(directory, recursive: false);
             }
         }
         catch (Exception)
