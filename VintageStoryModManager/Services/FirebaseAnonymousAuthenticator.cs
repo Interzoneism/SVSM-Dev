@@ -556,27 +556,13 @@ public sealed class FirebaseAnonymousAuthenticator : IDisposable
     {
         try
         {
-            // First check if there's a custom config folder configured
-            var customFolder = CustomConfigFolderManager.GetCustomConfigFolder();
-            string backupDirectory;
-            
-            if (!string.IsNullOrWhiteSpace(customFolder))
-            {
-                // Use the parent directory of the custom folder for backup
-                // For example, if custom is "D:\MyFolder\Simple VS Manager", backup to "D:\MyFolder\SVSM Backup"
-                var parentDirectory = Path.GetDirectoryName(customFolder);
-                if (!string.IsNullOrWhiteSpace(parentDirectory))
-                {
-                    backupDirectory = Path.Combine(parentDirectory, DevConfig.FirebaseAuthBackupDirectoryName);
-                    return Path.Combine(backupDirectory, StateFileName);
-                }
-            }
-
-            // Fall back to default location in LocalApplicationData
+            // Always use the default location in LocalApplicationData for the backup
+            // The SVSM Backup folder should remain in its original location
+            // even if the Simple VS Manager folder is moved to a custom location
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (string.IsNullOrWhiteSpace(localAppData)) return null;
 
-            backupDirectory = Path.Combine(localAppData, DevConfig.FirebaseAuthBackupDirectoryName);
+            var backupDirectory = Path.Combine(localAppData, DevConfig.FirebaseAuthBackupDirectoryName);
             return Path.Combine(backupDirectory, StateFileName);
         }
         catch
