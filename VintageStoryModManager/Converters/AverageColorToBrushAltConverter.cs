@@ -48,7 +48,7 @@ public class AverageColorToBrushAltConverter : IValueConverter
             GradientStops =
             {
                 new GradientStop(Color.FromArgb(220, baseColor.R, baseColor.G, baseColor.B), 0),
-                new GradientStop(Color.FromArgb(180, otherColor.R, otherColor.G, otherColor.B), 0.3)
+                new GradientStop(Color.FromArgb(200, otherColor.R, otherColor.G, otherColor.B), 0.3)
             }
         };
 
