@@ -6315,6 +6315,27 @@ public partial class MainWindow : Window
         }
     }
 
+    private static void TryDeleteEmptyDirectory(string directory)
+    {
+        if (string.IsNullOrWhiteSpace(directory))
+            return;
+
+        try
+        {
+            // Only delete if the directory is empty
+            if (Directory.Exists(directory) &&
+                Directory.GetFiles(directory, "*", SearchOption.AllDirectories).Length == 0 &&
+                Directory.GetDirectories(directory, "*", SearchOption.AllDirectories).Length == 0)
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+        catch (Exception)
+        {
+            // Silently ignore if we can't delete the empty directory
+        }
+    }
+
     private static void MoveBackupFolder(string currentFolder, string newFolder)
     {
         // Get the parent directory of the current manager folder
@@ -6346,6 +6367,9 @@ public partial class MainWindow : Window
             {
                 // Move contents of backup folder
                 MoveDirectoryContents(currentBackupFolder, newBackupFolder);
+                
+                // Clean up empty source backup folder
+                TryDeleteEmptyDirectory(currentBackupFolder);
             }
             else
             {
@@ -6362,6 +6386,9 @@ public partial class MainWindow : Window
             try
             {
                 MoveDirectoryContents(currentBackupFolder, newBackupFolder);
+                
+                // Clean up empty source backup folder
+                TryDeleteEmptyDirectory(currentBackupFolder);
             }
             catch (Exception)
             {
