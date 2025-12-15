@@ -6345,6 +6345,7 @@ public partial class MainWindow : Window
                              "• Move all configuration files, cached mods, backups, and presets\n" +
                              "• Update the configuration to use the default location\n" +
                              "• Require a restart to complete the change\n\n" +
+                             "Note: The Firebase authentication backup (SVSM Backup folder) will remain in its original location.\n\n" +
                              "Continue?";
 
         var confirmResult = WpfMessageBox.Show(
