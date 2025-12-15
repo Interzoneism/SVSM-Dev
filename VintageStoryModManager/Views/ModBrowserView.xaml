@@ -81,11 +81,7 @@
 
         <!-- Mod Card Style using DarkVsTheme -->
         <Style x:Key="ModCardStyle" TargetType="Border">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <Binding Path="AverageLogoColor" Converter="{StaticResource AverageColorToBrush}"/>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Background" Value="{DynamicResource Brush.ModCard.NoThumb}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Dark}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="CornerRadius" Value="8"/>
@@ -100,13 +96,6 @@
             </Style.Triggers>
         </Style>
 
-        <Style x:Key="InfoBoxStyle" TargetType="{x:Type Grid}">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <Binding Path="AverageLogoColor" Converter="{StaticResource AverageColorToBrushAlt}" ConverterParameter="Background"/>
-                </Setter.Value>
-            </Setter>
-        </Style>
 
         <Style x:Key="ThumbRectangle" TargetType="{x:Type Rectangle}">
             <Setter Property="Margin">
@@ -369,7 +358,7 @@
                                         <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
 
 
-                                        <Grid x:Name="ThumbContainer" Grid.Row="0" ClipToBounds="True">
+                                        <Grid x:Name="ThumbContainer" Grid.Row="0" >
                                             <Grid.RowSpan>
                                                 <MultiBinding Converter="{StaticResource ThumbnailLayoutConverter}" ConverterParameter="RowSpan">
                                                     <Binding ElementName="ThumbImage" Path="Source.PixelWidth"/>
@@ -405,20 +394,19 @@
 
                                         <Viewbox
                                             Grid.Row="0"
-                                            Grid.RowSpan="2"
+                                            Grid.RowSpan="1"
                                             Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}"
                                             Stretch="Uniform"
                                             HorizontalAlignment="Center"
                                             VerticalAlignment="Center">
                                             <TextBlock
                                                 Text="{Binding Name, Converter={StaticResource ModNameAbbreviationConverter}}"
-                                                FontFamily="pack://application:,,,/Resources/Fonts/Goudament.ttf#Goudament"
                                                 FontWeight="Bold"
                                                 Foreground="{DynamicResource Brush.Text.Primary}"
                                                 TextAlignment="Center"
                                                 TextWrapping="NoWrap"
                                                 VerticalAlignment="Center"
-                                                HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                HorizontalAlignment="Center" Margin="0,0,0,2"/>
                                         </Viewbox>
 
 
@@ -505,7 +493,7 @@
 
 
                                         <!-- Mod Info -->
-                                        <Grid Style="{DynamicResource InfoBoxStyle}" x:Name="Infobox" Grid.Row="1" Height="115" VerticalAlignment="Bottom">
+                                        <Grid x:Name="Infobox" Grid.Row="1" Height="115" VerticalAlignment="Bottom" Background="{DynamicResource Brush.ModCard.InfoBox}">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>

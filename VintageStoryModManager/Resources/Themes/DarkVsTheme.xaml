@@ -177,6 +177,7 @@
         <GradientStop Color="{DynamicResource Palette.BaseSurface.Raised}" Offset="0.5" />
         <GradientStop Color="{DynamicResource Palette.BaseSurface.Brighter}" Offset="1" />
     </LinearGradientBrush>
+    <SolidColorBrush x:Key="Brush.ModCard.InfoBox" Color="{DynamicResource Palette.Interactive.DisabledSurface}" Opacity="0.8" />
 
     <!-- =============================== -->
     <!-- Installed mods list formatting. -->
