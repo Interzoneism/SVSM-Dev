@@ -13,6 +13,9 @@ public class ThumbnailLayoutConverter : IMultiValueConverter
             return DependencyProperty.UnsetValue;
 
         var aspectRatio = GetAspectRatio(values);
+        if (double.IsNaN(aspectRatio))
+            return System.Windows.Data.Binding.DoNothing;
+
         var layout = Classify(aspectRatio);
 
         return target switch
