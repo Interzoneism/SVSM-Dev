@@ -18,6 +18,7 @@
     <Color x:Key="Palette.Bevel.Highlight">#80FFFFFF</Color>
     <Color x:Key="Palette.Bevel.Shadow">#40000000</Color>
     <Color x:Key="Palette.Overlay.HoverTint">#10FFFFFF</Color>
+    <Color x:Key="Palette.White">#FFfffcf5</Color>
 
     <!--  ======================================================  -->
     <!--  Window shell and shared panel surfaces (Main windows).  -->
@@ -190,6 +191,7 @@
         x:Key="Brush.ModCard.Shadow"
         Opacity="0.7"
         Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
+    <SolidColorBrush x:Key="Brush.ModCard.Hover.Bright" Color="{DynamicResource Palette.White}" />
     <SolidColorBrush
         x:Key="Brush.ModDetails.Shadow"
         Opacity="0.7"

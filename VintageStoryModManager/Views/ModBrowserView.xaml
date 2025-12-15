@@ -454,7 +454,7 @@
                                                     <DoubleAnimation
                                                         Storyboard.TargetName="ModCardHoverOverlay"
                                                         Storyboard.TargetProperty="Opacity"
-                                                        To="0.15"
+                                                        To="0.10"
                                                         Duration="0:0:0.25">
                                                         <DoubleAnimation.EasingFunction>
                                                             <CubicEase EasingMode="EaseInOut" />
@@ -470,7 +470,7 @@
                                                         Storyboard.TargetName="ModCardHoverOverlay"
                                                         Storyboard.TargetProperty="Opacity"
                                                         To="0"
-                                                        Duration="0:0:0.25">
+                                                        Duration="0:0:0.55">
                                                         <DoubleAnimation.EasingFunction>
                                                             <CubicEase EasingMode="EaseInOut" />
                                                         </DoubleAnimation.EasingFunction>
@@ -498,7 +498,6 @@
                                                     x:Name="ThumbImage"
                                                     Grid.Row="0"
                                                     MinHeight="229"
-                                                    RenderOptions.BitmapScalingMode="HighQuality"
                                                     Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
                                                     Stretch="Uniform"
                                                     Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" />
@@ -523,7 +522,7 @@
                                             x:Name="ModCardHoverOverlay"
                                             Grid.Row="0"
                                             Grid.RowSpan="2"
-                                            Background="{DynamicResource Brush.Button.Primary.Background.Hover}"
+                                            Background="{DynamicResource Brush.ModCard.Hover.Bright}"
                                             CornerRadius="8"
                                             IsHitTestVisible="False"
                                             Opacity="0" />
