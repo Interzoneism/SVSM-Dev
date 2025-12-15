@@ -6315,6 +6315,15 @@ public partial class MainWindow : Window
         }
     }
 
+    private static void MoveBackupFolderContents(string sourceFolder, string targetFolder)
+    {
+        // Move contents of backup folder
+        MoveDirectoryContents(sourceFolder, targetFolder);
+        
+        // Clean up empty source backup folder
+        TryDeleteEmptyDirectory(sourceFolder);
+    }
+
     private static void TryDeleteEmptyDirectory(string directory)
     {
         if (string.IsNullOrWhiteSpace(directory))
@@ -6363,36 +6372,29 @@ public partial class MainWindow : Window
             // If destination backup folder already exists, merge contents
             if (Directory.Exists(newBackupFolder))
             {
-                // Move contents of backup folder
-                MoveDirectoryContents(currentBackupFolder, newBackupFolder);
-                
-                // Clean up empty source backup folder
-                TryDeleteEmptyDirectory(currentBackupFolder);
+                MoveBackupFolderContents(currentBackupFolder, newBackupFolder);
             }
             else
             {
                 // Create parent directory if needed
                 Directory.CreateDirectory(newParent);
                 
-                // Try to move the entire backup folder
-                Directory.Move(currentBackupFolder, newBackupFolder);
+                // Try to move the entire backup folder atomically
+                try
+                {
+                    Directory.Move(currentBackupFolder, newBackupFolder);
+                }
+                catch (Exception)
+                {
+                    // If atomic move fails (e.g., across volumes), fall back to content move
+                    MoveBackupFolderContents(currentBackupFolder, newBackupFolder);
+                }
             }
         }
         catch (Exception)
         {
-            // If move fails, try to copy files instead
-            try
-            {
-                MoveDirectoryContents(currentBackupFolder, newBackupFolder);
-                
-                // Clean up empty source backup folder
-                TryDeleteEmptyDirectory(currentBackupFolder);
-            }
-            catch (Exception)
-            {
-                // Silently ignore if we can't move the backup folder
-                // The firebase-auth.json file inside the main manager folder is the primary copy
-            }
+            // Silently ignore if we can't move the backup folder
+            // The firebase-auth.json file inside the main manager folder is the primary copy
         }
     }
 
