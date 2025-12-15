@@ -226,7 +226,6 @@ public class StringToImageSourceConverter : IValueConverter
             bitmap.BeginInit();
             bitmap.UriSource = uri;
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
             bitmap.EndInit();
 
             if (bitmap.CanFreeze)
