@@ -6222,9 +6222,6 @@ public partial class MainWindow : Window
             // Move all files and subdirectories
             MoveDirectoryContents(currentFolder, newManagerFolder);
 
-            // Move the SVSM Backup folder if it exists
-            MoveBackupFolder(currentFolder, newManagerFolder);
-
             // Save the new custom folder path
             CustomConfigFolderManager.SetCustomConfigFolder(newManagerFolder);
 
@@ -6315,89 +6312,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private static void MoveBackupFolderContents(string sourceFolder, string targetFolder)
-    {
-        // Move contents of backup folder
-        MoveDirectoryContents(sourceFolder, targetFolder);
-        
-        // Clean up empty source backup folder
-        TryDeleteEmptyDirectory(sourceFolder);
-    }
-
-    private static void TryDeleteEmptyDirectory(string directory)
-    {
-        if (string.IsNullOrWhiteSpace(directory))
-            return;
-
-        try
-        {
-            // Only delete if the directory is empty
-            if (Directory.Exists(directory) && Directory.GetFileSystemEntries(directory).Length == 0)
-            {
-                Directory.Delete(directory, recursive: false);
-            }
-        }
-        catch (Exception)
-        {
-            // Silently ignore if we can't delete the empty directory
-        }
-    }
-
-    private static void MoveBackupFolder(string currentFolder, string newFolder)
-    {
-        // Get the parent directory of the current manager folder
-        var currentParent = Path.GetDirectoryName(currentFolder);
-        if (string.IsNullOrWhiteSpace(currentParent))
-            return;
-
-        // Get the parent directory of the new manager folder
-        var newParent = Path.GetDirectoryName(newFolder);
-        if (string.IsNullOrWhiteSpace(newParent))
-            return;
-
-        // Check if they're the same parent - if so, no need to move backup folder
-        if (string.Equals(currentParent, newParent, StringComparison.OrdinalIgnoreCase))
-            return;
-
-        // Construct the backup folder paths
-        var currentBackupFolder = Path.Combine(currentParent, DevConfig.FirebaseAuthBackupDirectoryName);
-        var newBackupFolder = Path.Combine(newParent, DevConfig.FirebaseAuthBackupDirectoryName);
-
-        // Only move if the source backup folder exists
-        if (!Directory.Exists(currentBackupFolder))
-            return;
-
-        try
-        {
-            // If destination backup folder already exists, merge contents
-            if (Directory.Exists(newBackupFolder))
-            {
-                MoveBackupFolderContents(currentBackupFolder, newBackupFolder);
-            }
-            else
-            {
-                // Create parent directory if needed
-                Directory.CreateDirectory(newParent);
-                
-                // Try to move the entire backup folder atomically
-                try
-                {
-                    Directory.Move(currentBackupFolder, newBackupFolder);
-                }
-                catch (Exception)
-                {
-                    // If atomic move fails (e.g., across volumes), fall back to content move
-                    MoveBackupFolderContents(currentBackupFolder, newBackupFolder);
-                }
-            }
-        }
-        catch (Exception)
-        {
-            // Silently ignore if we can't move the backup folder
-            // The firebase-auth.json file inside the main manager folder is the primary copy
-        }
-    }
-
     private void HandleResetManagerFolder(string currentFolder)
     {
         // Get the default location
@@ -6466,9 +6380,6 @@ public partial class MainWindow : Window
 
             // Move all files and subdirectories
             MoveDirectoryContents(currentFolder, defaultFolder);
-
-            // Move the SVSM Backup folder if it exists
-            MoveBackupFolder(currentFolder, defaultFolder);
 
             // Clear the custom folder configuration to use the default
             CustomConfigFolderManager.ClearCustomConfigFolder();
