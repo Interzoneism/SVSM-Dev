@@ -369,7 +369,13 @@
                                         <!-- Image scaled so its width always matches the container while preserving aspect ratio -->
 
                                         
-                                        <Grid Grid.Row="0" Grid.RowSpan="2" ClipToBounds="True">
+                                        <Grid x:Name="ThumbContainer" Grid.Row="0" ClipToBounds="True">
+                                            <Grid.RowSpan>
+                                                <MultiBinding Converter="{StaticResource ThumbnailLayoutConverter}" ConverterParameter="RowSpan">
+                                                    <Binding ElementName="ThumbImage" Path="Source.PixelWidth"/>
+                                                    <Binding ElementName="ThumbImage" Path="Source.PixelHeight"/>
+                                                </MultiBinding>
+                                            </Grid.RowSpan>
                                             <Border CornerRadius="8" ClipToBounds="True">
                                                 <Image
                                                     x:Name="ThumbImage"
@@ -379,12 +385,6 @@
                                                     UseLayoutRounding="True"
                                                     HorizontalAlignment="Stretch"
                                                     Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}">
-                                                    <Grid.RowSpan>
-                                                        <MultiBinding Converter="{StaticResource ThumbnailLayoutConverter}" ConverterParameter="RowSpan">
-                                                            <Binding Path="Source.PixelWidth" RelativeSource="{RelativeSource Self}"/>
-                                                            <Binding Path="Source.PixelHeight" RelativeSource="{RelativeSource Self}"/>
-                                                        </MultiBinding>
-                                                    </Grid.RowSpan>
                                                     <Image.Stretch>
                                                         <MultiBinding Converter="{StaticResource ThumbnailLayoutConverter}" ConverterParameter="Stretch">
                                                             <Binding Path="Source.PixelWidth" RelativeSource="{RelativeSource Self}"/>
