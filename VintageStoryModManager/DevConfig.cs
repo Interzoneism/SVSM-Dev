@@ -114,6 +114,20 @@ public static class DevConfig
 
     public static string FirebaseCacheDirectoryName { get; } = "Temp Cache/Firebase Cache";
 
+    public static string FirebaseDatabaseCacheDirectoryName { get; } = "Temp Cache/Firebase Database Cache";
+
+    public static string FirebaseDatabaseCacheDirectory
+    {
+        get
+        {
+            var managerDirectory = VintageStoryModManager.Services.ModCacheLocator.GetManagerDataDirectory();
+            if (!string.IsNullOrWhiteSpace(managerDirectory))
+                return Path.Combine(managerDirectory, FirebaseDatabaseCacheDirectoryName);
+
+            return Path.Combine(AppContext.BaseDirectory, FirebaseDatabaseCacheDirectoryName);
+        }
+    }
+
     // User configuration defaults.
     public static string ConfigurationFileName { get; } = "SimpleVSManagerConfiguration.json";
     public static string ModConfigPathsFileName { get; } = "SimpleVSManagerModConfigPaths.json";
