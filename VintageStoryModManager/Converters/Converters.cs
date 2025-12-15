@@ -221,7 +221,18 @@ public class StringToImageSourceConverter : IValueConverter
         try
         {
             var uri = new Uri(path, UriKind.RelativeOrAbsolute);
-            return new BitmapImage(uri);
+
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = uri;
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+            bitmap.EndInit();
+
+            if (bitmap.CanFreeze)
+                bitmap.Freeze();
+
+            return bitmap;
         }
         catch
         {
