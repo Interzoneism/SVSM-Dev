@@ -403,18 +403,21 @@ public partial class ModBrowserViewModel : ObservableObject
             _userReportsLoaded.Clear(); // Reset user reports tracking
             _modsWithLoadedLogos.Clear(); // Reset logo tracking
 
-            VisibleModsCount = DefaultLoadedMods;
+            // Calculate how many mods to prefetch and populate their metadata
             var modsToPrefetch = filteredMods.Take(Math.Min(DefaultLoadedMods + PrefetchBufferCount, filteredMods.Count)).ToList();
             
-            // Populate colors BEFORE adding to ModsList to prevent flash
+            // Populate colors and thumbnails BEFORE adding to ModsList to prevent flash
             await PopulateLogoColorsAsync(modsToPrefetch, token);
             await PopulateModThumbnailsAsync(modsToPrefetch, token);
 
+            // Add all filtered mods to the list
             foreach (var mod in filteredMods)
             {
                 ModsList.Add(mod);
             }
 
+            // Set visible count and notify after mods are in the list
+            VisibleModsCount = DefaultLoadedMods;
             OnPropertyChanged(nameof(VisibleMods));
 
             // Only populate user reports for visible mods + prefetch buffer (async is fine for these)
