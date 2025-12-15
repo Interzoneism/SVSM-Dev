@@ -441,42 +441,25 @@
                                     Tag="{Binding ModId}">
                                     <Grid>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="229" MinHeight="229" />
                                             <RowDefinition Height="115" />
                                         </Grid.RowDefinitions>
-                                        <!--  Image scaled so its width always matches the container while preserving aspect ratio  -->
+                                        <!--  Thumbnail scaled to match the card height and clipped to the card bounds  -->
 
-
-                                        <Grid
+                                        <Border
                                             x:Name="ThumbContainer"
                                             Grid.Row="0"
-                                            Grid.RowSpan="2">
-
-                                            <WrapPanel Name="container">
-
-                                                <Image
-                                                    x:Name="ThumbImage"
-                                                    Grid.Row="0"
-                                                    SnapsToDevicePixels="True"
-                                                    Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
-                                                    Stretch="Uniform"
-                                                    UseLayoutRounding="True"
-                                                    Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" />
-                                                <WrapPanel.OpacityMask>
-
-                                                    <VisualBrush>
-                                                        <VisualBrush.Visual>
-                                                            <Border
-                                                                Width="{Binding ElementName=container, Path=ActualWidth}"
-                                                                Height="{Binding ElementName=container, Path=ActualHeight}"
-                                                                Background="White"
-                                                                CornerRadius="8" />
-                                                        </VisualBrush.Visual>
-                                                    </VisualBrush>
-                                                </WrapPanel.OpacityMask>
-                                            </WrapPanel>
-
-                                        </Grid>
+                                            MinHeight="229"
+                                            ClipToBounds="True">
+                                            <Image
+                                                x:Name="ThumbImage"
+                                                SnapsToDevicePixels="True"
+                                                Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
+                                                Stretch="UniformToFill"
+                                                UseLayoutRounding="True"
+                                                VerticalAlignment="Top"
+                                                Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" />
+                                        </Border>
 
 
 
