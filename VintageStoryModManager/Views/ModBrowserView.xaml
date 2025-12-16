@@ -354,7 +354,7 @@
         <Border
             Grid.Row="1"
             Margin="16,0,16,0"
-            Background="{DynamicResource Brush.ModBrowser.Background}"
+            Background="{DynamicResource Brush.ModBrowser.Background.Radial}"
             CornerRadius="12,12,0,0">
             <ScrollViewer
                 x:Name="ModsScrollViewer"
@@ -565,7 +565,7 @@
                                             Opacity="0" />
 
                                         <!--  Abbreviation Text - DISABLED: Kept for future use but not displayed  -->
-                                        <Viewbox
+                                        <!--<Viewbox
                                             x:Name="AbbreviationViewbox"
                                             Grid.Row="0"
                                             Grid.RowSpan="1"
@@ -583,7 +583,7 @@
                                                 TextAlignment="Center"
                                                 TextWrapping="NoWrap" />
                                             <Viewbox.Style>
-                                                <!--  NOTE: These animations are preserved but inactive due to Visibility="Collapsed" above  -->
+                                                --><!--  NOTE: These animations are preserved but inactive due to Visibility="Collapsed" above  --><!--
                                                 <Style TargetType="Viewbox">
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" Value="Visible">
@@ -620,7 +620,7 @@
                                                     </Style.Triggers>
                                                 </Style>
                                             </Viewbox.Style>
-                                        </Viewbox>
+                                        </Viewbox>-->
 
 
                                         <!--  Overlay Buttons  -->
