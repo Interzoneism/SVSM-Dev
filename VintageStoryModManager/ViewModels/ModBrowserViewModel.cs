@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VintageStoryModManager.Models;
@@ -22,8 +23,8 @@ public partial class ModBrowserViewModel : ObservableObject
     private readonly string? _installedGameVersion;
     private CancellationTokenSource? _searchCts;
     private const int DefaultLoadedMods = 45;
-    private const int LoadMoreCount = 10;
-    private const int PrefetchBufferCount = 15;
+    private const int LoadMoreCount = 5;
+    private const int PrefetchBufferCount = 10;
     private const double TitleWeight = 6.0;
     private const double AuthorWeight = 4.5;
     private const double SummaryWeight = 2.5;
@@ -32,6 +33,8 @@ public partial class ModBrowserViewModel : ObservableObject
     private readonly HashSet<int> _userReportsLoaded = new();
     private readonly HashSet<int> _modsWithLoadedLogos = new();
     private readonly HashSet<string> _normalizedInstalledModIds = new(StringComparer.OrdinalIgnoreCase);
+    private long _lastLoadMoreTicks;
+    private const int LoadMoreThrottleMs = 300;
 
     #region Observable Properties
 
@@ -435,6 +438,28 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadMore()
     {
+        // Throttle load requests to prevent rapid consecutive calls (lock-free, thread-safe)
+        var nowTicks = Environment.TickCount64;
+        
+        // Atomically check and update timestamp to prevent race conditions
+        while (true)
+        {
+            var lastTicks = Interlocked.Read(ref _lastLoadMoreTicks);
+            var timeSinceLastLoad = nowTicks - lastTicks;
+            
+            if (timeSinceLastLoad < LoadMoreThrottleMs)
+            {
+                return; // Too soon, throttle this request
+            }
+            
+            // Try to atomically update the timestamp
+            if (Interlocked.CompareExchange(ref _lastLoadMoreTicks, nowTicks, lastTicks) == lastTicks)
+            {
+                break; // Successfully updated, proceed with load
+            }
+            // Another thread updated the timestamp, retry the check
+        }
+
         var previousCount = VisibleModsCount;
         VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
         OnPropertyChanged(nameof(VisibleMods));
