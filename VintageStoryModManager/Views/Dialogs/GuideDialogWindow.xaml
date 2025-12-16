@@ -76,6 +76,20 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
+                        <Bold>Restore VintagestoryData backup</Bold>
+                        <Run
+                            Text=" lists available backups of your entire VintagestoryData folder. Select one to restore your worlds, saves, and all data to a previous state." />
+                    </TextBlock>
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Automatically back up VintagestoryData before launch</Bold>
+                        <Run
+                            Text=" creates a complete backup of your VintagestoryData folder each time you launch the game from the manager, protecting your worlds and saves." />
+                    </TextBlock>
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
                         <Bold>Disable auto-refresh</Bold>
                         <Run
                             Text=" stops automatic checks that fetch mod tags, user reports, and update data. With it enabled, use " />
@@ -141,6 +155,44 @@
                                FontSize="12">
                         <Bold>Delete Cached Mods</Bold>
                         <Run Text=" empties the cached mod archives without touching your installed mods." />
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Margin="0,20,0,0">
+                    <TextBlock FontSize="15"
+                               FontWeight="Bold"
+                               Text="Folders menu" />
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Open Mods folder</Bold>
+                        <Run
+                            Text=" opens your VintagestoryData Mods directory where installed mod files are stored." />
+                    </TextBlock>
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Open Logs folder</Bold>
+                        <Run
+                            Text=" opens the Logs directory containing game log files for debugging mod issues and errors." />
+                    </TextBlock>
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Open Config folder</Bold>
+                        <Run
+                            Text=" opens the ModConfig directory where mod configuration files are stored." />
+                    </TextBlock>
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Open Simple VS Manager folder</Bold>
+                        <Run
+                            Text=" opens the Simple VS Manager configuration folder where the manager keeps its settings, presets, caches, and backups." />
                     </TextBlock>
                 </StackPanel>
 
@@ -223,14 +275,6 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
-                        <Bold>Use ModDB design</Bold>
-                        <Run
-                            Text=" switches Mod DB browsing between the card-based Mod DB layout (enabled) and the sortable list view (disabled)." />
-                    </TextBlock>
-
-                    <TextBlock Margin="0,8,0,0"
-                               TextWrapping="Wrap"
-                               FontSize="12">
                         <Bold>Themes</Bold>
                         <Run Text=" changes the manager's colour scheme. " />
                         <Bold>Custom…</Bold>
@@ -264,9 +308,15 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
-                        <Bold>Open manager config folder</Bold>
-                        <Run
-                            Text=" opens the configuration folder where Simple VS Manager keeps its settings, presets, caches, and backups." />
+                        <Bold>Menu Guide</Bold>
+                        <Run Text=" reopens this guide." />
+                    </TextBlock>
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Help!</Bold>
+                        <Run Text=" shows troubleshooting tips for common issues." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
@@ -280,23 +330,17 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
+                        <Bold>Clear temporary cache (Safe to use, nothing important is removed)</Bold>
+                        <Run
+                            Text=" deletes all cache folders (Cached Mods, Mod Database Cache, Mod Metadata, and cloud-modlist cache) while leaving your mods and settings untouched." />
+                    </TextBlock>
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
                         <Bold>Change manager config and cache folder...</Bold>
                         <Run
                             Text=" allows you to move the entire &quot;Simple VS Manager&quot; folder to a new location. This includes all configuration files, cached mods, backups, and presets. The application will automatically restart after the move is complete." />
-                    </TextBlock>
-
-                    <TextBlock Margin="0,8,0,0"
-                               TextWrapping="Wrap"
-                               FontSize="12">
-                        <Bold>Menu Guide</Bold>
-                        <Run Text=" reopens this guide." />
-                    </TextBlock>
-
-                    <TextBlock Margin="0,8,0,0"
-                               TextWrapping="Wrap"
-                               FontSize="12">
-                        <Bold>Help!</Bold>
-                        <Run Text=" shows troubleshooting tips for common issues." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
@@ -318,17 +362,52 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
-                        <Bold>Scan for mod config files</Bold>
+                        <Bold>Enable logging for...</Bold>
                         <Run
-                            Text=" searches the ModConfig directory for known configuration files and links them to the matching mods so you can open them directly." />
+                            Text=" opens a submenu where you can enable detailed logging for specific operations:" />
+                    </TextBlock>
+
+                    <TextBlock Margin="16,4,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>• Mod update</Bold>
+                        <Run Text=" logs all mod update operations." />
+                    </TextBlock>
+
+                    <TextBlock Margin="16,4,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>• Mod installation</Bold>
+                        <Run Text=" logs mod installation details." />
+                    </TextBlock>
+
+                    <TextBlock Margin="16,4,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>• Mod deletion</Bold>
+                        <Run Text=" logs when mods are deleted." />
+                    </TextBlock>
+
+                    <TextBlock Margin="16,4,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>• App launch and exit</Bold>
+                        <Run Text=" logs application lifecycle events." />
+                    </TextBlock>
+
+                    <TextBlock Margin="16,4,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>• Errors and exceptions</Bold>
+                        <Run Text=" logs all errors and exceptions that occur." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
-                        <Bold>Clear temporary cache (Safe to use, nothing important is removed)</Bold>
+                        <Bold>Scan for mod config files</Bold>
                         <Run
-                            Text=" deletes all cache folders (Cached Mods, Mod Database Cache, Mod Metadata, and cloud-modlist cache) while leaving your mods and settings untouched." />
+                            Text=" searches the ModConfig directory for known configuration files and links them to the matching mods so you can open them directly." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
