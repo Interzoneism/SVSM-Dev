@@ -22,8 +22,8 @@ public partial class ModBrowserViewModel : ObservableObject
     private readonly string? _installedGameVersion;
     private CancellationTokenSource? _searchCts;
     private const int DefaultLoadedMods = 45;
-    private const int LoadMoreCount = 10;
-    private const int PrefetchBufferCount = 15;
+    private const int LoadMoreCount = 5;
+    private const int PrefetchBufferCount = 10;
     private const double TitleWeight = 6.0;
     private const double AuthorWeight = 4.5;
     private const double SummaryWeight = 2.5;
@@ -32,6 +32,8 @@ public partial class ModBrowserViewModel : ObservableObject
     private readonly HashSet<int> _userReportsLoaded = new();
     private readonly HashSet<int> _modsWithLoadedLogos = new();
     private readonly HashSet<string> _normalizedInstalledModIds = new(StringComparer.OrdinalIgnoreCase);
+    private DateTime _lastLoadMoreTime = DateTime.MinValue;
+    private const int LoadMoreThrottleMs = 300;
 
     #region Observable Properties
 
@@ -435,6 +437,15 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadMore()
     {
+        // Throttle load requests to prevent rapid consecutive calls
+        var now = DateTime.UtcNow;
+        var timeSinceLastLoad = (now - _lastLoadMoreTime).TotalMilliseconds;
+        if (timeSinceLastLoad < LoadMoreThrottleMs)
+        {
+            return;
+        }
+        _lastLoadMoreTime = now;
+
         var previousCount = VisibleModsCount;
         VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
         OnPropertyChanged(nameof(VisibleMods));
