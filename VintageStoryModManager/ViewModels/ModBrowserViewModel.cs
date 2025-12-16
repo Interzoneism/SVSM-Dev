@@ -439,16 +439,25 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         // Throttle load requests to prevent rapid consecutive calls (lock-free, thread-safe)
         var nowTicks = Environment.TickCount64;
-        var lastTicks = Interlocked.Read(ref _lastLoadMoreTicks);
-        var timeSinceLastLoad = nowTicks - lastTicks;
         
-        if (timeSinceLastLoad < LoadMoreThrottleMs)
+        // Atomically check and update timestamp to prevent race conditions
+        while (true)
         {
-            return;
+            var lastTicks = Interlocked.Read(ref _lastLoadMoreTicks);
+            var timeSinceLastLoad = nowTicks - lastTicks;
+            
+            if (timeSinceLastLoad < LoadMoreThrottleMs)
+            {
+                return; // Too soon, throttle this request
+            }
+            
+            // Try to atomically update the timestamp
+            if (Interlocked.CompareExchange(ref _lastLoadMoreTicks, nowTicks, lastTicks) == lastTicks)
+            {
+                break; // Successfully updated, proceed with load
+            }
+            // Another thread updated the timestamp, retry the check
         }
-        
-        // Update timestamp - using Exchange ensures it's updated even if another thread changed it
-        Interlocked.Exchange(ref _lastLoadMoreTicks, nowTicks);
 
         var previousCount = VisibleModsCount;
         VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
