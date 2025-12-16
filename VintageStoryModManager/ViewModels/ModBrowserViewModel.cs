@@ -402,9 +402,19 @@ public partial class ModBrowserViewModel : ObservableObject
                 filteredMods = SortByRelevance(filteredMods, TextFilter);
             }
 
+            // Clear tracking before new search
+            _userReportsLoaded.Clear();
+            _modsWithLoadedLogos.Clear();
+
+            // Pre-populate thumbnails for initially visible mods to prevent flickering on first load
+            var initialVisibleCount = Math.Min(DefaultLoadedMods, filteredMods.Count);
+            var initialVisibleMods = filteredMods.Take(initialVisibleCount).ToList();
+            await PopulateModThumbnailsAsync(initialVisibleMods, token);
+
+            if (token.IsCancellationRequested)
+                return;
+
             ModsList.Clear();
-            _userReportsLoaded.Clear(); // Reset user reports tracking
-            _modsWithLoadedLogos.Clear(); // Reset logo tracking
             foreach (var mod in filteredMods)
             {
                 ModsList.Add(mod);
@@ -414,8 +424,6 @@ public partial class ModBrowserViewModel : ObservableObject
             OnPropertyChanged(nameof(VisibleMods));
 
             var modsToPrefetch = GetPrefetchMods();
-            await PopulateModThumbnailsAsync(modsToPrefetch, token);
-
             // Only populate user reports for visible mods + prefetch buffer
             _ = PopulateUserReportsAsync(modsToPrefetch, token);
         }
