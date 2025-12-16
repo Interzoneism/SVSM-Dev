@@ -729,10 +729,10 @@
                                                                 x:Name="PART_ScrollContentPresenter"
                                                                 Grid.Row="1"
                                                                 Grid.Column="0"
+                                                                Margin="{TemplateBinding Padding}"
                                                                 CanContentScroll="{TemplateBinding CanContentScroll}"
-                                                                ContentTemplate="{TemplateBinding ContentTemplate}"
                                                                 Content="{TemplateBinding Content}"
-                                                                Margin="{TemplateBinding Padding}" />
+                                                                ContentTemplate="{TemplateBinding ContentTemplate}" />
 
                                                             <ScrollBar
                                                                 x:Name="PART_VerticalScrollBar"
@@ -742,9 +742,9 @@
                                                                 Maximum="{TemplateBinding ScrollableHeight}"
                                                                 Orientation="Vertical"
                                                                 Style="{StaticResource IMM.DataGridScrollBarStyle}"
-                                                                Value="{TemplateBinding VerticalOffset}"
                                                                 ViewportSize="{TemplateBinding ViewportHeight}"
-                                                                Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}" />
+                                                                Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                                                                Value="{TemplateBinding VerticalOffset}" />
 
                                                             <ScrollBar
                                                                 x:Name="PART_HorizontalScrollBar"
@@ -754,9 +754,9 @@
                                                                 Maximum="{TemplateBinding ScrollableWidth}"
                                                                 Orientation="Horizontal"
                                                                 Style="{StaticResource IMM.DataGridScrollBarStyle}"
-                                                                Value="{TemplateBinding HorizontalOffset}"
                                                                 ViewportSize="{TemplateBinding ViewportWidth}"
-                                                                Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}" />
+                                                                Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"
+                                                                Value="{TemplateBinding HorizontalOffset}" />
 
                                                             <Border
                                                                 Grid.Row="2"
@@ -768,7 +768,7 @@
                                                 </Setter.Value>
                                             </Setter>
                                         </Style>
-                                        <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" />
+                                        <Style BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" TargetType="{x:Type ScrollViewer}" />
                                         <Style BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" TargetType="{x:Type ScrollBar}" />
                                         <Style BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" TargetType="{x:Type Thumb}" />
                                         <Style TargetType="{x:Type TextBlock}">
@@ -827,7 +827,8 @@
                                         </DataGridTemplateColumn>
                                         <DataGridTemplateColumn
                                             x:Name="IconColumn"
-                                            Width="76"
+                                            Width="80"
+                                            MinWidth="80"
                                             Header="Icon"
                                             IsReadOnly="True"
                                             Visibility="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}, Converter={StaticResource IMM.VisibleWhenFalseConverter}}">
@@ -841,9 +842,9 @@
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <Border
-                                                        Width="64"
-                                                        Height="64"
-                                                        HorizontalAlignment="Left"
+                                                        Width="80"
+                                                        Height="80"
+                                                        HorizontalAlignment="Center"
                                                         VerticalAlignment="Center"
                                                         ToolTipService.InitialShowDelay="200"
                                                         ToolTipService.ShowDuration="60000">
@@ -2480,16 +2481,18 @@
             Grid.RowSpan="3"
             Margin="0,0,0,-8"
             Panel.ZIndex="5500"
+            d:IsHidden="True"
             Background="#C0000000"
             IsHitTestVisible="True"
             Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsModlistInstallInProgress, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
             <Border
-                Width="420"
+                Width="497"
+                Height="260"
                 Padding="32"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
-                CornerRadius="10" Height="259">
+                CornerRadius="10">
                 <StackPanel>
                     <TextBlock
                         HorizontalAlignment="Center"
@@ -2504,17 +2507,20 @@
                         Minimum="0"
                         Value="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=ModlistInstallProgress}" />
                     <TextBlock
+                        Height="40"
                         Margin="0,8,0,8"
                         FontSize="14"
                         Foreground="{DynamicResource Brush.Text.Primary}"
                         Text="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=ModlistInstallStatusMessage}"
-                        TextWrapping="Wrap" Height="40" />
+                        TextWrapping="Wrap" />
                     <TextBlock
+                        Margin="0,8,0,0"
+                        HorizontalAlignment="Center"
                         FontSize="13"
                         Foreground="{DynamicResource Brush.Text.Primary}"
                         Text="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=ModlistDownloadSpeed, StringFormat=Download speed: {0}}"
                         TextWrapping="Wrap"
-                        Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=HasModlistDownloadSpeed, Converter={StaticResource IMM.VisibleWhenTrueConverter}}" Margin="0,8,0,0" />
+                        Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=HasModlistDownloadSpeed, Converter={StaticResource IMM.VisibleWhenTrueConverter}}" />
                 </StackPanel>
             </Border>
         </Border>
