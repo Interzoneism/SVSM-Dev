@@ -32,6 +32,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private readonly HashSet<int> _userReportsLoaded = new();
     private readonly HashSet<int> _modsWithLoadedLogos = new();
     private readonly HashSet<string> _normalizedInstalledModIds = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _loadMoreLock = new();
     private DateTime _lastLoadMoreTime = DateTime.MinValue;
     private const int LoadMoreThrottleMs = 300;
 
@@ -437,14 +438,17 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadMore()
     {
-        // Throttle load requests to prevent rapid consecutive calls
-        var now = DateTime.UtcNow;
-        var timeSinceLastLoad = (now - _lastLoadMoreTime).TotalMilliseconds;
-        if (timeSinceLastLoad < LoadMoreThrottleMs)
+        // Throttle load requests to prevent rapid consecutive calls (thread-safe)
+        lock (_loadMoreLock)
         {
-            return;
+            var now = DateTime.UtcNow;
+            var timeSinceLastLoad = (now - _lastLoadMoreTime).TotalMilliseconds;
+            if (timeSinceLastLoad < LoadMoreThrottleMs)
+            {
+                return;
+            }
+            _lastLoadMoreTime = now;
         }
-        _lastLoadMoreTime = now;
 
         var previousCount = VisibleModsCount;
         VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
