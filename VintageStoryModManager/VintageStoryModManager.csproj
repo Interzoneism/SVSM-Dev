@@ -33,7 +33,6 @@
 		<DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
-		<None Remove="mod-default.png" />
 		<None Remove="soil.png" />
 		<None Remove="Views\soilcorrect.png" />
 	</ItemGroup>
@@ -45,7 +44,7 @@
                 <Resource Include="warning.png" />
                 <Resource Include="error.png" />
                 <Resource Include="Resources\Discord.png" />
-                <Resource Include="Resources\Fonts\Goudament.ttf" />
+				<Resource Include="Resources\mod-default.png" />
         </ItemGroup>
 
 	<ItemGroup>
