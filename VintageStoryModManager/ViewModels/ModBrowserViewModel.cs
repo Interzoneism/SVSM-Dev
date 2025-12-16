@@ -447,8 +447,8 @@ public partial class ModBrowserViewModel : ObservableObject
             return;
         }
         
-        // Try to update the timestamp; if another thread beat us, that's fine
-        Interlocked.CompareExchange(ref _lastLoadMoreTicks, nowTicks, lastTicks);
+        // Update timestamp - using Exchange ensures it's updated even if another thread changed it
+        Interlocked.Exchange(ref _lastLoadMoreTicks, nowTicks);
 
         var previousCount = VisibleModsCount;
         VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
