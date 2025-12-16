@@ -33,7 +33,7 @@
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility" />
         <converters:FavoriteButtonShouldShowConverter x:Key="FavoriteButtonShouldShow" />
         <converters:InstallButtonShouldShowConverter x:Key="InstallButtonShouldShow" />
-        <converters:HeightToMarginConverter x:Key="HeightToMargin" />
+        
         <converters:ModNameAbbreviationConverter x:Key="ModNameAbbreviationConverter" />
         <converters:StringNullOrWhiteSpaceToVisibilityConverter x:Key="StringNullOrWhiteSpaceToVisibility" />
         <converters:StringToImageSourceConverter x:Key="StringToImageSource" />

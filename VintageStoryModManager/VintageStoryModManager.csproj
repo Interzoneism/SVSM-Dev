@@ -33,6 +33,9 @@
 		<DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
+	  <Compile Remove="Converters\HeightToMarginConverter.cs" />
+	</ItemGroup>
+	<ItemGroup>
 		<None Remove="soil.png" />
 		<None Remove="Views\soilcorrect.png" />
 	</ItemGroup>
