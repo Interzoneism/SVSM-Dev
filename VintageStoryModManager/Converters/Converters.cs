@@ -346,3 +346,74 @@ public class InstallButtonVisibilityConverter : IMultiValueConverter
         throw new NotSupportedException();
     }
 }
+
+/// <summary>
+/// Multi-value converter for favorite button visibility (bool result).
+/// Returns true when: card is hovered OR mod is favorited.
+/// values[0] = IsMouseOver (bool), values[1] = ModId (object), values[2] = FavoriteMods collection
+/// </summary>
+public class FavoriteButtonShouldShowConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 3 || values[0] == DependencyProperty.UnsetValue ||
+            values[1] == DependencyProperty.UnsetValue || values[2] == DependencyProperty.UnsetValue)
+            return false;
+
+        var isMouseOver = values[0] is bool b && b;
+        var modId = values[1];
+        var favoriteMods = values[2];
+
+        // Check if mod is favorited
+        var isFavorited = false;
+        if (favoriteMods is IList list && modId != null)
+        {
+            isFavorited = list.Contains(modId);
+        }
+        else if (favoriteMods is IEnumerable enumerable && modId != null)
+        {
+            foreach (var obj in enumerable)
+            {
+                if (Equals(obj, modId))
+                {
+                    isFavorited = true;
+                    break;
+                }
+            }
+        }
+
+        // Return true when hovered OR favorited
+        return isMouseOver || isFavorited;
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}
+
+/// <summary>
+/// Multi-value converter for install button visibility (bool result).
+/// Returns true when the card is hovered or the mod is already installed.
+/// values[0] = IsMouseOver (bool), values[1] = IsInstalled (bool)
+/// </summary>
+public class InstallButtonShouldShowConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 2 || values[0] == DependencyProperty.UnsetValue ||
+            values[1] == DependencyProperty.UnsetValue)
+            return false;
+
+        var isMouseOver = values[0] is bool b && b;
+        var isInstalled = values[1] is bool installed && installed;
+
+        // Return true when hovered or when installed so the checkmark remains visible
+        return isMouseOver || isInstalled;
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}
