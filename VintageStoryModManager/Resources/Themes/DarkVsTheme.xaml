@@ -15,7 +15,7 @@
     <Color x:Key="Palette.Accent.Alt.Darker">#FF1c2f36</Color>
     <Color x:Key="Palette.Accent.Alt.Mid">#FF2c4047</Color>
     <Color x:Key="Palette.Accent.Alt.LowSat">#FF628796</Color>
-    <Color x:Key="Palette.Accent.Alt.Background">#FF587e8c</Color>
+    <Color x:Key="Palette.Accent.Alt.Background">#FF2c3133</Color>
     <Color x:Key="Palette.Interactive.DisabledSurface">#FF332A21</Color>
     <Color x:Key="Palette.Text.Primary">#FFC8BCAE</Color>
     <Color x:Key="Palette.Text.Link">#FF479BBE</Color>
@@ -211,10 +211,12 @@
         <GradientStop Offset="1" Color="Transparent" />
     </LinearGradientBrush>
 
+    <SolidColorBrush x:Key="Brush.ModCard.InfoBox" Color="Black" />
+
     <SolidColorBrush
-        x:Key="Brush.ModCard.InfoBox"
+        x:Key="Brush.ModBrowser.Background"
         Opacity="0.7"
-        Color="Black" />
+        Color="{DynamicResource Palette.Accent.Alt.Background}" />
 
     <!--  ===============================  -->
     <!--  Installed mods list formatting.  -->
