@@ -310,9 +310,6 @@ public partial class MainWindow : Window
     private readonly List<MenuItem> _developerProfileMenuItems = new();
     private readonly List<MenuItem> _gameProfileMenuItems = new();
     private readonly Dictionary<InstalledModsColumn, bool> _installedColumnVisibilityPreferences = new();
-    
-    // Track Icon column state before compact mode
-    private bool _iconColumnStateBeforeCompactMode;
 
     // Services
     private readonly ModCompatibilityCommentsService _modCompatibilityCommentsService = new();
@@ -562,10 +559,9 @@ public partial class MainWindow : Window
 
         if (isCompactView)
         {
-            // Entering compact mode: save current state and disable the menu item
+            // Entering compact mode: disable the menu item
             // The Icon column is hidden via XAML binding to IsCompactView
             // We disable the menu item to prevent user interaction during compact mode
-            _iconColumnStateBeforeCompactMode = IconColumnMenuItem.IsChecked;
             IconColumnMenuItem.IsEnabled = false;
         }
         else
