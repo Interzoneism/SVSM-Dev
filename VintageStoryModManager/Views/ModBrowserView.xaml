@@ -575,7 +575,7 @@
                                             IsHitTestVisible="False"
                                             Opacity="0" />
 
-                                        <!--  Abbreviation Text - Fades in when no thumbnail  -->
+                                        <!--  Abbreviation Text - DISABLED: Kept for future use but not displayed  -->
                                         <Viewbox
                                             x:Name="AbbreviationViewbox"
                                             Grid.Row="0"
@@ -583,7 +583,8 @@
                                             HorizontalAlignment="Center"
                                             VerticalAlignment="Center"
                                             Opacity="0"
-                                            Stretch="Uniform">
+                                            Stretch="Uniform"
+                                            Visibility="Collapsed">
                                             <TextBlock
                                                 Margin="2,2,2,2"
                                                 HorizontalAlignment="Center"
