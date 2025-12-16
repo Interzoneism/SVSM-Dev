@@ -56,7 +56,8 @@ public sealed class UserConfigurationService
             ["Palette.Text.Link"] = "#FF479BBE",
             ["Palette.Bevel.Highlight"] = "#80FFFFFF",
             ["Palette.Bevel.Shadow"] = "#40000000",
-            ["Palette.Overlay.HoverTint"] = "#10FFFFFF"
+            ["Palette.Overlay.HoverTint"] = "#10FFFFFF",
+            ["Palette.White"] = "#FFFFFCF5"
         };
 
     private static readonly IReadOnlyDictionary<string, string> DarkPaletteColors =
