@@ -829,7 +829,8 @@
                                             x:Name="IconColumn"
                                             Width="76"
                                             Header="Icon"
-                                            IsReadOnly="True">
+                                            IsReadOnly="True"
+                                            Visibility="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}, Converter={StaticResource IMM.VisibleWhenFalseConverter}}">
                                             <DataGridTemplateColumn.CellStyle>
                                                 <Style BasedOn="{StaticResource IMM.DataGridCellBaseStyle}" TargetType="{x:Type DataGridCell}">
                                                     <Setter Property="HorizontalContentAlignment" Value="Left" />
