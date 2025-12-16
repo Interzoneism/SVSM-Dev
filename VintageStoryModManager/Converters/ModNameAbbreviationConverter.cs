@@ -16,6 +16,7 @@ public class ModNameAbbreviationConverter : IValueConverter
 
         var letters = new StringBuilder();
         var words = name.Split([' ', '\t', '\r', '\n', '-', '_'], StringSplitOptions.RemoveEmptyEntries);
+        var validWordCount = 0;
 
         foreach (var rawWord in words)
         {
@@ -24,6 +25,10 @@ public class ModNameAbbreviationConverter : IValueConverter
             if (!char.IsLetter(word[0])) continue;
 
             letters.Append(char.ToUpperInvariant(word[0]));
+            validWordCount++;
+            
+            if (validWordCount >= 3)
+                break;
         }
 
         if (letters.Length > 0)
