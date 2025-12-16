@@ -537,7 +537,7 @@
                                                                             BeginTime="0:0:0.15"
                                                                             Storyboard.TargetProperty="Opacity"
                                                                             To="0.5"
-                                                                            Duration="0:0:0.4">
+                                                                            Duration="0:0:0.20">
                                                                             <DoubleAnimation.EasingFunction>
                                                                                 <CubicEase EasingMode="EaseInOut" />
                                                                             </DoubleAnimation.EasingFunction>
@@ -551,7 +551,7 @@
                                                                         <DoubleAnimation
                                                                             Storyboard.TargetProperty="Opacity"
                                                                             To="0"
-                                                                            Duration="0:0:0.2">
+                                                                            Duration="0:0:0.20">
                                                                             <DoubleAnimation.EasingFunction>
                                                                                 <CubicEase EasingMode="EaseInOut" />
                                                                             </DoubleAnimation.EasingFunction>
@@ -604,7 +604,7 @@
                                                                             BeginTime="0:0:0.15"
                                                                             Storyboard.TargetProperty="Opacity"
                                                                             To="1.0"
-                                                                            Duration="0:0:0.4">
+                                                                            Duration="0:0:0.20">
                                                                             <DoubleAnimation.EasingFunction>
                                                                                 <CubicEase EasingMode="EaseInOut" />
                                                                             </DoubleAnimation.EasingFunction>
@@ -618,7 +618,7 @@
                                                                         <DoubleAnimation
                                                                             Storyboard.TargetProperty="Opacity"
                                                                             To="0"
-                                                                            Duration="0:0:0.2">
+                                                                            Duration="0:0:0.20">
                                                                             <DoubleAnimation.EasingFunction>
                                                                                 <CubicEase EasingMode="EaseInOut" />
                                                                             </DoubleAnimation.EasingFunction>
@@ -730,9 +730,7 @@
                                                     Height="28"
                                                     Click="InstallButton_Click"
                                                     IsEnabled="{Binding IsInstalled, Converter={StaticResource InvertBoolean}}"
-
                                                     Opacity="0"
-
                                                     Tag="{Binding ModId}"
                                                     ToolTip="Install mod">
                                                     <Button.Style>
@@ -823,12 +821,12 @@
                                                 <StackPanel Grid.Column="0" Margin="18,8,4,8">
                                                     <!--  MaxWidth: Card=288 - StatsColumn(80+16)=96 - Separator=1 - Margins=16 = 175  -->
                                                     <StackPanel
-                                                        MaxWidth="210"
+                                                        MaxWidth="220"
                                                         HorizontalAlignment="Left"
                                                         Orientation="Horizontal">
                                                         <!--  MaxWidth: 175 - LinkIcon(10+4margin) = 161  -->
                                                         <TextBlock
-                                                            MaxWidth="190"
+                                                            MaxWidth="210"
                                                             HorizontalAlignment="Left"
                                                             Cursor="Hand"
                                                             FontSize="21"

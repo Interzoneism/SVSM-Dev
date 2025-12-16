@@ -12,6 +12,10 @@
     <Color x:Key="Palette.BaseSurface.HoverGlow">#FF5A4530</Color>
     <Color x:Key="Palette.Interactive.Surface">#FF453525</Color>
     <Color x:Key="Palette.Accent.Primary">#FF479BBE</Color>
+    <Color x:Key="Palette.Accent.Alt.Darker">#FF1c2f36</Color>
+    <Color x:Key="Palette.Accent.Alt.Mid">#FF2c4047</Color>
+    <Color x:Key="Palette.Accent.Alt.LowSat">#FF628796</Color>
+    <Color x:Key="Palette.Accent.Alt.Background">#FF587e8c</Color>
     <Color x:Key="Palette.Interactive.DisabledSurface">#FF332A21</Color>
     <Color x:Key="Palette.Text.Primary">#FFC8BCAE</Color>
     <Color x:Key="Palette.Text.Link">#FF479BBE</Color>
@@ -197,9 +201,9 @@
         Opacity="0.7"
         Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
     <LinearGradientBrush x:Key="Brush.ModCard.NoThumb" StartPoint="0,1" EndPoint="0,0">
-        <GradientStop Offset="0.33" Color="{DynamicResource Palette.Interactive.DisabledSurface}" />
-        <GradientStop Offset="0.5" Color="{DynamicResource Palette.BaseSurface.Raised}" />
-        <GradientStop Offset="1" Color="{DynamicResource Palette.BaseSurface.Brighter}" />
+        <GradientStop Offset="0.33" Color="{DynamicResource Palette.Accent.Alt.Darker}" />
+        <GradientStop Offset="0.5" Color="{DynamicResource Palette.Accent.Alt.Mid}" />
+        <GradientStop Offset="1" Color="{DynamicResource Palette.Accent.Alt.LowSat}" />
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="Brush.ModCard.Border.Gradient" StartPoint="0,0" EndPoint="0.3,0.3">
@@ -209,8 +213,8 @@
 
     <SolidColorBrush
         x:Key="Brush.ModCard.InfoBox"
-        Opacity="0.8"
-        Color="{DynamicResource Palette.Interactive.DisabledSurface}" />
+        Opacity="0.7"
+        Color="Black" />
 
     <!--  ===============================  -->
     <!--  Installed mods list formatting.  -->
