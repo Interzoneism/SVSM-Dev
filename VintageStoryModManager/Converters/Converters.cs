@@ -210,13 +210,29 @@ public class IconKeyToGeometryConverter : IValueConverter
 /// <summary>
 /// Converts a non-empty string into an <see cref="ImageSource"/>.
 /// Returns <c>null</c> when the input is null, whitespace, or cannot be converted.
+/// Uses proper caching to prevent image flashing and re-loading.
 /// </summary>
 public class StringToImageSourceConverter : IValueConverter
 {
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, WeakReference<BitmapImage>> _imageCache = new();
+    private static readonly object _cleanupLock = new();
+    private static DateTime _lastCleanup = DateTime.UtcNow;
+    private const int MaxCacheSize = 500;
+    private const int CleanupIntervalMinutes = 5;
+
     public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         if (value is not string path || string.IsNullOrWhiteSpace(path))
             return null;
+
+        // Periodic cleanup of dead references
+        CleanupCacheIfNeeded();
+
+        // Try to get cached image first
+        if (_imageCache.TryGetValue(path, out var weakRef) && weakRef.TryGetTarget(out var cachedImage))
+        {
+            return cachedImage;
+        }
 
         try
         {
@@ -226,17 +242,68 @@ public class StringToImageSourceConverter : IValueConverter
             bitmap.BeginInit();
             bitmap.UriSource = uri;
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            // Remove IgnoreImageCache to prevent flashing - use WPF's internal cache
+            // Prevent re-decoding and use WPF's internal cache to avoid flashing
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
             bitmap.EndInit();
 
             if (bitmap.CanFreeze)
                 bitmap.Freeze();
 
+            // Cache the bitmap using a weak reference to allow GC when needed
+            _imageCache[path] = new WeakReference<BitmapImage>(bitmap);
+
             return bitmap;
         }
-        catch
+        catch (Exception ex)
         {
+            // Log the error for debugging but don't crash the UI
+            System.Diagnostics.Debug.WriteLine($"[StringToImageSourceConverter] Failed to load image from '{path}': {ex.Message}");
             return null;
+        }
+    }
+
+    private static void CleanupCacheIfNeeded()
+    {
+        // Only check cleanup interval from one thread at a time
+        if (!Monitor.TryEnter(_cleanupLock))
+            return;
+
+        try
+        {
+            var now = DateTime.UtcNow;
+            if ((now - _lastCleanup).TotalMinutes < CleanupIntervalMinutes)
+                return;
+
+            _lastCleanup = now;
+
+            // Create snapshot to avoid race conditions during enumeration
+            var snapshot = _imageCache.ToArray();
+
+            // Remove dead weak references to prevent dictionary from growing unbounded
+            foreach (var kvp in snapshot)
+            {
+                if (!kvp.Value.TryGetTarget(out _))
+                {
+                    _imageCache.TryRemove(kvp.Key, out _);
+                }
+            }
+
+            // If cache still exceeds limit after cleanup, remove half the entries
+            // Note: ConcurrentDictionary doesn't guarantee enumeration order,
+            // but WeakReferences ensure proper GC regardless of removal order
+            if (_imageCache.Count > MaxCacheSize)
+            {
+                var currentSnapshot = _imageCache.Keys.ToArray();
+                var toRemove = currentSnapshot.Length / 2;
+                for (var i = 0; i < toRemove && i < currentSnapshot.Length; i++)
+                {
+                    _imageCache.TryRemove(currentSnapshot[i], out _);
+                }
+            }
+        }
+        finally
+        {
+            Monitor.Exit(_cleanupLock);
         }
     }
 
