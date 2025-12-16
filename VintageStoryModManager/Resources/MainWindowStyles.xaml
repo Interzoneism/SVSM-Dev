@@ -453,7 +453,7 @@
                                     Value="{DynamicResource Brush.Button.Primary.Background.Pressed}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.5" />
+                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="1" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

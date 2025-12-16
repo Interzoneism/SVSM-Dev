@@ -699,6 +699,76 @@
                                     VirtualizingPanel.IsVirtualizing="True"
                                     VirtualizingPanel.VirtualizationMode="Recycling">
                                     <DataGrid.Resources>
+                                        <Style x:Key="IMM.InstalledModsScrollViewerStyle" TargetType="{x:Type ScrollViewer}">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="ScrollViewer">
+                                                        <Grid Background="{TemplateBinding Background}">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto" />
+                                                                <RowDefinition Height="*" />
+                                                                <RowDefinition Height="Auto" />
+                                                            </Grid.RowDefinitions>
+
+                                                            <DataGridColumnHeadersPresenter
+                                                                x:Name="PART_ColumnHeadersPresenter"
+                                                                Grid.Row="0"
+                                                                Grid.Column="0"
+                                                                Visibility="{Binding HeadersVisibility, RelativeSource={RelativeSource AncestorType=DataGrid}}" />
+                                                            <Border
+                                                                Grid.Row="0"
+                                                                Grid.Column="1"
+                                                                Background="{DynamicResource Brush.DataGrid.Header.Background}"
+                                                                Visibility="{Binding ComputedVerticalScrollBarVisibility, RelativeSource={RelativeSource TemplatedParent}}" />
+
+                                                            <ScrollContentPresenter
+                                                                x:Name="PART_ScrollContentPresenter"
+                                                                Grid.Row="1"
+                                                                Grid.Column="0"
+                                                                CanContentScroll="{TemplateBinding CanContentScroll}"
+                                                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                Content="{TemplateBinding Content}"
+                                                                Margin="{TemplateBinding Padding}" />
+
+                                                            <ScrollBar
+                                                                x:Name="PART_VerticalScrollBar"
+                                                                Grid.Row="1"
+                                                                Grid.Column="1"
+                                                                Background="{TemplateBinding Background}"
+                                                                Maximum="{TemplateBinding ScrollableHeight}"
+                                                                Orientation="Vertical"
+                                                                Style="{StaticResource IMM.DataGridScrollBarStyle}"
+                                                                Value="{TemplateBinding VerticalOffset}"
+                                                                ViewportSize="{TemplateBinding ViewportHeight}"
+                                                                Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}" />
+
+                                                            <ScrollBar
+                                                                x:Name="PART_HorizontalScrollBar"
+                                                                Grid.Row="2"
+                                                                Grid.Column="0"
+                                                                Background="{TemplateBinding Background}"
+                                                                Maximum="{TemplateBinding ScrollableWidth}"
+                                                                Orientation="Horizontal"
+                                                                Style="{StaticResource IMM.DataGridScrollBarStyle}"
+                                                                Value="{TemplateBinding HorizontalOffset}"
+                                                                ViewportSize="{TemplateBinding ViewportWidth}"
+                                                                Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}" />
+
+                                                            <Border
+                                                                Grid.Row="2"
+                                                                Grid.Column="1"
+                                                                Background="{DynamicResource Brush.DataGrid.Header.Background}"
+                                                                Visibility="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ComputedHorizontalScrollBarVisibility}" />
+                                                        </Grid>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                        <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" />
                                         <Style BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" TargetType="{x:Type ScrollBar}" />
                                         <Style BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" TargetType="{x:Type Thumb}" />
                                         <Style TargetType="{x:Type TextBlock}">

@@ -535,7 +535,7 @@
                                             Stretch="Uniform"
                                             Visibility="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}">
                                             <TextBlock
-                                                Margin="0,0,0,2"
+                                                Margin="2,2,2,2"
                                                 HorizontalAlignment="Center"
                                                 VerticalAlignment="Center"
                                                 FontWeight="Bold"
@@ -643,7 +643,9 @@
                                                     Height="28"
                                                     Click="InstallButton_Click"
                                                     IsEnabled="{Binding IsInstalled, Converter={StaticResource InvertBoolean}}"
+
                                                     Opacity="0"
+
                                                     Tag="{Binding ModId}"
                                                     ToolTip="Install mod">
                                                     <Button.Style>
