@@ -1571,6 +1571,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         LoadingProgress = 75;
 
         // Pre-create view models off the UI thread to reduce dispatcher work
+        // Note: CreateModViewModel is safe to call off UI thread because:
+        // - _settingsStore.IsDisabled() is thread-safe (uses lock)
+        // - GetDisplayPath() uses cached base paths (thread-safe read)
+        // - ModListItemViewModel constructor doesn't require UI thread
         var viewModelEntries = new List<(string sourcePath, ModEntry entry, ModListItemViewModel viewModel)>(entries.Count);
         foreach (var entry in entries)
         {
@@ -1670,6 +1674,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             return (false, false);
         }
+
+        // Invalidate cached base paths after settings reload since search paths may have changed
+        _cachedBasePaths = null;
 
         var modStatesChanged = false;
         await InvokeOnDispatcherAsync(() =>
