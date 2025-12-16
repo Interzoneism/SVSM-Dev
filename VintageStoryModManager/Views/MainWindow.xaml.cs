@@ -553,6 +553,31 @@ public partial class MainWindow : Window
             NotifyViewModelOfInstalledColumnVisibility(pair.Key, pair.Value);
     }
 
+    private void UpdateIconColumnMenuItemForCompactMode(bool isCompactView)
+    {
+        if (IconColumnMenuItem == null) return;
+
+        if (isCompactView)
+        {
+            // Entering compact mode: disable the menu item
+            // The Icon column is hidden via XAML binding to IsCompactView
+            // We disable the menu item to prevent user interaction during compact mode
+            IconColumnMenuItem.IsEnabled = false;
+        }
+        else
+        {
+            // Exiting compact mode: re-enable the menu item
+            IconColumnMenuItem.IsEnabled = true;
+            
+            // The XAML binding will try to make the Icon column visible when exiting compact mode
+            // We need to re-apply the user's preference to override the binding if they had it hidden
+            if (_installedColumnVisibilityPreferences.TryGetValue(InstalledModsColumn.Icon, out var userPreference))
+            {
+                ApplyInstalledColumnVisibility(InstalledModsColumn.Icon, userPreference);
+            }
+        }
+    }
+
     #endregion
 
     #region Window Lifecycle Events
@@ -2457,6 +2482,7 @@ public partial class MainWindow : Window
         RestoreSortPreference();
         UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
         ApplyColumnVisibilityPreferencesToViewModel();
+        UpdateIconColumnMenuItemForCompactMode(_viewModel.IsCompactView);
         SubscribeModBrowserToDirectoryWatcher();
     }
 
@@ -2871,7 +2897,11 @@ public partial class MainWindow : Window
         }
         else if (e.PropertyName == nameof(MainViewModel.IsCompactView))
         {
-            if (_viewModel != null) _userConfiguration.SetCompactViewMode(_viewModel.IsCompactView);
+            if (_viewModel != null)
+            {
+                _userConfiguration.SetCompactViewMode(_viewModel.IsCompactView);
+                UpdateIconColumnMenuItemForCompactMode(_viewModel.IsCompactView);
+            }
         }
         else if (e.PropertyName == nameof(MainViewModel.UseModDbDesignView))
         {
