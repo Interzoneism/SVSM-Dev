@@ -269,12 +269,6 @@
                             IsCheckable="True"
                             IsChecked="{Binding IsCompactView, Mode=TwoWay}"
                             Style="{StaticResource ToggleMenuItemStyle}" />
-                        <MenuItem
-                            Height="35"
-                            Header="_Use ModDB design"
-                            IsCheckable="True"
-                            IsChecked="{Binding UseModDbDesignView, Mode=TwoWay}"
-                            Style="{StaticResource ToggleMenuItemStyle}" />
                         <MenuItem Height="35" Header="_Themes">
                             <MenuItem
                                 x:Name="VintageStoryThemeMenuItem"
@@ -424,15 +418,6 @@
                             IsEnabled="False"
                             Opacity="0.75"
                             Visibility="Collapsed" />
-                        <Separator />
-                        <MenuItem
-                            Padding="12,6"
-                            Click="ManagerModDbPageMenuItem_OnClick"
-                            Header="Open _Mod DB page for the manager" />
-                        <MenuItem
-                            Padding="12,6"
-                            Click="ChangeManagerFolderMenuItem_OnClick"
-                            Header="Change manager config and cache folder..." />
                         <MenuItem
                             Padding="12,6"
                             Click="GuideMenuItem_OnClick"
@@ -441,6 +426,20 @@
                             Padding="12,6"
                             Click="HelpMenuItem_OnClick"
                             Header="Help!" />
+                        <MenuItem
+                            Padding="12,6"
+                            Click="ManagerModDbPageMenuItem_OnClick"
+                            Header="Open _Mod DB page for the manager" />
+                        <Separator />
+                        <MenuItem
+                            Padding="12,6"
+                            Click="ClearAllCachesMenuItem_OnClick"
+                            Header="Clear temporary cache (Safe to use, nothing important is removed)" />
+                        <Separator />
+                        <MenuItem
+                            Padding="12,6"
+                            Click="ChangeManagerFolderMenuItem_OnClick"
+                            Header="Change manager config and cache folder..." />
                         <MenuItem
                             x:Name="DeveloperProfilesMenuItem"
                             Padding="12,6"
@@ -502,11 +501,7 @@
                             Padding="12,6"
                             Click="ScanForModConfigsMenuItem_OnClick"
                             Header="Scan for mod config files" />
-                        <MenuItem
-                            Padding="12,6"
-                            Click="ClearAllCachesMenuItem_OnClick"
-                            Header="Clear temporary cache (Safe to use, nothing important is removed)" />
-                        <Separator />
+
                         <MenuItem
                             Padding="12,6"
                             Click="ExperimentalModDebuggingMenuItem_OnClick"
