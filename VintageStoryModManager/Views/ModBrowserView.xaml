@@ -101,17 +101,6 @@
         </Style>
 
 
-        <Style x:Key="ThumbRectangle" TargetType="{x:Type Rectangle}">
-            <Setter Property="Margin">
-                <Setter.Value>
-                    <Binding
-                        Converter="{StaticResource HeightToMargin}"
-                        ConverterParameter="226"
-                        Path="ActualHeight"
-                        RelativeSource="{RelativeSource Self}" />
-                </Setter.Value>
-            </Setter>
-        </Style>
     </UserControl.Resources>
 
     <Grid>
