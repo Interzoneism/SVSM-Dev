@@ -2480,7 +2480,6 @@
             Grid.RowSpan="3"
             Margin="0,0,0,-8"
             Panel.ZIndex="5500"
-            d:IsHidden="True"
             Background="#C0000000"
             IsHitTestVisible="True"
             Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=IsModlistInstallInProgress, Converter={StaticResource IMM.VisibleWhenTrueConverter}}">
@@ -2490,7 +2489,7 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
-                CornerRadius="10">
+                CornerRadius="10" Height="259">
                 <StackPanel>
                     <TextBlock
                         HorizontalAlignment="Center"
@@ -2505,25 +2504,17 @@
                         Minimum="0"
                         Value="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=ModlistInstallProgress}" />
                     <TextBlock
-                        Margin="0,0,0,8"
+                        Margin="0,8,0,8"
                         FontSize="14"
                         Foreground="{DynamicResource Brush.Text.Primary}"
                         Text="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=ModlistInstallStatusMessage}"
-                        TextWrapping="Wrap" />
+                        TextWrapping="Wrap" Height="40" />
                     <TextBlock
-                        Margin="0,0,0,8"
                         FontSize="13"
                         Foreground="{DynamicResource Brush.Text.Primary}"
                         Text="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=ModlistDownloadSpeed, StringFormat=Download speed: {0}}"
                         TextWrapping="Wrap"
-                        Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=HasModlistDownloadSpeed, Converter={StaticResource IMM.VisibleWhenTrueConverter}}" />
-                    <TextBlock
-                        Width="260"
-                        FontSize="13"
-                        Foreground="{DynamicResource Brush.Text.Primary}"
-                        Text="Simple VS Manager disables all controls while mods install."
-                        TextAlignment="Center"
-                        TextWrapping="Wrap" />
+                        Visibility="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=HasModlistDownloadSpeed, Converter={StaticResource IMM.VisibleWhenTrueConverter}}" Margin="0,8,0,0" />
                 </StackPanel>
             </Border>
         </Border>
