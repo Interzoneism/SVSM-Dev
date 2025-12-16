@@ -21,7 +21,7 @@ public class ModNameAbbreviationConverter : IValueConverter
         {
             var word = rawWord.Trim();
             if (string.IsNullOrEmpty(word)) continue;
-            if (char.IsDigit(word[0])) continue;
+            if (!char.IsLetter(word[0])) continue;
 
             letters.Append(char.ToUpperInvariant(word[0]));
         }
