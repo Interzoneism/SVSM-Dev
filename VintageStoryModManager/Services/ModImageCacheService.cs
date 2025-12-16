@@ -7,7 +7,19 @@ using System.Text;
 namespace VintageStoryModManager.Services;
 
 /// <summary>
-///     Provides caching for mod database images to avoid repeated downloads.
+///     Provides efficient caching for mod database images to avoid repeated downloads.
+///     <para>
+///     Cache files are stored with descriptor-based names (e.g., "modsource_modid.png") 
+///     for better organization and readability. Files are stored in the mod database 
+///     image cache directory managed by <see cref="ModCacheLocator"/>.
+///     </para>
+///     <para>
+///     Performance optimizations:
+///     - Uses Span&lt;T&gt; and stackalloc for zero-allocation hash computation
+///     - Eliminates redundant file system checks
+///     - Employs concurrent file locking to prevent race conditions
+///     - Atomic writes using temp files to ensure cache consistency
+///     </para>
 /// </summary>
 internal static class ModImageCacheService
 {
