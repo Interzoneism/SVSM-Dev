@@ -1324,6 +1324,7 @@
                                             SelectionUnit="FullRow"
                                             VerticalGridLinesBrush="Transparent">
                                             <DataGrid.Resources>
+                                                <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" />
                                                 <Style BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" TargetType="{x:Type ScrollBar}" />
                                                 <Style BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" TargetType="{x:Type Thumb}" />
                                                 <Style TargetType="{x:Type TextBlock}">
@@ -1622,6 +1623,7 @@
                                             SelectionUnit="FullRow"
                                             VerticalGridLinesBrush="Transparent">
                                             <DataGrid.Resources>
+                                                <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" />
                                                 <Style BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" TargetType="{x:Type ScrollBar}" />
                                                 <Style BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" TargetType="{x:Type Thumb}" />
                                                 <Style TargetType="{x:Type TextBlock}">
