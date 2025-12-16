@@ -563,27 +563,21 @@ public partial class MainWindow : Window
         if (isCompactView)
         {
             // Entering compact mode: save current state and disable the menu item
+            // The Icon column is hidden via XAML binding to IsCompactView
+            // We disable the menu item to prevent user interaction during compact mode
             _iconColumnStateBeforeCompactMode = IconColumnMenuItem.IsChecked;
             IconColumnMenuItem.IsEnabled = false;
         }
         else
         {
-            // Exiting compact mode: restore previous state and enable the menu item
+            // Exiting compact mode: re-enable the menu item
             IconColumnMenuItem.IsEnabled = true;
             
-            // Restore the Icon column's visibility to what it was before compact mode
-            if (_installedColumnVisibilityPreferences.TryGetValue(InstalledModsColumn.Icon, out var savedState))
+            // The XAML binding will try to make the Icon column visible when exiting compact mode
+            // We need to re-apply the user's preference to override the binding if they had it hidden
+            if (_installedColumnVisibilityPreferences.TryGetValue(InstalledModsColumn.Icon, out var userPreference))
             {
-                // Use the saved preference if available
-                if (IconColumnMenuItem.IsChecked != savedState)
-                {
-                    IconColumnMenuItem.IsChecked = savedState;
-                }
-            }
-            else if (IconColumnMenuItem.IsChecked != _iconColumnStateBeforeCompactMode)
-            {
-                // Otherwise restore to state before compact mode
-                IconColumnMenuItem.IsChecked = _iconColumnStateBeforeCompactMode;
+                ApplyInstalledColumnVisibility(InstalledModsColumn.Icon, userPreference);
             }
         }
     }
