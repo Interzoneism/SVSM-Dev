@@ -80,6 +80,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         new(MaxConcurrentUserReportRefreshes, MaxConcurrentUserReportRefreshes);
 
     private readonly ModVersionVoteService _voteService = new();
+    private List<string>? _cachedBasePaths;
     private int _activeMods;
     private int _activeUserReportOperations;
     private bool _allowModDetailsRefresh = true;
@@ -2846,7 +2847,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return fullPath;
         }
 
-        foreach (var candidate in EnumerateBasePaths())
+        // Use cached base paths for performance - recalculating these for every mod is expensive
+        var basePaths = _cachedBasePaths ??= GetBasePathsList();
+
+        foreach (var candidate in basePaths)
             try
             {
                 var relative = Path.GetRelativePath(candidate, best);
@@ -2861,7 +2865,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return best.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
     }
 
-    private IEnumerable<string> EnumerateBasePaths()
+    private List<string> GetBasePathsList()
     {
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -2885,7 +2889,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         TryAdd(Directory.GetCurrentDirectory());
 
-        return set;
+        return set.ToList();
+    }
+
+    private IEnumerable<string> EnumerateBasePaths()
+    {
+        return _cachedBasePaths ??= GetBasePathsList();
     }
 
     private static IEnumerable<SortOption> CreateSortOptions()
