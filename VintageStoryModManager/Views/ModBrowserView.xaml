@@ -594,6 +594,7 @@
                                                 TextAlignment="Center"
                                                 TextWrapping="NoWrap" />
                                             <Viewbox.Style>
+                                                <!--  NOTE: These animations are preserved but inactive due to Visibility="Collapsed" above  -->
                                                 <Style TargetType="Viewbox">
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" Value="Visible">
