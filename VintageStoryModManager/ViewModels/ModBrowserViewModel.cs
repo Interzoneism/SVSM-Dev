@@ -32,7 +32,6 @@ public partial class ModBrowserViewModel : ObservableObject
     private readonly HashSet<int> _userReportsLoaded = new();
     private readonly HashSet<int> _modsWithLoadedLogos = new();
     private readonly HashSet<string> _normalizedInstalledModIds = new(StringComparer.OrdinalIgnoreCase);
-    private readonly object _loadMoreLock = new();
     private long _lastLoadMoreTicks;
     private const int LoadMoreThrottleMs = 300;
 
@@ -438,17 +437,18 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadMore()
     {
-        // Throttle load requests to prevent rapid consecutive calls (thread-safe)
-        lock (_loadMoreLock)
+        // Throttle load requests to prevent rapid consecutive calls (lock-free, thread-safe)
+        var nowTicks = Environment.TickCount64;
+        var lastTicks = Interlocked.Read(ref _lastLoadMoreTicks);
+        var timeSinceLastLoad = nowTicks - lastTicks;
+        
+        if (timeSinceLastLoad < LoadMoreThrottleMs)
         {
-            var nowTicks = Environment.TickCount64;
-            var timeSinceLastLoad = nowTicks - _lastLoadMoreTicks;
-            if (timeSinceLastLoad < LoadMoreThrottleMs)
-            {
-                return;
-            }
-            _lastLoadMoreTicks = nowTicks;
+            return;
         }
+        
+        // Try to update the timestamp; if another thread beat us, that's fine
+        Interlocked.CompareExchange(ref _lastLoadMoreTicks, nowTicks, lastTicks);
 
         var previousCount = VisibleModsCount;
         VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
