@@ -310,6 +310,9 @@ public partial class MainWindow : Window
     private readonly List<MenuItem> _developerProfileMenuItems = new();
     private readonly List<MenuItem> _gameProfileMenuItems = new();
     private readonly Dictionary<InstalledModsColumn, bool> _installedColumnVisibilityPreferences = new();
+    
+    // Track Icon column state before compact mode
+    private bool _iconColumnStateBeforeCompactMode;
 
     // Services
     private readonly ModCompatibilityCommentsService _modCompatibilityCommentsService = new();
@@ -551,6 +554,38 @@ public partial class MainWindow : Window
 
         foreach (var pair in _installedColumnVisibilityPreferences)
             NotifyViewModelOfInstalledColumnVisibility(pair.Key, pair.Value);
+    }
+
+    private void UpdateIconColumnMenuItemForCompactMode(bool isCompactView)
+    {
+        if (IconColumnMenuItem == null) return;
+
+        if (isCompactView)
+        {
+            // Entering compact mode: save current state and disable the menu item
+            _iconColumnStateBeforeCompactMode = IconColumnMenuItem.IsChecked;
+            IconColumnMenuItem.IsEnabled = false;
+        }
+        else
+        {
+            // Exiting compact mode: restore previous state and enable the menu item
+            IconColumnMenuItem.IsEnabled = true;
+            
+            // Restore the Icon column's visibility to what it was before compact mode
+            if (_installedColumnVisibilityPreferences.TryGetValue(InstalledModsColumn.Icon, out var savedState))
+            {
+                // Use the saved preference if available
+                if (IconColumnMenuItem.IsChecked != savedState)
+                {
+                    IconColumnMenuItem.IsChecked = savedState;
+                }
+            }
+            else if (IconColumnMenuItem.IsChecked != _iconColumnStateBeforeCompactMode)
+            {
+                // Otherwise restore to state before compact mode
+                IconColumnMenuItem.IsChecked = _iconColumnStateBeforeCompactMode;
+            }
+        }
     }
 
     #endregion
@@ -2457,6 +2492,7 @@ public partial class MainWindow : Window
         RestoreSortPreference();
         UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
         ApplyColumnVisibilityPreferencesToViewModel();
+        UpdateIconColumnMenuItemForCompactMode(_viewModel.IsCompactView);
         SubscribeModBrowserToDirectoryWatcher();
     }
 
@@ -2871,7 +2907,11 @@ public partial class MainWindow : Window
         }
         else if (e.PropertyName == nameof(MainViewModel.IsCompactView))
         {
-            if (_viewModel != null) _userConfiguration.SetCompactViewMode(_viewModel.IsCompactView);
+            if (_viewModel != null)
+            {
+                _userConfiguration.SetCompactViewMode(_viewModel.IsCompactView);
+                UpdateIconColumnMenuItemForCompactMode(_viewModel.IsCompactView);
+            }
         }
         else if (e.PropertyName == nameof(MainViewModel.UseModDbDesignView))
         {
