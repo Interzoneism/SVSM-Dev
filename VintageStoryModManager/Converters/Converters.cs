@@ -226,7 +226,7 @@ public class StringToImageSourceConverter : IValueConverter
             bitmap.BeginInit();
             bitmap.UriSource = uri;
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+            // Remove IgnoreImageCache to prevent flashing - use WPF's internal cache
             bitmap.EndInit();
 
             if (bitmap.CanFreeze)

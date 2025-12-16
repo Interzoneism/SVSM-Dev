@@ -2061,7 +2061,7 @@ public sealed class ModListItemViewModel : ObservableObject
             var bitmap = new BitmapImage();
             bitmap.BeginInit();
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+            // Remove IgnoreImageCache to prevent flashing - use WPF's internal cache
             bitmap.StreamSource = stream;
             bitmap.EndInit();
             TryFreezeImageSource(bitmap, $"Async mod database logo ({sourceUri})", LogDebug);
@@ -2102,7 +2102,7 @@ public sealed class ModListItemViewModel : ObservableObject
                 bitmap.BeginInit();
                 bitmap.UriSource = uri;
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                // Remove IgnoreImageCache to prevent flashing - use WPF's internal cache
                 bitmap.EndInit();
                 TryFreezeImageSource(bitmap, $"{context} ({uri})", enableLogging ? LogDebug : null);
                 return bitmap;
