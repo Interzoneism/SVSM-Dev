@@ -33,7 +33,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private readonly HashSet<int> _modsWithLoadedLogos = new();
     private readonly HashSet<string> _normalizedInstalledModIds = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _loadMoreLock = new();
-    private DateTime _lastLoadMoreTime = DateTime.MinValue;
+    private long _lastLoadMoreTicks;
     private const int LoadMoreThrottleMs = 300;
 
     #region Observable Properties
@@ -441,13 +441,13 @@ public partial class ModBrowserViewModel : ObservableObject
         // Throttle load requests to prevent rapid consecutive calls (thread-safe)
         lock (_loadMoreLock)
         {
-            var now = DateTime.UtcNow;
-            var timeSinceLastLoad = (now - _lastLoadMoreTime).TotalMilliseconds;
+            var nowTicks = Environment.TickCount64;
+            var timeSinceLastLoad = nowTicks - _lastLoadMoreTicks;
             if (timeSinceLastLoad < LoadMoreThrottleMs)
             {
                 return;
             }
-            _lastLoadMoreTime = now;
+            _lastLoadMoreTicks = nowTicks;
         }
 
         var previousCount = VisibleModsCount;
