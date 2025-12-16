@@ -276,26 +276,28 @@ public class StringToImageSourceConverter : IValueConverter
 
             _lastCleanup = now;
 
-            // Remove dead weak references to prevent dictionary from growing unbounded
-            var deadKeys = _imageCache
-                .Where(kvp => !kvp.Value.TryGetTarget(out _))
-                .Select(kvp => kvp.Key)
-                .ToList();
+            // Create snapshot to avoid race conditions during enumeration
+            var snapshot = _imageCache.ToArray();
 
-            foreach (var key in deadKeys)
+            // Remove dead weak references to prevent dictionary from growing unbounded
+            foreach (var kvp in snapshot)
             {
-                _imageCache.TryRemove(key, out _);
+                if (!kvp.Value.TryGetTarget(out _))
+                {
+                    _imageCache.TryRemove(kvp.Key, out _);
+                }
             }
 
-            // If cache still exceeds limit after cleanup, clear oldest half
-            // ConcurrentDictionary doesn't guarantee order, but this is acceptable
-            // as WeakReferences allow proper GC regardless of dictionary size
+            // If cache still exceeds limit after cleanup, remove half the entries
+            // Note: ConcurrentDictionary doesn't guarantee enumeration order,
+            // but WeakReferences ensure proper GC regardless of removal order
             if (_imageCache.Count > MaxCacheSize)
             {
-                var keysToRemove = _imageCache.Keys.Take(_imageCache.Count / 2).ToList();
-                foreach (var key in keysToRemove)
+                var currentSnapshot = _imageCache.Keys.ToArray();
+                var toRemove = currentSnapshot.Length / 2;
+                for (var i = 0; i < toRemove && i < currentSnapshot.Length; i++)
                 {
-                    _imageCache.TryRemove(key, out _);
+                    _imageCache.TryRemove(currentSnapshot[i], out _);
                 }
             }
         }
