@@ -200,7 +200,7 @@ internal static class ModImageCacheService
             return string.IsNullOrWhiteSpace(extension) ? hash : $"{hash}{extension}";
         }
 
-        var segments = new List<string>(2);
+        var segments = new List<string>(3);
 
         var sourceSegment = NormalizeSegment(descriptor.ApiSource);
         if (!string.IsNullOrWhiteSpace(sourceSegment)) segments.Add(sourceSegment);
@@ -273,7 +273,7 @@ internal static class ModImageCacheService
     {
         // Use Span-based operations for better performance
         var maxByteCount = Encoding.UTF8.GetMaxByteCount(url.Length);
-        Span<byte> bytes = maxByteCount <= 256 ? stackalloc byte[maxByteCount] : new byte[maxByteCount];
+        Span<byte> bytes = maxByteCount <= 1024 ? stackalloc byte[maxByteCount] : new byte[maxByteCount];
         var actualByteCount = Encoding.UTF8.GetBytes(url.AsSpan(), bytes);
         
         Span<byte> hashBytes = stackalloc byte[32]; // SHA256 produces 32 bytes
@@ -281,7 +281,11 @@ internal static class ModImageCacheService
         
         // Use a URL-safe base64 encoding and take first 32 characters for a reasonable filename length
         Span<char> base64Chars = stackalloc char[44]; // Base64 of 32 bytes = 44 chars
-        Convert.TryToBase64Chars(hashBytes, base64Chars, out var charsWritten);
+        if (!Convert.TryToBase64Chars(hashBytes, base64Chars, out var charsWritten) || charsWritten == 0)
+        {
+            // Fallback to standard Base64 encoding if conversion fails
+            return Convert.ToBase64String(hashBytes).Replace('+', '-').Replace('/', '_').TrimEnd('=').Substring(0, 32);
+        }
         
         // Make URL-safe and truncate
         var targetLength = Math.Min(32, charsWritten);
