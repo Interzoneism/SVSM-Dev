@@ -31,6 +31,8 @@
         <converters:NoResultsVisibilityConverter x:Key="NoResultsVisibility" />
         <converters:FavoriteButtonVisibilityConverter x:Key="FavoriteButtonVisibility" />
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility" />
+        <converters:FavoriteButtonShouldShowConverter x:Key="FavoriteButtonShouldShow" />
+        <converters:InstallButtonShouldShowConverter x:Key="InstallButtonShouldShow" />
         <converters:HeightToMarginConverter x:Key="HeightToMargin" />
         <converters:ModNameAbbreviationConverter x:Key="ModNameAbbreviationConverter" />
         <converters:StringNullOrWhiteSpaceToVisibilityConverter x:Key="StringNullOrWhiteSpaceToVisibility" />
@@ -553,20 +555,56 @@
                                                 VerticalAlignment="Top"
                                                 Orientation="Horizontal">
                                                 <Button
+                                                    x:Name="FavoriteButton"
                                                     Width="28"
                                                     Height="28"
                                                     Click="FavoriteButton_Click"
-                                                    Opacity="0.9"
-                                                    Style="{StaticResource IconButtonStyle}"
+                                                    Opacity="0"
                                                     Tag="{Binding ModId}"
                                                     ToolTip="Toggle favorite">
-                                                    <Button.Visibility>
-                                                        <MultiBinding Converter="{StaticResource FavoriteButtonVisibility}">
-                                                            <Binding ElementName="ModCardBorder" Path="IsMouseOver" />
-                                                            <Binding Path="ModId" />
-                                                            <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}" />
-                                                        </MultiBinding>
-                                                    </Button.Visibility>
+                                                    <Button.Style>
+                                                        <Style BasedOn="{StaticResource IconButtonStyle}" TargetType="Button">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Value="True">
+                                                                    <DataTrigger.Binding>
+                                                                        <MultiBinding Converter="{StaticResource FavoriteButtonShouldShow}">
+                                                                            <Binding ElementName="ModCardBorder" Path="IsMouseOver" />
+                                                                            <Binding Path="ModId" />
+                                                                            <Binding Path="DataContext.FavoriteMods" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}" />
+                                                                        </MultiBinding>
+                                                                    </DataTrigger.Binding>
+                                                                    <DataTrigger.EnterActions>
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <DoubleAnimation
+                                                                                    Storyboard.TargetProperty="Opacity"
+                                                                                    To="0.9"
+                                                                                    Duration="0:0:0.25">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseInOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </DataTrigger.EnterActions>
+                                                                    <DataTrigger.ExitActions>
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <DoubleAnimation
+                                                                                    Storyboard.TargetProperty="Opacity"
+                                                                                    To="0"
+                                                                                    Duration="0:0:0.55">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseInOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </DataTrigger.ExitActions>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
                                                     <Path
                                                         Width="14"
                                                         Height="14"
@@ -600,20 +638,56 @@
                                                 VerticalAlignment="Top"
                                                 Orientation="Horizontal">
                                                 <Button
+                                                    x:Name="InstallButton"
                                                     Width="28"
                                                     Height="28"
                                                     Click="InstallButton_Click"
                                                     IsEnabled="{Binding IsInstalled, Converter={StaticResource InvertBoolean}}"
-                                                    Opacity="0.9"
-                                                    Style="{StaticResource IconButtonStyle}"
+                                                    Opacity="0"
                                                     Tag="{Binding ModId}"
                                                     ToolTip="Install mod">
-                                                    <Button.Visibility>
-                                                        <MultiBinding Converter="{StaticResource InstallButtonVisibility}">
-                                                            <Binding ElementName="ModCardBorder" Path="IsMouseOver" />
-                                                            <Binding Path="IsInstalled" />
-                                                        </MultiBinding>
-                                                    </Button.Visibility>
+                                                    <Button.Style>
+                                                        <Style BasedOn="{StaticResource IconButtonStyle}" TargetType="Button">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Value="True">
+                                                                    <DataTrigger.Binding>
+                                                                        <MultiBinding Converter="{StaticResource InstallButtonShouldShow}">
+                                                                            <Binding ElementName="ModCardBorder" Path="IsMouseOver" />
+                                                                            <Binding Path="IsInstalled" />
+                                                                        </MultiBinding>
+                                                                    </DataTrigger.Binding>
+                                                                    <DataTrigger.EnterActions>
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <DoubleAnimation
+                                                                                    Storyboard.TargetProperty="Opacity"
+                                                                                    To="0.9"
+                                                                                    Duration="0:0:0.25">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseInOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </DataTrigger.EnterActions>
+                                                                    <DataTrigger.ExitActions>
+                                                                        <BeginStoryboard>
+                                                                            <Storyboard>
+                                                                                <DoubleAnimation
+                                                                                    Storyboard.TargetProperty="Opacity"
+                                                                                    To="0"
+                                                                                    Duration="0:0:0.55">
+                                                                                    <DoubleAnimation.EasingFunction>
+                                                                                        <CubicEase EasingMode="EaseInOut" />
+                                                                                    </DoubleAnimation.EasingFunction>
+                                                                                </DoubleAnimation>
+                                                                            </Storyboard>
+                                                                        </BeginStoryboard>
+                                                                    </DataTrigger.ExitActions>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
                                                     <Path
                                                         Width="14"
                                                         Height="14"
