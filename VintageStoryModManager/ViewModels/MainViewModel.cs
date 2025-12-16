@@ -1515,12 +1515,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private async Task PerformFullReloadAsync(string? previousSelection)
     {
-        Dictionary<string, ModEntry> previousEntries = new(StringComparer.OrdinalIgnoreCase);
-
-        await InvokeOnDispatcherAsync(() =>
-        {
-            foreach (var pair in _modEntriesBySourcePath) previousEntries[pair.Key] = pair.Value;
-        }, CancellationToken.None).ConfigureAwait(true);
+        // Copy previousEntries directly - no need for dispatcher since we're reading a dictionary
+        // This optimization removes an unnecessary UI thread round-trip
+        Dictionary<string, ModEntry> previousEntries = new(_modEntriesBySourcePath, StringComparer.OrdinalIgnoreCase);
 
         // Initialize progress tracking
         LoadingProgress = 0;
@@ -1529,6 +1526,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         var allEntries = new List<ModEntry>();
         var batchSize = InstalledModsIncrementalBatchSize;
         var processedCount = 0;
+        var batchesSinceYield = 0;
+        const int yieldEveryNBatches = 5; // Yield every 5 batches instead of every batch to reduce context switching
 
         // Use incremental loading to keep UI responsive
         await foreach (var batch in _discoveryService.LoadModsIncrementallyAsync(batchSize, CancellationToken.None))
@@ -1544,12 +1543,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
 
             processedCount += batch.Count;
+            batchesSinceYield++;
 
             // Update progress - we don't know total yet, so show a generic loading message
             LoadingStatusText = $"Loading mods... ({processedCount} found)";
 
-            // Yield to keep UI responsive
-            await Task.Yield();
+            // Yield less frequently to reduce context switch overhead
+            // Only yield every N batches to keep UI responsive without excessive overhead
+            if (batchesSinceYield >= yieldEveryNBatches)
+            {
+                batchesSinceYield = 0;
+                await Task.Yield();
+            }
         }
 
         var entries = allEntries;
@@ -1564,6 +1569,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         LoadingStatusText = $"Updating UI with {entries.Count} mods...";
         LoadingProgress = 75;
 
+        // Pre-create view models off the UI thread to reduce dispatcher work
+        var viewModelEntries = new List<(string sourcePath, ModEntry entry, ModListItemViewModel viewModel)>(entries.Count);
+        foreach (var entry in entries)
+        {
+            var viewModel = CreateModViewModel(entry);
+            viewModelEntries.Add((entry.SourcePath, entry, viewModel));
+        }
+
         await InvokeOnDispatcherAsync(() =>
         {
             _modEntriesBySourcePath.Clear();
@@ -1574,11 +1587,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 _mods.Clear();
 
-                foreach (var entry in entries)
+                // Use pre-created view models to reduce work on UI thread
+                foreach (var (sourcePath, entry, viewModel) in viewModelEntries)
                 {
-                    _modEntriesBySourcePath[entry.SourcePath] = entry;
-                    var viewModel = CreateModViewModel(entry);
-                    _modViewModelsBySourcePath[entry.SourcePath] = viewModel;
+                    _modEntriesBySourcePath[sourcePath] = entry;
+                    _modViewModelsBySourcePath[sourcePath] = viewModel;
                     _mods.Add(viewModel);
                 }
             }
