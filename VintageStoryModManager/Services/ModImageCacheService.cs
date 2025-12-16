@@ -7,7 +7,19 @@ using System.Text;
 namespace VintageStoryModManager.Services;
 
 /// <summary>
-///     Provides caching for mod database images to avoid repeated downloads.
+///     Provides efficient caching for mod database images to avoid repeated downloads.
+///     <para>
+///     Cache files are stored with descriptor-based names (e.g., "modsource_modid.png") 
+///     for better organization and readability. Files are stored in the mod database 
+///     image cache directory managed by <see cref="ModCacheLocator"/>.
+///     </para>
+///     <para>
+///     Performance optimizations:
+///     - Uses Span&lt;T&gt; and stackalloc for zero-allocation hash computation
+///     - Eliminates redundant file system checks
+///     - Employs concurrent file locking to prevent race conditions
+///     - Atomic writes using temp files to ensure cache consistency
+///     </para>
 /// </summary>
 internal static class ModImageCacheService
 {
@@ -26,15 +38,13 @@ internal static class ModImageCacheService
     {
         if (string.IsNullOrWhiteSpace(imageUrl)) return null;
 
-        var cachePath = GetCachePath(imageUrl, descriptor, out var legacyPath);
+        var cachePath = GetCachePath(imageUrl, descriptor);
 
-        var resolvedPath = ResolveCachePath(cachePath, legacyPath, descriptor is not null);
-
-        if (string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath)) return null;
+        if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath)) return null;
 
         try
         {
-            return File.ReadAllBytes(resolvedPath);
+            return File.ReadAllBytes(cachePath);
         }
         catch (Exception)
         {
@@ -56,19 +66,16 @@ internal static class ModImageCacheService
     {
         if (string.IsNullOrWhiteSpace(imageUrl)) return null;
 
-        var cachePath = GetCachePath(imageUrl, descriptor, out var legacyPath);
+        var cachePath = GetCachePath(imageUrl, descriptor);
 
-        var resolvedPath = await ResolveCachePathAsync(cachePath, legacyPath, descriptor is not null, cancellationToken)
-            .ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath)) return null;
 
-        if (string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath)) return null;
-
-        var fileLock = await AcquireLockAsync(resolvedPath, cancellationToken).ConfigureAwait(false);
+        var fileLock = await AcquireLockAsync(cachePath, cancellationToken).ConfigureAwait(false);
         try
         {
-            if (!File.Exists(resolvedPath)) return null;
+            if (!File.Exists(cachePath)) return null;
 
-            return await File.ReadAllBytesAsync(resolvedPath, cancellationToken).ConfigureAwait(false);
+            return await File.ReadAllBytesAsync(cachePath, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -100,7 +107,7 @@ internal static class ModImageCacheService
         if (string.IsNullOrWhiteSpace(imageUrl)) return;
         if (imageBytes is null || imageBytes.Length == 0) return;
 
-        var cachePath = GetCachePath(imageUrl, descriptor, out _);
+        var cachePath = GetCachePath(imageUrl, descriptor);
         if (string.IsNullOrWhiteSpace(cachePath)) return;
 
         var directory = Path.GetDirectoryName(cachePath);
@@ -180,107 +187,32 @@ internal static class ModImageCacheService
 
     private static string? GetCachePath(
         string imageUrl,
-        ModImageCacheDescriptor? descriptor,
-        out string? legacyPath)
+        ModImageCacheDescriptor? descriptor)
     {
-        legacyPath = null;
-
         var cacheDirectory = ModCacheLocator.GetModDatabaseImageCacheDirectory();
         if (string.IsNullOrWhiteSpace(cacheDirectory)) return null;
 
         var fileName = GenerateCacheFileName(imageUrl, descriptor);
         if (string.IsNullOrWhiteSpace(fileName)) return null;
 
-        if (descriptor is not null)
-        {
-            var legacyName = GenerateLegacyCacheFileName(imageUrl);
-            if (!string.IsNullOrWhiteSpace(legacyName)) legacyPath = Path.Combine(cacheDirectory, legacyName);
-        }
-
         return Path.Combine(cacheDirectory, fileName);
     }
 
-    private static string ResolveCachePath(string? preferredPath, string? legacyPath, bool attemptMigration)
-    {
-        if (!string.IsNullOrWhiteSpace(preferredPath) && File.Exists(preferredPath)) return preferredPath;
 
-        if (attemptMigration
-            && !string.IsNullOrWhiteSpace(preferredPath)
-            && !File.Exists(preferredPath)
-            && !string.IsNullOrWhiteSpace(legacyPath)
-            && File.Exists(legacyPath))
-        {
-            try
-            {
-                var directory = Path.GetDirectoryName(preferredPath);
-                if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
-
-                File.Copy(legacyPath, preferredPath, false);
-                return preferredPath;
-            }
-            catch (Exception)
-            {
-                // Ignore migration failures, fall back to legacy path if available.
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(legacyPath) && File.Exists(legacyPath)) return legacyPath;
-
-        return preferredPath ?? legacyPath ?? string.Empty;
-    }
-
-    private static async Task<string> ResolveCachePathAsync(
-        string? preferredPath,
-        string? legacyPath,
-        bool attemptMigration,
-        CancellationToken cancellationToken)
-    {
-        if (!string.IsNullOrWhiteSpace(preferredPath) && File.Exists(preferredPath)) return preferredPath;
-
-        if (attemptMigration
-            && !string.IsNullOrWhiteSpace(preferredPath)
-            && !File.Exists(preferredPath)
-            && !string.IsNullOrWhiteSpace(legacyPath)
-            && File.Exists(legacyPath))
-        {
-            var fileLock = await AcquireLockAsync(preferredPath, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                if (File.Exists(preferredPath)) return preferredPath;
-
-                var directory = Path.GetDirectoryName(preferredPath);
-                if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
-
-                File.Copy(legacyPath, preferredPath, false);
-                return preferredPath;
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception)
-            {
-                // Ignore migration failures, fall back to legacy path if available.
-            }
-            finally
-            {
-                fileLock.Release();
-            }
-        }
-      
-        if (!string.IsNullOrWhiteSpace(legacyPath) && File.Exists(legacyPath)) return legacyPath;
-
-        return preferredPath ?? legacyPath ?? string.Empty;
-    }
 
     private static string GenerateCacheFileName(string imageUrl, ModImageCacheDescriptor? descriptor)
     {
         var extension = GetImageExtension(imageUrl);
 
+        // Always use descriptor-based naming for better cache organization
+        // Fall back to hash-based naming only when descriptor is unavailable
         if (descriptor is null)
-            return GenerateLegacyCacheFileName(imageUrl, extension);
+        {
+            var hash = ComputeUrlHash(imageUrl);
+            return string.IsNullOrWhiteSpace(extension) ? hash : $"{hash}{extension}";
+        }
 
-        var segments = new List<string>();
+        var segments = new List<string>(3);
 
         var sourceSegment = NormalizeSegment(descriptor.ApiSource);
         if (!string.IsNullOrWhiteSpace(sourceSegment)) segments.Add(sourceSegment);
@@ -288,22 +220,14 @@ internal static class ModImageCacheService
         var modSegment = NormalizeSegment(descriptor.ModId ?? descriptor.ModName);
         if (!string.IsNullOrWhiteSpace(modSegment)) segments.Add(modSegment);
 
-        if (segments.Count == 0) return GenerateLegacyCacheFileName(imageUrl, extension);
+        // If descriptor provided but no usable segments, fall back to hash
+        if (segments.Count == 0)
+        {
+            var hash = ComputeUrlHash(imageUrl);
+            return string.IsNullOrWhiteSpace(extension) ? hash : $"{hash}{extension}";
+        }
 
         return string.Concat(string.Join('_', segments), extension);
-    }
-
-    private static string GenerateLegacyCacheFileName(string imageUrl)
-    {
-        var extension = GetImageExtension(imageUrl);
-        return GenerateLegacyCacheFileName(imageUrl, extension);
-    }
-
-    private static string GenerateLegacyCacheFileName(string imageUrl, string extension)
-    {
-        var hash = ComputeUrlHash(imageUrl);
-
-        return string.IsNullOrWhiteSpace(extension) ? hash : $"{hash}{extension}";
     }
 
     private static string NormalizeSegment(string? value)
@@ -324,23 +248,29 @@ internal static class ModImageCacheService
 
         try
         {
-            // Remove query string if present
-            var urlWithoutQuery = imageUrl;
-            var queryIndex = imageUrl.IndexOf('?', StringComparison.Ordinal);
+            // Remove query string if present using Span for better performance
+            var urlSpan = imageUrl.AsSpan();
+            var queryIndex = urlSpan.IndexOf('?');
             if (queryIndex >= 0)
             {
-                urlWithoutQuery = imageUrl.Substring(0, queryIndex);
+                urlSpan = urlSpan.Slice(0, queryIndex);
             }
 
-            var extension = Path.GetExtension(urlWithoutQuery);
-            if (!string.IsNullOrWhiteSpace(extension))
+            // Find the last dot for extension
+            var lastDotIndex = urlSpan.LastIndexOf('.');
+            if (lastDotIndex < 0 || lastDotIndex == urlSpan.Length - 1) return ".png";
+
+            var extensionSpan = urlSpan.Slice(lastDotIndex);
+            
+            // Check for common image extensions (case-insensitive)
+            if (extensionSpan.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
+                extensionSpan.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                extensionSpan.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                extensionSpan.Equals(".gif", StringComparison.OrdinalIgnoreCase) ||
+                extensionSpan.Equals(".webp", StringComparison.OrdinalIgnoreCase) ||
+                extensionSpan.Equals(".bmp", StringComparison.OrdinalIgnoreCase))
             {
-                extension = extension.ToLowerInvariant();
-                // Only use common image extensions
-                if (extension is ".png" or ".jpg" or ".jpeg" or ".gif" or ".webp" or ".bmp")
-                {
-                    return extension;
-                }
+                return extensionSpan.ToString().ToLowerInvariant();
             }
         }
         catch (Exception)
@@ -353,17 +283,39 @@ internal static class ModImageCacheService
 
     private static string ComputeUrlHash(string url)
     {
-        var bytes = Encoding.UTF8.GetBytes(url);
-        var hashBytes = SHA256.HashData(bytes);
+        // Use Span-based operations for better performance
+        var maxByteCount = Encoding.UTF8.GetMaxByteCount(url.Length);
+        Span<byte> bytes = maxByteCount <= 1024 ? stackalloc byte[maxByteCount] : new byte[maxByteCount];
+        var actualByteCount = Encoding.UTF8.GetBytes(url.AsSpan(), bytes);
+        
+        Span<byte> hashBytes = stackalloc byte[32]; // SHA256 produces 32 bytes
+        SHA256.HashData(bytes.Slice(0, actualByteCount), hashBytes);
         
         // Use a URL-safe base64 encoding and take first 32 characters for a reasonable filename length
-        var base64 = Convert.ToBase64String(hashBytes);
-        var urlSafe = base64
-            .Replace('+', '-')
-            .Replace('/', '_')
-            .TrimEnd('=');
+        Span<char> base64Chars = stackalloc char[44]; // Base64 of 32 bytes = 44 chars
+        if (!Convert.TryToBase64Chars(hashBytes, base64Chars, out var charsWritten) || charsWritten == 0)
+        {
+            // Fallback to standard Base64 encoding if conversion fails
+            return Convert.ToBase64String(hashBytes).Replace('+', '-').Replace('/', '_').TrimEnd('=').Substring(0, 32);
+        }
         
-        return urlSafe.Length > 32 ? urlSafe.Substring(0, 32) : urlSafe;
+        // Make URL-safe and truncate
+        var targetLength = Math.Min(32, charsWritten);
+        Span<char> urlSafeChars = stackalloc char[targetLength];
+        
+        for (var i = 0; i < targetLength; i++)
+        {
+            var c = base64Chars[i];
+            urlSafeChars[i] = c switch
+            {
+                '+' => '-',
+                '/' => '_',
+                '=' => '_',
+                _ => c
+            };
+        }
+        
+        return urlSafeChars.ToString();
     }
 
     private static async Task<SemaphoreSlim> AcquireLockAsync(string path, CancellationToken cancellationToken)
