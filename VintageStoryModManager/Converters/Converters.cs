@@ -210,13 +210,22 @@ public class IconKeyToGeometryConverter : IValueConverter
 /// <summary>
 /// Converts a non-empty string into an <see cref="ImageSource"/>.
 /// Returns <c>null</c> when the input is null, whitespace, or cannot be converted.
+/// Uses proper caching to prevent image flashing and re-loading.
 /// </summary>
 public class StringToImageSourceConverter : IValueConverter
 {
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, WeakReference<BitmapImage>> _imageCache = new();
+
     public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         if (value is not string path || string.IsNullOrWhiteSpace(path))
             return null;
+
+        // Try to get cached image first
+        if (_imageCache.TryGetValue(path, out var weakRef) && weakRef.TryGetTarget(out var cachedImage))
+        {
+            return cachedImage;
+        }
 
         try
         {
@@ -226,16 +235,22 @@ public class StringToImageSourceConverter : IValueConverter
             bitmap.BeginInit();
             bitmap.UriSource = uri;
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            // Remove IgnoreImageCache to prevent flashing - use WPF's internal cache
+            // Prevent re-decoding and use WPF's internal cache to avoid flashing
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
             bitmap.EndInit();
 
             if (bitmap.CanFreeze)
                 bitmap.Freeze();
 
+            // Cache the bitmap using a weak reference to allow GC when needed
+            _imageCache[path] = new WeakReference<BitmapImage>(bitmap);
+
             return bitmap;
         }
-        catch
+        catch (Exception ex)
         {
+            // Log the error for debugging but don't crash the UI
+            System.Diagnostics.Debug.WriteLine($"[StringToImageSourceConverter] Failed to load image from '{path}': {ex.Message}");
             return null;
         }
     }

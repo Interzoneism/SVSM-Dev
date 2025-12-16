@@ -943,9 +943,10 @@ public partial class ModBrowserViewModel : ObservableObject
             {
                 throw;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Ignore individual failures; logos can be retried later if needed.
+                // Log thumbnail loading failures for debugging
+                System.Diagnostics.Debug.WriteLine($"[ModBrowser] Failed to load thumbnail for mod {mod.ModId} ({mod.Name}): {ex.Message}");
             }
             finally
             {
