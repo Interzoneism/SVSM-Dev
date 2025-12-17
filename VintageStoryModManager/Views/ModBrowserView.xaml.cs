@@ -44,6 +44,14 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         if (_isInitialized || ViewModel == null)
             return;
 
+        // Only initialize if the view is actually loaded and visible
+        // This prevents queries on app launch if the tab isn't active
+        if (!IsLoaded || !IsVisible)
+        {
+            System.Diagnostics.Debug.WriteLine("[ModBrowserView] Skipping initialization - view not visible");
+            return;
+        }
+
         // Set flag before awaiting to prevent race conditions
         _isInitialized = true;
 
