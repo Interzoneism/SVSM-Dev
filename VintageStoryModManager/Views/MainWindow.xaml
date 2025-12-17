@@ -1049,6 +1049,7 @@
                                                                 BorderThickness="1"
                                                                 CornerRadius="6">
                                                                 <ScrollViewer
+                                                                    Margin="0,4,0,0"
                                                                     MaxHeight="260"
                                                                     HorizontalScrollBarVisibility="Disabled"
                                                                     VerticalScrollBarVisibility="Auto">
