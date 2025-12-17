@@ -980,19 +980,20 @@
                                                             IsOpen="{Binding IsChecked, ElementName=TagsHeaderToggle, Mode=TwoWay}"
                                                             Placement="Bottom"
                                                             PlacementTarget="{Binding ElementName=TagsHeaderToggle}"
-                                                            StaysOpen="False">
+                                                            StaysOpen="True">
                                                             <Border
-                                                                MinWidth="440"
+                                                                MinWidth="140"
                                                                 Padding="8"
                                                                 Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
                                                                 BorderBrush="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
                                                                 BorderThickness="1"
                                                                 CornerRadius="6">
                                                                 <ScrollViewer
-                                                                    MaxHeight="260"
+                                                                    Style="{StaticResource IMM.TagsScrollViewerStyle}"
+                                                                    MaxHeight="360"
                                                                     Margin="0,4,0,0"
-                                                                    HorizontalScrollBarVisibility="Disabled"
-                                                                    VerticalScrollBarVisibility="Auto">
+                                                                    HorizontalScrollBarVisibility="Hidden"
+                                                                    VerticalScrollBarVisibility="Hidden" OverridesDefaultStyle="True">
                                                                     <ItemsControl ItemsPanel="{StaticResource IMM.TagFilterItemsPanelTemplate}" ItemsSource="{Binding DataContext.InstalledTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
                                                                         <ItemsControl.ItemTemplate>
                                                                             <DataTemplate DataType="{x:Type viewModels:TagFilterOptionViewModel}">

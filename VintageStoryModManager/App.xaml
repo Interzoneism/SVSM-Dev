@@ -494,6 +494,40 @@
                 </Setter>
             </Style>
 
+            <Style x:Key="IMM.TagsScrollViewerStyle" TargetType="{x:Type ScrollViewer}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollViewer">
+                            <Grid Background="{TemplateBinding Background}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <ScrollContentPresenter
+                                    x:Name="PART_ScrollContentPresenter"
+                                    Grid.Row="1"
+                                    Grid.Column="0"
+                                    Margin="{TemplateBinding Padding}"
+                                    CanContentScroll="{TemplateBinding CanContentScroll}"
+                                    Content="{TemplateBinding Content}"
+                                    ContentTemplate="{TemplateBinding ContentTemplate}" />
+                                <Border
+                                    Grid.Row="2"
+                                    Grid.Column="1"
+                                    Background="{DynamicResource Brush.DataGrid.Header.Background}"
+                                    Visibility="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ComputedHorizontalScrollBarVisibility}" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <Style
                 x:Key="IMM.SlimScrollBarThumbStyle"
                 BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}"

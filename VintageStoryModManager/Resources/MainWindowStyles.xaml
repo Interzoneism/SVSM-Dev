@@ -35,7 +35,7 @@
     </ItemsPanelTemplate>
 
     <ItemsPanelTemplate x:Key="IMM.TagFilterItemsPanelTemplate">
-        <UniformGrid HorizontalAlignment="Left" Columns="3" />
+        <UniformGrid HorizontalAlignment="Left" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Columns="4" />
     </ItemsPanelTemplate>
 
     <DataTemplate x:Key="IMM.TagBadgeTemplate">
