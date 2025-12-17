@@ -48,6 +48,9 @@ public partial class ModBrowserViewModel : ObservableObject
     private bool _isSearching;
 
     [ObservableProperty]
+    private string _loadingMessage = "Loading mods...";
+
+    [ObservableProperty]
     private string _textFilter = string.Empty;
 
     public bool HasSearchText => !string.IsNullOrWhiteSpace(TextFilter);
@@ -375,6 +378,7 @@ public partial class ModBrowserViewModel : ObservableObject
         try
         {
             IsSearching = true;
+            LoadingMessage = "Searching for mods...";
 
             // Add a small delay to debounce rapid typing
             var debounceDelay = string.IsNullOrWhiteSpace(TextFilter) ? 50 : 400;
@@ -409,6 +413,7 @@ public partial class ModBrowserViewModel : ObservableObject
             else if (isDownloads30DaysSort)
             {
                 // Calculate 30-day downloads for all mods and sort
+                LoadingMessage = "Processing downloads...";
                 await PopulateDownloads30DaysAsync(filteredMods, token);
 
                 if (token.IsCancellationRequested)
