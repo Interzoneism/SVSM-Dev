@@ -428,39 +428,52 @@ public partial class ModBrowserViewModel : ObservableObject
                 if (token.IsCancellationRequested)
                     return;
 
-                // Sort by Downloads30Days, with uncalculated mods (0) at the end
+                // Sort by Downloads30Days
+                // For ascending order, put mods with 0 downloads (uncalculated) at the end
                 filteredMods = OrderByDirection == "desc"
                     ? filteredMods.OrderByDescending(m => m.Downloads30Days).ToList()
-                    : filteredMods.OrderBy(m => m.Downloads30Days).ThenByDescending(m => m.Downloads30Days == 0 ? m.Downloads : 0).ToList();
+                    : filteredMods.OrderBy(m => m.Downloads30Days == 0 ? int.MaxValue : m.Downloads30Days).ToList();
                 
                 // Continue calculating in background for remaining mods
+                // Use a local copy of the token to avoid closure issues
+                var backgroundToken = token;
                 _ = Task.Run(async () =>
                 {
-                    var remainingMods = filteredMods.Skip(initialVisibleCount).ToList();
-                    if (remainingMods.Count > 0)
+                    try
                     {
-                        await PopulateDownloads30DaysAsync(remainingMods, token);
-                        
-                        // Re-sort the full list after background calculation completes
-                        if (!token.IsCancellationRequested)
+                        var remainingMods = filteredMods.Skip(initialVisibleCount).ToList();
+                        if (remainingMods.Count > 0)
                         {
-                            var sortedMods = OrderByDirection == "desc"
-                                ? filteredMods.OrderByDescending(m => m.Downloads30Days).ToList()
-                                : filteredMods.OrderBy(m => m.Downloads30Days).ToList();
+                            await PopulateDownloads30DaysAsync(remainingMods, backgroundToken);
                             
-                            // Update ModsList order on UI thread
-                            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                            // Re-sort the full list after background calculation completes
+                            if (!backgroundToken.IsCancellationRequested)
                             {
-                                ModsList.Clear();
-                                foreach (var mod in sortedMods)
+                                var sortedMods = OrderByDirection == "desc"
+                                    ? filteredMods.OrderByDescending(m => m.Downloads30Days).ToList()
+                                    : filteredMods.OrderBy(m => m.Downloads30Days == 0 ? int.MaxValue : m.Downloads30Days).ToList();
+                                
+                                // Update ModsList order on UI thread
+                                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                                 {
-                                    ModsList.Add(mod);
-                                }
-                                OnPropertyChanged(nameof(VisibleMods));
-                            });
+                                    if (!backgroundToken.IsCancellationRequested)
+                                    {
+                                        ModsList.Clear();
+                                        foreach (var mod in sortedMods)
+                                        {
+                                            ModsList.Add(mod);
+                                        }
+                                        OnPropertyChanged(nameof(VisibleMods));
+                                    }
+                                });
+                            }
                         }
                     }
-                }, token);
+                    catch (OperationCanceledException)
+                    {
+                        // Expected when cancelled
+                    }
+                }, backgroundToken);
             }
 
             // Clear tracking before new search
