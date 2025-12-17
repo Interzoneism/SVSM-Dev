@@ -933,22 +933,25 @@
                                                             <ToolTip
                                                                 MaxWidth="300"
                                                                 MaxHeight="600"
-                                                                Padding="0">
+                                                                Padding="10"
+                                                                UseLayoutRounding="True">
                                                                 <Border
                                                                     MaxWidth="300"
                                                                     MaxHeight="600"
-                                                                    ClipToBounds="True">
+                                                                    CornerRadius="6">
                                                                     <ItemsControl ItemsSource="{Binding NewerReleaseChangelogs}">
                                                                         <ItemsControl.ItemTemplate>
                                                                             <DataTemplate>
                                                                                 <StackPanel MaxWidth="300" Margin="0,0,0,12">
                                                                                     <TextBlock
                                                                                         Margin="0,0,0,4"
+                                                                                        ClipToBounds="True"
                                                                                         FontWeight="Bold"
                                                                                         Foreground="{DynamicResource Brush.ToolTip.Text}"
                                                                                         Text="{Binding Version}" />
                                                                                     <TextBlock
                                                                                         MaxWidth="300"
+                                                                                        ClipToBounds="True"
                                                                                         Foreground="{DynamicResource Brush.ToolTip.Text}"
                                                                                         Text="{Binding Changelog}"
                                                                                         TextWrapping="Wrap" />
@@ -964,7 +967,7 @@
                                                     <EventSetter Event="FrameworkElement.ToolTipClosing" Handler="LatestVersionTextBlock_OnToolTipClosing" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding ShouldHighlightLatestVersion}" Value="True">
-                                                            <Setter Property="Background" Value="{DynamicResource Brush.Accent.Primary}" />
+                                                            <Setter Property="Background" Value="{DynamicResource Brush.Accent.Half}" />
                                                             <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
                                                         </DataTrigger>
                                                         <DataTrigger Binding="{Binding HasNewerReleaseChangelogs}" Value="False">
@@ -1075,6 +1078,7 @@
                                                         <Border
                                                             x:Name="TagsContainer"
                                                             MaxHeight="{StaticResource IMM.TagRowMaxHeight}"
+                                                            
                                                             HorizontalAlignment="Stretch"
                                                             VerticalAlignment="Center"
                                                             ClipToBounds="True">
@@ -1324,7 +1328,7 @@
                                             SelectionUnit="FullRow"
                                             VerticalGridLinesBrush="Transparent">
                                             <DataGrid.Resources>
-                                                <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" />
+                                                <Style BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" TargetType="{x:Type ScrollViewer}" />
                                                 <Style BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" TargetType="{x:Type ScrollBar}" />
                                                 <Style BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" TargetType="{x:Type Thumb}" />
                                                 <Style TargetType="{x:Type TextBlock}">
@@ -1623,7 +1627,7 @@
                                             SelectionUnit="FullRow"
                                             VerticalGridLinesBrush="Transparent">
                                             <DataGrid.Resources>
-                                                <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" />
+                                                <Style BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" TargetType="{x:Type ScrollViewer}" />
                                                 <Style BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" TargetType="{x:Type ScrollBar}" />
                                                 <Style BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" TargetType="{x:Type Thumb}" />
                                                 <Style TargetType="{x:Type TextBlock}">

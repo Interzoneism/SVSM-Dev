@@ -19,6 +19,8 @@
     <Color x:Key="Palette.Bevel.Shadow">#40000000</Color>
     <Color x:Key="Palette.Overlay.HoverTint">#10FFFFFF</Color>
     <Color x:Key="Palette.White">#FFfffcf5</Color>
+    <Color x:Key="Palette.Grey">#FF867e74</Color>
+    <Color x:Key="Palette.DarkGrey">#FF6e675f</Color>
 
     <!--  ======================================================  -->
     <!--  Window shell and shared panel surfaces (Main windows).  -->
@@ -64,6 +66,7 @@
     <SolidColorBrush x:Key="Brush.Button.Bevel.Light" Color="{DynamicResource Palette.Bevel.Highlight}" />
     <SolidColorBrush x:Key="Brush.Button.Bevel.Dark" Color="{DynamicResource Palette.Bevel.Shadow}" />
     <SolidColorBrush x:Key="Brush.Accent.Primary" Color="{DynamicResource Palette.Accent.Primary}" />
+    <SolidColorBrush x:Key="Brush.Accent.Half" Color="{DynamicResource Palette.Accent.Primary}" Opacity="0.5" />
     <SolidColorBrush x:Key="Brush.ToggleButton.Background.Checked" Color="{DynamicResource Palette.Accent.Primary}" />
     <SolidColorBrush x:Key="Brush.ToggleButton.Border.Checked" Color="{DynamicResource Palette.Accent.Primary}" />
 
@@ -207,17 +210,19 @@
         <GradientStop Offset="1" Color="Transparent" />
     </LinearGradientBrush>
 
-    <SolidColorBrush x:Key="Brush.ModCard.InfoBox" Color="{DynamicResource Palette.Interactive.DisabledSurface}" Opacity="0.82"/>
-
-    <RadialGradientBrush x:Key="Brush.ModBrowser.Background.Radial" RadiusX="0.6" RadiusY="0.8" GradientOrigin="0.5,1" Center="0.5,1">
-        <GradientStop Offset="0" Color="{DynamicResource Palette.White}" />
-        <GradientStop Offset="0.8" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
-    </RadialGradientBrush>
-    
     <SolidColorBrush
-        x:Key="Brush.ModBrowser.Background"
-        
-        Color="{DynamicResource Palette.White}" />
+        x:Key="Brush.ModCard.InfoBox"
+        Opacity="0.82"
+        Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
+
+    <LinearGradientBrush x:Key="Brush.ModBrowser.Background.Gradient" StartPoint="0,0.3" EndPoint="1,0.5">
+        <GradientStop Offset="0" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
+        <GradientStop Offset="0.15" Color="{DynamicResource Palette.Grey}" />
+        <GradientStop Offset="0.25" Color="{DynamicResource Palette.DarkGrey}" />
+        <GradientStop Offset="1" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="Brush.ModBrowser.Background" Color="{DynamicResource Palette.White}" />
 
     <!--  ===============================  -->
     <!--  Installed mods list formatting.  -->

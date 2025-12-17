@@ -33,7 +33,7 @@
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility" />
         <converters:FavoriteButtonShouldShowConverter x:Key="FavoriteButtonShouldShow" />
         <converters:InstallButtonShouldShowConverter x:Key="InstallButtonShouldShow" />
-        
+
         <converters:ModNameAbbreviationConverter x:Key="ModNameAbbreviationConverter" />
         <converters:StringNullOrWhiteSpaceToVisibilityConverter x:Key="StringNullOrWhiteSpaceToVisibility" />
         <converters:StringToImageSourceConverter x:Key="StringToImageSource" />
@@ -354,7 +354,7 @@
         <Border
             Grid.Row="1"
             Margin="16,0,16,0"
-            Background="{DynamicResource Brush.ModBrowser.Background.Radial}"
+            Background="{DynamicResource Brush.ModBrowser.Background.Gradient}"
             CornerRadius="12,12,0,0">
             <ScrollViewer
                 x:Name="ModsScrollViewer"
@@ -412,6 +412,9 @@
                         Margin="16,0,16,16"
                         ItemsSource="{Binding VisibleMods}"
                         Visibility="{Binding ModsList.Count, Converter={StaticResource CountToVisibility}}">
+                        <ItemsControl.Effect>
+                            <DropShadowEffect BlurRadius="12" Opacity="0.75" Direction="310" ShadowDepth="8"/>
+                        </ItemsControl.Effect>
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal" />
@@ -429,13 +432,7 @@
                                     Style="{StaticResource ModCardStyle}"
                                     Tag="{Binding ModId}"
                                     UseLayoutRounding="True">
-                                    <Border.Effect>
-                                        <DropShadowEffect
-                                            BlurRadius="8"
-                                            Direction="320"
-                                            Opacity="0.8"
-                                            ShadowDepth="2" />
-                                    </Border.Effect>
+
                                     <Border.Triggers>
                                         <EventTrigger RoutedEvent="Border.MouseEnter">
                                             <BeginStoryboard>
@@ -583,7 +580,9 @@
                                                 TextAlignment="Center"
                                                 TextWrapping="NoWrap" />
                                             <Viewbox.Style>
-                                                --><!--  NOTE: These animations are preserved but inactive due to Visibility="Collapsed" above  --><!--
+                                        -->
+                                        <!--  NOTE: These animations are preserved but inactive due to Visibility="Collapsed" above  -->
+                                        <!--
                                                 <Style TargetType="Viewbox">
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" Value="Visible">
@@ -724,7 +723,7 @@
                                                     Tag="{Binding ModId}"
                                                     ToolTip="Install mod">
                                                     <Button.Style>
-                                                        <Style BasedOn="{StaticResource IconButtonStyle}" TargetType="Button">
+                                                        <Style BasedOn="{StaticResource ModCardButtonStyle}" TargetType="Button">
                                                             <Style.Triggers>
                                                                 <DataTrigger Value="True">
                                                                     <DataTrigger.Binding>
@@ -738,7 +737,7 @@
                                                                             <Storyboard>
                                                                                 <DoubleAnimation
                                                                                     Storyboard.TargetProperty="Opacity"
-                                                                                    To="0.9"
+                                                                                    To="1"
                                                                                     Duration="0:0:0.25">
                                                                                     <DoubleAnimation.EasingFunction>
                                                                                         <CubicEase EasingMode="EaseInOut" />
@@ -773,7 +772,7 @@
                                                         <Path.Style>
                                                             <Style TargetType="{x:Type Path}">
                                                                 <Setter Property="Data" Value="{StaticResource IconDownload}" />
-                                                                <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}" />
+                                                                <Setter Property="Fill" Value="{DynamicResource Brush.Text.Primary}" />
                                                                 <Style.Triggers>
                                                                     <!--  Show checkmark when installed  -->
                                                                     <DataTrigger Binding="{Binding IsInstalled}" Value="True">
@@ -783,7 +782,7 @@
                                                                     <!--  Show download icon when not installed  -->
                                                                     <DataTrigger Binding="{Binding IsInstalled}" Value="False">
                                                                         <Setter Property="Data" Value="{StaticResource IconDownload}" />
-                                                                        <Setter Property="Fill" Value="{DynamicResource Brush.Text.Subtle}" />
+                                                                        <Setter Property="Fill" Value="{DynamicResource Brush.Text.Primary}" />
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
                                                             </Style>
