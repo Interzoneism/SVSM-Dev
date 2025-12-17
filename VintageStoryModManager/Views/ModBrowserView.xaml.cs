@@ -21,7 +21,6 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         Unloaded += OnControlUnloaded;
-        IsVisibleChanged += OnIsVisibleChanged;
     }
 
     private ModBrowserViewModel? ViewModel => DataContext as ModBrowserViewModel;
@@ -31,17 +30,20 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         // Cache the storyboard reference during initialization
         _spinnerStoryboard = TryFindResource("SpinnerAnimation") as Storyboard;
         
-        // Don't initialize ViewModel here - defer until tab is visible
+        // Don't initialize ViewModel here - defer until tab is selected
         // This prevents unnecessary network requests on application startup
     }
 
-    private async void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    /// <summary>
+    /// Initializes the ModBrowserViewModel. This should be called only when the Database tab is selected for the first time.
+    /// </summary>
+    public async Task InitializeAsync()
     {
-        // Initialize the ViewModel only when the control becomes visible for the first time
-        if (!IsVisible || _isInitialized || ViewModel == null)
+        // Initialize the ViewModel only once
+        if (_isInitialized || ViewModel == null)
             return;
 
-        // Set flag before awaiting to prevent race conditions from rapid visibility changes
+        // Set flag before awaiting to prevent race conditions
         _isInitialized = true;
 
         try
@@ -62,9 +64,6 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         // Clean up resources when the control is unloaded
         StopSpinnerAnimation();
         _spinnerStoryboard = null;
-
-        // Unsubscribe from events
-        IsVisibleChanged -= OnIsVisibleChanged;
 
         if (DataContext is ModBrowserViewModel vm)
         {
