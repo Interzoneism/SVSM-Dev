@@ -126,6 +126,7 @@ public partial class ModBrowserViewModel : ObservableObject
     [
         new("trendingpoints", "Trending", "IconFire"),
         new("downloads", "Downloads", "IconDownload"),
+        new("downloads30days", "Downloads (30 days)", "IconDownload"),
         new("comments", "Comments", "IconMessage"),
         new("lastreleased", "Updated", "IconHistory"),
         new("asset.created", "Created", "IconCalendar"),
@@ -382,12 +383,16 @@ public partial class ModBrowserViewModel : ObservableObject
             if (token.IsCancellationRequested)
                 return;
 
+            // For 30-day downloads sorting, use a default sort and handle it client-side
+            var isDownloads30DaysSort = OrderBy == "downloads30days";
+            var apiOrderBy = isDownloads30DaysSort ? "downloads" : OrderBy;
+
             var mods = await _modApiService.QueryModsAsync(
                 textFilter: TextFilter,
                 authorFilter: SelectedAuthor,
                 versionsFilter: SelectedVersions,
                 tagsFilter: SelectedTags,
-                orderBy: OrderBy,
+                orderBy: apiOrderBy,
                 orderByOrder: OrderByDirection,
                 cancellationToken: token);
 
@@ -400,6 +405,18 @@ public partial class ModBrowserViewModel : ObservableObject
             if (ShouldApplyRelevantSorting())
             {
                 filteredMods = SortByRelevance(filteredMods, TextFilter);
+            }
+            else if (isDownloads30DaysSort)
+            {
+                // Calculate 30-day downloads for all mods and sort
+                await PopulateDownloads30DaysAsync(filteredMods, token);
+
+                if (token.IsCancellationRequested)
+                    return;
+
+                filteredMods = OrderByDirection == "desc"
+                    ? filteredMods.OrderByDescending(m => m.Downloads30Days).ToList()
+                    : filteredMods.OrderBy(m => m.Downloads30Days).ToList();
             }
 
             // Clear tracking before new search
@@ -1171,6 +1188,101 @@ public partial class ModBrowserViewModel : ObservableObject
             string.Format(CultureInfo.CurrentCulture, "Not functional ({0})", counts.NotFunctional),
             string.Format(CultureInfo.CurrentCulture, "Crashes/Freezes game ({0})", counts.CrashesOrFreezesGame)
         });
+    }
+
+    /// <summary>
+    /// Calculates downloads from releases in the last 30 days for a given mod.
+    /// Finds the oldest release within 30 days and sums all downloads from that release to the latest.
+    /// </summary>
+    private static int CalculateDownloads30Days(DownloadableMod mod)
+    {
+        if (mod.Releases == null || mod.Releases.Count == 0)
+        {
+            return 0;
+        }
+
+        var now = DateTime.UtcNow;
+        var thirtyDaysAgo = now.AddDays(-30);
+
+        // Parse all releases with valid dates
+        var releasesWithDates = mod.Releases
+            .Select(r => new
+            {
+                Release = r,
+                CreatedDate = DateTime.TryParse(r.Created, out var date) ? date : (DateTime?)null
+            })
+            .Where(r => r.CreatedDate.HasValue)
+            .OrderBy(r => r.CreatedDate!.Value)
+            .ToList();
+
+        if (releasesWithDates.Count == 0)
+        {
+            return 0;
+        }
+
+        // Find the oldest release within 30 days
+        var releasesInLast30Days = releasesWithDates
+            .Where(r => r.CreatedDate!.Value >= thirtyDaysAgo)
+            .ToList();
+
+        if (releasesInLast30Days.Count == 0)
+        {
+            // No releases in last 30 days
+            return 0;
+        }
+
+        // Sum downloads from the oldest release in the last 30 days to the latest
+        var oldestInRange = releasesInLast30Days.First();
+        var oldestIndex = releasesWithDates.IndexOf(oldestInRange);
+
+        // Sum all downloads from oldestIndex onwards
+        var totalDownloads = releasesWithDates
+            .Skip(oldestIndex)
+            .Sum(r => r.Release.Downloads);
+
+        return totalDownloads;
+    }
+
+    /// <summary>
+    /// Populates the Downloads30Days property for a list of mods by fetching full mod details.
+    /// </summary>
+    private async Task PopulateDownloads30DaysAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
+    {
+        const int maxConcurrentLoads = 5;
+        using var semaphore = new SemaphoreSlim(maxConcurrentLoads);
+
+        var tasks = mods.Select(async mod =>
+        {
+            if (cancellationToken.IsCancellationRequested) return;
+
+            try
+            {
+                await semaphore.WaitAsync(cancellationToken);
+                try
+                {
+                    var modDetails = await _modApiService.GetModAsync(mod.ModId, cancellationToken);
+                    if (modDetails != null)
+                    {
+                        mod.Downloads30Days = CalculateDownloads30Days(modDetails);
+                    }
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancelled
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ModBrowser] Failed to calculate 30-day downloads for mod {mod.ModId}: {ex.Message}");
+                mod.Downloads30Days = 0;
+            }
+        });
+
+        await Task.WhenAll(tasks);
     }
 
     #endregion
