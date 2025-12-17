@@ -639,7 +639,7 @@
                                                     Tag="{Binding ModId}"
                                                     ToolTip="Toggle favorite">
                                                     <Button.Style>
-                                                        <Style BasedOn="{StaticResource IconButtonStyle}" TargetType="Button">
+                                                        <Style BasedOn="{StaticResource ModCardButtonStyle}" TargetType="Button">
                                                             <Style.Triggers>
                                                                 <DataTrigger Value="True">
                                                                     <DataTrigger.Binding>
