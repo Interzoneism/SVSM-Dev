@@ -17,13 +17,14 @@
     <converters:DownloadMetricDisplayConverter x:Key="IMM.DownloadMetricDisplayConverter" />
     <sys:Double x:Key="IMM.TagRowMaxHeight">70</sys:Double>
     <sys:Double x:Key="IMM.TagRowCompactMaxHeight">35</sys:Double>
+    <CornerRadius x:Key="IMM.TagBadgeCornerRadius">10</CornerRadius>
 
     <!--  Tag badge styles  -->
     <Style x:Key="IMM.TagBadgeBorderStyle" TargetType="{x:Type Border}">
         <Setter Property="Background" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Light}" />
         <Setter Property="BorderThickness" Value="1,1,0,0" />
-        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="CornerRadius" Value="{StaticResource IMM.TagBadgeCornerRadius}" />
         <Setter Property="Padding" Value="8,2" />
         <Setter Property="Margin" Value="0,0,0,0" />
     </Style>
@@ -78,7 +79,7 @@
                             <Border
                                 x:Name="HoverOverlay"
                                 Background="{DynamicResource Brush.Button.Primary.Background.Hover}"
-                                CornerRadius="10"
+                                CornerRadius="{StaticResource IMM.TagBadgeCornerRadius}"
                                 IsHitTestVisible="False"
                                 Opacity="0" />
                         </Grid>
