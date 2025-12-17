@@ -3007,7 +3007,15 @@ public partial class MainWindow : Window
             // Initialize the ModBrowserView when the Database tab is first selected
             if (ModBrowserView != null)
             {
-                await ModBrowserView.InitializeAsync();
+                try
+                {
+                    await ModBrowserView.InitializeAsync();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[MainWindow] Failed to initialize mod browser: {ex.Message}");
+                }
             }
             
             if (_viewModel.ShowDatabaseTabCommand?.CanExecute(null) == true)
