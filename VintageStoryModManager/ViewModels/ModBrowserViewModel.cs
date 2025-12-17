@@ -428,15 +428,10 @@ public partial class ModBrowserViewModel : ObservableObject
                 if (token.IsCancellationRequested)
                     return;
 
-                // Sort by Downloads30Days
-                // For ascending order, put mods with 0 downloads (uncalculated) at the end
-                filteredMods = OrderByDirection == "desc"
-                    ? filteredMods.OrderByDescending(m => m.Downloads30Days).ToList()
-                    : filteredMods.OrderBy(m => m.Downloads30Days == 0 ? int.MaxValue : m.Downloads30Days).ToList();
+                // Sort by Downloads30Days using helper method
+                filteredMods = SortByDownloads30Days(filteredMods);
                 
                 // Continue calculating in background for remaining mods
-                // Use a local copy of the token to avoid closure issues
-                var backgroundToken = token;
                 _ = Task.Run(async () =>
                 {
                     try
@@ -444,28 +439,30 @@ public partial class ModBrowserViewModel : ObservableObject
                         var remainingMods = filteredMods.Skip(initialVisibleCount).ToList();
                         if (remainingMods.Count > 0)
                         {
-                            await PopulateDownloads30DaysAsync(remainingMods, backgroundToken);
+                            await PopulateDownloads30DaysAsync(remainingMods, token);
                             
                             // Re-sort the full list after background calculation completes
-                            if (!backgroundToken.IsCancellationRequested)
+                            if (!token.IsCancellationRequested)
                             {
-                                var sortedMods = OrderByDirection == "desc"
-                                    ? filteredMods.OrderByDescending(m => m.Downloads30Days).ToList()
-                                    : filteredMods.OrderBy(m => m.Downloads30Days == 0 ? int.MaxValue : m.Downloads30Days).ToList();
+                                var sortedMods = SortByDownloads30Days(filteredMods);
                                 
                                 // Update ModsList order on UI thread
-                                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                                var dispatcher = System.Windows.Application.Current?.Dispatcher;
+                                if (dispatcher != null)
                                 {
-                                    if (!backgroundToken.IsCancellationRequested)
+                                    await dispatcher.InvokeAsync(() =>
                                     {
-                                        ModsList.Clear();
-                                        foreach (var mod in sortedMods)
+                                        if (!token.IsCancellationRequested)
                                         {
-                                            ModsList.Add(mod);
+                                            ModsList.Clear();
+                                            foreach (var mod in sortedMods)
+                                            {
+                                                ModsList.Add(mod);
+                                            }
+                                            OnPropertyChanged(nameof(VisibleMods));
                                         }
-                                        OnPropertyChanged(nameof(VisibleMods));
-                                    }
-                                });
+                                    });
+                                }
                             }
                         }
                     }
@@ -473,7 +470,7 @@ public partial class ModBrowserViewModel : ObservableObject
                     {
                         // Expected when cancelled
                     }
-                }, backgroundToken);
+                }, token);
             }
 
             // Clear tracking before new search
@@ -1253,6 +1250,18 @@ public partial class ModBrowserViewModel : ObservableObject
             string.Format(CultureInfo.CurrentCulture, "Not functional ({0})", counts.NotFunctional),
             string.Format(CultureInfo.CurrentCulture, "Crashes/Freezes game ({0})", counts.CrashesOrFreezesGame)
         });
+    }
+
+    /// <summary>
+    /// Sorts a list of mods by their Downloads30Days value.
+    /// For ascending order, uncalculated mods (0 downloads) are placed at the end.
+    /// </summary>
+    private List<DownloadableModOnList> SortByDownloads30Days(IEnumerable<DownloadableModOnList> mods)
+    {
+        const int UncalculatedDownloads = 0;
+        return OrderByDirection == "desc"
+            ? mods.OrderByDescending(m => m.Downloads30Days).ToList()
+            : mods.OrderBy(m => m.Downloads30Days == UncalculatedDownloads ? int.MaxValue : m.Downloads30Days).ToList();
     }
 
     /// <summary>
