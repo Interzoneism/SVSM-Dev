@@ -993,10 +993,6 @@
                                                                     Margin="0,4,0,0"
                                                                     HorizontalScrollBarVisibility="Disabled"
                                                                     VerticalScrollBarVisibility="Auto">
-                                                                    <ScrollViewer.Resources>
-                                                                        <Style BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" TargetType="{x:Type ScrollBar}" />
-                                                                        <Style BasedOn="{StaticResource IMM.DataGridScrollBarThumbStyle}" TargetType="{x:Type Thumb}" />
-                                                                    </ScrollViewer.Resources>
                                                                     <ItemsControl ItemsPanel="{StaticResource IMM.TagFilterItemsPanelTemplate}" ItemsSource="{Binding DataContext.InstalledTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
                                                                         <ItemsControl.ItemTemplate>
                                                                             <DataTemplate DataType="{x:Type viewModels:TagFilterOptionViewModel}">
