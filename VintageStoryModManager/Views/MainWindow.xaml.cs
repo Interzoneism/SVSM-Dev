@@ -2991,7 +2991,7 @@ public partial class MainWindow : Window
         if (CloudModlistsDataGrid != null) CloudModlistsDataGrid.SelectedItem = null;
     }
 
-    private void MiddleTabControl_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void MiddleTabControl_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_isUpdatingMiddleTabSelection) return;
         if (_viewModel is null) return;
@@ -3004,6 +3004,20 @@ public partial class MainWindow : Window
         }
         else if (Equals(tabControl.SelectedItem, DatabaseTab))
         {
+            // Initialize the ModBrowserView when the Database tab is first selected
+            if (ModBrowserView != null)
+            {
+                try
+                {
+                    await ModBrowserView.InitializeAsync();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[MainWindow] Failed to initialize mod browser: {ex.Message}");
+                }
+            }
+            
             if (_viewModel.ShowDatabaseTabCommand?.CanExecute(null) == true)
                 _viewModel.ShowDatabaseTabCommand.Execute(null);
         }
