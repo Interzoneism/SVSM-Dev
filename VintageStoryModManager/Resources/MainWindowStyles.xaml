@@ -28,6 +28,8 @@
         <Setter Property="Margin" Value="0,0,0,0" />
     </Style>
 
+
+
     <ItemsPanelTemplate x:Key="IMM.TagItemsPanelTemplate">
         <views:OverlappingTagPanel />
     </ItemsPanelTemplate>
@@ -294,6 +296,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
                             SnapsToDevicePixels="True">
                             <Grid Grid.IsSharedSizeScope="True">
                                 <Grid.ColumnDefinitions>
@@ -353,19 +356,21 @@
 
                         <Popup
                             x:Name="SubMenuPopup"
+                            Margin="0,12,0,12"
                             AllowsTransparency="True"
                             Focusable="False"
-                            HorizontalOffset="-2"
+                            HorizontalOffset="2"
                             IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
                             Placement="Right"
                             PlacementTarget="{Binding ElementName=templateRoot}"
-                            VerticalOffset="-3">
+                            VerticalOffset="-4">
                             <Border
                                 MinWidth="{Binding ActualWidth, ElementName=templateRoot}"
                                 Margin="0,0,0,4"
-                                Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
-                                BorderBrush="{DynamicResource Brush.Menu.Item.Background.Hover}"
-                                BorderThickness="4"
+                                Background="{DynamicResource Brush.Menu.Item.Background.Hover}"
+                                BorderBrush="{DynamicResource Brush.Panel.Primary.Background.Solid}"
+                                BorderThickness="0"
+                                CornerRadius="4"
                                 SnapsToDevicePixels="True">
                                 <ScrollViewer
                                     CanContentScroll="False"
@@ -426,7 +431,7 @@
                         </Trigger>
 
                         <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="templateRoot" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
+                            <Setter TargetName="templateRoot" Property="Background" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
                             <Setter TargetName="templateRoot" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
                             <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
                         </Trigger>
@@ -738,8 +743,8 @@
     <!--  Base DataGrid row style for installed mods and mod database grids  -->
     <Style x:Key="IMM.ModsDataGridRowBaseStyle" TargetType="{x:Type DataGridRow}">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="{DynamicResource Brush.InstalledMod.Row.Border}" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Light}" />
+        <Setter Property="BorderThickness" Value="1,1,0,0" />
         <Setter Property="Margin" Value="2,2,2,2" />
         <Setter Property="UseLayoutRounding" Value="True" />
         <Setter Property="Padding">
@@ -754,41 +759,32 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type DataGridRow}">
-                    <!--  The brushes here come from InstalledMods_Row_* resources in Resources/Themes.  -->
                     <Border
                         x:Name="RowBorder"
-                        Margin="4,0,4,4"
+                        Margin="8,0,8,4"
                         Background="{DynamicResource Brush.InstalledMod.Row.Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
-                        CornerRadius="8"
-                        SnapsToDevicePixels="True">
-                        <Border.Effect>
-                            <DropShadowEffect
-                                BlurRadius="2"
-                                Direction="210"
-                                Opacity="0.5"
-                                ShadowDepth="2"
-                                Color="{Binding Color, Source={StaticResource Brush.DataGrid.RowShadow}}" />
-
-                        </Border.Effect>
+                        CornerRadius="12"
+                        SnapsToDevicePixels="True"
+                        UseLayoutRounding="True">
                         <Grid>
                             <Border
                                 x:Name="SelectionOverlay"
                                 Background="{DynamicResource Brush.Accent.Primary}"
-                                CornerRadius="8"
+                                CornerRadius="12"
                                 IsHitTestVisible="False"
                                 Opacity="0" />
                             <Border
                                 x:Name="HoverOverlay"
-                                Background="{DynamicResource Brush.Button.Primary.Background.Hover}"
-                                CornerRadius="8"
+                                Background="{DynamicResource Brush.White}"
+                                CornerRadius="12"
                                 IsHitTestVisible="False"
                                 Opacity="0" />
                             <Border
                                 Padding="{TemplateBinding Padding}"
                                 Background="Transparent"
-                                CornerRadius="8">
+                                CornerRadius="12">
                                 <SelectiveScrollingGrid>
                                     <SelectiveScrollingGrid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -809,10 +805,10 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                            <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.Overlay.Warning.Background}" />
+                            <Setter TargetName="RowBorder" Property="BorderBrush" Value="{DynamicResource Brush.Overlay.Warning.Background}" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding HasActivationError}" Value="True">
-                            <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.Overlay.Warning.Background}" />
+                            <Setter TargetName="RowBorder" Property="BorderBrush" Value="{DynamicResource Brush.InstalledMod.Error}" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsActive}" Value="False">
                             <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.ModCard.Background.Disabled}" />
@@ -821,136 +817,41 @@
                         <Trigger Property="DetailsVisibility" Value="Visible">
                             <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
                         </Trigger>
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="IsMouseOver" Value="True" />
-                                <Condition Property="IsSelected" Value="False" />
-                            </MultiTrigger.Conditions>
-                            <Setter TargetName="RowBorder" Property="BorderBrush" Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
-                        </MultiTrigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-        <Style.Triggers>
-            <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
-                <Setter Property="Padding">
-                    <Setter.Value>
-                        <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
-                            <Binding Source="{StaticResource IMM.RowPaddingBase}" />
-                            <Binding Source="{StaticResource IMM.CompactRowHeightOffset}" />
-                        </MultiBinding>
-                    </Setter.Value>
-                </Setter>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                <Setter Property="Background" Value="{DynamicResource Brush.Overlay.Warning.Background}" />
-            </DataTrigger>
-            <DataTrigger Binding="{Binding HasActivationError}" Value="True">
-                <Setter Property="Background" Value="{DynamicResource Brush.Overlay.Warning.Background}" />
-            </DataTrigger>
-            <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="{DynamicResource Brush.DataGrid.Row.Background.Selected}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent.Primary}" />
-            </Trigger>
-        </Style.Triggers>
-    </Style>
-
-    <!--
-        Base DataGrid row style for mod database grid (without IsActive trigger)
-        Note: This style is nearly identical to IMM.ModsDataGridRowBaseStyle, but WPF
-        ControlTemplates cannot be partially inherited. The only difference is the
-        IsActive DataTrigger in ControlTemplate.Triggers which dims disabled mods.
-        The ModDB grid shows search results that don't have an IsActive property,
-        so this trigger must be removed.
-    -->
-    <Style x:Key="IMM.ModDbDataGridRowBaseStyle" TargetType="{x:Type DataGridRow}">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="{DynamicResource Brush.InstalledMod.Row.Border}" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Margin" Value="2,2,2,2" />
-        <Setter Property="Padding">
-            <Setter.Value>
-                <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
-                    <Binding Source="{StaticResource IMM.RowPaddingBase}" />
-                    <Binding Source="{StaticResource IMM.NormalRowHeightOffset}" />
-                </MultiBinding>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type DataGridRow}">
-                    <!--  The brushes here come from InstalledMods_Row_* resources in Resources/Themes.  -->
-                    <Border
-                        x:Name="RowBorder"
-                        Margin="4,0,4,4"
-                        Background="{DynamicResource Brush.InstalledMod.Row.Background}"
-                        BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{TemplateBinding BorderThickness}"
-                        CornerRadius="8"
-                        SnapsToDevicePixels="True">
-                        <Border.Effect>
-                            <DropShadowEffect
-                                BlurRadius="2"
-                                Direction="210"
-                                Opacity="0.5"
-                                ShadowDepth="2"
-                                Color="{Binding Color, Source={StaticResource Brush.DataGrid.RowShadow}}" />
-
-                        </Border.Effect>
-                        <Grid>
-                            <Border
-                                x:Name="SelectionOverlay"
-                                Background="{DynamicResource Brush.Accent.Primary}"
-                                CornerRadius="8"
-                                IsHitTestVisible="False"
-                                Opacity="0" />
-                            <Border
-                                x:Name="HoverOverlay"
-                                Background="{DynamicResource Brush.Button.Primary.Background.Hover}"
-                                CornerRadius="8"
-                                IsHitTestVisible="False"
-                                Opacity="0" />
-                            <Border
-                                Padding="{TemplateBinding Padding}"
-                                Background="Transparent"
-                                CornerRadius="8">
-                                <SelectiveScrollingGrid>
-                                    <SelectiveScrollingGrid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                    </SelectiveScrollingGrid.ColumnDefinitions>
-                                    <SelectiveScrollingGrid.RowDefinitions>
-                                        <RowDefinition Height="*" />
-                                        <RowDefinition Height="Auto" />
-                                    </SelectiveScrollingGrid.RowDefinitions>
-                                    <DataGridCellsPresenter Grid.Column="0" SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" />
-                                    <DataGridDetailsPresenter
-                                        Grid.Row="1"
-                                        Grid.Column="0"
-                                        SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
-                                        Visibility="{TemplateBinding DetailsVisibility}" />
-                                </SelectiveScrollingGrid>
-                            </Border>
-                        </Grid>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                            <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.Overlay.Warning.Background}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding HasActivationError}" Value="True">
-                            <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource Brush.Overlay.Warning.Background}" />
-                        </DataTrigger>
-                        <Trigger Property="DetailsVisibility" Value="Visible">
-                            <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard x:Name="HoverFadeInStoryboard">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverOverlay"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0.05"
+                                            Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard x:Name="HoverFadeOutStoryboard">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="HoverOverlay"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0"
+                                            Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="IsMouseOver" Value="True" />
-                                <Condition Property="IsSelected" Value="False" />
-                            </MultiTrigger.Conditions>
-                            <Setter TargetName="RowBorder" Property="BorderBrush" Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
-                        </MultiTrigger>
+
+                        <!--  If row becomes selected, ensure hover animations are stopped and overlay hidden.  -->
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="0" />
+                            <Trigger.EnterActions>
+                                <StopStoryboard BeginStoryboardName="HoverFadeInStoryboard" />
+                                <StopStoryboard BeginStoryboardName="HoverFadeOutStoryboard" />
+                            </Trigger.EnterActions>
+                        </Trigger>
+
+
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -974,7 +875,6 @@
             </DataTrigger>
             <Trigger Property="IsSelected" Value="True">
                 <Setter Property="Background" Value="{DynamicResource Brush.DataGrid.Row.Background.Selected}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent.Primary}" />
             </Trigger>
         </Style.Triggers>
     </Style>

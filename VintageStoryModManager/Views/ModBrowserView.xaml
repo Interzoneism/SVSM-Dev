@@ -422,7 +422,7 @@
                         </ItemsControl.ItemsPanel>
 
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate>    
                                 <Border
                                     x:Name="ModCardBorder"
                                     Width="344"

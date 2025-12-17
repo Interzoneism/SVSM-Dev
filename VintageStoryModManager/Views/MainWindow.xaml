@@ -17,13 +17,15 @@
     Height="719"
     MinWidth="1000"
     MinHeight="775"
-    d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
+    d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData},
+                                     IsDesignTimeCreatable=True}"
     AllowDrop="True"
     Background="Transparent"
     PreviewDragEnter="MainWindow_OnPreviewDragEnter"
     PreviewDragOver="MainWindow_OnPreviewDragOver"
     PreviewDrop="MainWindow_OnPreviewDrop"
     PreviewKeyDown="MainWindow_OnPreviewKeyDown"
+    ResizeMode="CanResize"
     UseLayoutRounding="False"
     WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
@@ -36,13 +38,14 @@
         </ResourceDictionary>
     </Window.Resources>
 
+
     <!--  ============================================================  -->
     <!--  Main Window Layout: 3-row grid  -->
     <!--  ============================================================  -->
     <Grid x:Name="RootGrid" Background="{DynamicResource Brush.ComboBox.Background.Disabled}">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="26" MinHeight="10" />
+            <RowDefinition Height="32" MinHeight="10" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -52,23 +55,16 @@
         <!--  ============================================================  -->
         <Grid
             x:Name="TOP"
-            Height="24"
+            Height="32"
+            Margin="0,2,0,0"
             VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="500" />
+                <ColumnDefinition Width="350" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <Rectangle
-                Grid.ColumnSpan="2"
-                Height="24"
-                Fill="{DynamicResource Brush.Menu.Border}" />
-
             <!--  Main Application Menu  -->
-            <Border
-                Grid.Column="0"
-                Background="{DynamicResource Brush.Menu.Border}"
-                CornerRadius="0,5,5,0">
+            <Border Grid.Column="0" CornerRadius="0,0,5,0">
 
                 <Menu
                     HorizontalContentAlignment="Center"
@@ -660,14 +656,16 @@
                                 x:Name="MainBorder"
                                 Grid.Row="1"
                                 Margin="8,0,8,0"
-                                Background="{DynamicResource Brush.ModBrowser.Background.Gradient}"
+                                Background="{DynamicResource Brush.InstalledMods.Background.Gradient}"
                                 BorderBrush="{DynamicResource Brush.DataGrid.Background}"
                                 BorderThickness="2,2,0,0"
                                 CornerRadius="4"
                                 SnapsToDevicePixels="True">
+
                                 <DataGrid
                                     x:Name="ModsDataGrid"
                                     ui:ControlHelper.CornerRadius="0"
+                                    AreRowDetailsFrozen="True"
                                     AutoGenerateColumns="False"
                                     Background="Transparent"
                                     BorderBrush="Transparent"
@@ -708,6 +706,9 @@
                                         </Style>
                                         <Style BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" TargetType="{x:Type DataGridColumnHeader}" />
                                     </DataGrid.Resources>
+                                    <DataGrid.DragIndicatorStyle>
+                                        <Style />
+                                    </DataGrid.DragIndicatorStyle>
                                     <DataGrid.CellStyle>
                                         <StaticResource ResourceKey="IMM.DataGridCellBaseStyle" />
                                     </DataGrid.CellStyle>

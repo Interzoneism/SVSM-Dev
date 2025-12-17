@@ -21,6 +21,7 @@
     <Color x:Key="Palette.White">#FFfffcf5</Color>
     <Color x:Key="Palette.Grey">#FF867e74</Color>
     <Color x:Key="Palette.DarkGrey">#FF6e675f</Color>
+    <Color x:Key="Palette.Error">#FFED4337</Color>
 
     <!--  ======================================================  -->
     <!--  Window shell and shared panel surfaces (Main windows).  -->
@@ -66,7 +67,10 @@
     <SolidColorBrush x:Key="Brush.Button.Bevel.Light" Color="{DynamicResource Palette.Bevel.Highlight}" />
     <SolidColorBrush x:Key="Brush.Button.Bevel.Dark" Color="{DynamicResource Palette.Bevel.Shadow}" />
     <SolidColorBrush x:Key="Brush.Accent.Primary" Color="{DynamicResource Palette.Accent.Primary}" />
-    <SolidColorBrush x:Key="Brush.Accent.Half" Color="{DynamicResource Palette.Accent.Primary}" Opacity="0.5" />
+    <SolidColorBrush
+        x:Key="Brush.Accent.Half"
+        Opacity="0.5"
+        Color="{DynamicResource Palette.Accent.Primary}" />
     <SolidColorBrush x:Key="Brush.ToggleButton.Background.Checked" Color="{DynamicResource Palette.Accent.Primary}" />
     <SolidColorBrush x:Key="Brush.ToggleButton.Border.Checked" Color="{DynamicResource Palette.Accent.Primary}" />
 
@@ -171,10 +175,10 @@
     <!--  =====================================  -->
     <!--  Menu, context menu, and tool tip UI.  -->
     <!--  =====================================  -->
-    <SolidColorBrush x:Key="Brush.Menu.Background" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
-    <SolidColorBrush x:Key="Brush.Menu.Border" Color="{DynamicResource Palette.BaseSurface.Raised}" />
-    <SolidColorBrush x:Key="Brush.Menu.Item.Background.Hover" Color="{DynamicResource Palette.BaseSurface.HoverGlow}" />
-    <SolidColorBrush x:Key="Brush.Menu.Submenu.Background" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
+    <SolidColorBrush x:Key="Brush.Menu.Background" Color="{DynamicResource Palette.BaseSurface.Brighter}" />
+    <SolidColorBrush x:Key="Brush.Menu.Border" Color="{DynamicResource Palette.Bevel.Highlight}" />
+    <SolidColorBrush x:Key="Brush.Menu.Item.Background.Hover" Color="{DynamicResource Palette.BaseSurface.Raised}" />
+    <SolidColorBrush x:Key="Brush.Menu.Submenu.Background" Color="{DynamicResource Palette.BaseSurface.Brighter}" />
     <SolidColorBrush x:Key="Brush.ToolTip.Background" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
     <SolidColorBrush x:Key="Brush.ToolTip.Border" Color="{DynamicResource Palette.BaseSurface.Raised}" />
 
@@ -222,6 +226,13 @@
         <GradientStop Offset="1" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
     </LinearGradientBrush>
 
+    <LinearGradientBrush x:Key="Brush.InstalledMods.Background.Gradient" StartPoint="0,0.5" EndPoint="1,0.5">
+        <GradientStop Offset="0" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
+        <GradientStop Offset="0.3" Color="{DynamicResource Palette.Grey}" />
+        <GradientStop Offset="0.6" Color="{DynamicResource Palette.DarkGrey}" />
+        <GradientStop Offset="1" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
+    </LinearGradientBrush>
+
     <SolidColorBrush x:Key="Brush.ModBrowser.Background" Color="{DynamicResource Palette.White}" />
 
     <!--  ===============================  -->
@@ -229,6 +240,7 @@
     <!--  ===============================  -->
     <SolidColorBrush x:Key="Brush.InstalledMod.Row.Background" Color="{DynamicResource Palette.BaseSurface.Raised}" />
     <SolidColorBrush x:Key="Brush.InstalledMod.Row.Border" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
+    <SolidColorBrush x:Key="Brush.InstalledMod.Error" Color="{DynamicResource Palette.Error}" />
 
     <!--  ==============================  -->
     <!--  Tags, statuses, and overlays.  -->
@@ -429,9 +441,9 @@
                 <ControlTemplate TargetType="{x:Type Separator}">
                     <Grid Height="8" SnapsToDevicePixels="True">
                         <Border
-                            Height="2"
+                            Height="1"
                             VerticalAlignment="Center"
-                            Background="{DynamicResource Brush.Menu.Item.Background.Hover}" />
+                            Background="{DynamicResource Brush.Text.Primary}" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -441,7 +453,7 @@
     <Style TargetType="{x:Type MenuItem}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
         <Setter Property="Background" Value="{DynamicResource Brush.Menu.Background}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border.Default}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Menu.Border}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="12,6,12,6" />
         <Style.Resources>
@@ -470,8 +482,8 @@
                         VerticalOffset="0">
                         <Border
                             x:Name="SubMenuBorder"
-                            Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
-                            BorderBrush="{DynamicResource Brush.Border.Default}"
+                            Background="{DynamicResource Brush.Menu.Submenu.Background}"
+                            BorderBrush="{DynamicResource Brush.Menu.Border}"
                             BorderThickness="1"
                             SnapsToDevicePixels="True">
                             <ScrollViewer CanContentScroll="True">
@@ -482,13 +494,13 @@
                 </Grid>
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsSubmenuOpen" Value="True">
-                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
+                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Background}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Menu.Border}" />
                         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
                     </Trigger>
                     <Trigger Property="IsHighlighted" Value="True">
                         <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Menu.Border}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Subtle}" />
@@ -512,7 +524,7 @@
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsHighlighted" Value="True">
                         <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Menu.Border}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Subtle}" />
@@ -564,7 +576,7 @@
                         <Border
                             x:Name="SubMenuBorder"
                             Background="{DynamicResource Brush.Menu.Submenu.Background}"
-                            BorderBrush="{DynamicResource Brush.Border.Default}"
+                            BorderBrush="{DynamicResource Brush.Menu.Border}"
                             BorderThickness="1"
                             SnapsToDevicePixels="True">
                             <ScrollViewer CanContentScroll="True">
@@ -579,11 +591,11 @@
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsHighlighted" Value="True">
                         <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Menu.Border}" />
                     </Trigger>
                     <Trigger Property="IsSubmenuOpen" Value="True">
                         <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Menu.Border}" />
                     </Trigger>
                     <Trigger Property="FlowDirection" Value="RightToLeft">
                         <Setter TargetName="Glyph" Property="RenderTransform">
@@ -615,7 +627,7 @@
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsHighlighted" Value="True">
                         <Setter TargetName="Border" Property="Background" Value="{DynamicResource Brush.Menu.Item.Background.Hover}" />
-                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Border.Hover}" />
+                        <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Brush.Menu.Border}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Subtle}" />
