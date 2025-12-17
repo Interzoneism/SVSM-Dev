@@ -413,7 +413,7 @@
                         ItemsSource="{Binding VisibleMods}"
                         Visibility="{Binding ModsList.Count, Converter={StaticResource CountToVisibility}}">
                         <ItemsControl.Effect>
-                            <DropShadowEffect BlurRadius="12" Opacity="0.75" Direction="310" ShadowDepth="8"/>
+                            <DropShadowEffect BlurRadius="8" Opacity="0.2" Direction="310" ShadowDepth="6"/>
                         </ItemsControl.Effect>
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -434,7 +434,7 @@
                                     UseLayoutRounding="True">
 
                                     <Border.Triggers>
-                                        <EventTrigger RoutedEvent="Border.MouseEnter">
+                                        <EventTrigger RoutedEvent="UIElement.MouseEnter">
                                             <BeginStoryboard>
                                                 <Storyboard>
                                                     <DoubleAnimation
@@ -449,7 +449,7 @@
                                                 </Storyboard>
                                             </BeginStoryboard>
                                         </EventTrigger>
-                                        <EventTrigger RoutedEvent="Border.MouseLeave">
+                                        <EventTrigger RoutedEvent="UIElement.MouseLeave">
                                             <BeginStoryboard>
                                                 <Storyboard>
                                                     <DoubleAnimation
@@ -478,7 +478,20 @@
                                             Grid.Row="0"
                                             Grid.RowSpan="2">
 
-                                            <WrapPanel Name="container">
+                                            <WrapPanel x:Name="container">
+
+                                                <WrapPanel.OpacityMask>
+
+                                                    <VisualBrush>
+                                                        <VisualBrush.Visual>
+                                                            <Border
+                                                                Width="{Binding ActualWidth, ElementName=container}"
+                                                                Height="{Binding ActualHeight, ElementName=container}"
+                                                                Background="White"
+                                                                CornerRadius="8" />
+                                                        </VisualBrush.Visual>
+                                                    </VisualBrush>
+                                                </WrapPanel.OpacityMask>
 
                                                 <Image
                                                     x:Name="ThumbImage"
@@ -487,18 +500,6 @@
                                                     Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
                                                     Stretch="Uniform"
                                                     Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" />
-                                                <WrapPanel.OpacityMask>
-
-                                                    <VisualBrush>
-                                                        <VisualBrush.Visual>
-                                                            <Border
-                                                                Width="{Binding ElementName=container, Path=ActualWidth}"
-                                                                Height="{Binding ElementName=container, Path=ActualHeight}"
-                                                                Background="White"
-                                                                CornerRadius="8" />
-                                                        </VisualBrush.Visual>
-                                                    </VisualBrush>
-                                                </WrapPanel.OpacityMask>
                                             </WrapPanel>
 
                                         </Grid>
@@ -512,7 +513,7 @@
                                             Source="/Resources/mod-default.png"
                                             Stretch="UniformToFill">
                                             <Image.Style>
-                                                <Style TargetType="Image">
+                                                <Style TargetType="{x:Type Image}">
                                                     <Setter Property="Opacity" Value="0" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" Value="Visible">
@@ -610,7 +611,7 @@
                                                     Tag="{Binding ModId}"
                                                     ToolTip="Toggle favorite">
                                                     <Button.Style>
-                                                        <Style BasedOn="{StaticResource ModCardButtonStyle}" TargetType="Button">
+                                                        <Style BasedOn="{StaticResource ModCardButtonStyle}" TargetType="{x:Type Button}">
                                                             <Setter Property="Opacity" Value="0" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Value="True">
@@ -694,7 +695,7 @@
                                                     Tag="{Binding ModId}"
                                                     ToolTip="Install mod">
                                                     <Button.Style>
-                                                        <Style BasedOn="{StaticResource ModCardButtonStyle}" TargetType="Button">
+                                                        <Style BasedOn="{StaticResource ModCardButtonStyle}" TargetType="{x:Type Button}">
                                                             <Setter Property="Opacity" Value="0" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Value="True">
