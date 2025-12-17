@@ -503,48 +503,20 @@
 
                                         </Grid>
 
-                                        <!--  Default Thumbnail Background - Fades in when no thumbnail  -->
+                                        <!--  Default Thumbnail Background - Shows when no thumbnail  -->
                                         <Image
                                             x:Name="DefaultThumbImage"
                                             Grid.Row="0"
                                             Grid.RowSpan="2"
                                             MinHeight="229"
-                                            Opacity="0"
                                             Source="/Resources/mod-default.png"
                                             Stretch="UniformToFill">
                                             <Image.Style>
                                                 <Style TargetType="Image">
+                                                    <Setter Property="Opacity" Value="0" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding LogoUrl, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" Value="Visible">
-                                                            <DataTrigger.EnterActions>
-                                                                <BeginStoryboard>
-                                                                    <Storyboard>
-                                                                        <DoubleAnimation
-                                                                            BeginTime="0:0:0.15"
-                                                                            Storyboard.TargetProperty="Opacity"
-                                                                            To="0.5"
-                                                                            Duration="0:0:0.20">
-                                                                            <DoubleAnimation.EasingFunction>
-                                                                                <CubicEase EasingMode="EaseInOut" />
-                                                                            </DoubleAnimation.EasingFunction>
-                                                                        </DoubleAnimation>
-                                                                    </Storyboard>
-                                                                </BeginStoryboard>
-                                                            </DataTrigger.EnterActions>
-                                                            <DataTrigger.ExitActions>
-                                                                <BeginStoryboard>
-                                                                    <Storyboard>
-                                                                        <DoubleAnimation
-                                                                            Storyboard.TargetProperty="Opacity"
-                                                                            To="0"
-                                                                            Duration="0:0:0.20">
-                                                                            <DoubleAnimation.EasingFunction>
-                                                                                <CubicEase EasingMode="EaseInOut" />
-                                                                            </DoubleAnimation.EasingFunction>
-                                                                        </DoubleAnimation>
-                                                                    </Storyboard>
-                                                                </BeginStoryboard>
-                                                            </DataTrigger.ExitActions>
+                                                            <Setter Property="Opacity" Value="0.5" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -635,11 +607,11 @@
                                                     Width="28"
                                                     Height="28"
                                                     Click="FavoriteButton_Click"
-                                                    Opacity="0"
                                                     Tag="{Binding ModId}"
                                                     ToolTip="Toggle favorite">
                                                     <Button.Style>
                                                         <Style BasedOn="{StaticResource IconButtonStyle}" TargetType="Button">
+                                                            <Setter Property="Opacity" Value="0" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Value="True">
                                                                     <DataTrigger.Binding>
@@ -719,11 +691,11 @@
                                                     Height="28"
                                                     Click="InstallButton_Click"
                                                     IsEnabled="{Binding IsInstalled, Converter={StaticResource InvertBoolean}}"
-                                                    Opacity="0"
                                                     Tag="{Binding ModId}"
                                                     ToolTip="Install mod">
                                                     <Button.Style>
                                                         <Style BasedOn="{StaticResource ModCardButtonStyle}" TargetType="Button">
+                                                            <Setter Property="Opacity" Value="0" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Value="True">
                                                                     <DataTrigger.Binding>
