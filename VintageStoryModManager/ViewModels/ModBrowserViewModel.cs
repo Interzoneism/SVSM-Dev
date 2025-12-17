@@ -382,7 +382,7 @@ public partial class ModBrowserViewModel : ObservableObject
             
             // Clear the list immediately so the spinner is visible
             ModsList.Clear();
-            VisibleModsCount = DefaultLoadedMods;
+            VisibleModsCount = 0;
             OnPropertyChanged(nameof(VisibleMods));
 
             // Add a small delay to debounce rapid typing
