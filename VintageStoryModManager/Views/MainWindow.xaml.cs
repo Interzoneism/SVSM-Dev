@@ -3038,8 +3038,8 @@ public partial class MainWindow : Window
             targetTab = MainTab;
         else if (_viewModel.IsViewingModlistTab)
             targetTab = ModlistTab;
-        else if (_viewModel.IsViewingModlistTab)
-            targetTab = ModlistTab;
+        else if (_viewModel.SearchModDatabase)
+            targetTab = DatabaseTab;
         else
             targetTab = MainTab; // Default to MainTab if view section is unknown
 
