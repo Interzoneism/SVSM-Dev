@@ -379,6 +379,11 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             IsSearching = true;
             LoadingMessage = "Searching for mods...";
+            
+            // Clear the list immediately so the spinner is visible
+            ModsList.Clear();
+            VisibleModsCount = 0;
+            OnPropertyChanged(nameof(VisibleMods));
 
             // Add a small delay to debounce rapid typing
             var debounceDelay = string.IsNullOrWhiteSpace(TextFilter) ? 50 : 400;
@@ -436,7 +441,6 @@ public partial class ModBrowserViewModel : ObservableObject
             if (token.IsCancellationRequested)
                 return;
 
-            ModsList.Clear();
             foreach (var mod in filteredMods)
             {
                 ModsList.Add(mod);
