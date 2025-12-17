@@ -28,7 +28,7 @@ Brush.Menu.Item.Background.Pressed   → Palette.BaseSurface.HoverGlow (#FF5A453
 ```xml
 Brush.Menu.Item.Border.Hover         → Palette.Bevel.Highlight (#80FFFFFF)
 Brush.Menu.Item.Text                 → Palette.Text.Primary (#FFC8BCAE)
-Brush.Menu.Item.Text.Disabled        → Palette.Text.Placeholder (#45C8BCAE)
+Brush.Menu.Item.Text.Disabled        → Brush.Text.Placeholder (45% opacity)
 ```
 
 ### 📂 Submenus

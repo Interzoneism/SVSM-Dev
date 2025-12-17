@@ -194,7 +194,7 @@
     <!--  Text: Default text color for menu items  -->
     <SolidColorBrush x:Key="Brush.Menu.Item.Text" Color="{DynamicResource Palette.Text.Primary}" />
     <!--  Text.Disabled: Text color for disabled menu items  -->
-    <SolidColorBrush x:Key="Brush.Menu.Item.Text.Disabled" Color="{DynamicResource Palette.Text.Primary}" Opacity="0.45" />
+    <StaticResource x:Key="Brush.Menu.Item.Text.Disabled" ResourceKey="Brush.Text.Placeholder" />
     
     <!--  Submenu Dropdown Colors  -->
     <!--  Background: Background for submenu dropdowns  -->

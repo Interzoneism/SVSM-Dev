@@ -52,7 +52,7 @@ These control the appearance of items within dropdown menus:
 | Brush Key | Purpose | Default Value |
 |-----------|---------|---------------|
 | `Brush.Menu.Item.Text` | Default text color for menu items | `Palette.Text.Primary` (#FFC8BCAE) |
-| `Brush.Menu.Item.Text.Disabled` | Text color for disabled menu items | `Palette.Text.Placeholder` (#45C8BCAE) |
+| `Brush.Menu.Item.Text.Disabled` | Text color for disabled menu items | `Brush.Text.Placeholder` (45% opacity on primary text) |
 
 **Example:** To make menu items more prominent on hover, increase the brightness of `Palette.BaseSurface.Raised`.
 
@@ -137,10 +137,10 @@ Override the specific brush you want to change:
 ### Example 3: Make disabled items more obvious
 
 ```xml
-<!-- Make disabled text more transparent -->
+<!-- Make disabled text even more transparent -->
 <SolidColorBrush 
     x:Key="Brush.Menu.Item.Text.Disabled" 
-    Opacity="0.3"
+    Opacity="0.25"
     Color="{DynamicResource Palette.Text.Primary}" />
 ```
 
