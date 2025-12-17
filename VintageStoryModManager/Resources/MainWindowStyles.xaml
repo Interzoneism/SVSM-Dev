@@ -68,15 +68,24 @@
                         x:Name="TagBorder"
                         Padding="{TemplateBinding Padding}"
                         Background="{TemplateBinding Background}">
-                        <ContentPresenter
-                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                            Content="{TemplateBinding Content}"
-                            ContentTemplate="{TemplateBinding ContentTemplate}" />
+                        <Grid>
+                            <ContentPresenter
+                                x:Name="ContentPresenter"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}" />
+                            <Border
+                                x:Name="HoverOverlay"
+                                Background="{DynamicResource Brush.Button.Primary.Background.Hover}"
+                                CornerRadius="10"
+                                IsHitTestVisible="False"
+                                Opacity="0" />
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="TagBorder" Property="Background" Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
+                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="1" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
