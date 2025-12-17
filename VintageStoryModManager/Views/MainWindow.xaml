@@ -981,8 +981,8 @@
                                                                 BorderThickness="1"
                                                                 CornerRadius="6">
                                                                 <ScrollViewer
-                                                                    Margin="0,4,0,0"
                                                                     MaxHeight="260"
+                                                                    Margin="0,4,0,0"
                                                                     HorizontalScrollBarVisibility="Disabled"
                                                                     VerticalScrollBarVisibility="Auto">
                                                                     <ScrollViewer.Resources>
@@ -1011,7 +1011,6 @@
                                                         <Border
                                                             x:Name="TagsContainer"
                                                             MaxHeight="{StaticResource IMM.TagRowMaxHeight}"
-                                                            
                                                             HorizontalAlignment="Stretch"
                                                             VerticalAlignment="Center"
                                                             ClipToBounds="True">
@@ -1230,7 +1229,8 @@
                                     HorizontalContentAlignment="Stretch"
                                     BorderBrush="#00000000"
                                     Header="Local"
-                                    Style="{DynamicResource IMM.InnerModlistsTabItemStyle}" UseLayoutRounding="True">
+                                    Style="{DynamicResource IMM.InnerModlistsTabItemStyle}"
+                                    UseLayoutRounding="True">
                                     <Grid x:Name="LocalModlistsGrid">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="*" />
@@ -1422,7 +1422,7 @@
                                                     Width="185"
                                                     Height="32"
                                                     MinWidth="165"
-                                                    Margin="10,84,0,0"
+                                                    Margin="10,10,0,0"
                                                     Padding="12,0,12,0"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
@@ -1430,10 +1430,10 @@
                                                     Content="Save Modlist (Local)" />
                                                 <Button
                                                     x:Name="InstallLocalModlistButton"
-                                                    Width="192"
+                                                    Width="185"
                                                     Height="32"
                                                     MinWidth="165"
-                                                    Margin="200,121,0,0"
+                                                    Margin="10,47,0,0"
                                                     Padding="12,0,12,0"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
@@ -1445,7 +1445,7 @@
                                                     Width="185"
                                                     Height="32"
                                                     MinWidth="165"
-                                                    Margin="10,47,0,0"
+                                                    Margin="10,121,0,0"
                                                     Padding="12,0,12,0"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
@@ -1453,22 +1453,11 @@
                                                     Content="Delete"
                                                     IsEnabled="False" />
                                                 <Button
-                                                    x:Name="OpenModlistsFolderButton"
-                                                    Width="185"
-                                                    Height="32"
-                                                    MinWidth="165"
-                                                    Margin="10,121,0,0"
-                                                    Padding="12,0,12,0"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Top"
-                                                    Click="OpenModlistsFolderButton_OnClick"
-                                                    Content="Open Modlists Folder" />
-                                                <Button
                                                     x:Name="ModifyLocalModlistButton"
                                                     Width="185"
                                                     Height="32"
                                                     MinWidth="165"
-                                                    Margin="10,10,0,0"
+                                                    Margin="10,84,0,0"
                                                     Padding="12,0,12,0"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
@@ -1476,8 +1465,8 @@
                                                     Content="Modify"
                                                     IsEnabled="False" />
                                                 <Border
-                                                    Height="106"
-                                                    Margin="200,10,256,0"
+                                                    Height="142"
+                                                    Margin="200,10,10,0"
                                                     VerticalAlignment="Top"
                                                     Background="Transparent"
                                                     BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
@@ -1526,7 +1515,8 @@
                                     x:Name="OnlineModlistsTabItem"
                                     Padding="10,4,10,4"
                                     Header="Online"
-                                    Style="{DynamicResource IMM.InnerModlistsTabItemStyle}" UseLayoutRounding="True">
+                                    Style="{DynamicResource IMM.InnerModlistsTabItemStyle}"
+                                    UseLayoutRounding="True">
                                     <Grid x:Name="OnlineModlistsGrid">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="*" />
@@ -1708,8 +1698,7 @@
                                                     Click="InstallCloudModlistButton_OnClick"
                                                     Content="Install Selected Modlist"
                                                     IsEnabled="False"
-                                                    Visibility="Visible"
-                                                     />
+                                                    Visibility="Visible" />
                                                 <Button
                                                     x:Name="SaveCloudModlistButton"
                                                     Width="185"
@@ -1746,8 +1735,8 @@
                                                     Content="Refresh" />
                                                 <Border
                                                     x:Name="OnlineModlistsDescriptions"
-                                                    Height="106"
-                                                    Margin="200,10,256,0"
+                                                    Height="142"
+                                                    Margin="200,10,10,0"
                                                     VerticalAlignment="Top"
                                                     Background="Transparent"
                                                     BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
@@ -1874,7 +1863,7 @@
             </Grid.Effect>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Rectangle
