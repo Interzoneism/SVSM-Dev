@@ -175,13 +175,13 @@
     <!--  =====================================  -->
     <!--  Menu, context menu, and tool tip UI.  -->
     <!--  =====================================  -->
-    
+
     <!--  Main Menu Bar Colors  -->
     <!--  The main menu bar at the top of the application (File, Edit, etc.)  -->
     <SolidColorBrush x:Key="Brush.Menu.Background" Color="{DynamicResource Palette.BaseSurface.Brighter}" />
     <SolidColorBrush x:Key="Brush.Menu.Border" Color="{DynamicResource Palette.Bevel.Highlight}" />
     <SolidColorBrush x:Key="Brush.Menu.Text" Color="{DynamicResource Palette.Text.Primary}" />
-    
+
     <!--  Menu Item Colors (Items in dropdowns)  -->
     <!--  Background: Default background for menu items  -->
     <SolidColorBrush x:Key="Brush.Menu.Item.Background.Normal" Color="Transparent" />
@@ -195,19 +195,19 @@
     <SolidColorBrush x:Key="Brush.Menu.Item.Text" Color="{DynamicResource Palette.Text.Primary}" />
     <!--  Text.Disabled: Text color for disabled menu items  -->
     <StaticResource x:Key="Brush.Menu.Item.Text.Disabled" ResourceKey="Brush.Text.Placeholder" />
-    
+
     <!--  Submenu Dropdown Colors  -->
     <!--  Background: Background for submenu dropdowns  -->
     <SolidColorBrush x:Key="Brush.Menu.Submenu.Background" Color="{DynamicResource Palette.BaseSurface.Brighter}" />
     <!--  Border: Border around submenu dropdowns  -->
     <SolidColorBrush x:Key="Brush.Menu.Submenu.Border" Color="{DynamicResource Palette.Bevel.Highlight}" />
-    
+
     <!--  Menu Accent Colors  -->
     <!--  Glyph: Color for arrow glyphs in submenus  -->
     <SolidColorBrush x:Key="Brush.Menu.Glyph" Color="{DynamicResource Palette.Accent.Primary}" />
     <!--  Separator: Color for separator lines between menu items  -->
     <SolidColorBrush x:Key="Brush.Menu.Separator" Color="{DynamicResource Palette.Text.Primary}" />
-    
+
     <!--  ToolTip Colors  -->
     <SolidColorBrush x:Key="Brush.ToolTip.Background" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
     <SolidColorBrush x:Key="Brush.ToolTip.Border" Color="{DynamicResource Palette.BaseSurface.Raised}" />
@@ -258,8 +258,7 @@
 
     <LinearGradientBrush x:Key="Brush.InstalledMods.Background.Gradient" StartPoint="0,0.5" EndPoint="1,0.5">
         <GradientStop Offset="0" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
-        <GradientStop Offset="0.3" Color="{DynamicResource Palette.Grey}" />
-        <GradientStop Offset="0.6" Color="{DynamicResource Palette.DarkGrey}" />
+        <GradientStop Offset="0.05" Color="{DynamicResource Palette.Grey}" />
         <GradientStop Offset="1" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
     </LinearGradientBrush>
 

@@ -745,7 +745,7 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Light}" />
         <Setter Property="BorderThickness" Value="1,1,0,0" />
-        <Setter Property="Margin" Value="2,2,2,2" />
+        <Setter Property="Margin" Value="2,1,2,1" />
         <Setter Property="UseLayoutRounding" Value="True" />
         <Setter Property="Padding">
             <Setter.Value>

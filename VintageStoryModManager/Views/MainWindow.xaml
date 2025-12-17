@@ -706,6 +706,13 @@
                                         </Style>
                                         <Style BasedOn="{StaticResource IMM.PrimaryDataGridColumnHeaderStyle}" TargetType="{x:Type DataGridColumnHeader}" />
                                     </DataGrid.Resources>
+                                    <DataGrid.Effect>
+                                        <DropShadowEffect
+                                            BlurRadius="8"
+                                            Direction="315"
+                                            Opacity="0.85"
+                                            ShadowDepth="2" />
+                                    </DataGrid.Effect>
                                     <DataGrid.DragIndicatorStyle>
                                         <Style />
                                     </DataGrid.DragIndicatorStyle>
