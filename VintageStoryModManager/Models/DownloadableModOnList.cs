@@ -81,6 +81,8 @@ public class DownloadableModOnList : INotifyPropertyChanged
 
     private bool _isInstalled;
 
+    private int _downloads30Days;
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>
@@ -136,6 +138,22 @@ public class DownloadableModOnList : INotifyPropertyChanged
             if (value == _isInstalled) return;
 
             _isInstalled = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the calculated downloads from releases in the last 30 days.
+    /// This value is computed client-side and used for sorting.
+    /// </summary>
+    public int Downloads30Days
+    {
+        get => _downloads30Days;
+        set
+        {
+            if (value == _downloads30Days) return;
+
+            _downloads30Days = value;
             OnPropertyChanged();
         }
     }
