@@ -215,10 +215,10 @@
         Opacity="0.82"
         Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
 
-    <LinearGradientBrush x:Key="Brush.ModBrowser.Background.Gradient" StartPoint="0,0.3" EndPoint="1,0.5">
+    <LinearGradientBrush x:Key="Brush.ModBrowser.Background.Gradient" StartPoint="0,0.5" EndPoint="1,0.5">
         <GradientStop Offset="0" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
         <GradientStop Offset="0.15" Color="{DynamicResource Palette.Grey}" />
-        <GradientStop Offset="0.25" Color="{DynamicResource Palette.DarkGrey}" />
+        <GradientStop Offset="0.4" Color="{DynamicResource Palette.DarkGrey}" />
         <GradientStop Offset="1" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
     </LinearGradientBrush>
 

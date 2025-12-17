@@ -5,6 +5,7 @@
     xmlns:converters="clr-namespace:VintageStoryModManager.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:design="clr-namespace:VintageStoryModManager.Design"
+    xmlns:effects="clr-namespace:LoFiEffects.WPF.Effects;assembly=LoFiEffects.WPF"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:services="clr-namespace:VintageStoryModManager.Services"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -659,7 +660,7 @@
                                 x:Name="MainBorder"
                                 Grid.Row="1"
                                 Margin="8,0,8,0"
-                                Background="{DynamicResource Brush.DataGrid.Background}"
+                                Background="{DynamicResource Brush.ModBrowser.Background.Gradient}"
                                 BorderBrush="{DynamicResource Brush.DataGrid.Background}"
                                 BorderThickness="2,2,0,0"
                                 CornerRadius="4"
@@ -1229,7 +1230,7 @@
                                     HorizontalContentAlignment="Stretch"
                                     BorderBrush="#00000000"
                                     Header="Local"
-                                    Style="{DynamicResource IMM.InnerModlistsTabItemStyle}">
+                                    Style="{DynamicResource IMM.InnerModlistsTabItemStyle}" UseLayoutRounding="True">
                                     <Grid x:Name="LocalModlistsGrid">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="*" />
@@ -1527,7 +1528,7 @@
                                     x:Name="OnlineModlistsTabItem"
                                     Padding="10,4,10,4"
                                     Header="Online"
-                                    Style="{DynamicResource IMM.InnerModlistsTabItemStyle}">
+                                    Style="{DynamicResource IMM.InnerModlistsTabItemStyle}" UseLayoutRounding="True">
                                     <Grid x:Name="OnlineModlistsGrid">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="*" />

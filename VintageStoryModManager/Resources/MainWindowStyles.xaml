@@ -43,8 +43,8 @@
                 Foreground="{DynamicResource Brush.Text.Primary}"
                 Text="{Binding}" />
         </Border>
-        
-        
+
+
     </DataTemplate>
 
     <Style x:Key="IMM.TagFilterToggleButtonStyle" TargetType="{x:Type ToggleButton}">
@@ -62,9 +62,9 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ToggleButton}">
-                    <Border 
+                    <Border
                         x:Name="TagBorder"
-                        Padding="{TemplateBinding Padding}" 
+                        Padding="{TemplateBinding Padding}"
                         Background="{TemplateBinding Background}">
                         <ContentPresenter
                             HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -982,11 +982,14 @@
     <!--  DataGrid row style for modlists (local and cloud)  -->
     <Style x:Key="IMM.ModlistsDataGridRowStyle" TargetType="{x:Type DataGridRow}">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Light}" />
+        <Setter Property="BorderThickness" Value="1,1,0,0" />
         <Setter Property="Margin" Value="10,2,10,2" />
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="Padding">
+
             <Setter.Value>
                 <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
                     <Binding Source="{StaticResource IMM.RowPaddingBase}" />
@@ -1004,25 +1007,25 @@
                         Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
-                        CornerRadius="0"
+                        CornerRadius="8"
                         SnapsToDevicePixels="True">
                         <Grid>
                             <Border
                                 x:Name="SelectionOverlay"
-                                Background="{DynamicResource Brush.Accent.Primary}"
-                                CornerRadius="0"
+                                Background="{DynamicResource Brush.ModCard.Hover.Bright}"
+                                CornerRadius="8"
                                 IsHitTestVisible="False"
                                 Opacity="0" />
                             <Border
                                 x:Name="HoverOverlay"
                                 Background="{DynamicResource Brush.Button.Primary.Background.Hover}"
-                                CornerRadius="0"
+                                CornerRadius="8"
                                 IsHitTestVisible="False"
                                 Opacity="0" />
                             <Border
                                 Padding="{TemplateBinding Padding}"
                                 Background="Transparent"
-                                CornerRadius="0">
+                                CornerRadius="8">
                                 <SelectiveScrollingGrid>
                                     <SelectiveScrollingGrid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -1043,21 +1046,17 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.1" />
-                            <Setter TargetName="RowBorder" Property="BorderBrush" Value="{DynamicResource Brush.Button.Primary.Background.Hover}" />
+                            <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.5" />
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="False">
                             <Setter TargetName="HoverOverlay" Property="Opacity" Value="0" />
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="SelectionOverlay" Property="Opacity" Value="0.25" />
+                            <Setter TargetName="SelectionOverlay" Property="Opacity" Value="0.2" />
                             <Setter TargetName="HoverOverlay" Property="Opacity" Value="0" />
-                            <Setter TargetName="RowBorder" Property="BorderBrush" Value="{DynamicResource Brush.Panel.Secondary.Background.Solid}" />
-                            <Setter TargetName="RowBorder" Property="BorderThickness" Value="0" />
                         </Trigger>
                         <Trigger Property="IsSelected" Value="False">
                             <Setter TargetName="SelectionOverlay" Property="Opacity" Value="0" />
-                            <Setter TargetName="RowBorder" Property="BorderThickness" Value="0" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
