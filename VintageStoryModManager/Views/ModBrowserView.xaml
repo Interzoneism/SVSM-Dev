@@ -135,7 +135,7 @@
                         Text="{Binding TextFilter, UpdateSourceTrigger=PropertyChanged}"
                         UseLayoutRounding="True" />
                     <ComboBox
-                        Width="160"
+                        Width="200"
                         Height="32"
                         Margin="4,0,4,0"
                         VerticalContentAlignment="Center"
@@ -293,8 +293,8 @@
                 </WrapPanel>
                 <StackPanel
                     Grid.Column="1"
-                    Margin="0,0,8,4"
-                    VerticalAlignment="Bottom"
+                    Margin="0,4,8,0"
+                    VerticalAlignment="Top"
                     Orientation="Horizontal">
                     <Button
                         Width="32"

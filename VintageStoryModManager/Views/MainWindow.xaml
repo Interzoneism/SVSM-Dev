@@ -15,7 +15,7 @@
     Title="Simple VS Manager"
     Width="1558"
     Height="719"
-    MinWidth="1200"
+    MinWidth="1000"
     MinHeight="775"
     d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData}}"
     AllowDrop="True"
@@ -1476,10 +1476,8 @@
                                                     Content="Modify"
                                                     IsEnabled="False" />
                                                 <Border
-                                                    Width="942"
                                                     Height="106"
-                                                    Margin="200,10,0,0"
-                                                    HorizontalAlignment="Left"
+                                                    Margin="200,10,256,0"
                                                     VerticalAlignment="Top"
                                                     Background="Transparent"
                                                     BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
@@ -1697,29 +1695,27 @@
                                                 x:Name="OnlineModlistsButtons"
                                                 Margin="0,0,0,8"
                                                 IsEnabled="{Binding CanAccessCloudModlists}">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="197*" />
-                                                    <ColumnDefinition Width="955*" />
-                                                </Grid.ColumnDefinitions>
+
                                                 <Button
                                                     x:Name="InstallCloudModlistButton"
-                                                    Width="198"
+                                                    Width="185"
                                                     Height="32"
                                                     MinWidth="185"
-                                                    Margin="10,35,0,0"
+                                                    Margin="10,47,0,0"
                                                     Padding="12,0,12,0"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
                                                     Click="InstallCloudModlistButton_OnClick"
                                                     Content="Install Selected Modlist"
                                                     IsEnabled="False"
-                                                    Visibility="Visible" />
+                                                    Visibility="Visible"
+                                                     />
                                                 <Button
                                                     x:Name="SaveCloudModlistButton"
-                                                    Width="198"
+                                                    Width="185"
                                                     Height="32"
                                                     MinWidth="165"
-                                                    Margin="10,109,0,0"
+                                                    Margin="10,121,0,0"
                                                     Padding="12,0,12,0"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
@@ -1727,10 +1723,10 @@
                                                     Content="Save Modlist (Online)" />
                                                 <Button
                                                     x:Name="ModifyCloudModlistsButton"
-                                                    Width="198"
+                                                    Width="185"
                                                     Height="32"
                                                     MinWidth="165"
-                                                    Margin="10,72,0,0"
+                                                    Margin="10,84,0,0"
                                                     Padding="12,0,12,0"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
@@ -1739,10 +1735,10 @@
                                                 <Button
                                                     x:Name="RefreshCloudModlistsButton"
                                                     Grid.Column="1"
-                                                    Width="109"
+                                                    Width="185"
                                                     Height="32"
                                                     MinWidth="100"
-                                                    Margin="836,109,0,0"
+                                                    Margin="10,10,0,0"
                                                     Padding="12,0,12,0"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
@@ -1750,12 +1746,9 @@
                                                     Content="Refresh" />
                                                 <Border
                                                     x:Name="OnlineModlistsDescriptions"
-                                                    Grid.Column="1"
-                                                    Width="821"
-                                                    Height="131"
-                                                    Margin="3,0,0,0"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Center"
+                                                    Height="106"
+                                                    Margin="200,10,256,0"
+                                                    VerticalAlignment="Top"
                                                     Background="Transparent"
                                                     BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
                                                     BorderThickness="0,0,2,2"
@@ -1881,7 +1874,7 @@
             </Grid.Effect>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
-                <ColumnDefinition Width="Auto" MinWidth="729" />
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <Rectangle
@@ -1977,8 +1970,8 @@
                 Grid.Column="1"
                 Width="280"
                 Height="32"
-                Margin="439,0,0,10"
-                HorizontalAlignment="Left"
+                Margin="0,0,10,10"
+                HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
                 Orientation="Horizontal">
                 <Button

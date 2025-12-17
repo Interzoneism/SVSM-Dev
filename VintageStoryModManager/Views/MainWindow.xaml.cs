@@ -11829,20 +11829,6 @@ public partial class MainWindow : Window
         if (SelectedModlistDescription is not null)
             SelectedModlistDescription.Text = entry?.Description ?? string.Empty;
 
-        if (InstallCloudModlistButton is not null)
-        {
-            if (entry is null)
-            {
-                InstallCloudModlistButton.Visibility = Visibility.Collapsed;
-                InstallCloudModlistButton.ToolTip = null;
-            }
-            else
-            {
-                InstallCloudModlistButton.Visibility = Visibility.Visible;
-                InstallCloudModlistButton.ToolTip = $"Install \"{entry.DisplayName}\"";
-            }
-        }
-
         UpdateCloudModlistControlsEnabledState();
     }
 
