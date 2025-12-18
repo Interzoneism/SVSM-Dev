@@ -172,8 +172,9 @@ public class DownloadableModOnList : INotifyPropertyChanged
         Comments > 10000 ? $"{Comments / 1000}K" : Comments.ToString();
 
     /// <summary>
-    /// Gets the database-hosted logo URL.
-    /// Prioritizes LogoFileDatabase (higher quality) if available, otherwise falls back to Logo field.
+    /// Gets the logo URL for display.
+    /// Prioritizes LogoFileDatabase (high-quality thumbnail from individual API call) if available,
+    /// otherwise falls back to Logo (lower-quality thumbnail from initial batch API response).
     /// </summary>
     public string LogoUrl => LogoFileDatabase ?? Logo ?? string.Empty;
 

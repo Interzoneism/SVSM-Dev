@@ -1649,6 +1649,7 @@ public partial class MainWindow : Window
         if (sender is not MenuItem menuItem) return;
 
         _userConfiguration.SetUseCorrectThumbnails(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.UseCorrectThumbnails;
     }
 
     private void LogModUpdateMenuItem_OnClick(object sender, RoutedEventArgs e)
