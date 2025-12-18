@@ -3039,6 +3039,11 @@ public partial class MainWindow : Window
 
         var isVisible = isSelected && ModBrowserView?.IsVisible == true && DatabaseTab?.IsVisible == true;
         _modBrowserViewModel.SetTabVisibility(isVisible);
+
+        if (isVisible && ModBrowserView?.IsModBrowserInitialized == true)
+        {
+            _ = _modBrowserViewModel.RefreshSearchAsync();
+        }
     }
 
     private void SyncMiddleTabControlToViewModel()
