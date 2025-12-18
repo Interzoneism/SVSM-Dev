@@ -3037,7 +3037,10 @@ public partial class MainWindow : Window
     {
         if (_modBrowserViewModel == null) return;
 
-        var isVisible = isSelected && ModBrowserView?.IsVisible == true && DatabaseTab?.IsVisible == true;
+        // The ModBrowser view can report IsVisible = false immediately after switching tabs,
+        // which prevents new searches from running. Rely only on tab selection state here so
+        // the view model always considers the tab visible while it is selected.
+        var isVisible = isSelected && DatabaseTab?.IsVisible == true;
         _modBrowserViewModel.SetTabVisibility(isVisible);
 
         if (isVisible && ModBrowserView?.IsModBrowserInitialized == true)
