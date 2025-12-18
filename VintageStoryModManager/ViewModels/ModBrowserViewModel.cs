@@ -29,6 +29,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private const double AuthorWeight = 4.5;
     private const double SummaryWeight = 2.5;
     private bool _isInitializing;
+    private bool _isTabVisible;
     private Func<DownloadableMod, Task>? _installModCallback;
     private readonly HashSet<int> _userReportsLoaded = new();
     private readonly HashSet<int> _modsWithLoadedLogos = new();
@@ -173,6 +174,19 @@ public partial class ModBrowserViewModel : ObservableObject
     public void SetInstallModCallback(Func<DownloadableMod, Task> callback)
     {
         _installModCallback = callback;
+    }
+
+    /// <summary>
+    /// Updates whether the Mod Browser tab is currently visible to the user.
+    /// </summary>
+    public void SetTabVisibility(bool isVisible)
+    {
+        _isTabVisible = isVisible;
+
+        if (!isVisible)
+        {
+            _searchCts?.Cancel();
+        }
     }
 
     private async void OnFilterCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -369,6 +383,12 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task SearchModsAsync()
     {
+        if (!_isTabVisible)
+        {
+            System.Diagnostics.Debug.WriteLine("[ModBrowser] Search skipped because tab is not visible.");
+            return;
+        }
+
         // Cancel any pending search
         _searchCts?.Cancel();
         _searchCts = new CancellationTokenSource();
