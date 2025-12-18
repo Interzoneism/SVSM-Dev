@@ -103,10 +103,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _isBusy;
     private bool _isCompactView;
     private bool _isErrorStatus;
+    private bool _isFastCheckInProgress;
     private int _isFastCheckRunning;
     private bool _isInstalledTagRefreshPending;
     private bool _isLoadingModDetails;
     private bool _isLoadingMods;
+    private bool _isModDetailsProgressVisible;
     private double _modDetailsProgress;
     private int _modDetailsRefreshCompletedWork;
     private int _modDetailsRefreshTotalWork;
@@ -265,7 +267,26 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         get => _isLoadingModDetails;
         private set
         {
-            if (SetProperty(ref _isLoadingModDetails, value)) RecalculateIsBusy();
+            if (SetProperty(ref _isLoadingModDetails, value))
+            {
+                RecalculateIsBusy();
+                UpdateModDetailsProgressVisibility();
+            }
+        }
+    }
+
+    public bool IsModDetailsProgressVisible
+    {
+        get => _isModDetailsProgressVisible;
+        private set => SetProperty(ref _isModDetailsProgressVisible, value);
+    }
+
+    public bool IsFastCheckInProgress
+    {
+        get => _isFastCheckInProgress;
+        private set
+        {
+            if (SetProperty(ref _isFastCheckInProgress, value)) UpdateModDetailsProgressVisibility();
         }
     }
 
@@ -546,7 +567,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // Defer non-critical property changes to avoid blocking UI thread during tab switch
         Application.Current?.Dispatcher.BeginInvoke(() =>
         {
-            FastCheck();
+            if (_viewSection == ViewSection.MainTab) FastCheck();
         }, DispatcherPriority.Background);
     }
 
@@ -567,13 +588,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         try
         {
+            IsFastCheckInProgress = true;
+
             while (_hasPendingFastCheck)
             {
                 _hasPendingFastCheck = false;
 
                 if (InternetAccessManager.IsInternetAccessDisabled) break;
 
-                var updateCandidates = await CheckForNewModReleasesAsync(CancellationToken.None)
+                var updateCandidates = await CheckForNewModReleasesAsync(CancellationToken.None, false)
                     .ConfigureAwait(false);
 
                 if (updateCandidates.Count > 0) QueueDatabaseInfoRefresh(updateCandidates, true);
@@ -585,6 +608,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
         finally
         {
+            IsFastCheckInProgress = false;
+
             Interlocked.Exchange(ref _isFastCheckRunning, 0);
 
             if (_hasPendingFastCheck && !InternetAccessManager.IsInternetAccessDisabled) FastCheck();
@@ -618,7 +643,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         FastCheck();
     }
 
-    private async Task<IReadOnlyList<ModEntry>> CheckForNewModReleasesAsync(CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<ModEntry>> CheckForNewModReleasesAsync(
+        CancellationToken cancellationToken,
+        bool showProgress = true)
     {
         var entries = new List<ModEntry>();
         var completedChecks = 0;
@@ -646,8 +673,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             var updateCandidates = new List<ModEntry>();
             var processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            OnModDetailsRefreshEnqueued(entries.Count, "Checking for mod updates...");
-            modDetailsCheckEnqueued = true;
+            if (showProgress)
+            {
+                OnModDetailsRefreshEnqueued(entries.Count, "Checking for mod updates...");
+                modDetailsCheckEnqueued = true;
+            }
 
             foreach (var entry in entries)
             {
@@ -2630,6 +2660,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             IsLoadingModDetails = isLoading;
         }
+    }
+
+    private void UpdateModDetailsProgressVisibility()
+    {
+        IsModDetailsProgressVisible = _isLoadingModDetails && !_isFastCheckInProgress;
     }
 
 
