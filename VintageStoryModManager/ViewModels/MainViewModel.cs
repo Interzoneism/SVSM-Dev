@@ -107,6 +107,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _isInstalledTagRefreshPending;
     private bool _isLoadingModDetails;
     private bool _isLoadingMods;
+    private double _modDetailsProgress;
+    private int _modDetailsRefreshCompletedWork;
+    private int _modDetailsRefreshTotalWork;
+    private string _modDetailsProgressStage = string.Empty;
+    private string _modDetailsStatusText = string.Empty;
     private double _loadingProgress;
     private string _loadingStatusText = string.Empty;
     private bool _isModDetailsRefreshForced;
@@ -262,6 +267,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             if (SetProperty(ref _isLoadingModDetails, value)) RecalculateIsBusy();
         }
+    }
+
+    public double ModDetailsProgress
+    {
+        get => _modDetailsProgress;
+        private set => SetProperty(ref _modDetailsProgress, value);
+    }
+
+    public string ModDetailsStatusText
+    {
+        get => _modDetailsStatusText;
+        private set => SetProperty(ref _modDetailsStatusText, value);
     }
 
     public bool IsCompactView
@@ -603,9 +620,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private async Task<IReadOnlyList<ModEntry>> CheckForNewModReleasesAsync(CancellationToken cancellationToken)
     {
+        var entries = new List<ModEntry>();
+        var completedChecks = 0;
+        var modDetailsCheckEnqueued = false;
+
         try
         {
-            var entries = await InvokeOnDispatcherAsync(
+            entries = await InvokeOnDispatcherAsync(
                 () =>
                 {
                     var snapshot = new List<ModEntry>(_modEntriesBySourcePath.Count);
@@ -625,9 +646,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             var updateCandidates = new List<ModEntry>();
             var processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+            OnModDetailsRefreshEnqueued(entries.Count, "Checking for mod updates...");
+            modDetailsCheckEnqueued = true;
+
             foreach (var entry in entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                completedChecks++;
 
                 var modId = entry.ModId;
                 if (!processed.Add(modId)) continue;
@@ -659,6 +685,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         catch
         {
             return Array.Empty<ModEntry>();
+        }
+        finally
+        {
+            if (modDetailsCheckEnqueued)
+            {
+                var remaining = Math.Max(0, entries.Count - completedChecks);
+                if (remaining > 0) completedChecks += remaining;
+
+                OnModDetailsRefreshCompleted(completedChecks);
+            }
         }
     }
 
@@ -2614,7 +2650,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return Interlocked.CompareExchange(ref _pendingModDetailsRefreshCount, 0, 0) > 0;
     }
 
-    private void OnModDetailsRefreshEnqueued(int count)
+    private void OnModDetailsRefreshEnqueued(int count, string? statusText = null)
     {
         if (count <= 0) return;
 
@@ -2625,16 +2661,31 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
+        if (newCount == count) ResetModDetailsProgress();
+
         EnsureModDetailsBusyScope();
         UpdateIsLoadingModDetails(true);
+
+        AddModDetailsWork(count, statusText);
 
         if (newCount == count || !_isModDetailsStatusActive)
             SetStatus(BuildModDetailsLoadingStatusMessage(), false, true);
     }
 
-    private void OnModDetailsRefreshCompleted()
+    private void OnModDetailsRefreshCompleted(int completedCount = 1)
     {
-        var newCount = Interlocked.Decrement(ref _pendingModDetailsRefreshCount);
+        if (completedCount <= 0) return;
+
+        var newCount = Interlocked.Add(ref _pendingModDetailsRefreshCount, -completedCount);
+        if (newCount < 0)
+        {
+            Interlocked.Exchange(ref _pendingModDetailsRefreshCount, 0);
+            newCount = 0;
+        }
+
+        Interlocked.Add(ref _modDetailsRefreshCompletedWork, completedCount);
+        UpdateModDetailsProgress();
+
         if (newCount <= 0)
         {
             Interlocked.Exchange(ref _pendingModDetailsRefreshCount, 0);
@@ -2642,6 +2693,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             UpdateIsLoadingModDetails(false);
 
             if (_isModDetailsStatusActive) SetStatus(BuildModDetailsReadyStatusMessage(), false);
+
+            ResetModDetailsProgress();
         }
     }
 
@@ -2672,6 +2725,47 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (_hasShownModDetailsLoadingStatus) return $"Loaded {TotalMods} mods. Mod details up to date.";
 
         return $"Loaded {TotalMods} mods.";
+    }
+
+    private void AddModDetailsWork(int count, string? statusText)
+    {
+        if (count <= 0) return;
+
+        Interlocked.Add(ref _modDetailsRefreshTotalWork, count);
+        UpdateModDetailsProgress(statusText);
+    }
+
+    private void UpdateModDetailsProgress(string? statusText = null)
+    {
+        if (!string.IsNullOrWhiteSpace(statusText)) _modDetailsProgressStage = statusText;
+
+        var total = Interlocked.CompareExchange(ref _modDetailsRefreshTotalWork, 0, 0);
+        if (total <= 0)
+        {
+            ModDetailsProgress = 0;
+            ModDetailsStatusText = string.Empty;
+            return;
+        }
+
+        var completed = Interlocked.CompareExchange(ref _modDetailsRefreshCompletedWork, 0, 0);
+        completed = Math.Clamp(completed, 0, total);
+
+        ModDetailsProgress = (double)completed / total * 100;
+
+        var baseText = string.IsNullOrWhiteSpace(_modDetailsProgressStage)
+            ? BuildModDetailsLoadingStatusMessage()
+            : _modDetailsProgressStage;
+
+        ModDetailsStatusText = $"{baseText} ({completed}/{total})";
+    }
+
+    private void ResetModDetailsProgress()
+    {
+        Interlocked.Exchange(ref _modDetailsRefreshCompletedWork, 0);
+        Interlocked.Exchange(ref _modDetailsRefreshTotalWork, 0);
+        _modDetailsProgressStage = string.Empty;
+        ModDetailsProgress = 0;
+        ModDetailsStatusText = string.Empty;
     }
 
     private Task UpdateSearchResultsAsync(IReadOnlyList<ModListItemViewModel> items,
