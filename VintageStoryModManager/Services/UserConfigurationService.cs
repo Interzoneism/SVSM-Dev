@@ -57,9 +57,9 @@ public sealed class UserConfigurationService
             ["Palette.Bevel.Highlight"] = "#80FFFFFF",
             ["Palette.Bevel.Shadow"] = "#40000000",
             ["Palette.Overlay.HoverTint"] = "#10FFFFFF",
-            ["Palette.White"] = "#FFFFFCF5",
-            ["Palette.Grey"] = "#FF867E74",
-            ["Palette.DarkGrey"] = "#FF6E675F",
+            ["Palette.White"] = "#FFfffcf5",
+            ["Palette.Grey"] = "#FF867e74",
+            ["Palette.DarkGrey"] = "#FF6e675f",
             ["Palette.Error"] = "#FFED4337"
         };
 
