@@ -7273,6 +7273,9 @@ public partial class MainWindow : Window
         else
             await Task.Yield();
 
+        if (_userConfiguration.DisableAutoRefresh)
+            _viewModel.EnableUserReportFetching(true);
+
         try
         {
             RefreshModDetailsOnly();
