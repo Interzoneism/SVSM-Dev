@@ -457,6 +457,13 @@
                             Header="Enable server options"
                             IsCheckable="True"
                             Style="{StaticResource ToggleMenuItemStyle}" />
+                        <MenuItem
+                            x:Name="UseCorrectThumbnailsMenuItem"
+                            Padding="12,6"
+                            Click="UseCorrectThumbnailsMenuItem_OnClick"
+                            Header="Correct thumbnails (slower but better quality)"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}" />
                         <MenuItem Padding="12,6" Header="Enable logging for...">
                             <MenuItem
                                 x:Name="LogModUpdateMenuItem"
