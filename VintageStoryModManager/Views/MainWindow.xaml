@@ -1963,6 +1963,42 @@
                             Minimum="0"
                             Value="{Binding LoadingProgress, Mode=OneWay}" />
                     </StackPanel>
+
+                    <!--  Mod details loading progress display  -->
+                    <StackPanel Margin="8,4" VerticalAlignment="Center">
+                        <StackPanel.Style>
+                            <Style TargetType="{x:Type StackPanel}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsLoadingModDetails}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsLoadingMods}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsModlistInstallInProgress, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+
+                        <TextBlock
+                            Margin="0,0,0,4"
+                            HorizontalAlignment="Center"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource Brush.Text.Primary}"
+                            Text="{Binding ModDetailsStatusText}" />
+
+                        <ProgressBar
+                            Height="8"
+                            Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                            Foreground="{DynamicResource Brush.Accent.Primary}"
+                            Maximum="100"
+                            Minimum="0"
+                            Value="{Binding ModDetailsProgress, Mode=OneWay}" />
+                    </StackPanel>
                 </Grid>
             </Border>
 
