@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -123,6 +124,28 @@ public partial class ThemePaletteEditorDialog : Window
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void PaletteComboBox_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.ComboBox comboBox) return;
+        if (comboBox.SelectedItem is not System.Windows.Controls.ComboBoxItem selectedItem) return;
+        if (selectedItem.Tag is not string themeTag) return;
+
+        if (!Enum.TryParse<ColorTheme>(themeTag, true, out var theme)) return;
+
+        var palette = UserConfigurationService.GetDefaultThemePalette(theme);
+        
+        foreach (var pair in palette)
+        {
+            if (_configuration.TrySetThemePaletteColor(pair.Key, pair.Value))
+            {
+                var entry = PaletteItems.FirstOrDefault(item => item.Key == pair.Key);
+                entry?.UpdateFromHex(pair.Value);
+            }
+        }
+        
+        ApplyTheme();
     }
 
     private sealed class Win32Window : FormsIWin32Window
