@@ -15,6 +15,8 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
 {
     private bool _isInitialized;
 
+    public bool IsModBrowserInitialized => _isInitialized;
+
     public ModBrowserView()
     {
         InitializeComponent();
