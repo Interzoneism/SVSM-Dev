@@ -377,22 +377,69 @@ public class ModApiService : IModApiService
             var totalBytesRead = 0L;
             int bytesRead;
 
-            while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
+            try
             {
-                await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
-                totalBytesRead += bytesRead;
-
-                if (totalBytes > 0)
+                while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
                 {
-                    progress?.Report((double)totalBytesRead / totalBytes * 100);
+                    await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                    totalBytesRead += bytesRead;
+
+                    if (totalBytes > 0)
+                    {
+                        progress?.Report((double)totalBytesRead / totalBytes * 100);
+                    }
                 }
+            }
+            catch (IOException ioEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] IOException during download from {downloadUrl}");
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] Bytes read: {totalBytesRead}/{totalBytes}");
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] IOException details: {ioEx.Message}");
+                if (ioEx.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ModApiService] Inner exception: {ioEx.InnerException.GetType().Name} - {ioEx.InnerException.Message}");
+                }
+                throw;
+            }
+            catch (ObjectDisposedException odEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] ObjectDisposedException during download from {downloadUrl} - stream was disposed");
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] Object name: {odEx.ObjectName}");
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] Bytes read before disposal: {totalBytesRead}/{totalBytes}");
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] This may indicate cancellation or premature stream closure");
+                throw;
             }
 
             return true;
         }
+        catch (OperationCanceledException)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Download cancelled by user or timeout: {downloadUrl}");
+            return false;
+        }
+        catch (IOException ioEx)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] IOException establishing connection to {downloadUrl}: {ioEx.Message}");
+            if (ioEx.InnerException != null)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ModApiService] Inner exception: {ioEx.InnerException.GetType().Name} - {ioEx.InnerException.Message}");
+            }
+            return false;
+        }
+        catch (ObjectDisposedException odEx)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] ObjectDisposedException: {odEx.ObjectName} was disposed while downloading {downloadUrl}");
+            return false;
+        }
+        catch (HttpRequestException httpEx)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] HTTP request error downloading mod from {downloadUrl}: {httpEx.Message}");
+            return false;
+        }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error downloading mod: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Unexpected error downloading mod from {downloadUrl}: {ex.GetType().Name} - {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ModApiService] Exception details: {ex}");
             return false;
         }
     }
