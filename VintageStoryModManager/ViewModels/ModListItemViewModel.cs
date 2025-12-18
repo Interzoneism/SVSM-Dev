@@ -68,6 +68,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private bool _userReportHasError;
     private string? _userReportTooltip;
     private string? _versionWarningMessage;
+    private bool _hasInitializedUserReportState;
     
     // Cached tag display string to avoid repeated string.Join allocations
     private string? _cachedDatabaseTagsDisplay;
@@ -84,7 +85,8 @@ public sealed class ModListItemViewModel : ObservableObject
         string? installedGameVersion = null,
         bool isInstalled = false,
         Func<string?, string?, bool>? shouldSkipVersion = null,
-        Func<bool>? requireExactVersionMatch = null)
+        Func<bool>? requireExactVersionMatch = null,
+        bool initializeUserReportState = true)
     {
         ArgumentNullException.ThrowIfNull(entry);
         _activationHandler = activationHandler ?? throw new ArgumentNullException(nameof(activationHandler));
@@ -190,7 +192,16 @@ public sealed class ModListItemViewModel : ObservableObject
         UpdateNewerReleaseChangelogs();
         UpdateStatusFromErrors();
         UpdateTooltip();
-        InitializeUserReportState(_installedGameVersion, UserReportModVersion);
+        if (initializeUserReportState)
+        {
+            InitializeUserReportState(_installedGameVersion, UserReportModVersion);
+        }
+        else
+        {
+            _userReportDisplay = string.Empty;
+            _userReportTooltip = null;
+            _hasInitializedUserReportState = false;
+        }
         _searchIndex = BuildSearchIndex(entry, location);
     }
 
@@ -669,6 +680,8 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private void InitializeUserReportState(string? installedGameVersion, string? modVersion)
     {
+        _hasInitializedUserReportState = true;
+
         if (string.IsNullOrWhiteSpace(installedGameVersion) || string.IsNullOrWhiteSpace(modVersion))
         {
             SetUserReportUnavailable("User reports require a known Vintage Story and mod version.");
@@ -680,6 +693,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public void SetUserReportLoading()
     {
+        _hasInitializedUserReportState = true;
         ClearUserReportSummary();
         UserReportHasError = false;
         IsUserReportLoading = true;
@@ -689,6 +703,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public void SetUserReportOffline()
     {
+        _hasInitializedUserReportState = true;
         IsUserReportLoading = false;
         UserReportHasError = false;
         UserReportDisplay = "Offline";
@@ -697,6 +712,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public void SetUserReportUnavailable(string message)
     {
+        _hasInitializedUserReportState = true;
         ClearUserReportSummary();
         UserReportHasError = false;
         IsUserReportLoading = false;
@@ -706,6 +722,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public void SetUserReportError(string message)
     {
+        _hasInitializedUserReportState = true;
         IsUserReportLoading = false;
         UserReportHasError = true;
         UserReportTooltip = string.IsNullOrWhiteSpace(message)
@@ -718,6 +735,7 @@ public sealed class ModListItemViewModel : ObservableObject
     public void ApplyUserReportSummary(ModVersionVoteSummary summary)
     {
         UserReportSummary = summary ?? throw new ArgumentNullException(nameof(summary));
+        _hasInitializedUserReportState = true;
         IsUserReportLoading = false;
         UserReportHasError = false;
         UserReportDisplay = BuildUserReportDisplay(summary);
@@ -741,6 +759,20 @@ public sealed class ModListItemViewModel : ObservableObject
         OnPropertyChanged(nameof(UserReportSummary));
         OnPropertyChanged(nameof(UserReportCounts));
         OnPropertyChanged(nameof(UserVoteOption));
+    }
+
+    public void EnsureUserReportStateInitialized()
+    {
+        if (_hasInitializedUserReportState) return;
+
+        if (Application.Current?.Dispatcher.CheckAccess() == true)
+        {
+            InitializeUserReportState(_installedGameVersion, UserReportModVersion);
+        }
+        else
+        {
+            Application.Current?.Dispatcher.Invoke(() => EnsureUserReportStateInitialized());
+        }
     }
 
     private static string BuildUserReportDisplay(ModVersionVoteSummary? summary)

@@ -315,8 +315,8 @@ public class StringToImageSourceConverter : IValueConverter
 
 /// <summary>
 /// Multi-value converter for "No results" visibility.
-/// Shows "No results" only when: not searching AND not processing AND count is zero.
-/// values[0] = IsSearching (bool), values[1] = count (int or ICollection), values[2] = IsProcessing (bool)
+/// Shows "No results" only when: not searching AND count is zero.
+/// values[0] = IsSearching (bool), values[1] = count (int or ICollection)
 /// </summary>
 public class NoResultsVisibilityConverter : IMultiValueConverter
 {
@@ -332,37 +332,9 @@ public class NoResultsVisibilityConverter : IMultiValueConverter
             ICollection c => c.Count,
             _ => 0
         };
-        
-        // Check if processing (values[2] if available, otherwise assume not processing)
-        var isProcessing = values.Length > 2 && values[2] != DependencyProperty.UnsetValue && values[2] is bool p && p;
 
-        // Only show "No results" when not searching AND not processing AND count is zero
-        return !isSearching && !isProcessing && count == 0 ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-    {
-        throw new NotSupportedException();
-    }
-}
-
-/// <summary>
-/// Multi-value converter for loading indicator visibility.
-/// Shows loading indicator when: searching OR processing.
-/// values[0] = IsSearching (bool), values[1] = IsProcessing (bool)
-/// </summary>
-public class LoadingIndicatorVisibilityConverter : IMultiValueConverter
-{
-    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-    {
-        if (values.Length < 2 || values[0] == DependencyProperty.UnsetValue || values[1] == DependencyProperty.UnsetValue)
-            return Visibility.Collapsed;
-
-        var isSearching = values[0] is bool s && s;
-        var isProcessing = values[1] is bool p && p;
-
-        // Show loading indicator when searching OR processing
-        return isSearching || isProcessing ? Visibility.Visible : Visibility.Collapsed;
+        // Only show "No results" when not searching AND count is zero
+        return !isSearching && count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)

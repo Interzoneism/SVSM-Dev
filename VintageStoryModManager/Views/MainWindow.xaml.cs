@@ -2506,6 +2506,8 @@ public partial class MainWindow : Window
 
             ModBrowserView.DataContext = _modBrowserViewModel;
 
+            UpdateModBrowserTabVisibilityState(DatabaseTab?.IsSelected == true);
+
             // Set up votes cache watcher to refresh user reports when cache changes
             InitializeVotesCacheWatcher();
         }
@@ -2993,9 +2995,12 @@ public partial class MainWindow : Window
 
     private async void MiddleTabControl_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (sender is not TabControl tabControl) return;
+
+        UpdateModBrowserTabVisibilityState(Equals(tabControl.SelectedItem, DatabaseTab));
+
         if (_isUpdatingMiddleTabSelection) return;
         if (_viewModel is null) return;
-        if (sender is not TabControl tabControl) return;
 
         if (Equals(tabControl.SelectedItem, MainTab))
         {
@@ -3026,6 +3031,14 @@ public partial class MainWindow : Window
             if (_viewModel.ShowModlistTabCommand?.CanExecute(null) == true)
                 _viewModel.ShowModlistTabCommand.Execute(null);
         }
+    }
+
+    private void UpdateModBrowserTabVisibilityState(bool isSelected)
+    {
+        if (_modBrowserViewModel == null) return;
+
+        var isVisible = isSelected && ModBrowserView?.IsVisible == true && DatabaseTab?.IsVisible == true;
+        _modBrowserViewModel.SetTabVisibility(isVisible);
     }
 
     private void SyncMiddleTabControlToViewModel()
@@ -7272,6 +7285,9 @@ public partial class MainWindow : Window
             await Dispatcher.Yield(DispatcherPriority.Background);
         else
             await Task.Yield();
+
+        if (_userConfiguration.DisableAutoRefresh)
+            _viewModel.EnableUserReportFetching(true);
 
         try
         {

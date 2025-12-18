@@ -29,7 +29,6 @@
         <converters:BooleanToBrushConverter x:Key="BoolToBrush" />
         <converters:IconKeyToGeometryConverter x:Key="IconKeyToGeometry" />
         <converters:NoResultsVisibilityConverter x:Key="NoResultsVisibility" />
-        <converters:LoadingIndicatorVisibilityConverter x:Key="LoadingIndicatorVisibility" />
         <converters:FavoriteButtonVisibilityConverter x:Key="FavoriteButtonVisibility" />
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility" />
         <converters:FavoriteButtonShouldShowConverter x:Key="FavoriteButtonShouldShow" />
@@ -356,13 +355,8 @@
                     <!--  Loading Indicator  -->
                     <StackPanel
                         HorizontalAlignment="Center"
-                        VerticalAlignment="Center">
-                        <StackPanel.Visibility>
-                            <MultiBinding Converter="{StaticResource LoadingIndicatorVisibility}">
-                                <Binding Path="IsSearching" />
-                                <Binding Path="IsProcessing" />
-                            </MultiBinding>
-                        </StackPanel.Visibility>
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsSearching, Converter={StaticResource BoolToVisibility}}">
                         <!--  Progress Bar  -->
                         <ui:ProgressBar
                             Width="300"
@@ -387,7 +381,6 @@
                             <MultiBinding Converter="{StaticResource NoResultsVisibility}">
                                 <Binding Path="IsSearching" />
                                 <Binding Path="ModsList.Count" />
-                                <Binding Path="IsProcessing" />
                             </MultiBinding>
                         </TextBlock.Visibility>
                     </TextBlock>
