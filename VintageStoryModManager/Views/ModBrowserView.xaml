@@ -29,7 +29,6 @@
         <converters:BooleanToBrushConverter x:Key="BoolToBrush" />
         <converters:IconKeyToGeometryConverter x:Key="IconKeyToGeometry" />
         <converters:NoResultsVisibilityConverter x:Key="NoResultsVisibility" />
-        <converters:LoadingIndicatorVisibilityConverter x:Key="LoadingIndicatorVisibility" />
         <converters:FavoriteButtonVisibilityConverter x:Key="FavoriteButtonVisibility" />
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility" />
         <converters:FavoriteButtonShouldShowConverter x:Key="FavoriteButtonShouldShow" />

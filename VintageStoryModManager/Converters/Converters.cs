@@ -344,31 +344,6 @@ public class NoResultsVisibilityConverter : IMultiValueConverter
 }
 
 /// <summary>
-/// Multi-value converter for loading indicator visibility.
-/// Shows loading indicator when searching is active.
-/// Note: This converter is kept for potential future use but is currently not used in the UI.
-/// The UI now uses a simple BoolToVisibility converter with IsSearching.
-/// </summary>
-public class LoadingIndicatorVisibilityConverter : IMultiValueConverter
-{
-    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-    {
-        if (values.Length < 1 || values[0] == DependencyProperty.UnsetValue)
-            return Visibility.Collapsed;
-
-        var isSearching = values[0] is bool s && s;
-
-        // Show loading indicator when searching
-        return isSearching ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-    {
-        throw new NotSupportedException();
-    }
-}
-
-/// <summary>
 /// Multi-value converter for favorite button visibility.
 /// Shows button when: card is hovered OR mod is favorited.
 /// values[0] = IsMouseOver (bool), values[1] = ModId (object), values[2] = FavoriteMods collection
