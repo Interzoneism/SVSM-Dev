@@ -33,6 +33,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private readonly HashSet<int> _userReportsLoaded = new();
     private readonly HashSet<int> _modsWithLoadedLogos = new();
     private readonly HashSet<string> _normalizedInstalledModIds = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<int, int> _downloads30DaysCache = new();
     private long _lastLoadMoreTicks;
     private const int LoadMoreThrottleMs = 300;
 
@@ -417,16 +418,15 @@ public partial class ModBrowserViewModel : ObservableObject
             }
             else if (isDownloads30DaysSort)
             {
-                // Calculate 30-day downloads for all mods and sort
-                LoadingMessage = "Processing downloads...";
+                // Calculate 30-day downloads for ALL mods to properly sort them
+                LoadingMessage = "Calculating 30-day downloads...";
                 await PopulateDownloads30DaysAsync(filteredMods, token);
 
                 if (token.IsCancellationRequested)
                     return;
 
-                filteredMods = OrderByDirection == "desc"
-                    ? filteredMods.OrderByDescending(m => m.Downloads30Days).ToList()
-                    : filteredMods.OrderBy(m => m.Downloads30Days).ToList();
+                // Sort by Downloads30Days using helper method
+                filteredMods = SortByDownloads30Days(filteredMods);
             }
 
             // Clear tracking before new search
@@ -434,12 +434,15 @@ public partial class ModBrowserViewModel : ObservableObject
             _modsWithLoadedLogos.Clear();
 
             // Pre-populate thumbnails for initially visible mods to prevent flickering on first load
-            var initialVisibleCount = Math.Min(DefaultLoadedMods, filteredMods.Count);
-            var initialVisibleMods = filteredMods.Take(initialVisibleCount).ToList();
-            await PopulateModThumbnailsAsync(initialVisibleMods, token);
+            if (!isDownloads30DaysSort)
+            {
+                var initialVisibleCount = Math.Min(DefaultLoadedMods, filteredMods.Count);
+                var initialVisibleMods = filteredMods.Take(initialVisibleCount).ToList();
+                await PopulateModThumbnailsAsync(initialVisibleMods, token);
 
-            if (token.IsCancellationRequested)
-                return;
+                if (token.IsCancellationRequested)
+                    return;
+            }
 
             foreach (var mod in filteredMods)
             {
@@ -1200,6 +1203,18 @@ public partial class ModBrowserViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Sorts a list of mods by their Downloads30Days value.
+    /// For ascending order, uncalculated mods (0 downloads) are placed at the end.
+    /// </summary>
+    private List<DownloadableModOnList> SortByDownloads30Days(IEnumerable<DownloadableModOnList> mods)
+    {
+        const int UncalculatedDownloads = 0;
+        return OrderByDirection == "desc"
+            ? mods.OrderByDescending(m => m.Downloads30Days).ToList()
+            : mods.OrderBy(m => m.Downloads30Days == UncalculatedDownloads ? int.MaxValue : m.Downloads30Days).ToList();
+    }
+
+    /// <summary>
     /// Calculates downloads from releases in the last 30 days for a given mod.
     /// Finds the oldest release within 30 days and sums all downloads from that release to the latest.
     /// </summary>
@@ -1254,13 +1269,31 @@ public partial class ModBrowserViewModel : ObservableObject
 
     /// <summary>
     /// Populates the Downloads30Days property for a list of mods by fetching full mod details.
+    /// Uses caching to avoid redundant API calls.
     /// </summary>
     private async Task PopulateDownloads30DaysAsync(IEnumerable<DownloadableModOnList> mods, CancellationToken cancellationToken)
     {
-        const int maxConcurrentLoads = 5;
+        // Filter out mods that already have cached values
+        var modsToCalculate = mods.Where(m =>
+        {
+            lock (_downloads30DaysCache)
+            {
+                if (_downloads30DaysCache.TryGetValue(m.ModId, out var cachedValue))
+                {
+                    m.Downloads30Days = cachedValue;
+                    return false;
+                }
+            }
+            return true;
+        }).ToList();
+
+        if (modsToCalculate.Count == 0)
+            return;
+
+        const int maxConcurrentLoads = 20; // Increased to 20 for better performance when calculating all mods
         using var semaphore = new SemaphoreSlim(maxConcurrentLoads);
 
-        var tasks = mods.Select(async mod =>
+        var tasks = modsToCalculate.Select(async mod =>
         {
             if (cancellationToken.IsCancellationRequested) return;
 
@@ -1272,7 +1305,14 @@ public partial class ModBrowserViewModel : ObservableObject
                     var modDetails = await _modApiService.GetModAsync(mod.ModId, cancellationToken);
                     if (modDetails != null)
                     {
-                        mod.Downloads30Days = CalculateDownloads30Days(modDetails);
+                        var downloads = CalculateDownloads30Days(modDetails);
+                        mod.Downloads30Days = downloads;
+                        
+                        // Cache the calculated value
+                        lock (_downloads30DaysCache)
+                        {
+                            _downloads30DaysCache[mod.ModId] = downloads;
+                        }
                     }
                 }
                 finally
