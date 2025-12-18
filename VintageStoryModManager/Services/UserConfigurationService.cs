@@ -57,7 +57,10 @@ public sealed class UserConfigurationService
             ["Palette.Bevel.Highlight"] = "#80FFFFFF",
             ["Palette.Bevel.Shadow"] = "#40000000",
             ["Palette.Overlay.HoverTint"] = "#10FFFFFF",
-            ["Palette.White"] = "#FFFFFCF5"
+            ["Palette.White"] = "#FFFFFCF5",
+            ["Palette.Grey"] = "#FF867E74",
+            ["Palette.DarkGrey"] = "#FF6E675F",
+            ["Palette.Error"] = "#FFED4337"
         };
 
     private static readonly IReadOnlyDictionary<string, string> DarkPaletteColors =
@@ -74,7 +77,11 @@ public sealed class UserConfigurationService
             ["Palette.Interactive.Surface"] = "#FF2E2E2E",
             ["Palette.Overlay.HoverTint"] = "#14FFFFFF",
             ["Palette.Text.Link"] = "#FF0F6CBD",
-            ["Palette.Text.Primary"] = "#FFEDEDED"
+            ["Palette.Text.Primary"] = "#FFEDEDED",
+            ["Palette.White"] = "#FFFFFFFF",
+            ["Palette.Grey"] = "#FF808080",
+            ["Palette.DarkGrey"] = "#FF505050",
+            ["Palette.Error"] = "#FFED4337"
         };
 
     private static readonly IReadOnlyDictionary<string, string> LightPaletteColors =
@@ -91,7 +98,11 @@ public sealed class UserConfigurationService
             ["Palette.Interactive.Surface"] = "#FFE5F0FA",
             ["Palette.Overlay.HoverTint"] = "#20000000",
             ["Palette.Text.Link"] = "#FF0078D4",
-            ["Palette.Text.Primary"] = "#FF000000"
+            ["Palette.Text.Primary"] = "#FF000000",
+            ["Palette.White"] = "#FFFFFFFF",
+            ["Palette.Grey"] = "#FF9E9E9E",
+            ["Palette.DarkGrey"] = "#FF6E6E6E",
+            ["Palette.Error"] = "#FFED4337"
         };
 
     private static readonly int DefaultModDatabaseSearchResultLimit = DevConfig.DefaultModDatabaseSearchResultLimit;
