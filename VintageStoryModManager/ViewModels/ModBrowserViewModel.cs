@@ -418,59 +418,15 @@ public partial class ModBrowserViewModel : ObservableObject
             }
             else if (isDownloads30DaysSort)
             {
-                // Optimized approach: only calculate for initially visible mods
-                LoadingMessage = "Processing downloads...";
-                var initialVisibleCount = Math.Min(DefaultLoadedMods, filteredMods.Count);
-                var initialVisibleMods = filteredMods.Take(initialVisibleCount).ToList();
-                
-                await PopulateDownloads30DaysAsync(initialVisibleMods, token);
+                // Calculate 30-day downloads for ALL mods to properly sort them
+                LoadingMessage = "Calculating 30-day downloads...";
+                await PopulateDownloads30DaysAsync(filteredMods, token);
 
                 if (token.IsCancellationRequested)
                     return;
 
                 // Sort by Downloads30Days using helper method
                 filteredMods = SortByDownloads30Days(filteredMods);
-                
-                // Continue calculating in background for remaining mods
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        var remainingMods = filteredMods.Skip(initialVisibleCount).ToList();
-                        if (remainingMods.Count > 0)
-                        {
-                            await PopulateDownloads30DaysAsync(remainingMods, token);
-                            
-                            // Re-sort the full list after background calculation completes
-                            if (!token.IsCancellationRequested)
-                            {
-                                var sortedMods = SortByDownloads30Days(filteredMods);
-                                
-                                // Update ModsList order on UI thread
-                                var dispatcher = System.Windows.Application.Current?.Dispatcher;
-                                if (dispatcher != null)
-                                {
-                                    await dispatcher.InvokeAsync(() =>
-                                    {
-                                        if (!token.IsCancellationRequested)
-                                        {
-                                            ModsList.Clear();
-                                            foreach (var mod in sortedMods)
-                                            {
-                                                ModsList.Add(mod);
-                                            }
-                                            OnPropertyChanged(nameof(VisibleMods));
-                                        }
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // Expected when cancelled
-                    }
-                }, token);
             }
 
             // Clear tracking before new search
@@ -554,12 +510,6 @@ public partial class ModBrowserViewModel : ObservableObject
             var token = _searchCts?.Token ?? CancellationToken.None;
             await PopulateModThumbnailsAsync(modsToPrefetch, token);
             _ = PopulateUserReportsAsync(modsToPrefetch, token);
-            
-            // If sorting by Downloads (30 days), also populate those values for newly visible mods
-            if (OrderBy == "downloads30days")
-            {
-                _ = PopulateDownloads30DaysAsync(modsToPrefetch, token);
-            }
         }
     }
 
@@ -1340,7 +1290,7 @@ public partial class ModBrowserViewModel : ObservableObject
         if (modsToCalculate.Count == 0)
             return;
 
-        const int maxConcurrentLoads = 10; // Increased from 5 to 10 for better performance
+        const int maxConcurrentLoads = 20; // Increased to 20 for better performance when calculating all mods
         using var semaphore = new SemaphoreSlim(maxConcurrentLoads);
 
         var tasks = modsToCalculate.Select(async mod =>
