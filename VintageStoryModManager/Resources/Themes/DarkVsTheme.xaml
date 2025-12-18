@@ -256,10 +256,8 @@
         <GradientStop Offset="1" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
     </LinearGradientBrush>
 
-    <LinearGradientBrush x:Key="Brush.InstalledMods.Background.Gradient" StartPoint="0,0.5" EndPoint="1,0.5">
-        <GradientStop Offset="0" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
-        <GradientStop Offset="0.02" Color="{DynamicResource Palette.Grey}" />
-        <GradientStop Offset="0.3" Color="{DynamicResource Palette.DarkGrey}" />
+    <LinearGradientBrush x:Key="Brush.InstalledMods.Background.Gradient" StartPoint="0,0" EndPoint="1,0.5">
+        <GradientStop Offset="0" Color="{DynamicResource Palette.DarkGrey}" />
         <GradientStop Offset="1" Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
     </LinearGradientBrush>
 
