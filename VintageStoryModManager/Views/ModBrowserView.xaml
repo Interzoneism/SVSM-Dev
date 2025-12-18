@@ -29,6 +29,7 @@
         <converters:BooleanToBrushConverter x:Key="BoolToBrush" />
         <converters:IconKeyToGeometryConverter x:Key="IconKeyToGeometry" />
         <converters:NoResultsVisibilityConverter x:Key="NoResultsVisibility" />
+        <converters:LoadingIndicatorVisibilityConverter x:Key="LoadingIndicatorVisibility" />
         <converters:FavoriteButtonVisibilityConverter x:Key="FavoriteButtonVisibility" />
         <converters:InstallButtonVisibilityConverter x:Key="InstallButtonVisibility" />
         <converters:FavoriteButtonShouldShowConverter x:Key="FavoriteButtonShouldShow" />
@@ -38,16 +39,6 @@
         <converters:StringNullOrWhiteSpaceToVisibilityConverter x:Key="StringNullOrWhiteSpaceToVisibility" />
         <converters:StringToImageSourceConverter x:Key="StringToImageSource" />
         <converters:ThumbnailLayoutConverter x:Key="ThumbnailLayoutConverter" />
-
-        <!--  Loading Spinner Animation  -->
-        <Storyboard x:Key="SpinnerAnimation" RepeatBehavior="Forever">
-            <DoubleAnimation
-                Storyboard.TargetName="LoadingSpinner"
-                Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
-                From="0"
-                To="360"
-                Duration="0:0:1" />
-        </Storyboard>
 
         <!--  Icon Path Styles using DarkVsTheme  -->
         <Style x:Key="IconSmall" TargetType="Path">
@@ -365,27 +356,20 @@
                     <!--  Loading Indicator  -->
                     <StackPanel
                         HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Visibility="{Binding IsSearching, Converter={StaticResource BoolToVisibility}}">
-                        <!--  Loading Spinner Circle  -->
-                        <Border
-                            x:Name="LoadingSpinner"
-                            Width="48"
-                            Height="48"
-                            RenderTransformOrigin="0.5,0.5">
-                            <Border.RenderTransform>
-                                <RotateTransform Angle="0" />
-                            </Border.RenderTransform>
-                            <Ellipse
-                                Width="48"
-                                Height="48"
-                                Stroke="{DynamicResource Brush.Accent.Primary}"
-                                StrokeDashArray="3 2"
-                                StrokeEndLineCap="Round"
-                                StrokeThickness="4" />
-                        </Border>
+                        VerticalAlignment="Center">
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource LoadingIndicatorVisibility}">
+                                <Binding Path="IsSearching" />
+                                <Binding Path="IsProcessing" />
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                        <!--  Progress Bar  -->
+                        <ui:ProgressBar
+                            Width="300"
+                            Height="4"
+                            IsIndeterminate="True" />
                         <TextBlock
-                            Margin="0,12,0,0"
+                            Margin="0,16,0,0"
                             FontSize="14"
                             Foreground="{DynamicResource Brush.Text.Subtle}"
                             Text="{Binding LoadingMessage}"
@@ -398,11 +382,12 @@
                         VerticalAlignment="Center"
                         FontSize="18"
                         Foreground="{DynamicResource Brush.Text.Subtle}"
-                        Text="No mods match your filters">
+                        Text="No mods found with the current filters and sorting options">
                         <TextBlock.Visibility>
                             <MultiBinding Converter="{StaticResource NoResultsVisibility}">
                                 <Binding Path="IsSearching" />
                                 <Binding Path="ModsList.Count" />
+                                <Binding Path="IsProcessing" />
                             </MultiBinding>
                         </TextBlock.Visibility>
                     </TextBlock>

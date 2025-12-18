@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.Animation;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.ViewModels;
 
@@ -14,7 +13,6 @@ namespace VintageStoryModManager.Views;
 /// </summary>
 public partial class ModBrowserView : System.Windows.Controls.UserControl
 {
-    private Storyboard? _spinnerStoryboard;
     private bool _isInitialized;
 
     public ModBrowserView()
@@ -28,9 +26,6 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
 
     private void OnViewLoaded(object sender, RoutedEventArgs e)
     {
-        // Cache the storyboard reference during initialization
-        _spinnerStoryboard = TryFindResource("SpinnerAnimation") as Storyboard;
-        
         // Don't initialize ViewModel here - defer until tab is selected
         // This prevents unnecessary network requests on application startup
     }
@@ -71,9 +66,6 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
     private void OnControlUnloaded(object sender, RoutedEventArgs e)
     {
         // Clean up resources when the control is unloaded
-        StopSpinnerAnimation();
-        _spinnerStoryboard = null;
-
         if (DataContext is ModBrowserViewModel vm)
         {
             vm.PropertyChanged -= OnViewModelPropertyChanged;
@@ -95,30 +87,7 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ModBrowserViewModel.IsSearching))
-        {
-            Dispatcher.Invoke(() =>
-            {
-                if (ViewModel?.IsSearching == true)
-                {
-                    StartSpinnerAnimation();
-                }
-                else
-                {
-                    StopSpinnerAnimation();
-                }
-            });
-        }
-    }
-
-    private void StartSpinnerAnimation()
-    {
-        _spinnerStoryboard?.Begin(this, true);
-    }
-
-    private void StopSpinnerAnimation()
-    {
-        _spinnerStoryboard?.Stop(this);
+        // No spinner animation logic needed anymore - progress bar is controlled by bindings
     }
 
     private void ScrollToTop_Click(object sender, RoutedEventArgs e)

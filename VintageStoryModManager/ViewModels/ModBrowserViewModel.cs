@@ -49,6 +49,9 @@ public partial class ModBrowserViewModel : ObservableObject
     private bool _isSearching;
 
     [ObservableProperty]
+    private bool _isProcessing;
+
+    [ObservableProperty]
     private string _loadingMessage = "Loading mods...";
 
     [ObservableProperty]
@@ -379,9 +382,10 @@ public partial class ModBrowserViewModel : ObservableObject
         try
         {
             IsSearching = true;
-            LoadingMessage = "Searching for mods...";
+            IsProcessing = false;
+            LoadingMessage = "Searching mods...";
             
-            // Clear the list immediately so the spinner is visible
+            // Clear the list immediately so the progress indicator is visible
             ModsList.Clear();
             VisibleModsCount = 0;
             OnPropertyChanged(nameof(VisibleMods));
@@ -418,8 +422,11 @@ public partial class ModBrowserViewModel : ObservableObject
             }
             else if (isDownloads30DaysSort)
             {
-                // Calculate 30-day downloads for ALL mods to properly sort them
-                LoadingMessage = "Calculating 30-day downloads...";
+                // Start processing phase for manager-specific sorting
+                IsSearching = false;
+                IsProcessing = true;
+                LoadingMessage = "Processing results… Running a full analysis. This may take some time.";
+                
                 await PopulateDownloads30DaysAsync(filteredMods, token);
 
                 if (token.IsCancellationRequested)
@@ -463,6 +470,7 @@ public partial class ModBrowserViewModel : ObservableObject
         finally
         {
             IsSearching = false;
+            IsProcessing = false;
         }
     }
 
