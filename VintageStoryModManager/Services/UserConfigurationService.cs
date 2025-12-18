@@ -309,6 +309,8 @@ public sealed class UserConfigurationService
 
     public bool RebuiltModlistMigrationCompleted { get; private set; }
 
+    public bool UseCorrectThumbnails { get; private set; } = true;
+
     public IReadOnlyList<string> GetGameProfileNames()
     {
         return _gameProfiles.Keys
@@ -1464,6 +1466,14 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetUseCorrectThumbnails(bool useCorrectThumbnails)
+    {
+        if (UseCorrectThumbnails == useCorrectThumbnails) return;
+
+        UseCorrectThumbnails = useCorrectThumbnails;
+        Save();
+    }
+
     public bool IsModExcludedFromBulkUpdates(string? modId)
     {
         var normalized = NormalizeModId(modId);
@@ -1652,6 +1662,7 @@ public sealed class UserConfigurationService
             ClientSettingsCleanupCompleted = obj["clientSettingsCleanupCompleted"]?.GetValue<bool?>() ?? false;
             RebuiltModlistMigrationCompleted =
                 obj["rebuiltModlistMigrationCompleted"]?.GetValue<bool?>() ?? false;
+            UseCorrectThumbnails = obj["useCorrectThumbnails"]?.GetValue<bool?>() ?? true;
 
             var profilesFound = false;
             if (obj["gameProfiles"] is JsonObject profilesObj)
@@ -1784,6 +1795,7 @@ public sealed class UserConfigurationService
             GameProfileCreationWarningAcknowledged = false;
             ClientSettingsCleanupCompleted = false;
             RebuiltModlistMigrationCompleted = false;
+            UseCorrectThumbnails = true;
         }
 
         LoadPersistentModConfigPaths();
@@ -1874,6 +1886,7 @@ public sealed class UserConfigurationService
                 ["firebaseAuthBackupCreated"] = FirebaseAuthBackupCreated,
                 ["clientSettingsCleanupCompleted"] = ClientSettingsCleanupCompleted,
                 ["rebuiltModlistMigrationCompleted"] = RebuiltModlistMigrationCompleted,
+                ["useCorrectThumbnails"] = UseCorrectThumbnails,
                 ["gameProfiles"] = BuildGameProfilesJson()
             };
 

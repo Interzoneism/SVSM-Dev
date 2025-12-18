@@ -48,8 +48,28 @@ public class DownloadableModOnList : INotifyPropertyChanged
     [JsonPropertyName("type")]
     public string Type { get; set; } = string.Empty;
 
+    private string? _logo;
+
     [JsonPropertyName("logo")]
-    public string? Logo { get; set; }
+    public string? Logo
+    {
+        get => _logo;
+        set
+        {
+            if (value == _logo) return;
+
+            var previousLogoUrl = LogoUrl;
+            _logo = value;
+            OnPropertyChanged();
+            
+            // Only notify LogoUrl if it actually changed (cache new value to avoid redundant computation)
+            var newLogoUrl = LogoUrl;
+            if (newLogoUrl != previousLogoUrl)
+            {
+                OnPropertyChanged(nameof(LogoUrl));
+            }
+        }
+    }
 
     private string? _logoFileDatabase;
 
@@ -61,9 +81,16 @@ public class DownloadableModOnList : INotifyPropertyChanged
         {
             if (value == _logoFileDatabase) return;
 
+            var previousLogoUrl = LogoUrl;
             _logoFileDatabase = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(LogoUrl));
+            
+            // Only notify LogoUrl if it actually changed (cache new value to avoid redundant computation)
+            var newLogoUrl = LogoUrl;
+            if (newLogoUrl != previousLogoUrl)
+            {
+                OnPropertyChanged(nameof(LogoUrl));
+            }
         }
     }
 
@@ -159,9 +186,11 @@ public class DownloadableModOnList : INotifyPropertyChanged
         Comments > 10000 ? $"{Comments / 1000}K" : Comments.ToString();
 
     /// <summary>
-    /// Gets the database-hosted logo URL.
+    /// Gets the logo URL for display.
+    /// Prioritizes LogoFileDatabase (high-quality thumbnail from individual API call) if available,
+    /// otherwise falls back to Logo (lower-quality thumbnail from initial batch API response).
     /// </summary>
-    public string LogoUrl => LogoFileDatabase ?? string.Empty;
+    public string LogoUrl => LogoFileDatabase ?? Logo ?? string.Empty;
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {

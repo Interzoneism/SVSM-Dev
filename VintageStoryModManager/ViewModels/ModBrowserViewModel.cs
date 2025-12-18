@@ -108,6 +108,12 @@ public partial class ModBrowserViewModel : ObservableObject
     [ObservableProperty]
     private bool _useRelevantSearchResults = true;
 
+    /// <summary>
+    /// Gets whether to use correct (high-quality) thumbnails.
+    /// When false, uses faster loading with standard quality thumbnails from the initial API response.
+    /// </summary>
+    private bool ShouldUseCorrectThumbnails => _userConfigService?.UseCorrectThumbnails ?? true;
+
     #endregion
 
     #region Filter Options
@@ -444,9 +450,13 @@ public partial class ModBrowserViewModel : ObservableObject
             _modsWithLoadedLogos.Clear();
 
             // Pre-populate thumbnails for initially visible mods to prevent flickering on first load
-            var initialVisibleCount = Math.Min(DefaultLoadedMods, filteredMods.Count);
-            var initialVisibleMods = filteredMods.Take(initialVisibleCount).ToList();
-            await PopulateModThumbnailsAsync(initialVisibleMods, token);
+            // Only if "Correct thumbnails" setting is enabled
+            if (ShouldUseCorrectThumbnails)
+            {
+                var initialVisibleCount = Math.Min(DefaultLoadedMods, filteredMods.Count);
+                var initialVisibleMods = filteredMods.Take(initialVisibleCount).ToList();
+                await PopulateModThumbnailsAsync(initialVisibleMods, token);
+            }
 
             if (token.IsCancellationRequested)
                 return;
@@ -519,7 +529,11 @@ public partial class ModBrowserViewModel : ObservableObject
         if (modsToPrefetch.Any())
         {
             var token = _searchCts?.Token ?? CancellationToken.None;
-            await PopulateModThumbnailsAsync(modsToPrefetch, token);
+            // Only populate thumbnails if "Correct thumbnails" setting is enabled
+            if (ShouldUseCorrectThumbnails)
+            {
+                await PopulateModThumbnailsAsync(modsToPrefetch, token);
+            }
             _ = PopulateUserReportsAsync(modsToPrefetch, token);
         }
     }

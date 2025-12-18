@@ -418,6 +418,7 @@ public partial class MainWindow : Window
         AutomaticDataBackupsMenuItem.IsChecked = _userConfiguration.AutomaticDataBackupsEnabled;
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
+        UseCorrectThumbnailsMenuItem.IsChecked = _userConfiguration.UseCorrectThumbnails;
         UpdateLoggingMenuState();
         InitializeTraceListener();
         _modActivityLoggingService.LogAppLaunch();
@@ -1641,6 +1642,14 @@ public partial class MainWindow : Window
         _userConfiguration.SetEnableServerOptions(menuItem.IsChecked);
         var isEnabled = _userConfiguration.EnableServerOptions;
         UpdateServerOptionsState(isEnabled);
+    }
+
+    private void UseCorrectThumbnailsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        _userConfiguration.SetUseCorrectThumbnails(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.UseCorrectThumbnails;
     }
 
     private void LogModUpdateMenuItem_OnClick(object sender, RoutedEventArgs e)
