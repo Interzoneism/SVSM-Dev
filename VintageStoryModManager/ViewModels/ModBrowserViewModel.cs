@@ -982,10 +982,12 @@ public partial class ModBrowserViewModel : ObservableObject
 
         var tasks = modsToLoad.Select(async mod =>
         {
+            var semaphoreAcquired = false;
             var logoUpdated = false;
             try
             {
                 await semaphore.WaitAsync(cancellationToken);
+                semaphoreAcquired = true;
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
@@ -1002,6 +1004,7 @@ public partial class ModBrowserViewModel : ObservableObject
             }
             catch (OperationCanceledException)
             {
+                // Respect cancellation without releasing an un-acquired semaphore slot
                 throw;
             }
             catch (Exception ex)
@@ -1011,7 +1014,10 @@ public partial class ModBrowserViewModel : ObservableObject
             }
             finally
             {
-                semaphore.Release();
+                if (semaphoreAcquired)
+                {
+                    semaphore.Release();
+                }
 
                 if (!logoUpdated)
                 {
