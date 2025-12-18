@@ -208,6 +208,7 @@ public partial class ModBrowserViewModel : ObservableObject
                 }
             }
 
+            IsSearching = true;
             await SearchModsAsync();
         }
         catch (Exception ex)
@@ -224,7 +225,10 @@ public partial class ModBrowserViewModel : ObservableObject
         _userConfigService?.SetModBrowserFavoriteModIds(FavoriteMods);
 
         if (OnlyFavorites)
+        {
+            IsSearching = true;
             _ = SearchModsAsync();
+        }
     }
 
     /// <summary>
@@ -1209,19 +1213,26 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(HasSearchText));
         if (!_isInitializing)
+        {
+            IsSearching = true;
             _ = SearchModsAsync();
+        }
     }
 
     partial void OnSelectedAuthorChanged(ModAuthor? value)
     {
         if (!_isInitializing)
+        {
+            IsSearching = true;
             _ = SearchModsAsync();
+        }
     }
 
     partial void OnSelectedSideChanged(string value)
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserSelectedSide(value);
             _ = SearchModsAsync();
         }
@@ -1231,6 +1242,7 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserSelectedInstalledFilter(value);
             _ = SearchModsAsync();
         }
@@ -1240,6 +1252,7 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserOnlyFavorites(value);
             _ = SearchModsAsync();
         }
@@ -1249,6 +1262,7 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserOrderBy(value);
             _ = SearchModsAsync();
         }
@@ -1258,6 +1272,7 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserOrderByDirection(value);
             _ = SearchModsAsync();
         }
@@ -1267,6 +1282,7 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserRelevantSearch(value);
             _ = SearchModsAsync();
         }
