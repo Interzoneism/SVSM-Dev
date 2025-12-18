@@ -93,6 +93,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private Timer? _fastCheckTimer;
     private bool _hasActiveBusyScope;
     private bool _hasEnabledUserReportFetching;
+    private bool _hasFetchedUserReportsThisSession;
     private bool _hasMultipleSelectedMods;
     private volatile bool _hasPendingFastCheck;
     private bool _hasSelectedMods;
@@ -535,6 +536,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public void FastCheck()
     {
         ResetFastCheckTimer();
+
+        if (_isAutoRefreshDisabled) return;
 
         if (InternetAccessManager.IsInternetAccessDisabled) return;
 
@@ -1713,7 +1716,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             InstalledGameVersion,
             true,
             _configuration.ShouldSkipModVersion,
-            () => _configuration.RequireExactVsVersionMatch);
+            () => _configuration.RequireExactVsVersionMatch,
+            _allowModDetailsRefresh);
     }
 
     private async Task UpdateModsStateSnapshotAsync()
@@ -2091,24 +2095,41 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             CancellationToken.None);
     }
 
-    public void EnableUserReportFetching()
+    public void EnableUserReportFetching(bool includeInstalledWhenAutoRefreshDisabled = false)
     {
         if (!_areUserReportsVisible) return;
 
-        if (_hasEnabledUserReportFetching) return;
+        if (_hasFetchedUserReportsThisSession) return;
 
         _hasEnabledUserReportFetching = true;
 
-        if (_allowModDetailsRefresh)
+        var allowInstalledRefresh = _allowModDetailsRefresh || includeInstalledWhenAutoRefreshDisabled;
+        var hasQueuedRefresh = false;
+
+        if (allowInstalledRefresh)
+        {
             foreach (var mod in _installedModSubscriptions)
+            {
+                mod.EnsureUserReportStateInitialized();
                 QueueUserReportRefresh(mod);
+                hasQueuedRefresh = true;
+            }
+        }
 
         foreach (var mod in _searchResultSubscriptions)
         {
-            if (mod.CanSubmitUserReport) QueueUserReportRefresh(mod);
+            mod.EnsureUserReportStateInitialized();
+            if (mod.CanSubmitUserReport)
+            {
+                QueueUserReportRefresh(mod);
+                hasQueuedRefresh = true;
+            }
 
             QueueLatestReleaseUserReportRefresh(mod);
+            hasQueuedRefresh = true;
         }
+
+        if (hasQueuedRefresh) _hasFetchedUserReportsThisSession = true;
     }
 
     public Task<ModVersionVoteSummary?> RefreshUserReportAsync(
@@ -2314,6 +2335,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (!isVisible)
         {
             _hasEnabledUserReportFetching = false;
+            _hasFetchedUserReportsThisSession = false;
             return;
         }
 
@@ -2793,7 +2815,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private ModListItemViewModel CreateSearchResultViewModel(ModEntry entry, bool isInstalled)
     {
         return new ModListItemViewModel(entry, false, "Mod Database", RejectActivationChangeAsync, InstalledGameVersion,
-            isInstalled, null, () => _configuration.RequireExactVsVersionMatch);
+            isInstalled, null, () => _configuration.RequireExactVsVersionMatch, _allowModDetailsRefresh);
     }
 
     private static string? BuildSearchResultDescription(ModDatabaseSearchResult result)
