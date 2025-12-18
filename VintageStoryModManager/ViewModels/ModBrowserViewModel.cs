@@ -36,6 +36,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private readonly HashSet<string> _normalizedInstalledModIds = new(StringComparer.OrdinalIgnoreCase);
     private long _lastLoadMoreTicks;
     private const int LoadMoreThrottleMs = 300;
+    private int _activeSearchCount;
 
     #region Observable Properties
 
@@ -208,6 +209,7 @@ public partial class ModBrowserViewModel : ObservableObject
                 }
             }
 
+            IsSearching = true;
             await SearchModsAsync();
         }
         catch (Exception ex)
@@ -224,7 +226,10 @@ public partial class ModBrowserViewModel : ObservableObject
         _userConfigService?.SetModBrowserFavoriteModIds(FavoriteMods);
 
         if (OnlyFavorites)
+        {
+            IsSearching = true;
             _ = SearchModsAsync();
+        }
     }
 
     /// <summary>
@@ -394,6 +399,9 @@ public partial class ModBrowserViewModel : ObservableObject
         _searchCts = new CancellationTokenSource();
         var token = _searchCts.Token;
 
+        // Increment active search counter
+        Interlocked.Increment(ref _activeSearchCount);
+
         try
         {
             IsSearching = true;
@@ -461,7 +469,11 @@ public partial class ModBrowserViewModel : ObservableObject
         }
         finally
         {
-            IsSearching = false;
+            // Decrement active search counter and only set IsSearching to false when no searches are active
+            if (Interlocked.Decrement(ref _activeSearchCount) == 0)
+            {
+                IsSearching = false;
+            }
         }
     }
 
@@ -1215,19 +1227,26 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(HasSearchText));
         if (!_isInitializing)
+        {
+            IsSearching = true;
             _ = SearchModsAsync();
+        }
     }
 
     partial void OnSelectedAuthorChanged(ModAuthor? value)
     {
         if (!_isInitializing)
+        {
+            IsSearching = true;
             _ = SearchModsAsync();
+        }
     }
 
     partial void OnSelectedSideChanged(string value)
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserSelectedSide(value);
             _ = SearchModsAsync();
         }
@@ -1237,6 +1256,7 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserSelectedInstalledFilter(value);
             _ = SearchModsAsync();
         }
@@ -1246,6 +1266,7 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserOnlyFavorites(value);
             _ = SearchModsAsync();
         }
@@ -1255,6 +1276,7 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserOrderBy(value);
             _ = SearchModsAsync();
         }
@@ -1264,6 +1286,7 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserOrderByDirection(value);
             _ = SearchModsAsync();
         }
@@ -1273,6 +1296,7 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         if (!_isInitializing)
         {
+            IsSearching = true;
             _userConfigService?.SetModBrowserRelevantSearch(value);
             _ = SearchModsAsync();
         }
