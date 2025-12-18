@@ -107,6 +107,12 @@ public partial class ModBrowserViewModel : ObservableObject
     [ObservableProperty]
     private bool _useRelevantSearchResults = true;
 
+    /// <summary>
+    /// Gets whether to use correct (high-quality) thumbnails.
+    /// When false, uses faster loading with standard quality thumbnails from the initial API response.
+    /// </summary>
+    private bool ShouldUseCorrectThumbnails => _userConfigService?.UseCorrectThumbnails ?? true;
+
     #endregion
 
     #region Filter Options
@@ -437,7 +443,7 @@ public partial class ModBrowserViewModel : ObservableObject
 
             // Pre-populate thumbnails for initially visible mods to prevent flickering on first load
             // Only if "Correct thumbnails" setting is enabled
-            if (_userConfigService?.UseCorrectThumbnails ?? true)
+            if (ShouldUseCorrectThumbnails)
             {
                 var initialVisibleCount = Math.Min(DefaultLoadedMods, filteredMods.Count);
                 var initialVisibleMods = filteredMods.Take(initialVisibleCount).ToList();
@@ -512,7 +518,7 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             var token = _searchCts?.Token ?? CancellationToken.None;
             // Only populate thumbnails if "Correct thumbnails" setting is enabled
-            if (_userConfigService?.UseCorrectThumbnails ?? true)
+            if (ShouldUseCorrectThumbnails)
             {
                 await PopulateModThumbnailsAsync(modsToPrefetch, token);
             }

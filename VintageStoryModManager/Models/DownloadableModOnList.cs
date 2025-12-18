@@ -58,9 +58,15 @@ public class DownloadableModOnList : INotifyPropertyChanged
         {
             if (value == _logo) return;
 
+            var previousLogoUrl = LogoUrl;
             _logo = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(LogoUrl));
+            
+            // Only notify LogoUrl if it actually changed
+            if (LogoUrl != previousLogoUrl)
+            {
+                OnPropertyChanged(nameof(LogoUrl));
+            }
         }
     }
 
@@ -74,9 +80,15 @@ public class DownloadableModOnList : INotifyPropertyChanged
         {
             if (value == _logoFileDatabase) return;
 
+            var previousLogoUrl = LogoUrl;
             _logoFileDatabase = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(LogoUrl));
+            
+            // Only notify LogoUrl if it actually changed
+            if (LogoUrl != previousLogoUrl)
+            {
+                OnPropertyChanged(nameof(LogoUrl));
+            }
         }
     }
 
