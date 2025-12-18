@@ -7,6 +7,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VintageStoryModManager.Services;
 using Color = System.Windows.Media.Color;
+using ComboBox = System.Windows.Controls.ComboBox;
+using ComboBoxItem = System.Windows.Controls.ComboBoxItem;
 using DrawingColor = System.Drawing.Color;
 using FormsColorDialog = System.Windows.Forms.ColorDialog;
 using FormsDialogResult = System.Windows.Forms.DialogResult;
@@ -14,6 +16,7 @@ using FormsIWin32Window = System.Windows.Forms.IWin32Window;
 using MediaBrush = System.Windows.Media.Brush;
 using MediaBrushes = System.Windows.Media.Brushes;
 using MediaColorConverter = System.Windows.Media.ColorConverter;
+using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventArgs;
 using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 
 namespace VintageStoryModManager.Views.Dialogs;
@@ -126,22 +129,30 @@ public partial class ThemePaletteEditorDialog : Window
         Close();
     }
 
-    private void PaletteComboBox_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private void PaletteComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is not System.Windows.Controls.ComboBox comboBox) return;
-        if (comboBox.SelectedItem is not System.Windows.Controls.ComboBoxItem selectedItem) return;
+        // Guard against events during initialization
+        if (PaletteItems.Count == 0) return;
+        
+        if (sender is not ComboBox comboBox) return;
+        if (comboBox.SelectedItem is not ComboBoxItem selectedItem) return;
         if (selectedItem.Tag is not string themeTag) return;
 
         if (!Enum.TryParse<ColorTheme>(themeTag, true, out var theme)) return;
 
         var palette = UserConfigurationService.GetDefaultThemePalette(theme);
         
+        // Create a lookup dictionary for efficient item updates (O(n) for dictionary creation + O(1) per lookup)
+        var itemsLookup = PaletteItems.ToDictionary(item => item.Key, StringComparer.OrdinalIgnoreCase);
+        
         foreach (var pair in palette)
         {
             if (_configuration.TrySetThemePaletteColor(pair.Key, pair.Value))
             {
-                var entry = PaletteItems.FirstOrDefault(item => item.Key == pair.Key);
-                entry?.UpdateFromHex(pair.Value);
+                if (itemsLookup.TryGetValue(pair.Key, out var entry))
+                {
+                    entry.UpdateFromHex(pair.Value);
+                }
             }
         }
         
