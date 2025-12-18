@@ -2137,6 +2137,7 @@ public sealed class ModListItemViewModel : ObservableObject
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.StreamSource = stream;
+                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.PreservePixelFormat;
                 bitmap.EndInit();
                 TryFreezeImageSource(bitmap, $"{context} (byte stream)", LogDebug);
                 return bitmap;
