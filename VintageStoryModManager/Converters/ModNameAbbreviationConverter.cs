@@ -26,7 +26,7 @@ public class ModNameAbbreviationConverter : IValueConverter
 
             letters.Append(char.ToUpperInvariant(word[0]));
             validWordCount++;
-            
+
             if (validWordCount >= 3)
                 break;
         }

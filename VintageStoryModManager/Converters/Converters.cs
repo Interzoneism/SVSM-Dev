@@ -352,7 +352,7 @@ public class FavoriteButtonVisibilityConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (values.Length < 3 || values[0] == DependencyProperty.UnsetValue || 
+        if (values.Length < 3 || values[0] == DependencyProperty.UnsetValue ||
             values[1] == DependencyProperty.UnsetValue || values[2] == DependencyProperty.UnsetValue)
             return Visibility.Collapsed;
 

@@ -9,7 +9,7 @@ public partial class ChangeManagerFolderDialog : Window
         InitializeComponent();
 
         Owner = owner;
-        
+
         var message = $"Current manager folder:\n{currentFolder}\n\n" +
                       "This will allow you to move the entire \"Simple VS Manager\" folder to a new location.\n\n" +
                       "The manager will:\n" +
@@ -18,7 +18,7 @@ public partial class ChangeManagerFolderDialog : Window
                       "• Require a restart to complete the change\n\n" +
                       "Note: The Firebase authentication backup (SVSM Backup folder) will remain in its original location.\n\n" +
                       "Do not proceed unless you really need to move the folder. Do you want to continue?";
-        
+
         MessageTextBlock.Text = message;
     }
 

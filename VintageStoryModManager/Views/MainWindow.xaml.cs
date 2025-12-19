@@ -399,7 +399,7 @@ public partial class MainWindow : Window
         _modActivityLoggingService = new ModActivityLoggingService(_userConfiguration);
 
         InitializeComponent();
-        
+
         InitializeModBrowserView();
 
         DeveloperProfileManager.CurrentProfileChanged += DeveloperProfileManager_OnCurrentProfileChanged;
@@ -569,7 +569,7 @@ public partial class MainWindow : Window
         {
             // Exiting compact mode: re-enable the menu item
             IconColumnMenuItem.IsEnabled = true;
-            
+
             // The XAML binding will try to make the Icon column visible when exiting compact mode
             // We need to re-apply the user's preference to override the binding if they had it hidden
             if (_installedColumnVisibilityPreferences.TryGetValue(InstalledModsColumn.Icon, out var userPreference))
@@ -607,7 +607,7 @@ public partial class MainWindow : Window
             await InitializeViewModelAsync(_viewModel).ConfigureAwait(true);
             await EnsureInstalledModsCachedAsync(_viewModel).ConfigureAwait(true);
             await CreateAppStartedBackupAsync().ConfigureAwait(true);
-            
+
             // Sync installed mods to ModBrowser after ViewModel is initialized
             SyncInstalledModsToModBrowser();
         }
@@ -1123,7 +1123,7 @@ public partial class MainWindow : Window
         SaveWindowDimensions();
         SaveUploaderName();
         _modActivityLoggingService.LogAppExit();
-        
+
         // Clean up trace listener
         if (_traceListener != null)
         {
@@ -1131,7 +1131,7 @@ public partial class MainWindow : Window
             _traceListener.Dispose();
             _traceListener = null;
         }
-        
+
         DisposeCurrentViewModel();
         InternetAccessManager.InternetAccessChanged -= InternetAccessManager_OnInternetAccessChanged;
         DeveloperProfileManager.CurrentProfileChanged -= DeveloperProfileManager_OnCurrentProfileChanged;
@@ -2506,10 +2506,10 @@ public partial class MainWindow : Window
             {
                 Timeout = TimeSpan.FromSeconds(30)
             };
-            
+
             var modApiService = new ModApiService(httpClient);
             _modBrowserViewModel = new ModBrowserViewModel(modApiService, _userConfiguration);
-            
+
             // Set up the installation callback
             _modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
 
@@ -2615,7 +2615,7 @@ public partial class MainWindow : Window
 
         _modBrowserViewModel.UpdateInstalledMods(installedModIds, numericInstalledModIds);
     }
-    
+
     private void AddModToInstalledAndRemoveFromSearch(int modId)
     {
         if (_modBrowserViewModel == null) return;
@@ -2627,7 +2627,7 @@ public partial class MainWindow : Window
         if (modToRemove != null)
         {
             _modBrowserViewModel.ModsList.Remove(modToRemove);
-            
+
             // Clear selection if the removed mod was selected
             if (ReferenceEquals(_modBrowserViewModel.SelectedMod, modToRemove))
             {
@@ -2638,23 +2638,14 @@ public partial class MainWindow : Window
 
     private async Task InstallModFromBrowserAsync(DownloadableMod mod)
     {
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] InstallModFromBrowserAsync called for mod: {mod.Name} (ID: {mod.ModId})");
-        
         if (_isModUpdateInProgress)
-        {
-            System.Diagnostics.Debug.WriteLine("[MainWindow] Install already in progress, returning");
             return;
-        }
 
-        // Step 1: Convert the DownloadableMod to ModListItemViewModel
-        // This allows us to use all the existing install functions
-        System.Diagnostics.Debug.WriteLine("[MainWindow] Converting DownloadableMod to ModListItemViewModel");
+        // Convert and validate the mod for installation
         var modViewModel = ConvertToModListItemViewModel(mod);
 
-        // Step 2: Use the EXACT SAME validation logic as the old flow
         if (!modViewModel.HasDownloadableRelease)
         {
-            System.Diagnostics.Debug.WriteLine("[MainWindow] No downloadable releases available");
             WpfMessageBox.Show("No downloadable releases are available for this mod.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
@@ -2662,14 +2653,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] ModViewModel HasDownloadableRelease={modViewModel.HasDownloadableRelease}");
-        
-        // Step 3: Use the SAME SelectReleaseForInstall function (Line 5338)
-        System.Diagnostics.Debug.WriteLine("[MainWindow] Selecting release for install");
         var release = SelectReleaseForInstall(modViewModel);
         if (release is null)
         {
-            System.Diagnostics.Debug.WriteLine("[MainWindow] SelectReleaseForInstall returned null");
             WpfMessageBox.Show("No downloadable releases are available for this mod.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
@@ -2677,9 +2663,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] Selected release: Version={release.Version}, FileName={release.FileName}, DownloadUri={release.DownloadUri}");
-
-        // Step 4: Use the SAME TryGetInstallTargetPath function (Line 8377)
         if (!TryGetInstallTargetPath(modViewModel, release, out var targetPath, out var errorMessage))
         {
             if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -2691,36 +2674,30 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Step 5: Use the SAME backup function
         await CreateAutomaticBackupAsync("ModsUpdated").ConfigureAwait(true);
 
-        // Step 6: Set the same flag
         _isModUpdateInProgress = true;
         UpdateSelectedModButtons();
 
         try
         {
-            // Step 7: Create the SAME ModUpdateDescriptor structure
             var descriptor = new ModUpdateDescriptor(
-                modViewModel.ModId,                 // Use converted ModId (string)
-                modViewModel.DisplayName,           // Use converted DisplayName
-                release.DownloadUri,                // From converted ModReleaseInfo
-                targetPath,                         // From TryGetInstallTargetPath
-                false,                              // TargetIsDirectory = false (zip-only)
-                release.FileName,                   // From converted ModReleaseInfo
-                release.Version,                    // From converted ModReleaseInfo
-                modViewModel.Version);              // Installed version (null for new install)
+                modViewModel.ModId,
+                modViewModel.DisplayName,
+                release.DownloadUri,
+                targetPath,
+                false,
+                release.FileName,
+                release.Version,
+                modViewModel.Version);
 
-            // Step 8: Use the SAME progress reporter
             var progress = new Progress<ModUpdateProgress>(p =>
                 _viewModel?.ReportStatus($"{modViewModel.DisplayName}: {p.Message}"));
 
-            // Step 9: Call the SAME ModUpdateService.UpdateAsync
             var result = await _modUpdateService
                 .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
                 .ConfigureAwait(true);
 
-            // Step 10: Use the SAME error handling
             if (!result.Success)
             {
                 var message = string.IsNullOrWhiteSpace(result.ErrorMessage)
@@ -2773,8 +2750,6 @@ public partial class MainWindow : Window
     /// </summary>
     private ModListItemViewModel ConvertToModListItemViewModel(DownloadableMod mod)
     {
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] ConvertToModListItemViewModel: Converting mod {mod.Name} (ID: {mod.ModId})");
-
         // Only consider the most recent release with a valid downloadable file
         var latestRelease = mod.Releases?
             .OrderByDescending(r => DateTime.TryParse(r.Created, out var created) ? created : DateTime.MinValue)
@@ -2784,8 +2759,6 @@ public partial class MainWindow : Window
         var releases = latestRelease != null
             ? new List<ModReleaseInfo> { latestRelease }
             : new List<ModReleaseInfo>();
-
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] Latest release: {latestRelease?.Version ?? "null"}");
 
         // Create ModDatabaseInfo with converted data
         var logoUrlSource = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
@@ -2819,8 +2792,8 @@ public partial class MainWindow : Window
             ModId = mod.ModIdStr ?? mod.ModId.ToString(),
             Name = mod.Name,
             Version = null, // Not installed yet
-            Authors = !string.IsNullOrWhiteSpace(mod.Author) 
-                ? new[] { mod.Author } 
+            Authors = !string.IsNullOrWhiteSpace(mod.Author)
+                ? new[] { mod.Author }
                 : Array.Empty<string>(),
             Website = mod.HomepageUrl,
             SourcePath = string.Empty,
@@ -2850,11 +2823,7 @@ public partial class MainWindow : Window
     private ModReleaseInfo? ConvertToModReleaseInfo(DownloadableModRelease release)
     {
         if (string.IsNullOrWhiteSpace(release.MainFile) || string.IsNullOrWhiteSpace(release.Filename))
-        {
-            System.Diagnostics.Debug.WriteLine(
-                "[MainWindow] ConvertToModReleaseInfo: Skipping release with missing download info (MainFile or Filename is empty)");
             return null;
-        }
 
         // MainFile already contains the full download URL
         var downloadUri = new Uri(release.MainFile);
@@ -2863,8 +2832,6 @@ public partial class MainWindow : Window
         DateTime? createdUtc = null;
         if (DateTime.TryParse(release.Created, out var parsedDate))
             createdUtc = parsedDate.ToUniversalTime();
-
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] ConvertToModReleaseInfo: Version={release.ModVersion}, File={release.Filename}, Compatible=true, Tags={string.Join(",", release.Tags ?? [])}");
 
         return new ModReleaseInfo
         {
@@ -3031,7 +2998,7 @@ public partial class MainWindow : Window
                         $"[MainWindow] Failed to initialize mod browser: {ex.Message}");
                 }
             }
-            
+
             if (_viewModel.ShowDatabaseTabCommand?.CanExecute(null) == true)
                 _viewModel.ShowDatabaseTabCommand.Execute(null);
         }
@@ -4131,7 +4098,7 @@ public partial class MainWindow : Window
 
         if (selectedSourcePaths is { Count: > 0 })
             RestoreSelectionFromSourcePaths(selectedSourcePaths, anchorSourcePath);
-        
+
         // Keep ModBrowser in sync with installed mods
         SyncInstalledModsToModBrowser();
     }
@@ -6246,7 +6213,7 @@ public partial class MainWindow : Window
         var newManagerFolder = Path.Combine(newParentFolder, "Simple VS Manager");
 
         // Check if the destination already exists and is not the current folder
-        if (Directory.Exists(newManagerFolder) && 
+        if (Directory.Exists(newManagerFolder) &&
             !string.Equals(currentFolder, newManagerFolder, StringComparison.OrdinalIgnoreCase))
         {
             var overwriteMessage = $"The folder \"{newManagerFolder}\" already exists.\n\n" +
@@ -6336,7 +6303,7 @@ public partial class MainWindow : Window
         {
             var fileName = Path.GetFileName(file);
             var targetFile = Path.Combine(targetDir, fileName);
-            
+
             try
             {
                 // Use File.Move for atomic operation when possible
@@ -6374,7 +6341,7 @@ public partial class MainWindow : Window
         // Delete the source directory if it's now empty
         try
         {
-            if (Directory.GetFiles(sourceDir).Length == 0 && 
+            if (Directory.GetFiles(sourceDir).Length == 0 &&
                 Directory.GetDirectories(sourceDir).Length == 0)
             {
                 Directory.Delete(sourceDir, recursive: false);
@@ -7135,10 +7102,6 @@ public partial class MainWindow : Window
         if (UpdateAllButton != null) UpdateAllButton.IsEnabled = isEnabled;
 
         if (LaunchGameButton != null) LaunchGameButton.IsEnabled = isEnabled;
-
-        //if (ModDatabaseTabButton != null) ModDatabaseTabButton.IsEnabled = isEnabled;
-
-        //if (ModlistsTabButton != null) ModlistsTabButton.IsEnabled = isEnabled;
 
         if (PresetsAndModlistsMenuItem != null) PresetsAndModlistsMenuItem.IsEnabled = isEnabled;
 
@@ -13973,14 +13936,6 @@ public partial class MainWindow : Window
         {
             _isApplyingMultiToggle = false;
         }
-    }
-
-    private void CheckBox_Checked(object sender, RoutedEventArgs e)
-    {
-    }
-
-    private void Button_Click(object sender, RoutedEventArgs e)
-    {
     }
 
     protected override void OnActivated(EventArgs e)

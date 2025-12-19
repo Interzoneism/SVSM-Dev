@@ -52,12 +52,12 @@ internal static class ModManifestCacheService
             try
             {
                 manifestJson = entry.ManifestJson ?? string.Empty;
-                
+
                 // Try to load icon from cache folder
                 var iconPath = GetIconPath(entry.ModId, entry.Version);
                 if (!string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath))
                     iconBytes = File.ReadAllBytes(iconPath);
-                
+
                 return true;
             }
             catch (Exception)
@@ -135,7 +135,7 @@ internal static class ModManifestCacheService
             lock (CacheLock)
             {
                 var cache = EnsureCacheLocked();
-                
+
                 // Update or create cache entry
                 var entry = new CachedMetadataEntry
                 {
@@ -146,7 +146,7 @@ internal static class ModManifestCacheService
                     LastWriteTimeUtcTicks = ticks,
                     Tags = Array.Empty<string>() // Tags updated via UpdateTags when database info is loaded
                 };
-                
+
                 cache.Entries[normalizedPath] = entry;
                 cache.InvalidateIndex(); // Rebuild index on next access
                 SaveCacheLocked(cache);
@@ -242,12 +242,12 @@ internal static class ModManifestCacheService
     private static UnifiedMetadataCache LoadCache()
     {
         var cachePath = GetUnifiedCachePath();
-        if (cachePath == null) 
+        if (cachePath == null)
             return new UnifiedMetadataCache();
 
         try
         {
-            if (!File.Exists(cachePath)) 
+            if (!File.Exists(cachePath))
                 return new UnifiedMetadataCache();
 
             var json = File.ReadAllText(cachePath);
@@ -269,7 +269,7 @@ internal static class ModManifestCacheService
         try
         {
             var directory = Path.GetDirectoryName(cachePath);
-            if (!string.IsNullOrEmpty(directory)) 
+            if (!string.IsNullOrEmpty(directory))
                 Directory.CreateDirectory(directory);
 
             var json = JsonSerializer.Serialize(cache, SerializerOptions);
@@ -325,7 +325,7 @@ internal static class ModManifestCacheService
 
     private static long ToUniversalTicks(DateTime value)
     {
-        if (value.Kind == DateTimeKind.Unspecified) 
+        if (value.Kind == DateTimeKind.Unspecified)
             value = DateTime.SpecifyKind(value, DateTimeKind.Local);
 
         return value.ToUniversalTime().Ticks;
@@ -333,7 +333,7 @@ internal static class ModManifestCacheService
 
     private sealed class UnifiedMetadataCache
     {
-        public Dictionary<string, CachedMetadataEntry> Entries { get; set; } = 
+        public Dictionary<string, CachedMetadataEntry> Entries { get; set; } =
             new(StringComparer.OrdinalIgnoreCase);
 
         // Secondary index for efficient lookups by ModId+Version
