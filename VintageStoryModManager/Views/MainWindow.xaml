@@ -5,7 +5,6 @@
     xmlns:converters="clr-namespace:VintageStoryModManager.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:design="clr-namespace:VintageStoryModManager.Design"
-    xmlns:effects="clr-namespace:LoFiEffects.WPF.Effects;assembly=LoFiEffects.WPF"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:services="clr-namespace:VintageStoryModManager.Services"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -18,7 +17,7 @@
     MinWidth="1000"
     MinHeight="775"
     d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData},
-                                     IsDesignTimeCreatable=True}"
+                                     IsDesignTimeCreatable=False}"
     AllowDrop="True"
     Background="Transparent"
     PreviewDragEnter="MainWindow_OnPreviewDragEnter"
@@ -680,7 +679,6 @@
                                     CanUserAddRows="False"
                                     CanUserDeleteRows="False"
                                     CanUserSortColumns="True"
-                                    EnableRowVirtualization="True"
                                     FontSize="15"
                                     Foreground="{DynamicResource Brush.Text.Primary}"
                                     GridLinesVisibility="None"
@@ -996,11 +994,12 @@
                                                                 BorderThickness="1"
                                                                 CornerRadius="6">
                                                                 <ScrollViewer
-                                                                    Style="{StaticResource IMM.TagsScrollViewerStyle}"
                                                                     MaxHeight="360"
                                                                     Margin="0,4,0,0"
                                                                     HorizontalScrollBarVisibility="Hidden"
-                                                                    VerticalScrollBarVisibility="Hidden" OverridesDefaultStyle="True">
+                                                                    OverridesDefaultStyle="True"
+                                                                    Style="{StaticResource IMM.TagsScrollViewerStyle}"
+                                                                    VerticalScrollBarVisibility="Hidden">
                                                                     <ItemsControl ItemsPanel="{StaticResource IMM.TagFilterItemsPanelTemplate}" ItemsSource="{Binding DataContext.InstalledTagFilters, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
                                                                         <ItemsControl.ItemTemplate>
                                                                             <DataTemplate DataType="{x:Type viewModels:TagFilterOptionViewModel}">
@@ -1165,29 +1164,27 @@
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>
-                            <TextBlock
+                            <Image
                                 Grid.Row="1"
-                                Margin="32"
+                                Width="128"
+                                Height="128"
+                                Margin="0"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
-                                Panel.ZIndex="1"
-                                FontSize="16"
-                                Foreground="{DynamicResource Brush.Text.Primary}"
                                 IsHitTestVisible="False"
-                                Text="{Binding NoModsFoundMessage}"
-                                TextAlignment="Center"
-                                TextWrapping="Wrap">
-                                <TextBlock.Style>
-                                    <Style TargetType="{x:Type TextBlock}">
-                                        <Setter Property="Visibility" Value="Collapsed" />
+                                Opacity="1"
+                                Source="/Resources/manager-icon.png">
+                                <Image.Style>
+                                    <Style TargetType="{x:Type Image}">
+                                        <Setter Property="Visibility" Value="Hidden" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding TotalMods}" Value="0">
                                                 <Setter Property="Visibility" Value="Visible" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                                </Image.Style>
+                            </Image>
                         </Grid>
                     </Border>
                 </TabItem>
@@ -1970,15 +1967,15 @@
                     <!--  Mod details loading progress display  -->
                     <StackPanel Margin="8,4" VerticalAlignment="Center">
                         <StackPanel.Style>
-                                <Style TargetType="{x:Type StackPanel}">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsModDetailsProgressVisible}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsLoadingMods}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                        </DataTrigger>
+                            <Style TargetType="{x:Type StackPanel}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsModDetailsProgressVisible}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsLoadingMods}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
                                     <DataTrigger Binding="{Binding IsModlistInstallInProgress, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
                                         <Setter Property="Visibility" Value="Collapsed" />
                                     </DataTrigger>
@@ -2045,20 +2042,20 @@
                 Foreground="{DynamicResource Brush.Accent.Primary}"
                 IsActive="{Binding IsBusy}">
                 <ui:ProgressRing.Style>
-                        <Style TargetType="{x:Type ui:ProgressRing}">
-                            <Setter Property="Visibility" Value="Visible" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsBusy}" Value="False">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsFastCheckInProgress}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsModlistInstallInProgress, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
+                    <Style TargetType="{x:Type ui:ProgressRing}">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsBusy}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsFastCheckInProgress}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsModlistInstallInProgress, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
                 </ui:ProgressRing.Style>
             </ui:ProgressRing>
         </Grid>
