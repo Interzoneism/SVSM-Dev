@@ -10598,7 +10598,6 @@ public partial class MainWindow : Window
             {
                 Header = "Presets unavailable",
                 IsEnabled = false,
-                Padding = new Thickness(12, 6),
                 Focusable = false,
                 Opacity = 0.75
             });
@@ -10617,7 +10616,6 @@ public partial class MainWindow : Window
             {
                 Header = "Presets unavailable",
                 IsEnabled = false,
-                Padding = new Thickness(12, 6),
                 Focusable = false,
                 Opacity = 0.75
             });
@@ -10630,7 +10628,6 @@ public partial class MainWindow : Window
             {
                 Header = "No presets available",
                 IsEnabled = false,
-                Padding = new Thickness(12, 6),
                 Focusable = false,
                 Opacity = 0.75
             });
