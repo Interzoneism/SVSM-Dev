@@ -7,7 +7,6 @@
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
-		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 		<AssetTargetFallback>$(AssetTargetFallback);net5.0-windows7.0;netcoreapp3.0</AssetTargetFallback>
 		<ApplicationIcon>SVSM.ico</ApplicationIcon>
 		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
@@ -28,21 +27,6 @@
 		<InformationalVersion>$(AppVersion)</InformationalVersion>     <!-- About box/semver -->
 	</PropertyGroup>
 
-	<!-- Enable DEBUG symbol in all configurations so Debug.WriteLine calls are captured by trace listeners -->
-	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-		<DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
-	</PropertyGroup>
-	<ItemGroup>
-	  <Compile Remove="Converters\HeightToMarginConverter.cs" />
-	</ItemGroup>
-	<ItemGroup>
-		<None Remove="soil.png" />
-		<None Remove="Views\soilcorrect.png" />
-	</ItemGroup>
-	<ItemGroup>
-		<Page Remove="Resources\Themes\LightTheme.xaml" />
-	</ItemGroup>
-
         <ItemGroup>
                 <Resource Include="warning.png" />
                 <Resource Include="error.png" />
@@ -51,29 +35,12 @@
         </ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="BenchmarkDotNet" Version="0.15.6" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-		<PackageReference Include="LoFiEffects.WPF" Version="1.3.0" />
-		<PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.3.36714.1" />
 		<PackageReference Include="ModernWpfUI" Version="0.9.6" />
 		<PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
 		<PackageReference Include="QuestPDF" Version="2025.12.0" />
 		<PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
 		<PackageReference Include="YamlDotNet" Version="16.3.0" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Folder Include="Benchmarks\" />
-		<Folder Include="Resources\Fonts\" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Compile Update="Properties\Settings.Designer.cs">
-			<DesignTimeSharedInput>True</DesignTimeSharedInput>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>Settings.settings</DependentUpon>
-		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
