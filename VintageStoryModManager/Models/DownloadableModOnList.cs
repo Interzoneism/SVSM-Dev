@@ -61,7 +61,7 @@ public class DownloadableModOnList : INotifyPropertyChanged
             var previousLogoUrl = LogoUrl;
             _logo = value;
             OnPropertyChanged();
-            
+
             // Only notify LogoUrl if it actually changed (cache new value to avoid redundant computation)
             var newLogoUrl = LogoUrl;
             if (newLogoUrl != previousLogoUrl)
@@ -84,7 +84,7 @@ public class DownloadableModOnList : INotifyPropertyChanged
             var previousLogoUrl = LogoUrl;
             _logoFileDatabase = value;
             OnPropertyChanged();
-            
+
             // Only notify LogoUrl if it actually changed (cache new value to avoid redundant computation)
             var newLogoUrl = LogoUrl;
             if (newLogoUrl != previousLogoUrl)

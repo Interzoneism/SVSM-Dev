@@ -9,8 +9,8 @@ namespace VintageStoryModManager.Services;
 /// <summary>
 ///     Provides efficient caching for mod database images to avoid repeated downloads.
 ///     <para>
-///     Cache files are stored with descriptor-based names (e.g., "modsource_modid.png") 
-///     for better organization and readability. Files are stored in the mod database 
+///     Cache files are stored with descriptor-based names (e.g., "modsource_modid.png")
+///     for better organization and readability. Files are stored in the mod database
 ///     image cache directory managed by <see cref="ModCacheLocator"/>.
 ///     </para>
 ///     <para>
@@ -23,7 +23,7 @@ namespace VintageStoryModManager.Services;
 /// </summary>
 internal static class ModImageCacheService
 {
-    private static readonly ConcurrentDictionary<string, SemaphoreSlim> FileLocks = 
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> FileLocks =
         new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
@@ -259,7 +259,7 @@ internal static class ModImageCacheService
             if (lastDotIndex < 0 || lastDotIndex == urlSpan.Length - 1) return ".png";
 
             var extensionSpan = urlSpan.Slice(lastDotIndex);
-            
+
             // Check for common image extensions (case-insensitive)
             if (extensionSpan.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
                 extensionSpan.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
@@ -285,10 +285,10 @@ internal static class ModImageCacheService
         var maxByteCount = Encoding.UTF8.GetMaxByteCount(url.Length);
         Span<byte> bytes = maxByteCount <= 1024 ? stackalloc byte[maxByteCount] : new byte[maxByteCount];
         var actualByteCount = Encoding.UTF8.GetBytes(url.AsSpan(), bytes);
-        
+
         Span<byte> hashBytes = stackalloc byte[32]; // SHA256 produces 32 bytes
         SHA256.HashData(bytes.Slice(0, actualByteCount), hashBytes);
-        
+
         // Use a URL-safe base64 encoding and take first 32 characters for a reasonable filename length
         Span<char> base64Chars = stackalloc char[44]; // Base64 of 32 bytes = 44 chars
         if (!Convert.TryToBase64Chars(hashBytes, base64Chars, out var charsWritten) || charsWritten == 0)
@@ -296,11 +296,11 @@ internal static class ModImageCacheService
             // Fallback to standard Base64 encoding if conversion fails
             return Convert.ToBase64String(hashBytes).Replace('+', '-').Replace('/', '_').TrimEnd('=').Substring(0, 32);
         }
-        
+
         // Make URL-safe and truncate
         var targetLength = Math.Min(32, charsWritten);
         Span<char> urlSafeChars = stackalloc char[targetLength];
-        
+
         for (var i = 0; i < targetLength; i++)
         {
             var c = base64Chars[i];
@@ -312,7 +312,7 @@ internal static class ModImageCacheService
                 _ => c
             };
         }
-        
+
         return urlSafeChars.ToString();
     }
 

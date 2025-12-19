@@ -83,7 +83,7 @@ public static class DevConfig
     public static string FirebaseNewProjectId { get; } = "simplevsmanager";
 
     public static string FirebaseLegacyProjectId { get; } = "simple-vs-manager";
-                                                           
+
     public static string FirebaseAuthBackupDirectoryName { get; } = "SVSM Backup";
 
     public static string FirebaseCacheDirectoryName { get; } = "Temp Cache/Firebase Cache";

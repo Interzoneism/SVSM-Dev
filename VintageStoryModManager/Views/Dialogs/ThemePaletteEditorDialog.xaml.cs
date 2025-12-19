@@ -133,7 +133,7 @@ public partial class ThemePaletteEditorDialog : Window
     {
         // Guard against events during initialization
         if (PaletteItems.Count == 0) return;
-        
+
         if (sender is not ComboBox comboBox) return;
         if (comboBox.SelectedItem is not ComboBoxItem selectedItem) return;
         if (selectedItem.Tag is not string themeTag) return;
@@ -141,10 +141,10 @@ public partial class ThemePaletteEditorDialog : Window
         if (!Enum.TryParse<ColorTheme>(themeTag, true, out var theme)) return;
 
         var palette = UserConfigurationService.GetDefaultThemePalette(theme);
-        
+
         // Create a lookup dictionary for efficient item updates (O(n) for dictionary creation + O(1) per lookup)
         var itemsLookup = PaletteItems.ToDictionary(item => item.Key, StringComparer.OrdinalIgnoreCase);
-        
+
         foreach (var pair in palette)
         {
             if (_configuration.TrySetThemePaletteColor(pair.Key, pair.Value))
@@ -155,7 +155,7 @@ public partial class ThemePaletteEditorDialog : Window
                 }
             }
         }
-        
+
         ApplyTheme();
     }
 

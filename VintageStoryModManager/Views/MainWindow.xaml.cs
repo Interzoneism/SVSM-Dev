@@ -399,7 +399,7 @@ public partial class MainWindow : Window
         _modActivityLoggingService = new ModActivityLoggingService(_userConfiguration);
 
         InitializeComponent();
-        
+
         InitializeModBrowserView();
 
         DeveloperProfileManager.CurrentProfileChanged += DeveloperProfileManager_OnCurrentProfileChanged;
@@ -569,7 +569,7 @@ public partial class MainWindow : Window
         {
             // Exiting compact mode: re-enable the menu item
             IconColumnMenuItem.IsEnabled = true;
-            
+
             // The XAML binding will try to make the Icon column visible when exiting compact mode
             // We need to re-apply the user's preference to override the binding if they had it hidden
             if (_installedColumnVisibilityPreferences.TryGetValue(InstalledModsColumn.Icon, out var userPreference))
@@ -607,7 +607,7 @@ public partial class MainWindow : Window
             await InitializeViewModelAsync(_viewModel).ConfigureAwait(true);
             await EnsureInstalledModsCachedAsync(_viewModel).ConfigureAwait(true);
             await CreateAppStartedBackupAsync().ConfigureAwait(true);
-            
+
             // Sync installed mods to ModBrowser after ViewModel is initialized
             SyncInstalledModsToModBrowser();
         }
@@ -1123,7 +1123,7 @@ public partial class MainWindow : Window
         SaveWindowDimensions();
         SaveUploaderName();
         _modActivityLoggingService.LogAppExit();
-        
+
         // Clean up trace listener
         if (_traceListener != null)
         {
@@ -1131,7 +1131,7 @@ public partial class MainWindow : Window
             _traceListener.Dispose();
             _traceListener = null;
         }
-        
+
         DisposeCurrentViewModel();
         InternetAccessManager.InternetAccessChanged -= InternetAccessManager_OnInternetAccessChanged;
         DeveloperProfileManager.CurrentProfileChanged -= DeveloperProfileManager_OnCurrentProfileChanged;
@@ -2506,10 +2506,10 @@ public partial class MainWindow : Window
             {
                 Timeout = TimeSpan.FromSeconds(30)
             };
-            
+
             var modApiService = new ModApiService(httpClient);
             _modBrowserViewModel = new ModBrowserViewModel(modApiService, _userConfiguration);
-            
+
             // Set up the installation callback
             _modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
 
@@ -2615,7 +2615,7 @@ public partial class MainWindow : Window
 
         _modBrowserViewModel.UpdateInstalledMods(installedModIds, numericInstalledModIds);
     }
-    
+
     private void AddModToInstalledAndRemoveFromSearch(int modId)
     {
         if (_modBrowserViewModel == null) return;
@@ -2627,7 +2627,7 @@ public partial class MainWindow : Window
         if (modToRemove != null)
         {
             _modBrowserViewModel.ModsList.Remove(modToRemove);
-            
+
             // Clear selection if the removed mod was selected
             if (ReferenceEquals(_modBrowserViewModel.SelectedMod, modToRemove))
             {
@@ -2652,7 +2652,7 @@ public partial class MainWindow : Window
                 MessageBoxImage.Information);
             return;
         }
-        
+
         var release = SelectReleaseForInstall(modViewModel);
         if (release is null)
         {
@@ -2792,8 +2792,8 @@ public partial class MainWindow : Window
             ModId = mod.ModIdStr ?? mod.ModId.ToString(),
             Name = mod.Name,
             Version = null, // Not installed yet
-            Authors = !string.IsNullOrWhiteSpace(mod.Author) 
-                ? new[] { mod.Author } 
+            Authors = !string.IsNullOrWhiteSpace(mod.Author)
+                ? new[] { mod.Author }
                 : Array.Empty<string>(),
             Website = mod.HomepageUrl,
             SourcePath = string.Empty,
@@ -2998,7 +2998,7 @@ public partial class MainWindow : Window
                         $"[MainWindow] Failed to initialize mod browser: {ex.Message}");
                 }
             }
-            
+
             if (_viewModel.ShowDatabaseTabCommand?.CanExecute(null) == true)
                 _viewModel.ShowDatabaseTabCommand.Execute(null);
         }
@@ -4098,7 +4098,7 @@ public partial class MainWindow : Window
 
         if (selectedSourcePaths is { Count: > 0 })
             RestoreSelectionFromSourcePaths(selectedSourcePaths, anchorSourcePath);
-        
+
         // Keep ModBrowser in sync with installed mods
         SyncInstalledModsToModBrowser();
     }
@@ -6213,7 +6213,7 @@ public partial class MainWindow : Window
         var newManagerFolder = Path.Combine(newParentFolder, "Simple VS Manager");
 
         // Check if the destination already exists and is not the current folder
-        if (Directory.Exists(newManagerFolder) && 
+        if (Directory.Exists(newManagerFolder) &&
             !string.Equals(currentFolder, newManagerFolder, StringComparison.OrdinalIgnoreCase))
         {
             var overwriteMessage = $"The folder \"{newManagerFolder}\" already exists.\n\n" +
@@ -6303,7 +6303,7 @@ public partial class MainWindow : Window
         {
             var fileName = Path.GetFileName(file);
             var targetFile = Path.Combine(targetDir, fileName);
-            
+
             try
             {
                 // Use File.Move for atomic operation when possible
@@ -6341,7 +6341,7 @@ public partial class MainWindow : Window
         // Delete the source directory if it's now empty
         try
         {
-            if (Directory.GetFiles(sourceDir).Length == 0 && 
+            if (Directory.GetFiles(sourceDir).Length == 0 &&
                 Directory.GetDirectories(sourceDir).Length == 0)
             {
                 Directory.Delete(sourceDir, recursive: false);

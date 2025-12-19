@@ -408,7 +408,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // or during tab switches where the search text is cleared.
                 if (hadSearchTokens || hasSearchTokens)
                     TriggerDebouncedInstalledModsSearch();
-            
+
         }
     }
 
@@ -2000,7 +2000,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         if (string.Equals(e.PropertyName, nameof(ModListItemViewModel.DatabaseTags), StringComparison.Ordinal))
         {
-            
+
             return;
         }
 
@@ -3576,13 +3576,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (!_isTagsColumnVisible)
         {
             if (TryGetTagSuppressionKey(entry, out var key) && key != null) _suppressedTagEntries.Add(key);
-    
+
             return CreateInfoWithoutTags(info);
         }
 
         if (TryGetTagSuppressionKey(entry, out var visibleKey) && visibleKey != null)
             _suppressedTagEntries.Remove(visibleKey);
- 
+
         return info;
     }
 

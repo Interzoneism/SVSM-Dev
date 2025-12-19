@@ -119,15 +119,15 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
     private void InstallButton_Click(object sender, RoutedEventArgs e)
     {
         e.Handled = true; // Prevent card click
-        
+
         if (ViewModel == null)
             return;
-        
+
         if (sender is FrameworkElement element && element.Tag is int modId)
         {
             if (ViewModel.InstallModCommand == null)
                 return;
-            
+
             ViewModel.InstallModCommand.Execute(modId);
         }
     }

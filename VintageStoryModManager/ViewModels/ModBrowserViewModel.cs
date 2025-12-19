@@ -409,7 +409,7 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             IsSearching = true;
             LoadingMessage = "Searching mods...";
-            
+
             // Clear the list immediately so the progress indicator is visible
             ModsList.Clear();
             VisibleModsCount = 0;
@@ -495,18 +495,18 @@ public partial class ModBrowserViewModel : ObservableObject
     {
         // Throttle load requests to prevent rapid consecutive calls (lock-free, thread-safe)
         var nowTicks = Environment.TickCount64;
-        
+
         // Atomically check and update timestamp to prevent race conditions
         while (true)
         {
             var lastTicks = Interlocked.Read(ref _lastLoadMoreTicks);
             var timeSinceLastLoad = nowTicks - lastTicks;
-            
+
             if (timeSinceLastLoad < LoadMoreThrottleMs)
             {
                 return; // Too soon, throttle this request
             }
-            
+
             // Try to atomically update the timestamp
             if (Interlocked.CompareExchange(ref _lastLoadMoreTicks, nowTicks, lastTicks) == lastTicks)
             {
@@ -1044,7 +1044,7 @@ public partial class ModBrowserViewModel : ObservableObject
         {
             modsToLoad = mods.Where(m => !_userReportsLoaded.Contains(m.ModId)).ToList();
         }
-        
+
         if (modsToLoad.Count == 0)
             return;
 

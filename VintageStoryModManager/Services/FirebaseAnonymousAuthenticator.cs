@@ -825,7 +825,7 @@ public sealed class FirebaseAnonymousAuthenticator : IDisposable
             if (_disposed) return;
             _disposed = true;
         }
-        
+
         // Dispose semaphore outside the lock to avoid potential deadlocks.
         // The _disposed flag (set atomically above) prevents new operations.
         _stateLock.Dispose();
