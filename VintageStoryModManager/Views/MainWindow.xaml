@@ -212,10 +212,6 @@
                         UseLayoutRounding="True">
                         <MenuItem
                             Height="35"
-                            Click="SaveInstalledModsPdfMenuItem_OnClick"
-                            Header="Save _Modlist as an importable PDF..." />
-                        <MenuItem
-                            Height="35"
                             Click="SaveModlistMenuItem_OnClick"
                             Header="Save _Modlist..." />
                         <MenuItem
