@@ -2641,11 +2641,9 @@ public partial class MainWindow : Window
         if (_isModUpdateInProgress)
             return;
 
-        // Step 1: Convert the DownloadableMod to ModListItemViewModel
-        // This allows us to use all the existing install functions
+        // Convert and validate the mod for installation
         var modViewModel = ConvertToModListItemViewModel(mod);
 
-        // Step 2: Use the EXACT SAME validation logic as the old flow
         if (!modViewModel.HasDownloadableRelease)
         {
             WpfMessageBox.Show("No downloadable releases are available for this mod.",
@@ -2655,7 +2653,6 @@ public partial class MainWindow : Window
             return;
         }
         
-        // Step 3: Use the SAME SelectReleaseForInstall function (Line 5338)
         var release = SelectReleaseForInstall(modViewModel);
         if (release is null)
         {
@@ -2666,7 +2663,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Step 4: Use the SAME TryGetInstallTargetPath function (Line 8377)
         if (!TryGetInstallTargetPath(modViewModel, release, out var targetPath, out var errorMessage))
         {
             if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -2678,36 +2674,30 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Step 5: Use the SAME backup function
         await CreateAutomaticBackupAsync("ModsUpdated").ConfigureAwait(true);
 
-        // Step 6: Set the same flag
         _isModUpdateInProgress = true;
         UpdateSelectedModButtons();
 
         try
         {
-            // Step 7: Create the SAME ModUpdateDescriptor structure
             var descriptor = new ModUpdateDescriptor(
-                modViewModel.ModId,                 // Use converted ModId (string)
-                modViewModel.DisplayName,           // Use converted DisplayName
-                release.DownloadUri,                // From converted ModReleaseInfo
-                targetPath,                         // From TryGetInstallTargetPath
-                false,                              // TargetIsDirectory = false (zip-only)
-                release.FileName,                   // From converted ModReleaseInfo
-                release.Version,                    // From converted ModReleaseInfo
-                modViewModel.Version);              // Installed version (null for new install)
+                modViewModel.ModId,
+                modViewModel.DisplayName,
+                release.DownloadUri,
+                targetPath,
+                false,
+                release.FileName,
+                release.Version,
+                modViewModel.Version);
 
-            // Step 8: Use the SAME progress reporter
             var progress = new Progress<ModUpdateProgress>(p =>
                 _viewModel?.ReportStatus($"{modViewModel.DisplayName}: {p.Message}"));
 
-            // Step 9: Call the SAME ModUpdateService.UpdateAsync
             var result = await _modUpdateService
                 .UpdateAsync(descriptor, _userConfiguration.CacheAllVersionsLocally, progress)
                 .ConfigureAwait(true);
 
-            // Step 10: Use the SAME error handling
             if (!result.Success)
             {
                 var message = string.IsNullOrWhiteSpace(result.ErrorMessage)
