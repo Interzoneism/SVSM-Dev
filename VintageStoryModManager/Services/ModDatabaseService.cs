@@ -304,7 +304,7 @@ public sealed class ModDatabaseService
         if (string.IsNullOrWhiteSpace(modId)) return (null, true);
 
         var normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
-        
+
         // Always load from cache first
         var cached = await CacheService.TryLoadWithoutExpiryAsync(
             modId,
@@ -1425,7 +1425,7 @@ public sealed class ModDatabaseService
             // Don't trim leading spaces from lines with bullets to preserve indentation
             var trimmedStart = trimmedEnd.TrimStart();
             var foundBullet = false;
-            
+
             foreach (var bulletSymbol in BulletSymbols)
             {
                 if (trimmedStart.StartsWith(bulletSymbol, StringComparison.Ordinal))
@@ -1440,7 +1440,7 @@ public sealed class ModDatabaseService
                     break;
                 }
             }
-            
+
             if (!foundBullet)
             {
                 normalizedLines.Add(trimmedEnd.Trim());

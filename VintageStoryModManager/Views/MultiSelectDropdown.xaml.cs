@@ -119,7 +119,7 @@ namespace VintageStoryModManager.Views
             InitializeComponent();
             ItemsList.ItemsSource = _selectableItems;
             Loaded += (_, _) => UpdateDisplayText(); // Update after resources are available
-            
+
             // Subscribe to PreviewMouseDown on the root visual to detect clicks outside
             Loaded += (_, _) =>
             {
@@ -133,7 +133,7 @@ namespace VintageStoryModManager.Views
                     }
                 }
             };
-            
+
             Unloaded += (_, _) =>
             {
                 if (_isEventSubscribed)
@@ -147,12 +147,12 @@ namespace VintageStoryModManager.Views
                 }
             };
         }
-        
+
         private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             if (!DropdownPopup.IsOpen)
                 return;
-                
+
             // Check if the click is outside the dropdown
             var popupChild = DropdownPopup.Child;
             var toggleButton = DropdownToggle;
@@ -178,12 +178,12 @@ namespace VintageStoryModManager.Views
                 }
             }
         }
-        
+
         private bool IsDescendantOf(DependencyObject? child, DependencyObject parent)
         {
             if (child == null || parent == null)
                 return false;
-                
+
             DependencyObject current = child;
             while (current != null)
             {
@@ -233,7 +233,7 @@ namespace VintageStoryModManager.Views
                                 DisplayText = displayText,
                                 IsSelected = isSelected
                             };
-                            
+
                             if (insertIndex <= _selectableItems.Count)
                             {
                                 _selectableItems.Insert(insertIndex, selectableItem);
@@ -330,7 +330,7 @@ namespace VintageStoryModManager.Views
         private void OnSelectedItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             UpdateDisplayText();
-            
+
             // Update selection state incrementally instead of rebuilding entire list
             // Note: Using FirstOrDefault results in O(n) lookup per item, but this is acceptable because:
             // 1. SelectedItems changes are infrequent and typically involve only a few items
@@ -503,10 +503,10 @@ namespace VintageStoryModManager.Views
                 }
 
                 UpdateDisplayText();
-                
+
                 // Raise SelectionChanged event to notify listeners
                 SelectionChanged?.Invoke(this, EventArgs.Empty);
-                
+
                 // Mark event as handled to prevent popup from closing when clicking items
                 e.Handled = true;
             }

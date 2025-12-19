@@ -220,7 +220,6 @@ public sealed class FirebaseModlistStore : IDisposable
         {
             var rootUrl = BuildAuthenticatedUrl(session.IdToken, null /* root */);
 
-            // public registry stores only the content object, not registryId
             var registryNodeJson =
                 $"{{\"content\":{normalizedContent},\"dateAdded\":{JsonSerializer.Serialize(dateAddedIso)}}}";
             var registryOwnerJson = JsonSerializer.Serialize(session.UserId);
@@ -1091,7 +1090,7 @@ public sealed class FirebaseModlistStore : IDisposable
             if (_disposed) return;
             _disposed = true;
         }
-        
+
         // Dispose semaphores outside the lock to avoid potential deadlocks.
         // The _disposed flag (set atomically above) prevents new operations.
         _ownershipClaimLock.Dispose();

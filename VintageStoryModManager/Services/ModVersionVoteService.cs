@@ -878,7 +878,7 @@ public sealed class ModVersionVoteService : IDisposable
             if (_disposed) return;
             _disposed = true;
         }
-        
+
         // Dispose resources outside the lock to avoid deadlocks.
         // The _disposed flag (set atomically above) prevents new operations from starting.
         _cacheLock.Dispose();

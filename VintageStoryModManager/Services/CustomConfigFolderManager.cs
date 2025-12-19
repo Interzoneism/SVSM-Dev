@@ -27,14 +27,14 @@ public static class CustomConfigFolderManager
     public static string? GetCustomConfigFolder()
     {
         var pathFile = GetCustomFolderPathFile();
-        
+
         if (!File.Exists(pathFile))
             return null;
 
         try
         {
             var customPath = File.ReadAllText(pathFile).Trim();
-            
+
             if (string.IsNullOrWhiteSpace(customPath))
                 return null;
 
@@ -69,7 +69,7 @@ public static class CustomConfigFolderManager
     public static void ClearCustomConfigFolder()
     {
         var pathFile = GetCustomFolderPathFile();
-        
+
         if (File.Exists(pathFile))
         {
             try

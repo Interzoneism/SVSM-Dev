@@ -1248,9 +1248,9 @@ public sealed class UserConfigurationService
     public void SetModBrowserSelectedVersionIds(IEnumerable<string> versionIds)
     {
         var normalizedIds = versionIds?.Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id.Trim()).ToList() ?? [];
-        
+
         // Check if the lists are different
-        if (ModBrowserSelectedVersionIds.Count == normalizedIds.Count && 
+        if (ModBrowserSelectedVersionIds.Count == normalizedIds.Count &&
             ModBrowserSelectedVersionIds.SequenceEqual(normalizedIds))
             return;
 
@@ -1261,9 +1261,9 @@ public sealed class UserConfigurationService
     public void SetModBrowserSelectedTagIds(IEnumerable<int> tagIds)
     {
         var normalizedIds = tagIds?.ToList() ?? [];
-        
+
         // Check if the lists are different
-        if (ModBrowserSelectedTagIds.Count == normalizedIds.Count && 
+        if (ModBrowserSelectedTagIds.Count == normalizedIds.Count &&
             ModBrowserSelectedTagIds.SequenceEqual(normalizedIds))
             return;
 

@@ -69,10 +69,10 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _userReportTooltip;
     private string? _versionWarningMessage;
     private bool _hasInitializedUserReportState;
-    
+
     // Cached tag display string to avoid repeated string.Join allocations
     private string? _cachedDatabaseTagsDisplay;
-    
+
     // Property change batching support
     private int _propertyChangeSuspendCount;
     private readonly HashSet<string> _pendingPropertyChanges = new();
@@ -258,7 +258,7 @@ public sealed class ModListItemViewModel : ObservableObject
             var cached = _cachedDatabaseTagsDisplay;
             if (cached is not null)
                 return cached;
-            
+
             cached = DatabaseTags.Count == 0 ? "—" : string.Join(", ", DatabaseTags);
             _cachedDatabaseTagsDisplay = cached;
             return cached;
@@ -975,7 +975,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
         // Batch all property changes to reduce UI update overhead.
         // Thread safety: This method is always invoked on the Dispatcher thread via
-        // InvokeOnDispatcherAsync in MainViewModel.ApplyDatabaseInfoAsync, so no 
+        // InvokeOnDispatcherAsync in MainViewModel.ApplyDatabaseInfoAsync, so no
         // synchronization is needed for the property change batching mechanism.
         using (SuspendPropertyChangeNotifications())
         {
@@ -1478,7 +1478,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
         // Use ReadOnlySpan for more efficient substring searches
         var searchIndexSpan = _searchIndex.AsSpan();
-        
+
         foreach (var token in tokens)
         {
             if (searchIndexSpan.IndexOf(token.AsSpan(), StringComparison.OrdinalIgnoreCase) < 0)
@@ -1824,7 +1824,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
         var span = version.AsSpan();
         var dotIndex = span.IndexOf('.');
-        
+
         // Parse major version
         var majorSpan = dotIndex >= 0 ? span.Slice(0, dotIndex) : span;
         if (!int.TryParse(majorSpan.Trim(), out major)) return false;
@@ -1835,7 +1835,7 @@ public sealed class ModListItemViewModel : ObservableObject
             var remainingSpan = span.Slice(dotIndex + 1);
             var nextDotIndex = remainingSpan.IndexOf('.');
             var minorSpan = nextDotIndex >= 0 ? remainingSpan.Slice(0, nextDotIndex) : remainingSpan;
-            
+
             if (!int.TryParse(minorSpan.Trim(), out minor)) return false;
         }
         else

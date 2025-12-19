@@ -169,12 +169,12 @@ public class ModApiService : IModApiService
         {
             var url = $"{BaseUrl}/api/mod/{Uri.EscapeDataString(modIdStr)}";
             System.Diagnostics.Debug.WriteLine($"[ModApiService] Fetching mod from: {url}");
-            
+
             var response = await _httpClient.GetStringAsync(url, cancellationToken);
-            
+
             // Log response metadata instead of full content for performance
             System.Diagnostics.Debug.WriteLine($"[ModApiService] Received response: {response.Length} characters");
-            
+
             var result = JsonSerializer.Deserialize<ModResponse>(response, _jsonOptions);
 
             if (result?.StatusCode != 200)
@@ -188,29 +188,29 @@ public class ModApiService : IModApiService
             {
                 System.Diagnostics.Debug.WriteLine($"[ModApiService] Successfully deserialized mod: {mod.Name}");
                 System.Diagnostics.Debug.WriteLine($"[ModApiService] Mod has {mod.Releases?.Count ?? 0} releases");
-                
+
                 // Filter out releases with invalid file IDs (null was converted to 0)
                 if (mod.Releases != null)
                 {
                     var removedCount = mod.Releases.RemoveAll(r => r.FileId <= 0);
-                    
+
                     if (removedCount > 0)
                     {
                         System.Diagnostics.Debug.WriteLine($"[ModApiService] Filtered out {removedCount} releases with invalid file IDs");
                     }
                 }
-                
+
                 // Filter out screenshots with invalid file IDs (null was converted to 0)
                 if (mod.Screenshots != null)
                 {
                     var removedCount = mod.Screenshots.RemoveAll(s => s.FileId <= 0);
-                    
+
                     if (removedCount > 0)
                     {
                         System.Diagnostics.Debug.WriteLine($"[ModApiService] Filtered out {removedCount} screenshots with invalid file IDs");
                     }
                 }
-                
+
                 if (mod.Releases == null || mod.Releases.Count == 0)
                 {
                     System.Diagnostics.Debug.WriteLine($"[ModApiService] WARNING: Mod {mod.Name} has NO valid releases!");
@@ -220,7 +220,7 @@ public class ModApiService : IModApiService
             {
                 System.Diagnostics.Debug.WriteLine($"[ModApiService] Deserialized mod is null");
             }
-            
+
             return mod;
         }
         catch (JsonException ex)
@@ -289,7 +289,7 @@ public class ModApiService : IModApiService
             System.Diagnostics.Debug.WriteLine($"Fetching game versions from {BaseUrl}/api/gameversions");
             var response = await _httpClient.GetStringAsync($"{BaseUrl}/api/gameversions", cancellationToken);
             System.Diagnostics.Debug.WriteLine($"Raw API response (first 500 chars): {(response.Length > 500 ? response.Substring(0, 500) : response)}");
-            
+
             var result = JsonSerializer.Deserialize<GameVersionsResponse>(response, _jsonOptions);
             System.Diagnostics.Debug.WriteLine($"Deserialized {result?.GameVersions?.Count ?? 0} game versions");
 
