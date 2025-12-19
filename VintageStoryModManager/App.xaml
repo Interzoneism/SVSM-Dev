@@ -19,6 +19,7 @@
             <BooleanToVisibilityConverter x:Key="IMM.BooleanToVisibilityConverter" />
             <converters:ScaledThicknessConverter x:Key="IMM.ScaledThicknessConverter" />
             <converters:ScaledDoubleConverter x:Key="IMM.ScaledDoubleConverter" />
+            <converters:CompactViewWidthConverter x:Key="IMM.CompactViewWidthConverter" />
 
             <ControlTemplate x:Key="IMM.SunkenListControlTemplate" TargetType="{x:Type ListBox}">
                 <Border
