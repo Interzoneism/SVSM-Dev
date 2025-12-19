@@ -1589,67 +1589,84 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // This optimization removes an unnecessary UI thread round-trip
         Dictionary<string, ModEntry> previousEntries = new(_modEntriesBySourcePath, StringComparer.OrdinalIgnoreCase);
 
-        // Initialize progress tracking
-        LoadingProgress = 0;
-        LoadingStatusText = "Discovering mods...";
+        IProgress<LoadingProgressUpdate> progressReporter = new Progress<LoadingProgressUpdate>(update =>
+        {
+            LoadingProgress = update.Progress;
+            LoadingStatusText = update.Status;
+        });
 
-        var allEntries = new List<ModEntry>();
+        progressReporter.Report(new LoadingProgressUpdate(0, "Discovering mods..."));
+
         var batchSize = InstalledModsIncrementalBatchSize;
-        var processedCount = 0;
-        var batchesSinceYield = 0;
-        const int yieldEveryNBatches = 5; // Yield every 5 batches instead of every batch to reduce context switching
 
-        // Use incremental loading to keep UI responsive
-        await foreach (var batch in _discoveryService.LoadModsIncrementallyAsync(batchSize, CancellationToken.None))
-        {
-            if (batch.Count == 0) continue;
-
-            foreach (var entry in batch)
+        var loadResult = await Task
+            .Run<(List<ModEntry> entries, List<(string sourcePath, ModEntry entry, ModListItemViewModel viewModel)> viewModels)>(
+                async () =>
             {
-                ResetCalculatedModState(entry);
-                if (previousEntries.TryGetValue(entry.SourcePath, out var previous))
-                    CopyTransientModState(previous, entry);
-                allEntries.Add(entry);
-            }
+                var allEntries = new List<ModEntry>();
+                var processedCount = 0;
+                var batchesSinceYield = 0;
+                const int yieldEveryNBatches = 5; // Yield every 5 batches instead of every batch to reduce context switching
 
-            processedCount += batch.Count;
-            batchesSinceYield++;
+                // Use incremental loading on a background thread to keep UI responsive
+                await foreach (var batch in _discoveryService.LoadModsIncrementallyAsync(batchSize, CancellationToken.None))
+                {
+                    if (batch.Count == 0) continue;
 
-            // Update progress - we don't know total yet, so show a generic loading message
-            LoadingStatusText = $"Loading mods... ({processedCount} found)";
+                    foreach (var entry in batch)
+                    {
+                        ResetCalculatedModState(entry);
+                        if (previousEntries.TryGetValue(entry.SourcePath, out var previous))
+                            CopyTransientModState(previous, entry);
+                        allEntries.Add(entry);
+                    }
 
-            // Yield less frequently to reduce context switch overhead
-            // Only yield every N batches to keep UI responsive without excessive overhead
-            if (batchesSinceYield >= yieldEveryNBatches)
-            {
-                batchesSinceYield = 0;
-                await Task.Yield();
-            }
-        }
+                    processedCount += batch.Count;
+                    batchesSinceYield++;
 
-        var entries = allEntries;
+                    // Update progress - we don't know total yet, so show a generic loading message
+                    var discoveryProgress = Math.Min(45, 5 + processedCount * 0.1);
+                    progressReporter.Report(
+                        new LoadingProgressUpdate(discoveryProgress, $"Loading mods... ({processedCount} found)"));
 
-        // Now we know the total, update status
-        LoadingStatusText = $"Processing {entries.Count} mods...";
-        LoadingProgress = 50; // Halfway through the process
+                    // Yield less frequently to reduce context switch overhead
+                    // Only yield every N batches to keep UI responsive without excessive overhead
+                    if (batchesSinceYield >= yieldEveryNBatches)
+                    {
+                        batchesSinceYield = 0;
+                        await Task.Yield();
+                    }
+                }
 
-        if (entries.Count > 0)
-            await Task.Run(() => _discoveryService.ApplyLoadStatuses(entries)).ConfigureAwait(true);
+                if (allEntries.Count > 0)
+                {
+                    progressReporter.Report(new LoadingProgressUpdate(60, $"Processing {allEntries.Count} mods..."));
+                    _discoveryService.ApplyLoadStatuses(allEntries);
+                }
 
-        LoadingStatusText = $"Updating UI with {entries.Count} mods...";
-        LoadingProgress = 75;
+                progressReporter.Report(new LoadingProgressUpdate(80, $"Preparing {allEntries.Count} mods..."));
 
-        // Pre-create view models off the UI thread to reduce dispatcher work
-        // Note: CreateModViewModel is safe to call off UI thread because:
-        // - _settingsStore.IsDisabled() is thread-safe (uses lock)
-        // - GetDisplayPath() uses cached base paths (thread-safe read)
-        // - ModListItemViewModel constructor doesn't require UI thread
-        var viewModelEntries = new List<(string sourcePath, ModEntry entry, ModListItemViewModel viewModel)>(entries.Count);
-        foreach (var entry in entries)
-        {
-            var viewModel = CreateModViewModel(entry);
-            viewModelEntries.Add((entry.SourcePath, entry, viewModel));
-        }
+                // Pre-create view models off the UI thread to reduce dispatcher work
+                // Note: CreateModViewModel is safe to call off UI thread because:
+                // - _settingsStore.IsDisabled() is thread-safe (uses lock)
+                // - GetDisplayPath() uses cached base paths (thread-safe read)
+                // - ModListItemViewModel constructor doesn't require UI thread
+                var pendingViewModels =
+                    new List<(string sourcePath, ModEntry entry, ModListItemViewModel viewModel)>(allEntries.Count);
+                foreach (var entry in allEntries)
+                {
+                    var viewModel = CreateModViewModel(entry);
+                    pendingViewModels.Add((entry.SourcePath, entry, viewModel));
+                }
+
+                return (allEntries, pendingViewModels);
+            })
+            .ConfigureAwait(true);
+
+        var entries = loadResult.entries;
+        var viewModelEntries = loadResult.viewModels;
+
+        progressReporter.Report(new LoadingProgressUpdate(90, $"Updating UI with {entries.Count} mods..."));
 
         await InvokeOnDispatcherAsync(() =>
         {
@@ -1684,9 +1701,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }, CancellationToken.None).ConfigureAwait(true);
 
         // Complete
-        LoadingProgress = 100;
-        LoadingStatusText = $"Loaded {entries.Count} mods";
+        progressReporter.Report(new LoadingProgressUpdate(100, $"Loaded {entries.Count} mods"));
     }
+
+    private readonly record struct LoadingProgressUpdate(double Progress, string Status);
 
     public async Task<bool> CheckForModStateChangesAsync()
     {
