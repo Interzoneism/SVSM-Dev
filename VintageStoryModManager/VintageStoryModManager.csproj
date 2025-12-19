@@ -10,6 +10,9 @@
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 		<AssetTargetFallback>$(AssetTargetFallback);net5.0-windows7.0;netcoreapp3.0</AssetTargetFallback>
 		<ApplicationIcon>SVSM.ico</ApplicationIcon>
+		
+		<!-- Optimize single-file publish size -->
+		<!-- IncludeAllContentForSelfExtract removed to reduce executable size by excluding unnecessary content -->
 		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 
