@@ -507,7 +507,7 @@
                         HorizontalOffset="0"
                         IsOpen="{TemplateBinding IsSubmenuOpen}"
                         Placement="Bottom"
-                        VerticalOffset="0">
+                        VerticalOffset="20">
                         <Border
                             x:Name="SubMenuBorder"
                             Background="{DynamicResource Brush.Menu.Submenu.Background}"

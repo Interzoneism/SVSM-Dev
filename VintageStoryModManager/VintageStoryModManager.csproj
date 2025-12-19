@@ -12,7 +12,6 @@
 		
 		<!-- Optimize single-file publish size -->
 		<!-- IncludeAllContentForSelfExtract removed to reduce executable size by excluding unnecessary content -->
-		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 
 		<!-- What Windows/Task Manager shows -->
@@ -36,6 +35,7 @@
                 <Resource Include="error.png" />
                 <Resource Include="Resources\Discord.png" />
 				<Resource Include="Resources\mod-default.png" />
+				<Resource Include="Resources\manager-icon.png" />
         </ItemGroup>
 
 	<ItemGroup>
@@ -52,5 +52,81 @@
 			<Generator>SettingsSingleFileGenerator</Generator>
 			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
 		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\OFL.txt" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-ThinItalic.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-Thin.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-SemiBoldItalic.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-SemiBold.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-Regular.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-MediumItalic.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-Medium.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-LightItalic.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-Light.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-Italic.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-ExtraLightItalic.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-ExtraLight.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-ExtraBoldItalic.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-ExtraBold.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-BoldItalic.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-Bold.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-BlackItalic.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="C:\Users\Martin\.nuget\packages\questpdf\2025.12.0\buildTransitive\..\LatoFont\Lato-Black.ttf" />
 	</ItemGroup>
 </Project>
