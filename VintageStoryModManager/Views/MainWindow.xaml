@@ -107,8 +107,11 @@
                             <MenuItem
                                 x:Name="DeleteGameProfileMenuItem"
                                 Height="35"
+                                Padding="12,6"
                                 Click="DeleteGameProfileMenuItem_OnClick"
-                                Header="Delete profile..." />
+                                Focusable="False"
+                                Header="Delete profile..."
+                                Opacity="0.75" />
                         </MenuItem>
                         <MenuItem
                             Height="35"
@@ -199,6 +202,10 @@
                             Height="35"
                             Click="OpenConfigFolderButton_OnClick"
                             Header="Open _Config folder" />
+                        <MenuItem
+                            Height="35"
+                            Click="OpenModlistsFolderButton_OnClick"
+                            Header="Open Modlists folder" />
                         <MenuItem
                             Height="35"
                             Click="ManagerDataFolderMenuItem_OnClick"

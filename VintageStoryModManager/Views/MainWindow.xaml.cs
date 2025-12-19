@@ -10597,7 +10597,10 @@ public partial class MainWindow : Window
             menuItem.Items.Add(new MenuItem
             {
                 Header = "Presets unavailable",
-                IsEnabled = false
+                IsEnabled = false,
+                Padding = new Thickness(12, 6),
+                Focusable = false,
+                Opacity = 0.75
             });
             return;
         }
@@ -10613,7 +10616,10 @@ public partial class MainWindow : Window
             menuItem.Items.Add(new MenuItem
             {
                 Header = "Presets unavailable",
-                IsEnabled = false
+                IsEnabled = false,
+                Padding = new Thickness(12, 6),
+                Focusable = false,
+                Opacity = 0.75
             });
             return;
         }
@@ -10623,7 +10629,10 @@ public partial class MainWindow : Window
             menuItem.Items.Add(new MenuItem
             {
                 Header = "No presets available",
-                IsEnabled = false
+                IsEnabled = false,
+                Padding = new Thickness(12, 6),
+                Focusable = false,
+                Opacity = 0.75
             });
             return;
         }
