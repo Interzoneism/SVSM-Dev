@@ -427,6 +427,10 @@
                             Padding="12,6"
                             Click="ClearAllCachesMenuItem_OnClick"
                             Header="Clear temporary cache (Safe to use, nothing important is removed)" />
+                        <MenuItem
+                            Padding="12,6"
+                            Click="RestoreFirebaseAuthBackupMenuItem_OnClick"
+                            Header="Restore firebase-auth.json using backup" />
                         <Separator />
                         <MenuItem
                             Padding="12,6"
