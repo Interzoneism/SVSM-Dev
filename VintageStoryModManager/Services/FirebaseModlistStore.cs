@@ -220,7 +220,6 @@ public sealed class FirebaseModlistStore : IDisposable
         {
             var rootUrl = BuildAuthenticatedUrl(session.IdToken, null /* root */);
 
-            // public registry stores only the content object, not registryId
             var registryNodeJson =
                 $"{{\"content\":{normalizedContent},\"dateAdded\":{JsonSerializer.Serialize(dateAddedIso)}}}";
             var registryOwnerJson = JsonSerializer.Serialize(session.UserId);

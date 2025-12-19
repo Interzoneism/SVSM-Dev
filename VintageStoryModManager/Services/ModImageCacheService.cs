@@ -198,8 +198,6 @@ internal static class ModImageCacheService
         return Path.Combine(cacheDirectory, fileName);
     }
 
-
-
     private static string GenerateCacheFileName(string imageUrl, ModImageCacheDescriptor? descriptor)
     {
         var extension = GetImageExtension(imageUrl);

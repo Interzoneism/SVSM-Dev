@@ -596,37 +596,22 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task InstallModAsync(int modId)
     {
-        System.Diagnostics.Debug.WriteLine($"[ModBrowser] InstallModAsync called with modId: {modId}");
-        
         // Check if internet access is disabled
         if (InternetAccessManager.IsInternetAccessDisabled)
-        {
-            System.Diagnostics.Debug.WriteLine("Cannot install mod: Internet access is disabled");
-            // Note: In a full implementation, we'd want to show a user-facing message here
-            // but that would require a message service or similar to be passed to the ViewModel
             return;
-        }
 
         // Fetch full mod details
-        System.Diagnostics.Debug.WriteLine($"[ModBrowser] Fetching mod details for modId: {modId}");
         var mod = await _modApiService.GetModAsync(modId);
         if (mod == null)
-        {
-            System.Diagnostics.Debug.WriteLine($"[ModBrowser] Failed to fetch mod details for modId: {modId}");
             return;
-        }
-        
-        System.Diagnostics.Debug.WriteLine($"[ModBrowser] Fetched mod details: {mod.Name}");
 
         // If a callback is registered, use it (MainWindow will handle the actual installation)
         if (_installModCallback != null)
         {
-            System.Diagnostics.Debug.WriteLine($"[ModBrowser] Calling install callback for mod: {mod.Name}");
             await _installModCallback(mod);
         }
         else
         {
-            System.Diagnostics.Debug.WriteLine($"[ModBrowser] No install callback registered, adding to installed list");
             // Fallback: just mark as installed in the UI
             AddInstalledMod(mod.ModIdStr ?? mod.ModId.ToString(CultureInfo.InvariantCulture), modId);
         }
@@ -749,16 +734,12 @@ public partial class ModBrowserViewModel : ObservableObject
 
     private async Task LoadGameVersionsAsync()
     {
-        System.Diagnostics.Debug.WriteLine("LoadGameVersionsAsync: Starting");
         var versions = await _modApiService.GetGameVersionsAsync();
-        System.Diagnostics.Debug.WriteLine($"LoadGameVersionsAsync: Received {versions.Count} versions from API");
         AvailableVersions.Clear();
-        System.Diagnostics.Debug.WriteLine($"LoadGameVersionsAsync: Cleared AvailableVersions collection");
         foreach (var version in versions)
         {
             AvailableVersions.Add(version);
         }
-        System.Diagnostics.Debug.WriteLine($"LoadGameVersionsAsync: Completed. AvailableVersions now has {AvailableVersions.Count} items");
     }
 
     private async Task LoadTagsAsync()

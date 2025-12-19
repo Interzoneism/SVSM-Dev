@@ -2638,46 +2638,33 @@ public partial class MainWindow : Window
 
     private async Task InstallModFromBrowserAsync(DownloadableMod mod)
     {
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] InstallModFromBrowserAsync called for mod: {mod.Name} (ID: {mod.ModId})");
-        
         if (_isModUpdateInProgress)
-        {
-            System.Diagnostics.Debug.WriteLine("[MainWindow] Install already in progress, returning");
             return;
-        }
 
         // Step 1: Convert the DownloadableMod to ModListItemViewModel
         // This allows us to use all the existing install functions
-        System.Diagnostics.Debug.WriteLine("[MainWindow] Converting DownloadableMod to ModListItemViewModel");
         var modViewModel = ConvertToModListItemViewModel(mod);
 
         // Step 2: Use the EXACT SAME validation logic as the old flow
         if (!modViewModel.HasDownloadableRelease)
         {
-            System.Diagnostics.Debug.WriteLine("[MainWindow] No downloadable releases available");
             WpfMessageBox.Show("No downloadable releases are available for this mod.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
         }
-
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] ModViewModel HasDownloadableRelease={modViewModel.HasDownloadableRelease}");
         
         // Step 3: Use the SAME SelectReleaseForInstall function (Line 5338)
-        System.Diagnostics.Debug.WriteLine("[MainWindow] Selecting release for install");
         var release = SelectReleaseForInstall(modViewModel);
         if (release is null)
         {
-            System.Diagnostics.Debug.WriteLine("[MainWindow] SelectReleaseForInstall returned null");
             WpfMessageBox.Show("No downloadable releases are available for this mod.",
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
         }
-
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] Selected release: Version={release.Version}, FileName={release.FileName}, DownloadUri={release.DownloadUri}");
 
         // Step 4: Use the SAME TryGetInstallTargetPath function (Line 8377)
         if (!TryGetInstallTargetPath(modViewModel, release, out var targetPath, out var errorMessage))
@@ -2773,8 +2760,6 @@ public partial class MainWindow : Window
     /// </summary>
     private ModListItemViewModel ConvertToModListItemViewModel(DownloadableMod mod)
     {
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] ConvertToModListItemViewModel: Converting mod {mod.Name} (ID: {mod.ModId})");
-
         // Only consider the most recent release with a valid downloadable file
         var latestRelease = mod.Releases?
             .OrderByDescending(r => DateTime.TryParse(r.Created, out var created) ? created : DateTime.MinValue)
@@ -2784,8 +2769,6 @@ public partial class MainWindow : Window
         var releases = latestRelease != null
             ? new List<ModReleaseInfo> { latestRelease }
             : new List<ModReleaseInfo>();
-
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] Latest release: {latestRelease?.Version ?? "null"}");
 
         // Create ModDatabaseInfo with converted data
         var logoUrlSource = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
@@ -2863,8 +2846,6 @@ public partial class MainWindow : Window
         DateTime? createdUtc = null;
         if (DateTime.TryParse(release.Created, out var parsedDate))
             createdUtc = parsedDate.ToUniversalTime();
-
-        System.Diagnostics.Debug.WriteLine($"[MainWindow] ConvertToModReleaseInfo: Version={release.ModVersion}, File={release.Filename}, Compatible=true, Tags={string.Join(",", release.Tags ?? [])}");
 
         return new ModReleaseInfo
         {
@@ -7135,10 +7116,6 @@ public partial class MainWindow : Window
         if (UpdateAllButton != null) UpdateAllButton.IsEnabled = isEnabled;
 
         if (LaunchGameButton != null) LaunchGameButton.IsEnabled = isEnabled;
-
-        //if (ModDatabaseTabButton != null) ModDatabaseTabButton.IsEnabled = isEnabled;
-
-        //if (ModlistsTabButton != null) ModlistsTabButton.IsEnabled = isEnabled;
 
         if (PresetsAndModlistsMenuItem != null) PresetsAndModlistsMenuItem.IsEnabled = isEnabled;
 
@@ -13978,13 +13955,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void CheckBox_Checked(object sender, RoutedEventArgs e)
-    {
-    }
 
-    private void Button_Click(object sender, RoutedEventArgs e)
-    {
-    }
 
     protected override void OnActivated(EventArgs e)
     {

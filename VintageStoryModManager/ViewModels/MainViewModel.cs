@@ -2466,8 +2466,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ExecuteAsync();
     }
 
-
-
     private void ResetInstalledTagFilters(IEnumerable<string> tags)
     {
         if (!_isTagsColumnVisible) return;
