@@ -391,7 +391,11 @@
                         ItemsSource="{Binding VisibleMods}"
                         Visibility="{Binding ModsList.Count, Converter={StaticResource CountToVisibility}}">
                         <ItemsControl.Effect>
-                            <DropShadowEffect BlurRadius="8" Opacity="0.2" Direction="310" ShadowDepth="6"/>
+                            <DropShadowEffect
+                                BlurRadius="8"
+                                Direction="310"
+                                Opacity="0.2"
+                                ShadowDepth="6" />
                         </ItemsControl.Effect>
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -400,7 +404,7 @@
                         </ItemsControl.ItemsPanel>
 
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>    
+                            <DataTemplate>
                                 <Border
                                     x:Name="ModCardBorder"
                                     Width="344"
@@ -463,8 +467,8 @@
                                                     <VisualBrush>
                                                         <VisualBrush.Visual>
                                                             <Border
-                                                                Width="{Binding ActualWidth, ElementName=container}"
-                                                                Height="{Binding ActualHeight, ElementName=container}"
+                                                                Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=WrapPanel}}"
+                                                                Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=WrapPanel}}"
                                                                 Background="White"
                                                                 CornerRadius="8" />
                                                         </VisualBrush.Visual>
