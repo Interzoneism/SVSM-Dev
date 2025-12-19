@@ -2919,12 +2919,18 @@ public partial class MainWindow : Window
                     }
                 }, DispatcherPriority.Background);
         }
-        else if (e.PropertyName == nameof(MainViewModel.IsLoadingMods)
-                 || e.PropertyName == nameof(MainViewModel.IsLoadingModDetails))
+        else if (e.PropertyName == nameof(MainViewModel.IsLoadingMods))
         {
             Dispatcher.InvokeAsync(() =>
             {
                 RefreshHoverOverlayState();
+                ScheduleRefreshAfterModlistLoadIfReady();
+            }, DispatcherPriority.Background);
+        }
+        else if (e.PropertyName == nameof(MainViewModel.IsLoadingModDetails))
+        {
+            Dispatcher.InvokeAsync(() =>
+            {
                 ScheduleRefreshAfterModlistLoadIfReady();
             }, DispatcherPriority.Background);
         }
