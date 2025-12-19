@@ -2833,11 +2833,7 @@ public partial class MainWindow : Window
     private ModReleaseInfo? ConvertToModReleaseInfo(DownloadableModRelease release)
     {
         if (string.IsNullOrWhiteSpace(release.MainFile) || string.IsNullOrWhiteSpace(release.Filename))
-        {
-            System.Diagnostics.Debug.WriteLine(
-                "[MainWindow] ConvertToModReleaseInfo: Skipping release with missing download info (MainFile or Filename is empty)");
             return null;
-        }
 
         // MainFile already contains the full download URL
         var downloadUri = new Uri(release.MainFile);
@@ -13954,8 +13950,6 @@ public partial class MainWindow : Window
             _isApplyingMultiToggle = false;
         }
     }
-
-
 
     protected override void OnActivated(EventArgs e)
     {

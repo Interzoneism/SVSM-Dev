@@ -395,10 +395,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private async Task SearchModsAsync()
     {
         if (!_isTabVisible)
-        {
-            System.Diagnostics.Debug.WriteLine("[ModBrowser] Search skipped because tab is not visible.");
             return;
-        }
 
         // Cancel any pending search
         _searchCts?.Cancel();
