@@ -44,6 +44,9 @@ public partial class ModBrowserViewModel : ObservableObject
     private ObservableCollection<DownloadableModOnList> _modsList = [];
 
     [ObservableProperty]
+    private ObservableCollection<DownloadableModOnList> _visibleMods = [];
+
+    [ObservableProperty]
     private int _visibleModsCount = DefaultLoadedMods;
 
     [ObservableProperty]
@@ -241,8 +244,8 @@ public partial class ModBrowserViewModel : ObservableObject
     /// <summary>
     /// Gets the visible mods based on pagination.
     /// </summary>
-    public IEnumerable<DownloadableModOnList> VisibleMods =>
-        ModsList.Take(VisibleModsCount);
+    // public IEnumerable<DownloadableModOnList> VisibleMods =>
+    //    ModsList.Take(VisibleModsCount);
 
     private List<DownloadableModOnList> GetPrefetchMods()
     {
@@ -342,8 +345,7 @@ public partial class ModBrowserViewModel : ObservableObject
         lock (_userReportsLoaded)
         {
             // Get all visible mods that have loaded user reports
-            visibleMods = ModsList
-                .Take(VisibleModsCount)
+            visibleMods = VisibleMods
                 .Where(m => _userReportsLoaded.Contains(m.ModId))
                 .ToList();
 
@@ -412,8 +414,9 @@ public partial class ModBrowserViewModel : ObservableObject
 
             // Clear the list immediately so the progress indicator is visible
             ModsList.Clear();
+            VisibleMods.Clear();
             VisibleModsCount = 0;
-            OnPropertyChanged(nameof(VisibleMods));
+            // OnPropertyChanged(nameof(VisibleMods)); // Handled by ObservableCollection
 
             // Add a small delay to debounce rapid typing
             var debounceDelay = string.IsNullOrWhiteSpace(TextFilter) ? 50 : 400;
@@ -463,8 +466,14 @@ public partial class ModBrowserViewModel : ObservableObject
                 ModsList.Add(mod);
             }
 
-            VisibleModsCount = DefaultLoadedMods;
-            OnPropertyChanged(nameof(VisibleMods));
+            var initialBatch = ModsList.Take(DefaultLoadedMods);
+            foreach (var mod in initialBatch)
+            {
+                VisibleMods.Add(mod);
+            }
+
+            VisibleModsCount = VisibleMods.Count;
+            // OnPropertyChanged(nameof(VisibleMods));
 
             var modsToPrefetch = GetPrefetchMods();
             // Only populate user reports for visible mods + prefetch buffer
@@ -516,10 +525,19 @@ public partial class ModBrowserViewModel : ObservableObject
         }
 
         var previousCount = VisibleModsCount;
-        VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
+        var nextBatch = ModsList.Skip(previousCount).Take(LoadMoreCount).ToList();
+        
+        if (nextBatch.Count == 0) return;
+
+        foreach (var mod in nextBatch)
+        {
+            VisibleMods.Add(mod);
+        }
+
+        VisibleModsCount = VisibleMods.Count;
         
         // Notify UI of changes - using Normal priority to maintain responsiveness
-        OnPropertyChanged(nameof(VisibleMods));
+        // OnPropertyChanged(nameof(VisibleMods)); // Not needed
 
         // Load metadata for newly visible mods + prefetch buffer asynchronously
         var prefetchEndIndex = Math.Min(VisibleModsCount + PrefetchBufferCount, ModsList.Count);
