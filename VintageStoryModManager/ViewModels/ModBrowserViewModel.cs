@@ -242,9 +242,10 @@ public partial class ModBrowserViewModel : ObservableObject
 
     /// <summary>
     /// Gets the visible mods based on pagination.
-    /// This is now an ObservableCollection that WPF can track incrementally.
+    /// This is now an ObservableCollection (backed by _visibleMods field with [ObservableProperty])
+    /// that WPF can track incrementally, preventing UI flashing during scroll loading.
     /// </summary>
-    // Note: VisibleMods is now an [ObservableProperty] field above, not a computed property
+    // Note: Items are added incrementally to this collection, not replaced wholesale
 
     private List<DownloadableModOnList> GetPrefetchMods()
     {
