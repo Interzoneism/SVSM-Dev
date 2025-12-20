@@ -45,7 +45,7 @@
                         RequestNavigate="OnBackupHyperlinkRequestNavigate">
                         <Run Text="Discord server!" />
                     </Hyperlink></TextBlock>
-                <TextBlock FontSize="12" TextWrapping="Wrap"><Run Text="Most issues can be solved by deleting the temp cache (See Help and Advanced menu)" />
+                <TextBlock FontSize="12" TextWrapping="Wrap"><Run Text="Most issues can be solved by deleting the temp cache (see Advanced menu)" />
                 </TextBlock>
 
                 <TextBlock
@@ -61,12 +61,7 @@
                         Foreground="{DynamicResource Brush.Text.Emphasis}"
                         RequestNavigate="OnFirebaseHyperlinkRequestNavigate">
                         <Run Text="Simple VS Manager folder." />
-                    </Hyperlink><Run Text=" " /><Run Text="If it's still not working you can try copying the backup from the" /><Run Text=" " /><Hyperlink
-                        x:Name="BackupLink"
-                        Foreground="{DynamicResource Brush.Text.Emphasis}"
-                        RequestNavigate="OnBackupHyperlinkRequestNavigate">
-                        <Run Text="Firebase Cache backup folder" />
-                    </Hyperlink><Run Text=" " /><Run Text="and replace the firebase-auth.json file." /></TextBlock>
+                    </Hyperlink><Run Text=" " /><Run Text="If it's still not working run the Restore firebase-auth command from the Advanced menu." /></TextBlock>
 
                 <TextBlock
                     Margin="0,12,0,0"

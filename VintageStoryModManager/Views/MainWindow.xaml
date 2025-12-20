@@ -80,7 +80,7 @@
             Margin="0,2,0,0"
             VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="350" />
+                <ColumnDefinition Width="500" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
@@ -113,10 +113,6 @@
                             Click="SelectGameFolderMenuItem_OnClick"
                             Header="Set _Game Folder..." />
                         <MenuItem
-                            Height="35"
-                            Click="SetCustomShortcutMenuItem_OnClick"
-                            Header="Set Custom Vintage Story Shortcut" />
-                        <MenuItem
                             x:Name="GameProfilesMenuItem"
                             Height="35"
                             Header="Game Profiles"
@@ -137,7 +133,7 @@
                         </MenuItem>
                         <MenuItem
                             Height="35"
-                            Header="Restore backup point"
+                            Header="Restore mods backup"
                             SubmenuOpened="RestoreBackupMenuItem_OnSubmenuOpened">
                             <MenuItem Header="Loading..." IsEnabled="False" />
                         </MenuItem>
@@ -155,13 +151,6 @@
                             Header="Automatically back up VintagestoryData before launch"
                             IsCheckable="True"
                             Style="{StaticResource ToggleMenuItemStyle}" />
-                        <MenuItem
-                            x:Name="DisableAutoRefreshMenuItem"
-                            Height="35"
-                            Click="DisableAutoRefreshMenuItem_OnClick"
-                            Header="_Disable auto-refresh"
-                            IsCheckable="True"
-                            Style="{StaticResource ToggleMenuItemStyle}" />
                         <Separator />
                         <MenuItem
                             Height="35"
@@ -175,14 +164,9 @@
                         SubmenuOpened="ModsMenuItem_OnSubmenuOpened"
                         UseLayoutRounding="True">
                         <MenuItem
-                            Height="35"
-                            Command="{Binding RefreshModsUiCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                            Header="_Refresh Mods" />
-                        <MenuItem
-                            x:Name="UpdateAllModsMenuItem"
-                            Height="35"
-                            Click="UpdateAllModsMenuItem_OnClick"
-                            Header="{Binding DataContext.UpdateAllModsMenuHeader, FallbackValue=_Update All Mods, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+                            Padding="12,6"
+                            Click="ScanForModConfigsMenuItem_OnClick"
+                            Header="Scan for mod config files" />
                         <MenuItem
                             Height="35"
                             Click="CheckModsCompatibilityMenuItem_OnClick"
@@ -276,6 +260,27 @@
                             Height="35"
                             Click="AlwaysAddModlistsMenuItem_OnClick"
                             Header="Always add to current mods when loading Modlist"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}" />
+                    </MenuItem>
+                    <MenuItem
+                        x:Name="PerformanceMenuItem"
+                        Height="24"
+                        Padding="6,0,6,0"
+                        Header="_Performance"
+                        UseLayoutRounding="True">
+                        <MenuItem
+                            x:Name="DisableAutoRefreshMenuItem"
+                            Height="35"
+                            Click="DisableAutoRefreshMenuItem_OnClick"
+                            Header="_Disable auto-refresh (Faster startup, use manual Refresh button)"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}" />
+                        <MenuItem
+                            x:Name="UseCorrectThumbnailsMenuItem"
+                            Height="35"
+                            Click="UseCorrectThumbnailsMenuItem_OnClick"
+                            Header="Correct thumbnails (Slower to load in mod database)"
                             IsCheckable="True"
                             Style="{StaticResource ToggleMenuItemStyle}" />
                     </MenuItem>
@@ -422,7 +427,7 @@
                     <MenuItem
                         Height="24"
                         Padding="6,0,6,0"
-                        Header="_Help &amp; Advanced"
+                        Header="_Help &amp; About"
                         UseLayoutRounding="True">
                         <MenuItem
                             x:Name="ManagerVersionMenuItem"
@@ -439,6 +444,7 @@
                             IsEnabled="False"
                             Opacity="0.75"
                             Visibility="Collapsed" />
+                        <Separator />
                         <MenuItem
                             Padding="12,6"
                             Click="GuideMenuItem_OnClick"
@@ -451,26 +457,33 @@
                             Padding="12,6"
                             Click="ManagerModDbPageMenuItem_OnClick"
                             Header="Open _Mod DB page for the manager" />
-                        <Separator />
                         <MenuItem
                             Padding="12,6"
                             Click="ClearAllCachesMenuItem_OnClick"
                             Header="Clear temporary cache (Safe to use, nothing important is removed)" />
+                    </MenuItem>
+                    <MenuItem
+                        Height="24"
+                        Padding="6,0,6,0"
+                        Header="_Advanced"
+                        UseLayoutRounding="True">
                         <MenuItem
-                            Padding="12,6"
-                            Click="RestoreFirebaseAuthBackupMenuItem_OnClick"
-                            Header="Restore firebase-auth.json using backup" />
-                        <Separator />
-                        <MenuItem
-                            Padding="12,6"
-                            Click="ChangeManagerFolderMenuItem_OnClick"
-                            Header="Change manager config and cache folder..." />
+                            Height="35"
+                            Click="SetCustomShortcutMenuItem_OnClick"
+                            Header="Set Custom Vintage Story Shortcut" />
                         <MenuItem
                             x:Name="DeveloperProfilesMenuItem"
                             Padding="12,6"
                             Header="Developer Profiles"
                             Visibility="Collapsed" />
-                        <Separator />
+                        <MenuItem
+                            Padding="12,6"
+                            Click="ChangeManagerFolderMenuItem_OnClick"
+                            Header="Change manager config and cache folder..." />
+                        <MenuItem
+                            Padding="12,6"
+                            Click="RestoreFirebaseAuthBackupMenuItem_OnClick"
+                            Header="Restore firebase-auth.json using backup" />
                         <MenuItem
                             x:Name="DisableInternetAccessMenuItem"
                             Height="35"
@@ -485,13 +498,7 @@
                             Header="Enable server options"
                             IsCheckable="True"
                             Style="{StaticResource ToggleMenuItemStyle}" />
-                        <MenuItem
-                            x:Name="UseCorrectThumbnailsMenuItem"
-                            Padding="12,6"
-                            Click="UseCorrectThumbnailsMenuItem_OnClick"
-                            Header="Correct thumbnails (slower but better quality)"
-                            IsCheckable="True"
-                            Style="{StaticResource ToggleMenuItemStyle}" />
+
                         <MenuItem Padding="12,6" Header="Enable logging for...">
                             <MenuItem
                                 x:Name="LogModUpdateMenuItem"
@@ -531,11 +538,6 @@
                         </MenuItem>
                         <MenuItem
                             Padding="12,6"
-                            Click="ScanForModConfigsMenuItem_OnClick"
-                            Header="Scan for mod config files" />
-
-                        <MenuItem
-                            Padding="12,6"
                             Click="ExperimentalModDebuggingMenuItem_OnClick"
                             Header="Debug: Show all game log lines referencing the selected mod." />
                         <MenuItem
@@ -547,7 +549,6 @@
                             Padding="12,6"
                             Click="DeleteAllManagerFilesMenuItem_OnClick"
                             Header="Delete all Simple VS Manager files (Uninstall)" />
-
                     </MenuItem>
                 </Menu>
 

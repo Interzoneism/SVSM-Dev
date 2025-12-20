@@ -7086,8 +7086,6 @@ public partial class MainWindow : Window
 
         if (PresetsAndModlistsMenuItem != null) PresetsAndModlistsMenuItem.IsEnabled = isEnabled;
 
-        if (UpdateAllModsMenuItem != null) UpdateAllModsMenuItem.IsEnabled = isEnabled;
-
         if (ModsDataGrid != null)
         {
             if (isEnabled)
