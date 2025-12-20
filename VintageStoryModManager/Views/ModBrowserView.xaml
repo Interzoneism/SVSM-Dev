@@ -390,8 +390,6 @@
                         Margin="16,0,16,16"
                         ItemsSource="{Binding VisibleMods}"
                         RenderOptions.CachingHint="Cache"
-                        VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-                        VirtualizingPanel.VirtualizationMode="Recycling"
                         Visibility="{Binding ModsList.Count, Converter={StaticResource CountToVisibility}}">
                         <ItemsControl.Effect>
                             <DropShadowEffect

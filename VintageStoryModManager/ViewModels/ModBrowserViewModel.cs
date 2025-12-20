@@ -518,11 +518,8 @@ public partial class ModBrowserViewModel : ObservableObject
         var previousCount = VisibleModsCount;
         VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
         
-        // Defer property notification to reduce UI updates
-        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-        {
-            OnPropertyChanged(nameof(VisibleMods));
-        }, System.Windows.Threading.DispatcherPriority.Background);
+        // Notify UI of changes - using Normal priority to maintain responsiveness
+        OnPropertyChanged(nameof(VisibleMods));
 
         // Load metadata for newly visible mods + prefetch buffer asynchronously
         var prefetchEndIndex = Math.Min(VisibleModsCount + PrefetchBufferCount, ModsList.Count);
@@ -537,13 +534,18 @@ public partial class ModBrowserViewModel : ObservableObject
             {
                 try
                 {
+                    // Run thumbnail and user report loading in parallel for better performance
+                    var tasks = new List<Task>();
+                    
                     // Only populate thumbnails if "Correct thumbnails" setting is enabled
                     if (ShouldUseCorrectThumbnails)
                     {
-                        await PopulateModThumbnailsAsync(modsToPrefetch, token);
+                        tasks.Add(PopulateModThumbnailsAsync(modsToPrefetch, token));
                     }
-                    // Run user reports population separately
-                    await PopulateUserReportsAsync(modsToPrefetch, token);
+                    
+                    tasks.Add(PopulateUserReportsAsync(modsToPrefetch, token));
+                    
+                    await Task.WhenAll(tasks);
                 }
                 catch (OperationCanceledException)
                 {
