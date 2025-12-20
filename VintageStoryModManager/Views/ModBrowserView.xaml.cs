@@ -100,8 +100,8 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
     private void ModsScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
     {
         // Load more mods when scrolling near the bottom
-        // Trigger earlier (1 viewport) to preload content smoothly
-        if (e.VerticalOffset + e.ViewportHeight >= e.ExtentHeight - e.ViewportHeight)
+        // Trigger at 1.5 viewports from bottom to preload content smoothly
+        if (e.VerticalOffset + e.ViewportHeight >= e.ExtentHeight - (e.ViewportHeight * 1.5))
         {
             ViewModel?.LoadMoreCommand.Execute(null);
         }

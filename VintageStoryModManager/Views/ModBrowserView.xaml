@@ -390,12 +390,14 @@
                     <ItemsControl
                         Margin="16,0,16,16"
                         ItemsSource="{Binding VisibleMods}"
+                        RenderOptions.CachingHint="Cache"
                         Visibility="{Binding ModsList.Count, Converter={StaticResource CountToVisibility}}">
                         <ItemsControl.Effect>
                             <DropShadowEffect
                                 BlurRadius="8"
                                 Direction="310"
                                 Opacity="0.2"
+                                RenderingBias="Performance"
                                 ShadowDepth="6" />
                         </ItemsControl.Effect>
                         <ItemsControl.ItemsPanel>
@@ -412,6 +414,7 @@
                                     Height="344"
                                     Margin="8"
                                     ClipToBounds="False"
+                                    RenderOptions.CachingHint="Cache"
                                     Style="{StaticResource ModCardStyle}"
                                     Tag="{Binding ModId}"
                                     UseLayoutRounding="True">
@@ -424,9 +427,9 @@
                                                         Storyboard.TargetName="ModCardHoverOverlay"
                                                         Storyboard.TargetProperty="Opacity"
                                                         To="0.10"
-                                                        Duration="0:0:0.25">
+                                                        Duration="0:0:0.15">
                                                         <DoubleAnimation.EasingFunction>
-                                                            <CubicEase EasingMode="EaseInOut" />
+                                                            <QuadraticEase EasingMode="EaseOut" />
                                                         </DoubleAnimation.EasingFunction>
                                                     </DoubleAnimation>
                                                 </Storyboard>
@@ -439,9 +442,9 @@
                                                         Storyboard.TargetName="ModCardHoverOverlay"
                                                         Storyboard.TargetProperty="Opacity"
                                                         To="0"
-                                                        Duration="0:0:0.55">
+                                                        Duration="0:0:0.2">
                                                         <DoubleAnimation.EasingFunction>
-                                                            <CubicEase EasingMode="EaseInOut" />
+                                                            <QuadraticEase EasingMode="EaseIn" />
                                                         </DoubleAnimation.EasingFunction>
                                                     </DoubleAnimation>
                                                 </Storyboard>
@@ -461,11 +464,11 @@
                                             Grid.Row="0"
                                             Grid.RowSpan="2">
 
-                                            <WrapPanel x:Name="container">
+                                            <WrapPanel x:Name="container" RenderOptions.BitmapScalingMode="LowQuality">
 
                                                 <WrapPanel.OpacityMask>
 
-                                                    <VisualBrush>
+                                                    <VisualBrush RenderOptions.CachingHint="Cache">
                                                         <VisualBrush.Visual>
                                                             <Border
                                                                 Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=WrapPanel}}"
@@ -480,7 +483,8 @@
                                                     x:Name="ThumbImage"
                                                     Grid.Row="0"
                                                     MinHeight="229"
-                                                    Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
+                                                    RenderOptions.BitmapScalingMode="LowQuality"
+                                                    Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}, IsAsync=True}"
                                                     Stretch="Uniform"
                                                     Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" />
                                             </WrapPanel>
@@ -493,6 +497,7 @@
                                             Grid.Row="0"
                                             Grid.RowSpan="2"
                                             MinHeight="229"
+                                            RenderOptions.BitmapScalingMode="LowQuality"
                                             Source="/Resources/mod-default.png"
                                             Stretch="UniformToFill">
                                             <Image.Style>
@@ -611,9 +616,9 @@
                                                                                 <DoubleAnimation
                                                                                     Storyboard.TargetProperty="Opacity"
                                                                                     To="0.9"
-                                                                                    Duration="0:0:0.25">
+                                                                                    Duration="0:0:0.15">
                                                                                     <DoubleAnimation.EasingFunction>
-                                                                                        <CubicEase EasingMode="EaseInOut" />
+                                                                                        <QuadraticEase EasingMode="EaseOut" />
                                                                                     </DoubleAnimation.EasingFunction>
                                                                                 </DoubleAnimation>
                                                                             </Storyboard>
@@ -625,9 +630,9 @@
                                                                                 <DoubleAnimation
                                                                                     Storyboard.TargetProperty="Opacity"
                                                                                     To="0"
-                                                                                    Duration="0:0:0.55">
+                                                                                    Duration="0:0:0.2">
                                                                                     <DoubleAnimation.EasingFunction>
-                                                                                        <CubicEase EasingMode="EaseInOut" />
+                                                                                        <QuadraticEase EasingMode="EaseIn" />
                                                                                     </DoubleAnimation.EasingFunction>
                                                                                 </DoubleAnimation>
                                                                             </Storyboard>
@@ -694,9 +699,9 @@
                                                                                 <DoubleAnimation
                                                                                     Storyboard.TargetProperty="Opacity"
                                                                                     To="1"
-                                                                                    Duration="0:0:0.25">
+                                                                                    Duration="0:0:0.15">
                                                                                     <DoubleAnimation.EasingFunction>
-                                                                                        <CubicEase EasingMode="EaseInOut" />
+                                                                                        <QuadraticEase EasingMode="EaseOut" />
                                                                                     </DoubleAnimation.EasingFunction>
                                                                                 </DoubleAnimation>
                                                                             </Storyboard>
@@ -708,9 +713,9 @@
                                                                                 <DoubleAnimation
                                                                                     Storyboard.TargetProperty="Opacity"
                                                                                     To="0"
-                                                                                    Duration="0:0:0.55">
+                                                                                    Duration="0:0:0.2">
                                                                                     <DoubleAnimation.EasingFunction>
-                                                                                        <CubicEase EasingMode="EaseInOut" />
+                                                                                        <QuadraticEase EasingMode="EaseIn" />
                                                                                     </DoubleAnimation.EasingFunction>
                                                                                 </DoubleAnimation>
                                                                             </Storyboard>

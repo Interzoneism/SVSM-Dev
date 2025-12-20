@@ -23,7 +23,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private readonly string? _installedGameVersion;
     private CancellationTokenSource? _searchCts;
     private const int DefaultLoadedMods = 45;
-    private const int LoadMoreCount = 5;
+    private const int LoadMoreCount = 15;
     private const int PrefetchBufferCount = 10;
     private const double TitleWeight = 6.0;
     private const double AuthorWeight = 4.5;
@@ -517,21 +517,41 @@ public partial class ModBrowserViewModel : ObservableObject
 
         var previousCount = VisibleModsCount;
         VisibleModsCount = Math.Min(VisibleModsCount + LoadMoreCount, ModsList.Count);
+        
+        // Notify UI of changes - using Normal priority to maintain responsiveness
         OnPropertyChanged(nameof(VisibleMods));
 
-        // Load metadata for newly visible mods + prefetch buffer
+        // Load metadata for newly visible mods + prefetch buffer asynchronously
         var prefetchEndIndex = Math.Min(VisibleModsCount + PrefetchBufferCount, ModsList.Count);
         var modsToPrefetch = ModsList.Skip(previousCount).Take(prefetchEndIndex - previousCount).ToList();
 
         if (modsToPrefetch.Any())
         {
             var token = _searchCts?.Token ?? CancellationToken.None;
-            // Only populate thumbnails if "Correct thumbnails" setting is enabled
-            if (ShouldUseCorrectThumbnails)
+            
+            // Run these operations in parallel on background threads to avoid blocking UI
+            _ = Task.Run(async () =>
             {
-                await PopulateModThumbnailsAsync(modsToPrefetch, token);
-            }
-            _ = PopulateUserReportsAsync(modsToPrefetch, token);
+                try
+                {
+                    // Run thumbnail and user report loading in parallel for better performance
+                    var tasks = new List<Task>();
+                    
+                    // Only populate thumbnails if "Correct thumbnails" setting is enabled
+                    if (ShouldUseCorrectThumbnails)
+                    {
+                        tasks.Add(PopulateModThumbnailsAsync(modsToPrefetch, token));
+                    }
+                    
+                    tasks.Add(PopulateUserReportsAsync(modsToPrefetch, token));
+                    
+                    await Task.WhenAll(tasks);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected when cancelled
+                }
+            }, token);
         }
     }
 
