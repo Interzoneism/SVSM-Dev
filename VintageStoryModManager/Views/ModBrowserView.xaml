@@ -350,7 +350,8 @@
                 x:Name="ModsScrollViewer"
                 HorizontalScrollBarVisibility="Disabled"
                 ScrollChanged="ModsScrollViewer_ScrollChanged"
-                VerticalScrollBarVisibility="Auto">
+                VerticalScrollBarVisibility="Auto"
+                PreviewMouseWheel="ModsScrollViewer_PreviewMouseWheel">
                 <Grid>
                     <!--  Loading Indicator  -->
                     <StackPanel
@@ -767,7 +768,7 @@
                                                     <StackPanel
                                                         MaxWidth="220"
                                                         HorizontalAlignment="Left"
-                                                        Orientation="Horizontal">
+                                                        Orientation="Vertical">
                                                         <!--  MaxWidth: 175 - LinkIcon(10+4margin) = 161  -->
                                                         <TextBlock
                                                             MaxWidth="210"
@@ -791,6 +792,16 @@
                                                                 </Style>
                                                             </TextBlock.Style>
                                                         </TextBlock>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Path Data="{StaticResource IconUser}" Style="{StaticResource IconSmallSubtle}" />
+                                                            <!--  MaxWidth: StatsWidth=80 - Icon(12+4margin) = 64  -->
+                                                            <TextBlock
+                                                                MaxWidth="128"
+                                                                FontSize="12"
+                                                                Foreground="{DynamicResource Brush.Text.Primary}"
+                                                                Text="{Binding Author}"
+                                                                TextTrimming="CharacterEllipsis" />
+                                                        </StackPanel>
 
                                                     </StackPanel>
                                                     <TextBlock
@@ -809,16 +820,6 @@
                                                     Grid.Column="1"
                                                     Width="80"
                                                     Margin="8,16,8,8">
-                                                    <StackPanel Margin="0,2" Orientation="Horizontal">
-                                                        <Path Data="{StaticResource IconUser}" Style="{StaticResource IconSmallSubtle}" />
-                                                        <!--  MaxWidth: StatsWidth=80 - Icon(12+4margin) = 64  -->
-                                                        <TextBlock
-                                                            MaxWidth="64"
-                                                            FontSize="12"
-                                                            Foreground="{DynamicResource Brush.Text.Primary}"
-                                                            Text="{Binding Author}"
-                                                            TextTrimming="CharacterEllipsis" />
-                                                    </StackPanel>
                                                     <StackPanel Margin="0,2" Orientation="Horizontal">
                                                         <Path Data="{StaticResource IconDownload}" Style="{StaticResource IconSmallSubtle}" />
                                                         <TextBlock

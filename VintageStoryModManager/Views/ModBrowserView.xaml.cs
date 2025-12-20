@@ -107,6 +107,17 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         }
     }
 
+    private void ModsScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        const double ScrollSpeed = 65.0; // Increase for faster scrolling, decrease for slower
+        if (sender is ScrollViewer scrollViewer)
+        {
+            double offset = scrollViewer.VerticalOffset - (e.Delta * ScrollSpeed / Mouse.MouseWheelDeltaForOneLine);
+            scrollViewer.ScrollToVerticalOffset(offset);
+            e.Handled = true;
+        }
+    }
+
     private void FavoriteButton_Click(object sender, RoutedEventArgs e)
     {
         e.Handled = true; // Prevent card click
