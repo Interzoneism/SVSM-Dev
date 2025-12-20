@@ -2906,6 +2906,7 @@ public partial class MainWindow : Window
         {
             Dispatcher.InvokeAsync(() =>
             {
+                RefreshHoverOverlayState();
                 ScheduleRefreshAfterModlistLoadIfReady();
             }, DispatcherPriority.Background);
         }
