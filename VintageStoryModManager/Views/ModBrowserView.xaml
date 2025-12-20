@@ -465,11 +465,11 @@
                                             Grid.Row="0"
                                             Grid.RowSpan="2">
 
-                                            <WrapPanel x:Name="container">
+                                            <WrapPanel x:Name="container" RenderOptions.BitmapScalingMode="LowQuality">
 
                                                 <WrapPanel.OpacityMask>
 
-                                                    <VisualBrush>
+                                                    <VisualBrush RenderOptions.CachingHint="Cache">
                                                         <VisualBrush.Visual>
                                                             <Border
                                                                 Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=WrapPanel}}"
@@ -484,7 +484,8 @@
                                                     x:Name="ThumbImage"
                                                     Grid.Row="0"
                                                     MinHeight="229"
-                                                    Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}}"
+                                                    RenderOptions.BitmapScalingMode="LowQuality"
+                                                    Source="{Binding LogoUrl, Converter={StaticResource StringToImageSource}, IsAsync=True}"
                                                     Stretch="Uniform"
                                                     Visibility="{Binding LogoUrl, ConverterParameter=invert, Converter={StaticResource StringNullOrWhiteSpaceToVisibility}}" />
                                             </WrapPanel>
@@ -497,6 +498,7 @@
                                             Grid.Row="0"
                                             Grid.RowSpan="2"
                                             MinHeight="229"
+                                            RenderOptions.BitmapScalingMode="LowQuality"
                                             Source="/Resources/mod-default.png"
                                             Stretch="UniformToFill">
                                             <Image.Style>
