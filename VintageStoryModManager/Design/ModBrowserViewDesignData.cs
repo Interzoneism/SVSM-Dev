@@ -138,6 +138,9 @@ public sealed class ModBrowserViewDesignData
             }
         };
 
+        // Initialize VisibleMods with the same items as ModsList for design-time
+        VisibleMods = new ObservableCollection<DownloadableModOnList>(ModsList);
+
         // Initialize other collections
         FavoriteMods = new ObservableCollection<int> { 2, 5 };
         InstalledMods = new ObservableCollection<int> { 1, 2, 3 };
@@ -148,7 +151,7 @@ public sealed class ModBrowserViewDesignData
     }
 
     public ObservableCollection<DownloadableModOnList> ModsList { get; }
-    public IEnumerable<DownloadableModOnList> VisibleMods => ModsList;
+    public ObservableCollection<DownloadableModOnList> VisibleMods { get; }
     public ObservableCollection<int> FavoriteMods { get; }
     public ObservableCollection<int> InstalledMods { get; }
     public ObservableCollection<GameVersion> AvailableVersions { get; }

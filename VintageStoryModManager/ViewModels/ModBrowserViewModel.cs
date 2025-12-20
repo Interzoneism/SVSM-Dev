@@ -44,9 +44,9 @@ public partial class ModBrowserViewModel : ObservableObject
     private ObservableCollection<DownloadableModOnList> _modsList = [];
 
     [ObservableProperty]
-    private ObservableCollection<DownloadableModOnList> _visibleMods = [];
+    private ObservableCollection<DownloadableModOnList> _visibleMods = new(DefaultLoadedMods);
 
-    private int _visibleModsCount = DefaultLoadedMods;
+    private int _visibleModsCount = 0;
 
     [ObservableProperty]
     private bool _isSearching;
