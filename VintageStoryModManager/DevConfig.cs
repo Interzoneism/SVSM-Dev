@@ -12,13 +12,13 @@ public static class DevConfig
     public static string SingleInstanceMutexName { get; } = "VintageStoryModManager.SingleInstance";
 
     // View model tuning.
-    // Increased from 4 to 8 for better performance with many mods
-    public static int MaxConcurrentDatabaseRefreshes { get; } = 8;
-    // Increased from 6 to 8 for better performance with many mods
-    public static int MaxConcurrentUserReportRefreshes { get; } = 8;
+    // Reduced from 8 to 4 to improve UI responsiveness during heavy load
+    public static int MaxConcurrentDatabaseRefreshes { get; } = 4;
+    // Reduced from 8 to 4 to improve UI responsiveness during heavy load
+    public static int MaxConcurrentUserReportRefreshes { get; } = 4;
     public static int MaxNewModsRecentMonths { get; } = 24;
-    // Increased from 32 to 64 for better batching performance with many mods
-    public static int InstalledModsIncrementalBatchSize { get; } = 64;
+    // Reduced from 64 to 32 to improve UI responsiveness during heavy load
+    public static int InstalledModsIncrementalBatchSize { get; } = 32;
     public static int MaxModDatabaseResultLimit { get; } = int.MaxValue;
 
     // Main window behaviour and layout.

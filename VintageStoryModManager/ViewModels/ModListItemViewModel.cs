@@ -2185,22 +2185,9 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private ImageSource? CreateImageSafely(Func<ImageSource?> factory, string context, bool enableLogging = true)
     {
-        if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
-            try
-            {
-                if (enableLogging) LogDebug($"{context}: Invoking image creation on dispatcher thread.");
-                var result = dispatcher.Invoke(factory);
-                if (enableLogging)
-                    LogDebug(
-                        $"{context}: Dispatcher invocation completed with result {(result is null ? "null" : "available")}.");
-                return result;
-            }
-            catch (Exception ex)
-            {
-                if (enableLogging) LogDebug($"{context}: Exception during dispatcher invocation: {ex.Message}.");
-                return null;
-            }
-
+        // Executing image creation on the current thread.
+        // Note: The factory MUST freeze the image (e.g. bitmap.Freeze()) if created on a background thread
+        // to ensure it can be accessed by the UI thread.
         try
         {
             var result = factory();
