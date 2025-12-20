@@ -186,19 +186,11 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
-                        <Bold>Save Modlist as an importable PDF…</Bold>
-                        <Run
-                            Text=" exports your installed mods (and any selected configuration files) to a PDF. The manager stores the modlist inside the PDF metadata so you can import it later with " />
-                        <Bold>Load Modlist…</Bold>
-                        <Run Text="." />
-                    </TextBlock>
-
-                    <TextBlock Margin="0,8,0,0"
-                               TextWrapping="Wrap"
-                               FontSize="12">
                         <Bold>Save Modlist…</Bold>
                         <Run
-                            Text=" saves the current set of installed mods as a .json file inside the Modlists folder. You can optionally embed mod configuration files." />
+                            Text=" saves the current set of installed mods to a file. You can choose to save as a JSON file in the Modlists folder, or export as an importable PDF. The manager can store the modlist inside the PDF metadata so you can import it later with " />
+                        <Bold>Load Modlist…</Bold>
+                        <Run Text=". You can optionally embed mod configuration files." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
