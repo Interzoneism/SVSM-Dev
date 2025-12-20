@@ -52,24 +52,15 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
-                        <Bold>Set Custom Vintage Story Shortcut</Bold>
-                        <Run
-                            Text=" lets you choose a Windows .lnk shortcut. When saved, the Launch Game button uses that shortcut (and any arguments it contains); pick this menu again to clear the shortcut." />
-                    </TextBlock>
-
-                    <TextBlock Margin="0,8,0,0"
-                               TextWrapping="Wrap"
-                               FontSize="12">
                         <Bold>Game Profiles</Bold>
                         <Run
                             Text=" is used to manage different Vintage Story installs - create a new profile and set the Data and Game directory paths to another Vintage Story installation. The custom shortcut is also custom for each Game Profile.  " />
                     </TextBlock>
 
-
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
-                        <Bold>Restore backup point</Bold>
+                        <Bold>Restore mods backup</Bold>
                         <Run
                             Text=" lists the automatic JSON snapshots the manager creates before major actions. Pick one to restore your mods (and optionally their configuration files) to that state." />
                     </TextBlock>
@@ -86,15 +77,6 @@
                         <Bold>Automatically back up VintagestoryData before launch</Bold>
                         <Run
                             Text=" creates a complete backup of your VintagestoryData folder each time you launch the game from the manager, protecting your worlds and saves." />
-                    </TextBlock>
-                    <TextBlock Margin="0,8,0,0"
-                               TextWrapping="Wrap"
-                               FontSize="12">
-                        <Bold>Disable auto-refresh</Bold>
-                        <Run
-                            Text=" stops automatic checks that fetch mod tags, user reports, and update data. With it enabled, use " />
-                        <Bold>Mods &gt; Refresh Mods</Bold>
-                        <Run Text=" to update information manually." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
@@ -113,17 +95,9 @@
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
                                FontSize="12">
-                        <Bold>Refresh Mods</Bold>
+                        <Bold>Scan for mod config files</Bold>
                         <Run
-                            Text=" reloads the installed mod list and pulls fresh metadata. Use it after adding or removing mods outside the manager or when auto-refresh is disabled." />
-                    </TextBlock>
-
-                    <TextBlock Margin="0,8,0,0"
-                               TextWrapping="Wrap"
-                               FontSize="12">
-                        <Bold>Update All Mods</Bold>
-                        <Run
-                            Text=" scans for available updates, lets you choose which mods to update, creates a backup, and then downloads the selected releases." />
+                            Text=" searches the ModConfig directory for known configuration files and links them to the matching mods so you can open them directly." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
@@ -185,6 +159,14 @@
                         <Bold>Open Config folder</Bold>
                         <Run
                             Text=" opens the ModConfig directory where mod configuration files are stored." />
+                    </TextBlock>
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Open Modlists folder</Bold>
+                        <Run
+                            Text=" opens the Modlists directory where saved modlists are stored." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
@@ -263,6 +245,28 @@
                 <StackPanel Margin="0,20,0,0">
                     <TextBlock FontSize="15"
                                FontWeight="Bold"
+                               Text="Performance menu" />
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Disable auto-refresh (Faster startup, use manual Refresh button)</Bold>
+                        <Run
+                            Text=" stops automatic checks that fetch mod tags, user reports, and update data. With it enabled, use the Refresh button to update information manually." />
+                    </TextBlock>
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Correct thumbnails (Slower to load in mod database)</Bold>
+                        <Run
+                            Text=" ensures mod thumbnails are loaded accurately from the Mod Database. Disabling this option speeds up loading but may show incorrect images." />
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Margin="0,20,0,0">
+                    <TextBlock FontSize="15"
+                               FontWeight="Bold"
                                Text="View menu" />
 
                     <TextBlock Margin="0,8,0,0"
@@ -295,7 +299,7 @@
                 <StackPanel Margin="0,20,0,0">
                     <TextBlock FontSize="15"
                                FontWeight="Bold"
-                               Text="Help &amp; Advanced menu" />
+                               Text="Help &amp; About menu" />
 
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
@@ -334,6 +338,20 @@
                         <Run
                             Text=" deletes all cache folders (Cached Mods, Mod Database Cache, Mod Metadata, and cloud-modlist cache) while leaving your mods and settings untouched." />
                     </TextBlock>
+                </StackPanel>
+
+                <StackPanel Margin="0,20,0,0">
+                    <TextBlock FontSize="15"
+                               FontWeight="Bold"
+                               Text="Advanced menu" />
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Set Custom Vintage Story Shortcut</Bold>
+                        <Run
+                            Text=" lets you choose a Windows .lnk shortcut. When saved, the Launch Game button uses that shortcut (and any arguments it contains); pick this menu again to clear the shortcut." />
+                    </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
                                TextWrapping="Wrap"
@@ -341,6 +359,14 @@
                         <Bold>Change manager config and cache folder...</Bold>
                         <Run
                             Text=" allows you to move the entire &quot;Simple VS Manager&quot; folder to a new location. This includes all configuration files, cached mods, backups, and presets. The application will automatically restart after the move is complete." />
+                    </TextBlock>
+
+                    <TextBlock Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               FontSize="12">
+                        <Bold>Restore firebase-auth.json using backup</Bold>
+                        <Run
+                            Text=" restores the Firebase authentication file from a backup if you're having issues with online modlists or user reports." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
@@ -400,14 +426,6 @@
                                FontSize="12">
                         <Bold>• Errors and exceptions</Bold>
                         <Run Text=" logs all errors and exceptions that occur." />
-                    </TextBlock>
-
-                    <TextBlock Margin="0,8,0,0"
-                               TextWrapping="Wrap"
-                               FontSize="12">
-                        <Bold>Scan for mod config files</Bold>
-                        <Run
-                            Text=" searches the ModConfig directory for known configuration files and links them to the matching mods so you can open them directly." />
                     </TextBlock>
 
                     <TextBlock Margin="0,8,0,0"
