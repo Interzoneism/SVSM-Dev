@@ -4709,7 +4709,7 @@ public partial class MainWindow : Window
         UpdateRowModSubscription(row, e.NewValue as ModListItemViewModel);
 
         // Skip overlay reset during loading to reduce UI overhead
-        if (!AreHoverOverlaysSuppressed(row))
+        if (!AreHoverOverlaysSuppressed())
             ResetRowOverlays(row);
     }
 
@@ -4720,7 +4720,7 @@ public partial class MainWindow : Window
         row.DataContextChanged -= ModsDataGridRow_OnDataContextChanged;
         UpdateRowModSubscription(row, null);
         // Skip overlay cleanup during loading - overlays will be recreated anyway
-        if (!AreHoverOverlaysSuppressed(row))
+        if (!AreHoverOverlaysSuppressed())
             ClearRowOverlayValues(row);
         SetRowIsHovered(row, false);
     }
