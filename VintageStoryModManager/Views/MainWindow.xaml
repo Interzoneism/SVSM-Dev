@@ -337,11 +337,11 @@
                                 Style="{StaticResource ToggleMenuItemStyle}"
                                 Tag="{x:Static services:ColorTheme.SurpriseMe}" />
                         </MenuItem>
-                        <MenuItem
-                            x:Name="ColumnsMenuItem"
-                            Height="35"
-                            Header="_Columns"
-                            Visibility="{Binding IsViewingMainTab, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <MenuItem
+                                x:Name="ColumnsMenuItem"
+                                Height="35"
+                                Header="_Columns"
+                                Visibility="{Binding IsViewingMainTab, Converter={StaticResource IMM.BooleanToVisibilityConverter}}">
                             <MenuItem
                                 x:Name="ActiveColumnMenuItem"
                                 Checked="InstalledModsColumnMenuItem_OnChecked"
