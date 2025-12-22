@@ -471,8 +471,8 @@
                                                     <VisualBrush RenderOptions.CachingHint="Cache">
                                                         <VisualBrush.Visual>
                                                             <Border
-                                                                Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=WrapPanel}}"
-                                                                Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=WrapPanel}}"
+                                                                Width="{Binding ActualWidth, ElementName=container}"
+                                                                Height="{Binding ActualHeight, ElementName=container}"
                                                                 Background="White"
                                                                 CornerRadius="8" />
                                                         </VisualBrush.Visual>

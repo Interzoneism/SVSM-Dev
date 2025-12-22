@@ -539,6 +539,8 @@ public partial class ModBrowserViewModel : ObservableObject
         // Notify UI of changes - using Normal priority to maintain responsiveness
         // OnPropertyChanged(nameof(VisibleMods)); // Not needed
 
+        await Task.CompletedTask;
+
         // Load metadata for newly visible mods + prefetch buffer asynchronously
         var prefetchEndIndex = Math.Min(VisibleModsCount + PrefetchBufferCount, ModsList.Count);
         var modsToPrefetch = ModsList.Skip(previousCount).Take(prefetchEndIndex - previousCount).ToList();
