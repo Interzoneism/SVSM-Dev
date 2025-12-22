@@ -35,8 +35,10 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly string? _metadataError;
 
     private readonly Func<bool>? _requireExactVersionMatch;
-    private readonly string _searchIndex;
+    private string? _searchIndex;
     private readonly Func<string?, string?, bool>? _shouldSkipVersion;
+    private readonly ModEntry _modEntry;
+    private readonly string _constructorLocation;
     private string? _activationError;
     private int? _databaseComments;
     private int? _databaseDownloads;
@@ -69,6 +71,8 @@ public sealed class ModListItemViewModel : ObservableObject
     private string? _userReportTooltip;
     private string? _versionWarningMessage;
     private bool _hasInitializedUserReportState;
+    private ImageSource? _icon;
+    private bool _iconInitialized;
 
     // Cached tag display string to avoid repeated string.Join allocations
     private string? _cachedDatabaseTagsDisplay;
@@ -93,6 +97,10 @@ public sealed class ModListItemViewModel : ObservableObject
         _installedGameVersion = installedGameVersion;
         _shouldSkipVersion = shouldSkipVersion;
         _requireExactVersionMatch = requireExactVersionMatch;
+        
+        // Store for lazy search index building
+        _modEntry = entry;
+        _constructorLocation = location;
 
         ModId = entry.ModId;
         DisplayName = string.IsNullOrWhiteSpace(entry.Name) ? entry.ModId : entry.Name;
@@ -129,9 +137,10 @@ public sealed class ModListItemViewModel : ObservableObject
         _databaseTenDayDownloads = databaseInfo?.DownloadsLastTenDays;
         _modDatabaseLogoSource = databaseInfo?.LogoUrlSource;
         _modDatabaseLogoUrl = databaseInfo?.LogoUrl;
-        _modDatabaseLogo = CreateModDatabaseLogoImage();
+        // Defer logo image creation - will be created on first access via ModDatabasePreviewImage property
+        _modDatabaseLogo = null;
         LogDebug(
-            $"Initial database logo creation result: {_modDatabaseLogo is not null}. Source URL: '{FormatValue(_modDatabaseLogoUrl)}'.");
+            $"Deferred database logo creation. Source URL: '{FormatValue(_modDatabaseLogoUrl)}'.");
         ModDatabaseRelevancySortKey = entry.ModDatabaseSearchScore ?? 0;
         _modDatabaseLastUpdatedUtc = databaseInfo?.LastReleasedUtc ?? DetermineLastUpdatedFromReleases(_releases);
         if (_databaseRecentDownloads is null)
@@ -180,8 +189,10 @@ public sealed class ModListItemViewModel : ObservableObject
         RequiredOnServer = entry.RequiredOnServer;
         _modDatabaseSide = entry.DatabaseInfo?.Side;
 
-        Icon = CreateImage(entry.IconBytes, "Icon bytes");
-        LogDebug($"Icon image created: {Icon is not null}. Will fall back to database logo when null.");
+        // Icon will be lazily created on first access via Icon property getter
+        _icon = null;
+        _iconInitialized = false;
+        LogDebug($"Deferred icon image creation. Will be created on first access.");
 
         _isActive = isActive;
         HasErrors = entry.HasErrors;
@@ -202,7 +213,8 @@ public sealed class ModListItemViewModel : ObservableObject
             _userReportTooltip = null;
             _hasInitializedUserReportState = false;
         }
-        _searchIndex = BuildSearchIndex(entry, location);
+        // Defer search index building - will be built on first search
+        _searchIndex = null;
     }
 
     public string ModId { get; }
@@ -300,7 +312,25 @@ public sealed class ModListItemViewModel : ObservableObject
         ? _databaseComments.Value.ToString("N0", CultureInfo.CurrentCulture)
         : "—";
 
-    public ImageSource? ModDatabasePreviewImage => Icon ?? _modDatabaseLogo;
+    public ImageSource? ModDatabasePreviewImage
+    {
+        get
+        {
+            // Prefer icon if available, otherwise use database logo
+            var iconImage = Icon;
+            if (iconImage != null)
+                return iconImage;
+
+            // Lazy load database logo on first access
+            if (_modDatabaseLogo == null && !string.IsNullOrWhiteSpace(_modDatabaseLogoUrl))
+            {
+                _modDatabaseLogo = CreateModDatabaseLogoImage();
+                LogDebug($"Lazy database logo loaded. URL='{FormatValue(_modDatabaseLogoUrl)}', Image created={_modDatabaseLogo is not null}.");
+            }
+
+            return _modDatabaseLogo;
+        }
+    }
 
     public bool HasModDatabasePreviewImage => ModDatabasePreviewImage != null;
 
@@ -520,7 +550,19 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public string RequiredOnServerDisplay => RequiredOnServer.HasValue ? RequiredOnServer.Value ? "Yes" : "No" : "—";
 
-    public ImageSource? Icon { get; }
+    public ImageSource? Icon
+    {
+        get
+        {
+            if (!_iconInitialized)
+            {
+                _iconInitialized = true;
+                _icon = CreateImage(_modEntry.IconBytes, "Icon bytes");
+                LogDebug($"Lazy icon image created: {_icon is not null}. Will fall back to database logo when null.");
+            }
+            return _icon;
+        }
+    }
 
     public bool HasErrors { get; }
 
@@ -1475,6 +1517,13 @@ public sealed class ModListItemViewModel : ObservableObject
     internal bool MatchesSearchTokens(IReadOnlyList<string> tokens)
     {
         if (tokens.Count == 0) return true;
+
+        // Lazy initialization of search index on first search
+        if (_searchIndex == null)
+        {
+            _searchIndex = BuildSearchIndex(_modEntry, _constructorLocation);
+            LogDebug($"Lazy search index built for mod '{DisplayName}'.");
+        }
 
         // Use ReadOnlySpan for more efficient substring searches
         var searchIndexSpan = _searchIndex.AsSpan();
