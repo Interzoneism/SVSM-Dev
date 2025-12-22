@@ -14,6 +14,10 @@ The following operations are tracked for each mod:
 5. **Update Checks** - Time spent checking if newer versions are available
 6. **Changelog Loading** - Time spent loading and processing release changelogs
 7. **Database Info Loading** - Time spent loading general metadata from the mod database
+   - **Cache Loading** - Time spent loading database info from cache
+   - **Network Loading** - Time spent fetching database info from the network/API
+   - **Applying Info** - Time spent applying database info to mod entries
+   - **Offline Info Population** - Time spent creating offline database info
 
 ## How It Works
 
@@ -38,7 +42,7 @@ The following operations are tracked for each mod:
   ```
 
 ### Output Format
-On application exit, the timing summary is written to `Simple VS Manager logs.txt` in the following format:
+On application exit (if error/diagnostic logging is enabled via the "Enable Logging -> Exceptions and errors" menu option), the timing summary is written to `Simple VS Manager logs.txt` in the following format:
 
 ```
 === Mod Loading Performance Metrics ===
@@ -51,9 +55,17 @@ Update Checks: 1.45s total (150 ops, avg 9.67ms/op)
 Changelog Loading: 0.56s total (150 ops, avg 3.73ms/op)
 Database Info Loading: 45.23s total (150 ops, avg 301.53ms/op)
 
+  Database Info Loading Breakdown:
+  Cache Loading: 4.24s total (384 ops, avg 11.04ms/op)
+  Network Loading: 38.50s total (150 ops, avg 256.67ms/op)
+  Applying Info: 1.23s total (384 ops, avg 3.20ms/op)
+  Offline Info Population: 1.26s total (84 ops, avg 15.00ms/op)
+
 Total Time Across All Operations: 57.48s
 =======================================
 ```
+
+Note: The Database Info Loading breakdown is only shown when sub-operations are measured.
 
 ## Implementation Details
 
@@ -102,7 +114,7 @@ To measure additional operations in the future:
 
 ## Configuration
 
-The timing feature is always enabled and automatically logs when the application exits, provided that error/diagnostic logging is enabled in user configuration (`LogErrorsAndExceptions` setting).
+The timing feature is always enabled and automatically logs when the application exits, **but only if error/diagnostic logging is enabled** in user configuration (`LogErrorsAndExceptions` setting, accessible via the "Enable Logging -> Exceptions and errors" menu option).
 
 ## Performance Impact
 
