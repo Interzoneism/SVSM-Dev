@@ -793,10 +793,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         SemaphoreSlim limiter,
         CancellationToken cancellationToken)
     {
-        var acquired = false;
 
         await limiter.WaitAsync(cancellationToken).ConfigureAwait(false);
-        acquired = true;
 
         try
         {
@@ -3540,7 +3538,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
         finally
         {
-            if (acquired) limiter.Release();
+            limiter.Release();
             if (logScope != null)
             {
                 logScope.SetCacheStatus(cacheHit);
