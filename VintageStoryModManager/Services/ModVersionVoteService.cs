@@ -193,6 +193,10 @@ public sealed class ModVersionVoteService : IDisposable
 
         await EnsureOkAsync(response, "Submit vote").ConfigureAwait(false);
 
+        // Invalidate the vote index so it gets refreshed on next query
+        // This ensures that the newly submitted vote is reflected immediately
+        InvalidateVoteIndex();
+
         return await GetVoteSummaryWithEtagAsync(
                 session,
                 new VoteCacheKey(modId, modVersion, vintageStoryVersion),
@@ -227,6 +231,10 @@ public sealed class ModVersionVoteService : IDisposable
 
         if (response.StatusCode != HttpStatusCode.NotFound)
             await EnsureOkAsync(response, "Remove vote").ConfigureAwait(false);
+
+        // Invalidate the vote index so it gets refreshed on next query
+        // This ensures that vote removal is reflected immediately
+        InvalidateVoteIndex();
 
         return await GetVoteSummaryWithEtagAsync(
                 session,
@@ -454,6 +462,19 @@ public sealed class ModVersionVoteService : IDisposable
 
             _voteIndex = await FetchVoteIndexAsync(session, cancellationToken).ConfigureAwait(false);
             _voteIndexLoaded = true;
+        }
+        finally
+        {
+            _voteIndexLock.Release();
+        }
+    }
+
+    private void InvalidateVoteIndex()
+    {
+        _voteIndexLock.Wait();
+        try
+        {
+            _voteIndexLoaded = false;
         }
         finally
         {
