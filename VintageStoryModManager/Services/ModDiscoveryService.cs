@@ -7,6 +7,7 @@ using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
 using VintageStoryModManager.Models;
 using Application = System.Windows.Application;
 
@@ -95,32 +96,43 @@ public sealed class ModDiscoveryService
         var orderedEntries = CollectModSources();
         if (orderedEntries.Count == 0) yield break;
 
-        using var results = new BlockingCollection<(int Order, ModEntry? Entry)>();
-        // Scale parallelism based on CPU cores: 1 for single-core, up to 16 for many-core systems
+        // Use a bounded channel to avoid unbounded buffering while keeping producers busy.
+        // BoundedChannelFullMode.Wait ensures producers naturally throttle when the consumer
+        // falls behind, which prevents excessive memory growth when thousands of mods are loaded.
         var maxDegree = Math.Clamp(Environment.ProcessorCount, 1, 16);
-        var options = new ParallelOptions
+        var channelOptions = new BoundedChannelOptions(maxDegree * 2)
         {
-            MaxDegreeOfParallelism = maxDegree,
-            CancellationToken = cancellationToken
+            SingleReader = true,
+            SingleWriter = false,
+            FullMode = BoundedChannelFullMode.Wait
         };
+        var channel = Channel.CreateBounded<(int Order, ModEntry? Entry)>(channelOptions);
 
-        var producer = Task.Run(() =>
+        var producer = Task.Run(async () =>
         {
             try
             {
-                Parallel.ForEach(orderedEntries.Chunk(DiscoveryBatchSize), options, batch =>
-                {
-                    foreach (var (order, source) in batch)
-                    {
-                        options.CancellationToken.ThrowIfCancellationRequested();
-                        var entry = ProcessEntry(source);
-                        results.Add((order, entry), options.CancellationToken);
-                    }
-                });
+                await Parallel.ForEachAsync(
+                        orderedEntries.Chunk(DiscoveryBatchSize),
+                        new ParallelOptions
+                        {
+                            MaxDegreeOfParallelism = maxDegree,
+                            CancellationToken = cancellationToken
+                        },
+                        async (batch, token) =>
+                        {
+                            foreach (var (order, source) in batch)
+                            {
+                                token.ThrowIfCancellationRequested();
+                                var entry = ProcessEntry(source);
+                                await channel.Writer.WriteAsync((order, entry), token).ConfigureAwait(false);
+                            }
+                        })
+                    .ConfigureAwait(false);
             }
             finally
             {
-                results.CompleteAdding();
+                channel.Writer.TryComplete();
             }
         }, cancellationToken);
 
@@ -130,7 +142,7 @@ public sealed class ModDiscoveryService
 
         try
         {
-            foreach (var (order, entry) in results.GetConsumingEnumerable(cancellationToken))
+            await foreach (var (order, entry) in channel.Reader.ReadAllAsync(cancellationToken))
             {
                 pending[order] = entry;
 
