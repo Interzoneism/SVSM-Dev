@@ -3495,9 +3495,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private async Task RefreshDatabaseInfoAsync(ModEntry entry, SemaphoreSlim limiter, CancellationToken cancellationToken)
     {
-        var acquired = false;
         await limiter.WaitAsync(cancellationToken).ConfigureAwait(false);
-        acquired = true;
 
         using var logScope = StatusLogService.BeginDebugScope(entry.Name, entry.ModId, "metadata");
         var cacheHit = false;
