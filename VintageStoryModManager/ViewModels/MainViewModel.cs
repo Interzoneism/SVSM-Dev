@@ -53,6 +53,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly ObservableCollection<TagFilterOptionViewModel> _installedTagFilters = new();
     private readonly Dictionary<string, string> _latestReleaseUserReportEtags = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _modDetailsBusyScopeLock = new();
+    private readonly object _databaseRefreshLock = new();
     private readonly Dictionary<string, ModEntry> _modEntriesBySourcePath = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly BatchedObservableCollection<ModListItemViewModel> _mods = new();
@@ -118,6 +119,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private string _loadingStatusText = string.Empty;
     private bool _isModDetailsRefreshForced;
     private bool _isModDetailsStatusActive;
+    private Task? _databaseRefreshTask;
+    private CancellationTokenSource? _databaseRefreshCts;
     private bool _isModInfoExpanded = true;
     private bool _isTagsColumnVisible = true;
     private bool _useModDbDesignView;
@@ -499,6 +502,25 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _pendingSearchCts = null;
         }
 
+        lock (_databaseRefreshLock)
+        {
+            _databaseRefreshCts?.Cancel();
+            _databaseRefreshCts?.Dispose();
+            _databaseRefreshCts = null;
+        }
+
+        if (_databaseRefreshTask != null)
+        {
+            try
+            {
+                _databaseRefreshTask.Wait(TimeSpan.FromSeconds(2));
+            }
+            catch (AggregateException)
+            {
+                // Ignore background refresh cancellations during shutdown.
+            }
+        }
+
         _clientSettingsWatcher.Dispose();
         _modDetailsBusyScope?.Dispose();
         _modDetailsBusyScope = null;
@@ -771,7 +793,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         SemaphoreSlim limiter,
         CancellationToken cancellationToken)
     {
+        var acquired = false;
+
         await limiter.WaitAsync(cancellationToken).ConfigureAwait(false);
+        acquired = true;
 
         try
         {
@@ -1459,10 +1484,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             updatedEntriesForStatus.Add(entry);
         }
 
+        IReadOnlyCollection<ModEntry> impactedEntries = Array.Empty<ModEntry>();
+
         if (_modEntriesBySourcePath.Count > 0)
         {
             var updatedEntriesSnapshot = new List<ModEntry>(_modEntriesBySourcePath.Values);
-            _ = await Task
+            impactedEntries = await Task
                 .Run(() => _discoveryService.ApplyLoadStatusesIncremental(
                     updatedEntriesSnapshot,
                     updatedEntriesForStatus,
@@ -1470,14 +1497,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 .ConfigureAwait(true);
         }
 
-        ApplyPartialUpdates(reloadResults, previousSelection);
+        ApplyPartialUpdates(reloadResults, previousSelection, impactedEntries);
 
         if (_allowModDetailsRefresh && refreshedEntries.Count > 0) QueueDatabaseInfoRefresh(refreshedEntries);
 
         TotalMods = _mods.Count;
         UpdateActiveCount();
         SelectedSortOption?.Apply(ModsView);
-        ModsView.Refresh();
         await UpdateModsStateSnapshotAsync().ConfigureAwait(true);
     }
 
@@ -1548,12 +1574,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 }
 
                 var allEntries = new List<ModEntry>(_modEntriesBySourcePath.Values);
-                _ = await Task
+                var impacted = await Task
                     .Run(() => _discoveryService.ApplyLoadStatusesIncremental(allEntries, updatedEntriesForStatus,
                         removedModIds))
                     .ConfigureAwait(true);
 
-                ApplyPartialUpdates(reloadResults, previousSelection);
+                ApplyPartialUpdates(reloadResults, previousSelection, impacted);
 
                 if (_allowModDetailsRefresh && updatedEntriesForStatus.Count > 0)
                     QueueDatabaseInfoRefresh(updatedEntriesForStatus);
@@ -1562,10 +1588,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             TotalMods = _mods.Count;
             UpdateActiveCount();
             SelectedSortOption?.Apply(ModsView);
-            ModsView.Refresh();
             await UpdateModsStateSnapshotAsync();
 
-            // Defer clearing IsLoadingMods until after any events from ModsView.Refresh() are processed.
+            // Defer clearing IsLoadingMods until after any queued CollectionChanged events are processed.
             // This ensures the guard in ModsView_OnCollectionChanged works correctly during the critical
             // window when CollectionChanged events may be queued but not yet processed.
             await Application.Current.Dispatcher.InvokeAsync(
@@ -3162,9 +3187,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (source.ModDatabaseSearchScore.HasValue) target.ModDatabaseSearchScore = source.ModDatabaseSearchScore;
     }
 
-    private void ApplyPartialUpdates(IReadOnlyDictionary<string, ModEntry?> changes, string? previousSelection)
+    private void ApplyPartialUpdates(
+        IReadOnlyDictionary<string, ModEntry?> changes,
+        string? previousSelection,
+        IReadOnlyCollection<ModEntry>? statusChanges = null)
     {
-        if (changes.Count == 0)
+        var hasStatusChanges = statusChanges is { Count: > 0 };
+
+        if (changes.Count == 0 && !hasStatusChanges)
         {
             SetStatus("Mods are up to date.", false);
             if (!string.IsNullOrWhiteSpace(previousSelection)
@@ -3226,14 +3256,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
         }
 
-        foreach (var pair in _modViewModelsBySourcePath)
+        if (statusChanges is { Count: > 0 })
         {
-            if (changes.ContainsKey(pair.Key)) continue;
-
-            if (_modEntriesBySourcePath.TryGetValue(pair.Key, out var entry))
+            foreach (var entry in statusChanges)
             {
-                pair.Value.UpdateLoadError(entry.LoadError);
-                pair.Value.UpdateDependencyIssues(entry.DependencyHasErrors, entry.MissingDependencies);
+                if (entry is null || string.IsNullOrWhiteSpace(entry.SourcePath)) continue;
+                if (changes.ContainsKey(entry.SourcePath)) continue;
+
+                if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
+                {
+                    viewModel.UpdateLoadError(entry.LoadError);
+                    viewModel.UpdateDependencyIssues(
+                        entry.DependencyHasErrors,
+                        entry.MissingDependencies ?? Array.Empty<ModDependencyInfo>());
+                }
             }
         }
 
@@ -3245,7 +3281,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         var affected = added + updated + removed;
         if (affected == 0)
         {
-            SetStatus("Mods are up to date.", false);
+            SetStatus(hasStatusChanges ? "Updated mod statuses." : "Mods are up to date.", false);
             return;
         }
 
@@ -3276,36 +3312,53 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         OnModDetailsRefreshEnqueued(pending.Length);
 
-        _ = Task.Run(async () =>
+        CancellationToken refreshToken;
+        lock (_databaseRefreshLock)
         {
-            try
-            {
-                if (InternetAccessManager.IsInternetAccessDisabled)
-                {
-                    await PopulateOfflineDatabaseInfoAsync(pending).ConfigureAwait(false);
-                    return;
-                }
+            _databaseRefreshCts?.Cancel();
+            _databaseRefreshCts?.Dispose();
+            _databaseRefreshCts = new CancellationTokenSource();
+            refreshToken = _databaseRefreshCts.Token;
+        }
 
-                // Use progressive loading strategy for large mod counts
-                if (pending.Length > 100)
-                {
-                    await RefreshDatabaseInfoProgressivelyAsync(pending).ConfigureAwait(false);
-                }
-                else
-                {
-                    using var limiter = new SemaphoreSlim(MaxConcurrentDatabaseRefreshes, MaxConcurrentDatabaseRefreshes);
-                    var refreshTasks = pending
-                        .Select(entry => RefreshDatabaseInfoAsync(entry, limiter))
-                        .ToArray();
+        _databaseRefreshTask = Task.Run(() => RefreshDatabaseInfoBatchAsync(pending, refreshToken), refreshToken);
+    }
 
-                    await Task.WhenAll(refreshTasks).ConfigureAwait(false);
-                }
-            }
-            catch (Exception)
+    private async Task RefreshDatabaseInfoBatchAsync(ModEntry[] pending, CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (InternetAccessManager.IsInternetAccessDisabled)
             {
-                // Swallow unexpected exceptions from the refresh loop.
+                await PopulateOfflineDatabaseInfoAsync(pending, cancellationToken).ConfigureAwait(false);
+                return;
             }
-        });
+
+            // Use progressive loading strategy for large mod counts
+            if (pending.Length > 100)
+            {
+                await RefreshDatabaseInfoProgressivelyAsync(pending, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                using var limiter = new SemaphoreSlim(MaxConcurrentDatabaseRefreshes, MaxConcurrentDatabaseRefreshes);
+                var refreshTasks = pending
+                    .Select(entry => RefreshDatabaseInfoAsync(entry, limiter, cancellationToken))
+                    .ToArray();
+
+                await Task.WhenAll(refreshTasks).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancellation is expected when a newer refresh supersedes the current one.
+        }
+        catch (Exception)
+        {
+            // Swallow unexpected exceptions from the refresh loop.
+        }
     }
 
     private bool NeedsDatabaseRefresh(ModEntry entry)
@@ -3357,7 +3410,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     /// Progressively refreshes database info for large mod collections.
     /// First batch (visible items) gets high priority, rest are processed in background.
     /// </summary>
-    private async Task RefreshDatabaseInfoProgressivelyAsync(ModEntry[] entries)
+    private async Task RefreshDatabaseInfoProgressivelyAsync(ModEntry[] entries, CancellationToken cancellationToken)
     {
         const int priorityBatchSize = 50; // First 50 mods get immediate attention
         const int regularBatchSize = 20;  // Subsequent batches are smaller
@@ -3367,8 +3420,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         // Process first batch with high priority (likely visible in UI)
         var priorityCount = Math.Min(priorityBatchSize, entries.Length);
         var priorityBatch = entries.Take(priorityCount).ToArray();
+        cancellationToken.ThrowIfCancellationRequested();
+
         var priorityTasks = priorityBatch
-            .Select(entry => RefreshDatabaseInfoAsync(entry, limiter))
+            .Select(entry => RefreshDatabaseInfoAsync(entry, limiter, cancellationToken))
             .ToArray();
 
         await Task.WhenAll(priorityTasks).ConfigureAwait(false);
@@ -3377,9 +3432,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         var remaining = entries.Skip(priorityCount).ToArray();
         for (int i = 0; i < remaining.Length; i += regularBatchSize)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var batch = remaining.Skip(i).Take(regularBatchSize).ToArray();
             var batchTasks = batch
-                .Select(entry => RefreshDatabaseInfoAsync(entry, limiter))
+                .Select(entry => RefreshDatabaseInfoAsync(entry, limiter, cancellationToken))
                 .ToArray();
 
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
@@ -3387,14 +3443,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             // Small delay between batches to keep UI responsive
             if (i + regularBatchSize < remaining.Length)
             {
-                await Task.Delay(50).ConfigureAwait(false);
+                await Task.Delay(50, cancellationToken).ConfigureAwait(false);
             }
         }
     }
 
-    private async Task RefreshDatabaseInfoAsync(ModEntry entry, SemaphoreSlim limiter)
+    private async Task RefreshDatabaseInfoAsync(ModEntry entry, SemaphoreSlim limiter, CancellationToken cancellationToken)
     {
-        await limiter.WaitAsync().ConfigureAwait(false);
+        await limiter.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         using var logScope = StatusLogService.BeginDebugScope(entry.Name, entry.ModId, "metadata");
         var cacheHit = false;
@@ -3404,6 +3460,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // Load from cache and check if refresh is needed via version comparison
             var (cachedInfo, needsRefresh) = await _databaseService
                 .TryLoadCachedDatabaseInfoWithRefreshCheckAsync(entry.ModId, entry.Version, InstalledGameVersion,
@@ -3452,7 +3509,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Pass the already-loaded cached info to avoid re-reading from disk
                 info = await _databaseService
                     .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
-                        _configuration.RequireExactVsVersionMatch, cachedInfo, CancellationToken.None)
+                        _configuration.RequireExactVsVersionMatch, cachedInfo, cancellationToken)
                     .ConfigureAwait(false);
             }
             catch (Exception)
@@ -3483,7 +3540,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
         finally
         {
-            limiter.Release();
+            if (acquired) limiter.Release();
             if (logScope != null)
             {
                 logScope.SetCacheStatus(cacheHit);
@@ -3497,11 +3554,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    private async Task PopulateOfflineDatabaseInfoAsync(IEnumerable<ModEntry> entries)
+    private async Task PopulateOfflineDatabaseInfoAsync(IEnumerable<ModEntry> entries, CancellationToken cancellationToken)
     {
         foreach (var entry in entries)
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (entry is not null) await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
             }
             catch (Exception)
