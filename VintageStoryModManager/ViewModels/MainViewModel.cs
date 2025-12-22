@@ -3516,15 +3516,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             // This skips expensive network checks and just uses whatever is cached
             if (_isInitialLoad)
             {
-                var cachedInfo = await _databaseService
-                    .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
-                        _configuration.RequireExactVsVersionMatch)
-                    .ConfigureAwait(false);
+                ModDatabaseInfo? cachedInfo;
+                using (_timingService.MeasureDbCacheLoad())
+                {
+                    cachedInfo = await _databaseService
+                        .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
+                            _configuration.RequireExactVsVersionMatch)
+                        .ConfigureAwait(false);
+                }
                 
                 if (cachedInfo != null)
                 {
                     cacheHit = true;
-                    await ApplyDatabaseInfoAsync(entry, cachedInfo, false).ConfigureAwait(false);
+                    using (_timingService.MeasureDbApplyInfo())
+                    {
+                        await ApplyDatabaseInfoAsync(entry, cachedInfo, false).ConfigureAwait(false);
+                    }
                     tagCount = cachedInfo.Tags?.Count ?? 0;
                     releaseCount = cachedInfo.Releases?.Count ?? 0;
                     source = "cache";
@@ -3532,7 +3539,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 }
                 
                 // No cache available, create offline info
-                await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                using (_timingService.MeasureDbOfflineInfo())
+                {
+                    await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                }
                 tagCount = entry.DatabaseInfo?.Tags?.Count ?? 0;
                 releaseCount = entry.DatabaseInfo?.Releases?.Count ?? 0;
                 source = "offline";
@@ -3540,16 +3550,24 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
             
             // For subsequent refreshes, use normal refresh logic with version checks
-            var (cachedInfo2, needsRefresh) = await _databaseService
-                .TryLoadCachedDatabaseInfoWithRefreshCheckAsync(entry.ModId, entry.Version, InstalledGameVersion,
-                    _configuration.RequireExactVsVersionMatch)
-                .ConfigureAwait(false);
+            ModDatabaseInfo? cachedInfo2;
+            bool needsRefresh;
+            using (_timingService.MeasureDbCacheLoad())
+            {
+                (cachedInfo2, needsRefresh) = await _databaseService
+                    .TryLoadCachedDatabaseInfoWithRefreshCheckAsync(entry.ModId, entry.Version, InstalledGameVersion,
+                        _configuration.RequireExactVsVersionMatch)
+                    .ConfigureAwait(false);
+            }
 
             cacheHit = cachedInfo2 != null;
 
             if (cachedInfo2 != null)
             {
-                await ApplyDatabaseInfoAsync(entry, cachedInfo2, false).ConfigureAwait(false);
+                using (_timingService.MeasureDbApplyInfo())
+                {
+                    await ApplyDatabaseInfoAsync(entry, cachedInfo2, false).ConfigureAwait(false);
+                }
                 tagCount = cachedInfo2.Tags?.Count ?? 0;
                 releaseCount = cachedInfo2.Releases?.Count ?? 0;
 
@@ -3574,7 +3592,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
             else if (InternetAccessManager.IsInternetAccessDisabled)
             {
-                await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                using (_timingService.MeasureDbOfflineInfo())
+                {
+                    await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                }
                 tagCount = entry.DatabaseInfo?.Tags?.Count ?? 0;
                 releaseCount = entry.DatabaseInfo?.Releases?.Count ?? 0;
                 source = "offline";
@@ -3585,10 +3606,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             try
             {
                 // Pass the already-loaded cached info to avoid re-reading from disk
-                info = await _databaseService
-                    .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
-                        _configuration.RequireExactVsVersionMatch, cachedInfo2, cancellationToken)
-                    .ConfigureAwait(false);
+                using (_timingService.MeasureDbNetworkLoad())
+                {
+                    info = await _databaseService
+                        .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
+                            _configuration.RequireExactVsVersionMatch, cachedInfo2, cancellationToken)
+                        .ConfigureAwait(false);
+                }
             }
             catch (Exception)
             {
@@ -3604,14 +3628,20 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     return;
                 }
 
-                await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                using (_timingService.MeasureDbOfflineInfo())
+                {
+                    await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                }
                 tagCount = entry.DatabaseInfo?.Tags?.Count ?? 0;
                 releaseCount = entry.DatabaseInfo?.Releases?.Count ?? 0;
                 source = "offline";
                 return;
             }
 
-            await ApplyDatabaseInfoAsync(entry, info).ConfigureAwait(false);
+            using (_timingService.MeasureDbApplyInfo())
+            {
+                await ApplyDatabaseInfoAsync(entry, info).ConfigureAwait(false);
+            }
             tagCount = info.Tags?.Count ?? tagCount;
             releaseCount = info.Releases?.Count ?? releaseCount;
             source = info.IsOfflineOnly ? "offline" : "net";
