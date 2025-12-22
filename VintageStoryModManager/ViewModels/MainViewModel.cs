@@ -37,6 +37,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly int MaxConcurrentUserReportRefreshes = DevConfig.MaxConcurrentUserReportRefreshes;
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
     private static readonly int InstalledModsIncrementalBatchSize = DevConfig.InstalledModsIncrementalBatchSize;
+    
+    // Database refresh delays for startup optimization
+    private const int InitialRefreshDelayMs = 500;  // Delay before starting database refresh on initial load
+    private const int IncrementalRefreshDelayMs = 300;  // Delay before refreshing after incremental updates
+    
     private readonly object _busyStateLock = new();
     private readonly RelayCommand _clearSearchCommand;
     private readonly ClientSettingsWatcher _clientSettingsWatcher;
@@ -88,6 +93,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _areUserReportsVisible = true;
     private int _busyOperationCount;
     private CancellationTokenSource? _busyReleaseCts;
+    private bool _isInitialLoad = true;
     private bool _disposed;
     private Timer? _searchDebounceTimer;
     private CancellationTokenSource? _pendingSearchCts;
@@ -793,7 +799,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         SemaphoreSlim limiter,
         CancellationToken cancellationToken)
     {
-
         await limiter.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
@@ -1580,7 +1585,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 ApplyPartialUpdates(reloadResults, previousSelection, impacted);
 
                 if (_allowModDetailsRefresh && updatedEntriesForStatus.Count > 0)
-                    QueueDatabaseInfoRefresh(updatedEntriesForStatus);
+                {
+                    // Defer database refresh to background during incremental updates
+                    var entriesToRefresh = updatedEntriesForStatus.ToList();
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await Task.Delay(IncrementalRefreshDelayMs).ConfigureAwait(false);
+                            QueueDatabaseInfoRefresh(entriesToRefresh);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log but don't crash - database refresh is not critical for app function
+                            System.Diagnostics.Debug.WriteLine($"[MainViewModel] Deferred incremental refresh failed: {ex.Message}");
+                        }
+                    });
+                }
             }
 
             TotalMods = _mods.Count;
@@ -1718,9 +1739,35 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             else
                 SelectedMod = null;
 
-            if (_allowModDetailsRefresh && entries.Count > 0) QueueDatabaseInfoRefresh(entries);
-
             UpdateLoadedModsStatus();
+            
+            // Defer database refresh to background to show UI faster
+            if (_allowModDetailsRefresh && entries.Count > 0)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        // Small delay to ensure UI is responsive first
+                        await Task.Delay(InitialRefreshDelayMs).ConfigureAwait(false);
+                        QueueDatabaseInfoRefresh(entries);
+                        
+                        // Mark initial load as complete after first database refresh
+                        _isInitialLoad = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log but don't crash - database refresh is not critical for app function
+                        System.Diagnostics.Debug.WriteLine($"[MainViewModel] Deferred database refresh failed: {ex.Message}");
+                        _isInitialLoad = false;
+                    }
+                });
+            }
+            else
+            {
+                // If no database refresh needed, mark as complete immediately
+                _isInitialLoad = false;
+            }
         }, CancellationToken.None).ConfigureAwait(true);
 
         // Complete
@@ -3448,7 +3495,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private async Task RefreshDatabaseInfoAsync(ModEntry entry, SemaphoreSlim limiter, CancellationToken cancellationToken)
     {
+        var acquired = false;
         await limiter.WaitAsync(cancellationToken).ConfigureAwait(false);
+        acquired = true;
 
         using var logScope = StatusLogService.BeginDebugScope(entry.Name, entry.ModId, "metadata");
         var cacheHit = false;
@@ -3459,19 +3508,47 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            // Load from cache and check if refresh is needed via version comparison
-            var (cachedInfo, needsRefresh) = await _databaseService
+            
+            // On initial load, use cache-only approach for better startup performance
+            // This skips expensive network checks and just uses whatever is cached
+            if (_isInitialLoad)
+            {
+                var cachedInfo = await _databaseService
+                    .TryLoadCachedDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
+                        _configuration.RequireExactVsVersionMatch)
+                    .ConfigureAwait(false);
+                
+                if (cachedInfo != null)
+                {
+                    cacheHit = true;
+                    await ApplyDatabaseInfoAsync(entry, cachedInfo, false).ConfigureAwait(false);
+                    tagCount = cachedInfo.Tags?.Count ?? 0;
+                    releaseCount = cachedInfo.Releases?.Count ?? 0;
+                    source = "cache";
+                    return;
+                }
+                
+                // No cache available, create offline info
+                await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                tagCount = entry.DatabaseInfo?.Tags?.Count ?? 0;
+                releaseCount = entry.DatabaseInfo?.Releases?.Count ?? 0;
+                source = "offline";
+                return;
+            }
+            
+            // For subsequent refreshes, use normal refresh logic with version checks
+            var (cachedInfo2, needsRefresh) = await _databaseService
                 .TryLoadCachedDatabaseInfoWithRefreshCheckAsync(entry.ModId, entry.Version, InstalledGameVersion,
                     _configuration.RequireExactVsVersionMatch)
                 .ConfigureAwait(false);
 
-            cacheHit = cachedInfo != null;
+            cacheHit = cachedInfo2 != null;
 
-            if (cachedInfo != null)
+            if (cachedInfo2 != null)
             {
-                await ApplyDatabaseInfoAsync(entry, cachedInfo, false).ConfigureAwait(false);
-                tagCount = cachedInfo.Tags?.Count ?? 0;
-                releaseCount = cachedInfo.Releases?.Count ?? 0;
+                await ApplyDatabaseInfoAsync(entry, cachedInfo2, false).ConfigureAwait(false);
+                tagCount = cachedInfo2.Tags?.Count ?? 0;
+                releaseCount = cachedInfo2.Releases?.Count ?? 0;
 
                 if (InternetAccessManager.IsInternetAccessDisabled)
                 {
@@ -3486,7 +3563,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     return;
                 }
 
-                if (ShouldSkipOnlineDatabaseRefresh(cachedInfo))
+                if (ShouldSkipOnlineDatabaseRefresh(cachedInfo2))
                 {
                     source = "cache";
                     return;
@@ -3507,7 +3584,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 // Pass the already-loaded cached info to avoid re-reading from disk
                 info = await _databaseService
                     .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
-                        _configuration.RequireExactVsVersionMatch, cachedInfo, cancellationToken)
+                        _configuration.RequireExactVsVersionMatch, cachedInfo2, cancellationToken)
                     .ConfigureAwait(false);
             }
             catch (Exception)
