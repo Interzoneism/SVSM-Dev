@@ -24,6 +24,17 @@ public sealed class ModLoadingTimingService
     private double _totalDbApplyInfoTimeMs;
     private double _totalDbOfflineInfoTimeMs;
     
+    // Network loading sub-operations
+    private double _totalDbNetworkHttpTimeMs;
+    private double _totalDbNetworkParseTimeMs;
+    private double _totalDbNetworkExtractTimeMs;
+    private double _totalDbNetworkStoreTimeMs;
+    
+    // Apply info sub-operations
+    private double _totalDbApplyDispatcherTimeMs;
+    private double _totalDbApplyEntryUpdateTimeMs;
+    private double _totalDbApplyViewModelUpdateTimeMs;
+    
     // Count of operations for averaging
     private int _iconLoadCount;
     private int _tagsLoadCount;
@@ -36,6 +47,17 @@ public sealed class ModLoadingTimingService
     private int _dbNetworkLoadCount;
     private int _dbApplyInfoCount;
     private int _dbOfflineInfoCount;
+    
+    // Network loading sub-operation counts
+    private int _dbNetworkHttpCount;
+    private int _dbNetworkParseCount;
+    private int _dbNetworkExtractCount;
+    private int _dbNetworkStoreCount;
+    
+    // Apply info sub-operation counts
+    private int _dbApplyDispatcherCount;
+    private int _dbApplyEntryUpdateCount;
+    private int _dbApplyViewModelUpdateCount;
 
     /// <summary>
     ///     Records time spent loading an icon.
@@ -170,6 +192,90 @@ public sealed class ModLoadingTimingService
     }
 
     /// <summary>
+    ///     Records time spent on HTTP request/response during network loading.
+    /// </summary>
+    public void RecordDbNetworkHttpTime(double milliseconds)
+    {
+        lock (_lock)
+        {
+            _totalDbNetworkHttpTimeMs += milliseconds;
+            _dbNetworkHttpCount++;
+        }
+    }
+
+    /// <summary>
+    ///     Records time spent parsing JSON during network loading.
+    /// </summary>
+    public void RecordDbNetworkParseTime(double milliseconds)
+    {
+        lock (_lock)
+        {
+            _totalDbNetworkParseTimeMs += milliseconds;
+            _dbNetworkParseCount++;
+        }
+    }
+
+    /// <summary>
+    ///     Records time spent extracting/processing data during network loading.
+    /// </summary>
+    public void RecordDbNetworkExtractTime(double milliseconds)
+    {
+        lock (_lock)
+        {
+            _totalDbNetworkExtractTimeMs += milliseconds;
+            _dbNetworkExtractCount++;
+        }
+    }
+
+    /// <summary>
+    ///     Records time spent storing to cache during network loading.
+    /// </summary>
+    public void RecordDbNetworkStoreTime(double milliseconds)
+    {
+        lock (_lock)
+        {
+            _totalDbNetworkStoreTimeMs += milliseconds;
+            _dbNetworkStoreCount++;
+        }
+    }
+
+    /// <summary>
+    ///     Records time spent waiting for dispatcher during apply info.
+    /// </summary>
+    public void RecordDbApplyDispatcherTime(double milliseconds)
+    {
+        lock (_lock)
+        {
+            _totalDbApplyDispatcherTimeMs += milliseconds;
+            _dbApplyDispatcherCount++;
+        }
+    }
+
+    /// <summary>
+    ///     Records time spent updating entry during apply info.
+    /// </summary>
+    public void RecordDbApplyEntryUpdateTime(double milliseconds)
+    {
+        lock (_lock)
+        {
+            _totalDbApplyEntryUpdateTimeMs += milliseconds;
+            _dbApplyEntryUpdateCount++;
+        }
+    }
+
+    /// <summary>
+    ///     Records time spent updating view model during apply info.
+    /// </summary>
+    public void RecordDbApplyViewModelUpdateTime(double milliseconds)
+    {
+        lock (_lock)
+        {
+            _totalDbApplyViewModelUpdateTimeMs += milliseconds;
+            _dbApplyViewModelUpdateCount++;
+        }
+    }
+
+    /// <summary>
     ///     Gets a formatted summary of all timing metrics for logging.
     /// </summary>
     public string GetTimingSummary()
@@ -196,7 +302,30 @@ public sealed class ModLoadingTimingService
                 lines.Add("  Database Info Loading Breakdown:");
                 lines.Add($"  {FormatMetric("Cache Loading", _totalDbCacheLoadingTimeMs, _dbCacheLoadCount)}");
                 lines.Add($"  {FormatMetric("Network Loading", _totalDbNetworkLoadingTimeMs, _dbNetworkLoadCount)}");
+                
+                // Add Network Loading sub-breakdown if we have data
+                if (_dbNetworkHttpCount > 0 || _dbNetworkParseCount > 0 || _dbNetworkExtractCount > 0 || _dbNetworkStoreCount > 0)
+                {
+                    lines.Add("");
+                    lines.Add("    Network Loading Breakdown:");
+                    lines.Add($"    {FormatMetric("HTTP Request/Response", _totalDbNetworkHttpTimeMs, _dbNetworkHttpCount)}");
+                    lines.Add($"    {FormatMetric("JSON Parsing", _totalDbNetworkParseTimeMs, _dbNetworkParseCount)}");
+                    lines.Add($"    {FormatMetric("Data Extraction", _totalDbNetworkExtractTimeMs, _dbNetworkExtractCount)}");
+                    lines.Add($"    {FormatMetric("Cache Storage", _totalDbNetworkStoreTimeMs, _dbNetworkStoreCount)}");
+                }
+                
                 lines.Add($"  {FormatMetric("Applying Info", _totalDbApplyInfoTimeMs, _dbApplyInfoCount)}");
+                
+                // Add Applying Info sub-breakdown if we have data
+                if (_dbApplyDispatcherCount > 0 || _dbApplyEntryUpdateCount > 0 || _dbApplyViewModelUpdateCount > 0)
+                {
+                    lines.Add("");
+                    lines.Add("    Applying Info Breakdown:");
+                    lines.Add($"    {FormatMetric("Dispatcher Wait", _totalDbApplyDispatcherTimeMs, _dbApplyDispatcherCount)}");
+                    lines.Add($"    {FormatMetric("Entry Update", _totalDbApplyEntryUpdateTimeMs, _dbApplyEntryUpdateCount)}");
+                    lines.Add($"    {FormatMetric("ViewModel Update", _totalDbApplyViewModelUpdateTimeMs, _dbApplyViewModelUpdateCount)}");
+                }
+                
                 lines.Add($"  {FormatMetric("Offline Info Population", _totalDbOfflineInfoTimeMs, _dbOfflineInfoCount)}");
             }
 
@@ -316,6 +445,62 @@ public sealed class ModLoadingTimingService
     public IDisposable MeasureDbOfflineInfo()
     {
         return new TimingScope(this, RecordDbOfflineInfoTime);
+    }
+
+    /// <summary>
+    ///     Starts a timing operation and returns a disposable that records the elapsed time when disposed.
+    /// </summary>
+    public IDisposable MeasureDbNetworkHttp()
+    {
+        return new TimingScope(this, RecordDbNetworkHttpTime);
+    }
+
+    /// <summary>
+    ///     Starts a timing operation and returns a disposable that records the elapsed time when disposed.
+    /// </summary>
+    public IDisposable MeasureDbNetworkParse()
+    {
+        return new TimingScope(this, RecordDbNetworkParseTime);
+    }
+
+    /// <summary>
+    ///     Starts a timing operation and returns a disposable that records the elapsed time when disposed.
+    /// </summary>
+    public IDisposable MeasureDbNetworkExtract()
+    {
+        return new TimingScope(this, RecordDbNetworkExtractTime);
+    }
+
+    /// <summary>
+    ///     Starts a timing operation and returns a disposable that records the elapsed time when disposed.
+    /// </summary>
+    public IDisposable MeasureDbNetworkStore()
+    {
+        return new TimingScope(this, RecordDbNetworkStoreTime);
+    }
+
+    /// <summary>
+    ///     Starts a timing operation and returns a disposable that records the elapsed time when disposed.
+    /// </summary>
+    public IDisposable MeasureDbApplyDispatcher()
+    {
+        return new TimingScope(this, RecordDbApplyDispatcherTime);
+    }
+
+    /// <summary>
+    ///     Starts a timing operation and returns a disposable that records the elapsed time when disposed.
+    /// </summary>
+    public IDisposable MeasureDbApplyEntryUpdate()
+    {
+        return new TimingScope(this, RecordDbApplyEntryUpdateTime);
+    }
+
+    /// <summary>
+    ///     Starts a timing operation and returns a disposable that records the elapsed time when disposed.
+    /// </summary>
+    public IDisposable MeasureDbApplyViewModelUpdate()
+    {
+        return new TimingScope(this, RecordDbApplyViewModelUpdateTime);
     }
 
     private sealed class TimingScope : IDisposable
