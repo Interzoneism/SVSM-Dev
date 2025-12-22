@@ -37,6 +37,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly int MaxConcurrentUserReportRefreshes = DevConfig.MaxConcurrentUserReportRefreshes;
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
     private static readonly int InstalledModsIncrementalBatchSize = DevConfig.InstalledModsIncrementalBatchSize;
+    
+    // Database refresh delays for startup optimization
+    private const int InitialRefreshDelayMs = 500;  // Delay before starting database refresh on initial load
+    private const int IncrementalRefreshDelayMs = 300;  // Delay before refreshing after incremental updates
+    
     private readonly object _busyStateLock = new();
     private readonly RelayCommand _clearSearchCommand;
     private readonly ClientSettingsWatcher _clientSettingsWatcher;
@@ -1585,8 +1590,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     var entriesToRefresh = updatedEntriesForStatus.ToList();
                     _ = Task.Run(async () =>
                     {
-                        await Task.Delay(300).ConfigureAwait(false);
-                        QueueDatabaseInfoRefresh(entriesToRefresh);
+                        try
+                        {
+                            await Task.Delay(IncrementalRefreshDelayMs).ConfigureAwait(false);
+                            QueueDatabaseInfoRefresh(entriesToRefresh);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log but don't crash - database refresh is not critical for app function
+                            System.Diagnostics.Debug.WriteLine($"[MainViewModel] Deferred incremental refresh failed: {ex.Message}");
+                        }
                     });
                 }
             }
@@ -1733,12 +1746,21 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             {
                 _ = Task.Run(async () =>
                 {
-                    // Small delay to ensure UI is responsive first
-                    await Task.Delay(500).ConfigureAwait(false);
-                    QueueDatabaseInfoRefresh(entries);
-                    
-                    // Mark initial load as complete after first database refresh
-                    _isInitialLoad = false;
+                    try
+                    {
+                        // Small delay to ensure UI is responsive first
+                        await Task.Delay(InitialRefreshDelayMs).ConfigureAwait(false);
+                        QueueDatabaseInfoRefresh(entries);
+                        
+                        // Mark initial load as complete after first database refresh
+                        _isInitialLoad = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log but don't crash - database refresh is not critical for app function
+                        System.Diagnostics.Debug.WriteLine($"[MainViewModel] Deferred database refresh failed: {ex.Message}");
+                        _isInitialLoad = false;
+                    }
                 });
             }
             else
