@@ -6901,6 +6901,28 @@ public partial class MainWindow : Window
                     failedFolders.Add($"{name}: {ex.Message}");
                 }
 
+            // Silently clean up legacy cache folders (from before Temp Cache reorganization)
+            var legacyCacheFolders = new[]
+            {
+                Path.Combine(managerDataDir, "Mod Database Cache"),
+                Path.Combine(managerDataDir, "Cached Mods"),
+                Path.Combine(managerDataDir, "Mod Metadata"),
+                Path.Combine(managerDataDir, "Firebase Cache")
+            };
+
+            foreach (var legacyPath in legacyCacheFolders)
+                try
+                {
+                    if (Directory.Exists(legacyPath))
+                    {
+                        Directory.Delete(legacyPath, true);
+                    }
+                }
+                catch
+                {
+                    // Silently ignore failures for legacy folders
+                }
+
             // Show results
             var messageBuilder = new StringBuilder();
 
