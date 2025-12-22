@@ -1099,6 +1099,14 @@ public partial class MainWindow : Window
 
         SaveWindowDimensions();
         SaveUploaderName();
+        
+        // Log timing summary before app exit
+        if (_viewModel != null)
+        {
+            var timingSummary = _viewModel.TimingService.GetTimingSummary();
+            _modActivityLoggingService.LogModLoadingTimingSummary(timingSummary);
+        }
+        
         _modActivityLoggingService.LogAppExit();
 
         // Clean up trace listener

@@ -86,6 +86,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         new(MaxConcurrentUserReportRefreshes, MaxConcurrentUserReportRefreshes);
 
     private readonly ModVersionVoteService _voteService = new();
+    private readonly ModLoadingTimingService _timingService = new();
     private List<string>? _cachedBasePaths;
     private int _activeMods;
     private int _activeUserReportOperations;
@@ -221,6 +222,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public ICollectionView LocalModlistsView { get; }
 
     public ModDirectoryWatcher ModsWatcher => _modsWatcher;
+
+    public ModLoadingTimingService TimingService => _timingService;
 
     public ReadOnlyObservableCollection<TagFilterOptionViewModel> InstalledTagFilters { get; }
 
@@ -1871,7 +1874,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             true,
             _configuration.ShouldSkipModVersion,
             () => _configuration.RequireExactVsVersionMatch,
-            _allowModDetailsRefresh);
+            _allowModDetailsRefresh,
+            _timingService);
     }
 
     private async Task UpdateModsStateSnapshotAsync()
@@ -3498,6 +3502,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         await limiter.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         using var logScope = StatusLogService.BeginDebugScope(entry.Name, entry.ModId, "metadata");
+        using var timingScope = _timingService.MeasureDatabaseInfoLoad();
         var cacheHit = false;
         var source = string.Empty;
         var tagCount = 0;
