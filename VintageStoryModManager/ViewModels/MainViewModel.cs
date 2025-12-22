@@ -3615,7 +3615,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
         finally
         {
-            if (acquired) limiter.Release();
+            limiter.Release();
             if (logScope != null)
             {
                 logScope.SetCacheStatus(cacheHit);
