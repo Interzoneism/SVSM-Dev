@@ -195,7 +195,7 @@ public sealed class ModVersionVoteService : IDisposable
 
         // Invalidate the vote index so it gets refreshed on next query
         // This ensures that the newly submitted vote is reflected immediately
-        InvalidateVoteIndex();
+        await InvalidateVoteIndexAsync(cancellationToken).ConfigureAwait(false);
 
         return await GetVoteSummaryWithEtagAsync(
                 session,
@@ -234,7 +234,7 @@ public sealed class ModVersionVoteService : IDisposable
 
         // Invalidate the vote index so it gets refreshed on next query
         // This ensures that vote removal is reflected immediately
-        InvalidateVoteIndex();
+        await InvalidateVoteIndexAsync(cancellationToken).ConfigureAwait(false);
 
         return await GetVoteSummaryWithEtagAsync(
                 session,
@@ -469,9 +469,9 @@ public sealed class ModVersionVoteService : IDisposable
         }
     }
 
-    private void InvalidateVoteIndex()
+    private async Task InvalidateVoteIndexAsync(CancellationToken cancellationToken = default)
     {
-        _voteIndexLock.Wait();
+        await _voteIndexLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             _voteIndexLoaded = false;
