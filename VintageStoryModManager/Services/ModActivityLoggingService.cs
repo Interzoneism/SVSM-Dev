@@ -86,6 +86,16 @@ public sealed class ModActivityLoggingService
         LogLifecycleEvent("App exited");
     }
 
+    /// <summary>
+    ///     Logs the mod loading performance timing summary.
+    /// </summary>
+    public void LogModLoadingTimingSummary(string summary)
+    {
+        if (!_userConfiguration.LogErrorsAndExceptions) return;
+
+        AppendLogEntry(summary);
+    }
+
     private void AppendLogEntry(string message)
     {
         try

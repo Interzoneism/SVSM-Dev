@@ -35,6 +35,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly string? _metadataError;
 
     private readonly Func<bool>? _requireExactVersionMatch;
+    private readonly ModLoadingTimingService? _timingService;
     private string? _searchIndex;
     private readonly Func<string?, string?, bool>? _shouldSkipVersion;
     private readonly ModEntry _modEntry;
@@ -90,13 +91,15 @@ public sealed class ModListItemViewModel : ObservableObject
         bool isInstalled = false,
         Func<string?, string?, bool>? shouldSkipVersion = null,
         Func<bool>? requireExactVersionMatch = null,
-        bool initializeUserReportState = true)
+        bool initializeUserReportState = true,
+        ModLoadingTimingService? timingService = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
         _activationHandler = activationHandler ?? throw new ArgumentNullException(nameof(activationHandler));
         _installedGameVersion = installedGameVersion;
         _shouldSkipVersion = shouldSkipVersion;
         _requireExactVersionMatch = requireExactVersionMatch;
+        _timingService = timingService;
         
         // Store for lazy search index building
         _modEntry = entry;
@@ -557,8 +560,12 @@ public sealed class ModListItemViewModel : ObservableObject
             if (!_iconInitialized)
             {
                 _iconInitialized = true;
-                _icon = CreateImage(_modEntry.IconBytes, "Icon bytes");
-                LogDebug($"Lazy icon image created: {_icon is not null}. Will fall back to database logo when null.");
+                
+                using (_timingService?.MeasureIconLoad())
+                {
+                    _icon = CreateImage(_modEntry.IconBytes, "Icon bytes");
+                    LogDebug($"Lazy icon image created: {_icon is not null}. Will fall back to database logo when null.");
+                }
             }
             return _icon;
         }
@@ -776,15 +783,18 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public void ApplyUserReportSummary(ModVersionVoteSummary summary)
     {
-        UserReportSummary = summary ?? throw new ArgumentNullException(nameof(summary));
-        _hasInitializedUserReportState = true;
-        IsUserReportLoading = false;
-        UserReportHasError = false;
-        UserReportDisplay = BuildUserReportDisplay(summary);
-        UserReportTooltip = BuildUserReportTooltip(summary);
-        OnPropertyChanged(nameof(UserReportSummary));
-        OnPropertyChanged(nameof(UserReportCounts));
-        OnPropertyChanged(nameof(UserVoteOption));
+        using (_timingService?.MeasureUserReportsLoad())
+        {
+            UserReportSummary = summary ?? throw new ArgumentNullException(nameof(summary));
+            _hasInitializedUserReportState = true;
+            IsUserReportLoading = false;
+            UserReportHasError = false;
+            UserReportDisplay = BuildUserReportDisplay(summary);
+            UserReportTooltip = BuildUserReportTooltip(summary);
+            OnPropertyChanged(nameof(UserReportSummary));
+            OnPropertyChanged(nameof(UserReportCounts));
+            OnPropertyChanged(nameof(UserVoteOption));
+        }
     }
 
     private void ClearUserReportSummary()
@@ -1033,10 +1043,13 @@ public sealed class ModListItemViewModel : ObservableObject
             var tags = info.Tags ?? Array.Empty<string>();
             if (HasDifferentContent(DatabaseTags, tags))
             {
-                DatabaseTags = tags;
-                _cachedDatabaseTagsDisplay = null; // Invalidate display cache
-                OnPropertyChanged(nameof(DatabaseTags));
-                OnPropertyChanged(nameof(DatabaseTagsDisplay));
+                using (_timingService?.MeasureTagsLoad())
+                {
+                    DatabaseTags = tags;
+                    _cachedDatabaseTagsDisplay = null; // Invalidate display cache
+                    OnPropertyChanged(nameof(DatabaseTags));
+                    OnPropertyChanged(nameof(DatabaseTagsDisplay));
+                }
             }
 
             var requiredVersions = info.RequiredGameVersions ?? Array.Empty<string>();
@@ -1383,32 +1396,35 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public void UpdateDependencyIssues(bool hasDependencyErrors, IReadOnlyList<ModDependencyInfo> missingDependencies)
     {
-        var changed = false;
-
-        if (DependencyHasErrors != hasDependencyErrors)
+        using (_timingService?.MeasureDependencyCheck())
         {
-            DependencyHasErrors = hasDependencyErrors;
-            OnPropertyChanged(nameof(DependencyHasErrors));
-            changed = true;
-        }
+            var changed = false;
 
-        IReadOnlyList<ModDependencyInfo> normalizedMissing = missingDependencies is { Count: > 0 }
-            ? missingDependencies.ToArray()
-            : Array.Empty<ModDependencyInfo>();
-
-        if (!ReferenceEquals(MissingDependencies, normalizedMissing))
-            if (MissingDependencies.Count != normalizedMissing.Count
-                || !MissingDependencies.SequenceEqual(normalizedMissing))
+            if (DependencyHasErrors != hasDependencyErrors)
             {
-                MissingDependencies = normalizedMissing;
-                OnPropertyChanged(nameof(MissingDependencies));
+                DependencyHasErrors = hasDependencyErrors;
+                OnPropertyChanged(nameof(DependencyHasErrors));
                 changed = true;
             }
 
-        if (changed)
-        {
-            OnPropertyChanged(nameof(HasDependencyIssues));
-            OnPropertyChanged(nameof(CanFixDependencyIssues));
+            IReadOnlyList<ModDependencyInfo> normalizedMissing = missingDependencies is { Count: > 0 }
+                ? missingDependencies.ToArray()
+                : Array.Empty<ModDependencyInfo>();
+
+            if (!ReferenceEquals(MissingDependencies, normalizedMissing))
+                if (MissingDependencies.Count != normalizedMissing.Count
+                    || !MissingDependencies.SequenceEqual(normalizedMissing))
+                {
+                    MissingDependencies = normalizedMissing;
+                    OnPropertyChanged(nameof(MissingDependencies));
+                    changed = true;
+                }
+
+            if (changed)
+            {
+                OnPropertyChanged(nameof(HasDependencyIssues));
+                OnPropertyChanged(nameof(CanFixDependencyIssues));
+            }
         }
     }
 
@@ -1539,29 +1555,32 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private void InitializeUpdateAvailability()
     {
-        if (LatestRelease is null)
+        using (_timingService?.MeasureUpdateCheck())
         {
-            CanUpdate = false;
-            _updateMessage = null;
-            return;
-        }
+            if (LatestRelease is null)
+            {
+                CanUpdate = false;
+                _updateMessage = null;
+                return;
+            }
 
-        if (!VersionStringUtility.IsCandidateVersionNewer(LatestRelease.Version, Version))
-        {
-            CanUpdate = false;
-            _updateMessage = null;
-            return;
-        }
+            if (!VersionStringUtility.IsCandidateVersionNewer(LatestRelease.Version, Version))
+            {
+                CanUpdate = false;
+                _updateMessage = null;
+                return;
+            }
 
-        if (_shouldSkipVersion?.Invoke(ModId, LatestRelease.Version) == true)
-        {
-            CanUpdate = false;
-            _updateMessage = null;
-            return;
-        }
+            if (_shouldSkipVersion?.Invoke(ModId, LatestRelease.Version) == true)
+            {
+                CanUpdate = false;
+                _updateMessage = null;
+                return;
+            }
 
-        CanUpdate = true;
-        _updateMessage = BuildUpdateMessage(LatestRelease);
+            CanUpdate = true;
+            _updateMessage = BuildUpdateMessage(LatestRelease);
+        }
     }
 
     private string BuildUpdateMessage(ModReleaseInfo release)
@@ -1617,12 +1636,15 @@ public sealed class ModListItemViewModel : ObservableObject
 
     private void UpdateNewerReleaseChangelogs()
     {
-        var updated = BuildNewerReleaseChangelogList();
-        if (ReferenceEquals(NewerReleaseChangelogs, updated)) return;
+        using (_timingService?.MeasureChangelogLoad())
+        {
+            var updated = BuildNewerReleaseChangelogList();
+            if (ReferenceEquals(NewerReleaseChangelogs, updated)) return;
 
-        NewerReleaseChangelogs = updated;
-        OnPropertyChanged(nameof(NewerReleaseChangelogs));
-        OnPropertyChanged(nameof(HasNewerReleaseChangelogs));
+            NewerReleaseChangelogs = updated;
+            OnPropertyChanged(nameof(NewerReleaseChangelogs));
+            OnPropertyChanged(nameof(HasNewerReleaseChangelogs));
+        }
     }
 
     private IReadOnlyList<ReleaseChangelog> BuildNewerReleaseChangelogList()
