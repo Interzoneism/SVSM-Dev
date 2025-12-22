@@ -3668,7 +3668,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (entry is not null) await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                if (entry is not null)
+                {
+                    using (_timingService.MeasureDatabaseInfoLoad())
+                    using (_timingService.MeasureDbOfflineInfo())
+                    {
+                        await PopulateOfflineInfoForEntryAsync(entry).ConfigureAwait(false);
+                    }
+                }
             }
             catch (Exception)
             {

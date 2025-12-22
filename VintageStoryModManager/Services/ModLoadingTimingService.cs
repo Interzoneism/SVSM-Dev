@@ -194,10 +194,10 @@ public sealed class ModLoadingTimingService
             {
                 lines.Add("");
                 lines.Add("  Database Info Loading Breakdown:");
-                lines.Add("  " + FormatMetric("Cache Loading", _totalDbCacheLoadingTimeMs, _dbCacheLoadCount));
-                lines.Add("  " + FormatMetric("Network Loading", _totalDbNetworkLoadingTimeMs, _dbNetworkLoadCount));
-                lines.Add("  " + FormatMetric("Applying Info", _totalDbApplyInfoTimeMs, _dbApplyInfoCount));
-                lines.Add("  " + FormatMetric("Offline Info Population", _totalDbOfflineInfoTimeMs, _dbOfflineInfoCount));
+                lines.Add($"  {FormatMetric("Cache Loading", _totalDbCacheLoadingTimeMs, _dbCacheLoadCount)}");
+                lines.Add($"  {FormatMetric("Network Loading", _totalDbNetworkLoadingTimeMs, _dbNetworkLoadCount)}");
+                lines.Add($"  {FormatMetric("Applying Info", _totalDbApplyInfoTimeMs, _dbApplyInfoCount)}");
+                lines.Add($"  {FormatMetric("Offline Info Population", _totalDbOfflineInfoTimeMs, _dbOfflineInfoCount)}");
             }
 
             lines.Add("");
