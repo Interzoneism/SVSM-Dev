@@ -1100,8 +1100,8 @@ public partial class MainWindow : Window
         SaveWindowDimensions();
         SaveUploaderName();
         
-        // Log timing summary before app exit
-        if (_viewModel != null)
+        // Log timing summary before app exit (only if error/diagnostic logging is enabled)
+        if (_viewModel != null && _userConfiguration.LogErrorsAndExceptions)
         {
             var timingSummary = _viewModel.TimingService.GetTimingSummary();
             _modActivityLoggingService.LogModLoadingTimingSummary(timingSummary);

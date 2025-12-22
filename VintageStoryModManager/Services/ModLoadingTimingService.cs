@@ -19,6 +19,10 @@ public sealed class ModLoadingTimingService
     private double _totalUpdateCheckTimeMs;
     private double _totalChangelogLoadingTimeMs;
     private double _totalDatabaseInfoLoadingTimeMs;
+    private double _totalDbCacheLoadingTimeMs;
+    private double _totalDbNetworkLoadingTimeMs;
+    private double _totalDbApplyInfoTimeMs;
+    private double _totalDbOfflineInfoTimeMs;
     
     // Count of operations for averaging
     private int _iconLoadCount;
@@ -28,6 +32,10 @@ public sealed class ModLoadingTimingService
     private int _updateCheckCount;
     private int _changelogLoadCount;
     private int _databaseInfoLoadCount;
+    private int _dbCacheLoadCount;
+    private int _dbNetworkLoadCount;
+    private int _dbApplyInfoCount;
+    private int _dbOfflineInfoCount;
 
     /// <summary>
     ///     Records time spent loading an icon.
@@ -114,6 +122,54 @@ public sealed class ModLoadingTimingService
     }
 
     /// <summary>
+    ///     Records time spent loading database info from cache.
+    /// </summary>
+    public void RecordDbCacheLoadTime(double milliseconds)
+    {
+        lock (_lock)
+        {
+            _totalDbCacheLoadingTimeMs += milliseconds;
+            _dbCacheLoadCount++;
+        }
+    }
+
+    /// <summary>
+    ///     Records time spent loading database info from network.
+    /// </summary>
+    public void RecordDbNetworkLoadTime(double milliseconds)
+    {
+        lock (_lock)
+        {
+            _totalDbNetworkLoadingTimeMs += milliseconds;
+            _dbNetworkLoadCount++;
+        }
+    }
+
+    /// <summary>
+    ///     Records time spent applying database info to mod entry.
+    /// </summary>
+    public void RecordDbApplyInfoTime(double milliseconds)
+    {
+        lock (_lock)
+        {
+            _totalDbApplyInfoTimeMs += milliseconds;
+            _dbApplyInfoCount++;
+        }
+    }
+
+    /// <summary>
+    ///     Records time spent populating offline database info.
+    /// </summary>
+    public void RecordDbOfflineInfoTime(double milliseconds)
+    {
+        lock (_lock)
+        {
+            _totalDbOfflineInfoTimeMs += milliseconds;
+            _dbOfflineInfoCount++;
+        }
+    }
+
+    /// <summary>
     ///     Gets a formatted summary of all timing metrics for logging.
     /// </summary>
     public string GetTimingSummary()
@@ -131,10 +187,22 @@ public sealed class ModLoadingTimingService
                 FormatMetric("Update Checks", _totalUpdateCheckTimeMs, _updateCheckCount),
                 FormatMetric("Changelog Loading", _totalChangelogLoadingTimeMs, _changelogLoadCount),
                 FormatMetric("Database Info Loading", _totalDatabaseInfoLoadingTimeMs, _databaseInfoLoadCount),
-                "",
-                $"Total Time Across All Operations: {FormatTime(_totalIconLoadingTimeMs + _totalTagsLoadingTimeMs + _totalUserReportsLoadingTimeMs + _totalDependencyChecksTimeMs + _totalUpdateCheckTimeMs + _totalChangelogLoadingTimeMs + _totalDatabaseInfoLoadingTimeMs)}",
-                "======================================="
             };
+
+            // Add detailed breakdown of Database Info Loading if we have any sub-operations
+            if (_dbCacheLoadCount > 0 || _dbNetworkLoadCount > 0 || _dbApplyInfoCount > 0 || _dbOfflineInfoCount > 0)
+            {
+                lines.Add("");
+                lines.Add("  Database Info Loading Breakdown:");
+                lines.Add($"  {FormatMetric("Cache Loading", _totalDbCacheLoadingTimeMs, _dbCacheLoadCount)}");
+                lines.Add($"  {FormatMetric("Network Loading", _totalDbNetworkLoadingTimeMs, _dbNetworkLoadCount)}");
+                lines.Add($"  {FormatMetric("Applying Info", _totalDbApplyInfoTimeMs, _dbApplyInfoCount)}");
+                lines.Add($"  {FormatMetric("Offline Info Population", _totalDbOfflineInfoTimeMs, _dbOfflineInfoCount)}");
+            }
+
+            lines.Add("");
+            lines.Add($"Total Time Across All Operations: {FormatTime(_totalIconLoadingTimeMs + _totalTagsLoadingTimeMs + _totalUserReportsLoadingTimeMs + _totalDependencyChecksTimeMs + _totalUpdateCheckTimeMs + _totalChangelogLoadingTimeMs + _totalDatabaseInfoLoadingTimeMs)}");
+            lines.Add("=======================================");
 
             return string.Join(Environment.NewLine, lines);
         }
@@ -216,6 +284,38 @@ public sealed class ModLoadingTimingService
     public IDisposable MeasureDatabaseInfoLoad()
     {
         return new TimingScope(this, RecordDatabaseInfoLoadTime);
+    }
+
+    /// <summary>
+    ///     Starts a timing operation and returns a disposable that records the elapsed time when disposed.
+    /// </summary>
+    public IDisposable MeasureDbCacheLoad()
+    {
+        return new TimingScope(this, RecordDbCacheLoadTime);
+    }
+
+    /// <summary>
+    ///     Starts a timing operation and returns a disposable that records the elapsed time when disposed.
+    /// </summary>
+    public IDisposable MeasureDbNetworkLoad()
+    {
+        return new TimingScope(this, RecordDbNetworkLoadTime);
+    }
+
+    /// <summary>
+    ///     Starts a timing operation and returns a disposable that records the elapsed time when disposed.
+    /// </summary>
+    public IDisposable MeasureDbApplyInfo()
+    {
+        return new TimingScope(this, RecordDbApplyInfoTime);
+    }
+
+    /// <summary>
+    ///     Starts a timing operation and returns a disposable that records the elapsed time when disposed.
+    /// </summary>
+    public IDisposable MeasureDbOfflineInfo()
+    {
+        return new TimingScope(this, RecordDbOfflineInfoTime);
     }
 
     private sealed class TimingScope : IDisposable
