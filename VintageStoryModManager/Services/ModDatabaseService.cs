@@ -250,6 +250,7 @@ public sealed class ModDatabaseService
     /// <param name="preloadedCachedInfo">Previously loaded cached info to avoid re-reading from disk. When provided,
     /// this method will attempt a network refresh. Pass null to have freshness checked automatically.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="timingService">Optional timing service for detailed performance measurement.</param>
     /// <returns>The database info, or null if not found.</returns>
     public Task<ModDatabaseInfo?> TryLoadDatabaseInfoAsync(
         string modId,
@@ -257,13 +258,14 @@ public sealed class ModDatabaseService
         string? installedGameVersion,
         bool requireExactVersionMatch,
         ModDatabaseInfo? preloadedCachedInfo,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        ModLoadingTimingService? timingService = null)
     {
         if (string.IsNullOrWhiteSpace(modId)) return Task.FromResult<ModDatabaseInfo?>(null);
 
         var normalizedGameVersion = VersionStringUtility.Normalize(installedGameVersion);
         return TryLoadDatabaseInfoAsyncCore(modId, modVersion, normalizedGameVersion, requireExactVersionMatch,
-            preloadedCachedInfo, cancellationToken);
+            preloadedCachedInfo, cancellationToken, timingService);
     }
 
     public Task<ModDatabaseInfo?> TryLoadCachedDatabaseInfoAsync(
@@ -385,7 +387,8 @@ public sealed class ModDatabaseService
         string? normalizedGameVersion,
         bool requireExactVersionMatch,
         ModDatabaseInfo? preloadedCachedInfo,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        ModLoadingTimingService? timingService = null)
     {
         var internetDisabled = InternetAccessManager.IsInternetAccessDisabled;
 
@@ -423,7 +426,7 @@ public sealed class ModDatabaseService
         if (internetDisabled || !needsRefresh) return cached;
 
         var info = await TryLoadDatabaseInfoInternalAsync(modId, modVersion, normalizedGameVersion,
-                requireExactVersionMatch, cancellationToken)
+                requireExactVersionMatch, cancellationToken, timingService)
             .ConfigureAwait(false);
 
         return info ?? cached;
@@ -967,7 +970,7 @@ public sealed class ModDatabaseService
     }
 
     private static async Task<ModDatabaseInfo?> TryLoadDatabaseInfoInternalAsync(string modId, string? modVersion,
-        string? normalizedGameVersion, bool requireExactVersionMatch, CancellationToken cancellationToken)
+        string? normalizedGameVersion, bool requireExactVersionMatch, CancellationToken cancellationToken, ModLoadingTimingService? timingService = null)
     {
         if (InternetAccessManager.IsInternetAccessDisabled) return null;
 
@@ -978,92 +981,119 @@ public sealed class ModDatabaseService
             var requestUri =
                 string.Format(CultureInfo.InvariantCulture, ApiEndpointFormat, Uri.EscapeDataString(modId));
             using HttpRequestMessage request = new(HttpMethod.Get, requestUri);
-            using var response = await HttpClient
-                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode) return null;
-
-            // Capture HTTP headers for conditional requests
-            // Last-Modified can be in either response headers or content headers depending on the server
-            string? lastModified = null;
-            string? etag = null;
-            if (response.Content.Headers.TryGetValues("Last-Modified", out var contentLastModifiedValues))
+            
+            // Measure HTTP request/response time
+            HttpResponseMessage response;
+            using (timingService?.MeasureDbNetworkHttp())
             {
-                lastModified = contentLastModifiedValues.FirstOrDefault();
+                response = await HttpClient
+                    .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode) return null;
             }
-            else if (response.Headers.TryGetValues("Last-Modified", out var responseLastModifiedValues))
+            
+            using (response)
             {
-                lastModified = responseLastModifiedValues.FirstOrDefault();
+                // Capture HTTP headers for conditional requests
+                // Last-Modified can be in either response headers or content headers depending on the server
+                string? lastModified = null;
+                string? etag = null;
+                if (response.Content.Headers.TryGetValues("Last-Modified", out var contentLastModifiedValues))
+                {
+                    lastModified = contentLastModifiedValues.FirstOrDefault();
+                }
+                else if (response.Headers.TryGetValues("Last-Modified", out var responseLastModifiedValues))
+                {
+                    lastModified = responseLastModifiedValues.FirstOrDefault();
+                }
+                // ETag can also be in either location
+                if (response.Headers.TryGetValues("ETag", out var responseEtagValues))
+                {
+                    etag = responseEtagValues.FirstOrDefault();
+                }
+                else if (response.Content.Headers.TryGetValues("ETag", out var contentEtagValues))
+                {
+                    etag = contentEtagValues.FirstOrDefault();
+                }
+
+                // Measure JSON parsing time
+                JsonDocument document;
+                using (timingService?.MeasureDbNetworkParse())
+                {
+                    await using var contentStream =
+                        await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                    document = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
+                using (document)
+                {
+                    if (!document.RootElement.TryGetProperty("mod", out var modElement) ||
+                        modElement.ValueKind != JsonValueKind.Object) return null;
+
+                    // Measure data extraction time
+                    ModDatabaseInfo info;
+                    string? lastModifiedApiValue;
+                    using (timingService?.MeasureDbNetworkExtract())
+                    {
+                        var tags = GetStringList(modElement, "tags");
+                        var assetId = TryGetAssetId(modElement);
+                        var modPageUrl = assetId == null ? null : ModPageBaseUrl + assetId;
+                        var downloads = GetNullableInt(modElement, "downloads");
+                        var comments = GetNullableInt(modElement, "comments");
+                        var follows = GetNullableInt(modElement, "follows");
+                        var trendingPoints = GetNullableInt(modElement, "trendingpoints");
+                        var side = GetString(modElement, "side");
+                        var logoUrl = GetString(modElement, "logofiledb");
+                        var logoUrlSource = string.IsNullOrWhiteSpace(logoUrl) ? null : "logofiledb";
+                        var lastReleasedUtc = TryParseDateTime(GetString(modElement, "lastreleased"));
+                        var createdUtc = TryParseDateTime(GetString(modElement, "created"));
+                        lastModifiedApiValue = GetString(modElement, "lastmodified");
+                        var releases = BuildReleaseInfos(modElement, normalizedGameVersion, requireExactVersionMatch);
+                        var latestRelease = releases.Count > 0 ? releases[0] : null;
+                        var latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
+                        var latestVersion = latestRelease?.Version;
+                        var latestCompatibleVersion = latestCompatibleRelease?.Version;
+                        var requiredVersions = FindRequiredGameVersions(modElement, modVersion);
+                        var recentDownloads = CalculateDownloadsLastThirtyDays(releases);
+                        var tenDayDownloads = CalculateDownloadsLastTenDays(releases);
+
+                        info = new ModDatabaseInfo
+                        {
+                            Tags = tags,
+                            CachedTagsVersion = normalizedModVersion,
+                            AssetId = assetId,
+                            ModPageUrl = modPageUrl,
+                            LatestCompatibleVersion = latestCompatibleVersion,
+                            LatestVersion = latestVersion,
+                            RequiredGameVersions = requiredVersions,
+                            Downloads = downloads,
+                            Comments = comments,
+                            Follows = follows,
+                            TrendingPoints = trendingPoints,
+                            LogoUrl = logoUrl,
+                            LogoUrlSource = logoUrlSource,
+                            DownloadsLastThirtyDays = recentDownloads,
+                            DownloadsLastTenDays = tenDayDownloads,
+                            LastReleasedUtc = lastReleasedUtc,
+                            CreatedUtc = createdUtc,
+                            LatestRelease = latestRelease,
+                            LatestCompatibleRelease = latestCompatibleRelease,
+                            Releases = releases,
+                            Side = side
+                        };
+                    }
+
+                    // Measure cache storage time
+                    using (timingService?.MeasureDbNetworkStore())
+                    {
+                        // Store with API lastmodified value for cache invalidation
+                        await CacheService.StoreAsync(modId, normalizedGameVersion, info, modVersion, lastModified, etag, lastModifiedApiValue, cancellationToken)
+                            .ConfigureAwait(false);
+                    }
+
+                    return info;
+                }
             }
-            // ETag can also be in either location
-            if (response.Headers.TryGetValues("ETag", out var responseEtagValues))
-            {
-                etag = responseEtagValues.FirstOrDefault();
-            }
-            else if (response.Content.Headers.TryGetValues("ETag", out var contentEtagValues))
-            {
-                etag = contentEtagValues.FirstOrDefault();
-            }
-
-            await using var contentStream =
-                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            using var document = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
-
-            if (!document.RootElement.TryGetProperty("mod", out var modElement) ||
-                modElement.ValueKind != JsonValueKind.Object) return null;
-
-            var tags = GetStringList(modElement, "tags");
-            var assetId = TryGetAssetId(modElement);
-            var modPageUrl = assetId == null ? null : ModPageBaseUrl + assetId;
-            var downloads = GetNullableInt(modElement, "downloads");
-            var comments = GetNullableInt(modElement, "comments");
-            var follows = GetNullableInt(modElement, "follows");
-            var trendingPoints = GetNullableInt(modElement, "trendingpoints");
-            var side = GetString(modElement, "side");
-            var logoUrl = GetString(modElement, "logofiledb");
-            var logoUrlSource = string.IsNullOrWhiteSpace(logoUrl) ? null : "logofiledb";
-            var lastReleasedUtc = TryParseDateTime(GetString(modElement, "lastreleased"));
-            var createdUtc = TryParseDateTime(GetString(modElement, "created"));
-            var lastModifiedApiValue = GetString(modElement, "lastmodified");
-            var releases = BuildReleaseInfos(modElement, normalizedGameVersion, requireExactVersionMatch);
-            var latestRelease = releases.Count > 0 ? releases[0] : null;
-            var latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
-            var latestVersion = latestRelease?.Version;
-            var latestCompatibleVersion = latestCompatibleRelease?.Version;
-            var requiredVersions = FindRequiredGameVersions(modElement, modVersion);
-            var recentDownloads = CalculateDownloadsLastThirtyDays(releases);
-            var tenDayDownloads = CalculateDownloadsLastTenDays(releases);
-
-            var info = new ModDatabaseInfo
-            {
-                Tags = tags,
-                CachedTagsVersion = normalizedModVersion,
-                AssetId = assetId,
-                ModPageUrl = modPageUrl,
-                LatestCompatibleVersion = latestCompatibleVersion,
-                LatestVersion = latestVersion,
-                RequiredGameVersions = requiredVersions,
-                Downloads = downloads,
-                Comments = comments,
-                Follows = follows,
-                TrendingPoints = trendingPoints,
-                LogoUrl = logoUrl,
-                LogoUrlSource = logoUrlSource,
-                DownloadsLastThirtyDays = recentDownloads,
-                DownloadsLastTenDays = tenDayDownloads,
-                LastReleasedUtc = lastReleasedUtc,
-                CreatedUtc = createdUtc,
-                LatestRelease = latestRelease,
-                LatestCompatibleRelease = latestCompatibleRelease,
-                Releases = releases,
-                Side = side
-            };
-
-            // Store with API lastmodified value for cache invalidation
-            await CacheService.StoreAsync(modId, normalizedGameVersion, info, modVersion, lastModified, etag, lastModifiedApiValue, cancellationToken)
-                .ConfigureAwait(false);
-
-            return info;
         }
         catch (OperationCanceledException)
         {

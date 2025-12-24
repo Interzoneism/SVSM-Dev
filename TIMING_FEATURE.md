@@ -16,7 +16,14 @@ The following operations are tracked for each mod:
 7. **Database Info Loading** - Time spent loading general metadata from the mod database
    - **Cache Loading** - Time spent loading database info from cache
    - **Network Loading** - Time spent fetching database info from the network/API
+     - **HTTP Request/Response** - Time spent on HTTP request and receiving response
+     - **JSON Parsing** - Time spent parsing JSON response
+     - **Data Extraction** - Time spent extracting and processing data from parsed JSON
+     - **Cache Storage** - Time spent storing fetched data to cache
    - **Applying Info** - Time spent applying database info to mod entries
+     - **Dispatcher Wait** - Time spent waiting for UI thread dispatcher
+     - **Entry Update** - Time spent updating mod entry with database info
+     - **ViewModel Update** - Time spent updating view model with database info
    - **Offline Info Population** - Time spent creating offline database info
 
 ## How It Works
@@ -58,14 +65,27 @@ Database Info Loading: 45.23s total (150 ops, avg 301.53ms/op)
   Database Info Loading Breakdown:
   Cache Loading: 4.24s total (384 ops, avg 11.04ms/op)
   Network Loading: 38.50s total (150 ops, avg 256.67ms/op)
+
+    Network Loading Breakdown:
+    HTTP Request/Response: 30.10s total (150 ops, avg 200.67ms/op)
+    JSON Parsing: 2.15s total (150 ops, avg 14.33ms/op)
+    Data Extraction: 4.80s total (150 ops, avg 32.00ms/op)
+    Cache Storage: 1.45s total (150 ops, avg 9.67ms/op)
+
   Applying Info: 1.23s total (384 ops, avg 3.20ms/op)
+
+    Applying Info Breakdown:
+    Dispatcher Wait: 0.45s total (384 ops, avg 1.17ms/op)
+    Entry Update: 0.38s total (384 ops, avg 0.99ms/op)
+    ViewModel Update: 0.40s total (384 ops, avg 1.04ms/op)
+
   Offline Info Population: 1.26s total (84 ops, avg 15.00ms/op)
 
 Total Time Across All Operations: 57.48s
 =======================================
 ```
 
-Note: The Database Info Loading breakdown is only shown when sub-operations are measured.
+Note: The Database Info Loading breakdown and its sub-breakdowns are only shown when sub-operations are measured.
 
 ## Implementation Details
 

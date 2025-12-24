@@ -3610,7 +3610,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 {
                     info = await _databaseService
                         .TryLoadDatabaseInfoAsync(entry.ModId, entry.Version, InstalledGameVersion,
-                            _configuration.RequireExactVsVersionMatch, cachedInfo2, cancellationToken)
+                            _configuration.RequireExactVsVersionMatch, cachedInfo2, cancellationToken, _timingService)
                         .ConfigureAwait(false);
                 }
             }
@@ -3714,20 +3714,33 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         try
         {
+            var dispatcherStopwatch = System.Diagnostics.Stopwatch.StartNew();
             await InvokeOnDispatcherAsync(
                     () =>
                     {
+                        // Record dispatcher wait time
+                        dispatcherStopwatch.Stop();
+                        _timingService.RecordDbApplyDispatcherTime(dispatcherStopwatch.Elapsed.TotalMilliseconds);
+                        
                         if (!_modEntriesBySourcePath.TryGetValue(entry.SourcePath, out var currentEntry)
                             || !ReferenceEquals(currentEntry, entry))
                             return;
 
-                        currentEntry.UpdateDatabaseInfo(preparedInfo);
+                        // Measure entry update time
+                        using (_timingService.MeasureDbApplyEntryUpdate())
+                        {
+                            currentEntry.UpdateDatabaseInfo(preparedInfo);
+                        }
 
                         if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
                         {
-                            viewModel.UpdateDatabaseInfo(preparedInfo, loadLogoImmediately);
-                            // Defer user report refresh to avoid cascading updates during bulk loading
-                            // The user report will be loaded on-demand when visible or when explicitly requested
+                            // Measure view model update time
+                            using (_timingService.MeasureDbApplyViewModelUpdate())
+                            {
+                                viewModel.UpdateDatabaseInfo(preparedInfo, loadLogoImmediately);
+                                // Defer user report refresh to avoid cascading updates during bulk loading
+                                // The user report will be loaded on-demand when visible or when explicitly requested
+                            }
                         }
                     },
                     CancellationToken.None,
