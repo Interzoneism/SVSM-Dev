@@ -87,6 +87,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private readonly ModVersionVoteService _voteService = new();
     private readonly ModLoadingTimingService _timingService = new();
+    
+    // Database info batching for improved UI performance
+    private readonly object _databaseInfoBatchLock = new();
+    private readonly List<(ModEntry entry, ModDatabaseInfo info, bool loadLogoImmediately)> _pendingDatabaseInfoUpdates = new();
+    private Timer? _databaseInfoBatchTimer;
+    private const int DatabaseInfoBatchDelayMs = 50; // Batch updates every 50ms
+    private const int DatabaseInfoBatchSize = 20; // Apply up to 20 updates per batch
+    
     private List<string>? _cachedBasePaths;
     private int _activeMods;
     private int _activeUserReportOperations;
@@ -509,6 +517,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _pendingSearchCts?.Cancel();
             _pendingSearchCts?.Dispose();
             _pendingSearchCts = null;
+        }
+        
+        lock (_databaseInfoBatchLock)
+        {
+            _databaseInfoBatchTimer?.Dispose();
+            _databaseInfoBatchTimer = null;
+            _pendingDatabaseInfoUpdates.Clear();
         }
 
         lock (_databaseRefreshLock)
@@ -3408,6 +3423,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             // Swallow unexpected exceptions from the refresh loop.
         }
+        finally
+        {
+            // Flush any pending batched updates when refresh completes
+            FlushDatabaseInfoBatch();
+        }
     }
 
     private bool NeedsDatabaseRefresh(ModEntry entry)
@@ -3712,6 +3732,123 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         var preparedInfo = PrepareDatabaseInfoForVisibility(entry, info);
 
+        // During initial load or when we have many pending updates, use batching for better performance
+        // This dramatically reduces dispatcher overhead by grouping updates together
+        if (_isInitialLoad || ShouldUseBatchedUpdates())
+        {
+            QueueDatabaseInfoUpdate(entry, preparedInfo, loadLogoImmediately);
+            return;
+        }
+
+        // For individual updates (e.g., user-triggered refresh), apply immediately
+        await ApplyDatabaseInfoImmediateAsync(entry, preparedInfo, loadLogoImmediately).ConfigureAwait(false);
+    }
+
+    private bool ShouldUseBatchedUpdates()
+    {
+        lock (_databaseInfoBatchLock)
+        {
+            // Use batching if we already have pending updates to continue the batch
+            return _pendingDatabaseInfoUpdates.Count > 0;
+        }
+    }
+
+    private void QueueDatabaseInfoUpdate(ModEntry entry, ModDatabaseInfo info, bool loadLogoImmediately)
+    {
+        lock (_databaseInfoBatchLock)
+        {
+            // Add to batch queue
+            _pendingDatabaseInfoUpdates.Add((entry, info, loadLogoImmediately));
+
+            // If batch is full, flush immediately
+            if (_pendingDatabaseInfoUpdates.Count >= DatabaseInfoBatchSize)
+            {
+                FlushDatabaseInfoBatch();
+            }
+            else
+            {
+                // Otherwise, schedule a timer to flush soon
+                _databaseInfoBatchTimer?.Dispose();
+                _databaseInfoBatchTimer = new Timer(
+                    _ => FlushDatabaseInfoBatch(),
+                    null,
+                    DatabaseInfoBatchDelayMs,
+                    Timeout.Infinite);
+            }
+        }
+    }
+
+    private void FlushDatabaseInfoBatch()
+    {
+        List<(ModEntry entry, ModDatabaseInfo info, bool loadLogoImmediately)> batch;
+        lock (_databaseInfoBatchLock)
+        {
+            if (_pendingDatabaseInfoUpdates.Count == 0) return;
+
+            batch = new List<(ModEntry, ModDatabaseInfo, bool)>(_pendingDatabaseInfoUpdates);
+            _pendingDatabaseInfoUpdates.Clear();
+
+            _databaseInfoBatchTimer?.Dispose();
+            _databaseInfoBatchTimer = null;
+        }
+
+        // Apply the batch on the dispatcher (async fire-and-forget is intentional here)
+        _ = ApplyDatabaseInfoBatchAsync(batch);
+    }
+
+    private async Task ApplyDatabaseInfoBatchAsync(List<(ModEntry entry, ModDatabaseInfo info, bool loadLogoImmediately)> batch)
+    {
+        if (batch.Count == 0) return;
+
+        try
+        {
+            var dispatcherStopwatch = System.Diagnostics.Stopwatch.StartNew();
+            await InvokeOnDispatcherAsync(
+                    () =>
+                    {
+                        // Record dispatcher wait time once for the entire batch
+                        dispatcherStopwatch.Stop();
+                        _timingService.RecordDbApplyDispatcherTime(dispatcherStopwatch.Elapsed.TotalMilliseconds);
+
+                        // Apply all updates in the batch
+                        foreach (var (entry, info, loadLogoImmediately) in batch)
+                        {
+                            if (!_modEntriesBySourcePath.TryGetValue(entry.SourcePath, out var currentEntry)
+                                || !ReferenceEquals(currentEntry, entry))
+                                continue;
+
+                            // Measure entry update time
+                            using (_timingService.MeasureDbApplyEntryUpdate())
+                            {
+                                currentEntry.UpdateDatabaseInfo(info);
+                            }
+
+                            if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
+                            {
+                                // Measure view model update time
+                                using (_timingService.MeasureDbApplyViewModelUpdate())
+                                {
+                                    viewModel.UpdateDatabaseInfo(info, loadLogoImmediately);
+                                }
+                            }
+                        }
+                    },
+                    CancellationToken.None,
+                    DispatcherPriority.Background)
+                .ConfigureAwait(false);
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignore cancellations when the dispatcher shuts down.
+        }
+        catch (Exception)
+        {
+            // Ignore dispatcher failures to keep refresh resilient.
+        }
+    }
+
+    private async Task ApplyDatabaseInfoImmediateAsync(ModEntry entry, ModDatabaseInfo info, bool loadLogoImmediately)
+    {
         try
         {
             var dispatcherStopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -3729,7 +3866,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         // Measure entry update time
                         using (_timingService.MeasureDbApplyEntryUpdate())
                         {
-                            currentEntry.UpdateDatabaseInfo(preparedInfo);
+                            currentEntry.UpdateDatabaseInfo(info);
                         }
 
                         if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
@@ -3737,7 +3874,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                             // Measure view model update time
                             using (_timingService.MeasureDbApplyViewModelUpdate())
                             {
-                                viewModel.UpdateDatabaseInfo(preparedInfo, loadLogoImmediately);
+                                viewModel.UpdateDatabaseInfo(info, loadLogoImmediately);
                                 // Defer user report refresh to avoid cascading updates during bulk loading
                                 // The user report will be loaded on-demand when visible or when explicitly requested
                             }
