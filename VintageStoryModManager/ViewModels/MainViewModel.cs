@@ -3496,6 +3496,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             .ToArray();
 
         await Task.WhenAll(priorityTasks).ConfigureAwait(false);
+        
+        // Flush after priority batch to show initial results quickly
+        FlushDatabaseInfoBatch();
 
         // Process remaining entries in smaller batches with delays to avoid overwhelming the system
         var remaining = entries.Skip(priorityCount).ToArray();
