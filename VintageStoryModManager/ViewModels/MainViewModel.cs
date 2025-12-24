@@ -3766,14 +3766,28 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             // If batch is full, flush immediately
             if (_pendingDatabaseInfoUpdates.Count >= DatabaseInfoBatchSize)
             {
-                FlushDatabaseInfoBatch();
+                // Dispose timer before flushing to prevent race condition
+                _databaseInfoBatchTimer?.Dispose();
+                _databaseInfoBatchTimer = null;
+                FlushDatabaseInfoBatchLocked();
             }
             else
             {
                 // Otherwise, schedule a timer to flush soon
+                // Dispose old timer first to prevent race condition
                 _databaseInfoBatchTimer?.Dispose();
                 _databaseInfoBatchTimer = new Timer(
-                    _ => FlushDatabaseInfoBatch(),
+                    _ =>
+                    {
+                        lock (_databaseInfoBatchLock)
+                        {
+                            // Only flush if this timer hasn't been disposed/replaced
+                            if (_databaseInfoBatchTimer != null)
+                            {
+                                FlushDatabaseInfoBatchLocked();
+                            }
+                        }
+                    },
                     null,
                     DatabaseInfoBatchDelayMs,
                     Timeout.Infinite);
@@ -3783,19 +3797,29 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void FlushDatabaseInfoBatch()
     {
-        List<(ModEntry entry, ModDatabaseInfo info, bool loadLogoImmediately)> batch;
         lock (_databaseInfoBatchLock)
         {
-            if (_pendingDatabaseInfoUpdates.Count == 0) return;
-
-            batch = new List<(ModEntry, ModDatabaseInfo, bool)>(_pendingDatabaseInfoUpdates);
-            _pendingDatabaseInfoUpdates.Clear();
-
-            _databaseInfoBatchTimer?.Dispose();
-            _databaseInfoBatchTimer = null;
+            FlushDatabaseInfoBatchLocked();
         }
+    }
 
-        // Apply the batch on the dispatcher (async fire-and-forget is intentional here)
+    /// <summary>
+    /// Flushes pending database info updates. Must be called while holding _databaseInfoBatchLock.
+    /// Note: This does NOT trigger recursive batching because ApplyDatabaseInfoBatchAsync
+    /// applies updates directly without going through ApplyDatabaseInfoAsync.
+    /// </summary>
+    private void FlushDatabaseInfoBatchLocked()
+    {
+        if (_pendingDatabaseInfoUpdates.Count == 0) return;
+
+        var batch = new List<(ModEntry, ModDatabaseInfo, bool)>(_pendingDatabaseInfoUpdates);
+        _pendingDatabaseInfoUpdates.Clear();
+
+        _databaseInfoBatchTimer?.Dispose();
+        _databaseInfoBatchTimer = null;
+
+        // Apply the batch on the dispatcher
+        // Note: This is intentionally fire-and-forget, but we log any failures
         _ = ApplyDatabaseInfoBatchAsync(batch);
     }
 
@@ -3844,9 +3868,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             // Ignore cancellations when the dispatcher shuts down.
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Ignore dispatcher failures to keep refresh resilient.
+            // Log batch application failures to diagnose missing UI updates
+            System.Diagnostics.Debug.WriteLine($"[MainViewModel] Failed to apply database info batch ({batch.Count} items): {ex.Message}");
         }
     }
 
