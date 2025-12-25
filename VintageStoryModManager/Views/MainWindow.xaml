@@ -6,6 +6,7 @@
     xmlns:converters="clr-namespace:VintageStoryModManager.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:design="clr-namespace:VintageStoryModManager.Design"
+    xmlns:helpers="clr-namespace:VintageStoryModManager.Helpers"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:services="clr-namespace:VintageStoryModManager.Services"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -35,6 +36,10 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Resources/MainWindowStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            
+            <!--  BindingProxy to enable DataContext binding in DataGrid columns  -->
+            <helpers:BindingProxy x:Key="DataContextProxy" Data="{Binding}" />
+            
             <Style
                 x:Key="CloseButton"
                 BasedOn="{StaticResource IMM.ButtonBaseStyle}"
@@ -803,8 +808,8 @@
                                         </DataGridTemplateColumn>
                                         <DataGridTemplateColumn
                                             x:Name="IconColumn"
-                                            Width="{Binding DataContext.IsCompactView, ElementName=MainWindowRoot, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='80,40'}"
-                                            MinWidth="{Binding DataContext.IsCompactView, ElementName=MainWindowRoot, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='80,40'}"
+                                            Width="{Binding Data.IsCompactView, Source={StaticResource DataContextProxy}, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='80,40'}"
+                                            MinWidth="{Binding Data.IsCompactView, Source={StaticResource DataContextProxy}, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='80,40'}"
                                             Header="Icon"
                                             IsReadOnly="True">
                                             <DataGridTemplateColumn.CellStyle>
@@ -817,8 +822,8 @@
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <Border
-                                                        Width="{Binding DataContext.IsCompactView, ElementName=MainWindowRoot, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='80,40'}"
-                                                        Height="{Binding DataContext.IsCompactView, ElementName=MainWindowRoot, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='80,40'}"
+                                                        Width="{Binding Data.IsCompactView, Source={StaticResource DataContextProxy}, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='80,40'}"
+                                                        Height="{Binding Data.IsCompactView, Source={StaticResource DataContextProxy}, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='80,40'}"
                                                         HorizontalAlignment="Center"
                                                         VerticalAlignment="Center"
                                                         ToolTipService.InitialShowDelay="200"
