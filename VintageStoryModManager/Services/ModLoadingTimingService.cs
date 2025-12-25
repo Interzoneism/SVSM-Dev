@@ -34,6 +34,8 @@ public sealed class ModLoadingTimingService
     private double _totalDbApplyDispatcherTimeMs;
     private double _totalDbApplyEntryUpdateTimeMs;
     private double _totalDbApplyViewModelUpdateTimeMs;
+    private double _totalDbApplyUiHandlerTimeMs;
+    private double _maxDbApplyUiHandlerTimeMs;
     
     // Count of operations for averaging
     private int _iconLoadCount;
@@ -58,6 +60,10 @@ public sealed class ModLoadingTimingService
     private int _dbApplyDispatcherCount;
     private int _dbApplyEntryUpdateCount;
     private int _dbApplyViewModelUpdateCount;
+    private int _dbApplyUiHandlerCount;
+    private int _dbApplyUiHandlerSlowCount;
+    private int _dbApplyUiHandlerUpdates;
+    private int _dbApplyUiHandlerSmallBatchCount;
 
     /// <summary>
     ///     Records time spent loading an icon.
@@ -276,6 +282,34 @@ public sealed class ModLoadingTimingService
     }
 
     /// <summary>
+    ///     Records time spent executing the UI thread handler that applies database info.
+    ///     Also tracks how many updates were processed to identify high-frequency dispatcher postings.
+    /// </summary>
+    public void RecordDbApplyUiHandlerTime(double milliseconds, int updatesApplied)
+    {
+        lock (_lock)
+        {
+            _totalDbApplyUiHandlerTimeMs += milliseconds;
+            _dbApplyUiHandlerCount++;
+            _dbApplyUiHandlerUpdates += Math.Max(0, updatesApplied);
+            _maxDbApplyUiHandlerTimeMs = Math.Max(_maxDbApplyUiHandlerTimeMs, milliseconds);
+
+            if (milliseconds >= 50)
+                _dbApplyUiHandlerSlowCount++;
+
+            if (updatesApplied <= 2)
+                _dbApplyUiHandlerSmallBatchCount++;
+        }
+
+        if (milliseconds >= 50 || updatesApplied <= 2)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[Timing] UI handler applied {updatesApplied} database update(s) in {milliseconds:F2}ms " +
+                "(slow handler or small batch detected).");
+        }
+    }
+
+    /// <summary>
     ///     Gets a formatted summary of all timing metrics for logging.
     /// </summary>
     public string GetTimingSummary()
@@ -317,13 +351,15 @@ public sealed class ModLoadingTimingService
                 lines.Add($"  {FormatMetric("Applying Info", _totalDbApplyInfoTimeMs, _dbApplyInfoCount)}");
                 
                 // Add Applying Info sub-breakdown if we have data
-                if (_dbApplyDispatcherCount > 0 || _dbApplyEntryUpdateCount > 0 || _dbApplyViewModelUpdateCount > 0)
+                if (_dbApplyDispatcherCount > 0 || _dbApplyEntryUpdateCount > 0 || _dbApplyViewModelUpdateCount > 0
+                    || _dbApplyUiHandlerCount > 0)
                 {
                     lines.Add("");
                     lines.Add("    Applying Info Breakdown:");
                     lines.Add($"    {FormatMetric("Dispatcher Wait", _totalDbApplyDispatcherTimeMs, _dbApplyDispatcherCount)}");
                     lines.Add($"    {FormatMetric("Entry Update", _totalDbApplyEntryUpdateTimeMs, _dbApplyEntryUpdateCount)}");
                     lines.Add($"    {FormatMetric("ViewModel Update", _totalDbApplyViewModelUpdateTimeMs, _dbApplyViewModelUpdateCount)}");
+                    lines.Add($"    {FormatUiHandlerMetric()}");
                 }
                 
                 lines.Add($"  {FormatMetric("Offline Info Population", _totalDbOfflineInfoTimeMs, _dbOfflineInfoCount)}");
@@ -357,6 +393,25 @@ public sealed class ModLoadingTimingService
 
         var seconds = milliseconds / 1000.0;
         return $"{seconds:F2}s";
+    }
+
+    private string FormatUiHandlerMetric()
+    {
+        if (_dbApplyUiHandlerCount == 0)
+            return "UI Handler: No operations recorded";
+
+        var baseMetric = FormatMetric("UI Handler", _totalDbApplyUiHandlerTimeMs, _dbApplyUiHandlerCount);
+        var avgUpdatesPerDispatch = _dbApplyUiHandlerCount == 0
+            ? "n/a"
+            : $"{(double)_dbApplyUiHandlerUpdates / _dbApplyUiHandlerCount:F1} updates/dispatch";
+        var slowPart = _dbApplyUiHandlerSlowCount > 0
+            ? $", {_dbApplyUiHandlerSlowCount} slow (>=50ms)"
+            : string.Empty;
+        var smallBatchPart = _dbApplyUiHandlerSmallBatchCount > 0
+            ? $", {_dbApplyUiHandlerSmallBatchCount} small batches (<=2 updates)"
+            : string.Empty;
+
+        return $"{baseMetric} (avg {avgUpdatesPerDispatch}, max {FormatTime(_maxDbApplyUiHandlerTimeMs)}{slowPart}{smallBatchPart})";
     }
 
     /// <summary>
@@ -503,6 +558,15 @@ public sealed class ModLoadingTimingService
         return new TimingScope(this, RecordDbApplyViewModelUpdateTime);
     }
 
+    /// <summary>
+    ///     Starts a timing operation for the UI handler that applies database info on the dispatcher thread.
+    ///     The supplied updatesApplied value is recorded with the elapsed time to diagnose high-frequency postings.
+    /// </summary>
+    public IDisposable MeasureDbApplyUiHandler(int updatesApplied)
+    {
+        return new CountedTimingScope(this, updatesApplied, RecordDbApplyUiHandlerTime);
+    }
+
     private sealed class TimingScope : IDisposable
     {
         private readonly ModLoadingTimingService _service;
@@ -524,6 +588,32 @@ public sealed class ModLoadingTimingService
 
             _stopwatch.Stop();
             _recordAction(_stopwatch.Elapsed.TotalMilliseconds);
+        }
+    }
+
+    private sealed class CountedTimingScope : IDisposable
+    {
+        private readonly ModLoadingTimingService _service;
+        private readonly Action<double, int> _recordAction;
+        private readonly int _updatesApplied;
+        private readonly Stopwatch _stopwatch;
+        private bool _disposed;
+
+        public CountedTimingScope(ModLoadingTimingService service, int updatesApplied, Action<double, int> recordAction)
+        {
+            _service = service;
+            _updatesApplied = updatesApplied;
+            _recordAction = recordAction;
+            _stopwatch = Stopwatch.StartNew();
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+
+            _disposed = true;
+            _stopwatch.Stop();
+            _recordAction(_stopwatch.Elapsed.TotalMilliseconds, _updatesApplied);
         }
     }
 }

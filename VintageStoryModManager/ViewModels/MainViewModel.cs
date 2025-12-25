@@ -3838,24 +3838,27 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         _timingService.RecordDbApplyDispatcherTime(dispatcherStopwatch.Elapsed.TotalMilliseconds);
 
                         // Apply all updates in the batch
-                        foreach (var (entry, info, loadLogoImmediately) in batch)
+                        using (_timingService.MeasureDbApplyUiHandler(batch.Count))
                         {
-                            if (!_modEntriesBySourcePath.TryGetValue(entry.SourcePath, out var currentEntry)
-                                || !ReferenceEquals(currentEntry, entry))
-                                continue;
-
-                            // Measure entry update time
-                            using (_timingService.MeasureDbApplyEntryUpdate())
+                            foreach (var (entry, info, loadLogoImmediately) in batch)
                             {
-                                currentEntry.UpdateDatabaseInfo(info);
-                            }
+                                if (!_modEntriesBySourcePath.TryGetValue(entry.SourcePath, out var currentEntry)
+                                    || !ReferenceEquals(currentEntry, entry))
+                                    continue;
 
-                            if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
-                            {
-                                // Measure view model update time
-                                using (_timingService.MeasureDbApplyViewModelUpdate())
+                                // Measure entry update time
+                                using (_timingService.MeasureDbApplyEntryUpdate())
                                 {
-                                    viewModel.UpdateDatabaseInfo(info, loadLogoImmediately);
+                                    currentEntry.UpdateDatabaseInfo(info);
+                                }
+
+                                if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
+                                {
+                                    // Measure view model update time
+                                    using (_timingService.MeasureDbApplyViewModelUpdate())
+                                    {
+                                        viewModel.UpdateDatabaseInfo(info, loadLogoImmediately);
+                                    }
                                 }
                             }
                         }
@@ -3891,20 +3894,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                             || !ReferenceEquals(currentEntry, entry))
                             return;
 
-                        // Measure entry update time
-                        using (_timingService.MeasureDbApplyEntryUpdate())
+                        using (_timingService.MeasureDbApplyUiHandler(1))
                         {
-                            currentEntry.UpdateDatabaseInfo(info);
-                        }
-
-                        if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
-                        {
-                            // Measure view model update time
-                            using (_timingService.MeasureDbApplyViewModelUpdate())
+                            // Measure entry update time
+                            using (_timingService.MeasureDbApplyEntryUpdate())
                             {
-                                viewModel.UpdateDatabaseInfo(info, loadLogoImmediately);
-                                // Defer user report refresh to avoid cascading updates during bulk loading
-                                // The user report will be loaded on-demand when visible or when explicitly requested
+                                currentEntry.UpdateDatabaseInfo(info);
+                            }
+
+                            if (_modViewModelsBySourcePath.TryGetValue(entry.SourcePath, out var viewModel))
+                            {
+                                // Measure view model update time
+                                using (_timingService.MeasureDbApplyViewModelUpdate())
+                                {
+                                    viewModel.UpdateDatabaseInfo(info, loadLogoImmediately);
+                                    // Defer user report refresh to avoid cascading updates during bulk loading
+                                    // The user report will be loaded on-demand when visible or when explicitly requested
+                                }
                             }
                         }
                     },
