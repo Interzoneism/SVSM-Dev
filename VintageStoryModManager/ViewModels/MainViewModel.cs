@@ -56,6 +56,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly TagCacheService _tagCache = new();
     private readonly TagFilterService _tagFilterService;
     private readonly ObservableCollection<TagFilterOptionViewModel> _installedTagFilters = new();
+    private string[] _lastInstalledAvailableTags = Array.Empty<string>();
     private readonly Dictionary<string, string> _latestReleaseUserReportEtags = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _modDetailsBusyScopeLock = new();
     private readonly object _databaseRefreshLock = new();
@@ -2567,6 +2568,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         if (!_isTagsColumnVisible) return;
 
+        var normalizedTags = normalized
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Select(tag => tag.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(tag => tag, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (_lastInstalledAvailableTags.SequenceEqual(normalizedTags, StringComparer.OrdinalIgnoreCase)) return;
+
+        _lastInstalledAvailableTags = normalizedTags;
+
         _suppressInstalledTagFilterSelectionChanges = true;
         try
         {
@@ -2574,7 +2586,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             _installedTagFilters.Clear();
 
-            foreach (var tag in normalized)
+            foreach (var tag in normalizedTags)
             {
                 var isSelected = _tagFilterService.IsInstalledTagSelected(tag);
                 var option = new TagFilterOptionViewModel(tag, isSelected);

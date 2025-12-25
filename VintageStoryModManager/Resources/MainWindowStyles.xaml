@@ -835,7 +835,7 @@
                         <Trigger Property="DetailsVisibility" Value="Visible">
                             <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
                         </Trigger>
-                        
+
                         <!--  Hover effect - only active when not loading mods or mod details  -->
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>

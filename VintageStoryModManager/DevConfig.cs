@@ -22,7 +22,7 @@ public static class DevConfig
     public static int MaxModDatabaseResultLimit { get; } = int.MaxValue;
 
     // Main window behaviour and layout.
-    public static double ModListScrollMultiplier { get; } = 0.5;
+    public static double ModListScrollMultiplier { get; } = 20;
     public static double ModDbDesignScrollMultiplier { get; } = 20.0;
     public static double LoadMoreScrollThreshold { get; } = 0.98;
     public static double HoverOverlayOpacity { get; } = 0.1;

@@ -715,6 +715,8 @@
                                     CanUserAddRows="False"
                                     CanUserDeleteRows="False"
                                     CanUserSortColumns="True"
+                                    EnableColumnVirtualization="True"
+                                    EnableRowVirtualization="True"
                                     FontSize="15"
                                     Foreground="{DynamicResource Brush.Text.Primary}"
                                     GridLinesVisibility="None"
@@ -730,6 +732,7 @@
                                     RowBackground="{DynamicResource Brush.Button.Primary.Background.Normal}"
                                     RowHeaderWidth="0"
                                     ScrollViewer.CanContentScroll="True"
+                                    ScrollViewer.IsDeferredScrollingEnabled="{Binding IsLoadingMods, FallbackValue=False}"
                                     SelectionChanged="ModsDataGrid_OnSelectionChanged"
                                     SelectionMode="Single"
                                     SelectionUnit="FullRow"
@@ -737,6 +740,7 @@
                                     UseLayoutRounding="True"
                                     VerticalGridLinesBrush="Transparent"
                                     VirtualizingPanel.IsVirtualizing="True"
+                                    VirtualizingPanel.ScrollUnit="Pixel"
                                     VirtualizingPanel.VirtualizationMode="Recycling">
                                     <DataGrid.Resources>
                                         <Style BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" TargetType="{x:Type ScrollViewer}" />
