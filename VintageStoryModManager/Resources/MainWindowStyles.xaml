@@ -81,6 +81,10 @@
                                 ContentTemplate="{TemplateBinding ContentTemplate}" />
                             <Border
                                 x:Name="HoverOverlay"
+                                Width="{Binding ActualWidth, ElementName=ContentPresenter}"
+                                Height="{Binding ActualHeight, ElementName=ContentPresenter}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                 Background="{DynamicResource Brush.Button.Primary.Background.Hover}"
                                 CornerRadius="{StaticResource IMM.TagBadgeCornerRadius}"
                                 IsHitTestVisible="False"
