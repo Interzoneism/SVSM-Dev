@@ -835,8 +835,15 @@
                         <Trigger Property="DetailsVisibility" Value="Visible">
                             <Setter TargetName="RowBorder" Property="BorderThickness" Value="2,2,2,2" />
                         </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Trigger.EnterActions>
+                        
+                        <!--  Hover effect - only active when not loading mods or mod details  -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="True" />
+                                <Condition Binding="{Binding DataContext.IsLoadingMods, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
+                                <Condition Binding="{Binding DataContext.IsLoadingModDetails, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="False" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.EnterActions>
                                 <BeginStoryboard x:Name="HoverFadeInStoryboard">
                                     <Storyboard>
                                         <DoubleAnimation
@@ -846,8 +853,8 @@
                                             Duration="0:0:0.12" />
                                     </Storyboard>
                                 </BeginStoryboard>
-                            </Trigger.EnterActions>
-                            <Trigger.ExitActions>
+                            </MultiDataTrigger.EnterActions>
+                            <MultiDataTrigger.ExitActions>
                                 <BeginStoryboard x:Name="HoverFadeOutStoryboard">
                                     <Storyboard>
                                         <DoubleAnimation
@@ -857,8 +864,8 @@
                                             Duration="0:0:0.12" />
                                     </Storyboard>
                                 </BeginStoryboard>
-                            </Trigger.ExitActions>
-                        </Trigger>
+                            </MultiDataTrigger.ExitActions>
+                        </MultiDataTrigger>
 
                         <!--  If row becomes selected, ensure hover animations are stopped and overlay hidden.  -->
                         <Trigger Property="IsSelected" Value="True">
