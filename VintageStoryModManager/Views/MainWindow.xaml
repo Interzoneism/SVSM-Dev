@@ -1,5 +1,4 @@
 <Window
-    x:Name="MainWindowRoot"
     x:Class="VintageStoryModManager.Views.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -13,13 +12,14 @@
     xmlns:ui="http://schemas.modernwpf.com/2019"
     xmlns:viewModels="clr-namespace:VintageStoryModManager.ViewModels"
     xmlns:views="clr-namespace:VintageStoryModManager.Views"
+    x:Name="MainWindowRoot"
     Title="Simple VS Manager"
     Width="1558"
     Height="719"
     MinWidth="1000"
     MinHeight="775"
     d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData},
-                                     IsDesignTimeCreatable=False}"
+                                     IsDesignTimeCreatable=True}"
     AllowDrop="True"
     Background="Transparent"
     PreviewDragEnter="MainWindow_OnPreviewDragEnter"
@@ -36,10 +36,10 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Resources/MainWindowStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            
+
             <!--  BindingProxy to enable DataContext binding in DataGrid columns  -->
             <helpers:BindingProxy x:Key="DataContextProxy" Data="{Binding}" />
-            
+
             <Style
                 x:Key="CloseButton"
                 BasedOn="{StaticResource IMM.ButtonBaseStyle}"
@@ -343,11 +343,11 @@
                                 Style="{StaticResource ToggleMenuItemStyle}"
                                 Tag="{x:Static services:ColorTheme.SurpriseMe}" />
                         </MenuItem>
-                            <MenuItem
-                                x:Name="ColumnsMenuItem"
-                                Height="35"
-                                Header="_Columns"
-                                Visibility="{Binding IsViewingMainTab, Converter={StaticResource IMM.BooleanToVisibilityConverter}}">
+                        <MenuItem
+                            x:Name="ColumnsMenuItem"
+                            Height="35"
+                            Header="_Columns"
+                            Visibility="{Binding IsViewingMainTab, Converter={StaticResource IMM.BooleanToVisibilityConverter}}">
                             <MenuItem
                                 x:Name="ActiveColumnMenuItem"
                                 Checked="InstalledModsColumnMenuItem_OnChecked"
@@ -730,7 +730,6 @@
                                     PreviewMouseLeftButtonDown="ModsDataGrid_OnPreviewMouseLeftButtonDown"
                                     PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                                     RowBackground="{DynamicResource Brush.Button.Primary.Background.Normal}"
-                                    RowHeight="{Binding IsCompactView, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='84,64'}"
                                     RowHeaderWidth="0"
                                     ScrollViewer.CanContentScroll="True"
                                     ScrollViewer.IsDeferredScrollingEnabled="{Binding IsLoadingMods, FallbackValue=False}"

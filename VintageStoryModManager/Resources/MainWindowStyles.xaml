@@ -9,7 +9,6 @@
     <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenTrueConverter" />
     <converters:BooleanToVisibilityConverter x:Key="IMM.VisibleWhenFalseConverter" IsInverted="True" />
     <converters:BooleanToVisibilityConverter x:Key="IMM.HiddenWhenFalseConverter" UseHidden="True" />
-    <converters:RowPaddingOffsetConverter x:Key="IMM.RowPaddingOffsetConverter" />
     <Thickness x:Key="IMM.RowPaddingBase">0,0,0,0</Thickness>
     <sys:Double x:Key="IMM.NormalRowHeightOffset">10</sys:Double>
     <sys:Double x:Key="IMM.CompactRowHeightOffset">-12</sys:Double>
@@ -763,17 +762,9 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Bevel.Light}" />
         <Setter Property="BorderThickness" Value="1,1,0,0" />
-        <Setter Property="Margin" Value="2,1,2,1" />
+        <Setter Property="Margin" Value="2,0,2,0" />
         <Setter Property="UseLayoutRounding" Value="True" />
-        <Setter Property="Padding">
-            <Setter.Value>
-                <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
-                    <Binding Source="{StaticResource IMM.RowPaddingBase}" />
-                    <Binding Source="{StaticResource IMM.NormalRowHeightOffset}" />
-                </MultiBinding>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
+        <Setter Property="Height" Value="Auto" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type DataGridRow}">
@@ -882,16 +873,6 @@
             </Setter.Value>
         </Setter>
         <Style.Triggers>
-            <DataTrigger Binding="{Binding DataContext.IsCompactView, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
-                <Setter Property="Padding">
-                    <Setter.Value>
-                        <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
-                            <Binding Source="{StaticResource IMM.RowPaddingBase}" />
-                            <Binding Source="{StaticResource IMM.CompactRowHeightOffset}" />
-                        </MultiBinding>
-                    </Setter.Value>
-                </Setter>
-            </DataTrigger>
             <DataTrigger Binding="{Binding HasErrors}" Value="True">
                 <Setter Property="Background" Value="{DynamicResource Brush.Overlay.Warning.Background}" />
             </DataTrigger>
@@ -913,15 +894,6 @@
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
         <Setter Property="UseLayoutRounding" Value="True" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
-        <Setter Property="Padding">
-
-            <Setter.Value>
-                <MultiBinding Converter="{StaticResource IMM.RowPaddingOffsetConverter}">
-                    <Binding Source="{StaticResource IMM.RowPaddingBase}" />
-                    <Binding Source="{StaticResource IMM.NormalRowHeightOffset}" />
-                </MultiBinding>
-            </Setter.Value>
-        </Setter>
         <Setter Property="Height" Value="{x:Static sys:Double.NaN}" />
         <Setter Property="Template">
             <Setter.Value>
