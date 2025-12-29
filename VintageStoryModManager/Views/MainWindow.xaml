@@ -753,9 +753,9 @@
                                     </DataGrid.Resources>
                                     <DataGrid.Effect>
                                         <DropShadowEffect
-                                            BlurRadius="8"
+                                            BlurRadius="6"
                                             Direction="315"
-                                            Opacity="0.85"
+                                            Opacity="0.6"
                                             ShadowDepth="2" />
                                     </DataGrid.Effect>
                                     <DataGrid.DragIndicatorStyle>

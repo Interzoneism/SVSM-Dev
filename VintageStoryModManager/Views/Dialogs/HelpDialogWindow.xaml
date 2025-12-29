@@ -45,7 +45,7 @@
                         RequestNavigate="OnBackupHyperlinkRequestNavigate">
                         <Run Text="Discord server!" />
                     </Hyperlink></TextBlock>
-                <TextBlock FontSize="12" TextWrapping="Wrap"><Run Text="Most issues can be solved by deleting the temp cache (see Advanced menu)" />
+                <TextBlock FontSize="12" TextWrapping="Wrap"><Run Text="Most issues can be solved by deleting the temp cache (see Help and About menu) which is totally safe" />
                 </TextBlock>
 
                 <TextBlock
