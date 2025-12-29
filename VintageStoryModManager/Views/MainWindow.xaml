@@ -730,6 +730,7 @@
                                     PreviewMouseLeftButtonDown="ModsDataGrid_OnPreviewMouseLeftButtonDown"
                                     PreviewMouseWheel="ModsDataGrid_OnPreviewMouseWheel"
                                     RowBackground="{DynamicResource Brush.Button.Primary.Background.Normal}"
+                                    RowHeight="{Binding IsCompactView, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='84,64'}"
                                     RowHeaderWidth="0"
                                     ScrollViewer.CanContentScroll="True"
                                     ScrollViewer.IsDeferredScrollingEnabled="{Binding IsLoadingMods, FallbackValue=False}"
