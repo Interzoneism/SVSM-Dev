@@ -263,8 +263,8 @@
                         Margin="0,8,0,0"
                         FontSize="12"
                         TextWrapping="Wrap">
-                        <Bold>Correct thumbnails (Slower to load in mod database)</Bold>
-                        <Run Text=" ensures mod thumbnails are loaded accurately from the Mod Database. For most mods you won't notice a difference, and this is just an aestethic option. Disabling this option speeds up loading in mod browser." />
+                        <Bold>Faster thumbnails (Faster to load in mod database)</Bold>
+                        <Run Text=" uses faster thumbnail loading for improved performance when browsing mods. For most mods you won't notice a visual difference. Disabling this option loads thumbnails more accurately from the Mod Database but takes longer." />
                     </TextBlock>
                 </StackPanel>
 

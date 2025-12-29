@@ -113,9 +113,10 @@ public partial class ModBrowserViewModel : ObservableObject
 
     /// <summary>
     /// Gets whether to use correct (high-quality) thumbnails.
-    /// When false, uses faster loading with standard quality thumbnails from the initial API response.
+    /// When faster thumbnails are enabled (default), uses faster loading.
+    /// When faster thumbnails are disabled, uses higher quality thumbnails which load slower.
     /// </summary>
-    private bool ShouldUseCorrectThumbnails => _userConfigService?.UseCorrectThumbnails ?? true;
+    private bool ShouldUseCorrectThumbnails => !(_userConfigService?.UseFasterThumbnails ?? true);
 
     #endregion
 
@@ -450,7 +451,7 @@ public partial class ModBrowserViewModel : ObservableObject
             _modsWithLoadedLogos.Clear();
 
             // Pre-populate thumbnails for initially visible mods to prevent flickering on first load
-            // Only if "Correct thumbnails" setting is enabled
+            // Only if "Faster thumbnails" setting is disabled (i.e., using correct thumbnails)
             if (ShouldUseCorrectThumbnails)
             {
                 var initialVisibleCount = Math.Min(DefaultLoadedMods, filteredMods.Count);
@@ -557,7 +558,7 @@ public partial class ModBrowserViewModel : ObservableObject
                     // Run thumbnail and user report loading in parallel for better performance
                     var tasks = new List<Task>();
 
-                    // Only populate thumbnails if "Correct thumbnails" setting is enabled
+                    // Only populate thumbnails if "Faster thumbnails" setting is disabled (i.e., using correct thumbnails)
                     if (ShouldUseCorrectThumbnails)
                     {
                         tasks.Add(PopulateModThumbnailsAsync(modsToPrefetch, token));
