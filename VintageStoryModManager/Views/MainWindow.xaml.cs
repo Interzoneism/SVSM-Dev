@@ -10455,6 +10455,219 @@ public partial class MainWindow : Window
         _viewModel.ReportStatus(status);
     }
 
+    #region Context Menu Handlers for Modlists
+
+    // Local Modlist Context Menu Handlers
+    private void LocalModlistsDataGrid_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (LocalModlistsDataGrid?.ContextMenu is not ContextMenu contextMenu) return;
+        
+        var hasSelection = _selectedLocalModlists.Count > 0;
+
+        // Enable/disable menu items based on selection
+        if (LocalModlistInstallMenuItem is not null)
+            LocalModlistInstallMenuItem.IsEnabled = hasSelection && _selectedLocalModlists.Count == 1;
+        if (LocalModlistReplaceMenuItem is not null)
+            LocalModlistReplaceMenuItem.IsEnabled = hasSelection && _selectedLocalModlists.Count == 1;
+        if (LocalModlistRenameMenuItem is not null)
+            LocalModlistRenameMenuItem.IsEnabled = hasSelection && _selectedLocalModlists.Count == 1;
+        if (LocalModlistDeleteMenuItem is not null)
+            LocalModlistDeleteMenuItem.IsEnabled = hasSelection;
+    }
+
+    private void LocalModlistInstallMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        InstallLocalModlistButton_OnClick(sender, e);
+    }
+
+    private void LocalModlistReplaceMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedLocalModlists.Count != 1) return;
+        var entry = _selectedLocalModlists[0];
+        if (entry is null || string.IsNullOrWhiteSpace(entry.FilePath)) return;
+
+        // Prefill with the same name for replace action
+        var preservedSelection = new List<string> { entry.FilePath };
+        if (TrySaveModlist(() => entry.DisplayName ?? string.Empty, out var savedFilePath))
+        {
+            if (!string.IsNullOrWhiteSpace(savedFilePath))
+            {
+                preservedSelection = new List<string> { savedFilePath };
+                _viewModel?.ReportStatus($"Modlist \"{Path.GetFileNameWithoutExtension(savedFilePath)}\" saved successfully.");
+            }
+            else
+            {
+                _viewModel?.ReportStatus("Modlist saved successfully.");
+            }
+            RefreshLocalModlists(false, preservedSelection);
+        }
+    }
+
+    private void LocalModlistRenameMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        ModifyLocalModlistButton_OnClick(sender, e);
+    }
+
+    private void LocalModlistDeleteMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        DeleteLocalModlistsButton_OnClick(sender, e);
+    }
+
+    // Cloud Modlist Context Menu Handlers
+    private void CloudModlistsDataGrid_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (CloudModlistsDataGrid?.ContextMenu is not ContextMenu contextMenu) return;
+        
+        var hasSelection = _selectedCloudModlist is not null;
+
+        // Enable/disable all menu items based on selection
+        if (CloudModlistInstallMenuItem is not null)
+            CloudModlistInstallMenuItem.IsEnabled = hasSelection;
+        if (CloudModlistReplaceMenuItem is not null)
+            CloudModlistReplaceMenuItem.IsEnabled = hasSelection;
+        if (CloudModlistRenameMenuItem is not null)
+            CloudModlistRenameMenuItem.IsEnabled = hasSelection;
+        if (CloudModlistDeleteMenuItem is not null)
+            CloudModlistDeleteMenuItem.IsEnabled = hasSelection;
+
+        // Note: Ownership check for rename/delete will be done when the menu item is clicked
+        // to avoid async operations in the ContextMenuOpening event handler
+    }
+
+    private void CloudModlistInstallMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        InstallCloudModlistButton_OnClick(sender, e);
+    }
+
+    private async void CloudModlistReplaceMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedCloudModlist is not CloudModlistListEntry entry) return;
+        
+        // For cloud modlist replace, we show the save dialog with the selected modlist's name pre-filled
+        // The existing SaveModlistToCloudAsync will handle detecting name conflicts and prompting for replacement
+        await ExecuteCloudOperationAsync(async store =>
+        {
+            var suggestedName = entry.DisplayName ?? string.Empty;
+            var configOptions = BuildModConfigOptions(selectByDefault: false);
+            var detailsDialog = new CloudModlistDetailsDialog(
+                this,
+                suggestedName,
+                configOptions,
+                _viewModel?.InstalledGameVersion);
+            var dialogResult = detailsDialog.ShowDialog();
+            if (dialogResult != true) return;
+
+            var uploader = DetermineUploaderName(store);
+            var modlistName = detailsDialog.ModlistName;
+            var description = detailsDialog.ModlistDescription;
+            var version = detailsDialog.ModlistVersion;
+
+            Dictionary<string, IReadOnlyList<ModConfigurationSnapshot>>? includedConfigurations = null;
+            var selectedConfigOptions = detailsDialog.GetSelectedConfigOptions();
+            includedConfigurations = TryReadModConfigurations(selectedConfigOptions);
+
+            var gameVersion = ResolveGameVersion(detailsDialog.ModlistGameVersion);
+
+            if (!TryBuildCurrentModlistJson(modlistName, description, version, uploader, includedConfigurations, gameVersion, out var json))
+                return;
+
+            // Save to the same slot as the selected modlist
+            await store.SaveAsync(entry.SlotKey, json);
+            _viewModel?.ReportStatus($"Replaced cloud modlist \"{entry.DisplayName ?? "Unnamed Modlist"}\" with \"{modlistName}\".");
+        }, "replace a cloud modlist");
+    }
+
+    private async void CloudModlistRenameMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedCloudModlist is not CloudModlistListEntry entry) return;
+
+        await ExecuteCloudOperationAsync(async store =>
+        {
+            // Check if the user owns this modlist
+            if (!string.Equals(entry.OwnerId, store.CurrentUserId, StringComparison.Ordinal))
+            {
+                WpfMessageBox.Show(
+                    "You can only rename modlists that you own.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            var renameDialog = new CloudModlistRenameDialog(this, entry.Name ?? entry.DisplayName ?? string.Empty);
+            var dialogResult = renameDialog.ShowDialog();
+            if (dialogResult != true) return;
+
+            var newName = renameDialog.ModlistName;
+            if (string.IsNullOrWhiteSpace(newName)) return;
+
+            // Note: DisplayName is a computed property that never returns null, but compiler doesn't track this
+            var managementEntry = new CloudModlistManagementEntry(
+                entry.SlotKey,
+                entry.SlotLabel,
+                entry.Name,
+                entry.Version,
+                entry.DisplayName ?? "Unnamed Modlist",
+                entry.ContentJson);
+
+            var success = await RenameCloudModlistAsync(store, managementEntry, newName);
+            if (success)
+            {
+                await RefreshCloudModlistsAsync(true);
+                _viewModel?.ReportStatus($"Modlist renamed to \"{newName}\".");
+            }
+        }, "rename a cloud modlist");
+    }
+
+    private async void CloudModlistDeleteMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedCloudModlist is not CloudModlistListEntry entry) return;
+
+        await ExecuteCloudOperationAsync(async store =>
+        {
+            // Check if the user owns this modlist
+            if (!string.Equals(entry.OwnerId, store.CurrentUserId, StringComparison.Ordinal))
+            {
+                WpfMessageBox.Show(
+                    "You can only delete modlists that you own.",
+                    "Simple VS Manager",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            var displayName = string.IsNullOrWhiteSpace(entry.Name)
+                ? entry.SlotLabel
+                : $"{entry.SlotLabel} (\"{entry.Name}\")";
+
+            var confirmation = WpfMessageBox.Show(
+                $"Are you sure you want to delete {displayName}? This action cannot be undone.",
+                "Simple VS Manager",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirmation != MessageBoxResult.Yes) return;
+
+            // Note: DisplayName is a computed property that never returns null, but compiler doesn't track this
+            var managementEntry = new CloudModlistManagementEntry(
+                entry.SlotKey,
+                entry.SlotLabel,
+                entry.Name,
+                entry.Version,
+                entry.DisplayName ?? "Unnamed Modlist",
+                entry.ContentJson);
+
+            var success = await DeleteCloudModlistAsync(store, managementEntry);
+            if (success)
+            {
+                await RefreshCloudModlistsAsync(true);
+                _viewModel?.ReportStatus("Modlist deleted successfully.");
+            }
+        }, "delete a cloud modlist");
+    }
+
+    #endregion
+
     private async void LoadModlistFromCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         await ExecuteCloudOperationAsync(async store =>

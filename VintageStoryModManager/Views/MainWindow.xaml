@@ -1308,7 +1308,17 @@
                                             SelectionChanged="LocalModlistsDataGrid_OnSelectionChanged"
                                             SelectionMode="Extended"
                                             SelectionUnit="FullRow"
-                                            VerticalGridLinesBrush="Transparent">
+                                            VerticalGridLinesBrush="Transparent"
+                                            ContextMenuOpening="LocalModlistsDataGrid_OnContextMenuOpening">
+                                            <DataGrid.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem x:Name="LocalModlistInstallMenuItem" Header="Install Modlist" Click="LocalModlistInstallMenuItem_OnClick" />
+                                                    <MenuItem x:Name="LocalModlistReplaceMenuItem" Header="Replace Modlist" Click="LocalModlistReplaceMenuItem_OnClick" />
+                                                    <MenuItem x:Name="LocalModlistRenameMenuItem" Header="Rename Modlist" Click="LocalModlistRenameMenuItem_OnClick" />
+                                                    <Separator />
+                                                    <MenuItem x:Name="LocalModlistDeleteMenuItem" Header="Delete Modlist" Click="LocalModlistDeleteMenuItem_OnClick" />
+                                                </ContextMenu>
+                                            </DataGrid.ContextMenu>
                                             <DataGrid.Resources>
                                                 <Style BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" TargetType="{x:Type ScrollViewer}" />
                                                 <Style BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" TargetType="{x:Type ScrollBar}" />
@@ -1595,7 +1605,17 @@
                                             SelectionChanged="CloudModlistsDataGrid_OnSelectionChanged"
                                             SelectionMode="Single"
                                             SelectionUnit="FullRow"
-                                            VerticalGridLinesBrush="Transparent">
+                                            VerticalGridLinesBrush="Transparent"
+                                            ContextMenuOpening="CloudModlistsDataGrid_OnContextMenuOpening">
+                                            <DataGrid.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem x:Name="CloudModlistInstallMenuItem" Header="Install Modlist" Click="CloudModlistInstallMenuItem_OnClick" />
+                                                    <MenuItem x:Name="CloudModlistReplaceMenuItem" Header="Replace Modlist" Click="CloudModlistReplaceMenuItem_OnClick" />
+                                                    <MenuItem x:Name="CloudModlistRenameMenuItem" Header="Rename Modlist" Click="CloudModlistRenameMenuItem_OnClick" />
+                                                    <Separator />
+                                                    <MenuItem x:Name="CloudModlistDeleteMenuItem" Header="Delete Modlist" Click="CloudModlistDeleteMenuItem_OnClick" />
+                                                </ContextMenu>
+                                            </DataGrid.ContextMenu>
                                             <DataGrid.Resources>
                                                 <Style BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" TargetType="{x:Type ScrollViewer}" />
                                                 <Style BasedOn="{StaticResource IMM.DataGridScrollBarStyle}" TargetType="{x:Type ScrollBar}" />
