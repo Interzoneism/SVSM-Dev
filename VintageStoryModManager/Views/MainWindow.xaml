@@ -1312,6 +1312,9 @@
                                             ContextMenuOpening="LocalModlistsDataGrid_OnContextMenuOpening">
                                             <DataGrid.ContextMenu>
                                                 <ContextMenu>
+                                                    <ContextMenu.Resources>
+                                                        <Style BasedOn="{StaticResource ToggleMenuItemStyle}" TargetType="{x:Type MenuItem}" />
+                                                    </ContextMenu.Resources>
                                                     <MenuItem x:Name="LocalModlistInstallMenuItem" Header="Install Modlist" Click="LocalModlistInstallMenuItem_OnClick" />
                                                     <MenuItem x:Name="LocalModlistReplaceMenuItem" Header="Replace Modlist" Click="LocalModlistReplaceMenuItem_OnClick" />
                                                     <MenuItem x:Name="LocalModlistRenameMenuItem" Header="Rename Modlist" Click="LocalModlistRenameMenuItem_OnClick" />
@@ -1609,6 +1612,9 @@
                                             ContextMenuOpening="CloudModlistsDataGrid_OnContextMenuOpening">
                                             <DataGrid.ContextMenu>
                                                 <ContextMenu>
+                                                    <ContextMenu.Resources>
+                                                        <Style BasedOn="{StaticResource ToggleMenuItemStyle}" TargetType="{x:Type MenuItem}" />
+                                                    </ContextMenu.Resources>
                                                     <MenuItem x:Name="CloudModlistInstallMenuItem" Header="Install Modlist" Click="CloudModlistInstallMenuItem_OnClick" />
                                                     <MenuItem x:Name="CloudModlistReplaceMenuItem" Header="Replace Modlist" Click="CloudModlistReplaceMenuItem_OnClick" />
                                                     <MenuItem x:Name="CloudModlistRenameMenuItem" Header="Rename Modlist" Click="CloudModlistRenameMenuItem_OnClick" />
