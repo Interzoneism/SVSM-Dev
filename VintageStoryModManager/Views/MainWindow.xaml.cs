@@ -10488,7 +10488,7 @@ public partial class MainWindow : Window
 
         // Prefill with the same name for replace action
         var preservedSelection = new List<string> { entry.FilePath };
-        if (TrySaveModlist(() => entry.DisplayName, out var savedFilePath))
+        if (TrySaveModlist(() => entry.DisplayName ?? string.Empty, out var savedFilePath))
         {
             if (!string.IsNullOrWhiteSpace(savedFilePath)) preservedSelection = new List<string> { savedFilePath };
             RefreshLocalModlists(false, preservedSelection);
@@ -10540,7 +10540,7 @@ public partial class MainWindow : Window
         // The existing SaveModlistToCloudAsync will handle detecting name conflicts and prompting for replacement
         await ExecuteCloudOperationAsync(async store =>
         {
-            var suggestedName = entry.DisplayName;
+            var suggestedName = entry.DisplayName ?? string.Empty;
             var configOptions = BuildModConfigOptions(selectByDefault: false);
             var detailsDialog = new CloudModlistDetailsDialog(
                 this,
@@ -10566,7 +10566,7 @@ public partial class MainWindow : Window
 
             // Save to the same slot as the selected modlist
             await store.SaveAsync(entry.SlotKey, json);
-            _viewModel?.ReportStatus($"Replaced cloud modlist \"{entry.DisplayName}\" with \"{modlistName}\".");
+            _viewModel?.ReportStatus($"Replaced cloud modlist \"{entry.DisplayName ?? "[Unnamed]"}\" with \"{modlistName}\".");
         }, "replace a cloud modlist");
     }
 
@@ -10587,7 +10587,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var renameDialog = new CloudModlistRenameDialog(this, entry.Name ?? entry.DisplayName);
+            var renameDialog = new CloudModlistRenameDialog(this, entry.Name ?? entry.DisplayName ?? string.Empty);
             var dialogResult = renameDialog.ShowDialog();
             if (dialogResult != true) return;
 
@@ -10599,7 +10599,7 @@ public partial class MainWindow : Window
                 entry.SlotLabel,
                 entry.Name,
                 entry.Version,
-                entry.DisplayName,
+                entry.DisplayName ?? "Unnamed Modlist",  // DisplayName property ensures non-null but compiler needs hint
                 entry.ContentJson);
 
             var success = await RenameCloudModlistAsync(store, managementEntry, newName);
@@ -10645,7 +10645,7 @@ public partial class MainWindow : Window
                 entry.SlotLabel,
                 entry.Name,
                 entry.Version,
-                entry.DisplayName,
+                entry.DisplayName ?? "Unnamed Modlist",  // DisplayName property ensures non-null but compiler needs hint
                 entry.ContentJson);
 
             var success = await DeleteCloudModlistAsync(store, managementEntry);
