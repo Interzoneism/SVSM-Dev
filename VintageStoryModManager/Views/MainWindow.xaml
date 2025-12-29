@@ -741,7 +741,7 @@
                                     UseLayoutRounding="True"
                                     VerticalGridLinesBrush="Transparent"
                                     VirtualizingPanel.IsVirtualizing="True"
-                                    VirtualizingPanel.ScrollUnit="Pixel"
+                                    VirtualizingPanel.ScrollUnit="Item"
                                     VirtualizingPanel.VirtualizationMode="Recycling">
                                     <DataGrid.Resources>
                                         <Style BasedOn="{StaticResource IMM.InstalledModsScrollViewerStyle}" TargetType="{x:Type ScrollViewer}" />
