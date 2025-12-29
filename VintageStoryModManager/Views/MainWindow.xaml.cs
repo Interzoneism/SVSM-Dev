@@ -1099,14 +1099,14 @@ public partial class MainWindow : Window
 
         SaveWindowDimensions();
         SaveUploaderName();
-        
+
         // Log timing summary before app exit (only if error/diagnostic logging is enabled)
         if (_viewModel != null && _userConfiguration.LogErrorsAndExceptions)
         {
             var timingSummary = _viewModel.TimingService.GetTimingSummary();
             _modActivityLoggingService.LogModLoadingTimingSummary(timingSummary);
         }
-        
+
         _modActivityLoggingService.LogAppExit();
 
         // Clean up trace listener
@@ -2471,7 +2471,7 @@ public partial class MainWindow : Window
         ApplyPlayerIdentityToUiAndCloudStore();
         _cloudModlistsLoaded = false;
         _localModlistsLoaded = false;
-        _selectedCloudModlist = null;;
+        _selectedCloudModlist = null; ;
         AttachToModsView(_viewModel.CurrentModsView);
         RestoreSortPreference();
         UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
@@ -13020,7 +13020,7 @@ public partial class MainWindow : Window
 
         var isModListGrid = ReferenceEquals(dependencyObject, ModsDataGrid);
 
-        var scrollViewer = GetModsScrollViewer();;
+        var scrollViewer = GetModsScrollViewer(); ;
 
         if (scrollViewer is null) return;
 
@@ -13736,12 +13736,12 @@ public partial class MainWindow : Window
                 if (useModlistInstallUi)
                 {
                     CompleteModlistInstallStep($"Updated {displayName} to {release.Version}.");
-              _modActivityLoggingService.LogModUpdate(mod.DisplayName ?? mod.ModId ?? "Unknown", mod.Version, release.Version);
+                    _modActivityLoggingService.LogModUpdate(mod.DisplayName ?? mod.ModId ?? "Unknown", mod.Version, release.Version);
                 }
                 else
                 {
                     _viewModel.ReportStatus($"Updated {displayName} to {release.Version}.");
-              _modActivityLoggingService.LogModUpdate(mod.DisplayName ?? mod.ModId ?? "Unknown", mod.Version, release.Version);
+                    _modActivityLoggingService.LogModUpdate(mod.DisplayName ?? mod.ModId ?? "Unknown", mod.Version, release.Version);
                 }
                 await _viewModel.PreserveActivationStateAsync(mod.ModId ?? string.Empty, mod.Version, release.Version, mod.IsActive)
                     .ConfigureAwait(true);

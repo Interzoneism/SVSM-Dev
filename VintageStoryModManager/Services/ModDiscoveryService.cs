@@ -551,8 +551,8 @@ public sealed class ModDiscoveryService
         AddPath(Path.Combine(_settingsStore.DataDirectory, "ModsByServer"));
 
         foreach (var path in _settingsStore.ModPaths)
-        foreach (var candidate in ResolvePathCandidates(path))
-            AddPath(candidate);
+            foreach (var candidate in ResolvePathCandidates(path))
+                AddPath(candidate);
 
         foreach (var loggedPath in LoadPathsFromLog()) AddPath(loggedPath);
 

@@ -100,7 +100,7 @@ public sealed class ModListItemViewModel : ObservableObject
         _shouldSkipVersion = shouldSkipVersion;
         _requireExactVersionMatch = requireExactVersionMatch;
         _timingService = timingService;
-        
+
         // Store for lazy search index building
         _modEntry = entry;
         _constructorLocation = location;
@@ -560,7 +560,7 @@ public sealed class ModListItemViewModel : ObservableObject
             if (!_iconInitialized)
             {
                 _iconInitialized = true;
-                
+
                 using (_timingService?.MeasureIconLoad())
                 {
                     _icon = CreateImage(_modEntry.IconBytes, "Icon bytes");

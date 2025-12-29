@@ -188,19 +188,19 @@ public sealed class ModConfigurationViewModel : ObservableObject
             case null:
                 return null;
             case JsonObject obj:
-            {
-                var dictionary = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach (var pair in obj) dictionary[pair.Key] = ConvertJsonNodeToYamlObject(pair.Value);
+                {
+                    var dictionary = new Dictionary<string, object?>(StringComparer.Ordinal);
+                    foreach (var pair in obj) dictionary[pair.Key] = ConvertJsonNodeToYamlObject(pair.Value);
 
-                return dictionary;
-            }
+                    return dictionary;
+                }
             case JsonArray array:
-            {
-                var list = new List<object?>(array.Count);
-                foreach (var item in array) list.Add(ConvertJsonNodeToYamlObject(item));
+                {
+                    var list = new List<object?>(array.Count);
+                    foreach (var item in array) list.Add(ConvertJsonNodeToYamlObject(item));
 
-                return list;
-            }
+                    return list;
+                }
             case JsonValue value:
                 return ConvertJsonValueToPrimitive(value);
             default:

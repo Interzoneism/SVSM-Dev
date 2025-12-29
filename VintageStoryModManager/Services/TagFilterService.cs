@@ -56,7 +56,7 @@ internal sealed class TagFilterService
         {
             lock (_filterLock)
             {
-                return _selectedInstalledTags.Count > 0 ;
+                return _selectedInstalledTags.Count > 0;
             }
         }
     }
