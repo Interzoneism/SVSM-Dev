@@ -526,7 +526,7 @@ public partial class ModBrowserViewModel : ObservableObject
 
         var previousCount = VisibleModsCount;
         var nextBatch = ModsList.Skip(previousCount).Take(LoadMoreCount).ToList();
-        
+
         if (nextBatch.Count == 0) return;
 
         foreach (var mod in nextBatch)
@@ -535,7 +535,7 @@ public partial class ModBrowserViewModel : ObservableObject
         }
 
         VisibleModsCount = VisibleMods.Count;
-        
+
         // Notify UI of changes - using Normal priority to maintain responsiveness
         // OnPropertyChanged(nameof(VisibleMods)); // Not needed
 
@@ -548,7 +548,7 @@ public partial class ModBrowserViewModel : ObservableObject
         if (modsToPrefetch.Any())
         {
             var token = _searchCts?.Token ?? CancellationToken.None;
-            
+
             // Run these operations in parallel on background threads to avoid blocking UI
             _ = Task.Run(async () =>
             {
@@ -556,15 +556,15 @@ public partial class ModBrowserViewModel : ObservableObject
                 {
                     // Run thumbnail and user report loading in parallel for better performance
                     var tasks = new List<Task>();
-                    
+
                     // Only populate thumbnails if "Correct thumbnails" setting is enabled
                     if (ShouldUseCorrectThumbnails)
                     {
                         tasks.Add(PopulateModThumbnailsAsync(modsToPrefetch, token));
                     }
-                    
+
                     tasks.Add(PopulateUserReportsAsync(modsToPrefetch, token));
-                    
+
                     await Task.WhenAll(tasks);
                 }
                 catch (OperationCanceledException)

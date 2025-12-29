@@ -981,7 +981,7 @@ public sealed class ModDatabaseService
             var requestUri =
                 string.Format(CultureInfo.InvariantCulture, ApiEndpointFormat, Uri.EscapeDataString(modId));
             using HttpRequestMessage request = new(HttpMethod.Get, requestUri);
-            
+
             // Measure HTTP request/response time
             HttpResponseMessage response;
             using (timingService?.MeasureDbNetworkHttp())
@@ -990,7 +990,7 @@ public sealed class ModDatabaseService
                     .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode) return null;
             }
-            
+
             using (response)
             {
                 // Capture HTTP headers for conditional requests
