@@ -1673,7 +1673,9 @@ public sealed class UserConfigurationService
             ClientSettingsCleanupCompleted = obj["clientSettingsCleanupCompleted"]?.GetValue<bool?>() ?? false;
             RebuiltModlistMigrationCompleted =
                 obj["rebuiltModlistMigrationCompleted"]?.GetValue<bool?>() ?? false;
-            UseFasterThumbnails = obj["useFasterThumbnails"]?.GetValue<bool?>() ?? true;
+            // Migration: Invert old useCorrectThumbnails value if present, otherwise default to true (faster)
+            UseFasterThumbnails = obj["useFasterThumbnails"]?.GetValue<bool?>() ??
+                                  !(obj["useCorrectThumbnails"]?.GetValue<bool?>() ?? false);
 
             var profilesFound = false;
             if (obj["gameProfiles"] is JsonObject profilesObj)
