@@ -37,11 +37,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static readonly int MaxConcurrentUserReportRefreshes = DevConfig.MaxConcurrentUserReportRefreshes;
     private static readonly int MaxNewModsRecentMonths = DevConfig.MaxNewModsRecentMonths;
     private static readonly int InstalledModsIncrementalBatchSize = DevConfig.InstalledModsIncrementalBatchSize;
-    
+
     // Database refresh delays for startup optimization
     private const int InitialRefreshDelayMs = 500;  // Delay before starting database refresh on initial load
     private const int IncrementalRefreshDelayMs = 300;  // Delay before refreshing after incremental updates
-    
+
     private readonly object _busyStateLock = new();
     private readonly RelayCommand _clearSearchCommand;
     private readonly ClientSettingsWatcher _clientSettingsWatcher;
@@ -88,14 +88,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private readonly ModVersionVoteService _voteService = new();
     private readonly ModLoadingTimingService _timingService = new();
-    
+
     // Database info batching for improved UI performance
     private readonly object _databaseInfoBatchLock = new();
     private readonly List<(ModEntry entry, ModDatabaseInfo info, bool loadLogoImmediately)> _pendingDatabaseInfoUpdates = new();
     private Timer? _databaseInfoBatchTimer;
     private const int DatabaseInfoBatchDelayMs = 50; // Batch updates every 50ms
     private const int DatabaseInfoBatchSize = 20; // Apply up to 20 updates per batch
-    
+
     private List<string>? _cachedBasePaths;
     private int _activeMods;
     private int _activeUserReportOperations;
@@ -424,11 +424,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(HasSearchText));
             _clearSearchCommand.NotifyCanExecuteChanged();
 
-                // Only refresh if the search filter state actually changed.
-                // This avoids unnecessary refreshes when clearing an already-empty search
-                // or during tab switches where the search text is cleared.
-                if (hadSearchTokens || hasSearchTokens)
-                    TriggerDebouncedInstalledModsSearch();
+            // Only refresh if the search filter state actually changed.
+            // This avoids unnecessary refreshes when clearing an already-empty search
+            // or during tab switches where the search text is cleared.
+            if (hadSearchTokens || hasSearchTokens)
+                TriggerDebouncedInstalledModsSearch();
 
         }
     }
@@ -519,7 +519,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _pendingSearchCts?.Dispose();
             _pendingSearchCts = null;
         }
-        
+
         lock (_databaseInfoBatchLock)
         {
             _databaseInfoBatchTimer?.Dispose();
@@ -593,7 +593,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             case ViewSection.DatabaseTab:
                 SelectedMod = null;
-                    SetStatus("Showing mod database.", false);
+                SetStatus("Showing mod database.", false);
                 break;
             case ViewSection.MainTab:
                 SelectedMod = null;
@@ -1759,7 +1759,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 SelectedMod = null;
 
             UpdateLoadedModsStatus();
-            
+
             // Defer database refresh to background to show UI faster
             if (_allowModDetailsRefresh && entries.Count > 0)
             {
@@ -1770,7 +1770,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         // Small delay to ensure UI is responsive first
                         await Task.Delay(InitialRefreshDelayMs).ConfigureAwait(false);
                         QueueDatabaseInfoRefresh(entries);
-                        
+
                         // Mark initial load as complete after first database refresh
                         _isInitialLoad = false;
                     }
@@ -3508,7 +3508,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             .ToArray();
 
         await Task.WhenAll(priorityTasks).ConfigureAwait(false);
-        
+
         // Flush after priority batch to show initial results quickly
         FlushDatabaseInfoBatch();
 
@@ -3546,7 +3546,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            
+
             // On initial load, use cache-only approach for better startup performance
             // This skips expensive network checks and just uses whatever is cached
             if (_isInitialLoad)
@@ -3559,7 +3559,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                             _configuration.RequireExactVsVersionMatch)
                         .ConfigureAwait(false);
                 }
-                
+
                 if (cachedInfo != null)
                 {
                     cacheHit = true;
@@ -3572,7 +3572,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     source = "cache";
                     return;
                 }
-                
+
                 // No cache available, create offline info
                 using (_timingService.MeasureDbOfflineInfo())
                 {
@@ -3583,7 +3583,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 source = "offline";
                 return;
             }
-            
+
             // For subsequent refreshes, use normal refresh logic with version checks
             ModDatabaseInfo? cachedInfo2;
             bool needsRefresh;
@@ -3901,7 +3901,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                         // Record dispatcher wait time
                         dispatcherStopwatch.Stop();
                         _timingService.RecordDbApplyDispatcherTime(dispatcherStopwatch.Elapsed.TotalMilliseconds);
-                        
+
                         if (!_modEntriesBySourcePath.TryGetValue(entry.SourcePath, out var currentEntry)
                             || !ReferenceEquals(currentEntry, entry))
                             return;

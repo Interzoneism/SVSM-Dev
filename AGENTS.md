@@ -114,7 +114,7 @@ dotnet format --verify-no-changes
 ## Additional Notes
 - **Project Name**: The assembly is named `VintageStoryModManager` but displays as "Simple VS Manager"
 - **Company**: Interzone
-- **Version**: Managed centrally in `Directory.Build.props` (currently 1.4.0)
+- **Version**: Managed centrally in `Directory.Build.props` (currently 2.0.0)
 - **Icon**: `SVSM.ico` is the application icon
 - **File Description**: Shows as "Simple VS Manager" in Windows Task Manager
 

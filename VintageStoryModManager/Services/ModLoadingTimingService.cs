@@ -10,7 +10,7 @@ namespace VintageStoryModManager.Services;
 public sealed class ModLoadingTimingService
 {
     private readonly object _lock = new();
-    
+
     // Cumulative timing metrics (in milliseconds)
     private double _totalIconLoadingTimeMs;
     private double _totalTagsLoadingTimeMs;
@@ -23,20 +23,20 @@ public sealed class ModLoadingTimingService
     private double _totalDbNetworkLoadingTimeMs;
     private double _totalDbApplyInfoTimeMs;
     private double _totalDbOfflineInfoTimeMs;
-    
+
     // Network loading sub-operations
     private double _totalDbNetworkHttpTimeMs;
     private double _totalDbNetworkParseTimeMs;
     private double _totalDbNetworkExtractTimeMs;
     private double _totalDbNetworkStoreTimeMs;
-    
+
     // Apply info sub-operations
     private double _totalDbApplyDispatcherTimeMs;
     private double _totalDbApplyEntryUpdateTimeMs;
     private double _totalDbApplyViewModelUpdateTimeMs;
     private double _totalDbApplyUiHandlerTimeMs;
     private double _maxDbApplyUiHandlerTimeMs;
-    
+
     // Count of operations for averaging
     private int _iconLoadCount;
     private int _tagsLoadCount;
@@ -49,13 +49,13 @@ public sealed class ModLoadingTimingService
     private int _dbNetworkLoadCount;
     private int _dbApplyInfoCount;
     private int _dbOfflineInfoCount;
-    
+
     // Network loading sub-operation counts
     private int _dbNetworkHttpCount;
     private int _dbNetworkParseCount;
     private int _dbNetworkExtractCount;
     private int _dbNetworkStoreCount;
-    
+
     // Apply info sub-operation counts
     private int _dbApplyDispatcherCount;
     private int _dbApplyEntryUpdateCount;
@@ -336,7 +336,7 @@ public sealed class ModLoadingTimingService
                 lines.Add("  Database Info Loading Breakdown:");
                 lines.Add($"  {FormatMetric("Cache Loading", _totalDbCacheLoadingTimeMs, _dbCacheLoadCount)}");
                 lines.Add($"  {FormatMetric("Network Loading", _totalDbNetworkLoadingTimeMs, _dbNetworkLoadCount)}");
-                
+
                 // Add Network Loading sub-breakdown if we have data
                 if (_dbNetworkHttpCount > 0 || _dbNetworkParseCount > 0 || _dbNetworkExtractCount > 0 || _dbNetworkStoreCount > 0)
                 {
@@ -347,9 +347,9 @@ public sealed class ModLoadingTimingService
                     lines.Add($"    {FormatMetric("Data Extraction", _totalDbNetworkExtractTimeMs, _dbNetworkExtractCount)}");
                     lines.Add($"    {FormatMetric("Cache Storage", _totalDbNetworkStoreTimeMs, _dbNetworkStoreCount)}");
                 }
-                
+
                 lines.Add($"  {FormatMetric("Applying Info", _totalDbApplyInfoTimeMs, _dbApplyInfoCount)}");
-                
+
                 // Add Applying Info sub-breakdown if we have data
                 if (_dbApplyDispatcherCount > 0 || _dbApplyEntryUpdateCount > 0 || _dbApplyViewModelUpdateCount > 0
                     || _dbApplyUiHandlerCount > 0)
@@ -361,7 +361,7 @@ public sealed class ModLoadingTimingService
                     lines.Add($"    {FormatMetric("ViewModel Update", _totalDbApplyViewModelUpdateTimeMs, _dbApplyViewModelUpdateCount)}");
                     lines.Add($"    {FormatUiHandlerMetric()}");
                 }
-                
+
                 lines.Add($"  {FormatMetric("Offline Info Population", _totalDbOfflineInfoTimeMs, _dbOfflineInfoCount)}");
             }
 
