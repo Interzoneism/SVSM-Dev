@@ -283,10 +283,10 @@
                             IsCheckable="True"
                             Style="{StaticResource ToggleMenuItemStyle}" />
                         <MenuItem
-                            x:Name="UseCorrectThumbnailsMenuItem"
+                            x:Name="UseFasterThumbnailsMenuItem"
                             Height="35"
-                            Click="UseCorrectThumbnailsMenuItem_OnClick"
-                            Header="Correct thumbnails (Slower to load in mod database)"
+                            Click="UseFasterThumbnailsMenuItem_OnClick"
+                            Header="_Faster thumbnails (Faster to load in mod database)"
                             IsCheckable="True"
                             Style="{StaticResource ToggleMenuItemStyle}" />
                     </MenuItem>

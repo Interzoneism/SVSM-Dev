@@ -320,7 +320,7 @@ public sealed class UserConfigurationService
 
     public bool RebuiltModlistMigrationCompleted { get; private set; }
 
-    public bool UseCorrectThumbnails { get; private set; } = true;
+    public bool UseFasterThumbnails { get; private set; } = true;
 
     public IReadOnlyList<string> GetGameProfileNames()
     {
@@ -1477,11 +1477,11 @@ public sealed class UserConfigurationService
         Save();
     }
 
-    public void SetUseCorrectThumbnails(bool useCorrectThumbnails)
+    public void SetUseFasterThumbnails(bool useFasterThumbnails)
     {
-        if (UseCorrectThumbnails == useCorrectThumbnails) return;
+        if (UseFasterThumbnails == useFasterThumbnails) return;
 
-        UseCorrectThumbnails = useCorrectThumbnails;
+        UseFasterThumbnails = useFasterThumbnails;
         Save();
     }
 
@@ -1673,7 +1673,9 @@ public sealed class UserConfigurationService
             ClientSettingsCleanupCompleted = obj["clientSettingsCleanupCompleted"]?.GetValue<bool?>() ?? false;
             RebuiltModlistMigrationCompleted =
                 obj["rebuiltModlistMigrationCompleted"]?.GetValue<bool?>() ?? false;
-            UseCorrectThumbnails = obj["useCorrectThumbnails"]?.GetValue<bool?>() ?? true;
+            // Migration: Invert old useCorrectThumbnails value if present, otherwise default to true (faster)
+            UseFasterThumbnails = obj["useFasterThumbnails"]?.GetValue<bool?>() ??
+                                  !(obj["useCorrectThumbnails"]?.GetValue<bool?>() ?? false);
 
             var profilesFound = false;
             if (obj["gameProfiles"] is JsonObject profilesObj)
@@ -1806,7 +1808,7 @@ public sealed class UserConfigurationService
             GameProfileCreationWarningAcknowledged = false;
             ClientSettingsCleanupCompleted = false;
             RebuiltModlistMigrationCompleted = false;
-            UseCorrectThumbnails = true;
+            UseFasterThumbnails = true;
         }
 
         LoadPersistentModConfigPaths();
@@ -1897,7 +1899,7 @@ public sealed class UserConfigurationService
                 ["firebaseAuthBackupCreated"] = FirebaseAuthBackupCreated,
                 ["clientSettingsCleanupCompleted"] = ClientSettingsCleanupCompleted,
                 ["rebuiltModlistMigrationCompleted"] = RebuiltModlistMigrationCompleted,
-                ["useCorrectThumbnails"] = UseCorrectThumbnails,
+                ["useFasterThumbnails"] = UseFasterThumbnails,
                 ["gameProfiles"] = BuildGameProfilesJson()
             };
 
