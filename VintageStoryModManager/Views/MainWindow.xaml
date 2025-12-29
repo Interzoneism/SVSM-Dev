@@ -19,7 +19,7 @@
     MinWidth="1000"
     MinHeight="775"
     d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData},
-                                     IsDesignTimeCreatable=True}"
+                                     IsDesignTimeCreatable=False}"
     AllowDrop="True"
     Background="Transparent"
     PreviewDragEnter="MainWindow_OnPreviewDragEnter"
