@@ -10490,9 +10490,16 @@ public partial class MainWindow : Window
         var preservedSelection = new List<string> { entry.FilePath };
         if (TrySaveModlist(() => entry.DisplayName ?? string.Empty, out var savedFilePath))
         {
-            if (!string.IsNullOrWhiteSpace(savedFilePath)) preservedSelection = new List<string> { savedFilePath };
+            if (!string.IsNullOrWhiteSpace(savedFilePath))
+            {
+                preservedSelection = new List<string> { savedFilePath };
+                _viewModel?.ReportStatus($"Modlist \"{Path.GetFileNameWithoutExtension(savedFilePath)}\" saved successfully.");
+            }
+            else
+            {
+                _viewModel?.ReportStatus("Modlist saved successfully.");
+            }
             RefreshLocalModlists(false, preservedSelection);
-            _viewModel?.ReportStatus($"Modlist \"{Path.GetFileNameWithoutExtension(savedFilePath)}\" saved successfully.");
         }
     }
 
@@ -10566,7 +10573,7 @@ public partial class MainWindow : Window
 
             // Save to the same slot as the selected modlist
             await store.SaveAsync(entry.SlotKey, json);
-            _viewModel?.ReportStatus($"Replaced cloud modlist \"{entry.DisplayName ?? "[Unnamed]"}\" with \"{modlistName}\".");
+            _viewModel?.ReportStatus($"Replaced cloud modlist \"{entry.DisplayName ?? "Unnamed Modlist"}\" with \"{modlistName}\".");
         }, "replace a cloud modlist");
     }
 
@@ -10594,12 +10601,13 @@ public partial class MainWindow : Window
             var newName = renameDialog.ModlistName;
             if (string.IsNullOrWhiteSpace(newName)) return;
 
+            // Note: DisplayName is a computed property that never returns null, but compiler doesn't track this
             var managementEntry = new CloudModlistManagementEntry(
                 entry.SlotKey,
                 entry.SlotLabel,
                 entry.Name,
                 entry.Version,
-                entry.DisplayName ?? "Unnamed Modlist",  // DisplayName property ensures non-null but compiler needs hint
+                entry.DisplayName ?? "Unnamed Modlist",
                 entry.ContentJson);
 
             var success = await RenameCloudModlistAsync(store, managementEntry, newName);
@@ -10640,12 +10648,13 @@ public partial class MainWindow : Window
 
             if (confirmation != MessageBoxResult.Yes) return;
 
+            // Note: DisplayName is a computed property that never returns null, but compiler doesn't track this
             var managementEntry = new CloudModlistManagementEntry(
                 entry.SlotKey,
                 entry.SlotLabel,
                 entry.Name,
                 entry.Version,
-                entry.DisplayName ?? "Unnamed Modlist",  // DisplayName property ensures non-null but compiler needs hint
+                entry.DisplayName ?? "Unnamed Modlist",
                 entry.ContentJson);
 
             var success = await DeleteCloudModlistAsync(store, managementEntry);
