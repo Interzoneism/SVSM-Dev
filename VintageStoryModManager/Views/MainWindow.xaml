@@ -1308,7 +1308,8 @@
                                             SelectionChanged="LocalModlistsDataGrid_OnSelectionChanged"
                                             SelectionMode="Extended"
                                             SelectionUnit="FullRow"
-                                            VerticalGridLinesBrush="Transparent">
+                                            VerticalGridLinesBrush="Transparent"
+                                            ContextMenuOpening="LocalModlistsDataGrid_OnContextMenuOpening">
                                             <DataGrid.ContextMenu>
                                                 <ContextMenu>
                                                     <MenuItem x:Name="LocalModlistInstallMenuItem" Header="Install Modlist" Click="LocalModlistInstallMenuItem_OnClick" />

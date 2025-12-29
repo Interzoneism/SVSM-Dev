@@ -10458,6 +10458,23 @@ public partial class MainWindow : Window
     #region Context Menu Handlers for Modlists
 
     // Local Modlist Context Menu Handlers
+    private void LocalModlistsDataGrid_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (LocalModlistsDataGrid?.ContextMenu is not ContextMenu contextMenu) return;
+        
+        var hasSelection = _selectedLocalModlists.Count > 0;
+
+        // Enable/disable menu items based on selection
+        if (LocalModlistInstallMenuItem is not null)
+            LocalModlistInstallMenuItem.IsEnabled = hasSelection && _selectedLocalModlists.Count == 1;
+        if (LocalModlistReplaceMenuItem is not null)
+            LocalModlistReplaceMenuItem.IsEnabled = hasSelection && _selectedLocalModlists.Count == 1;
+        if (LocalModlistRenameMenuItem is not null)
+            LocalModlistRenameMenuItem.IsEnabled = hasSelection && _selectedLocalModlists.Count == 1;
+        if (LocalModlistDeleteMenuItem is not null)
+            LocalModlistDeleteMenuItem.IsEnabled = hasSelection;
+    }
+
     private void LocalModlistInstallMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         InstallLocalModlistButton_OnClick(sender, e);
@@ -10490,6 +10507,26 @@ public partial class MainWindow : Window
     }
 
     // Cloud Modlist Context Menu Handlers
+    private void CloudModlistsDataGrid_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (CloudModlistsDataGrid?.ContextMenu is not ContextMenu contextMenu) return;
+        
+        var hasSelection = _selectedCloudModlist is not null;
+
+        // Enable/disable all menu items based on selection
+        if (CloudModlistInstallMenuItem is not null)
+            CloudModlistInstallMenuItem.IsEnabled = hasSelection;
+        if (CloudModlistReplaceMenuItem is not null)
+            CloudModlistReplaceMenuItem.IsEnabled = hasSelection;
+        if (CloudModlistRenameMenuItem is not null)
+            CloudModlistRenameMenuItem.IsEnabled = hasSelection;
+        if (CloudModlistDeleteMenuItem is not null)
+            CloudModlistDeleteMenuItem.IsEnabled = hasSelection;
+
+        // Note: Ownership check for rename/delete will be done when the menu item is clicked
+        // to avoid async operations in the ContextMenuOpening event handler
+    }
+
     private void CloudModlistInstallMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         InstallCloudModlistButton_OnClick(sender, e);
@@ -10618,26 +10655,6 @@ public partial class MainWindow : Window
                 _viewModel?.ReportStatus("Modlist deleted successfully.");
             }
         }, "delete a cloud modlist");
-    }
-
-    private void CloudModlistsDataGrid_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
-    {
-        if (CloudModlistsDataGrid?.ContextMenu is not ContextMenu contextMenu) return;
-        
-        var hasSelection = _selectedCloudModlist is not null;
-
-        // Enable/disable all menu items based on selection
-        if (CloudModlistInstallMenuItem is not null)
-            CloudModlistInstallMenuItem.IsEnabled = hasSelection;
-        if (CloudModlistReplaceMenuItem is not null)
-            CloudModlistReplaceMenuItem.IsEnabled = hasSelection;
-        if (CloudModlistRenameMenuItem is not null)
-            CloudModlistRenameMenuItem.IsEnabled = hasSelection;
-        if (CloudModlistDeleteMenuItem is not null)
-            CloudModlistDeleteMenuItem.IsEnabled = hasSelection;
-
-        // Note: Ownership check for rename/delete will be done when the menu item is clicked
-        // to avoid async operations in the ContextMenuOpening event handler
     }
 
     #endregion
