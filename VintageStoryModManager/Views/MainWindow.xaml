@@ -813,7 +813,7 @@
                                         <DataGridTemplateColumn
                                             x:Name="IconColumn"
                                             Width="{Binding Data.IsCompactView, Source={StaticResource DataContextProxy}, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='80,40'}"
-                                            MinWidth="{Binding Data.IsCompactView, Source={StaticResource DataContextProxy}, Converter={StaticResource IMM.CompactViewWidthConverter}, ConverterParameter='80,40'}"
+                                            MinWidth="50"
                                             Header="Icon"
                                             IsReadOnly="True">
                                             <DataGridTemplateColumn.CellStyle>
@@ -854,6 +854,7 @@
                                             x:Name="NameColumn"
                                             Width="220"
                                             Binding="{Binding DisplayName, Mode=OneWay}"
+                                            CanUserResize="True"
                                             Header="Name"
                                             IsReadOnly="True"
                                             SortMemberPath="NameSortKey">

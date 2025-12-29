@@ -15,7 +15,7 @@
     <sys:Double x:Key="IMM.ModDbCardScale">0.75</sys:Double>
     <converters:DownloadMetricDisplayConverter x:Key="IMM.DownloadMetricDisplayConverter" />
     <sys:Double x:Key="IMM.TagRowMaxHeight">70</sys:Double>
-    <sys:Double x:Key="IMM.TagRowCompactMaxHeight">35</sys:Double>
+    <sys:Double x:Key="IMM.TagRowCompactMaxHeight">40</sys:Double>
     <CornerRadius x:Key="IMM.TagBadgeCornerRadius">10</CornerRadius>
 
     <!--  Tag badge styles  -->
