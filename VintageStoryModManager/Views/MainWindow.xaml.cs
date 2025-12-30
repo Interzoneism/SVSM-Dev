@@ -1398,6 +1398,7 @@ public partial class MainWindow : Window
         _userConfiguration.SetColorTheme(theme, paletteOverride);
         var palette = _userConfiguration.GetThemePaletteColors();
         App.ApplyTheme(theme, palette.Count > 0 ? palette : null);
+        ClearScrollViewerCache();
     }
 
     private void UpdateThemeMenuSelection(ColorTheme theme)
@@ -1449,6 +1450,7 @@ public partial class MainWindow : Window
 
         var palette = _userConfiguration.GetThemePaletteColors();
         App.ApplyTheme(ColorTheme.Custom, palette.Count > 0 ? palette : null);
+        ClearScrollViewerCache();
 
         var dialog = new ThemePaletteEditorDialog(_userConfiguration)
         {
@@ -1457,6 +1459,7 @@ public partial class MainWindow : Window
 
         _ = dialog.ShowDialog();
         UpdateThemeMenuSelection(_userConfiguration.ColorTheme);
+        ClearScrollViewerCache();
     }
 
     private void AlwaysClearModlistsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -13575,6 +13578,12 @@ public partial class MainWindow : Window
         _modsScrollViewer = FindDescendantScrollViewer(targetGrid);
         _modsScrollViewerSource = targetGrid;
         return _modsScrollViewer;
+    }
+
+    private void ClearScrollViewerCache()
+    {
+        _modsScrollViewer = null;
+        _modsScrollViewerSource = null;
     }
 
     private static ScrollViewer? FindDescendantScrollViewer(DependencyObject? current)
