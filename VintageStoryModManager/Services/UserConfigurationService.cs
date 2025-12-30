@@ -793,15 +793,20 @@ public sealed class UserConfigurationService
 
     public IReadOnlyList<string> GetAllThemeNames()
     {
-        var result = new List<string>
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             GetThemeDisplayName(ColorTheme.VintageStory),
             GetThemeDisplayName(ColorTheme.Dark),
             GetThemeDisplayName(ColorTheme.Light)
         };
 
-        result.AddRange(GetCustomThemeNames());
-        return result;
+        // Add custom themes (duplicates of built-in names are automatically filtered by HashSet)
+        foreach (var name in GetCustomThemeNames())
+        {
+            result.Add(name);
+        }
+
+        return result.OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     public string GetCurrentThemeName()
@@ -843,15 +848,16 @@ public sealed class UserConfigurationService
         var normalized = NormalizeThemeName(name);
         if (normalized is null) return false;
 
-        if (TryGetBuiltInTheme(normalized, out var builtInTheme))
-        {
-            palette = GetDefaultThemePalette(builtInTheme);
-            return true;
-        }
-
+        // Check custom themes first to allow overriding built-in themes
         if (_savedCustomThemes.TryGetValue(normalized, out var savedPalette))
         {
             palette = new Dictionary<string, string>(savedPalette, StringComparer.OrdinalIgnoreCase);
+            return true;
+        }
+
+        if (TryGetBuiltInTheme(normalized, out var builtInTheme))
+        {
+            palette = GetDefaultThemePalette(builtInTheme);
             return true;
         }
 
