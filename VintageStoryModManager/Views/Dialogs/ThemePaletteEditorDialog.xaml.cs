@@ -261,14 +261,21 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
         var previousTheme = e.RemovedItems.OfType<ThemeOption>().FirstOrDefault();
         var requestedTheme = e.AddedItems.OfType<ThemeOption>().FirstOrDefault() ?? SelectedThemeOption;
 
-        if (previousTheme is not null && !TryResolveUnsavedChanges(previousTheme))
+        // Revert the selection immediately before checking for unsaved changes
+        if (previousTheme is not null && !ReferenceEquals(SelectedThemeOption, previousTheme))
         {
             _isInitializing = true;
             SelectedThemeOption = previousTheme;
             _isInitializing = false;
-            return;
+            
+            // Now check if we can proceed with the theme switch
+            if (!TryResolveUnsavedChanges(previousTheme))
+            {
+                return;
+            }
         }
 
+        // User has approved switching, now update to the requested theme
         if (requestedTheme is not null && !ReferenceEquals(SelectedThemeOption, requestedTheme))
         {
             _isInitializing = true;
@@ -340,7 +347,7 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
         switch (result)
         {
             case MessageBoxResult.Yes:
-                return TrySaveTheme(out _);
+                return TrySaveTheme(out _, activeTheme.Name);
             case MessageBoxResult.No:
                 RestoreThemeFromSnapshot(activeTheme);
                 return true;
@@ -369,11 +376,11 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
         ApplyTheme();
     }
 
-    private bool TrySaveTheme(out string? savedThemeName)
+    private bool TrySaveTheme(out string? savedThemeName, string? defaultThemeName = null)
     {
         savedThemeName = null;
 
-        var defaultName = SelectedThemeOption?.Name ?? _configuration.GetCurrentThemeName();
+        var defaultName = defaultThemeName ?? SelectedThemeOption?.Name ?? _configuration.GetCurrentThemeName();
         var dialog = new ThemeNameDialog(defaultName, _configuration)
         {
             Owner = this
