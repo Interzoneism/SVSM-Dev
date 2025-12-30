@@ -120,8 +120,6 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 
         ThemeOptions.Clear();
 
-        var customThemeNames = new HashSet<string>(_configuration.GetCustomThemeNames(), StringComparer.OrdinalIgnoreCase);
-
         // Add built-in themes (these might have custom overrides)
         ThemeOptions.Add(new ThemeOption(
             UserConfigurationService.GetThemeDisplayName(ColorTheme.VintageStory),
@@ -139,7 +137,7 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
         // Add custom themes that don't match built-in theme names
         foreach (var name in _configuration.GetCustomThemeNames())
         {
-            if (!IsBuiltInThemeName(name))
+            if (!ThemeOption.IsBuiltInThemeName(name))
                 ThemeOptions.Add(new ThemeOption(name, null, _configuration));
         }
 
@@ -152,13 +150,6 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
                               ?? SelectedThemeOption;
         _isInitializing = false;
         UpdateResetAvailability();
-    }
-
-    private static bool IsBuiltInThemeName(string name)
-    {
-        return string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.VintageStory), StringComparison.OrdinalIgnoreCase)
-            || string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.Dark), StringComparison.OrdinalIgnoreCase)
-            || string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.Light), StringComparison.OrdinalIgnoreCase);
     }
 
     private void PickColor(PaletteColorEntry? entry)
@@ -478,13 +469,12 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
             // 1. It's a built-in theme (VintageStory, Dark, or Light), OR
             // 2. It's a custom theme that overrides a built-in theme name
             var isBuiltInTheme = theme is ColorTheme.VintageStory or ColorTheme.Dark or ColorTheme.Light;
-            var hasBuiltInName = string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.VintageStory), StringComparison.OrdinalIgnoreCase)
-                || string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.Dark), StringComparison.OrdinalIgnoreCase)
-                || string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.Light), StringComparison.OrdinalIgnoreCase);
+            var hasBuiltInName = IsBuiltInThemeName(name);
             
             SupportsReset = isBuiltInTheme || hasBuiltInName;
             
             // Check if this built-in theme has a custom override
+            HasCustomOverride = false;
             if (isBuiltInTheme && configuration != null)
             {
                 var customThemeNames = configuration.GetCustomThemeNames();
@@ -502,6 +492,13 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
         public bool SupportsReset { get; }
         
         public bool HasCustomOverride { get; }
+        
+        public static bool IsBuiltInThemeName(string name)
+        {
+            return string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.VintageStory), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.Dark), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.Light), StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private sealed record PaletteDisplayInfo(string Key, string DisplayName, int UsageCount);
