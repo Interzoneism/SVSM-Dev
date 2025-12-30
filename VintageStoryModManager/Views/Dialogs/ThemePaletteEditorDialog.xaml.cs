@@ -25,6 +25,8 @@ namespace VintageStoryModManager.Views.Dialogs;
 public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 {
     private readonly UserConfigurationService _configuration;
+    private readonly Dictionary<string, IReadOnlyDictionary<string, string>> _themePaletteSnapshots =
+        new(StringComparer.OrdinalIgnoreCase);
     private bool _isInitializing;
     private ThemeOption? _selectedThemeOption;
 
@@ -37,6 +39,7 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
         DataContext = this;
         _isInitializing = true;
         RefreshThemeOptions();
+        CaptureThemePaletteSnapshots();
         SelectedThemeOption ??= ThemeOptions.FirstOrDefault();
         LoadPalette();
         UpdateResetAvailability();
@@ -56,6 +59,22 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 
             UpdateResetAvailability();
         }
+    }
+
+    private void CaptureThemePaletteSnapshots()
+    {
+        _themePaletteSnapshots.Clear();
+
+        foreach (var name in _configuration.GetAllThemeNames())
+            if (_configuration.TryGetThemePalette(name, out var palette))
+                _themePaletteSnapshots[name] =
+                    new Dictionary<string, string>(palette, StringComparer.OrdinalIgnoreCase);
+
+        var currentName = _configuration.GetCurrentThemeName();
+        if (!_themePaletteSnapshots.ContainsKey(currentName)
+            && _configuration.TryGetThemePalette(currentName, out var currentPalette))
+            _themePaletteSnapshots[currentName] =
+                new Dictionary<string, string>(currentPalette, StringComparer.OrdinalIgnoreCase);
     }
 
     private void LoadPalette()
@@ -169,14 +188,6 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
     {
         if (_isInitializing || SelectedThemeOption is null) return;
 
-        if (SelectedThemeOption.Theme is ColorTheme)
-        {
-            _configuration.TryActivateTheme(SelectedThemeOption.Name);
-            LoadPalette();
-            ApplyTheme();
-            return;
-        }
-
         if (_configuration.TryActivateTheme(SelectedThemeOption.Name))
         {
             LoadPalette();
@@ -196,6 +207,8 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (!TryResolveUnsavedChanges(SelectedThemeOption, isClosing: true)) return;
+
         Close();
     }
 
@@ -206,7 +219,25 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 
     private void PaletteComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (PaletteItems.Count == 0) return;
+        if (_isInitializing || PaletteItems.Count == 0) return;
+
+        var previousTheme = e.RemovedItems.OfType<ThemeOption>().FirstOrDefault();
+        var requestedTheme = e.AddedItems.OfType<ThemeOption>().FirstOrDefault() ?? SelectedThemeOption;
+
+        if (previousTheme is not null && !TryResolveUnsavedChanges(previousTheme))
+        {
+            _isInitializing = true;
+            SelectedThemeOption = previousTheme;
+            _isInitializing = false;
+            return;
+        }
+
+        if (requestedTheme is not null && !ReferenceEquals(SelectedThemeOption, requestedTheme))
+        {
+            _isInitializing = true;
+            SelectedThemeOption = requestedTheme;
+            _isInitializing = false;
+        }
 
         ApplySelectedTheme();
     }
@@ -229,26 +260,7 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 
     private void SaveButton_OnClick(object sender, RoutedEventArgs e)
     {
-        var defaultName = SelectedThemeOption?.Name ?? _configuration.GetCurrentThemeName();
-        var dialog = new ThemeNameDialog(defaultName, _configuration)
-        {
-            Owner = this
-        };
-
-        if (dialog.ShowDialog() != true) return;
-
-        if (!_configuration.SaveCustomTheme(dialog.ThemeName))
-        {
-            WpfMessageBox.Show(this, "Please enter a valid theme name.", "Simple VS Manager", MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            return;
-        }
-
-        RefreshThemeOptions();
-        SelectedThemeOption = ThemeOptions.FirstOrDefault(option =>
-            string.Equals(option.Name, dialog.ThemeName, StringComparison.OrdinalIgnoreCase));
-
-        ApplySelectedTheme();
+        TrySaveTheme(out _);
     }
 
     private void DeleteButton_OnClick(object sender, RoutedEventArgs e)
@@ -266,9 +278,112 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 
         if (!_configuration.DeleteCustomTheme(SelectedThemeOption.Name)) return;
 
+        _themePaletteSnapshots.Remove(SelectedThemeOption.Name);
+
         RefreshThemeOptions();
         SelectedThemeOption ??= ThemeOptions.FirstOrDefault();
         ApplySelectedTheme();
+    }
+
+    private bool TryResolveUnsavedChanges(ThemeOption? activeTheme, bool isClosing = false)
+    {
+        if (activeTheme is null || !HasUnsavedChanges(activeTheme.Name)) return true;
+
+        var prompt = isClosing
+            ? "Save changes to the current theme before closing?"
+            : $"Save changes to the theme '{activeTheme.Name}' before switching?";
+
+        var result = WpfMessageBox.Show(
+            this,
+            prompt,
+            "Simple VS Manager",
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
+
+        switch (result)
+        {
+            case MessageBoxResult.Yes:
+                return TrySaveTheme(out _);
+            case MessageBoxResult.No:
+                RestoreThemeFromSnapshot(activeTheme);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private bool HasUnsavedChanges(string themeName)
+    {
+        if (!_themePaletteSnapshots.TryGetValue(themeName, out var snapshot)) return false;
+
+        var currentPalette = _configuration.GetThemePaletteColors();
+        return !ArePalettesEqual(currentPalette, snapshot);
+    }
+
+    private void RestoreThemeFromSnapshot(ThemeOption themeOption)
+    {
+        if (!_themePaletteSnapshots.TryGetValue(themeOption.Name, out var palette)) return;
+
+        var paletteCopy = new Dictionary<string, string>(palette, StringComparer.OrdinalIgnoreCase);
+        var theme = themeOption.Theme ?? ColorTheme.Custom;
+
+        _configuration.SetColorTheme(theme, paletteCopy);
+        LoadPalette();
+        ApplyTheme();
+    }
+
+    private bool TrySaveTheme(out string? savedThemeName)
+    {
+        savedThemeName = null;
+
+        var defaultName = SelectedThemeOption?.Name ?? _configuration.GetCurrentThemeName();
+        var dialog = new ThemeNameDialog(defaultName, _configuration)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true) return false;
+
+        if (!_configuration.SaveCustomTheme(dialog.ThemeName))
+        {
+            WpfMessageBox.Show(this, "Please enter a valid theme name.", "Simple VS Manager", MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return false;
+        }
+
+        savedThemeName = dialog.ThemeName;
+        UpdateThemeSnapshot(savedThemeName);
+
+        RefreshThemeOptions();
+        SelectedThemeOption = ThemeOptions.FirstOrDefault(option =>
+            string.Equals(option.Name, dialog.ThemeName, StringComparison.OrdinalIgnoreCase));
+
+        ApplySelectedTheme();
+        return true;
+    }
+
+    private void UpdateThemeSnapshot(string themeName)
+    {
+        var palette = _configuration.GetThemePaletteColors();
+        _themePaletteSnapshots[themeName] = new Dictionary<string, string>(palette, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static bool ArePalettesEqual(
+        IReadOnlyDictionary<string, string> first,
+        IReadOnlyDictionary<string, string> second)
+    {
+        if (ReferenceEquals(first, second)) return true;
+
+        if (first.Count != second.Count) return false;
+
+        foreach (var pair in first)
+        {
+            if (!second.TryGetValue(pair.Key, out var value)) return false;
+
+            if (!string.Equals(pair.Value, value, StringComparison.OrdinalIgnoreCase)) return false;
+        }
+
+        return true;
     }
 
     public sealed class ThemeOption
