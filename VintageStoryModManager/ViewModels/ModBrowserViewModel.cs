@@ -509,11 +509,23 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadMore()
     {
+        // Check if we have more mods to load early
+        if (VisibleModsCount >= ModsList.Count)
+        {
+            return;
+        }
+
         // Prevent concurrent load operations
         if (_isLoadingMore)
         {
             // If already loading, schedule a delayed retry to ensure we eventually load
             // This prevents missing loads when scrolling rapidly
+            // Only retry if we have more mods to load
+            if (VisibleModsCount >= ModsList.Count)
+            {
+                return;
+            }
+            
             _pendingLoadMoreCts?.Cancel();
             _pendingLoadMoreCts = new CancellationTokenSource();
             var delayCts = _pendingLoadMoreCts;
@@ -525,7 +537,8 @@ public partial class ModBrowserViewModel : ObservableObject
                     await Task.Delay(LoadMoreThrottleMs, delayCts.Token);
                     if (!delayCts.Token.IsCancellationRequested)
                     {
-                        await LoadMoreCommand.ExecuteAsync(null);
+                        // Call the method directly to avoid command infrastructure overhead
+                        await LoadMore();
                     }
                 }
                 catch (OperationCanceledException)
@@ -533,12 +546,6 @@ public partial class ModBrowserViewModel : ObservableObject
                     // Expected when cancelled
                 }
             });
-            return;
-        }
-
-        // Check if we have more mods to load
-        if (VisibleModsCount >= ModsList.Count)
-        {
             return;
         }
 
@@ -550,6 +557,12 @@ public partial class ModBrowserViewModel : ObservableObject
         if (timeSinceLastLoad < LoadMoreThrottleMs)
         {
             // Too soon, schedule a delayed retry instead of rejecting
+            // Only retry if we have more mods to load
+            if (VisibleModsCount >= ModsList.Count)
+            {
+                return;
+            }
+            
             _pendingLoadMoreCts?.Cancel();
             _pendingLoadMoreCts = new CancellationTokenSource();
             var delayCts = _pendingLoadMoreCts;
@@ -562,7 +575,8 @@ public partial class ModBrowserViewModel : ObservableObject
                     await Task.Delay(remainingDelay, delayCts.Token);
                     if (!delayCts.Token.IsCancellationRequested)
                     {
-                        await LoadMoreCommand.ExecuteAsync(null);
+                        // Call the method directly to avoid command infrastructure overhead
+                        await LoadMore();
                     }
                 }
                 catch (OperationCanceledException)
@@ -581,7 +595,11 @@ public partial class ModBrowserViewModel : ObservableObject
             var previousCount = VisibleModsCount;
             var nextBatch = ModsList.Skip(previousCount).Take(LoadMoreCount).ToList();
 
-            if (nextBatch.Count == 0) return;
+            // Double-check we have mods to load (could have changed since initial check)
+            if (nextBatch.Count == 0)
+            {
+                return;
+            }
 
             foreach (var mod in nextBatch)
             {
