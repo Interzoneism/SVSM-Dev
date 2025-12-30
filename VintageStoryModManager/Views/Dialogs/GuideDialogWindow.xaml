@@ -288,10 +288,8 @@
                         TextWrapping="Wrap">
                         <Bold>Themes</Bold>
                         <Run Text=" changes the manager's colour scheme. " />
-                        <Bold>Custom…</Bold>
-                        <Run Text=" opens the palette editor, and " />
-                        <Bold>Surprise me! (In A Bad Way)</Bold>
-                        <Run Text=" picks a random palette." />
+                        <Bold>Edit theme…</Bold>
+                        <Run Text=" opens the palette editor." />
                     </TextBlock>
 
                     <TextBlock

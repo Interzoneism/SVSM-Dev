@@ -1425,8 +1425,6 @@ public partial class MainWindow : Window
 
         if (LightThemeMenuItem is not null) LightThemeMenuItem.IsChecked = theme == ColorTheme.Light;
 
-        if (SurpriseMeThemeMenuItem is not null) SurpriseMeThemeMenuItem.IsChecked = theme == ColorTheme.SurpriseMe;
-
         if (CustomThemeMenuItem is not null) CustomThemeMenuItem.IsChecked = theme == ColorTheme.Custom;
 
         var normalizedName = themeName ?? _userConfiguration.GetCurrentThemeName();
@@ -1486,6 +1484,10 @@ public partial class MainWindow : Window
 
         var toggleStyle = TryFindResource("ToggleMenuItemStyle") as Style;
 
+        var insertionIndex = CustomThemeMenuItem is not null && ThemesMenuItem.Items.Contains(CustomThemeMenuItem)
+            ? ThemesMenuItem.Items.IndexOf(CustomThemeMenuItem)
+            : ThemesMenuItem.Items.Count;
+
         foreach (var name in customThemes)
         {
             var menuItem = new MenuItem
@@ -1499,7 +1501,7 @@ public partial class MainWindow : Window
 
             menuItem.Click += ThemeMenuItem_OnClick;
             _customThemeMenuItems.Add(menuItem);
-            ThemesMenuItem.Items.Add(menuItem);
+            ThemesMenuItem.Items.Insert(insertionIndex++, menuItem);
         }
     }
 
