@@ -12,7 +12,7 @@ public partial class ThemeNameDialog : Window
         DataContext = this;
     }
 
-    public string ThemeName { get; private set; }
+    public string ThemeName { get; set; }
 
     private void OkButton_OnClick(object sender, RoutedEventArgs e)
     {
