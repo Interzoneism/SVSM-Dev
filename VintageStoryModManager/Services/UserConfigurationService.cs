@@ -816,18 +816,19 @@ public sealed class UserConfigurationService
         var normalized = NormalizeThemeName(name);
         if (normalized is null) return false;
 
-        if (TryGetBuiltInTheme(normalized, out var builtInTheme))
-        {
-            _currentThemeName = GetThemeDisplayName(builtInTheme);
-            SetColorTheme(builtInTheme);
-            return true;
-        }
-
+        // Check custom themes first to allow overriding built-in themes
         if (_savedCustomThemes.TryGetValue(normalized, out var palette))
         {
             _currentThemeName = normalized;
             SetColorTheme(ColorTheme.Custom, palette);
             SyncCustomThemePaletteWithCurrentTheme();
+            return true;
+        }
+
+        if (TryGetBuiltInTheme(normalized, out var builtInTheme))
+        {
+            _currentThemeName = GetThemeDisplayName(builtInTheme);
+            SetColorTheme(builtInTheme);
             return true;
         }
 
