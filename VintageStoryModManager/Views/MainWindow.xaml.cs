@@ -1513,12 +1513,13 @@ public partial class MainWindow : Window
 
     private void ShowCustomThemeEditor()
     {
-        if (_userConfiguration.ColorTheme != ColorTheme.Custom) _userConfiguration.SetColorTheme(ColorTheme.Custom);
+        var currentTheme = _userConfiguration.ColorTheme;
+        var currentThemeName = _userConfiguration.GetCurrentThemeName();
 
-        UpdateThemeMenuSelection(ColorTheme.Custom, _userConfiguration.GetCurrentThemeName());
+        UpdateThemeMenuSelection(currentTheme, currentThemeName);
 
         var palette = _userConfiguration.GetThemePaletteColors();
-        App.ApplyTheme(ColorTheme.Custom, palette.Count > 0 ? palette : null);
+        App.ApplyTheme(currentTheme, palette.Count > 0 ? palette : null);
         ClearScrollViewerCache();
 
         var dialog = new ThemePaletteEditorDialog(_userConfiguration)
