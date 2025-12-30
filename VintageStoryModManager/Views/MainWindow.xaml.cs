@@ -61,6 +61,7 @@ using ProgressBar = System.Windows.Controls.ProgressBar;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 using ScrollBar = System.Windows.Controls.Primitives.ScrollBar;
 using TabControl = System.Windows.Controls.TabControl;
+using TextBox = System.Windows.Controls.TextBox;
 using TextBoxBase = System.Windows.Controls.Primitives.TextBoxBase;
 using VerticalAlignment = System.Windows.VerticalAlignment;
 using WinForms = System.Windows.Forms;
@@ -4617,6 +4618,10 @@ public partial class MainWindow : Window
 
         if (e.Key == Key.A && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
         {
+            // Allow CTRL+A to select text when a TextBox has focus
+            if (Keyboard.FocusedElement is TextBox)
+                return false;
+
             if (ModsDataGrid?.IsVisible == true)
             {
                 SelectAllModsInCurrentView();
