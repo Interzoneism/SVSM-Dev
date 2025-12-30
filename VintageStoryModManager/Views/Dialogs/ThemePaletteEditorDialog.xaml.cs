@@ -24,6 +24,29 @@ namespace VintageStoryModManager.Views.Dialogs;
 
 public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 {
+    private static readonly IReadOnlyDictionary<string, PaletteDisplayInfo> PaletteDisplayInfos =
+        new Dictionary<string, PaletteDisplayInfo>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Palette.BaseSurface.Shadowed"] =
+                new("Palette.BaseSurface.Shadowed", "Main background", 33),
+            ["Palette.Text.Primary"] = new("Palette.Text.Primary", "Primary text", 24),
+            ["Palette.Accent.Primary"] = new("Palette.Accent.Primary", "Accent color", 24),
+            ["Palette.BaseSurface.Raised"] = new("Palette.BaseSurface.Raised", "Panel background", 19),
+            ["Palette.BaseSurface.HoverGlow"] = new("Palette.BaseSurface.HoverGlow", "Hover highlight", 14),
+            ["Palette.Interactive.Surface"] = new("Palette.Interactive.Surface", "Active controls", 13),
+            ["Palette.Interactive.DisabledSurface"] =
+                new("Palette.Interactive.DisabledSurface", "Disabled controls", 11),
+            ["Palette.Bevel.Highlight"] = new("Palette.Bevel.Highlight", "Highlight edges", 11),
+            ["Palette.BaseSurface.Brighter"] = new("Palette.BaseSurface.Brighter", "Secondary background", 7),
+            ["Palette.Bevel.Shadow"] = new("Palette.Bevel.Shadow", "Shadow edges", 7),
+            ["Palette.White"] = new("Palette.White", "Bright highlight", 6),
+            ["Palette.DarkGrey"] = new("Palette.DarkGrey", "Dark neutral", 6),
+            ["Palette.Overlay.HoverTint"] = new("Palette.Overlay.HoverTint", "Hover overlay", 6),
+            ["Palette.Text.Link"] = new("Palette.Text.Link", "Link text", 5),
+            ["Palette.Grey"] = new("Palette.Grey", "Neutral grey", 5),
+            ["Palette.Error"] = new("Palette.Error", "Error state", 5)
+        };
+
     private readonly UserConfigurationService _configuration;
     private readonly Dictionary<string, IReadOnlyDictionary<string, string>> _themePaletteSnapshots =
         new(StringComparer.OrdinalIgnoreCase);
@@ -82,8 +105,12 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
         PaletteItems.Clear();
 
         foreach (var pair in _configuration.GetThemePaletteColors()
-                     .OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
-            PaletteItems.Add(new PaletteColorEntry(pair.Key, pair.Value, PickColor));
+                     .OrderByDescending(entry => GetPaletteUsageCount(entry.Key))
+                     .ThenBy(entry => GetPaletteDisplayName(entry.Key), StringComparer.OrdinalIgnoreCase))
+        {
+            var displayName = GetPaletteDisplayName(pair.Key);
+            PaletteItems.Add(new PaletteColorEntry(pair.Key, displayName, pair.Value, PickColor));
+        }
     }
 
     private void RefreshThemeOptions()
@@ -159,6 +186,16 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
     {
         var palette = _configuration.GetThemePaletteColors();
         App.ApplyTheme(_configuration.ColorTheme, palette.Count > 0 ? palette : null);
+    }
+
+    private static string GetPaletteDisplayName(string key)
+    {
+        return PaletteDisplayInfos.TryGetValue(key, out var info) ? info.DisplayName : key;
+    }
+
+    private static int GetPaletteUsageCount(string key)
+    {
+        return PaletteDisplayInfos.TryGetValue(key, out var info) ? info.UsageCount : 0;
     }
 
     private static bool TryParseColor(string? value, out Color color)
@@ -403,6 +440,8 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
         public bool SupportsReset => Theme is ColorTheme.VintageStory or ColorTheme.Dark or ColorTheme.Light;
     }
 
+    private sealed record PaletteDisplayInfo(string Key, string DisplayName, int UsageCount);
+
     private sealed class Win32Window : FormsIWin32Window
     {
         public Win32Window(IntPtr handle)
@@ -420,9 +459,14 @@ public sealed class PaletteColorEntry : ObservableObject
     private string _hexValue;
     private MediaBrush _previewBrush;
 
-    public PaletteColorEntry(string key, string hexValue, Action<PaletteColorEntry> selectColorAction)
+    public PaletteColorEntry(
+        string key,
+        string displayName,
+        string hexValue,
+        Action<PaletteColorEntry> selectColorAction)
     {
         Key = key;
+        DisplayName = displayName;
         _hexValue = hexValue;
         _selectColorAction = selectColorAction ?? throw new ArgumentNullException(nameof(selectColorAction));
         _previewBrush = CreateBrush(hexValue);
@@ -431,7 +475,7 @@ public sealed class PaletteColorEntry : ObservableObject
 
     public string Key { get; }
 
-    public string DisplayName => Key;
+    public string DisplayName { get; }
 
     public string HexValue
     {
