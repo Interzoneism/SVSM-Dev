@@ -120,17 +120,30 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 
         ThemeOptions.Clear();
 
-        ThemeOptions.Add(new ThemeOption(UserConfigurationService.GetThemeDisplayName(ColorTheme.VintageStory),
-            ColorTheme.VintageStory));
-        ThemeOptions.Add(new ThemeOption(UserConfigurationService.GetThemeDisplayName(ColorTheme.Dark), ColorTheme.Dark));
-        ThemeOptions.Add(new ThemeOption(UserConfigurationService.GetThemeDisplayName(ColorTheme.Light), ColorTheme.Light));
+        // Add built-in themes (these might have custom overrides)
+        ThemeOptions.Add(new ThemeOption(
+            UserConfigurationService.GetThemeDisplayName(ColorTheme.VintageStory),
+            ColorTheme.VintageStory,
+            _configuration));
+        ThemeOptions.Add(new ThemeOption(
+            UserConfigurationService.GetThemeDisplayName(ColorTheme.Dark), 
+            ColorTheme.Dark,
+            _configuration));
+        ThemeOptions.Add(new ThemeOption(
+            UserConfigurationService.GetThemeDisplayName(ColorTheme.Light), 
+            ColorTheme.Light,
+            _configuration));
 
+        // Add custom themes that don't match built-in theme names
         foreach (var name in _configuration.GetCustomThemeNames())
-            ThemeOptions.Add(new ThemeOption(name, null));
+        {
+            if (!ThemeOption.IsBuiltInThemeName(name))
+                ThemeOptions.Add(new ThemeOption(name, null, _configuration));
+        }
 
         if (_configuration.ColorTheme == ColorTheme.Custom
             && ThemeOptions.All(option => !string.Equals(option.Name, currentName, StringComparison.OrdinalIgnoreCase)))
-            ThemeOptions.Add(new ThemeOption(currentName, null));
+            ThemeOptions.Add(new ThemeOption(currentName, null, _configuration));
 
         SelectedThemeOption = ThemeOptions.FirstOrDefault(option =>
                                   string.Equals(option.Name, currentName, StringComparison.OrdinalIgnoreCase))
@@ -236,10 +249,25 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
     {
         if (SelectedThemeOption?.SupportsReset != true) return;
 
+        // If this is a built-in theme with a custom override, delete the custom theme
+        if (SelectedThemeOption.Theme.HasValue && SelectedThemeOption.HasCustomOverride)
+        {
+            _configuration.DeleteCustomTheme(SelectedThemeOption.Name);
+            _themePaletteSnapshots.Remove(SelectedThemeOption.Name);
+        }
+
+        // Activate the theme (this will use the built-in version now if override was deleted)
         _configuration.TryActivateTheme(SelectedThemeOption.Name);
         _configuration.ResetThemePalette();
+        
+        // Refresh the theme options to update the HasCustomOverride flag
+        RefreshThemeOptions();
+        
         LoadPalette();
         ApplyTheme();
+        
+        // Capture new snapshot after reset
+        CaptureThemePaletteSnapshots();
     }
 
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
@@ -432,10 +460,27 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 
     public sealed class ThemeOption
     {
-        public ThemeOption(string name, ColorTheme? theme)
+        public ThemeOption(string name, ColorTheme? theme, UserConfigurationService configuration)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Theme = theme;
+            
+            // A theme supports reset if:
+            // 1. It's a built-in theme (VintageStory, Dark, or Light), OR
+            // 2. It's a custom theme that overrides a built-in theme name
+            var isBuiltInTheme = theme is ColorTheme.VintageStory or ColorTheme.Dark or ColorTheme.Light;
+            var hasBuiltInName = IsBuiltInThemeName(name);
+            
+            SupportsReset = isBuiltInTheme || hasBuiltInName;
+            
+            // Check if this built-in theme has a custom override
+            HasCustomOverride = false;
+            if (isBuiltInTheme && configuration != null)
+            {
+                var customThemeNames = configuration.GetCustomThemeNames();
+                HasCustomOverride = customThemeNames.Any(customName => 
+                    string.Equals(customName, name, StringComparison.OrdinalIgnoreCase));
+            }
         }
 
         public string Name { get; }
@@ -444,7 +489,16 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 
         public bool IsCustom => Theme is null;
 
-        public bool SupportsReset => Theme is ColorTheme.VintageStory or ColorTheme.Dark or ColorTheme.Light;
+        public bool SupportsReset { get; }
+        
+        public bool HasCustomOverride { get; }
+        
+        public static bool IsBuiltInThemeName(string name)
+        {
+            return string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.VintageStory), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.Dark), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, UserConfigurationService.GetThemeDisplayName(ColorTheme.Light), StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private sealed record PaletteDisplayInfo(string Key, string DisplayName, int UsageCount);
