@@ -301,7 +301,7 @@
                             IsCheckable="True"
                             IsChecked="{Binding IsCompactView, Mode=TwoWay}"
                             Style="{StaticResource ToggleMenuItemStyle}" />
-                        <MenuItem Height="35" Header="_Themes">
+                        <MenuItem x:Name="ThemesMenuItem" Height="35" Header="_Themes">
                             <MenuItem
                                 x:Name="VintageStoryThemeMenuItem"
                                 Height="35"
@@ -342,6 +342,7 @@
                                 IsCheckable="True"
                                 Style="{StaticResource ToggleMenuItemStyle}"
                                 Tag="{x:Static services:ColorTheme.SurpriseMe}" />
+                            <Separator x:Name="CustomThemesSeparator" Visibility="Collapsed" />
                         </MenuItem>
                         <MenuItem
                             x:Name="ColumnsMenuItem"
