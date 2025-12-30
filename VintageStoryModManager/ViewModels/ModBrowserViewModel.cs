@@ -602,7 +602,8 @@ public partial class ModBrowserViewModel : ObservableObject
             }
 
             // Add items to VisibleMods on the UI thread to avoid cross-thread exceptions
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            // Using BeginInvoke for non-blocking asynchronous dispatch
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 foreach (var mod in nextBatch)
                 {
