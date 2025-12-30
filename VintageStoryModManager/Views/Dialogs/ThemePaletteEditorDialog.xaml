@@ -19,16 +19,15 @@
                    TextWrapping="Wrap"
                    Margin="0,0,0,16" />
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
-            <TextBlock Text="Load palette from:" 
-                       VerticalAlignment="Center" 
+            <TextBlock Text="Current theme:"
+                       VerticalAlignment="Center"
                        Margin="0,0,12,0" />
             <ComboBox x:Name="PaletteComboBox"
                       MinWidth="200"
-                      SelectionChanged="PaletteComboBox_OnSelectionChanged">
-                <ComboBoxItem Content="Vintage Story" Tag="VintageStory" />
-                <ComboBoxItem Content="Dark" Tag="Dark" />
-                <ComboBoxItem Content="Light" Tag="Light" />
-            </ComboBox>
+                      ItemsSource="{Binding ThemeOptions}"
+                      DisplayMemberPath="Name"
+                      SelectedItem="{Binding SelectedThemeOption, Mode=TwoWay}"
+                      SelectionChanged="PaletteComboBox_OnSelectionChanged" />
         </StackPanel>
         <ListView Grid.Row="2"
                   ItemsSource="{Binding PaletteItems}"
@@ -77,6 +76,17 @@
                     HorizontalAlignment="Right"
                     Margin="0,16,0,0">
             <Button Width="96"
+                    Height="32"
+                    Margin="0,0,12,0"
+                    Content="Save"
+                    Click="SaveButton_OnClick" />
+            <Button Width="96"
+                    Height="32"
+                    Margin="0,0,12,0"
+                    Content="Delete"
+                    Click="DeleteButton_OnClick" />
+            <Button x:Name="ResetButton"
+                    Width="96"
                     Height="32"
                     Margin="0,0,12,0"
                     Content="Reset"

@@ -382,6 +382,7 @@ public partial class MainWindow : Window
     // ViewModel
     private MainViewModel? _viewModel;
     private ModBrowserViewModel? _modBrowserViewModel;
+    private readonly List<MenuItem> _customThemeMenuItems = new();
 
     #endregion
 
@@ -424,7 +425,8 @@ public partial class MainWindow : Window
         InitializeTraceListener();
         _modActivityLoggingService.LogAppLaunch();
 
-        UpdateThemeMenuSelection(_userConfiguration.ColorTheme);
+        RefreshCustomThemeMenuItems();
+        UpdateThemeMenuSelection(_userConfiguration.ColorTheme, _userConfiguration.GetCurrentThemeName());
 
         if (ManagerVersionMenuItem is not null)
         {
@@ -1376,7 +1378,19 @@ public partial class MainWindow : Window
 
     private void ThemeMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not ColorTheme theme) return;
+        if (sender is not MenuItem menuItem) return;
+
+        if (menuItem.Tag is string themeName)
+        {
+            if (!_userConfiguration.TryActivateTheme(themeName)) return;
+
+            var selectedPalette = _userConfiguration.GetThemePaletteColors();
+            UpdateThemeMenuSelection(_userConfiguration.ColorTheme, themeName);
+            App.ApplyTheme(_userConfiguration.ColorTheme, selectedPalette.Count > 0 ? selectedPalette : null);
+            return;
+        }
+
+        if (menuItem.Tag is not ColorTheme theme) return;
 
         if (theme == ColorTheme.Custom)
         {
@@ -1391,18 +1405,18 @@ public partial class MainWindow : Window
 
         if (theme == currentTheme && paletteOverride is null)
         {
-            UpdateThemeMenuSelection(currentTheme);
+            UpdateThemeMenuSelection(currentTheme, _userConfiguration.GetCurrentThemeName());
             return;
         }
 
-        UpdateThemeMenuSelection(theme);
+        UpdateThemeMenuSelection(theme, UserConfigurationService.GetThemeDisplayName(theme));
         _userConfiguration.SetColorTheme(theme, paletteOverride);
         var palette = _userConfiguration.GetThemePaletteColors();
         App.ApplyTheme(theme, palette.Count > 0 ? palette : null);
         ClearScrollViewerCache();
     }
 
-    private void UpdateThemeMenuSelection(ColorTheme theme)
+    private void UpdateThemeMenuSelection(ColorTheme theme, string? themeName = null)
     {
         if (VintageStoryThemeMenuItem is not null)
             VintageStoryThemeMenuItem.IsChecked = theme == ColorTheme.VintageStory;
@@ -1414,6 +1428,15 @@ public partial class MainWindow : Window
         if (SurpriseMeThemeMenuItem is not null) SurpriseMeThemeMenuItem.IsChecked = theme == ColorTheme.SurpriseMe;
 
         if (CustomThemeMenuItem is not null) CustomThemeMenuItem.IsChecked = theme == ColorTheme.Custom;
+
+        var normalizedName = themeName ?? _userConfiguration.GetCurrentThemeName();
+        foreach (var menuItem in _customThemeMenuItems)
+        {
+            var header = menuItem.Header?.ToString();
+            menuItem.IsChecked = theme == ColorTheme.Custom
+                                 && !string.IsNullOrWhiteSpace(header)
+                                 && string.Equals(header, normalizedName, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private static IReadOnlyDictionary<string, string> GenerateSurprisePalette()
@@ -1443,11 +1466,48 @@ public partial class MainWindow : Window
         return $"#{alpha:X2}{rgb[0]:X2}{rgb[1]:X2}{rgb[2]:X2}";
     }
 
+    private void RefreshCustomThemeMenuItems()
+    {
+        if (ThemesMenuItem is null) return;
+
+        foreach (var item in _customThemeMenuItems)
+        {
+            item.Click -= ThemeMenuItem_OnClick;
+            ThemesMenuItem.Items.Remove(item);
+        }
+
+        _customThemeMenuItems.Clear();
+
+        var customThemes = _userConfiguration.GetCustomThemeNames();
+        if (CustomThemesSeparator is not null)
+            CustomThemesSeparator.Visibility = customThemes.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        if (customThemes.Count == 0) return;
+
+        var toggleStyle = TryFindResource("ToggleMenuItemStyle") as Style;
+
+        foreach (var name in customThemes)
+        {
+            var menuItem = new MenuItem
+            {
+                Header = name,
+                Height = 35,
+                IsCheckable = true,
+                Tag = name,
+                Style = toggleStyle
+            };
+
+            menuItem.Click += ThemeMenuItem_OnClick;
+            _customThemeMenuItems.Add(menuItem);
+            ThemesMenuItem.Items.Add(menuItem);
+        }
+    }
+
     private void ShowCustomThemeEditor()
     {
         if (_userConfiguration.ColorTheme != ColorTheme.Custom) _userConfiguration.SetColorTheme(ColorTheme.Custom);
 
-        UpdateThemeMenuSelection(ColorTheme.Custom);
+        UpdateThemeMenuSelection(ColorTheme.Custom, _userConfiguration.GetCurrentThemeName());
 
         var palette = _userConfiguration.GetThemePaletteColors();
         App.ApplyTheme(ColorTheme.Custom, palette.Count > 0 ? palette : null);
@@ -1459,8 +1519,11 @@ public partial class MainWindow : Window
         };
 
         _ = dialog.ShowDialog();
-        UpdateThemeMenuSelection(_userConfiguration.ColorTheme);
+
+        RefreshCustomThemeMenuItems();
+        UpdateThemeMenuSelection(_userConfiguration.ColorTheme, _userConfiguration.GetCurrentThemeName());
         ClearScrollViewerCache();
+
     }
 
     private void AlwaysClearModlistsMenuItem_OnClick(object sender, RoutedEventArgs e)

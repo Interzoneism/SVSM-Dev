@@ -1,5 +1,8 @@
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -7,8 +10,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VintageStoryModManager.Services;
 using Color = System.Windows.Media.Color;
-using ComboBox = System.Windows.Controls.ComboBox;
-using ComboBoxItem = System.Windows.Controls.ComboBoxItem;
 using DrawingColor = System.Drawing.Color;
 using FormsColorDialog = System.Windows.Forms.ColorDialog;
 using FormsDialogResult = System.Windows.Forms.DialogResult;
@@ -21,20 +22,41 @@ using WpfMessageBox = VintageStoryModManager.Services.ModManagerMessageBox;
 
 namespace VintageStoryModManager.Views.Dialogs;
 
-public partial class ThemePaletteEditorDialog : Window
+public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 {
     private readonly UserConfigurationService _configuration;
+    private bool _isInitializing;
+    private ThemeOption? _selectedThemeOption;
 
     public ThemePaletteEditorDialog(UserConfigurationService configuration)
     {
         InitializeComponent();
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         PaletteItems = new ObservableCollection<PaletteColorEntry>();
+        ThemeOptions = new ObservableCollection<ThemeOption>();
         DataContext = this;
+        _isInitializing = true;
+        RefreshThemeOptions();
+        SelectedThemeOption ??= ThemeOptions.FirstOrDefault();
         LoadPalette();
+        UpdateResetAvailability();
+        _isInitializing = false;
     }
 
     public ObservableCollection<PaletteColorEntry> PaletteItems { get; }
+
+    public ObservableCollection<ThemeOption> ThemeOptions { get; }
+
+    public ThemeOption? SelectedThemeOption
+    {
+        get => _selectedThemeOption;
+        set
+        {
+            if (!SetProperty(ref _selectedThemeOption, value)) return;
+
+            UpdateResetAvailability();
+        }
+    }
 
     private void LoadPalette()
     {
@@ -43,6 +65,32 @@ public partial class ThemePaletteEditorDialog : Window
         foreach (var pair in _configuration.GetThemePaletteColors()
                      .OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
             PaletteItems.Add(new PaletteColorEntry(pair.Key, pair.Value, PickColor));
+    }
+
+    private void RefreshThemeOptions()
+    {
+        _isInitializing = true;
+        var currentName = SelectedThemeOption?.Name ?? _configuration.GetCurrentThemeName();
+
+        ThemeOptions.Clear();
+
+        ThemeOptions.Add(new ThemeOption(UserConfigurationService.GetThemeDisplayName(ColorTheme.VintageStory),
+            ColorTheme.VintageStory));
+        ThemeOptions.Add(new ThemeOption(UserConfigurationService.GetThemeDisplayName(ColorTheme.Dark), ColorTheme.Dark));
+        ThemeOptions.Add(new ThemeOption(UserConfigurationService.GetThemeDisplayName(ColorTheme.Light), ColorTheme.Light));
+
+        foreach (var name in _configuration.GetCustomThemeNames())
+            ThemeOptions.Add(new ThemeOption(name, null));
+
+        if (_configuration.ColorTheme == ColorTheme.Custom
+            && ThemeOptions.All(option => !string.Equals(option.Name, currentName, StringComparison.OrdinalIgnoreCase)))
+            ThemeOptions.Add(new ThemeOption(currentName, null));
+
+        SelectedThemeOption = ThemeOptions.FirstOrDefault(option =>
+                                  string.Equals(option.Name, currentName, StringComparison.OrdinalIgnoreCase))
+                              ?? SelectedThemeOption;
+        _isInitializing = false;
+        UpdateResetAvailability();
     }
 
     private void PickColor(PaletteColorEntry? entry)
@@ -117,8 +165,30 @@ public partial class ThemePaletteEditorDialog : Window
         return false;
     }
 
+    private void ApplySelectedTheme()
+    {
+        if (_isInitializing || SelectedThemeOption is null) return;
+
+        if (SelectedThemeOption.Theme is ColorTheme)
+        {
+            _configuration.TryActivateTheme(SelectedThemeOption.Name);
+            LoadPalette();
+            ApplyTheme();
+            return;
+        }
+
+        if (_configuration.TryActivateTheme(SelectedThemeOption.Name))
+        {
+            LoadPalette();
+            ApplyTheme();
+        }
+    }
+
     private void ResetButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (SelectedThemeOption?.SupportsReset != true) return;
+
+        _configuration.TryActivateTheme(SelectedThemeOption.Name);
         _configuration.ResetThemePalette();
         LoadPalette();
         ApplyTheme();
@@ -129,34 +199,93 @@ public partial class ThemePaletteEditorDialog : Window
         Close();
     }
 
+    private void UpdateResetAvailability()
+    {
+        if (ResetButton is not null) ResetButton.IsEnabled = SelectedThemeOption?.SupportsReset == true;
+    }
+
     private void PaletteComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        // Guard against events during initialization
         if (PaletteItems.Count == 0) return;
 
-        if (sender is not ComboBox comboBox) return;
-        if (comboBox.SelectedItem is not ComboBoxItem selectedItem) return;
-        if (selectedItem.Tag is not string themeTag) return;
+        ApplySelectedTheme();
+    }
 
-        if (!Enum.TryParse<ColorTheme>(themeTag, true, out var theme)) return;
+    public event PropertyChangedEventHandler? PropertyChanged;
 
-        var palette = UserConfigurationService.GetDefaultThemePalette(theme);
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 
-        // Create a lookup dictionary for efficient item updates (O(n) for dictionary creation + O(1) per lookup)
-        var itemsLookup = PaletteItems.ToDictionary(item => item.Key, StringComparer.OrdinalIgnoreCase);
+    private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(storage, value)) return false;
 
-        foreach (var pair in palette)
+        storage = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
+
+    private void SaveButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var defaultName = SelectedThemeOption?.Name ?? _configuration.GetCurrentThemeName();
+        var dialog = new ThemeNameDialog(defaultName)
         {
-            if (_configuration.TrySetThemePaletteColor(pair.Key, pair.Value))
-            {
-                if (itemsLookup.TryGetValue(pair.Key, out var entry))
-                {
-                    entry.UpdateFromHex(pair.Value);
-                }
-            }
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        if (!_configuration.SaveCustomTheme(dialog.ThemeName))
+        {
+            WpfMessageBox.Show(this, "Please enter a valid theme name.", "Simple VS Manager", MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
         }
 
-        ApplyTheme();
+        RefreshThemeOptions();
+        SelectedThemeOption = ThemeOptions.FirstOrDefault(option =>
+            string.Equals(option.Name, dialog.ThemeName, StringComparison.OrdinalIgnoreCase));
+
+        ApplySelectedTheme();
+    }
+
+    private void DeleteButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (SelectedThemeOption is null || !SelectedThemeOption.IsCustom) return;
+
+        var result = WpfMessageBox.Show(
+            this,
+            $"Delete the theme '{SelectedThemeOption.Name}'?",
+            "Simple VS Manager",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes) return;
+
+        if (!_configuration.DeleteCustomTheme(SelectedThemeOption.Name)) return;
+
+        RefreshThemeOptions();
+        SelectedThemeOption ??= ThemeOptions.FirstOrDefault();
+        ApplySelectedTheme();
+    }
+
+    public sealed class ThemeOption
+    {
+        public ThemeOption(string name, ColorTheme? theme)
+        {
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            Theme = theme;
+        }
+
+        public string Name { get; }
+
+        public ColorTheme? Theme { get; }
+
+        public bool IsCustom => Theme is null;
+
+        public bool SupportsReset => Theme is ColorTheme.VintageStory or ColorTheme.Dark or ColorTheme.Light;
     }
 
     private sealed class Win32Window : FormsIWin32Window
