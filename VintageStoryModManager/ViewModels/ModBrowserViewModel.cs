@@ -601,12 +601,17 @@ public partial class ModBrowserViewModel : ObservableObject
                 return;
             }
 
-            foreach (var mod in nextBatch)
+            // Add items to VisibleMods on the UI thread to avoid cross-thread exceptions
+            // Using BeginInvoke for non-blocking asynchronous dispatch
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                VisibleMods.Add(mod);
-            }
+                foreach (var mod in nextBatch)
+                {
+                    VisibleMods.Add(mod);
+                }
 
-            VisibleModsCount = VisibleMods.Count;
+                VisibleModsCount = VisibleMods.Count;
+            });
 
             // Notify UI of changes - using Normal priority to maintain responsiveness
             // OnPropertyChanged(nameof(VisibleMods)); // Not needed
