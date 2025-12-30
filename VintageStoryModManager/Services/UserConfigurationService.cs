@@ -843,15 +843,16 @@ public sealed class UserConfigurationService
         var normalized = NormalizeThemeName(name);
         if (normalized is null) return false;
 
-        if (TryGetBuiltInTheme(normalized, out var builtInTheme))
-        {
-            palette = GetDefaultThemePalette(builtInTheme);
-            return true;
-        }
-
+        // Check custom themes first to allow overriding built-in themes
         if (_savedCustomThemes.TryGetValue(normalized, out var savedPalette))
         {
             palette = new Dictionary<string, string>(savedPalette, StringComparer.OrdinalIgnoreCase);
+            return true;
+        }
+
+        if (TryGetBuiltInTheme(normalized, out var builtInTheme))
+        {
+            palette = GetDefaultThemePalette(builtInTheme);
             return true;
         }
 
