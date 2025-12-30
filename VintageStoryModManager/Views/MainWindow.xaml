@@ -326,15 +326,12 @@
                                 IsCheckable="True"
                                 Style="{StaticResource ToggleMenuItemStyle}"
                                 Tag="{x:Static services:ColorTheme.Light}" />
-                            <Separator x:Name="CustomThemesSeparator" Visibility="Collapsed" />
+                            <Separator x:Name="CustomThemesSeparator" />
                             <MenuItem
-                                x:Name="CustomThemeMenuItem"
+                                x:Name="EditThemeMenuItem"
                                 Height="35"
-                                Click="ThemeMenuItem_OnClick"
-                                Header="_Edit theme..."
-                                IsCheckable="True"
-                                Style="{StaticResource ToggleMenuItemStyle}"
-                                Tag="{x:Static services:ColorTheme.Custom}" />
+                                Click="EditThemeMenuItem_OnClick"
+                                Header="_Edit theme..." />
                         </MenuItem>
                         <MenuItem
                             x:Name="ColumnsMenuItem"
