@@ -4614,6 +4614,10 @@ public partial class MainWindow : Window
 
         if (e.Key == Key.A && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
         {
+            // Allow CTRL+A to select text when a TextBox has focus
+            if (Keyboard.FocusedElement is System.Windows.Controls.TextBox)
+                return false;
+
             if (ModsDataGrid?.IsVisible == true)
             {
                 SelectAllModsInCurrentView();
