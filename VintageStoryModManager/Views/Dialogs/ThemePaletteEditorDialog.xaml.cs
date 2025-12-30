@@ -288,6 +288,7 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
 
         var previousTheme = e.RemovedItems.OfType<ThemeOption>().FirstOrDefault();
         var requestedTheme = e.AddedItems.OfType<ThemeOption>().FirstOrDefault() ?? SelectedThemeOption;
+        var requestedThemeName = requestedTheme?.Name;
 
         // Revert the selection immediately before checking for unsaved changes
         if (previousTheme is not null && !ReferenceEquals(SelectedThemeOption, previousTheme))
@@ -295,12 +296,18 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
             _isInitializing = true;
             SelectedThemeOption = previousTheme;
             _isInitializing = false;
-            
+
             // Now check if we can proceed with the theme switch
             if (!TryResolveUnsavedChanges(previousTheme))
             {
                 return;
             }
+        }
+
+        if (requestedThemeName is not null)
+        {
+            requestedTheme = ThemeOptions.FirstOrDefault(option =>
+                string.Equals(option.Name, requestedThemeName, StringComparison.OrdinalIgnoreCase));
         }
 
         // User has approved switching, now update to the requested theme
