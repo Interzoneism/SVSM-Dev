@@ -199,6 +199,8 @@ public partial class ModBrowserViewModel : ObservableObject
         if (!isVisible)
         {
             _searchCts?.Cancel();
+            _pendingLoadMoreCts?.Cancel();
+            _pendingLoadMoreCts = null;
         }
     }
 
