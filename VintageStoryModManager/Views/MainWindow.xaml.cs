@@ -61,6 +61,7 @@ using ProgressBar = System.Windows.Controls.ProgressBar;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 using ScrollBar = System.Windows.Controls.Primitives.ScrollBar;
 using TabControl = System.Windows.Controls.TabControl;
+using TextBox = System.Windows.Controls.TextBox;
 using TextBoxBase = System.Windows.Controls.Primitives.TextBoxBase;
 using VerticalAlignment = System.Windows.VerticalAlignment;
 using WinForms = System.Windows.Forms;
@@ -1412,6 +1413,7 @@ public partial class MainWindow : Window
         _userConfiguration.SetColorTheme(theme, paletteOverride);
         var palette = _userConfiguration.GetThemePaletteColors();
         App.ApplyTheme(theme, palette.Count > 0 ? palette : null);
+        ClearScrollViewerCache();
     }
 
     private void UpdateThemeMenuSelection(ColorTheme theme, string? themeName = null)
@@ -1509,6 +1511,7 @@ public partial class MainWindow : Window
 
         var palette = _userConfiguration.GetThemePaletteColors();
         App.ApplyTheme(ColorTheme.Custom, palette.Count > 0 ? palette : null);
+        ClearScrollViewerCache();
 
         var dialog = new ThemePaletteEditorDialog(_userConfiguration)
         {
@@ -1516,8 +1519,11 @@ public partial class MainWindow : Window
         };
 
         _ = dialog.ShowDialog();
+
         RefreshCustomThemeMenuItems();
         UpdateThemeMenuSelection(_userConfiguration.ColorTheme, _userConfiguration.GetCurrentThemeName());
+        ClearScrollViewerCache();
+
     }
 
     private void AlwaysClearModlistsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -4675,6 +4681,10 @@ public partial class MainWindow : Window
 
         if (e.Key == Key.A && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
         {
+            // Allow CTRL+A to select text when a TextBox has focus
+            if (Keyboard.FocusedElement is TextBox)
+                return false;
+
             if (ModsDataGrid?.IsVisible == true)
             {
                 SelectAllModsInCurrentView();
@@ -13636,6 +13646,12 @@ public partial class MainWindow : Window
         _modsScrollViewer = FindDescendantScrollViewer(targetGrid);
         _modsScrollViewerSource = targetGrid;
         return _modsScrollViewer;
+    }
+
+    private void ClearScrollViewerCache()
+    {
+        _modsScrollViewer = null;
+        _modsScrollViewerSource = null;
     }
 
     private static ScrollViewer? FindDescendantScrollViewer(DependencyObject? current)
