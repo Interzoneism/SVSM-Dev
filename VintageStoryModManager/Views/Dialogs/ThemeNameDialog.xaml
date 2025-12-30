@@ -23,7 +23,8 @@
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
-            <Button Width="88"
+            <Button x:Name="SaveButton"
+                    Width="88"
                     Height="30"
                     Margin="0,0,8,0"
                     Content="Save"

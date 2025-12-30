@@ -5,14 +5,39 @@ namespace VintageStoryModManager.Views.Dialogs;
 
 public partial class ThemeNameDialog : Window
 {
-    public ThemeNameDialog(string? initialName)
+    private readonly UserConfigurationService _configuration;
+
+    public ThemeNameDialog(string? initialName, UserConfigurationService configuration)
     {
         InitializeComponent();
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         ThemeName = initialName ?? string.Empty;
         DataContext = this;
+        
+        // Update button text if the initial name matches an existing theme
+        UpdateSaveButtonText();
+        
+        // Update button text as user types
+        ThemeNameTextBox.TextChanged += (s, e) => UpdateSaveButtonText();
     }
 
     public string ThemeName { get; set; }
+
+    private void UpdateSaveButtonText()
+    {
+        var currentText = ThemeNameTextBox.Text?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(currentText))
+        {
+            SaveButton.Content = "Save";
+            return;
+        }
+
+        var allThemes = _configuration.GetAllThemeNames();
+        var themeExists = allThemes.Any(name => 
+            string.Equals(name, currentText, StringComparison.OrdinalIgnoreCase));
+        
+        SaveButton.Content = themeExists ? "Replace" : "Save";
+    }
 
     private void OkButton_OnClick(object sender, RoutedEventArgs e)
     {

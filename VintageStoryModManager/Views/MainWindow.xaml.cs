@@ -1392,12 +1392,6 @@ public partial class MainWindow : Window
 
         if (menuItem.Tag is not ColorTheme theme) return;
 
-        if (theme == ColorTheme.Custom)
-        {
-            ShowCustomThemeEditor();
-            return;
-        }
-
         var currentTheme = _userConfiguration.ColorTheme;
         IReadOnlyDictionary<string, string>? paletteOverride = null;
 
@@ -1416,6 +1410,11 @@ public partial class MainWindow : Window
         ClearScrollViewerCache();
     }
 
+    private void EditThemeMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        ShowCustomThemeEditor();
+    }
+
     private void UpdateThemeMenuSelection(ColorTheme theme, string? themeName = null)
     {
         if (VintageStoryThemeMenuItem is not null)
@@ -1424,8 +1423,6 @@ public partial class MainWindow : Window
         if (DarkThemeMenuItem is not null) DarkThemeMenuItem.IsChecked = theme == ColorTheme.Dark;
 
         if (LightThemeMenuItem is not null) LightThemeMenuItem.IsChecked = theme == ColorTheme.Light;
-
-        if (CustomThemeMenuItem is not null) CustomThemeMenuItem.IsChecked = theme == ColorTheme.Custom;
 
         var normalizedName = themeName ?? _userConfiguration.GetCurrentThemeName();
         foreach (var menuItem in _customThemeMenuItems)
@@ -1477,17 +1474,25 @@ public partial class MainWindow : Window
         _customThemeMenuItems.Clear();
 
         var customThemes = _userConfiguration.GetCustomThemeNames();
-        if (CustomThemesSeparator is not null)
-            CustomThemesSeparator.Visibility = customThemes.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
-        if (customThemes.Count == 0) return;
+        if (customThemes.Count == 0)
+        {
+            if (CustomThemesSeparator is not null)
+                CustomThemesSeparator.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        if (CustomThemesSeparator is not null)
+            CustomThemesSeparator.Visibility = Visibility.Visible;
 
         var toggleStyle = TryFindResource("ToggleMenuItemStyle") as Style;
 
-        var insertionIndex = CustomThemeMenuItem is not null && ThemesMenuItem.Items.Contains(CustomThemeMenuItem)
-            ? ThemesMenuItem.Items.IndexOf(CustomThemeMenuItem)
+        // Find the separator index
+        var separatorIndex = CustomThemesSeparator is not null && ThemesMenuItem.Items.Contains(CustomThemesSeparator)
+            ? ThemesMenuItem.Items.IndexOf(CustomThemesSeparator)
             : ThemesMenuItem.Items.Count;
 
+        // Insert custom themes BEFORE the separator
         foreach (var name in customThemes)
         {
             var menuItem = new MenuItem
@@ -1501,7 +1506,8 @@ public partial class MainWindow : Window
 
             menuItem.Click += ThemeMenuItem_OnClick;
             _customThemeMenuItems.Add(menuItem);
-            ThemesMenuItem.Items.Insert(insertionIndex++, menuItem);
+            ThemesMenuItem.Items.Insert(separatorIndex, menuItem);
+            separatorIndex++; // Increment to keep adding before the separator
         }
     }
 

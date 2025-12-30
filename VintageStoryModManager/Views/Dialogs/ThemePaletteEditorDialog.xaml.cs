@@ -230,7 +230,7 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
     private void SaveButton_OnClick(object sender, RoutedEventArgs e)
     {
         var defaultName = SelectedThemeOption?.Name ?? _configuration.GetCurrentThemeName();
-        var dialog = new ThemeNameDialog(defaultName)
+        var dialog = new ThemeNameDialog(defaultName, _configuration)
         {
             Owner = this
         };
