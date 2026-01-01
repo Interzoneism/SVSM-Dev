@@ -416,6 +416,13 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
         savedThemeName = null;
 
         var defaultName = defaultThemeName ?? SelectedThemeOption?.Name ?? _configuration.GetCurrentThemeName();
+        
+        // If editing a built-in theme, prefill with "BUILTINNAME Custom"
+        if (ThemeOption.IsBuiltInThemeName(defaultName))
+        {
+            defaultName = $"{defaultName} Custom";
+        }
+        
         var dialog = new ThemeNameDialog(defaultName, _configuration)
         {
             Owner = this
