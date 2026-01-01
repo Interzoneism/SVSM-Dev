@@ -21,7 +21,8 @@ public sealed class ModVersionVoteService : IDisposable
 
     private static readonly string VotesRootPath = DevConfig.ModVersionVoteRootPath;
 
-    private static readonly string VoteCachePath = Path.Combine(DevConfig.FirebaseBackupDirectory, "compat-votes-cache.json");
+    private static readonly string VoteCachePath =
+        Path.Combine(DevConfig.FirebaseDatabaseCacheDirectory, "compat-votes-cache.json");
 
     /// <summary>
     ///     Gets the full path to the votes cache file.
