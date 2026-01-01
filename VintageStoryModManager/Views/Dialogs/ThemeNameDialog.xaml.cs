@@ -53,6 +53,18 @@ public partial class ThemeNameDialog : Window
             return;
         }
 
+        // Check if the entered name is a built-in theme name
+        if (ThemePaletteEditorDialog.ThemeOption.IsBuiltInThemeName(enteredName))
+        {
+            ModManagerMessageBox.Show(
+                this,
+                "Cannot save theme with a built-in theme name. Please choose a different name.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
         ThemeName = enteredName;
         DialogResult = true;
     }
