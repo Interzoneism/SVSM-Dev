@@ -362,8 +362,15 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
         _themePaletteSnapshots.Remove(SelectedThemeOption.Name);
 
         RefreshThemeOptions();
-        SelectedThemeOption ??= ThemeOptions.FirstOrDefault();
+        
+        // After deletion, sync the selection with the current theme from the service
+        var currentThemeName = _configuration.GetCurrentThemeName();
+        SelectedThemeOption = ThemeOptions.FirstOrDefault(option =>
+            string.Equals(option.Name, currentThemeName, StringComparison.OrdinalIgnoreCase))
+            ?? ThemeOptions.FirstOrDefault();
+        
         ApplySelectedTheme();
+        CaptureThemePaletteSnapshots();
     }
 
     private bool TryResolveUnsavedChanges(ThemeOption? activeTheme, bool isClosing = false)
