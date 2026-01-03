@@ -391,7 +391,7 @@
                         FontSize="12"
                         TextWrapping="Wrap">
                         <Bold>Enable server options</Bold>
-                        <Run Text=" unlocks features aimed at server admins, such as generating installation macros for remote servers." />
+                        <Run Text=" unlocks features aimed at server admins, currently adds a Copy to Server button for selected mods, which copies a ./moddb install command to paste in game." />
                     </TextBlock>
 
                     <TextBlock
