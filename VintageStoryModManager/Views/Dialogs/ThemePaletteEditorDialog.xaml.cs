@@ -51,6 +51,7 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
     private readonly Dictionary<string, IReadOnlyDictionary<string, string>> _themePaletteSnapshots =
         new(StringComparer.OrdinalIgnoreCase);
     private bool _isInitializing;
+    private bool _isSwitchingAfterSave;
     private ThemeOption? _selectedThemeOption;
 
     public ThemePaletteEditorDialog(UserConfigurationService configuration)
@@ -297,8 +298,9 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
             SelectedThemeOption = previousTheme;
             _isInitializing = false;
 
+            // Skip the unsaved changes check if we're switching after saving
             // Now check if we can proceed with the theme switch
-            if (!TryResolveUnsavedChanges(previousTheme))
+            if (!_isSwitchingAfterSave && !TryResolveUnsavedChanges(previousTheme))
             {
                 return;
             }
@@ -441,10 +443,21 @@ public partial class ThemePaletteEditorDialog : Window, INotifyPropertyChanged
         UpdateThemeSnapshot(savedThemeName);
 
         RefreshThemeOptions();
-        SelectedThemeOption = ThemeOptions.FirstOrDefault(option =>
-            string.Equals(option.Name, dialog.ThemeName, StringComparison.OrdinalIgnoreCase));
+        
+        // Set flag to skip unsaved changes prompt when switching to the newly saved theme
+        _isSwitchingAfterSave = true;
+        try
+        {
+            SelectedThemeOption = ThemeOptions.FirstOrDefault(option =>
+                string.Equals(option.Name, dialog.ThemeName, StringComparison.OrdinalIgnoreCase));
 
-        ApplySelectedTheme();
+            ApplySelectedTheme();
+        }
+        finally
+        {
+            _isSwitchingAfterSave = false;
+        }
+        
         return true;
     }
 
