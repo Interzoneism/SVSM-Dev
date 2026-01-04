@@ -34,6 +34,7 @@ using System.Windows.Threading;
 using UglyToad.PdfPig;
 using VintageStoryModManager.Models;
 using VintageStoryModManager.Services;
+using VintageStoryModManager.Helpers;
 using VintageStoryModManager.ViewModels;
 using VintageStoryModManager.Views.Dialogs;
 using YamlDotNet.Core;
@@ -422,7 +423,7 @@ public partial class MainWindow : Window
         UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
         UseFasterThumbnailsMenuItem.IsChecked = _userConfiguration.UseFasterThumbnails;
         DisableHoverEffectsMenuItem.IsChecked = _userConfiguration.DisableHoverEffects;
-        Helpers.HoverEffectHelper.SetDisableHoverEffects(this, _userConfiguration.DisableHoverEffects);
+        HoverEffectHelper.SetDisableHoverEffects(this, _userConfiguration.DisableHoverEffects);
         UpdateLoggingMenuState();
         InitializeTraceListener();
         _modActivityLoggingService.LogAppLaunch();
@@ -1723,7 +1724,9 @@ public partial class MainWindow : Window
         menuItem.IsChecked = _userConfiguration.DisableHoverEffects;
 
         // Set the attached property on the main window to disable hover effects globally
-        Helpers.HoverEffectHelper.SetDisableHoverEffects(this, menuItem.IsChecked);
+        HoverEffectHelper.SetDisableHoverEffects(this, menuItem.IsChecked);
+
+        RefreshHoverOverlayState();
     }
 
     private void LogModUpdateMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -4879,7 +4882,11 @@ public partial class MainWindow : Window
 
         if (hoverOverlay != null)
         {
-            var shouldShowHover = isHovered && !isModSelected && !AreHoverOverlaysSuppressed(row);
+            var shouldShowHover =
+                isHovered
+                && !isModSelected
+                && !AreHoverEffectsDisabled(row)
+                && !AreHoverOverlaysSuppressed(row);
             hoverOverlay.Opacity = shouldShowHover ? HoverOverlayOpacity : 0;
         }
     }
@@ -4892,6 +4899,11 @@ public partial class MainWindow : Window
     private static bool AreHoverOverlaysSuppressed(DataGridRow row)
     {
         return GetWindow(row) is MainWindow mainWindow && mainWindow.AreHoverOverlaysSuppressed();
+    }
+
+    private static bool AreHoverEffectsDisabled(DependencyObject dependencyObject)
+    {
+        return HoverEffectHelper.GetDisableHoverEffects(dependencyObject);
     }
 
     private static void ClearRowOverlayValues(DataGridRow row)
