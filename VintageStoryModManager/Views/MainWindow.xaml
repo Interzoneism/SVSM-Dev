@@ -289,6 +289,13 @@
                             Header="_Faster thumbnails (Faster to load in mod database)"
                             IsCheckable="True"
                             Style="{StaticResource ToggleMenuItemStyle}" />
+                        <MenuItem
+                            x:Name="DisableHoverEffectsMenuItem"
+                            Height="35"
+                            Click="DisableHoverEffectsMenuItem_OnClick"
+                            Header="Disable _hover and transition visual effects"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}" />
                     </MenuItem>
                     <MenuItem
                         Height="24"
