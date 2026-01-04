@@ -421,6 +421,8 @@ public partial class MainWindow : Window
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
         UseFasterThumbnailsMenuItem.IsChecked = _userConfiguration.UseFasterThumbnails;
+        DisableHoverEffectsMenuItem.IsChecked = _userConfiguration.DisableHoverEffects;
+        Helpers.HoverEffectHelper.SetDisableHoverEffects(this, _userConfiguration.DisableHoverEffects);
         UpdateLoggingMenuState();
         InitializeTraceListener();
         _modActivityLoggingService.LogAppLaunch();
@@ -1711,6 +1713,17 @@ public partial class MainWindow : Window
 
         _userConfiguration.SetUseFasterThumbnails(menuItem.IsChecked);
         menuItem.IsChecked = _userConfiguration.UseFasterThumbnails;
+    }
+
+    private void DisableHoverEffectsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        _userConfiguration.SetDisableHoverEffects(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.DisableHoverEffects;
+
+        // Set the attached property on the main window to disable hover effects globally
+        Helpers.HoverEffectHelper.SetDisableHoverEffects(this, menuItem.IsChecked);
     }
 
     private void LogModUpdateMenuItem_OnClick(object sender, RoutedEventArgs e)

@@ -338,6 +338,8 @@ public sealed class UserConfigurationService
 
     public bool UseFasterThumbnails { get; private set; } = true;
 
+    public bool DisableHoverEffects { get; private set; }
+
     public IReadOnlyList<string> GetGameProfileNames()
     {
         return _gameProfiles.Keys
@@ -1627,6 +1629,14 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetDisableHoverEffects(bool disableHoverEffects)
+    {
+        if (DisableHoverEffects == disableHoverEffects) return;
+
+        DisableHoverEffects = disableHoverEffects;
+        Save();
+    }
+
     public bool IsModExcludedFromBulkUpdates(string? modId)
     {
         var normalized = NormalizeModId(modId);
@@ -1823,6 +1833,7 @@ public sealed class UserConfigurationService
             // Migration: Invert old useCorrectThumbnails value if present, otherwise default to true (faster)
             UseFasterThumbnails = obj["useFasterThumbnails"]?.GetValue<bool?>() ??
                                   !(obj["useCorrectThumbnails"]?.GetValue<bool?>() ?? false);
+            DisableHoverEffects = obj["disableHoverEffects"]?.GetValue<bool?>() ?? false;
 
             var profilesFound = false;
             if (obj["gameProfiles"] is JsonObject profilesObj)
@@ -2049,6 +2060,7 @@ public sealed class UserConfigurationService
                 ["clientSettingsCleanupCompleted"] = ClientSettingsCleanupCompleted,
                 ["rebuiltModlistMigrationCompleted"] = RebuiltModlistMigrationCompleted,
                 ["useFasterThumbnails"] = UseFasterThumbnails,
+                ["disableHoverEffects"] = DisableHoverEffects,
                 ["gameProfiles"] = BuildGameProfilesJson()
             };
 
