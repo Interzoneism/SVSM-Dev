@@ -1544,7 +1544,7 @@
                                                             <TextBlock
                                                                 x:Name="SelectedLocalModlistDescription"
                                                                 Grid.Row="1"
-                                                                Margin="0,8,0,0"
+                                                                Margin="0,16,0,0"
                                                                 Foreground="{DynamicResource Brush.Text.Primary}"
                                                                 Text=""
                                                                 TextWrapping="Wrap" />
