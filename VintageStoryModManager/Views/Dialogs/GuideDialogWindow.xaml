@@ -266,6 +266,15 @@
                         <Bold>Faster thumbnails (Faster to load in mod database)</Bold>
                         <Run Text=" uses faster thumbnail loading for improved performance when browsing mods. For most mods you won't notice a visual difference. Disabling this option loads thumbnails more accurately from the Mod Database but takes longer." />
                     </TextBlock>
+
+                    <TextBlock
+                        Margin="0,8,0,0"
+                        FontSize="12"
+                        TextWrapping="Wrap">
+                        <Bold>Disable hover and transition visual effects</Bold>
+                        <Run Text=" disables all hover overlays and animations (minimal performance win)" />
+                    </TextBlock>
+
                 </StackPanel>
 
                 <StackPanel Margin="0,20,0,0">
