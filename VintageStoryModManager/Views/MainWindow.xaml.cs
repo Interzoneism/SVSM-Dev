@@ -91,7 +91,7 @@ public partial class MainWindow : Window
     #region Static Configuration
 
     // URLs
-    private const string DiscordInviteUrl = "https://discord.gg/Zhm3QnD2s9";
+    private static readonly string DiscordInviteUrl = DevConfig.DiscordInviteUrl;
     private static readonly string ManagerModDatabaseUrl = DevConfig.ManagerModDatabaseUrl;
     private static readonly string ManagerModDatabaseModId = DevConfig.ManagerModDatabaseModId;
     private static readonly string ModDatabaseUnavailableMessage = DevConfig.ModDatabaseUnavailableMessage;
