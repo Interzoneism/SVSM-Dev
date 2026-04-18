@@ -1177,7 +1177,7 @@
                                         </DataGridTemplateColumn>
                                         <DataGridTemplateColumn
                                             x:Name="UserReportsColumn"
-                                            Width="150"
+                                            Width="190"
                                             Header="User Reports"
                                             IsReadOnly="True">
                                             <DataGridTemplateColumn.CellStyle>
@@ -1205,6 +1205,9 @@
                                                                     </DataTrigger>
                                                                     <DataTrigger Binding="{Binding UserReportHasError}" Value="True">
                                                                         <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Emphasis}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding HasUserVoted}" Value="True">
+                                                                        <Setter Property="FontWeight" Value="SemiBold" />
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
                                                             </Style>

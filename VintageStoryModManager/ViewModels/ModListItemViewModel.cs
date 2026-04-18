@@ -24,7 +24,7 @@ namespace VintageStoryModManager.ViewModels;
 /// </summary>
 public sealed class ModListItemViewModel : ObservableObject
 {
-    private static readonly HttpClient HttpClient = new();
+    private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(15) };
 
     private readonly Func<ModListItemViewModel, bool, Task<ActivationResult>> _activationHandler;
     private readonly IReadOnlyList<string> _authors;
@@ -436,6 +436,8 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public ModVersionVoteOption? UserVoteOption => UserReportSummary?.UserVote;
 
+    public bool HasUserVoted => UserVoteOption.HasValue;
+
     public string UserReportDisplay
     {
         get => _userReportDisplay;
@@ -812,6 +814,7 @@ public sealed class ModListItemViewModel : ObservableObject
             OnPropertyChanged(nameof(UserReportSummary));
             OnPropertyChanged(nameof(UserReportCounts));
             OnPropertyChanged(nameof(UserVoteOption));
+            OnPropertyChanged(nameof(HasUserVoted));
         }
     }
 
@@ -822,6 +825,7 @@ public sealed class ModListItemViewModel : ObservableObject
             OnPropertyChanged(nameof(UserReportSummary));
             OnPropertyChanged(nameof(UserReportCounts));
             OnPropertyChanged(nameof(UserVoteOption));
+            OnPropertyChanged(nameof(HasUserVoted));
             return;
         }
 
@@ -829,6 +833,7 @@ public sealed class ModListItemViewModel : ObservableObject
         OnPropertyChanged(nameof(UserReportSummary));
         OnPropertyChanged(nameof(UserReportCounts));
         OnPropertyChanged(nameof(UserVoteOption));
+        OnPropertyChanged(nameof(HasUserVoted));
     }
 
     public void EnsureUserReportStateInitialized()
