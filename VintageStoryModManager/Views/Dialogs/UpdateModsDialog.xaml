@@ -58,11 +58,11 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock FontSize="14"
                                                            FontWeight="SemiBold">
-                                                    <Hyperlink Command="{Binding Mod.OpenModDatabasePageCommand}">
-                                                        <Run Text="{Binding DisplayName}" />
+                                                    <Hyperlink Command="{Binding Mod.OpenModDatabasePageCommand, Mode=OneWay}">
+                                                        <Run Text="{Binding DisplayName, Mode=OneWay}" />
                                                     </Hyperlink>
                                                 </TextBlock>
-                                                <TextBlock Text="{Binding VersionSummary}"
+                                                <TextBlock Text="{Binding VersionSummary, Mode=OneWay}"
                                                            Margin="8,2,0,0"
                                                            Foreground="{DynamicResource Brush.Text.Secondary}" />
                                             </StackPanel>
@@ -75,30 +75,30 @@
                                                 Width="140">
                                         <Button Content="Exclude version"
                                                 HorizontalAlignment="Stretch"
-                                                IsEnabled="{Binding CanSkip}"
-                                                Visibility="{Binding ShowExcludeVersionButton, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                IsEnabled="{Binding CanSkip, Mode=OneWay}"
+                                                Visibility="{Binding ShowExcludeVersionButton, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
                                                 Click="SkipVersionButton_OnClick" />
                                         <Button Content="Copy for Server"
                                                 Margin="0,8,0,0"
                                                 HorizontalAlignment="Stretch"
                                                 Click="CopyServerCommandButton_OnClick"
-                                                Visibility="{Binding ShowServerInstallCommand, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                IsEnabled="{Binding ShowServerInstallCommand}" />
+                                                Visibility="{Binding ShowServerInstallCommand, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                IsEnabled="{Binding ShowServerInstallCommand, Mode=OneWay}" />
                                     </StackPanel>
                                 </Grid>
 
-                                <Expander Header="{Binding ChangelogHeader}"
+                                <Expander Header="{Binding ChangelogHeader, Mode=OneWay}"
                                           FontWeight="Bold"
                                           Margin="24,8,0,0"
-                                          Visibility="{Binding HasChangelogs, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                    <ItemsControl ItemsSource="{Binding Changelogs}">
+                                          Visibility="{Binding HasChangelogs, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <ItemsControl ItemsSource="{Binding Changelogs, Mode=OneWay}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <StackPanel Margin="0,0,0,12">
-                                                    <TextBlock Text="{Binding Version}"
+                                                    <TextBlock Text="{Binding Version, Mode=OneWay}"
                                                                FontWeight="SemiBold"
                                                                TextWrapping="Wrap" />
-                                                    <TextBlock Text="{Binding Changelog}"
+                                                    <TextBlock Text="{Binding Changelog, Mode=OneWay}"
                                                                TextWrapping="Wrap"
                                                                Margin="0,4,0,0" />
                                                 </StackPanel>

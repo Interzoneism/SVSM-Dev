@@ -1358,7 +1358,7 @@ public partial class MainWindow : Window
             const string message =
                 "This is an experimental feature and will increase your start up time depending on your files. Depending on your mods, saves and other files it could also end up taking up a lot of disk space."
                 + "\n\n"
-                + "But probably not. Report any bugs! Remember to launch with the \"Launch Vintage Story\" button, it backups at launch ONLY.";
+                + "You can set the maximum number of backups in the menu, the oldest one will be deleted. Remember to launch with the \"Launch Vintage Story\" button, it backups at launch ONLY.";
 
             WpfMessageBox.Show(
                 message,
@@ -1604,7 +1604,9 @@ public partial class MainWindow : Window
         }
 
         var detectedDisplay = hasDetectedVersion ? gameVersion!.Trim() : "Unknown";
-        if (hasOverrideVersion)
+        if (TargetGameVersionPreference.IsLatest(overrideVersion))
+            GameVersionMenuItem.Header = $"Vintage Story: {detectedDisplay} (targeting latest)";
+        else if (hasOverrideVersion)
             GameVersionMenuItem.Header = $"Vintage Story: {detectedDisplay} (targeting {overrideVersion})";
         else
             GameVersionMenuItem.Header = $"Vintage Story: {detectedDisplay}";
@@ -1621,7 +1623,9 @@ public partial class MainWindow : Window
             ? "unknown"
             : detectedVersion.Trim();
 
-        if (string.IsNullOrWhiteSpace(overrideVersion))
+        if (TargetGameVersionPreference.IsLatest(overrideVersion))
+            TargetGameVersionMenuItem.Header = $"Target version: Latest (detected: {detectedDisplay})";
+        else if (string.IsNullOrWhiteSpace(overrideVersion))
             TargetGameVersionMenuItem.Header = $"Target version: Auto ({detectedDisplay})";
         else
             TargetGameVersionMenuItem.Header = $"Target version: {overrideVersion} (detected: {detectedDisplay})";
@@ -1634,6 +1638,7 @@ public partial class MainWindow : Window
         var detectedVersion = VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory);
         var currentOverride = _userConfiguration.TargetGameVersionOverride;
         var normalizedCurrentOverride = VersionStringUtility.Normalize(currentOverride);
+        var isLatestSelected = TargetGameVersionPreference.IsLatest(currentOverride);
         var candidates = BuildTargetVersionMenuCandidates(detectedVersion, currentOverride);
 
         menuItem.Items.Clear();
@@ -1651,6 +1656,16 @@ public partial class MainWindow : Window
         autoItem.Click += TargetGameVersionChoiceMenuItem_OnClick;
         menuItem.Items.Add(autoItem);
 
+        var latestItem = new MenuItem
+        {
+            Header = "Latest",
+            Tag = TargetGameVersionPreference.Latest,
+            IsCheckable = true,
+            IsChecked = isLatestSelected
+        };
+        latestItem.Click += TargetGameVersionChoiceMenuItem_OnClick;
+        menuItem.Items.Add(latestItem);
+
         menuItem.Items.Add(new Separator());
 
         foreach (var candidate in candidates)
@@ -1661,7 +1676,8 @@ public partial class MainWindow : Window
                 Header = candidate,
                 Tag = candidate,
                 IsCheckable = true,
-                IsChecked = !string.IsNullOrWhiteSpace(normalizedCurrentOverride)
+                IsChecked = !isLatestSelected
+                            && !string.IsNullOrWhiteSpace(normalizedCurrentOverride)
                             && string.Equals(normalizedCandidate, normalizedCurrentOverride,
                                 StringComparison.OrdinalIgnoreCase)
             };
@@ -1688,6 +1704,8 @@ public partial class MainWindow : Window
         string? overrideValue;
         if (string.Equals(tag, TargetGameVersionMenuAutoTag, StringComparison.Ordinal))
             overrideValue = null;
+        else if (TargetGameVersionPreference.IsLatest(tag))
+            overrideValue = TargetGameVersionPreference.Latest;
         else if (string.Equals(tag, TargetGameVersionMenuCustomTag, StringComparison.Ordinal))
         {
             overrideValue = PromptForTargetGameVersionOverride();
@@ -1697,6 +1715,8 @@ public partial class MainWindow : Window
         {
             overrideValue = tag;
         }
+
+        ApplyTargetGameVersionMenuCheckedState(menuItem);
 
         if (string.Equals(_userConfiguration.TargetGameVersionOverride, overrideValue, StringComparison.Ordinal)) return;
 
@@ -1713,11 +1733,28 @@ public partial class MainWindow : Window
         UpdateGameVersionMenuItem(detectedVersion);
     }
 
+    public static void ApplyTargetGameVersionMenuCheckedState(MenuItem selectedMenuItem)
+    {
+        if (!selectedMenuItem.IsCheckable) return;
+
+        var parent = ItemsControl.ItemsControlFromItemContainer(selectedMenuItem)
+                     ?? selectedMenuItem.Parent as ItemsControl;
+        if (parent is null) return;
+
+        foreach (var item in parent.Items.OfType<MenuItem>())
+        {
+            if (!item.IsCheckable) continue;
+
+            item.IsChecked = ReferenceEquals(item, selectedMenuItem);
+        }
+    }
+
     private string? PromptForTargetGameVersionOverride()
     {
-        var initialValue = _userConfiguration.TargetGameVersionOverride
-                           ?? ExtractMajorMinorVersion(VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory))
-                           ?? string.Empty;
+        var initialValue = TargetGameVersionPreference.HasConcreteOverride(_userConfiguration.TargetGameVersionOverride)
+                        ? _userConfiguration.TargetGameVersionOverride!
+            : ExtractMajorMinorVersion(VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory))
+              ?? string.Empty;
 
         var input = Microsoft.VisualBasic.Interaction.InputBox(
             "Enter the target Vintage Story version (for example: 1.22 or 1.22.0).",
@@ -2811,9 +2848,25 @@ public partial class MainWindow : Window
             ModBrowserView.DataContext = _modBrowserViewModel;
 
             UpdateModBrowserTabVisibilityState(DatabaseTab?.IsSelected == true);
+            if (!_userConfiguration.DisableInternetAccess) _ = LoadTargetGameVersionsForMenuAsync();
 
             // Set up votes cache watcher to refresh user reports when cache changes
             InitializeVotesCacheWatcher();
+        }
+    }
+
+    private async Task LoadTargetGameVersionsForMenuAsync()
+    {
+        if (_modBrowserViewModel is null) return;
+
+        try
+        {
+            await _modBrowserViewModel.LoadAvailableGameVersionsAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[MainWindow] Failed to load target game versions for menu: {ex.Message}");
         }
     }
 
@@ -3053,15 +3106,21 @@ public partial class MainWindow : Window
     /// </summary>
     private ModListItemViewModel ConvertToModListItemViewModel(DownloadableMod mod)
     {
-        // Only consider the most recent release with a valid downloadable file
-        var latestRelease = mod.Releases?
-            .OrderByDescending(r => DateTime.TryParse(r.Created, out var created) ? created : DateTime.MinValue)
-            .Select(ConvertToModReleaseInfo)
-            .FirstOrDefault(r => r != null);
+        var effectiveGameVersion = _viewModel?.EffectiveGameVersion;
+        var requireExactVersionMatch = _userConfiguration.RequireExactVsVersionMatch;
 
-        var releases = latestRelease != null
-            ? new List<ModReleaseInfo> { latestRelease }
-            : new List<ModReleaseInfo>();
+        var releases = mod.Releases?
+            .OrderByDescending(r => DateTime.TryParse(r.Created, out var created) ? created : DateTime.MinValue)
+            .Select(release => ConvertToModReleaseInfo(release, effectiveGameVersion, requireExactVersionMatch))
+            .Where(release => release != null)
+            .Select(release => release!)
+            .ToList() ?? [];
+
+        var latestRelease = releases.FirstOrDefault();
+        var latestCompatibleRelease = TargetGameVersionReleaseSelector.SelectLatestCompatibleRelease(
+            releases,
+            effectiveGameVersion,
+            requireExactVersionMatch);
 
         // Create ModDatabaseInfo with converted data
         var logoUrlSource = !string.IsNullOrWhiteSpace(mod.LogoFileDatabase)
@@ -3074,7 +3133,7 @@ public partial class MainWindow : Window
             AssetId = mod.AssetId.ToString(),
             ModPageUrl = $"https://mods.vintagestory.at/show/mod/{mod.AssetId}",
             LatestVersion = latestRelease?.Version,
-            LatestCompatibleVersion = latestRelease?.Version,
+            LatestCompatibleVersion = latestCompatibleRelease?.Version,
             RequiredGameVersions = releases.SelectMany(r => r.GameVersionTags).Distinct().ToArray(),
             Downloads = mod.Downloads,
             Comments = mod.Comments,
@@ -3084,7 +3143,7 @@ public partial class MainWindow : Window
             LogoUrlSource = logoUrlSource,
             LastReleasedUtc = latestRelease?.CreatedUtc,
             LatestRelease = latestRelease,
-            LatestCompatibleRelease = latestRelease,
+            LatestCompatibleRelease = latestCompatibleRelease,
             Releases = releases,
             Side = mod.Side
         };
@@ -3111,10 +3170,10 @@ public partial class MainWindow : Window
             isActive: false,
             location: "Mod Database",
             activationHandler: (_, _) => Task.FromResult(new ActivationResult(false, null)),
-            installedGameVersion: _viewModel?.InstalledGameVersion,
+            installedGameVersion: effectiveGameVersion,
             isInstalled: false,
             shouldSkipVersion: null,
-            requireExactVersionMatch: null);
+            requireExactVersionMatch: () => _userConfiguration.RequireExactVsVersionMatch);
 
         return viewModel;
     }
@@ -3123,7 +3182,10 @@ public partial class MainWindow : Window
     /// Converts a DownloadableModRelease from the API to a ModReleaseInfo
     /// for use with the standard installation flow.
     /// </summary>
-    private ModReleaseInfo? ConvertToModReleaseInfo(DownloadableModRelease release)
+    private static ModReleaseInfo? ConvertToModReleaseInfo(
+        DownloadableModRelease release,
+        string? targetGameVersion,
+        bool requireExactVersionMatch)
     {
         if (string.IsNullOrWhiteSpace(release.MainFile) || string.IsNullOrWhiteSpace(release.Filename))
             return null;
@@ -3136,13 +3198,19 @@ public partial class MainWindow : Window
         if (DateTime.TryParse(release.Created, out var parsedDate))
             createdUtc = parsedDate.ToUniversalTime();
 
+        var gameVersionTags = release.Tags?.ToArray() ?? Array.Empty<string>();
+
         return new ModReleaseInfo
         {
             Version = release.ModVersion,
+            NormalizedVersion = VersionStringUtility.Normalize(release.ModVersion),
             DownloadUri = downloadUri,
             FileName = release.Filename,
-            GameVersionTags = release.Tags?.ToArray() ?? Array.Empty<string>(),
-            IsCompatibleWithInstalledGame = true,
+            GameVersionTags = gameVersionTags,
+            IsCompatibleWithInstalledGame = TargetGameVersionReleaseSelector.TagsSupportTarget(
+                gameVersionTags,
+                targetGameVersion,
+                requireExactVersionMatch),
             Changelog = release.Changelog,
             Downloads = release.Downloads,
             CreatedUtc = createdUtc
@@ -5534,6 +5602,7 @@ public partial class MainWindow : Window
         }
 
         _userConfiguration.RemoveModConfigPath(mod.ModId, true);
+        _userConfiguration.ClearDependencyWarningOverride(mod.ModId);
         _modActivityLoggingService.LogModDeletion(mod.DisplayName ?? mod.ModId ?? "Unknown");
         return true;
     }
@@ -5642,11 +5711,21 @@ public partial class MainWindow : Window
         if (failures.Count > 0)
         {
             var message = string.Join(Environment.NewLine, failures);
-            WpfMessageBox.Show($"Some dependencies could not be resolved:{Environment.NewLine}{message}",
+            var enableAnyway = WpfMessageBox.Show(
+                $"Some dependencies could not be resolved:{Environment.NewLine}{message}{Environment.NewLine}{Environment.NewLine}You can enable {mod.DisplayName} anyway and ignore this dependency warning.",
                 "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-            _viewModel?.ReportStatus($"Failed to resolve all dependencies for {mod.DisplayName}.", true);
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning,
+                buttonContentOverrides: new MessageDialogButtonContentOverrides
+                {
+                    Ok = "Enable anyway",
+                    Cancel = "Cancel"
+                });
+
+            if (enableAnyway == MessageBoxResult.OK)
+                await EnableModDespiteDependencyWarningAsync(mod).ConfigureAwait(true);
+            else
+                _viewModel?.ReportStatus($"Failed to resolve all dependencies for {mod.DisplayName}.", true);
         }
         else if (anySuccess)
         {
@@ -5656,6 +5735,37 @@ public partial class MainWindow : Window
         {
             _viewModel?.ReportStatus($"Dependencies for {mod.DisplayName} are already satisfied.");
         }
+    }
+
+    private async Task EnableModDespiteDependencyWarningAsync(ModListItemViewModel mod)
+    {
+        _userConfiguration.SetDependencyWarningOverride(mod.ModId, mod.Version, true);
+        mod.RefreshDependencyWarningOverride();
+
+        if (_viewModel is null)
+        {
+            mod.IsActive = true;
+            return;
+        }
+
+        var result = await _viewModel.ApplyActivationChangeAsync(mod, true).ConfigureAwait(true);
+        if (!result.Success)
+        {
+            _userConfiguration.ClearDependencyWarningOverride(mod.ModId);
+            mod.RefreshDependencyWarningOverride();
+            var message = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                ? $"Failed to activate {mod.DisplayName}."
+                : result.ErrorMessage!;
+            WpfMessageBox.Show(message,
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        mod.SetIsActiveSilently(true);
+        _viewModel.ReportStatus($"Enabled {mod.DisplayName} despite unresolved dependency warnings.");
+        UpdateSelectedModButtons();
     }
 
     private async void InstallModButton_OnClick(object sender, RoutedEventArgs e)
@@ -5769,7 +5879,7 @@ public partial class MainWindow : Window
         try
         {
             var info = await _modDatabaseService
-                .TryLoadDatabaseInfoAsync(dependency.ModId, installedMod?.Version, _viewModel?.InstalledGameVersion,
+                .TryLoadDatabaseInfoAsync(dependency.ModId, installedMod?.Version, _viewModel?.EffectiveGameVersion,
                     _userConfiguration.RequireExactVsVersionMatch)
                 .ConfigureAwait(true);
 
@@ -5840,11 +5950,14 @@ public partial class MainWindow : Window
             }
 
             if (installedMod != null && _viewModel != null)
+            {
+                _userConfiguration.ClearDependencyWarningOverride(dependency.ModId);
                 await _viewModel.PreserveActivationStateAsync(
                     dependency.ModId,
                     installedMod.Version,
                     release.Version,
                     wasActive).ConfigureAwait(true);
+            }
 
             var action = installedMod != null ? "Updated" : "Installed";
             var versionSuffix = string.IsNullOrWhiteSpace(release.Version) ? string.Empty : $" {release.Version}";
@@ -5872,42 +5985,12 @@ public partial class MainWindow : Window
                 && VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, release.Version))
                 return release;
 
-        foreach (var release in releases)
-            if (VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, release.Version))
-                return release;
-
-        var fallback = releases.FirstOrDefault(r => r.IsCompatibleWithInstalledGame)
-                       ?? releases[0];
-
-        var availableVersion = string.IsNullOrWhiteSpace(fallback.Version)
-            ? "the latest available release"
-            : $"version {fallback.Version}";
-
-        var requirement = string.IsNullOrWhiteSpace(dependency.Version)
-            ? dependency.ModId
-            : $"{dependency.ModId} {dependency.Version} or newer";
-
-        var message =
-            $"No release that satisfies the required minimum version for {dependency.Display} could be found.{Environment.NewLine}{Environment.NewLine}" +
-            $"The mod database only provides {availableVersion}, which may not resolve the dependency requirement for {requirement}.{Environment.NewLine}{Environment.NewLine}" +
-            "Do you want to install this older release anyway?";
-
-        var confirmation = WpfMessageBox.Show(
-            message,
-            "Simple VS Manager",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        return confirmation == MessageBoxResult.Yes ? fallback : null;
+        return null;
     }
 
     private static ModReleaseInfo? SelectReleaseForInstall(ModListItemViewModel mod)
     {
-        if (mod.LatestRelease?.IsCompatibleWithInstalledGame == true) return mod.LatestRelease;
-
-        if (mod.LatestCompatibleRelease != null) return mod.LatestCompatibleRelease;
-
-        return mod.LatestRelease;
+        return mod.LatestCompatibleRelease;
     }
 
     private async void UpdateModButton_OnClick(object sender, RoutedEventArgs e)
@@ -8116,6 +8199,7 @@ public partial class MainWindow : Window
             await _dataBackupService
                 .CreateBackupAsync(_dataDirectory!, installedGameVersion, progress, CancellationToken.None)
                 .ConfigureAwait(true);
+            PruneDataBackupsForCurrentContext();
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -8320,6 +8404,15 @@ public partial class MainWindow : Window
         changeBackupLocationMenuItem.Click += ChangeBackupLocationMenuItem_OnClick;
         menuItem.Items.Add(changeBackupLocationMenuItem);
 
+        var setMaximumBackupsMenuItem = new MenuItem
+        {
+            Header = _userConfiguration.MaximumDataBackups > 0
+                ? $"Set maximum backups... ({_userConfiguration.MaximumDataBackups})"
+                : "Set maximum backups... (Unlimited)"
+        };
+        setMaximumBackupsMenuItem.Click += SetMaximumDataBackupsMenuItem_OnClick;
+        menuItem.Items.Add(setMaximumBackupsMenuItem);
+
         var deleteBackupsMenuItem = new MenuItem
         {
             Header = "Delete all data folder backups",
@@ -8515,6 +8608,67 @@ public partial class MainWindow : Window
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
+        }
+    }
+
+    private void SetMaximumDataBackupsMenuItem_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var currentMaximum = _userConfiguration.MaximumDataBackups;
+        var input = Microsoft.VisualBasic.Interaction.InputBox(
+            "Enter the maximum number of VintagestoryData backups to keep for the current data folder and Vintage Story version. Use 0 for unlimited.",
+            "Set Maximum Backups",
+            currentMaximum.ToString(CultureInfo.InvariantCulture));
+
+        if (string.IsNullOrWhiteSpace(input)) return;
+
+        if (!int.TryParse(input.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var maximumBackups)
+            || maximumBackups < 0)
+        {
+            WpfMessageBox.Show(
+                "Enter 0 for unlimited backups, or a positive whole number.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        _userConfiguration.SetMaximumDataBackups(maximumBackups);
+
+        if (maximumBackups <= 0)
+        {
+            _viewModel?.ReportStatus("VintagestoryData backup limit set to unlimited.");
+            return;
+        }
+
+        var deleted = PruneDataBackupsForCurrentContext();
+        _viewModel?.ReportStatus(
+            deleted == 0
+                ? $"VintagestoryData backup limit set to {maximumBackups}."
+                : $"VintagestoryData backup limit set to {maximumBackups}; deleted {deleted} old backup(s).");
+    }
+
+    private int PruneDataBackupsForCurrentContext()
+    {
+        var maximumBackups = _userConfiguration.MaximumDataBackups;
+        if (maximumBackups <= 0) return 0;
+        if (string.IsNullOrWhiteSpace(_dataDirectory)) return 0;
+
+        var installedVersion = VintageStoryVersionLocator.GetInstalledVersion(_gameDirectory);
+        var normalizedInstalledVersion = VersionStringUtility.Normalize(installedVersion);
+        if (string.IsNullOrWhiteSpace(normalizedInstalledVersion)) return 0;
+
+        try
+        {
+            return _dataBackupService.PruneBackups(
+                _dataDirectory!,
+                installedVersion ?? normalizedInstalledVersion,
+                maximumBackups);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException
+                                   or ArgumentException)
+        {
+            Trace.TraceWarning("Failed to prune VintagestoryData backups: {0}", ex.Message);
+            return 0;
         }
     }
 
@@ -13267,6 +13421,7 @@ public partial class MainWindow : Window
             }
 
             _userConfiguration.RemoveModConfigPath(mod.ModId, true);
+            _userConfiguration.ClearDependencyWarningOverride(mod.ModId);
         }
 
         if (!string.IsNullOrWhiteSpace(localBackupSessionDirectory) && backedUpModNames is { Count: > 0 })
@@ -13969,8 +14124,6 @@ public partial class MainWindow : Window
         try
         {
             var results = new List<ModUpdateOperationResult>();
-            ModUpdateReleasePreference? bulkPreference = null;
-            var abortRequested = false;
             var requiresRefresh = false;
 
             foreach (var mod in mods)
@@ -13999,12 +14152,7 @@ public partial class MainWindow : Window
                 var previousResultCount = results.Count;
                 var release = hasOverride
                     ? overrideRelease
-                    : SelectReleaseForMod(mod, isBulk, ref bulkPreference, results, ref abortRequested);
-                if (abortRequested)
-                {
-                    requiresRefresh = true;
-                    break;
-                }
+                    : SelectReleaseForMod(mod, results);
 
                 if (release is null)
                 {
@@ -14096,6 +14244,7 @@ public partial class MainWindow : Window
                 }
                 await _viewModel.PreserveActivationStateAsync(mod.ModId ?? string.Empty, mod.Version, release.Version, mod.IsActive)
                     .ConfigureAwait(true);
+                _userConfiguration.ClearDependencyWarningOverride(mod.ModId);
                 var appliedChangelogEntries =
                     mod.GetChangelogEntriesForUpgrade(release.Version);
                 var changelogSummary = BuildChangelogSummary(appliedChangelogEntries);
@@ -14117,21 +14266,11 @@ public partial class MainWindow : Window
                         MessageBoxImage.Error);
                 }
 
-            if (abortRequested && !useModlistInstallUi)
-                _viewModel.ReportStatus(isBulk ? "Bulk update cancelled." : "Update cancelled.");
-
             if (results.Count > 0 && showSummary)
             {
                 if (isBulk) ShowBulkUpdateChangelogDialog(results);
 
-                ShowUpdateSummary(results, isBulk, abortRequested);
-            }
-            else if (abortRequested && showSummary)
-            {
-                WpfMessageBox.Show(isBulk ? "Bulk update cancelled." : "Update cancelled.",
-                    "Simple VS Manager",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                ShowUpdateSummary(results, isBulk, false);
             }
         }
         finally
@@ -14147,24 +14286,17 @@ public partial class MainWindow : Window
 
     private ModReleaseInfo? SelectReleaseForMod(
         ModListItemViewModel mod,
-        bool isBulk,
-        ref ModUpdateReleasePreference? bulkPreference,
-        List<ModUpdateOperationResult> results,
-        ref bool abortRequested)
+        List<ModUpdateOperationResult> results)
     {
-        var latest = mod.LatestRelease;
-        if (latest is null)
+        var latestCompatible = mod.LatestCompatibleRelease;
+        if (latestCompatible is null)
         {
-            results.Add(ModUpdateOperationResult.SkippedResult(mod, "No downloadable release was found."));
+            results.Add(ModUpdateOperationResult.SkippedResult(mod,
+                "No release marked compatible with the current target Vintage Story version was found."));
             return null;
         }
 
-        if (bulkPreference.HasValue && bulkPreference.Value == ModUpdateReleasePreference.LatestCompatible)
-            if (mod.LatestCompatibleRelease != null)
-                return mod.LatestCompatibleRelease;
-
-        // No compatible release is available; fall back to installing the latest release.
-        return latest;
+        return latestCompatible;
     }
 
     private void ShowBulkUpdateChangelogDialog(IReadOnlyList<ModUpdateOperationResult> results)
@@ -14458,12 +14590,6 @@ public partial class MainWindow : Window
         bool ModMissing,
         bool VersionMissing,
         string? ErrorMessage);
-
-    private enum ModUpdateReleasePreference
-    {
-        Latest,
-        LatestCompatible
-    }
 
     private readonly record struct ModUpdateOperationResult(
         ModListItemViewModel Mod,

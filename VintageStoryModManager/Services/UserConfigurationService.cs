@@ -126,6 +126,7 @@ public sealed class UserConfigurationService
         "gameDirectory",
         "bulkUpdateModExclusions",
         "skippedModVersions",
+        "dependencyWarningOverrides",
         "modConfigPaths",
         "modUsageTracking",
         "customShortcutPath"
@@ -230,6 +231,8 @@ public sealed class UserConfigurationService
 
     public string? CustomDataBackupLocation { get; private set; }
 
+    public int MaximumDataBackups { get; private set; }
+
     public bool SuppressModlistSavePrompt { get; private set; }
 
     public bool SuppressRefreshCachePrompt
@@ -313,6 +316,8 @@ public sealed class UserConfigurationService
     private Dictionary<string, bool> ActiveBulkUpdateModExclusions => ActiveProfile.BulkUpdateModExclusions;
 
     private Dictionary<string, string> ActiveSkippedModVersions => ActiveProfile.SkippedModVersions;
+
+    private Dictionary<string, string> ActiveDependencyWarningOverrides => ActiveProfile.DependencyWarningOverrides;
 
     private Dictionary<ModUsageTrackingKey, int> ActiveModUsageSessionCounts => ActiveProfile.ModUsageSessionCounts;
 
@@ -565,6 +570,7 @@ public sealed class UserConfigurationService
 
         LoadBulkUpdateModExclusions(obj["bulkUpdateModExclusions"], profile.BulkUpdateModExclusions);
         LoadSkippedModVersions(obj["skippedModVersions"], profile.SkippedModVersions);
+        LoadDependencyWarningOverrides(obj["dependencyWarningOverrides"], profile.DependencyWarningOverrides);
         LoadModUsageTracking(obj["modUsageTracking"], profile);
     }
 
@@ -578,6 +584,9 @@ public sealed class UserConfigurationService
 
         if (profile.SkippedModVersions.Count == 0)
             LoadSkippedModVersions(root["skippedModVersions"], profile.SkippedModVersions);
+
+        if (profile.DependencyWarningOverrides.Count == 0)
+            LoadDependencyWarningOverrides(root["dependencyWarningOverrides"], profile.DependencyWarningOverrides);
 
         if (profile.ModUsageSessionCounts.Count == 0) LoadModUsageTracking(root["modUsageTracking"], profile);
     }
@@ -1269,6 +1278,16 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetMaximumDataBackups(int maximumBackups)
+    {
+        var normalized = NormalizeMaximumDataBackups(maximumBackups);
+
+        if (MaximumDataBackups == normalized) return;
+
+        MaximumDataBackups = normalized;
+        Save();
+    }
+
     public void SetModlistAutoLoadBehavior(ModlistAutoLoadBehavior behavior)
     {
         if (ModlistAutoLoadBehavior == behavior) return;
@@ -1710,6 +1729,84 @@ public sealed class UserConfigurationService
         return string.Equals(storedVersion, normalizedVersion, StringComparison.OrdinalIgnoreCase);
     }
 
+    public bool IsDependencyWarningOverridden(string? modId, string? version)
+    {
+        var normalizedId = NormalizeModId(modId);
+        if (normalizedId is null) return false;
+
+        if (!ActiveDependencyWarningOverrides.TryGetValue(normalizedId, out var storedVersion)) return false;
+
+        var normalizedVersion = NormalizeVersion(version);
+        if (normalizedVersion is null
+            || !string.Equals(storedVersion, normalizedVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            if (ActiveDependencyWarningOverrides.Remove(normalizedId))
+                Save();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    public void SetDependencyWarningOverride(string? modId, string? version, bool isOverridden)
+    {
+        var normalizedId = NormalizeModId(modId);
+        if (normalizedId is null) return;
+
+        if (!isOverridden)
+        {
+            if (ActiveDependencyWarningOverrides.Remove(normalizedId)) Save();
+            return;
+        }
+
+        var normalizedVersion = NormalizeVersion(version);
+        if (normalizedVersion is null) return;
+
+        if (ActiveDependencyWarningOverrides.TryGetValue(normalizedId, out var current)
+            && string.Equals(current, normalizedVersion, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        ActiveDependencyWarningOverrides[normalizedId] = normalizedVersion;
+        Save();
+    }
+
+    public void ClearDependencyWarningOverride(string? modId)
+    {
+        var normalizedId = NormalizeModId(modId);
+        if (normalizedId is null) return;
+
+        if (ActiveDependencyWarningOverrides.Remove(normalizedId)) Save();
+    }
+
+    public void PruneDependencyWarningOverrides(IEnumerable<(string ModId, string? Version)> installedMods)
+    {
+        if (ActiveDependencyWarningOverrides.Count == 0) return;
+
+        var activeVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (modId, version) in installedMods)
+        {
+            var normalizedId = NormalizeModId(modId);
+            var normalizedVersion = NormalizeVersion(version);
+            if (normalizedId is null || normalizedVersion is null) continue;
+
+            activeVersions[normalizedId] = normalizedVersion;
+        }
+
+        var removed = false;
+        foreach (var pair in ActiveDependencyWarningOverrides.ToArray())
+        {
+            if (activeVersions.TryGetValue(pair.Key, out var activeVersion)
+                && string.Equals(activeVersion, pair.Value, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            ActiveDependencyWarningOverrides.Remove(pair.Key);
+            removed = true;
+        }
+
+        if (removed) Save();
+    }
+
 
     private void Load()
     {
@@ -1759,6 +1856,7 @@ public sealed class UserConfigurationService
             AutomaticDataBackupsWarningAcknowledged =
                 obj["automaticDataBackupsWarningAcknowledged"]?.GetValue<bool?>() ?? false;
             CustomDataBackupLocation = NormalizePath(GetOptionalString(obj["customDataBackupLocation"]));
+            MaximumDataBackups = NormalizeMaximumDataBackups(obj["maximumDataBackups"]?.GetValue<int?>());
             SuppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePrompt = obj["suppressRefreshCachePrompt"]?.GetValue<bool?>() ?? false;
             _suppressRefreshCachePromptVersion = NormalizeVersion(
@@ -1943,6 +2041,7 @@ public sealed class UserConfigurationService
             LogModDeletions = false;
             AutomaticDataBackupsWarningAcknowledged = false;
             CustomDataBackupLocation = null;
+            MaximumDataBackups = 0;
             SuppressModlistSavePrompt = false;
             _suppressRefreshCachePrompt = false;
             _suppressRefreshCachePromptVersion = null;
@@ -2026,6 +2125,7 @@ public sealed class UserConfigurationService
                 ["automaticDataBackupsEnabled"] = AutomaticDataBackupsEnabled,
                 ["automaticDataBackupsWarningAcknowledged"] = AutomaticDataBackupsWarningAcknowledged,
                 ["customDataBackupLocation"] = CustomDataBackupLocation,
+                ["maximumDataBackups"] = MaximumDataBackups,
                 ["suppressModlistSavePrompt"] = SuppressModlistSavePrompt,
                 ["suppressRefreshCachePrompt"] = _suppressRefreshCachePrompt,
                 ["suppressRefreshCachePromptVersion"] = _suppressRefreshCachePromptVersion,
@@ -2060,6 +2160,8 @@ public sealed class UserConfigurationService
                 ["modInfoPanelTop"] = _modInfoPanelTop,
                 ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(ActiveProfile.BulkUpdateModExclusions),
                 ["skippedModVersions"] = BuildSkippedModVersionsJson(ActiveProfile.SkippedModVersions),
+                ["dependencyWarningOverrides"] =
+                    BuildDependencyWarningOverridesJson(ActiveProfile.DependencyWarningOverrides),
                 ["installedColumnVisibility"] = BuildInstalledColumnVisibilityJson(),
                 ["modUsageTracking"] = BuildModUsageTrackingJson(ActiveProfile),
                 ["themePalette"] = BuildThemePaletteJson(),
@@ -2150,6 +2252,13 @@ public sealed class UserConfigurationService
         if (normalized <= 0) return DefaultModDatabaseSearchResultLimit;
 
         return Math.Max(normalized, 1);
+    }
+
+    private static int NormalizeMaximumDataBackups(int? value)
+    {
+        if (!value.HasValue) return 0;
+
+        return Math.Max(value.Value, 0);
     }
 
     private static int NormalizeModDatabaseNewModsRecentMonths(int? value)
@@ -2267,6 +2376,20 @@ public sealed class UserConfigurationService
         return result;
     }
 
+    private static JsonObject BuildDependencyWarningOverridesJson(IReadOnlyDictionary<string, string> source)
+    {
+        var result = new JsonObject();
+
+        foreach (var pair in source.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value)) continue;
+
+            result[pair.Key] = pair.Value;
+        }
+
+        return result;
+    }
+
     private static JsonObject BuildModUsageTrackingJson(GameProfileState profile)
     {
         var counts = new JsonArray();
@@ -2360,6 +2483,8 @@ public sealed class UserConfigurationService
                 ["customShortcutPath"] = profile.CustomShortcutPath,
                 ["bulkUpdateModExclusions"] = BuildBulkUpdateModExclusionsJson(profile.BulkUpdateModExclusions),
                 ["skippedModVersions"] = BuildSkippedModVersionsJson(profile.SkippedModVersions),
+                ["dependencyWarningOverrides"] =
+                    BuildDependencyWarningOverridesJson(profile.DependencyWarningOverrides),
                 ["modUsageTracking"] = BuildModUsageTrackingJson(profile)
             };
 
@@ -2429,6 +2554,38 @@ public sealed class UserConfigurationService
     }
 
     private void LoadSkippedModVersions(JsonNode? node, Dictionary<string, string> target)
+    {
+        target.Clear();
+
+        if (node is not JsonObject obj) return;
+
+        var requiresSave = false;
+
+        foreach (var (key, value) in obj)
+        {
+            var normalizedId = NormalizeModId(key);
+            if (normalizedId is null)
+            {
+                requiresSave = true;
+                continue;
+            }
+
+            var version = NormalizeVersion(GetOptionalString(value));
+            if (version is null)
+            {
+                requiresSave = true;
+                continue;
+            }
+
+            if (target.ContainsKey(normalizedId)) continue;
+
+            target[normalizedId] = version;
+        }
+
+        if (requiresSave) _hasPendingSave = true;
+    }
+
+    private void LoadDependencyWarningOverrides(JsonNode? node, Dictionary<string, string> target)
     {
         target.Clear();
 
@@ -3619,6 +3776,8 @@ public sealed class UserConfigurationService
         public Dictionary<string, bool> BulkUpdateModExclusions { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public Dictionary<string, string> SkippedModVersions { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public Dictionary<string, string> DependencyWarningOverrides { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public Dictionary<ModUsageTrackingKey, int> ModUsageSessionCounts { get; } = new();
 

@@ -39,6 +39,7 @@ public partial class ModBrowserViewModel : ObservableObject
     private int _activeSearchCount;
     private CancellationTokenSource? _pendingLoadMoreCts;
     private bool _isLoadingMore;
+    private readonly SemaphoreSlim _gameVersionsLoadGate = new(1, 1);
 
     #region Observable Properties
 
@@ -75,7 +76,6 @@ public partial class ModBrowserViewModel : ObservableObject
     private ObservableCollection<GameVersion> _availableVersions = [];
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ClearTagsCommand))]
     private ObservableCollection<ModTag> _selectedTags = [];
 
     [ObservableProperty]
@@ -123,9 +123,9 @@ public partial class ModBrowserViewModel : ObservableObject
     private bool ShouldUseCorrectThumbnails => !(_userConfigService?.UseFasterThumbnails ?? true);
 
     private string? EffectiveGameVersion =>
-        string.IsNullOrWhiteSpace(_userConfigService?.TargetGameVersionOverride)
-            ? _installedGameVersion
-            : _userConfigService.TargetGameVersionOverride;
+        TargetGameVersionPreference.ResolveEffectiveGameVersion(
+            _installedGameVersion,
+            _userConfigService?.TargetGameVersionOverride);
 
     #endregion
 
@@ -244,10 +244,6 @@ public partial class ModBrowserViewModel : ObservableObject
         }
         finally
         {
-            if (sender == SelectedTags)
-            {
-                ClearTagsCommand.NotifyCanExecuteChanged();
-            }
         }
     }
 
@@ -417,6 +413,24 @@ public partial class ModBrowserViewModel : ObservableObject
     public Task RefreshSearchAsync()
     {
         return SearchModsAsync();
+    }
+
+    public async Task LoadAvailableGameVersionsAsync()
+    {
+        await _gameVersionsLoadGate.WaitAsync();
+        try
+        {
+            var versions = await _modApiService.GetGameVersionsAsync();
+            AvailableVersions.Clear();
+            foreach (var version in versions)
+            {
+                AvailableVersions.Add(version);
+            }
+        }
+        finally
+        {
+            _gameVersionsLoadGate.Release();
+        }
     }
 
     [RelayCommand]
@@ -722,14 +736,6 @@ public partial class ModBrowserViewModel : ObservableObject
 
     private bool CanDownloadAllFavorites() => FavoriteMods.Count > 0;
 
-    [RelayCommand(CanExecute = nameof(CanClearTags))]
-    private void ClearTags()
-    {
-        SelectedTags.Clear();
-    }
-
-    private bool CanClearTags() => SelectedTags.Count > 0;
-
     [RelayCommand]
     private void ToggleRelevantSearchResults()
     {
@@ -908,12 +914,7 @@ public partial class ModBrowserViewModel : ObservableObject
 
     private async Task LoadGameVersionsAsync()
     {
-        var versions = await _modApiService.GetGameVersionsAsync();
-        AvailableVersions.Clear();
-        foreach (var version in versions)
-        {
-            AvailableVersions.Add(version);
-        }
+        await LoadAvailableGameVersionsAsync();
     }
 
     private async Task LoadTagsAsync()

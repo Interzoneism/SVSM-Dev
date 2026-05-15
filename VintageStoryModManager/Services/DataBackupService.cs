@@ -145,6 +145,39 @@ public sealed class DataBackupService
         return deleted;
     }
 
+    public int PruneBackups(string dataDirectory, string vintageStoryVersion, int maximumBackups)
+    {
+        if (maximumBackups <= 0) return 0;
+
+        if (string.IsNullOrWhiteSpace(dataDirectory))
+            throw new ArgumentException("A data directory must be provided.", nameof(dataDirectory));
+
+        if (string.IsNullOrWhiteSpace(vintageStoryVersion))
+            throw new ArgumentException("Vintage Story version is required.", nameof(vintageStoryVersion));
+
+        var normalizedSource = NormalizeDirectoryPath(dataDirectory)
+                               ?? throw new ArgumentException("A valid data directory must be provided.", nameof(dataDirectory));
+        var normalizedVersion = VersionStringUtility.Normalize(vintageStoryVersion);
+        if (string.IsNullOrWhiteSpace(normalizedVersion))
+            throw new ArgumentException("A valid Vintage Story version must be provided.", nameof(vintageStoryVersion));
+
+        var backupsToDelete = GetAvailableBackups()
+            .Where(summary => DirectoriesMatch(summary.SourceDataDirectory, normalizedSource))
+            .Where(summary => VersionsMatch(summary.VintageStoryVersion, normalizedVersion))
+            .OrderByDescending(summary => summary.CreatedOnUtc)
+            .Skip(maximumBackups)
+            .ToArray();
+
+        var deleted = 0;
+        foreach (var backup in backupsToDelete)
+        {
+            if (DeleteBackup(backup)) deleted++;
+        }
+
+        if (deleted > 0) CleanupSaveStore();
+        return deleted;
+    }
+
     public string GetBackupRootDirectory()
     {
         return _backupRootDirectory;
@@ -797,6 +830,20 @@ public sealed class DataBackupService
         {
             Trace.TraceWarning("Failed to delete file {0}: {1}", path, ex.Message);
         }
+    }
+
+    private static bool DeleteBackup(DataBackupSummary summary)
+    {
+        if (summary.DirectoryPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            var existed = File.Exists(summary.DirectoryPath);
+            TryDeleteFile(summary.DirectoryPath);
+            return existed && !File.Exists(summary.DirectoryPath);
+        }
+
+        var directoryExisted = Directory.Exists(summary.DirectoryPath);
+        TryDeleteDirectory(summary.DirectoryPath);
+        return directoryExisted && !Directory.Exists(summary.DirectoryPath);
     }
 
     private static void TryDeleteEntry(string path)

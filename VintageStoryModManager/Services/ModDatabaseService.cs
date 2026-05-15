@@ -1050,7 +1050,10 @@ public sealed class ModDatabaseService
                         lastModifiedApiValue = GetString(modElement, "lastmodified");
                         var releases = BuildReleaseInfos(modElement, normalizedGameVersion, requireExactVersionMatch);
                         var latestRelease = releases.Count > 0 ? releases[0] : null;
-                        var latestCompatibleRelease = releases.FirstOrDefault(release => release.IsCompatibleWithInstalledGame);
+                        var latestCompatibleRelease = TargetGameVersionReleaseSelector.SelectLatestCompatibleRelease(
+                            releases,
+                            normalizedGameVersion,
+                            requireExactVersionMatch);
                         var latestVersion = latestCompatibleRelease?.Version ?? modVersion ?? latestRelease?.Version;
                         var latestCompatibleVersion = latestCompatibleRelease?.Version ?? modVersion;
                         var requiredVersions = FindRequiredGameVersions(modElement, modVersion);
@@ -1244,15 +1247,10 @@ public sealed class ModDatabaseService
 
         var normalizedVersion = VersionStringUtility.Normalize(version);
         var releaseTags = GetStringList(releaseElement, "tags");
-        var isCompatible = normalizedGameVersion is null || releaseTags.Count == 0;
-
-        if (!isCompatible)
-            foreach (var tag in releaseTags)
-                if (VersionStringUtility.SupportsVersion(tag, normalizedGameVersion, requireExactVersionMatch))
-                {
-                    isCompatible = true;
-                    break;
-                }
+        var isCompatible = TargetGameVersionReleaseSelector.TagsSupportTarget(
+            releaseTags,
+            normalizedGameVersion,
+            requireExactVersionMatch);
 
         var fileName = GetString(releaseElement, "filename");
         var changelog = ConvertChangelogToPlainText(GetString(releaseElement, "changelog"));

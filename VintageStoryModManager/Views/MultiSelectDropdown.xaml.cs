@@ -65,6 +65,27 @@ namespace VintageStoryModManager.Views
                 typeof(MultiSelectDropdown),
                 new PropertyMetadata(new SolidColorBrush(System.Windows.Media.Color.FromRgb(161, 161, 170)))); // TextSecondaryBrush
 
+        public static readonly DependencyProperty MaxDropDownWidthProperty =
+            DependencyProperty.Register(
+                nameof(MaxDropDownWidth),
+                typeof(double),
+                typeof(MultiSelectDropdown),
+                new PropertyMetadata(double.PositiveInfinity, OnDropDownSizeChanged));
+
+        public static readonly DependencyProperty ShowClearSelectionOptionProperty =
+            DependencyProperty.Register(
+                nameof(ShowClearSelectionOption),
+                typeof(bool),
+                typeof(MultiSelectDropdown),
+                new PropertyMetadata(false, OnClearSelectionStateChanged));
+
+        public static readonly DependencyProperty ClearSelectionTextProperty =
+            DependencyProperty.Register(
+                nameof(ClearSelectionText),
+                typeof(string),
+                typeof(MultiSelectDropdown),
+                new PropertyMetadata("Clear", OnClearSelectionStateChanged));
+
         public IEnumerable ItemsSource
         {
             get => (IEnumerable)GetValue(ItemsSourceProperty);
@@ -99,6 +120,24 @@ namespace VintageStoryModManager.Views
         {
             get => (Brush)GetValue(DisplayTextBrushProperty);
             private set => SetValue(DisplayTextBrushProperty, value);
+        }
+
+        public double MaxDropDownWidth
+        {
+            get => (double)GetValue(MaxDropDownWidthProperty);
+            set => SetValue(MaxDropDownWidthProperty, value);
+        }
+
+        public bool ShowClearSelectionOption
+        {
+            get => (bool)GetValue(ShowClearSelectionOptionProperty);
+            set => SetValue(ShowClearSelectionOptionProperty, value);
+        }
+
+        public string ClearSelectionText
+        {
+            get => (string)GetValue(ClearSelectionTextProperty);
+            set => SetValue(ClearSelectionTextProperty, value);
         }
 
         private ObservableCollection<SelectableItem> _selectableItems = [];
@@ -411,8 +450,26 @@ namespace VintageStoryModManager.Views
             }
         }
 
+        private static void OnDropDownSizeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is MultiSelectDropdown dropdown)
+            {
+                dropdown.UpdateDropDownSize();
+            }
+        }
+
+        private static void OnClearSelectionStateChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is MultiSelectDropdown dropdown)
+            {
+                dropdown.UpdateClearSelectionOption();
+            }
+        }
+
         private void UpdateDisplayText()
         {
+            UpdateClearSelectionOption();
+
             if (SelectedItems == null || SelectedItems.Count == 0)
             {
                 DisplayText = PlaceholderText;
@@ -510,6 +567,47 @@ namespace VintageStoryModManager.Views
                 // Mark event as handled to prevent popup from closing when clicking items
                 e.Handled = true;
             }
+        }
+
+        private void UpdateDropDownSize()
+        {
+            if (DropdownBorder == null)
+                return;
+
+            DropdownBorder.MaxWidth = MaxDropDownWidth;
+        }
+
+        private void UpdateClearSelectionOption()
+        {
+            if (ClearSelectionOption == null || ClearSelectionTextBlock == null)
+                return;
+
+            ClearSelectionOption.Visibility =
+                ShowClearSelectionOption && SelectedItems?.Count > 0
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            ClearSelectionTextBlock.Text = ClearSelectionText;
+        }
+
+        private void ClearSelection_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (SelectedItems == null || SelectedItems.Count == 0)
+            {
+                e.Handled = true;
+                return;
+            }
+
+            SelectedItems.Clear();
+
+            foreach (var selectableItem in _selectableItems)
+            {
+                selectableItem.IsSelected = false;
+            }
+
+            UpdateDisplayText();
+            SelectionChanged?.Invoke(this, EventArgs.Empty);
+
+            e.Handled = true;
         }
     }
 

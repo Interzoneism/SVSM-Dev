@@ -35,6 +35,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private readonly string? _metadataError;
 
     private readonly Func<bool>? _requireExactVersionMatch;
+    private readonly Func<string?, string?, bool>? _isDependencyWarningOverridden;
     private readonly ModLoadingTimingService? _timingService;
     private string? _searchIndex;
     private readonly Func<string?, string?, bool>? _shouldSkipVersion;
@@ -49,6 +50,7 @@ public sealed class ModListItemViewModel : ObservableObject
     private bool _hasActivationError;
 
     private bool _isActive;
+    private bool _dependencyWarningOverridden;
     private bool _isSelected;
     private bool _isUserReportLoading;
     private string? _latestReleaseUserReportDisplay;
@@ -92,13 +94,15 @@ public sealed class ModListItemViewModel : ObservableObject
         Func<string?, string?, bool>? shouldSkipVersion = null,
         Func<bool>? requireExactVersionMatch = null,
         bool initializeUserReportState = true,
-        ModLoadingTimingService? timingService = null)
+        ModLoadingTimingService? timingService = null,
+        Func<string?, string?, bool>? isDependencyWarningOverridden = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
         _activationHandler = activationHandler ?? throw new ArgumentNullException(nameof(activationHandler));
         _installedGameVersion = installedGameVersion;
         _shouldSkipVersion = shouldSkipVersion;
         _requireExactVersionMatch = requireExactVersionMatch;
+        _isDependencyWarningOverridden = isDependencyWarningOverridden;
         _timingService = timingService;
 
         // Store for lazy search index building
@@ -153,9 +157,7 @@ public sealed class ModListItemViewModel : ObservableObject
             _databaseTenDayDownloads = CalculateDownloadsLastTenDaysFromReleases(_releases);
         LatestDatabaseVersion = LatestCompatibleRelease?.Version
                     ?? databaseInfo?.LatestCompatibleVersion
-                    ?? Version
-                    ?? LatestRelease?.Version
-                    ?? databaseInfo?.LatestVersion;
+                    ?? Version;
         var initialUserReportVersion = !string.IsNullOrWhiteSpace(entry.Version)
             ? entry.Version
             : SelectPreferredUserReportVersion(LatestRelease, LatestCompatibleRelease, databaseInfo);
@@ -201,6 +203,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
         _isActive = isActive;
         HasErrors = entry.HasErrors;
+        _dependencyWarningOverridden = ResolveDependencyWarningOverride();
 
         InitializeUpdateAvailability();
         InitializeVersionOptions();
@@ -399,7 +402,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool HasVersionOptions => VersionOptions.Count > 0;
 
-    public bool HasDownloadableRelease => LatestRelease != null || LatestCompatibleRelease != null;
+    public bool HasDownloadableRelease => LatestCompatibleRelease != null;
 
     public IReadOnlyList<ReleaseChangelog> NewerReleaseChangelogs { get; private set; } =
         Array.Empty<ReleaseChangelog>();
@@ -471,15 +474,10 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             if (!HasDownloadableRelease) return "No downloadable releases are available.";
 
-            if (LatestRelease?.IsCompatibleWithInstalledGame == true)
-                return $"Install version {LatestRelease.Version}.";
-
             if (LatestCompatibleRelease != null)
                 return $"Install compatible version {LatestCompatibleRelease.Version}.";
 
-            if (LatestRelease != null) return $"Install version {LatestRelease.Version} (may be incompatible).";
-
-            return "No downloadable releases are available.";
+            return "No releases are marked compatible with the current target Vintage Story version.";
         }
     }
 
@@ -493,16 +491,14 @@ public sealed class ModListItemViewModel : ObservableObject
     {
         get
         {
-            if (LatestRelease is null) return "No updates available.";
+            if (LatestCompatibleRelease is null) return "No compatible updates available.";
 
-            if (LatestRelease.IsCompatibleWithInstalledGame) return $"Install version {LatestRelease.Version}.";
-
-            if (LatestCompatibleRelease != null
+            if (LatestRelease != null
                 && !string.Equals(LatestRelease.Version, LatestCompatibleRelease.Version,
                     StringComparison.OrdinalIgnoreCase))
                 return $"Latest: {LatestRelease.Version}. Compatible: {LatestCompatibleRelease.Version}.";
 
-            return $"Install version {LatestRelease.Version} (may be incompatible).";
+            return $"Install version {LatestCompatibleRelease.Version}.";
         }
     }
 
@@ -585,7 +581,11 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool HasLoadError => !string.IsNullOrWhiteSpace(_loadError);
 
-    public bool CanToggle => !HasErrors && !HasLoadError;
+    public bool IsDependencyWarningOverridden => _dependencyWarningOverridden;
+
+    public bool CanToggle => !HasErrors && (!HasLoadError || CanOverrideDependencyWarning);
+
+    private bool CanOverrideDependencyWarning => IsDependencyWarningOverridden && HasDependencyIssues;
 
     public bool HasActivationError
     {
@@ -1040,6 +1040,18 @@ public sealed class ModListItemViewModel : ObservableObject
         UpdateTooltip();
     }
 
+    public void RefreshDependencyWarningOverride()
+    {
+        var isOverridden = ResolveDependencyWarningOverride();
+        if (_dependencyWarningOverridden == isOverridden) return;
+
+        _dependencyWarningOverridden = isOverridden;
+        OnPropertyChanged(nameof(IsDependencyWarningOverridden));
+        OnPropertyChanged(nameof(CanToggle));
+        UpdateStatusFromErrors();
+        UpdateTooltip();
+    }
+
     /// <summary>
     /// Updates database information for this mod with batched property change notifications.
     /// This method must be called from the UI thread (Dispatcher thread).
@@ -1195,9 +1207,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
             var latestDatabaseVersion = latestCompatibleRelease?.Version
                                         ?? info.LatestCompatibleVersion
-                                        ?? Version
-                                        ?? latestRelease?.Version
-                                        ?? info.LatestVersion;
+                                        ?? Version;
 
             if (!string.Equals(LatestDatabaseVersion, latestDatabaseVersion, StringComparison.Ordinal))
             {
@@ -1448,8 +1458,15 @@ public sealed class ModListItemViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(HasDependencyIssues));
                 OnPropertyChanged(nameof(CanFixDependencyIssues));
+                OnPropertyChanged(nameof(CanToggle));
+                RefreshDependencyWarningOverride();
             }
         }
+    }
+
+    private bool ResolveDependencyWarningOverride()
+    {
+        return _isDependencyWarningOverridden?.Invoke(ModId, Version) == true;
     }
 
     private async Task ApplyActivationChangeAsync(bool previous, bool current)
@@ -1499,8 +1516,17 @@ public sealed class ModListItemViewModel : ObservableObject
         }
         else if (HasLoadError)
         {
-            StatusText = "Error";
-            StatusDetails = AppendWarningText(_loadError ?? string.Empty);
+            if (CanOverrideDependencyWarning)
+            {
+                StatusText = "Warning";
+                StatusDetails = AppendWarningText(
+                    $"Dependency warning overridden. {_loadError ?? string.Empty}".Trim());
+            }
+            else
+            {
+                StatusText = "Error";
+                StatusDetails = AppendWarningText(_loadError ?? string.Empty);
+            }
         }
         else if (HasActivationError)
         {

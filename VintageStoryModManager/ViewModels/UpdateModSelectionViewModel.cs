@@ -35,19 +35,19 @@ public sealed partial class UpdateModSelectionViewModel : ObservableObject
     {
         get
         {
-            var target = _overrideRelease?.Version
-                         ?? Mod.LatestRelease?.Version
-                         ?? Mod.Version;
+            var target = TargetRelease?.Version ?? Mod.Version;
             return string.IsNullOrWhiteSpace(target) ? "—" : target!;
         }
     }
 
-    public string? TargetUpdateVersion => _overrideRelease?.Version ?? Mod.LatestRelease?.Version;
+    public ModReleaseInfo? TargetRelease => _overrideRelease ?? Mod.LatestCompatibleRelease;
+
+    public string? TargetUpdateVersion => TargetRelease?.Version;
 
     public bool CanSkip => !string.IsNullOrWhiteSpace(TargetUpdateVersion);
 
     private string? LatestServerInstallVersion =>
-        Mod.LatestRelease?.Version ?? _overrideRelease?.Version ?? Mod.Version;
+        TargetRelease?.Version ?? Mod.Version;
 
     public bool ShowServerInstallCommand => _isServerOptionsEnabled
                                             && !string.IsNullOrWhiteSpace(Mod.ModId)
@@ -69,11 +69,12 @@ public sealed partial class UpdateModSelectionViewModel : ObservableObject
         }
     }
 
-    public IReadOnlyList<ModListItemViewModel.ReleaseChangelog> Changelogs => Mod.NewerReleaseChangelogs;
+    public IReadOnlyList<ModListItemViewModel.ReleaseChangelog> Changelogs =>
+        Mod.GetChangelogEntriesForUpgrade(TargetUpdateVersion);
 
-    public int ChangelogCount => Mod.NewerReleaseChangelogs.Count;
+    public int ChangelogCount => Changelogs.Count;
 
-    public bool HasChangelogs => Mod.HasNewerReleaseChangelogs;
+    public bool HasChangelogs => ChangelogCount > 0;
 
     public string ChangelogHeader => ChangelogCount <= 1
         ? "Changelog"

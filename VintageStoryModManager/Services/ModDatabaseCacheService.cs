@@ -585,7 +585,10 @@ internal sealed class ModDatabaseCacheService
         var releases = BuildReleases(cached.Releases, normalizedGameVersion, requireExactVersionMatch);
 
         var latestRelease = releases.Count > 0 ? releases[0] : null;
-        var latestCompatibleRelease = releases.FirstOrDefault(r => r.IsCompatibleWithInstalledGame);
+        var latestCompatibleRelease = TargetGameVersionReleaseSelector.SelectLatestCompatibleRelease(
+            releases,
+            normalizedGameVersion,
+            requireExactVersionMatch);
 
         var requiredVersions = DetermineRequiredGameVersions(
             cached.Releases,
@@ -659,13 +662,19 @@ internal sealed class ModDatabaseCacheService
                 continue;
 
             var isCompatible = false;
-            if (normalizedGameVersion != null && release.GameVersionTags is { Length: > 0 })
+            if (normalizedGameVersion is null)
+            {
+                isCompatible = true;
+            }
+            else if (release.GameVersionTags is { Length: > 0 })
+            {
                 foreach (var tag in release.GameVersionTags)
                     if (VersionStringUtility.SupportsVersion(tag, normalizedGameVersion, requireExactVersionMatch))
                     {
                         isCompatible = true;
                         break;
                     }
+            }
 
             releases.Add(new ModReleaseInfo
             {

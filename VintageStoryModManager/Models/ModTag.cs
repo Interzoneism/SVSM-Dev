@@ -8,6 +8,7 @@ namespace VintageStoryModManager.Models;
 public class ModTag
 {
     [JsonPropertyName("tagid")]
+    [JsonConverter(typeof(FlexibleIntConverter))]
     public int TagId { get; set; }
 
     [JsonPropertyName("name")]

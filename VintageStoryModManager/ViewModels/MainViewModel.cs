@@ -43,6 +43,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private const int IncrementalRefreshDelayMs = 300;  // Delay before refreshing after incremental updates
 
     private readonly object _busyStateLock = new();
+    private readonly RelayCommand _clearInstalledTagFiltersCommand;
     private readonly RelayCommand _clearSearchCommand;
     private readonly ClientSettingsWatcher _clientSettingsWatcher;
     private readonly ObservableCollection<CloudModlistListEntry> _cloudModlists = new();
@@ -198,6 +199,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         _clearSearchCommand = new RelayCommand(() => SearchText = string.Empty, () => HasSearchText);
         ClearSearchCommand = _clearSearchCommand;
+        _clearInstalledTagFiltersCommand = new RelayCommand(ClearInstalledTagFilters, () => HasSelectedTags);
+        ClearInstalledTagFiltersCommand = _clearInstalledTagFiltersCommand;
 
         _showMainTabCommand = new RelayCommand(() => SetViewSection(ViewSection.MainTab));
         _showDatabaseTabCommand = new RelayCommand(
@@ -485,14 +488,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public IRelayCommand ClearSearchCommand { get; }
 
+    public IRelayCommand ClearInstalledTagFiltersCommand { get; }
+
     public IAsyncRelayCommand RefreshCommand { get; }
 
     public string? InstalledGameVersion { get; }
 
     public string? EffectiveGameVersion =>
-        string.IsNullOrWhiteSpace(_configuration.TargetGameVersionOverride)
-            ? InstalledGameVersion
-            : _configuration.TargetGameVersionOverride;
+        TargetGameVersionPreference.ResolveEffectiveGameVersion(
+            InstalledGameVersion,
+            _configuration.TargetGameVersionOverride);
 
     public void Dispose()
     {
@@ -1527,6 +1532,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
 
         ApplyPartialUpdates(reloadResults, previousSelection, impactedEntries);
+        PruneDependencyWarningOverridesToCurrentMods();
 
         if (_allowModDetailsRefresh && refreshedEntries.Count > 0) QueueDatabaseInfoRefresh(refreshedEntries);
 
@@ -1714,6 +1720,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                     _discoveryService.ApplyLoadStatuses(allEntries);
                 }
 
+                PruneDependencyWarningOverrides(allEntries);
+
                 progressReporter.Report(new LoadingProgressUpdate(80, $"Preparing {allEntries.Count} mods..."));
 
                 // Pre-create view models off the UI thread to reduce dispatcher work
@@ -1898,7 +1906,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             _configuration.ShouldSkipModVersion,
             () => _configuration.RequireExactVsVersionMatch,
             _allowModDetailsRefresh,
-            _timingService);
+            _timingService,
+            _configuration.IsDependencyWarningOverridden);
     }
 
     private async Task UpdateModsStateSnapshotAsync()
@@ -2625,6 +2634,30 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void ClearInstalledTagFilters()
+    {
+        if (!HasSelectedTags) return;
+
+        _suppressInstalledTagFilterSelectionChanges = true;
+        try
+        {
+            foreach (var filter in _installedTagFilters)
+            {
+                filter.IsSelected = false;
+            }
+        }
+        finally
+        {
+            _suppressInstalledTagFilterSelectionChanges = false;
+        }
+
+        if (_tagFilterService.SetSelectedInstalledTags(Array.Empty<string>()))
+        {
+            UpdateHasSelectedTags();
+            ModsView.Refresh();
+        }
+    }
+
     private void OnModDatabaseTagFilterPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
 
@@ -2646,6 +2679,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void UpdateHasSelectedTags()
     {
         HasSelectedTags = _tagFilterService.HasSelectedTags;
+        _clearInstalledTagFiltersCommand.NotifyCanExecuteChanged();
     }
 
     private IDisposable BeginBusyScope()
@@ -3406,6 +3440,19 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         SetStatus($"Applied changes to mods ({summary}).", false);
     }
 
+    private void PruneDependencyWarningOverridesToCurrentMods()
+    {
+        PruneDependencyWarningOverrides(_modEntriesBySourcePath.Values);
+    }
+
+    private void PruneDependencyWarningOverrides(IEnumerable<ModEntry> entries)
+    {
+        _configuration.PruneDependencyWarningOverrides(
+            entries
+                .Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.ModId))
+                .Select(entry => (entry.ModId, entry.Version)));
+    }
+
     private void QueueDatabaseInfoRefresh(IEnumerable<ModEntry> entries, bool forceRefresh = false)
     {
         if (entries is null) return;
@@ -4040,7 +4087,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             LatestVersion = latestVersion,
             LatestCompatibleVersion = latestCompatibleVersion,
             LatestRelease = latestRelease,
-            LatestCompatibleRelease = latestCompatibleRelease ?? latestRelease,
+            LatestCompatibleRelease = latestCompatibleRelease,
             Releases = releases,
             LastReleasedUtc = lastUpdatedUtc,
             IsOfflineOnly = true,
@@ -4086,7 +4133,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             LastReleasedUtc = offlineInfo.LastReleasedUtc ?? cachedInfo.LastReleasedUtc,
             CreatedUtc = cachedInfo.CreatedUtc ?? offlineInfo.CreatedUtc,
             LatestRelease = latestRelease,
-            LatestCompatibleRelease = latestCompatibleRelease ?? latestRelease,
+            LatestCompatibleRelease = latestCompatibleRelease,
             Releases = mergedReleases,
             IsOfflineOnly = offlineInfo.IsOfflineOnly && (cachedInfo?.IsOfflineOnly ?? true),
             Side = cachedInfo?.Side ?? offlineInfo.Side
