@@ -105,6 +105,30 @@ public partial class UpdateModsDialog : Window
         }
     }
 
+    private void CopyChangelogButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var changelogText = _viewModel.BuildChangelogClipboardText();
+        if (string.IsNullOrWhiteSpace(changelogText)) return;
+
+        try
+        {
+            WinFormsClipboard.SetDataObject(changelogText, true, 10, 100);
+            if (Owner is MainWindow mainWindow)
+                mainWindow.ReportStatus("Copied update changelog.");
+            else
+                StatusLogService.AppendStatus("Copied update changelog.", false);
+        }
+        catch (ExternalException)
+        {
+            WpfMessageBox.Show(
+                this,
+                "Failed to copy the update changelog. Please try again.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         foreach (var item in _viewModel.Mods) item.PropertyChanged -= OnSelectionPropertyChanged;

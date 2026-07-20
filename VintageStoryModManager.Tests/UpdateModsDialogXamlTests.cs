@@ -28,6 +28,29 @@ public sealed class UpdateModsDialogXamlTests
         Assert.NotNull(displayNameRun);
     }
 
+    [Fact]
+    public void CopyChangelogButtonIsAvailableInDialogActions()
+    {
+        var xamlPath = Path.Combine(
+            FindRepositoryRoot(),
+            "VintageStoryModManager",
+            "Views",
+            "Dialogs",
+            "UpdateModsDialog.xaml");
+
+        var document = XDocument.Load(Path.GetFullPath(xamlPath));
+        XNamespace presentation = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
+
+        var copyButton = document
+            .Descendants(presentation + "Button")
+            .Single(element => string.Equals(
+                element.Attribute("Content")?.Value,
+                "Copy changelog",
+                StringComparison.Ordinal));
+
+        Assert.Equal("CopyChangelogButton_OnClick", copyButton.Attribute("Click")?.Value);
+    }
+
     private static string FindRepositoryRoot()
     {
         var candidates = new[]

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace VintageStoryModManager.ViewModels;
@@ -55,6 +56,35 @@ public sealed class UpdateModsDialogViewModel : ObservableObject
         return Mods.Where(m => m.IsSelected).Select(m => m.Mod).ToList();
     }
 
+    public string BuildChangelogClipboardText()
+    {
+        var builder = new StringBuilder();
+
+        foreach (var mod in Mods)
+        {
+            if (builder.Length > 0)
+            {
+                builder.AppendLine();
+            }
+
+            builder.AppendLine(mod.DisplayName);
+            builder.AppendLine(mod.VersionSummary);
+
+            if (!mod.HasChangelogs) continue;
+
+            builder.AppendLine(mod.ChangelogHeader);
+
+            foreach (var changelog in mod.Changelogs)
+            {
+                builder.AppendLine(changelog.Version);
+                if (!string.IsNullOrWhiteSpace(changelog.Changelog))
+                    builder.AppendLine(NormalizeLineEndings(changelog.Changelog.TrimEnd()));
+            }
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+
     public bool RemoveMod(UpdateModSelectionViewModel? mod)
     {
         if (mod is null) return false;
@@ -94,5 +124,13 @@ public sealed class UpdateModsDialogViewModel : ObservableObject
             }
 
         OnPropertyChanged(nameof(HasSelection));
+    }
+
+    private static string NormalizeLineEndings(string value)
+    {
+        return value
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n')
+            .Replace("\n", Environment.NewLine, StringComparison.Ordinal);
     }
 }
