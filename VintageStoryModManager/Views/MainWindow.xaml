@@ -17,7 +17,7 @@
     Width="1558"
     Height="719"
     MinWidth="1000"
-    MinHeight="775"
+    MinHeight="400"
     d:DataContext="{d:DesignInstance Type={x:Type design:MainWindowDesignData},
                                      IsDesignTimeCreatable=False}"
     AllowDrop="True"
@@ -297,6 +297,14 @@
                             IsCheckable="True"
                             Style="{StaticResource ToggleMenuItemStyle}" />
                         <MenuItem
+                            x:Name="CacheModDatabaseResultsMenuItem"
+                            Height="35"
+                            Click="CacheModDatabaseResultsMenuItem_OnClick"
+                            Header="Cache Mod Database results (experimental)"
+                            IsCheckable="True"
+                            Style="{StaticResource ToggleMenuItemStyle}"
+                            ToolTip="Reuse the current Mod Database results when its search and filters have not changed." />
+                        <MenuItem
                             x:Name="DisableHoverEffectsMenuItem"
                             Height="35"
                             Click="DisableHoverEffectsMenuItem_OnClick"
@@ -315,7 +323,10 @@
                             IsCheckable="True"
                             IsChecked="{Binding IsCompactView, Mode=TwoWay}"
                             Style="{StaticResource ToggleMenuItemStyle}" />
-                        <MenuItem x:Name="ThemesMenuItem" Height="35" Header="_Themes">
+                        <MenuItem
+                            x:Name="ThemesMenuItem"
+                            Height="35"
+                            Header="_Themes">
                             <MenuItem
                                 x:Name="VintageStoryThemeMenuItem"
                                 Height="35"
@@ -622,13 +633,41 @@
         <!--  ============================================================  -->
         <!--  MIDDLE: Main Content Area (Installed Mods, Mod Database, Modlists tabs)  -->
         <!--  ============================================================  -->
-        <Grid
-            x:Name="MIDDLE"
+        <ui:SplitView
+            x:Name="InstalledModSplitView"
             Grid.Row="1"
-            Background="Transparent">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+            CompactPaneLength="0"
+            DisplayMode="Inline"
+            IsTabStop="False"
+            OpenPaneLength="344"
+            PaneBackground="{DynamicResource Brush.MiddleTab.Background.Selected}">
+            <ui:SplitView.Style>
+                <Style TargetType="{x:Type ui:SplitView}">
+                    <Setter Property="IsPaneOpen" Value="False" />
+                    <Style.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding HasSelectedMods}" Value="True" />
+                                <Condition Binding="{Binding IsViewingMainTab}" Value="True" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="IsPaneOpen" Value="True" />
+                        </MultiDataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ui:SplitView.Style>
+            <ui:SplitView.Pane>
+                <ContentControl
+                    x:Name="ModInfoPaneHost"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Top" />
+            </ui:SplitView.Pane>
+
+            <Grid
+                x:Name="MIDDLE"
+                Background="Transparent">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
             <!--  Discord Button (top-right corner)  -->
             <TabControl
@@ -1698,7 +1737,7 @@
                                                 <DataGridTextColumn
                                                     Width="180"
                                                     Binding="{Binding DateAddedDisplay}"
-                                                    Header="Date Added"
+                                                    Header="Date Modified"
                                                     IsReadOnly="True"
                                                     SortMemberPath="DateAdded">
                                                     <DataGridTextColumn.ElementStyle>
@@ -1946,7 +1985,8 @@
                     </ControlTemplate>
                 </Button.Template>
             </Button>
-        </Grid>
+            </Grid>
+        </ui:SplitView>
 
         <!--  ============================================================  -->
         <!--  BOTTOM: Status Bar and Action Buttons  -->
@@ -2156,30 +2196,29 @@
         <!--  FLOATING OVERLAYS: Mod Info Panel, Modlist Install, Data Backup  -->
         <!--  ============================================================  -->
 
-        <!--  Selected Mod Info Panel (Draggable Floating Panel)  -->
+        <!--
+            Selected Mod details content. It is created here so its existing named
+            controls and handlers remain intact, then moved into the inline
+            SplitView pane during window initialization.
+        -->
         <Canvas
             x:Name="ModInfoOverlay"
             Grid.RowSpan="3"
-            Panel.ZIndex="400">
+            IsHitTestVisible="False"
+            Visibility="Collapsed">
             <Border
                 x:Name="MODINFO_border"
-                Canvas.Left="1060"
-                Canvas.Top="350"
                 Width="326"
                 Height="230"
-                Panel.ZIndex="400"
+                Margin="8,10,8,8"
                 Background="{DynamicResource Brush.ModCard.Background.Active}"
                 BorderBrush="{DynamicResource Brush.Button.Bevel.Light}"
                 BorderThickness="1,1,0.5,0.5"
-                CornerRadius="8,8,8,8"
-                LostMouseCapture="ModInfoBorder_OnLostMouseCapture"
-                MouseLeftButtonDown="ModInfoBorder_OnMouseLeftButtonDown"
-                MouseLeftButtonUp="ModInfoBorder_OnMouseLeftButtonUp"
-                MouseMove="ModInfoBorder_OnMouseMove">
+                CornerRadius="8,8,8,8">
                 <Border.Style>
                     <Style TargetType="{x:Type Border}">
                         <Setter Property="Visibility" Value="Collapsed" />
-                        <Setter Property="IsHitTestVisible" Value="False"  />
+                        <Setter Property="IsHitTestVisible" Value="False" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding HasSelectedMods}" Value="True">
                                 <Setter Property="Visibility" Value="Visible" />
@@ -2200,14 +2239,6 @@
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-                <Border.Effect>
-                    <DropShadowEffect
-                        BlurRadius="20"
-                        Direction="270"
-                        Opacity="0.2"
-                        ShadowDepth="8"
-                        Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
-                </Border.Effect>
                 <Grid
                     x:Name="MODINFO_grid"
                     Width="324"
@@ -2217,19 +2248,33 @@
                         <ColumnDefinition Width="53*" />
                         <ColumnDefinition Width="28*" />
                     </Grid.ColumnDefinitions>
-                    <Grid.Effect>
-                        <DropShadowEffect
-                            BlurRadius="6"
-                            Direction="270"
-                            Opacity="0.1"
-                            ShadowDepth="4"
-                            Color="{DynamicResource Palette.BaseSurface.Shadowed}" />
-                    </Grid.Effect>
+                    <!--  Move the inline pane between the left and right edges.  -->
+                    <Button
+                        x:Name="ModInfoPanePlacementButton"
+                        Grid.Column="1"
+                        Width="18"
+                        Height="18"
+                        Margin="0,-3,22,0"
+                        Padding="0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Panel.ZIndex="1000"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="0"
+                        Click="ModInfoPanePlacementButton_OnClick"
+                        Content="⇆"
+                        Cursor="Hand"
+                        FontSize="11"
+                        Foreground="{DynamicResource Brush.Text.Primary}"
+                        Style="{DynamicResource CloseButton}"
+                        ToolTip="Move details pane to the left" />
                     <!--  Close Button  -->
                     <Button
                         Grid.Column="1"
                         Width="16"
                         Height="16"
+                        Margin="0,-2,0,0"
                         Padding="0,0,0,0"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Top"
@@ -2246,7 +2291,7 @@
                         FontWeight="Bold"
                         Foreground="{DynamicResource Brush.Text.Primary}"
                         Style="{DynamicResource CloseButton}"
-                        ToolTip="Close and deselect mod" Margin="0,-2,0,0">
+                        ToolTip="Close and deselect mod">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <ContentPresenter

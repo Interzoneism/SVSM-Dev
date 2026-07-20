@@ -105,12 +105,6 @@ public partial class MainWindow : Window
     private static readonly double HoverOverlayOpacity = DevConfig.HoverOverlayOpacity;
     private static readonly double SelectionOverlayOpacity = DevConfig.SelectionOverlayOpacity;
 
-    // Mod info panel positioning
-    private static readonly double ModInfoPanelHorizontalOverhang = DevConfig.ModInfoPanelHorizontalOverhang;
-    private static readonly double DefaultModInfoPanelLeft = DevConfig.DefaultModInfoPanelLeft;
-    private static readonly double DefaultModInfoPanelTop = DevConfig.DefaultModInfoPanelTop;
-    private static readonly double DefaultModInfoPanelRightMargin = DevConfig.DefaultModInfoPanelRightMargin;
-
     // Directory names
     private static readonly string PresetDirectoryName = DevConfig.PresetDirectoryName;
     private static readonly string ModListDirectoryName = DevConfig.ModListDirectoryName;
@@ -354,14 +348,12 @@ public partial class MainWindow : Window
     private VotesCacheWatcher? _votesCacheWatcher;
 
     // UI state flags
-    private bool _hasAppliedInitialModInfoPanelPosition;
     private bool _isApplyingMultiToggle;
     private bool _isApplyingPreset;
     private bool _isAutomaticRefreshRunning;
     private bool _isInstallingMod;
     private bool _isCloudModlistRefreshInProgress;
     private bool _isDependencyResolutionRefreshPending;
-    private bool _isDraggingModInfoPanel;
     private bool _isInitializing;
     private bool _isUpdatingModlistsTabSelection;
     private bool _isUpdatingMiddleTabSelection;
@@ -373,9 +365,6 @@ public partial class MainWindow : Window
     private bool _localModlistsLoaded;
     private bool _suppressSortPreferenceSave;
     private bool _isModBrowserWatcherSubscribed;
-
-    // Drag state
-    private Point _modInfoDragOffset;
 
     // Modlist installation state
     private string? _recentLocalModBackupDirectory;
@@ -406,11 +395,10 @@ public partial class MainWindow : Window
 
         InitializeComponent();
 
+        InitializeModInfoPane();
         InitializeModBrowserView();
 
         DeveloperProfileManager.CurrentProfileChanged += DeveloperProfileManager_OnCurrentProfileChanged;
-
-        RootGrid.SizeChanged += RootGrid_OnSizeChanged;
 
         UpdateModlistLoadingUiState();
 
@@ -425,6 +413,7 @@ public partial class MainWindow : Window
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
         UseFasterThumbnailsMenuItem.IsChecked = _userConfiguration.UseFasterThumbnails;
+        CacheModDatabaseResultsMenuItem.IsChecked = _userConfiguration.CacheModDatabaseResults;
         DisableHoverEffectsMenuItem.IsChecked = _userConfiguration.DisableHoverEffects;
         HoverEffectHelper.SetDisableHoverEffects(this, _userConfiguration.DisableHoverEffects);
         UpdateLoggingMenuState();
@@ -574,8 +563,6 @@ public partial class MainWindow : Window
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         Loaded -= MainWindow_Loaded;
-
-        ApplyStoredModInfoPanelPosition();
 
         _userConfiguration.EnablePersistence();
 
@@ -1133,173 +1120,36 @@ public partial class MainWindow : Window
         DeveloperProfileManager.CurrentProfileChanged -= DeveloperProfileManager_OnCurrentProfileChanged;
     }
 
-    private void RootGrid_OnSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        if (_isDraggingModInfoPanel) return;
-
-        EnsureModInfoPanelWithinBounds(true);
-    }
-
     #endregion
 
-    #region Mod Info Panel (Dragging and Positioning)
+    #region Installed Mod Details Pane
 
-    private void ModInfoBorder_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private void InitializeModInfoPane()
     {
-        if (sender is not Border border) return;
-
-        if (IsModInfoDragInitiationBlocked(e.OriginalSource as DependencyObject)) return;
-
-        _isDraggingModInfoPanel = true;
-        _modInfoDragOffset = e.GetPosition(border);
-        border.CaptureMouse();
-        e.Handled = true;
+        ModInfoOverlay.Children.Remove(MODINFO_border);
+        ModInfoPaneHost.Content = MODINFO_border;
+        ApplyModInfoPanePlacement(_userConfiguration.ModInfoPanePlacement);
     }
 
-    private void ModInfoBorder_OnMouseMove(object sender, MouseEventArgs e)
+    private void ModInfoPanePlacementButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!_isDraggingModInfoPanel || sender is not Border border) return;
+        var placement = _userConfiguration.ModInfoPanePlacement == ModInfoPanePlacement.Left
+            ? ModInfoPanePlacement.Right
+            : ModInfoPanePlacement.Left;
 
-        var pointerPosition = e.GetPosition(RootGrid);
-        var left = pointerPosition.X - _modInfoDragOffset.X;
-        var top = pointerPosition.Y - _modInfoDragOffset.Y;
-
-        SetModInfoPanelPosition(left, top, false);
-        e.Handled = true;
+        _userConfiguration.SetModInfoPanePlacement(placement);
+        ApplyModInfoPanePlacement(placement);
     }
 
-    private void ModInfoBorder_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private void ApplyModInfoPanePlacement(ModInfoPanePlacement placement)
     {
-        if (!_isDraggingModInfoPanel || sender is not Border border) return;
-
-        _isDraggingModInfoPanel = false;
-        border.ReleaseMouseCapture();
-        EnsureModInfoPanelWithinBounds(true);
-        e.Handled = true;
-    }
-
-    private void ModInfoBorder_OnLostMouseCapture(object sender, MouseEventArgs e)
-    {
-        if (!_isDraggingModInfoPanel) return;
-
-        _isDraggingModInfoPanel = false;
-        EnsureModInfoPanelWithinBounds(true);
-    }
-
-    private void ApplyStoredModInfoPanelPosition()
-    {
-        Dispatcher.BeginInvoke(new Action(() =>
-        {
-            var left = _userConfiguration.ModInfoPanelLeft ?? ComputeDefaultModInfoPanelLeft();
-            var top = _userConfiguration.ModInfoPanelTop ?? DefaultModInfoPanelTop;
-
-            SetModInfoPanelPosition(left, top, false);
-            _hasAppliedInitialModInfoPanelPosition = true;
-        }), DispatcherPriority.Loaded);
-    }
-
-    private void EnsureModInfoPanelWithinBounds(bool persist)
-    {
-        if (MODINFO_border is null) return;
-
-        var left = Canvas.GetLeft(MODINFO_border);
-        if (double.IsNaN(left)) left = _userConfiguration.ModInfoPanelLeft ?? ComputeDefaultModInfoPanelLeft();
-
-        var top = Canvas.GetTop(MODINFO_border);
-        if (double.IsNaN(top)) top = _userConfiguration.ModInfoPanelTop ?? DefaultModInfoPanelTop;
-
-        var shouldPersist = persist && _hasAppliedInitialModInfoPanelPosition;
-        SetModInfoPanelPosition(left, top, shouldPersist);
-    }
-
-    private void SetModInfoPanelPosition(double left, double top, bool persist)
-    {
-        if (RootGrid is null || MODINFO_border is null) return;
-
-        var containerWidth = RootGrid.ActualWidth;
-        var containerHeight = RootGrid.ActualHeight;
-
-        if (containerWidth <= 0 || containerHeight <= 0)
-        {
-            Dispatcher.BeginInvoke(new Action(() => SetModInfoPanelPosition(left, top, persist)),
-                DispatcherPriority.Loaded);
-            return;
-        }
-
-        var panelWidth = GetModInfoPanelWidth();
-        var panelHeight = GetModInfoPanelHeight();
-
-        var minLeft = -ModInfoPanelHorizontalOverhang;
-        var maxLeft = Math.Max(minLeft, containerWidth - panelWidth + ModInfoPanelHorizontalOverhang);
-        double minTop = 0;
-        var maxTop = Math.Max(minTop, containerHeight - panelHeight);
-
-        var clampedLeft = Math.Min(Math.Max(left, minLeft), maxLeft);
-        var clampedTop = Math.Min(Math.Max(top, minTop), maxTop);
-
-        Canvas.SetLeft(MODINFO_border, clampedLeft);
-        Canvas.SetTop(MODINFO_border, clampedTop);
-
-        if (persist) _userConfiguration.SetModInfoPanelPosition(clampedLeft, clampedTop);
-    }
-
-    private double ComputeDefaultModInfoPanelLeft()
-    {
-        var containerWidth = RootGrid?.ActualWidth ?? ActualWidth;
-
-        if (containerWidth <= 0) containerWidth = Width;
-
-        var panelWidth = GetModInfoPanelWidth();
-
-        var preferredLeft = DefaultModInfoPanelLeft;
-
-        if (containerWidth > 0 && panelWidth > 0)
-        {
-            var rightAlignedLeft = containerWidth - panelWidth - DefaultModInfoPanelRightMargin;
-            if (!double.IsNaN(rightAlignedLeft)) preferredLeft = Math.Min(preferredLeft, rightAlignedLeft);
-
-            var minLeft = -ModInfoPanelHorizontalOverhang;
-            var maxLeft = Math.Max(minLeft, containerWidth - panelWidth + ModInfoPanelHorizontalOverhang);
-
-            return Math.Min(Math.Max(preferredLeft, minLeft), maxLeft);
-        }
-
-        return preferredLeft;
-    }
-
-    private double GetModInfoPanelWidth()
-    {
-        if (MODINFO_border is null) return 0;
-
-        var width = MODINFO_border.ActualWidth;
-        if (width <= 0) width = MODINFO_border.Width;
-
-        return double.IsNaN(width) ? 0 : width;
-    }
-
-    private double GetModInfoPanelHeight()
-    {
-        if (MODINFO_border is null) return 0;
-
-        var height = MODINFO_border.ActualHeight;
-        if (height <= 0) height = MODINFO_border.Height;
-
-        return double.IsNaN(height) ? 0 : height;
-    }
-
-    private static bool IsModInfoDragInitiationBlocked(DependencyObject? source)
-    {
-        while (source is not null)
-        {
-            if (source is Border border && border.Name == nameof(MODINFO_border)) break;
-
-            if (source is ButtonBase || source is Selector || source is TextBoxBase || source is Hyperlink ||
-                source is Slider || source is ScrollBar) return true;
-
-            source = VisualTreeHelper.GetParent(source);
-        }
-
-        return false;
+        var dockLeft = placement == ModInfoPanePlacement.Left;
+        InstalledModSplitView.PanePlacement = dockLeft
+            ? SplitViewPanePlacement.Left
+            : SplitViewPanePlacement.Right;
+        ModInfoPanePlacementButton.ToolTip = dockLeft
+            ? "Move details pane to the right"
+            : "Move details pane to the left";
     }
 
     #endregion
@@ -1970,6 +1820,14 @@ public partial class MainWindow : Window
 
         _userConfiguration.SetUseFasterThumbnails(menuItem.IsChecked);
         menuItem.IsChecked = _userConfiguration.UseFasterThumbnails;
+    }
+
+    private void CacheModDatabaseResultsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        _userConfiguration.SetCacheModDatabaseResults(menuItem.IsChecked);
+        menuItem.IsChecked = _userConfiguration.CacheModDatabaseResults;
     }
 
     private void DisableHoverEffectsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -3398,7 +3256,7 @@ public partial class MainWindow : Window
 
         if (isVisible && ModBrowserView?.IsModBrowserInitialized == true)
         {
-            _ = _modBrowserViewModel.RefreshSearchAsync();
+            _ = _modBrowserViewModel.RefreshSearchAsync(_userConfiguration.CacheModDatabaseResults);
         }
     }
 
@@ -10318,6 +10176,19 @@ public partial class MainWindow : Window
             var modlistName = detailsDialog.ModlistName;
             var description = detailsDialog.ModlistDescription;
             var version = detailsDialog.ModlistVersion;
+
+            if (OnlineModlistContentValidator.TryFindBlockedWord(
+                    new[] { modlistName, description, uploader },
+                    out var blockedWord))
+            {
+                WpfMessageBox.Show(
+                    $"The online modlist cannot be saved because it contains the blocked word or phrase \"{blockedWord}\".\n\n" +
+                    "Remove it from the modlist name, description, or uploader name and try again.",
+                    "Blocked Word",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
 
             Dictionary<string, IReadOnlyList<ModConfigurationSnapshot>>? includedConfigurations = null;
             var selectedConfigOptions = detailsDialog.GetSelectedConfigOptions();

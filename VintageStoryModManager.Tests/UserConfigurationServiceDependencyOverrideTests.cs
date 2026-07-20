@@ -48,6 +48,34 @@ public sealed class UserConfigurationServiceDependencyOverrideTests : IDisposabl
         Assert.False(configuration.IsDependencyWarningOverridden("removed", "1.0.0"));
     }
 
+    [Fact]
+    public void CacheModDatabaseResultsDefaultsOffAndPersistsWhenEnabled()
+    {
+        var configuration = new UserConfigurationService();
+
+        Assert.False(configuration.CacheModDatabaseResults);
+
+        configuration.EnablePersistence();
+        configuration.SetCacheModDatabaseResults(true);
+
+        var reloaded = new UserConfigurationService();
+        Assert.True(reloaded.CacheModDatabaseResults);
+    }
+
+    [Fact]
+    public void ModInfoPanePlacementDefaultsRightAndPersistsWhenMovedLeft()
+    {
+        var configuration = new UserConfigurationService();
+
+        Assert.Equal(ModInfoPanePlacement.Right, configuration.ModInfoPanePlacement);
+
+        configuration.EnablePersistence();
+        configuration.SetModInfoPanePlacement(ModInfoPanePlacement.Left);
+
+        var reloaded = new UserConfigurationService();
+        Assert.Equal(ModInfoPanePlacement.Left, reloaded.ModInfoPanePlacement);
+    }
+
     public void Dispose()
     {
         CustomConfigFolderManager.ClearCustomConfigFolder();

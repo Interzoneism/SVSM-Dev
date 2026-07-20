@@ -27,6 +27,35 @@ public sealed class ModBrowserViewModelTests
         Assert.Equal(0, modApiService.QueryModsCallCount);
     }
 
+    [Fact]
+    public async Task CachedRefreshSkipsUnchangedSuccessfulSearch()
+    {
+        var modApiService = new RecordingModApiService();
+        var viewModel = new ModBrowserViewModel(modApiService);
+        viewModel.SetTabVisibility(true);
+
+        await viewModel.RefreshSearchAsync();
+        await viewModel.RefreshSearchAsync(true);
+
+        Assert.Equal(1, modApiService.QueryModsCallCount);
+    }
+
+    [Fact]
+    public async Task CachedRefreshFetchesAgainAfterSearchChanges()
+    {
+        var modApiService = new RecordingModApiService();
+        var viewModel = new ModBrowserViewModel(modApiService);
+        viewModel.SetTabVisibility(true);
+
+        await viewModel.RefreshSearchAsync();
+        viewModel.SetTabVisibility(false);
+        viewModel.SelectedSide = "client";
+        viewModel.SetTabVisibility(true);
+        await viewModel.RefreshSearchAsync(true);
+
+        Assert.Equal(2, modApiService.QueryModsCallCount);
+    }
+
     private sealed class RecordingModApiService : IModApiService
     {
         public List<GameVersion> GameVersions { get; set; } = [];

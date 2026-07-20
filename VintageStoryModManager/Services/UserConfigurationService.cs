@@ -201,6 +201,8 @@ public sealed class UserConfigurationService
 
     public bool CacheAllVersionsLocally { get; private set; } = true;
 
+    public bool CacheModDatabaseResults { get; private set; }
+
     public ColorTheme ColorTheme { get; private set; } = ColorTheme.VintageStory;
 
     public bool ExcludeInstalledModDatabaseResults { get; private set; }
@@ -259,6 +261,8 @@ public sealed class UserConfigurationService
         get => _preferredModlistsTab;
         private set => _preferredModlistsTab = value;
     }
+
+    public ModInfoPanePlacement ModInfoPanePlacement { get; private set; } = ModInfoPanePlacement.Right;
 
     public int ModDatabaseSearchResultLimit { get; private set; } = DefaultModDatabaseSearchResultLimit;
 
@@ -1771,6 +1775,22 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetModInfoPanePlacement(ModInfoPanePlacement placement)
+    {
+        if (ModInfoPanePlacement == placement) return;
+
+        ModInfoPanePlacement = placement;
+        Save();
+    }
+
+    public void SetCacheModDatabaseResults(bool cacheModDatabaseResults)
+    {
+        if (CacheModDatabaseResults == cacheModDatabaseResults) return;
+
+        CacheModDatabaseResults = cacheModDatabaseResults;
+        Save();
+    }
+
     public void ClearDependencyWarningOverride(string? modId)
     {
         var normalizedId = NormalizeModId(modId);
@@ -1841,6 +1861,7 @@ public sealed class UserConfigurationService
             IsCompactView = obj["isCompactView"]?.GetValue<bool?>() ?? false;
             UseModDbDesignView = obj["useModDbDesignView"]?.GetValue<bool?>() ?? true;
             CacheAllVersionsLocally = obj["cacheAllVersionsLocally"]?.GetValue<bool?>() ?? true;
+            CacheModDatabaseResults = obj["cacheModDatabaseResults"]?.GetValue<bool?>() ?? false;
             DisableAutoRefresh = obj["disableAutoRefresh"]?.GetValue<bool?>() ?? false;
             DisableAutoRefreshWarningAcknowledged =
                 obj["disableAutoRefreshWarningAcknowledged"]?.GetValue<bool?>() ?? false;
@@ -1900,6 +1921,7 @@ public sealed class UserConfigurationService
             ResetThemePaletteToDefaults();
             ModlistAutoLoadBehavior = ParseModlistAutoLoadBehavior(GetOptionalString(obj["modlistAutoLoadBehavior"]));
             PreferredModlistsTab = ParseModlistsTabSelection(GetOptionalString(obj["preferredModlistsTab"]));
+            ModInfoPanePlacement = ParseModInfoPanePlacement(GetOptionalString(obj["modInfoPanePlacement"]));
             _modsSortMemberPath = NormalizeSortMemberPath(GetOptionalString(obj["modsSortMemberPath"]));
             _modsSortDirection = ParseSortDirection(GetOptionalString(obj["modsSortDirection"]));
             ModDatabaseSearchResultLimit =
@@ -2047,12 +2069,14 @@ public sealed class UserConfigurationService
             _suppressRefreshCachePromptVersion = null;
             ModlistAutoLoadBehavior = ModlistAutoLoadBehavior.Prompt;
             PreferredModlistsTab = ModlistsTabSelection.Local;
+            ModInfoPanePlacement = ModInfoPanePlacement.Right;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
             _selectedPresetName = null;
             ModDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
             ModDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
             ModDatabaseAutoLoadMode = ModDatabaseAutoLoadMode.TotalDownloads;
+            CacheModDatabaseResults = false;
             ExcludeInstalledModDatabaseResults = false;
             OnlyShowCompatibleModDatabaseResults = false;
             RequireExactVsVersionMatch = false;
@@ -2112,6 +2136,7 @@ public sealed class UserConfigurationService
                 ["isCompactView"] = IsCompactView,
                 ["useModDbDesignView"] = UseModDbDesignView,
                 ["cacheAllVersionsLocally"] = CacheAllVersionsLocally,
+                ["cacheModDatabaseResults"] = CacheModDatabaseResults,
                 ["disableAutoRefresh"] = DisableAutoRefresh,
                 ["disableAutoRefreshWarningAcknowledged"] = DisableAutoRefreshWarningAcknowledged,
                 ["disableInternetAccess"] = DisableInternetAccess,
@@ -2135,6 +2160,7 @@ public sealed class UserConfigurationService
                 ["currentThemeName"] = _currentThemeName,
                 ["modlistAutoLoadBehavior"] = ModlistAutoLoadBehavior.ToString(),
                 ["preferredModlistsTab"] = PreferredModlistsTab.ToString(),
+                ["modInfoPanePlacement"] = ModInfoPanePlacement.ToString(),
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
                 ["modDatabaseSearchResultLimit"] = ModDatabaseSearchResultLimit,
@@ -2283,6 +2309,13 @@ public sealed class UserConfigurationService
         if (Enum.TryParse(value, true, out ModlistsTabSelection selection)) return selection;
 
         return ModlistsTabSelection.Local;
+    }
+
+    private static ModInfoPanePlacement ParseModInfoPanePlacement(string? value)
+    {
+        if (Enum.TryParse(value, true, out ModInfoPanePlacement placement)) return placement;
+
+        return ModInfoPanePlacement.Right;
     }
 
     private static ModDatabaseAutoLoadMode ParseModDatabaseAutoLoadMode(string? value)

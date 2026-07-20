@@ -40,6 +40,9 @@ public partial class ModBrowserViewModel : ObservableObject
     private CancellationTokenSource? _pendingLoadMoreCts;
     private bool _isLoadingMore;
     private readonly SemaphoreSlim _gameVersionsLoadGate = new(1, 1);
+    private string? _lastSuccessfulSearchFingerprint;
+    private bool _hasCachedSearchResults;
+    private int _installedModsVersion;
 
     #region Observable Properties
 
@@ -100,10 +103,111 @@ public partial class ModBrowserViewModel : ObservableObject
     private DownloadableModOnList? _selectedMod;
 
     [ObservableProperty]
-    private DownloadableMod? _modToInstall;
+    private DownloadableMod? _modDetails;
 
     [ObservableProperty]
-    private bool _isInstallDialogOpen;
+    private bool _isModDetailsOpen;
+
+    [ObservableProperty]
+    private bool _isModDetailsLoading;
+
+    [ObservableProperty]
+    private IReadOnlyList<string> _screenshotUrls = Array.Empty<string>();
+
+    [ObservableProperty]
+    private int _currentScreenshotIndex;
+
+    public bool HasScreenshots => ScreenshotUrls.Count > 0;
+
+    public bool HasMultipleScreenshots => ScreenshotUrls.Count > 1;
+
+    public string? CurrentScreenshotUrl =>
+        CurrentScreenshotIndex >= 0 && CurrentScreenshotIndex < ScreenshotUrls.Count
+            ? ScreenshotUrls[CurrentScreenshotIndex]
+            : null;
+
+    public string ScreenshotCounterText =>
+        HasScreenshots ? $"{CurrentScreenshotIndex + 1} / {ScreenshotUrls.Count}" : string.Empty;
+
+    partial void OnModDetailsChanged(DownloadableMod? value)
+    {
+        BuildScreenshotGallery();
+    }
+
+    partial void OnScreenshotUrlsChanged(IReadOnlyList<string> value)
+    {
+        OnPropertyChanged(nameof(HasScreenshots));
+        OnPropertyChanged(nameof(HasMultipleScreenshots));
+        OnPropertyChanged(nameof(CurrentScreenshotUrl));
+        OnPropertyChanged(nameof(ScreenshotCounterText));
+    }
+
+    partial void OnCurrentScreenshotIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(CurrentScreenshotUrl));
+        OnPropertyChanged(nameof(ScreenshotCounterText));
+    }
+
+    private void BuildScreenshotGallery()
+    {
+        var urls = new List<string>();
+
+        var screenshots = ModDetails?.Screenshots;
+        if (screenshots != null)
+        {
+            foreach (var screenshot in screenshots)
+            {
+                var url = ResolveScreenshotUrl(screenshot.MainFile);
+                if (!string.IsNullOrWhiteSpace(url))
+                    urls.Add(url);
+            }
+        }
+
+        // Fall back to the mod's logo/thumbnail when no screenshots are available.
+        if (urls.Count == 0)
+        {
+            var logo = SelectedMod?.LogoUrl;
+            if (!string.IsNullOrWhiteSpace(logo))
+                urls.Add(logo);
+        }
+
+        CurrentScreenshotIndex = 0;
+        ScreenshotUrls = urls;
+    }
+
+    private static string? ResolveScreenshotUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var trimmed = value.Trim();
+
+        if (trimmed.StartsWith("//", StringComparison.Ordinal))
+            return "https:" + trimmed;
+
+        if (trimmed.StartsWith("/", StringComparison.Ordinal))
+            return "https://mods.vintagestory.at" + trimmed;
+
+        return trimmed;
+    }
+
+    [RelayCommand]
+    private void NextScreenshot()
+    {
+        if (ScreenshotUrls.Count == 0)
+            return;
+
+        CurrentScreenshotIndex = (CurrentScreenshotIndex + 1) % ScreenshotUrls.Count;
+    }
+
+    [RelayCommand]
+    private void PreviousScreenshot()
+    {
+        if (ScreenshotUrls.Count == 0)
+            return;
+
+        CurrentScreenshotIndex = (CurrentScreenshotIndex - 1 + ScreenshotUrls.Count) % ScreenshotUrls.Count;
+    }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(DownloadAllFavoritesCommand))]
@@ -296,6 +400,7 @@ public partial class ModBrowserViewModel : ObservableObject
     /// <param name="numericModIds">Optional numeric identifiers for compatibility with existing bindings.</param>
     public void UpdateInstalledMods(IEnumerable<string> modIds, IEnumerable<int>? numericModIds = null)
     {
+        var previousModIds = _normalizedInstalledModIds.OrderBy(id => id, StringComparer.OrdinalIgnoreCase).ToArray();
         _normalizedInstalledModIds.Clear();
         foreach (var modId in modIds)
         {
@@ -310,6 +415,13 @@ public partial class ModBrowserViewModel : ObservableObject
         }
 
         RefreshInstalledFlags();
+
+        if (!previousModIds.SequenceEqual(
+                _normalizedInstalledModIds.OrderBy(id => id, StringComparer.OrdinalIgnoreCase),
+                StringComparer.OrdinalIgnoreCase))
+        {
+            _installedModsVersion++;
+        }
     }
 
     /// <summary>
@@ -410,9 +522,9 @@ public partial class ModBrowserViewModel : ObservableObject
         await SearchModsAsync();
     }
 
-    public Task RefreshSearchAsync()
+    public Task RefreshSearchAsync(bool useCachedResults = false)
     {
-        return SearchModsAsync();
+        return SearchModsCoreAsync(useCachedResults);
     }
 
     public async Task LoadAvailableGameVersionsAsync()
@@ -434,10 +546,23 @@ public partial class ModBrowserViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SearchModsAsync()
+    private Task SearchModsAsync()
+    {
+        return SearchModsCoreAsync(false);
+    }
+
+    private async Task SearchModsCoreAsync(bool useCachedResults)
     {
         if (!_isTabVisible)
             return;
+
+        var searchFingerprint = CreateSearchFingerprint();
+        if (useCachedResults
+            && _hasCachedSearchResults
+            && string.Equals(_lastSuccessfulSearchFingerprint, searchFingerprint, StringComparison.Ordinal))
+        {
+            return;
+        }
 
         // Cancel any pending search and pending load more operations
         _searchCts?.Cancel();
@@ -451,6 +576,7 @@ public partial class ModBrowserViewModel : ObservableObject
 
         try
         {
+            _hasCachedSearchResults = false;
             IsSearching = true;
             LoadingMessage = "Searching mods...";
 
@@ -515,6 +641,8 @@ public partial class ModBrowserViewModel : ObservableObject
             }
 
             VisibleModsCount = VisibleMods.Count;
+            _lastSuccessfulSearchFingerprint = searchFingerprint;
+            _hasCachedSearchResults = true;
             // OnPropertyChanged(nameof(VisibleMods));
 
             var modsToPrefetch = GetPrefetchMods();
@@ -533,6 +661,29 @@ public partial class ModBrowserViewModel : ObservableObject
                 IsSearching = false;
             }
         }
+    }
+
+    private string CreateSearchFingerprint()
+    {
+        var selectedVersionIds = string.Join(",", SelectedVersions.Select(version => version.TagId).Order());
+        var selectedTagIds = string.Join(",", SelectedTags.Select(tag => tag.TagId).Order());
+        var favoriteModIds = OnlyFavorites
+            ? string.Join(",", FavoriteMods.Order())
+            : string.Empty;
+
+        return string.Join("|",
+            TextFilter.Trim(),
+            SelectedAuthor?.UserId ?? string.Empty,
+            selectedVersionIds,
+            selectedTagIds,
+            SelectedSide,
+            SelectedInstalledFilter,
+            OnlyFavorites,
+            favoriteModIds,
+            OrderBy,
+            OrderByDirection,
+            UseRelevantSearchResults,
+            _installedModsVersion);
     }
 
     [RelayCommand]
@@ -745,17 +896,50 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenModDetailsAsync(DownloadableModOnList mod)
     {
+        // Show the overlay immediately using the summary data already available,
+        // then load the full mod details (including the complete description).
         SelectedMod = mod;
-        ModToInstall = await _modApiService.GetModAsync(mod.ModId);
-        IsInstallDialogOpen = true;
+        ModDetails = null;
+        BuildScreenshotGallery();
+        IsModDetailsOpen = true;
+        IsModDetailsLoading = true;
+
+        try
+        {
+            ModDetails = await _modApiService.GetModAsync(mod.ModId);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModBrowserViewModel] Failed to load mod details: {ex.Message}");
+        }
+        finally
+        {
+            IsModDetailsLoading = false;
+        }
     }
 
     [RelayCommand]
-    private void CloseInstallDialog()
+    private void CloseModDetails()
     {
-        IsInstallDialogOpen = false;
-        ModToInstall = null;
+        IsModDetailsOpen = false;
+        IsModDetailsLoading = false;
+        ModDetails = null;
         SelectedMod = null;
+        CurrentScreenshotIndex = 0;
+        ScreenshotUrls = Array.Empty<string>();
+    }
+
+    [RelayCommand]
+    private async Task DownloadFromDetailsAsync()
+    {
+        var mod = SelectedMod;
+        if (mod == null)
+            return;
+
+        // Close the detail overlay before starting the download.
+        var modId = mod.ModId;
+        CloseModDetails();
+        await InstallModAsync(modId);
     }
 
     [RelayCommand]

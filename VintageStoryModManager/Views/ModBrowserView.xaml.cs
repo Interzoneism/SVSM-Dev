@@ -152,13 +152,24 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         }
     }
 
-    private void OpenInBrowserTitle_Click(object sender, MouseButtonEventArgs e)
+    private void ModCard_Click(object sender, MouseButtonEventArgs e)
     {
-        e.Handled = true;
-        if (sender is FrameworkElement element && element.Tag is int assetId)
+        if (sender is FrameworkElement { DataContext: Models.DownloadableModOnList mod })
         {
-            ViewModel?.OpenModInBrowserCommand.Execute(assetId);
+            ViewModel?.OpenModDetailsCommand.Execute(mod);
         }
+    }
+
+    private void ModDetailOverlay_Click(object sender, MouseButtonEventArgs e)
+    {
+        // Clicking the dimmed backdrop closes the detail overlay.
+        ViewModel?.CloseModDetailsCommand.Execute(null);
+    }
+
+    private void ModDetailCard_Click(object sender, MouseButtonEventArgs e)
+    {
+        // Prevent clicks on the card itself from bubbling up and closing the overlay.
+        e.Handled = true;
     }
 
     private async void VersionsDropdown_SelectionChanged(object? sender, EventArgs e)

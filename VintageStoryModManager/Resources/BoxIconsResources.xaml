@@ -69,6 +69,12 @@
     <!--  Chevron down icon (for descending sort)  -->
     <Geometry x:Key="IconChevronDown">m12 15.41 5.71-5.7-1.42-1.42-4.29 4.3-4.29-4.3-1.42 1.42z</Geometry>
 
+    <!--  Chevron left icon (for gallery navigation)  -->
+    <Geometry x:Key="IconChevronLeft">M13.293 6.293 7.586 12l5.707 5.707 1.414-1.414L10.414 12l4.293-4.293z</Geometry>
+
+    <!--  Chevron right icon (for gallery navigation)  -->
+    <Geometry x:Key="IconChevronRight">M10.707 17.707 16.414 12l-5.707-5.707-1.414 1.414L13.586 12l-4.293 4.293z</Geometry>
+
     <!--  Arrow up icon  -->
     <Geometry x:Key="IconArrowUp">M13 18v-6h4l-5-6-5 6h4v6z</Geometry>
 

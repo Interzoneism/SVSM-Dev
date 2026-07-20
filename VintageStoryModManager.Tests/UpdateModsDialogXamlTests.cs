@@ -6,16 +6,21 @@ namespace VintageStoryModManager.Tests;
 public sealed class UpdateModsDialogXamlTests
 {
     [Fact]
+    public void ChangelogExpansionCannotResizeDialogWidthToContent()
+    {
+        var document = LoadDialogXaml();
+        var window = document.Root;
+
+        Assert.NotNull(window);
+        Assert.Equal("Height", window.Attribute("SizeToContent")?.Value);
+        Assert.True(double.TryParse(window.Attribute("Width")?.Value, out var width));
+        Assert.True(width > 0);
+    }
+
+    [Fact]
     public void DisplayNameBindingIsOneWay()
     {
-        var xamlPath = Path.Combine(
-            FindRepositoryRoot(),
-            "VintageStoryModManager",
-            "Views",
-            "Dialogs",
-            "UpdateModsDialog.xaml");
-
-        var document = XDocument.Load(Path.GetFullPath(xamlPath));
+        var document = LoadDialogXaml();
         XNamespace presentation = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
 
         var displayNameRun = document
@@ -31,14 +36,7 @@ public sealed class UpdateModsDialogXamlTests
     [Fact]
     public void CopyChangelogButtonIsAvailableInDialogActions()
     {
-        var xamlPath = Path.Combine(
-            FindRepositoryRoot(),
-            "VintageStoryModManager",
-            "Views",
-            "Dialogs",
-            "UpdateModsDialog.xaml");
-
-        var document = XDocument.Load(Path.GetFullPath(xamlPath));
+        var document = LoadDialogXaml();
         XNamespace presentation = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
 
         var copyButton = document
@@ -49,6 +47,18 @@ public sealed class UpdateModsDialogXamlTests
                 StringComparison.Ordinal));
 
         Assert.Equal("CopyChangelogButton_OnClick", copyButton.Attribute("Click")?.Value);
+    }
+
+    private static XDocument LoadDialogXaml()
+    {
+        var xamlPath = Path.Combine(
+            FindRepositoryRoot(),
+            "VintageStoryModManager",
+            "Views",
+            "Dialogs",
+            "UpdateModsDialog.xaml");
+
+        return XDocument.Load(Path.GetFullPath(xamlPath));
     }
 
     private static string FindRepositoryRoot()

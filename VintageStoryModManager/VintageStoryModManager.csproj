@@ -65,6 +65,11 @@
         </ItemGroup>
 
 	<ItemGroup>
+		<None Remove="swearWords.xml" />
+		<EmbeddedResource Include="swearWords.xml" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="ModernWpfUI" Version="0.9.6" />
 		<PackageReference Include="HtmlAgilityPack" Version="1.12.4" />

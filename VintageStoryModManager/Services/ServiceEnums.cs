@@ -17,6 +17,15 @@ public enum ModlistsTabSelection
 }
 
 /// <summary>
+///     Defines which side of the installed-mod list hosts the inline details pane.
+/// </summary>
+public enum ModInfoPanePlacement
+{
+    Left,
+    Right
+}
+
+/// <summary>
 ///     Defines how the application should handle automatic modlist loading.
 /// </summary>
 public enum ModlistAutoLoadBehavior

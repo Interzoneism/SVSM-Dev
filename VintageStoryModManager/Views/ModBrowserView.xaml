@@ -40,6 +40,21 @@
         <converters:StringToImageSourceConverter x:Key="StringToImageSource" />
         <converters:ThumbnailLayoutConverter x:Key="ThumbnailLayoutConverter" />
 
+        <!--
+            Keep the existing 344x344 card and 8px item margin while allowing the
+            repeater to realize only cards near the viewport. Center matches the
+            previous centered WrapPanel, including partially filled final rows.
+        -->
+        <ui:UniformGridLayout
+            x:Key="ModCardsLayout"
+            ItemsJustification="Center"
+            ItemsStretch="None"
+            MinColumnSpacing="0"
+            MinItemHeight="360"
+            MinItemWidth="360"
+            MinRowSpacing="0"
+            Orientation="Horizontal" />
+
         <!--  Icon Path Styles using DarkVsTheme  -->
         <Style x:Key="IconSmall" TargetType="Path">
             <Setter Property="Width" Value="12" />
@@ -89,6 +104,19 @@
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True" />
             </Style.Triggers>
+        </Style>
+
+        <!--  Text buttons for the expanded mod detail card  -->
+        <Style
+            x:Key="DetailActionButtonStyle"
+            BasedOn="{StaticResource ModCardButtonStyle}"
+            TargetType="{x:Type Button}">
+            <Setter Property="Height" Value="38" />
+            <Setter Property="MinWidth" Value="130" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
         </Style>
 
 
@@ -359,13 +387,14 @@
             Margin="16,0,16,0"
             Background="{DynamicResource Brush.ModBrowser.Background.Gradient}"
             CornerRadius="12,12,0,0">
-            <ScrollViewer
-                x:Name="ModsScrollViewer"
-                HorizontalScrollBarVisibility="Disabled"
-                ScrollChanged="ModsScrollViewer_ScrollChanged"
-                VerticalScrollBarVisibility="Auto"
-                PreviewMouseWheel="ModsScrollViewer_PreviewMouseWheel">
-                <Grid>
+            <ui:ItemsRepeaterScrollHost>
+                <ScrollViewer
+                    x:Name="ModsScrollViewer"
+                    HorizontalScrollBarVisibility="Disabled"
+                    PreviewMouseWheel="ModsScrollViewer_PreviewMouseWheel"
+                    ScrollChanged="ModsScrollViewer_ScrollChanged"
+                    VerticalScrollBarVisibility="Auto">
+                    <Grid>
                     <!--  Loading Indicator  -->
                     <StackPanel
                         HorizontalAlignment="Center"
@@ -400,26 +429,13 @@
                     </TextBlock>
 
                     <!--  Mods Grid  -->
-                    <ItemsControl
+                    <ui:ItemsRepeater
                         Margin="16,0,16,16"
                         ItemsSource="{Binding VisibleMods}"
+                        Layout="{StaticResource ModCardsLayout}"
                         RenderOptions.CachingHint="Cache"
                         Visibility="{Binding ModsList.Count, Converter={StaticResource CountToVisibility}}">
-                        <ItemsControl.Effect>
-                            <DropShadowEffect
-                                BlurRadius="8"
-                                Direction="310"
-                                Opacity="0.2"
-                                RenderingBias="Performance"
-                                ShadowDepth="6" />
-                        </ItemsControl.Effect>
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-
-                        <ItemsControl.ItemTemplate>
+                        <ui:ItemsRepeater.ItemTemplate>
                             <DataTemplate>
                                 <Border
                                     x:Name="ModCardBorder"
@@ -427,6 +443,7 @@
                                     Height="344"
                                     Margin="8"
                                     ClipToBounds="False"
+                                    MouseLeftButtonUp="ModCard_Click"
                                     RenderOptions.CachingHint="Cache"
                                     Style="{StaticResource ModCardStyle}"
                                     Tag="{Binding ModId}"
@@ -847,8 +864,6 @@
                                                             FontSize="21"
                                                             FontWeight="Light"
                                                             Foreground="{DynamicResource Brush.Text.Primary}"
-                                                            MouseLeftButtonDown="OpenInBrowserTitle_Click"
-                                                            Tag="{Binding AssetId}"
                                                             Text="{Binding Name}"
                                                             TextTrimming="CharacterEllipsis"
                                                             ToolTip="{Binding Name}">
@@ -939,12 +954,339 @@
                                     </Grid>
                                 </Border>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </Grid>
-            </ScrollViewer>
+                        </ui:ItemsRepeater.ItemTemplate>
+                    </ui:ItemsRepeater>
+                    </Grid>
+                </ScrollViewer>
+            </ui:ItemsRepeaterScrollHost>
         </Border>
 
         <!--  Mod Grid  -->
+
+        <!--  Expanded Mod Detail Overlay  -->
+        <Border
+            x:Name="ModDetailOverlay"
+            Grid.Row="0"
+            Grid.RowSpan="2"
+            Background="#B0000000"
+            MouseLeftButtonDown="ModDetailOverlay_Click"
+            Visibility="{Binding IsModDetailsOpen, Converter={StaticResource BoolToVisibility}}">
+            <Border
+                MaxWidth="720"
+                MaxHeight="760"
+                Margin="24"
+                Background="{DynamicResource Brush.ModCard.NoThumb}"
+                BorderBrush="{DynamicResource Brush.ModCard.Border.Gradient}"
+                BorderThickness="1"
+                ClipToBounds="True"
+                CornerRadius="10"
+                MouseLeftButtonDown="ModDetailCard_Click"
+                SnapsToDevicePixels="True"
+                UseLayoutRounding="True">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!--  Screenshot gallery  -->
+                    <Grid
+                        Grid.Row="0"
+                        Height="300"
+                        Background="#33000000">
+                        <!--  Current screenshot (contained within the dialog with a margin)  -->
+                        <Image
+                            Margin="16"
+                            RenderOptions.BitmapScalingMode="HighQuality"
+                            Source="{Binding CurrentScreenshotUrl, Converter={StaticResource StringToImageSource}, IsAsync=True}"
+                            Stretch="Uniform"
+                            StretchDirection="DownOnly"
+                            Visibility="{Binding HasScreenshots, Converter={StaticResource BoolToVisibility}}" />
+
+                        <!--  Placeholder when there is nothing to show  -->
+                        <Image
+                            Width="120"
+                            Height="120"
+                            Opacity="0.4"
+                            RenderOptions.BitmapScalingMode="HighQuality"
+                            Source="/Resources/mod-default.png"
+                            Stretch="Uniform"
+                            Visibility="{Binding HasScreenshots, ConverterParameter=invert, Converter={StaticResource BoolToVisibility}}" />
+
+                        <!--  Previous image button  -->
+                        <Button
+                            Width="36"
+                            Height="36"
+                            Margin="20,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Command="{Binding PreviousScreenshotCommand}"
+                            Style="{StaticResource ModCardButtonStyle}"
+                            ToolTip="Previous image"
+                            Visibility="{Binding HasMultipleScreenshots, Converter={StaticResource BoolToVisibility}}">
+                            <Path
+                                Width="18"
+                                Height="18"
+                                Data="{StaticResource IconChevronLeft}"
+                                Fill="{DynamicResource Brush.Text.Primary}"
+                                Stretch="Uniform" />
+                        </Button>
+
+                        <!--  Next image button  -->
+                        <Button
+                            Width="36"
+                            Height="36"
+                            Margin="0,0,20,0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Command="{Binding NextScreenshotCommand}"
+                            Style="{StaticResource ModCardButtonStyle}"
+                            ToolTip="Next image"
+                            Visibility="{Binding HasMultipleScreenshots, Converter={StaticResource BoolToVisibility}}">
+                            <Path
+                                Width="18"
+                                Height="18"
+                                Data="{StaticResource IconChevronRight}"
+                                Fill="{DynamicResource Brush.Text.Primary}"
+                                Stretch="Uniform" />
+                        </Button>
+
+                        <!--  Image counter  -->
+                        <Border
+                            Margin="0,0,0,14"
+                            Padding="10,4"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
+                            Background="#99000000"
+                            CornerRadius="10"
+                            Visibility="{Binding HasMultipleScreenshots, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock
+                                FontSize="12"
+                                Foreground="White"
+                                Text="{Binding ScreenshotCounterText}" />
+                        </Border>
+
+                        <!--  Close button  -->
+                        <Button
+                            Width="32"
+                            Height="32"
+                            Margin="10"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Command="{Binding CloseModDetailsCommand}"
+                            Style="{StaticResource ModCardButtonStyle}"
+                            ToolTip="Close">
+                            <Path
+                                Width="16"
+                                Height="16"
+                                Data="{StaticResource IconXCircle}"
+                                Fill="{DynamicResource Brush.Text.Primary}"
+                                Stretch="Uniform" />
+                        </Button>
+                    </Grid>
+
+                    <!--  Header: title, author, stats, actions  -->
+                    <Border
+                        Grid.Row="1"
+                        Padding="24,18,24,12"
+                        Background="{DynamicResource Brush.ModCard.InfoBox}">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Orientation="Vertical">
+                                    <TextBlock
+                                        FontSize="26"
+                                        FontWeight="Light"
+                                        Foreground="{DynamicResource Brush.Text.Primary}"
+                                        Text="{Binding SelectedMod.Name}"
+                                        TextTrimming="CharacterEllipsis"
+                                        TextWrapping="Wrap" />
+                                    <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
+                                        <Path Data="{StaticResource IconUser}" Style="{StaticResource IconSmallSubtle}" />
+                                        <TextBlock
+                                            FontSize="13"
+                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                            Text="{Binding SelectedMod.Author}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!--  Stats  -->
+                                <StackPanel
+                                    Grid.Column="1"
+                                    VerticalAlignment="Top"
+                                    Orientation="Vertical">
+                                    <StackPanel Margin="0,2" Orientation="Horizontal">
+                                        <Path Data="{StaticResource IconDownload}" Style="{StaticResource IconSmallSubtle}" />
+                                        <TextBlock
+                                            FontSize="13"
+                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                            Text="{Binding SelectedMod.FormattedDownloads}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,2" Orientation="Horizontal">
+                                        <Path Data="{StaticResource IconHeartSolid}" Style="{StaticResource IconSmallSubtle}" />
+                                        <TextBlock
+                                            FontSize="13"
+                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                            Text="{Binding SelectedMod.FormattedFollows}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,2" Orientation="Horizontal">
+                                        <Path Data="{StaticResource IconMessage}" Style="{StaticResource IconSmallSubtle}" />
+                                        <TextBlock
+                                            FontSize="13"
+                                            Foreground="{DynamicResource Brush.Text.Primary}"
+                                            Text="{Binding SelectedMod.FormattedComments}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+
+                            <!--  Action buttons  -->
+                            <StackPanel Margin="0,16,0,0" Orientation="Horizontal">
+                                <Button
+                                    Command="{Binding OpenModInBrowserCommand}"
+                                    CommandParameter="{Binding SelectedMod.AssetId}"
+                                    Style="{StaticResource DetailActionButtonStyle}"
+                                    ToolTip="Open this mod's page in your web browser">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path
+                                            Width="14"
+                                            Height="14"
+                                            Margin="0,0,8,0"
+                                            VerticalAlignment="Center"
+                                            Data="{StaticResource IconLink}"
+                                            Fill="{DynamicResource Brush.Text.Primary}"
+                                            Stretch="Uniform" />
+                                        <TextBlock VerticalAlignment="Center" Text="Open in web browser" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Button
+                                    Command="{Binding DownloadFromDetailsCommand}"
+                                    IsEnabled="{Binding SelectedMod.IsInstalled, Converter={StaticResource InvertBoolean}}"
+                                    Style="{StaticResource DetailActionButtonStyle}"
+                                    ToolTip="Download and install this mod">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path
+                                            Width="14"
+                                            Height="14"
+                                            Margin="0,0,8,0"
+                                            VerticalAlignment="Center"
+                                            Stretch="Uniform">
+                                            <Path.Style>
+                                                <Style TargetType="{x:Type Path}">
+                                                    <Setter Property="Data" Value="{StaticResource IconDownload}" />
+                                                    <Setter Property="Fill" Value="{DynamicResource Brush.Text.Primary}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding SelectedMod.IsInstalled}" Value="True">
+                                                            <Setter Property="Data" Value="{StaticResource IconCheck}" />
+                                                            <Setter Property="Fill" Value="{DynamicResource Brush.Status.Success}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Path.Style>
+                                        </Path>
+                                        <TextBlock VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="Text" Value="Download" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding SelectedMod.IsInstalled}" Value="True">
+                                                            <Setter Property="Text" Value="Installed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button
+                                    Command="{Binding ToggleFavoriteCommand}"
+                                    CommandParameter="{Binding SelectedMod.ModId}"
+                                    Style="{StaticResource DetailActionButtonStyle}"
+                                    ToolTip="Toggle favorite">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path
+                                            Width="14"
+                                            Height="14"
+                                            Margin="0,0,8,0"
+                                            VerticalAlignment="Center"
+                                            Data="{StaticResource IconStarSolid}"
+                                            Stretch="Uniform">
+                                            <Path.Style>
+                                                <Style TargetType="{x:Type Path}">
+                                                    <Setter Property="Fill" Value="{DynamicResource Brush.Text.Primary}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Value="True">
+                                                            <DataTrigger.Binding>
+                                                                <MultiBinding Converter="{StaticResource ContainsConverter}">
+                                                                    <Binding Path="SelectedMod.ModId" />
+                                                                    <Binding Path="FavoriteMods" />
+                                                                </MultiBinding>
+                                                            </DataTrigger.Binding>
+                                                            <Setter Property="Fill" Value="#FBBF24" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Path.Style>
+                                        </Path>
+                                        <TextBlock VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="Text" Value="Favorite" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Value="True">
+                                                            <DataTrigger.Binding>
+                                                                <MultiBinding Converter="{StaticResource ContainsConverter}">
+                                                                    <Binding Path="SelectedMod.ModId" />
+                                                                    <Binding Path="FavoriteMods" />
+                                                                </MultiBinding>
+                                                            </DataTrigger.Binding>
+                                                            <Setter Property="Text" Value="Favorited" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!--  Description  -->
+                    <Grid Grid.Row="2">
+                        <FlowDocumentScrollViewer
+                            Padding="0"
+                            FontSize="14"
+                            Foreground="{DynamicResource Brush.Text.Primary}"
+                            IsToolBarVisible="False"
+                            VerticalScrollBarVisibility="Auto"
+                            helpers:HtmlDocumentBehavior.Html="{Binding ModDetails.Text}" />
+
+                        <!--  Loading description indicator  -->
+                        <StackPanel
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding IsModDetailsLoading, Converter={StaticResource BoolToVisibility}}">
+                            <ui:ProgressBar
+                                Width="220"
+                                Height="4"
+                                IsIndeterminate="True" />
+                            <TextBlock
+                                Margin="0,12,0,0"
+                                FontSize="13"
+                                Foreground="{DynamicResource Brush.Text.Subtle}"
+                                Text="Loading description..."
+                                TextAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Border>
     </Grid>
 </UserControl>
