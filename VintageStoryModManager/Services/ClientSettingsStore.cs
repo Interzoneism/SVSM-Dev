@@ -128,7 +128,7 @@ public sealed class ClientSettingsStore
             return false;
         }
 
-        lock (_syncRoot)
+        return TryPersistDisabledStateMutation(() =>
         {
             var normalizedModId = modId.Trim();
             var keyWithVersion = !string.IsNullOrWhiteSpace(version)
@@ -154,50 +154,30 @@ public sealed class ClientSettingsStore
                 }
             }
 
-            if (!changed)
-            {
-                error = null;
-                return true;
-            }
-
-            try
-            {
-                Persist();
-                error = null;
-                return true;
-            }
-            catch (Exception ex)
-            {
-                error = ex.Message;
-                return false;
-            }
-        }
+            return changed;
+        }, out error);
     }
 
     public bool TryApplyDisabledEntries(IEnumerable<string> entries, out string? error)
     {
-        lock (_syncRoot)
+        var sanitized = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (entries != null)
+            foreach (var entry in entries)
+            {
+                if (string.IsNullOrWhiteSpace(entry)) continue;
+
+                var trimmed = entry.Trim();
+                if (seen.Add(trimmed)) sanitized.Add(trimmed);
+            }
+
+        return TryPersistDisabledStateMutation(() =>
         {
-            var sanitized = new List<string>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            if (entries != null)
-                foreach (var entry in entries)
-                {
-                    if (string.IsNullOrWhiteSpace(entry)) continue;
-
-                    var trimmed = entry.Trim();
-                    if (seen.Add(trimmed)) sanitized.Add(trimmed);
-                }
-
             var changed = sanitized.Count != _disabledMods.Count
                           || !sanitized.SequenceEqual(_disabledMods, StringComparer.OrdinalIgnoreCase);
 
-            if (!changed)
-            {
-                error = null;
-                return true;
-            }
+            if (!changed) return false;
 
             _disabledMods.Clear();
             _disabledLookup.Clear();
@@ -208,18 +188,8 @@ public sealed class ClientSettingsStore
                 _disabledLookup.Add(value);
             }
 
-            try
-            {
-                Persist();
-                error = null;
-                return true;
-            }
-            catch (Exception ex)
-            {
-                error = ex.Message;
-                return false;
-            }
-        }
+            return true;
+        }, out error);
     }
 
     public bool TryUpdateDisabledEntry(string modId, string? previousVersion, string? newVersion, bool shouldDisable,
@@ -235,7 +205,7 @@ public sealed class ClientSettingsStore
         var previousKey = ComposeVersionKey(normalizedModId, previousVersion);
         var newKey = ComposeVersionKey(normalizedModId, newVersion);
 
-        lock (_syncRoot)
+        return TryPersistDisabledStateMutation(() =>
         {
             var hadGeneralEntry = _disabledLookup.Contains(normalizedModId);
             var changed = false;
@@ -270,7 +240,16 @@ public sealed class ClientSettingsStore
                 }
             }
 
-            if (!changed)
+            return changed;
+        }, out error);
+    }
+
+    private bool TryPersistDisabledStateMutation(Func<bool> mutation, out string? error)
+    {
+        lock (_syncRoot)
+        {
+            var snapshot = CaptureDisabledState();
+            if (!mutation())
             {
                 error = null;
                 return true;
@@ -284,11 +263,36 @@ public sealed class ClientSettingsStore
             }
             catch (Exception ex)
             {
-                error = ex.Message;
+                RestoreDisabledState(snapshot);
+                error = $"Failed to save Vintage Story client settings at '{SettingsPath}': {ex.Message}";
                 return false;
             }
         }
     }
+
+    private DisabledStateSnapshot CaptureDisabledState()
+    {
+        return new DisabledStateSnapshot(
+            _disabledMods.ToList(),
+            new HashSet<string>(_disabledLookup, StringComparer.OrdinalIgnoreCase),
+            _stringListSettings["disabledMods"]?.DeepClone());
+    }
+
+    private void RestoreDisabledState(DisabledStateSnapshot snapshot)
+    {
+        _disabledMods = snapshot.DisabledMods;
+        _disabledLookup = snapshot.DisabledLookup;
+
+        if (snapshot.DisabledModsJson is null)
+            _stringListSettings.Remove("disabledMods");
+        else
+            _stringListSettings["disabledMods"] = snapshot.DisabledModsJson;
+    }
+
+    private sealed record DisabledStateSnapshot(
+        List<string> DisabledMods,
+        HashSet<string> DisabledLookup,
+        JsonNode? DisabledModsJson);
 
     public bool RemoveInvalidDisabledEntries()
     {

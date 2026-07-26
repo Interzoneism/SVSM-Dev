@@ -12,9 +12,10 @@ public static class ModManagerMessageBox
         MessageBoxButton button,
         MessageBoxImage icon,
         MessageDialogExtraButton? extraButton = null,
-        MessageDialogButtonContentOverrides? buttonContentOverrides = null)
+        MessageDialogButtonContentOverrides? buttonContentOverrides = null,
+        string? fixedFooterText = null)
     {
-        return ShowInternal(null, messageBoxText, caption, button, icon, extraButton, buttonContentOverrides);
+        return ShowInternal(null, messageBoxText, caption, button, icon, extraButton, buttonContentOverrides, fixedFooterText);
     }
 
     public static MessageBoxResult Show(
@@ -24,9 +25,10 @@ public static class ModManagerMessageBox
         MessageBoxButton button,
         MessageBoxImage icon,
         MessageDialogExtraButton? extraButton = null,
-        MessageDialogButtonContentOverrides? buttonContentOverrides = null)
+        MessageDialogButtonContentOverrides? buttonContentOverrides = null,
+        string? fixedFooterText = null)
     {
-        return ShowInternal(owner, messageBoxText, caption, button, icon, extraButton, buttonContentOverrides);
+        return ShowInternal(owner, messageBoxText, caption, button, icon, extraButton, buttonContentOverrides, fixedFooterText);
     }
 
     private static MessageBoxResult ShowInternal(
@@ -36,7 +38,8 @@ public static class ModManagerMessageBox
         MessageBoxButton button,
         MessageBoxImage icon,
         MessageDialogExtraButton? extraButton,
-        MessageDialogButtonContentOverrides? buttonContentOverrides)
+        MessageDialogButtonContentOverrides? buttonContentOverrides,
+        string? fixedFooterText)
     {
         var resolvedOwner = owner ?? GetActiveWindow();
         var hasVisibleOwner = resolvedOwner?.IsVisible == true;
@@ -49,7 +52,7 @@ public static class ModManagerMessageBox
             Topmost = resolvedOwner is null || !hasVisibleOwner
         };
 
-        dialog.Initialize(messageBoxText, caption, button, icon, extraButton, buttonContentOverrides);
+        dialog.Initialize(messageBoxText, caption, button, icon, extraButton, buttonContentOverrides, fixedFooterText);
         _ = dialog.ShowDialog();
         return dialog.Result;
     }

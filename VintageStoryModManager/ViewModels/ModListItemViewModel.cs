@@ -437,6 +437,9 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public ModVersionVoteCounts UserReportCounts => UserReportSummary?.Counts ?? ModVersionVoteCounts.Empty;
 
+    public bool HasNegativeUserReports => UserReportCounts.NotFunctional > 0
+                                          || UserReportCounts.CrashesOrFreezesGame > 0;
+
     public ModVersionVoteOption? UserVoteOption => UserReportSummary?.UserVote;
 
     public bool HasUserVoted => UserVoteOption.HasValue;
@@ -813,8 +816,10 @@ public sealed class ModListItemViewModel : ObservableObject
             UserReportTooltip = BuildUserReportTooltip(summary);
             OnPropertyChanged(nameof(UserReportSummary));
             OnPropertyChanged(nameof(UserReportCounts));
+            OnPropertyChanged(nameof(HasNegativeUserReports));
             OnPropertyChanged(nameof(UserVoteOption));
             OnPropertyChanged(nameof(HasUserVoted));
+            UpdateStatusFromErrors();
         }
     }
 
@@ -824,16 +829,20 @@ public sealed class ModListItemViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(UserReportSummary));
             OnPropertyChanged(nameof(UserReportCounts));
+            OnPropertyChanged(nameof(HasNegativeUserReports));
             OnPropertyChanged(nameof(UserVoteOption));
             OnPropertyChanged(nameof(HasUserVoted));
+            UpdateStatusFromErrors();
             return;
         }
 
         UserReportSummary = null;
         OnPropertyChanged(nameof(UserReportSummary));
         OnPropertyChanged(nameof(UserReportCounts));
+        OnPropertyChanged(nameof(HasNegativeUserReports));
         OnPropertyChanged(nameof(UserVoteOption));
         OnPropertyChanged(nameof(HasUserVoted));
+        UpdateStatusFromErrors();
     }
 
     public void EnsureUserReportStateInitialized()
@@ -1533,7 +1542,8 @@ public sealed class ModListItemViewModel : ObservableObject
             StatusText = "Error";
             StatusDetails = AppendWarningText(ActivationError ?? string.Empty);
         }
-        else if (!string.IsNullOrWhiteSpace(_versionWarningMessage))
+        else if (!string.IsNullOrWhiteSpace(_versionWarningMessage)
+                 && UserReportSummary?.HasPositiveCompatibilityConsensus() != true)
         {
             StatusText = "Warning";
             StatusDetails = _versionWarningMessage!;

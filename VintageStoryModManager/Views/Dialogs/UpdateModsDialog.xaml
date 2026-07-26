@@ -11,6 +11,7 @@
         ResizeMode="CanResize"
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
+        Loaded="UpdateModsDialog_OnLoaded"
         Background="{DynamicResource Brush.Window.Shell.Background.Solid}" MaxHeight="950">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />

@@ -7,6 +7,48 @@ namespace VintageStoryModManager.Tests;
 public sealed class TargetGameVersionReleaseSelectorTests
 {
     [Fact]
+    public void TagsSupportTargetTreatsUntaggedReleaseAsUnknownWhenTargetKnown()
+    {
+        var isCompatible = TargetGameVersionReleaseSelector.TagsSupportTarget(
+            Array.Empty<string>(),
+            "1.22.5",
+            requireExactVersionMatch: false);
+
+        Assert.False(isCompatible);
+    }
+
+    [Fact]
+    public void TagsSupportTargetAcceptsUntaggedReleaseWhenTargetIsLatest()
+    {
+        var isCompatible = TargetGameVersionReleaseSelector.TagsSupportTarget(
+            Array.Empty<string>(),
+            TargetGameVersionPreference.ResolveEffectiveGameVersion(
+                "1.22.5",
+                TargetGameVersionPreference.Latest),
+            requireExactVersionMatch: true);
+
+        Assert.True(isCompatible);
+    }
+
+    [Theory]
+    [InlineData("1.22.0", "1.22.5", false, true)]
+    [InlineData("1.22.0", "1.22.5", true, false)]
+    [InlineData("1.22", "1.22.5", true, true)]
+    public void TagsSupportTargetPreservesExactAndRelaxedMatching(
+        string tag,
+        string target,
+        bool requireExactVersionMatch,
+        bool expected)
+    {
+        var isCompatible = TargetGameVersionReleaseSelector.TagsSupportTarget(
+            [tag],
+            target,
+            requireExactVersionMatch);
+
+        Assert.Equal(expected, isCompatible);
+    }
+
+    [Fact]
     public void SelectLatestCompatibleReleaseReturnsNewestReleaseMarkedForTarget()
     {
         var latestIncompatible = CreateRelease("3.0.0", "1.21");

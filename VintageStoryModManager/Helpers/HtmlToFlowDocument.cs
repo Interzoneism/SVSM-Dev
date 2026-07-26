@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
@@ -362,7 +364,7 @@ public static class HtmlToFlowDocument
 
             case "img":
             {
-                var image = CreateImage(node.Attributes["src"]?.Value);
+                var image = CreateImage(node);
                 if (image != null)
                     yield return image;
                 break;
@@ -418,9 +420,9 @@ public static class HtmlToFlowDocument
         return hyperlink;
     }
 
-    private static Inline? CreateImage(string? src)
+    private static Inline? CreateImage(HtmlNode node)
     {
-        var uri = ResolveUri(src);
+        var uri = ResolveUri(node.Attributes["src"]?.Value);
         if (uri == null)
             return null;
 
@@ -435,11 +437,29 @@ public static class HtmlToFlowDocument
             var image = new System.Windows.Controls.Image
             {
                 Source = bitmap,
-                MaxWidth = MaxImageWidth,
                 Stretch = Stretch.Uniform,
-                StretchDirection = System.Windows.Controls.StretchDirection.DownOnly,
                 HorizontalAlignment = HorizontalAlignment.Left,
             };
+
+            var width = ReadImageDimension(node, "width");
+            var height = ReadImageDimension(node, "height");
+
+            if (width.HasValue || height.HasValue)
+            {
+                // Honor the HTML-specified size so table icons stay small, just
+                // like they render on the mod DB page.
+                if (width.HasValue)
+                    image.Width = Math.Min(width.Value, MaxImageWidth);
+                if (height.HasValue)
+                    image.Height = height.Value;
+                image.StretchDirection = System.Windows.Controls.StretchDirection.Both;
+            }
+            else
+            {
+                // No explicit size: cap large images but never upscale small ones.
+                image.MaxWidth = MaxImageWidth;
+                image.StretchDirection = System.Windows.Controls.StretchDirection.DownOnly;
+            }
 
             return new InlineUIContainer(image);
         }
@@ -448,6 +468,33 @@ public static class HtmlToFlowDocument
             Debug.WriteLine($"[HtmlToFlowDocument] Failed to load image '{uri}': {ex.Message}");
             return null;
         }
+    }
+
+    private static double? ReadImageDimension(HtmlNode node, string name)
+    {
+        // Prefer an inline style (e.g. style="width: 32px") then fall back to the attribute.
+        var style = node.Attributes["style"]?.Value;
+        if (!string.IsNullOrEmpty(style))
+        {
+            var match = Regex.Match(
+                style,
+                $@"(?:^|;)\s*{name}\s*:\s*(\d+(?:\.\d+)?)\s*px",
+                RegexOptions.IgnoreCase);
+            if (match.Success &&
+                double.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var styleValue) &&
+                styleValue > 0)
+                return styleValue;
+        }
+
+        var attribute = node.Attributes[name]?.Value?.Trim();
+        if (string.IsNullOrEmpty(attribute) || attribute.EndsWith("%", StringComparison.Ordinal))
+            return null;
+
+        attribute = attribute.Replace("px", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
+        if (double.TryParse(attribute, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && value > 0)
+            return value;
+
+        return null;
     }
 
     private static void OnRequestNavigate(object sender, RequestNavigateEventArgs e)

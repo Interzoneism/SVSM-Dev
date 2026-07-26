@@ -27,10 +27,6 @@ public static class DevConfig
     public static double LoadMoreScrollThreshold { get; } = 0.98;
     public static double HoverOverlayOpacity { get; } = 0.1;
     public static double SelectionOverlayOpacity { get; } = 0.25;
-    public static double ModInfoPanelHorizontalOverhang { get; } = 0;
-    public static double DefaultModInfoPanelLeft { get; } = 1060.0;
-    public static double DefaultModInfoPanelTop { get; } = 350.0;
-    public static double DefaultModInfoPanelRightMargin { get; } = 40.0;
     public static string ManagerModDatabaseUrl { get; } = "https://mods.vintagestory.at/simplevsmanager";
     public static string ManagerModDatabaseModId { get; } = "5545";
 
@@ -144,6 +140,7 @@ public static class DevConfig
         "https://mods.vintagestory.at/api/mods?sortby=updated&sortdir=d&limit={0}";
 
     public static string ModDatabasePageBaseUrl { get; } = "https://mods.vintagestory.at/show/mod/";
+    public static string ModDatabasePageAliasBaseUrl { get; } = "https://mods.vintagestory.at/";
     public static int ModDatabaseMaxConcurrentMetadataRequests { get; } = 4;
     public static int ModDatabaseMinimumTotalDownloadsForTrending { get; } = 500;
     public static int ModDatabaseDefaultNewModsMonths { get; } = 3;

@@ -23,6 +23,7 @@ public sealed class ModDatabaseService
     private static readonly string RecentlyCreatedEndpointFormat = DevConfig.ModDatabaseRecentlyCreatedEndpointFormat;
     private static readonly string RecentlyUpdatedEndpointFormat = DevConfig.ModDatabaseRecentlyUpdatedEndpointFormat;
     private static readonly string ModPageBaseUrl = DevConfig.ModDatabasePageBaseUrl;
+    private static readonly string ModPageAliasBaseUrl = DevConfig.ModDatabasePageAliasBaseUrl;
     private static readonly int MaxConcurrentMetadataRequests = DevConfig.ModDatabaseMaxConcurrentMetadataRequests;
 
     private static readonly int MinimumTotalDownloadsForTrending =
@@ -988,7 +989,14 @@ public sealed class ModDatabaseService
             {
                 response = await HttpClient
                     .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                if (!response.IsSuccessStatusCode) return null;
+                if (!response.IsSuccessStatusCode)
+                    return await TryLoadDatabaseInfoFromPageAsync(
+                            modId,
+                            normalizedModVersion,
+                            normalizedGameVersion,
+                            requireExactVersionMatch,
+                            cancellationToken)
+                        .ConfigureAwait(false);
             }
 
             using (response)
@@ -1028,7 +1036,14 @@ public sealed class ModDatabaseService
                 using (document)
                 {
                     if (!document.RootElement.TryGetProperty("mod", out var modElement) ||
-                        modElement.ValueKind != JsonValueKind.Object) return null;
+                        modElement.ValueKind != JsonValueKind.Object)
+                        return await TryLoadDatabaseInfoFromPageAsync(
+                                modId,
+                                normalizedModVersion,
+                                normalizedGameVersion,
+                                requireExactVersionMatch,
+                                cancellationToken)
+                            .ConfigureAwait(false);
 
                     // Measure data extraction time
                     ModDatabaseInfo info;
@@ -1119,6 +1134,134 @@ public sealed class ModDatabaseService
             System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Exception details: {ex}");
             return null;
         }
+    }
+
+    private static async Task<ModDatabaseInfo?> TryLoadDatabaseInfoFromPageAsync(
+        string modId,
+        string? normalizedModVersion,
+        string? normalizedGameVersion,
+        bool requireExactVersionMatch,
+        CancellationToken cancellationToken)
+    {
+        if (InternetAccessManager.IsInternetAccessDisabled) return null;
+
+        try
+        {
+            var pageUri = new Uri(
+                ModPageAliasBaseUrl + Uri.EscapeDataString(modId.Trim()),
+                UriKind.Absolute);
+
+            using var response = await HttpClient
+                .GetAsync(pageUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode) return null;
+
+            var html = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var document = new HtmlDocument();
+            document.LoadHtml(html);
+
+            var rows = document.DocumentNode.SelectNodes("//tr[@data-assetid]");
+            if (rows is null || rows.Count == 0) return null;
+
+            var releases = new List<ModReleaseInfo>();
+            string? assetId = null;
+
+            foreach (var row in rows)
+            {
+                var cells = row.SelectNodes("./td");
+                var download = row.SelectSingleNode(".//a[contains(@class, 'mod-dl')][@href]");
+                if (cells is null || cells.Count < 3 || download is null) continue;
+
+                var version = CleanHtmlText(cells[0].InnerText);
+                var href = download.GetAttributeValue("href", string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(version) || string.IsNullOrWhiteSpace(href)) continue;
+
+                if (!Uri.TryCreate(pageUri, href, out var downloadUri)) continue;
+
+                var tags = row
+                    .SelectNodes(".//*[contains(concat(' ', normalize-space(@class), ' '), ' tag ')]")?
+                    .Select(node => CleanHtmlText(node.InnerText))
+                    .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray() ?? Array.Empty<string>();
+
+                var fileName = CleanHtmlText(download.InnerText);
+                var downloads = cells.Count > 3 ? TryParseInt(CleanHtmlText(cells[3].InnerText)) : null;
+                var rowAssetId = row.GetAttributeValue("data-assetid", string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(assetId) && !string.IsNullOrWhiteSpace(rowAssetId)) assetId = rowAssetId;
+
+                releases.Add(new ModReleaseInfo
+                {
+                    Version = version,
+                    NormalizedVersion = VersionStringUtility.Normalize(version),
+                    DownloadUri = downloadUri,
+                    FileName = fileName,
+                    GameVersionTags = tags,
+                    IsCompatibleWithInstalledGame = TargetGameVersionReleaseSelector.TagsSupportTarget(
+                        tags,
+                        normalizedGameVersion,
+                        requireExactVersionMatch),
+                    Downloads = downloads
+                });
+            }
+
+            if (releases.Count == 0) return null;
+
+            var latestRelease = releases[0];
+            var latestCompatibleRelease = TargetGameVersionReleaseSelector.SelectLatestCompatibleRelease(
+                releases,
+                normalizedGameVersion,
+                requireExactVersionMatch);
+
+            var info = new ModDatabaseInfo
+            {
+                CachedTagsVersion = normalizedModVersion,
+                AssetId = assetId,
+                ModPageUrl = pageUri.ToString(),
+                LatestVersion = latestRelease.Version,
+                LatestCompatibleVersion = latestCompatibleRelease?.Version,
+                LatestRelease = latestRelease,
+                LatestCompatibleRelease = latestCompatibleRelease,
+                Releases = releases,
+                RequiredGameVersions = releases
+                    .SelectMany(release => release.GameVersionTags)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray()
+            };
+
+            await CacheService
+                .StoreAsync(modId, normalizedGameVersion, info, normalizedModVersion, cancellationToken)
+                .ConfigureAwait(false);
+
+            return info;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] HTTP request error loading page for mod '{modId}': {ex.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ModDatabaseService] Unexpected error loading page for mod '{modId}': {ex.Message}");
+            return null;
+        }
+    }
+
+    private static string CleanHtmlText(string? value)
+    {
+        return HtmlEntity.DeEntitize(value ?? string.Empty).Trim();
+    }
+
+    private static int? TryParseInt(string value)
+    {
+        return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result)
+            ? result
+            : null;
     }
 
     private static IReadOnlyList<string> GetStringList(JsonElement element, string propertyName)

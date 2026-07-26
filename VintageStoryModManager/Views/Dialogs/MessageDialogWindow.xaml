@@ -17,6 +17,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
@@ -42,7 +43,16 @@
                        Foreground="{DynamicResource Brush.Text.Primary}" />
         </ScrollViewer>
 
-        <StackPanel Grid.Row="1"
+        <TextBlock x:Name="FixedFooterTextBlock"
+                   Grid.Row="1"
+                   Grid.ColumnSpan="2"
+                   Margin="0,20,0,0"
+                   TextWrapping="Wrap"
+                   MaxWidth="480"
+                   Foreground="{DynamicResource Brush.Text.Primary}"
+                   Visibility="Collapsed" />
+
+        <StackPanel Grid.Row="2"
                     Grid.ColumnSpan="2"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"

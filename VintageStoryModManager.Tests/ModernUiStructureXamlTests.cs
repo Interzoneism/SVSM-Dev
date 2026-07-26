@@ -33,26 +33,31 @@ public sealed class ModernUiStructureXamlTests
     }
 
     [Fact]
-    public void InstalledModDetailsUseInlineMovableSplitView()
+    public void InstalledModDetailsUsePurposeBuiltInlineMovablePane()
     {
         var document = LoadView("MainWindow.xaml");
 
         var splitView = document.Descendants(ModernWpf + "SplitView").Single(element =>
             string.Equals(element.Attribute(Xaml + "Name")?.Value, "InstalledModSplitView", StringComparison.Ordinal));
-        var paneHost = splitView.Descendants(Presentation + "ContentControl").Single(element =>
-            string.Equals(element.Attribute(Xaml + "Name")?.Value, "ModInfoPaneHost", StringComparison.Ordinal));
+        var paneRoot = splitView.Descendants(Presentation + "Border").Single(element =>
+            string.Equals(element.Attribute(Xaml + "Name")?.Value, "ModInfoPaneRoot", StringComparison.Ordinal));
         var placementButton = document.Descendants(Presentation + "Button").Single(element =>
             string.Equals(element.Attribute(Xaml + "Name")?.Value, "ModInfoPanePlacementButton", StringComparison.Ordinal));
-        var modInfoBorder = document.Descendants(Presentation + "Border").Single(element =>
-            string.Equals(element.Attribute(Xaml + "Name")?.Value, "MODINFO_border", StringComparison.Ordinal));
+        var versionSelector = paneRoot.Descendants(Presentation + "ComboBox").Single(element =>
+            string.Equals(element.Attribute(Xaml + "Name")?.Value, "SelectedModVersionComboBox", StringComparison.Ordinal));
+        var deleteButton = paneRoot.Descendants(Presentation + "Button").Single(element =>
+            string.Equals(element.Attribute(Xaml + "Name")?.Value, "SelectedModDeleteButton", StringComparison.Ordinal));
 
         Assert.Equal("Inline", splitView.Attribute("DisplayMode")?.Value);
-        Assert.Equal("344", splitView.Attribute("OpenPaneLength")?.Value);
-        Assert.NotNull(paneHost);
+        Assert.Equal("372", splitView.Attribute("OpenPaneLength")?.Value);
+        Assert.NotNull(paneRoot);
+        Assert.NotNull(versionSelector);
+        Assert.Equal("DeleteModButton_OnClick", deleteButton.Attribute("Click")?.Value);
         Assert.Equal("ModInfoPanePlacementButton_OnClick", placementButton.Attribute("Click")?.Value);
-        Assert.Null(modInfoBorder.Attribute("MouseLeftButtonDown"));
-        Assert.Null(modInfoBorder.Attribute("MouseMove"));
-        Assert.Null(modInfoBorder.Attribute("MouseLeftButtonUp"));
+        Assert.DoesNotContain(document.Descendants(Presentation + "Canvas"), element =>
+            string.Equals(element.Attribute(Xaml + "Name")?.Value, "ModInfoOverlay", StringComparison.Ordinal));
+        Assert.DoesNotContain(document.Descendants(Presentation + "Border"), element =>
+            string.Equals(element.Attribute(Xaml + "Name")?.Value, "MODINFO_border", StringComparison.Ordinal));
     }
 
     private static XDocument LoadView(string fileName)

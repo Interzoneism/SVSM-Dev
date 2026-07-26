@@ -1,9 +1,15 @@
 using System.ComponentModel;
+using System.IO;
+using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using VintageStoryModManager.Models;
+using VintageStoryModManager.Services;
 using VintageStoryModManager.ViewModels;
 
 namespace VintageStoryModManager.Views;
@@ -13,7 +19,10 @@ namespace VintageStoryModManager.Views;
 /// </summary>
 public partial class ModBrowserView : System.Windows.Controls.UserControl
 {
+    private static readonly HttpClient ScreenshotHttpClient = CreateScreenshotHttpClient();
     private bool _isInitialized;
+    private int _screenshotLoadVersion;
+    private CancellationTokenSource? _screenshotLoadCancellation;
 
     public bool IsModBrowserInitialized => _isInitialized;
 
@@ -67,6 +76,8 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
 
     private void OnControlUnloaded(object sender, RoutedEventArgs e)
     {
+        CancelScreenshotLoad();
+
         // Clean up resources when the control is unloaded
         if (DataContext is ModBrowserViewModel vm)
         {
@@ -84,12 +95,130 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
         if (e.NewValue is ModBrowserViewModel newVm)
         {
             newVm.PropertyChanged += OnViewModelPropertyChanged;
+            _ = UpdateScreenshotImageAsync(clearExistingImage: true);
         }
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // No spinner animation logic needed anymore - progress bar is controlled by bindings
+        if (e.PropertyName == nameof(ModBrowserViewModel.CurrentScreenshotUrl))
+        {
+            _ = UpdateScreenshotImageAsync(clearExistingImage: false);
+        }
+        else if (e.PropertyName == nameof(ModBrowserViewModel.IsModDetailsOpen) &&
+                 ViewModel?.IsModDetailsOpen != true)
+        {
+            CancelScreenshotLoad();
+            CurrentScreenshotImage.Source = null;
+        }
+    }
+
+    private async Task UpdateScreenshotImageAsync(bool clearExistingImage)
+    {
+        var screenshotUrl = ViewModel?.CurrentScreenshotUrl;
+        var loadVersion = ++_screenshotLoadVersion;
+        _screenshotLoadCancellation?.Cancel();
+        _screenshotLoadCancellation?.Dispose();
+        _screenshotLoadCancellation = new CancellationTokenSource();
+        var cancellationToken = _screenshotLoadCancellation.Token;
+
+        if (clearExistingImage || string.IsNullOrWhiteSpace(screenshotUrl))
+            CurrentScreenshotImage.Source = null;
+
+        if (string.IsNullOrWhiteSpace(screenshotUrl))
+            return;
+
+        try
+        {
+            var imageBytes = await LoadScreenshotBytesAsync(screenshotUrl, cancellationToken);
+            if (imageBytes is null || imageBytes.Length == 0)
+                return;
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (loadVersion != _screenshotLoadVersion ||
+                    cancellationToken.IsCancellationRequested ||
+                    !string.Equals(screenshotUrl, ViewModel?.CurrentScreenshotUrl, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                // BitmapImage is a WPF Freezable, so it must be created on the UI
+                // dispatcher that will own and display it. Only raw bytes cross
+                // the background-loading boundary.
+                CurrentScreenshotImage.Source = CreateBitmapImage(imageBytes);
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer gallery selection or closing the overlay superseded this load.
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[ModBrowserView] Failed to load screenshot '{screenshotUrl}': {ex.Message}");
+        }
+    }
+
+    private static async Task<byte[]?> LoadScreenshotBytesAsync(
+        string screenshotUrl,
+        CancellationToken cancellationToken)
+    {
+        var cachedBytes = await ModImageCacheService
+            .TryGetCachedImageAsync(screenshotUrl, cancellationToken)
+            .ConfigureAwait(false);
+        if (cachedBytes is { Length: > 0 })
+            return cachedBytes;
+
+        if (InternetAccessManager.IsInternetAccessDisabled ||
+            !Uri.TryCreate(screenshotUrl, UriKind.Absolute, out var screenshotUri) ||
+            (screenshotUri.Scheme != Uri.UriSchemeHttp && screenshotUri.Scheme != Uri.UriSchemeHttps))
+        {
+            return null;
+        }
+
+        using var response = await ScreenshotHttpClient
+            .GetAsync(screenshotUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            .ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        var imageBytes = await response.Content
+            .ReadAsByteArrayAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        await ModImageCacheService
+            .StoreImageAsync(screenshotUrl, imageBytes, cancellationToken)
+            .ConfigureAwait(false);
+
+        return imageBytes;
+    }
+
+    private static BitmapImage CreateBitmapImage(byte[] imageBytes)
+    {
+        using var stream = new MemoryStream(imageBytes, writable: false);
+        var bitmap = new BitmapImage();
+        bitmap.BeginInit();
+        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+        bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+        bitmap.StreamSource = stream;
+        bitmap.EndInit();
+        bitmap.Freeze();
+        return bitmap;
+    }
+
+    private void CancelScreenshotLoad()
+    {
+        _screenshotLoadVersion++;
+        _screenshotLoadCancellation?.Cancel();
+        _screenshotLoadCancellation?.Dispose();
+        _screenshotLoadCancellation = null;
+    }
+
+    private static HttpClient CreateScreenshotHttpClient()
+    {
+        var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("SimpleVSManager/1.0");
+        return httpClient;
     }
 
     private void ScrollToTop_Click(object sender, RoutedEventArgs e)
@@ -170,6 +299,32 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
     {
         // Prevent clicks on the card itself from bubbling up and closing the overlay.
         e.Handled = true;
+    }
+
+    private void ModDetailOverlay_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is not UIElement { IsVisible: true } overlay)
+            return;
+
+        // Opening the overlay does not inherently move keyboard focus away from the
+        // clicked card. Defer until the current mouse event has finished so Escape
+        // and the other routed keyboard input work immediately.
+        overlay.Dispatcher.BeginInvoke(
+            DispatcherPriority.Input,
+            new Action(() =>
+            {
+                if (overlay.IsVisible)
+                    Keyboard.Focus(overlay);
+            }));
+    }
+
+    private void ModBrowserView_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && ViewModel?.IsModDetailsOpen == true)
+        {
+            ViewModel.CloseModDetailsCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 
     private async void VersionsDropdown_SelectionChanged(object? sender, EventArgs e)

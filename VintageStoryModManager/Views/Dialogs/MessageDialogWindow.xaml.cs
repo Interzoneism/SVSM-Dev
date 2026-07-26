@@ -27,11 +27,16 @@ public partial class MessageDialogWindow : Window
         MessageBoxButton buttons,
         MessageBoxImage icon,
         MessageDialogExtraButton? extraButton = null,
-        MessageDialogButtonContentOverrides? buttonContentOverrides = null)
+        MessageDialogButtonContentOverrides? buttonContentOverrides = null,
+        string? fixedFooterText = null)
     {
         _buttons = buttons;
         Title = caption;
         MessageTextBlock.Text = message;
+        FixedFooterTextBlock.Text = fixedFooterText;
+        FixedFooterTextBlock.Visibility = string.IsNullOrWhiteSpace(fixedFooterText)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
         _buttonContentOverrides = buttonContentOverrides;
 
         ConfigureButtons(buttons);

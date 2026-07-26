@@ -64,6 +64,8 @@ public sealed class ModVersionVoteCounts
 /// </summary>
 public sealed class ModVersionVoteSummary
 {
+    private const int PositiveCompatibilityConsensusVoteCount = 4;
+
     public ModVersionVoteSummary(
         string modId,
         string modVersion,
@@ -97,6 +99,19 @@ public sealed class ModVersionVoteSummary
     public ModVersionVoteComments Comments { get; }
 
     public int TotalVotes => Counts.Total;
+
+    /// <summary>
+    ///     Returns whether the reports provide enough positive evidence to treat a version warning as informational.
+    /// </summary>
+    public bool HasPositiveCompatibilityConsensus()
+    {
+        var majority = GetMajorityOption();
+        if (majority is not ModVersionVoteOption.FullyFunctional
+            && majority is not ModVersionVoteOption.NoIssuesSoFar)
+            return false;
+
+        return Counts.GetCount(majority.Value) >= PositiveCompatibilityConsensusVoteCount;
+    }
 
     public ModVersionVoteOption? GetMajorityOption()
     {

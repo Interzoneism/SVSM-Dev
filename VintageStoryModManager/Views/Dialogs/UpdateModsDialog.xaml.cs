@@ -47,6 +47,28 @@ public partial class UpdateModsDialog : Window
 
     public IReadOnlyList<ModListItemViewModel> SelectedMods => _viewModel.GetSelectedMods();
 
+    private void UpdateModsDialog_OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (Owner == null) return;
+
+        ConstrainMaxHeightToOwner();
+        Owner.SizeChanged += Owner_OnSizeChanged;
+        Closed += (_, _) => Owner.SizeChanged -= Owner_OnSizeChanged;
+    }
+
+    private void Owner_OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        ConstrainMaxHeightToOwner();
+    }
+
+    private void ConstrainMaxHeightToOwner()
+    {
+        if (Owner is not { } owner) return;
+
+        var ownerHeight = owner.ActualHeight-300;
+        if (ownerHeight > 0) MaxHeight = ownerHeight;
+    }
+
     private void UpdateButton_OnClick(object sender, RoutedEventArgs e)
     {
         DialogResult = true;

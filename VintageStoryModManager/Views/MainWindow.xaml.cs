@@ -323,6 +323,7 @@ public partial class MainWindow : Window
     private readonly List<ModListItemViewModel> _selectedMods = new();
     private readonly List<LocalModlistListEntry> _selectedLocalModlists = new();
     private CloudModlistListEntry? _selectedCloudModlist;
+    private DataGridColumn? _installedContextColumn;
     private ModListItemViewModel? _selectionAnchor;
 
     // Cloud/Firebase state
@@ -552,6 +553,527 @@ public partial class MainWindow : Window
 
         foreach (var pair in _installedColumnVisibilityPreferences)
             NotifyViewModelOfInstalledColumnVisibility(pair.Key, pair.Value);
+    }
+
+    private void ModsDataGrid_OnPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        var source = e.OriginalSource as DependencyObject;
+        var columnHeader = FindAncestor<DataGridColumnHeader>(source);
+        _installedContextColumn = columnHeader?.Column;
+
+        if (columnHeader is not null || FindAncestor<ScrollBar>(source) is not null) return;
+
+        if (FindAncestor<DataGridRow>(source)?.Item is ModListItemViewModel mod)
+        {
+            if (!_selectedMods.Contains(mod))
+            {
+                ClearSelection();
+                AddToSelection(mod);
+                _selectionAnchor = mod;
+            }
+
+            return;
+        }
+
+        ClearSelection(true);
+    }
+
+    private void InstalledModsContextMenu_OnOpened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ContextMenu menu) return;
+
+        menu.Items.Clear();
+
+        if (_installedContextColumn is not null)
+        {
+            PopulateInstalledColumnHeaderContextMenu(menu, _installedContextColumn);
+            return;
+        }
+
+        PopulateInstalledModsContextMenu(menu);
+    }
+
+    private void InstalledModsContextMenu_OnClosed(object sender, RoutedEventArgs e)
+    {
+        _installedContextColumn = null;
+    }
+
+    private void PopulateInstalledColumnHeaderContextMenu(ContextMenu menu, DataGridColumn column)
+    {
+        if (TryGetInstalledColumn(column, out var columnKey))
+        {
+            var label = GetInstalledColumnLabel(columnKey);
+            menu.Items.Add(CreateContextMenuItem(
+                $"Hide {label} column",
+                (_, _) => SetInstalledColumnVisibility(columnKey, false),
+                column.Visibility == Visibility.Visible));
+            menu.Items.Add(new Separator());
+        }
+
+        menu.Items.Add(CreateInstalledColumnsSubmenu());
+    }
+
+    private void PopulateInstalledModsContextMenu(ContextMenu menu)
+    {
+        var selection = _selectedMods.ToList();
+        var singleSelection = selection.Count == 1 ? selection[0] : null;
+        var activateCount = selection.Count(mod => mod.CanToggle && !mod.IsActive);
+        var deactivateCount = selection.Count(mod => mod.CanToggle && mod.IsActive);
+        var updateCount = selection.Count(mod => mod.CanUpdate);
+
+        if (activateCount > 0)
+            menu.Items.Add(CreateContextMenuItem(
+                selection.Count > 1 ? $"Activate selected mods ({activateCount})" : "Activate",
+                (_, _) => SetSelectedModsActivation(true)));
+
+        if (deactivateCount > 0)
+            menu.Items.Add(CreateContextMenuItem(
+                selection.Count > 1 ? $"Deactivate selected mods ({deactivateCount})" : "Deactivate",
+                (_, _) => SetSelectedModsActivation(false)));
+
+        if (updateCount > 0)
+        {
+            var updateHeader = selection.Count == 1
+                ? "Update to latest"
+                : $"Update selected {(updateCount == 1 ? "mod" : "mods")} ({updateCount})";
+            menu.Items.Add(CreateContextMenuItem(
+                updateHeader,
+                UpdateSelectedModsContextMenuItem_OnClick,
+                !_isModUpdateInProgress));
+        }
+
+        if (singleSelection?.CanFixDependencyIssues == true)
+            menu.Items.Add(CreateModContextMenuItem(
+                "Resolve dependency issues",
+                singleSelection,
+                FixModButton_OnClick,
+                !_isModUpdateInProgress));
+
+        AddSeparatorIfNeeded(menu);
+
+        if (singleSelection is not null)
+        {
+            var hasConfigPath = !string.IsNullOrWhiteSpace(singleSelection.ModId)
+                                && _userConfiguration.TryGetModConfigPath(singleSelection.ModId, out var configPath)
+                                && !string.IsNullOrWhiteSpace(configPath);
+            menu.Items.Add(CreateModContextMenuItem(
+                hasConfigPath ? "Edit config" : "Set config...",
+                singleSelection,
+                EditConfigButton_OnClick));
+
+            if (singleSelection.HasModDatabasePageLink)
+                menu.Items.Add(CreateModContextMenuItem(
+                    "Open mod page",
+                    singleSelection,
+                    ModDatabasePageButton_OnClick));
+
+            if (singleSelection.CanSubmitUserReport && !InternetAccessManager.IsInternetAccessDisabled)
+                menu.Items.Add(CreateModContextMenuItem(
+                    "View user reports...",
+                    singleSelection,
+                    UserReportsButton_OnClick));
+
+            if (_userConfiguration.EnableServerOptions
+                && !string.IsNullOrWhiteSpace(
+                    ServerCommandBuilder.TryBuildInstallCommand(singleSelection.ModId, singleSelection.Version)))
+                menu.Items.Add(CreateModContextMenuItem(
+                    "Copy install command for server",
+                    singleSelection,
+                    SelectedModCopyForServerButton_OnClick));
+
+            if (!string.IsNullOrWhiteSpace(singleSelection.ModId))
+                menu.Items.Add(CreateModContextMenuItem(
+                    "Copy mod ID",
+                    singleSelection,
+                    CopyModIdContextMenuItem_OnClick));
+
+            menu.Items.Add(CreateModContextMenuItem(
+                "Open mod location",
+                singleSelection,
+                OpenModLocationContextMenuItem_OnClick));
+        }
+
+        if (selection.Count > 0)
+        {
+            AddSeparatorIfNeeded(menu);
+            menu.Items.Add(CreateContextMenuItem(
+                selection.Count == 1 ? "Remove mod" : $"Remove selected mods ({selection.Count})",
+                DeleteModButton_OnClick,
+                true,
+                selection.Count == 1 ? singleSelection : null,
+                "Delete"));
+        }
+
+        AddSeparatorIfNeeded(menu);
+        menu.Items.Add(CreateContextMenuItem(
+            "Select all",
+            (_, _) => SelectAllModsInCurrentView(),
+            GetModsInViewOrder().Count > 0,
+            inputGestureText: "Ctrl+A"));
+        menu.Items.Add(CreateInstalledColumnsSubmenu());
+    }
+
+    private void LocalModlistsDataGrid_OnPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not DataGrid dataGrid) return;
+
+        var source = e.OriginalSource as DependencyObject;
+        if (FindAncestor<DataGridColumnHeader>(source) is not null
+            || FindAncestor<ScrollBar>(source) is not null)
+            return;
+
+        if (FindAncestor<DataGridRow>(source) is { Item: LocalModlistListEntry entry } row)
+        {
+            if (!row.IsSelected)
+            {
+                dataGrid.UnselectAll();
+                row.IsSelected = true;
+            }
+
+            row.Focus();
+            return;
+        }
+
+        dataGrid.UnselectAll();
+    }
+
+    private void LocalModlistsContextMenu_OnOpened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ContextMenu menu) return;
+
+        menu.Items.Clear();
+        var selectionCount = _selectedLocalModlists.Count;
+
+        menu.Items.Add(CreateContextMenuItem(
+            "Save current mods as local modlist...",
+            SaveLocalModlistButton_OnClick));
+        menu.Items.Add(new Separator());
+        menu.Items.Add(CreateContextMenuItem(
+            "Install selected modlist",
+            InstallLocalModlistButton_OnClick,
+            selectionCount == 1));
+        menu.Items.Add(CreateContextMenuItem(
+            "Modify selected modlist...",
+            ModifyLocalModlistButton_OnClick,
+            selectionCount == 1));
+        menu.Items.Add(CreateContextMenuItem(
+            selectionCount > 1 ? $"Delete selected modlists ({selectionCount})" : "Delete selected modlist",
+            DeleteLocalModlistsButton_OnClick,
+            selectionCount > 0));
+        menu.Items.Add(new Separator());
+        menu.Items.Add(CreateContextMenuItem(
+            "Open modlists folder",
+            OpenModlistsFolderButton_OnClick));
+    }
+
+    private void CloudModlistsDataGrid_OnPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not DataGrid dataGrid) return;
+
+        var source = e.OriginalSource as DependencyObject;
+        if (FindAncestor<DataGridColumnHeader>(source) is not null
+            || FindAncestor<ScrollBar>(source) is not null)
+            return;
+
+        if (FindAncestor<DataGridRow>(source) is { Item: CloudModlistListEntry } row)
+        {
+            dataGrid.SelectedItem = row.Item;
+            row.Focus();
+            return;
+        }
+
+        dataGrid.UnselectAll();
+    }
+
+    private void CloudModlistsContextMenu_OnOpened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ContextMenu menu) return;
+
+        menu.Items.Clear();
+        var internetEnabled = !InternetAccessManager.IsInternetAccessDisabled;
+
+        menu.Items.Add(CreateContextMenuItem(
+            "Refresh online modlists",
+            RefreshCloudModlistsButton_OnClick,
+            internetEnabled && !_isCloudModlistRefreshInProgress));
+        menu.Items.Add(new Separator());
+        menu.Items.Add(CreateContextMenuItem(
+            "Install selected modlist",
+            InstallCloudModlistButton_OnClick,
+            internetEnabled && _selectedCloudModlist is not null));
+        menu.Items.Add(CreateContextMenuItem(
+            "Save current mods as online modlist...",
+            SaveCloudModlistButton_OnClick,
+            internetEnabled));
+        menu.Items.Add(CreateContextMenuItem(
+            "Modify online modlists...",
+            ModifyCloudModlistsButton_OnClick,
+            internetEnabled));
+    }
+
+    private MenuItem CreateInstalledColumnsSubmenu()
+    {
+        var columnsMenu = new MenuItem
+        {
+            Header = "Columns",
+            MinWidth = 220,
+            Style = TryFindResource("ToggleMenuItemStyle") as Style
+        };
+
+        var toggleStyle = TryFindResource("ToggleMenuItemStyle") as Style;
+
+        foreach (var (column, label) in GetInstalledColumns())
+        {
+            var columnMenuItem = new MenuItem
+            {
+                Header = label,
+                IsCheckable = true,
+                IsChecked = _installedColumnVisibilityPreferences.GetValueOrDefault(column, true),
+                MinHeight = 32,
+                Style = toggleStyle,
+                StaysOpenOnClick = true
+            };
+            columnMenuItem.Click += (_, _) => SetInstalledColumnVisibility(column, columnMenuItem.IsChecked);
+            columnsMenu.Items.Add(columnMenuItem);
+        }
+
+        return columnsMenu;
+    }
+
+    private MenuItem CreateContextMenuItem(
+        string header,
+        RoutedEventHandler clickHandler,
+        bool isEnabled = true,
+        object? dataContext = null,
+        string? inputGestureText = null)
+    {
+        var item = new MenuItem
+        {
+            Header = header,
+            IsEnabled = isEnabled,
+            MinHeight = 32,
+            DataContext = dataContext,
+            Style = TryFindResource("ToggleMenuItemStyle") as Style
+        };
+
+        if (!string.IsNullOrWhiteSpace(inputGestureText))
+            item.InputGestureText = inputGestureText;
+
+        item.Click += clickHandler;
+        return item;
+    }
+
+    private MenuItem CreateModContextMenuItem(
+        string header,
+        ModListItemViewModel mod,
+        RoutedEventHandler clickHandler,
+        bool isEnabled = true)
+    {
+        return CreateContextMenuItem(header, clickHandler, isEnabled, mod);
+    }
+
+    private static void AddSeparatorIfNeeded(ContextMenu menu)
+    {
+        if (menu.Items.Count > 0 && menu.Items[^1] is not Separator)
+            menu.Items.Add(new Separator());
+    }
+
+    private void SetSelectedModsActivation(bool isActive)
+    {
+        if (_selectedMods.Count == 0) return;
+
+        try
+        {
+            _isApplyingMultiToggle = true;
+
+            foreach (var mod in _selectedMods.ToList())
+            {
+                if (!mod.CanToggle || mod.IsActive == isActive) continue;
+                mod.IsActive = isActive;
+            }
+        }
+        finally
+        {
+            _isApplyingMultiToggle = false;
+        }
+    }
+
+    private async void UpdateSelectedModsContextMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_isModUpdateInProgress) return;
+
+        var modsToUpdate = _selectedMods
+            .Where(mod => mod.CanUpdate)
+            .ToList();
+        if (modsToUpdate.Count == 0) return;
+
+        e.Handled = true;
+        await UpdateModsAsync(modsToUpdate, modsToUpdate.Count > 1).ConfigureAwait(true);
+    }
+
+    private void CopyModIdContextMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: ModListItemViewModel mod }
+            || string.IsNullOrWhiteSpace(mod.ModId))
+            return;
+
+        try
+        {
+            WinForms.Clipboard.SetDataObject(mod.ModId, true, 10, 100);
+            _viewModel?.ReportStatus($"Copied mod ID {mod.ModId}.");
+        }
+        catch (ExternalException ex)
+        {
+            _viewModel?.ReportStatus($"Failed to copy mod ID for {mod.DisplayName}: {ex.Message}", true);
+            WpfMessageBox.Show(
+                this,
+                "Failed to copy the mod ID. Please try again.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void OpenModLocationContextMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: ModListItemViewModel mod }) return;
+
+        if (!TryGetManagedModPath(mod, out var modPath, out var errorMessage))
+        {
+            WpfMessageBox.Show(
+                this,
+                errorMessage ?? "The mod location could not be determined.",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (!File.Exists(modPath) && !Directory.Exists(modPath))
+        {
+            WpfMessageBox.Show(
+                this,
+                $"The mod could not be found at:{Environment.NewLine}{modPath}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            RevealPathWithShell(modPath);
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(
+                this,
+                $"Failed to open the mod location:{Environment.NewLine}{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private static void RevealPathWithShell(string path)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            var explorerStartInfo = new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                UseShellExecute = true
+            };
+            explorerStartInfo.ArgumentList.Add("/select,");
+            explorerStartInfo.ArgumentList.Add(path);
+            Process.Start(explorerStartInfo);
+            return;
+        }
+
+        var directory = Directory.Exists(path) ? path : Path.GetDirectoryName(path);
+        if (!string.IsNullOrWhiteSpace(directory))
+            OpenFolderWithShell(directory);
+    }
+
+    private void SetInstalledColumnVisibility(InstalledModsColumn column, bool isVisible)
+    {
+        var menuItem = GetInstalledColumnMenuItem(column);
+        if (menuItem is not null && menuItem.IsChecked != isVisible)
+        {
+            menuItem.IsChecked = isVisible;
+            return;
+        }
+
+        _installedColumnVisibilityPreferences[column] = isVisible;
+        _userConfiguration.SetInstalledColumnVisibility(column.ToString(), isVisible);
+        NotifyViewModelOfInstalledColumnVisibility(column, isVisible);
+        ApplyInstalledColumnVisibility(column, isVisible);
+    }
+
+    private MenuItem? GetInstalledColumnMenuItem(InstalledModsColumn column)
+    {
+        return column switch
+        {
+            InstalledModsColumn.Active => ActiveColumnMenuItem,
+            InstalledModsColumn.Icon => IconColumnMenuItem,
+            InstalledModsColumn.Name => NameColumnMenuItem,
+            InstalledModsColumn.Version => VersionColumnMenuItem,
+            InstalledModsColumn.LatestVersion => LatestVersionColumnMenuItem,
+            InstalledModsColumn.DateModified => DateModifiedColumnMenuItem,
+            InstalledModsColumn.Authors => AuthorsColumnMenuItem,
+            InstalledModsColumn.Tags => TagsColumnMenuItem,
+            InstalledModsColumn.UserReports => UserReportsColumnMenuItem,
+            InstalledModsColumn.Status => StatusColumnMenuItem,
+            InstalledModsColumn.Side => SideColumnMenuItem,
+            _ => null
+        };
+    }
+
+    private bool TryGetInstalledColumn(DataGridColumn column, out InstalledModsColumn columnKey)
+    {
+        if (ReferenceEquals(column, ActiveColumn)) columnKey = InstalledModsColumn.Active;
+        else if (ReferenceEquals(column, IconColumn)) columnKey = InstalledModsColumn.Icon;
+        else if (ReferenceEquals(column, NameColumn)) columnKey = InstalledModsColumn.Name;
+        else if (ReferenceEquals(column, VersionColumn)) columnKey = InstalledModsColumn.Version;
+        else if (ReferenceEquals(column, LatestVersionColumn)) columnKey = InstalledModsColumn.LatestVersion;
+        else if (ReferenceEquals(column, DateModifiedColumn)) columnKey = InstalledModsColumn.DateModified;
+        else if (ReferenceEquals(column, AuthorsColumn)) columnKey = InstalledModsColumn.Authors;
+        else if (ReferenceEquals(column, TagsColumn)) columnKey = InstalledModsColumn.Tags;
+        else if (ReferenceEquals(column, UserReportsColumn)) columnKey = InstalledModsColumn.UserReports;
+        else if (ReferenceEquals(column, StatusColumn)) columnKey = InstalledModsColumn.Status;
+        else if (ReferenceEquals(column, SideColumn)) columnKey = InstalledModsColumn.Side;
+        else
+        {
+            columnKey = default;
+            return false;
+        }
+
+        return true;
+    }
+
+    private static IReadOnlyList<(InstalledModsColumn Column, string Label)> GetInstalledColumns()
+    {
+        return
+        [
+            (InstalledModsColumn.Active, "Active"),
+            (InstalledModsColumn.Icon, "Icon"),
+            (InstalledModsColumn.Name, "Name"),
+            (InstalledModsColumn.Version, "Version"),
+            (InstalledModsColumn.LatestVersion, "Latest Version"),
+            (InstalledModsColumn.DateModified, "Date Modified"),
+            (InstalledModsColumn.Authors, "Authors"),
+            (InstalledModsColumn.Tags, "Tags"),
+            (InstalledModsColumn.UserReports, "User Reports"),
+            (InstalledModsColumn.Status, "Status"),
+            (InstalledModsColumn.Side, "Side")
+        ];
+    }
+
+    private static string GetInstalledColumnLabel(InstalledModsColumn column)
+    {
+        return GetInstalledColumns()
+            .First(entry => entry.Column == column)
+            .Label;
     }
 
 
@@ -1126,8 +1648,6 @@ public partial class MainWindow : Window
 
     private void InitializeModInfoPane()
     {
-        ModInfoOverlay.Children.Remove(MODINFO_border);
-        ModInfoPaneHost.Content = MODINFO_border;
         ApplyModInfoPanePlacement(_userConfiguration.ModInfoPanePlacement);
     }
 
@@ -2080,8 +2600,12 @@ public partial class MainWindow : Window
     {
         if (sender is not MenuItem menuItem) return;
 
+        var previousValue = _userConfiguration.RequireExactVsVersionMatch;
         _userConfiguration.SetRequireExactVsVersionMatch(menuItem.IsChecked);
         menuItem.IsChecked = _userConfiguration.RequireExactVsVersionMatch;
+
+        if (previousValue != _userConfiguration.RequireExactVsVersionMatch)
+            _viewModel?.RefreshInstalledModDetails();
     }
 
     private async void ExperimentalModDebuggingMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -4747,7 +5271,7 @@ public partial class MainWindow : Window
     {
         if (_viewModel is null) return;
 
-        var sortMemberPath = e.Column.SortMemberPath;
+        var sortMemberPath = GetColumnSortMemberPath(e.Column);
         if (string.IsNullOrWhiteSpace(sortMemberPath))
         {
             e.Handled = true;
@@ -4756,11 +5280,71 @@ public partial class MainWindow : Window
 
         e.Handled = true;
 
-        var direction = e.Column.SortDirection == ListSortDirection.Ascending
-            ? ListSortDirection.Descending
-            : ListSortDirection.Ascending;
+        var direction = GetNextColumnSortDirection(e.Column);
 
         ApplyModListSort(sortMemberPath, direction, true);
+    }
+
+    private void ModlistsDataGrid_OnSorting(object sender, DataGridSortingEventArgs e)
+    {
+        e.Handled = true;
+
+        if (sender is not DataGrid dataGrid)
+            return;
+
+        var sortMemberPath = GetColumnSortMemberPath(e.Column);
+
+        if (string.IsNullOrWhiteSpace(sortMemberPath)
+            || dataGrid.ItemsSource is not ICollectionView view)
+            return;
+
+        var direction = GetNextColumnSortDirection(e.Column);
+
+        view.SortDescriptions.Clear();
+        view.SortDescriptions.Add(new SortDescription(sortMemberPath, direction));
+
+        foreach (var column in dataGrid.Columns)
+            column.SortDirection = string.Equals(GetColumnSortMemberPath(column), sortMemberPath, StringComparison.Ordinal)
+                ? direction
+                : null;
+    }
+
+    private static string? GetColumnSortMemberPath(DataGridColumn column)
+    {
+        if (!string.IsNullOrWhiteSpace(column.SortMemberPath))
+            return column.SortMemberPath;
+
+        return column is DataGridBoundColumn { Binding: System.Windows.Data.Binding binding }
+            ? binding.Path?.Path
+            : null;
+    }
+
+    private static ListSortDirection GetNextColumnSortDirection(DataGridColumn column)
+    {
+        if (column.SortDirection is { } currentDirection)
+            return currentDirection == ListSortDirection.Descending
+                ? ListSortDirection.Ascending
+                : ListSortDirection.Descending;
+
+        return IsDescendingFirstColumn(column)
+            ? ListSortDirection.Descending
+            : ListSortDirection.Ascending;
+    }
+
+    private static bool IsDescendingFirstColumn(DataGridColumn column)
+    {
+        var header = column.Header?.ToString();
+        if (string.Equals(header, "Version", StringComparison.Ordinal)
+            || string.Equals(header, "Latest Version", StringComparison.Ordinal)
+            || string.Equals(header, "Date Modified", StringComparison.Ordinal)
+            || string.Equals(header, "VS Version", StringComparison.Ordinal))
+            return true;
+
+        var sortMemberPath = GetColumnSortMemberPath(column);
+        return string.Equals(sortMemberPath, nameof(ModListItemViewModel.LatestVersionSortKey), StringComparison.Ordinal)
+               || string.Equals(sortMemberPath, nameof(ModListItemViewModel.DateModified), StringComparison.Ordinal)
+               || string.Equals(sortMemberPath, nameof(LocalModlistListEntry.LastModified), StringComparison.Ordinal)
+               || string.Equals(sortMemberPath, nameof(CloudModlistListEntry.DateAdded), StringComparison.Ordinal);
     }
 
     private void ModsDataGrid_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -4789,7 +5373,7 @@ public partial class MainWindow : Window
 
     private async void UserReportsButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not WpfButton { DataContext: ModListItemViewModel mod }) return;
+        if (sender is not FrameworkElement { DataContext: ModListItemViewModel mod }) return;
 
         e.Handled = true;
 
@@ -4851,6 +5435,21 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    private void UserReportReasonsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfButton { DataContext: ModListItemViewModel mod }
+            || mod.UserReportSummary is not { } summary)
+            return;
+
+        e.Handled = true;
+
+        ModVoteReasonDetailsDialog dialog = new(mod.DisplayName, summary)
+        {
+            Owner = this
+        };
+        dialog.ShowDialog();
     }
 
     private async Task<bool> TryHandleModListKeyDownAsync(KeyEventArgs e)
@@ -5151,7 +5750,7 @@ public partial class MainWindow : Window
 
     private void ModDatabasePageButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is WpfButton { DataContext: ModListItemViewModel mod }
+        if (sender is FrameworkElement { DataContext: ModListItemViewModel mod }
             && mod.OpenModDatabasePageCommand is ICommand command
             && command.CanExecute(null))
             command.Execute(null);
@@ -5161,7 +5760,7 @@ public partial class MainWindow : Window
 
     private void SelectedModCopyForServerButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not WpfButton { DataContext: ModListItemViewModel mod }) return;
+        if (sender is not FrameworkElement { DataContext: ModListItemViewModel mod }) return;
 
         var command = ServerCommandBuilder.TryBuildInstallCommand(mod.ModId, mod.Version);
         if (string.IsNullOrWhiteSpace(command)) return;
@@ -5188,7 +5787,7 @@ public partial class MainWindow : Window
 
     private void EditConfigButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not WpfButton { DataContext: ModListItemViewModel mod }) return;
+        if (sender is not FrameworkElement { DataContext: ModListItemViewModel mod }) return;
 
         e.Handled = true;
 
@@ -5275,9 +5874,7 @@ public partial class MainWindow : Window
 
     private async void DeleteModButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not WpfButton button) return;
-
-        if (button.DataContext is ModListItemViewModel mod)
+        if (sender is FrameworkElement { DataContext: ModListItemViewModel mod })
         {
             e.Handled = true;
             await DeleteSingleModAsync(mod);
@@ -5469,7 +6066,7 @@ public partial class MainWindow : Window
     {
         if (_isModUpdateInProgress) return;
 
-        if (sender is not WpfButton { DataContext: ModListItemViewModel mod }) return;
+        if (sender is not FrameworkElement { DataContext: ModListItemViewModel mod }) return;
 
         e.Handled = true;
 
@@ -5494,52 +6091,20 @@ public partial class MainWindow : Window
 
         var failures = new List<string>();
         var anySuccess = false;
-        var processedDependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         try
         {
             foreach (var dependency in dependencies)
             {
-                if (dependency.IsGameOrCoreDependency || !processedDependencies.Add(dependency.ModId)) continue;
-
-                var installedDependency = _viewModel?.FindInstalledModById(dependency.ModId);
-
-                var isMissing = mod.MissingDependencies.Any(d =>
-                    string.Equals(d.ModId, dependency.ModId, StringComparison.OrdinalIgnoreCase));
-                if (!isMissing && installedDependency is null) isMissing = true;
-
-                if (!isMissing && installedDependency != null)
+                var result = await ResolveDependencyTreeAsync(dependency, modsToRefresh).ConfigureAwait(true);
+                if (!result.Success)
                 {
-                    var satisfies =
-                        VersionStringUtility.SatisfiesMinimumVersion(dependency.Version, installedDependency.Version);
-                    if (!satisfies) isMissing = true;
+                    failures.Add($"{dependency.Display}: {result.Message}");
+                    _viewModel?.ReportStatus($"Failed to resolve dependency {dependency.Display}: {result.Message}",
+                        true);
                 }
 
-                if (isMissing)
-                {
-                    var result = await InstallOrUpdateDependencyAsync(dependency, installedDependency)
-                        .ConfigureAwait(true);
-                    if (!result.Success)
-                    {
-                        failures.Add($"{dependency.Display}: {result.Message}");
-                        _viewModel?.ReportStatus($"Failed to install dependency {dependency.Display}: {result.Message}",
-                            true);
-                    }
-                    else
-                    {
-                        anySuccess = true;
-                        _viewModel?.ReportStatus(result.Message);
-                    }
-
-                    continue;
-                }
-
-                if (installedDependency != null && !installedDependency.IsActive)
-                {
-                    installedDependency.IsActive = true;
-                    anySuccess = true;
-                    _viewModel?.ReportStatus($"Activated dependency {installedDependency.DisplayName}.");
-                }
+                anySuccess |= result.Changed;
             }
         }
         finally
@@ -5592,6 +6157,123 @@ public partial class MainWindow : Window
         else
         {
             _viewModel?.ReportStatus($"Dependencies for {mod.DisplayName} are already satisfied.");
+        }
+    }
+
+    private async Task<(bool Success, bool Changed, string Message)> ResolveDependencyTreeAsync(
+        ModDependencyInfo dependency,
+        ISet<string> modsToRefresh)
+    {
+        if (_viewModel is null) return (false, false, "The mod view model is not available.");
+        if (dependency.IsGameOrCoreDependency) return (true, false, string.Empty);
+
+        var resolved = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var resolving = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var changed = false;
+
+        return await ResolveAsync(dependency).ConfigureAwait(true);
+
+        async Task<(bool Success, bool Changed, string Message)> ResolveAsync(ModDependencyInfo current)
+        {
+            if (current.IsGameOrCoreDependency) return (true, false, string.Empty);
+            if (resolved.Contains(current.ModId)) return (true, false, string.Empty);
+
+            if (!resolving.Add(current.ModId))
+                return (false, changed, $"A dependency cycle includes {current.ModId}.");
+
+            try
+            {
+                var installed = _viewModel.FindInstalledModById(current.ModId);
+                var needsInstall = installed is null
+                                   || !VersionStringUtility.SatisfiesMinimumVersion(current.Version, installed.Version);
+
+                if (needsInstall)
+                {
+                    var installResult = await InstallOrUpdateDependencyAsync(current, installed).ConfigureAwait(true);
+                    if (!installResult.Success)
+                        return (false, changed, installResult.Message);
+
+                    changed = true;
+                    _viewModel.ReportStatus(installResult.Message);
+                    var refreshResult = await RefreshAfterDependencyChangeAsync().ConfigureAwait(true);
+                    if (!refreshResult.Success)
+                        return (false, changed, refreshResult.Message);
+
+                    installed = _viewModel.FindInstalledModById(current.ModId);
+
+                    if (installed is null)
+                        return (false, changed, "The dependency was installed but could not be discovered afterward.");
+                }
+
+                if (installed is null)
+                    return (false, changed, "The dependency is not installed.");
+
+                if (!installed.IsActive)
+                {
+                    installed.IsActive = true;
+                    changed = true;
+                    _viewModel.ReportStatus($"Activated dependency {installed.DisplayName}.");
+                    var refreshResult = await RefreshAfterDependencyChangeAsync().ConfigureAwait(true);
+                    if (!refreshResult.Success)
+                        return (false, changed, refreshResult.Message);
+
+                    installed = _viewModel.FindInstalledModById(current.ModId) ?? installed;
+                }
+
+                if (installed.MissingDependencies.Count > 0 || installed.DependencyHasErrors)
+                {
+                    var nestedDependencies = installed.MissingDependencies.Count > 0
+                        ? installed.MissingDependencies
+                        : installed.Dependencies;
+
+                    if (nestedDependencies.Count == 0)
+                        return (false, changed, "The dependency still reports a dependency error.");
+
+                    foreach (var nestedDependency in nestedDependencies)
+                    {
+                        var nestedResult = await ResolveAsync(nestedDependency).ConfigureAwait(true);
+                        if (!nestedResult.Success)
+                            return (false, changed,
+                                $"Required dependency {nestedDependency.Display} could not be resolved: {nestedResult.Message}");
+                    }
+
+                    var refreshResult = await RefreshAfterDependencyChangeAsync().ConfigureAwait(true);
+                    if (!refreshResult.Success)
+                        return (false, changed, refreshResult.Message);
+
+                    installed = _viewModel.FindInstalledModById(current.ModId) ?? installed;
+                }
+
+                if (installed.HasLoadError || installed.DependencyHasErrors || installed.MissingDependencies.Count > 0)
+                    return (false, changed, "The dependency is still reporting a load or dependency error.");
+
+                resolved.Add(current.ModId);
+                return (true, changed, string.Empty);
+            }
+            finally
+            {
+                resolving.Remove(current.ModId);
+            }
+        }
+
+        async Task<(bool Success, string Message)> RefreshAfterDependencyChangeAsync()
+        {
+            if (_viewModel is null) return (false, "The mod view model is not available.");
+
+            try
+            {
+                await _viewModel.RefreshCommand.ExecuteAsync(null).ConfigureAwait(true);
+                foreach (var mod in _viewModel.GetInstalledModsSnapshot())
+                    if (mod.HasLoadError || mod.DependencyHasErrors || mod.MissingDependencies.Count > 0)
+                        if (!string.IsNullOrWhiteSpace(mod.SourcePath))
+                            modsToRefresh.Add(mod.SourcePath);
+
+                return (true, string.Empty);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                return (false, $"The installed mods could not be refreshed: {ex.Message}");
+            }
         }
     }
 
@@ -5855,7 +6537,7 @@ public partial class MainWindow : Window
     {
         if (_isModUpdateInProgress) return;
 
-        if (sender is not WpfButton { DataContext: ModListItemViewModel mod }) return;
+        if (sender is not FrameworkElement { DataContext: ModListItemViewModel mod }) return;
 
         e.Handled = true;
 
@@ -6931,6 +7613,24 @@ public partial class MainWindow : Window
         if (e is not null) e.Handled = true;
 
         await ShowModUsagePromptDialogAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Provides read access to the current user configuration so companion windows
+    /// (such as the settings window) can reflect the persisted option states.
+    /// </summary>
+    internal UserConfigurationService UserConfiguration => _userConfiguration;
+
+    private void SettingsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (e is not null) e.Handled = true;
+
+        var window = new SettingsWindow(this)
+        {
+            Owner = this
+        };
+
+        window.ShowDialog();
     }
 
     private void OpenManagerModDatabasePage()
@@ -12766,15 +13466,16 @@ public partial class MainWindow : Window
         var message = "This modlist includes configuration files for the following mods:";
         if (!string.IsNullOrEmpty(summary)) message += $"\n\n{summary}";
 
-        message +=
-            "\n\nImporting these configurations will overwrite your existing settings for these mods if they are already installed. Do you want to import them?";
+        const string importWarning =
+            "Importing these configurations will overwrite your existing settings for these mods if they are already installed. Do you want to import them?";
 
         var prompt = WpfMessageBox.Show(
             this,
             message,
             "Import Mod Configurations",
             MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
+            MessageBoxImage.Question,
+            fixedFooterText: importWarning);
 
         if (prompt != MessageBoxResult.Yes) return;
 
@@ -13058,6 +13759,42 @@ public partial class MainWindow : Window
         finally
         {
             if (showInstallOverlay) EndModlistInstallUi();
+        }
+
+        if ((installCandidates.Count > 0 || hasOverrides) && _viewModel is { } refreshedViewModel)
+        {
+            try
+            {
+                // Newly installed archives are not part of the current view-model snapshot yet.
+                // Refresh before walking dependencies so transitive dependencies declared by the
+                // newly installed mod are available to the resolver.
+                await refreshedViewModel.RefreshCommand.ExecuteAsync(null).ConfigureAwait(true);
+
+                foreach (var state in preset.ModStates)
+                {
+                    var installed = refreshedViewModel.FindInstalledModById(state.ModId);
+                    if (installed is null
+                        || (!installed.HasLoadError
+                            && !installed.DependencyHasErrors
+                            && installed.MissingDependencies.Count == 0)) continue;
+
+                    foreach (var dependency in installed.Dependencies)
+                    {
+                        var dependencyResult = await ResolveDependencyTreeAsync(
+                                dependency,
+                                new HashSet<string>(StringComparer.OrdinalIgnoreCase))
+                            .ConfigureAwait(true);
+
+                        if (!dependencyResult.Success)
+                            installFailures.Add(
+                                $"{installed.DisplayName}: {dependency.Display} — {dependencyResult.Message}");
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                installFailures.Add($"Dependency resolution after modlist installation failed: {ex.Message}");
+            }
         }
 
         if (missingMods.Count > 0 || missingVersions.Count > 0 || installFailures.Count > 0)
@@ -13387,16 +14124,29 @@ public partial class MainWindow : Window
 
         if (e.OriginalSource is DependencyObject originalSource && IsDescendantOfToolTip(originalSource)) return;
 
-        if (sender is not DependencyObject dependencyObject) return;
+        if (sender is not DependencyObject) return;
 
-        var isModListGrid = ReferenceEquals(dependencyObject, ModsDataGrid);
-
-        var scrollViewer = GetModsScrollViewer(); ;
+        var scrollViewer = GetModsScrollViewer();
 
         if (scrollViewer is null) return;
 
-        double lines = Math.Max(1, SystemParameters.WheelScrollLines);
         var deltaMultiplier = e.Delta / (double)Mouse.MouseWheelDeltaForOneLine;
+
+        if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+        {
+            const double horizontalDistancePerWheelStep = 48.0;
+            var horizontalTargetOffset =
+                scrollViewer.HorizontalOffset - deltaMultiplier * horizontalDistancePerWheelStep;
+            var horizontalClampedOffset =
+                Math.Max(0, Math.Min(horizontalTargetOffset, scrollViewer.ScrollableWidth));
+            if (Math.Abs(horizontalClampedOffset - scrollViewer.HorizontalOffset) < double.Epsilon) return;
+
+            scrollViewer.ScrollToHorizontalOffset(horizontalClampedOffset);
+            e.Handled = true;
+            return;
+        }
+
+        double lines = Math.Max(1, SystemParameters.WheelScrollLines);
         var offsetChange = deltaMultiplier * lines * GetCurrentScrollMultiplier();
         if (Math.Abs(offsetChange) < double.Epsilon) return;
 

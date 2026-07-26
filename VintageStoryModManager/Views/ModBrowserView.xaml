@@ -17,10 +17,12 @@
     d:DesignWidth="1311"
     Background="{DynamicResource Brush.Panel.Primary.Background.Solid}"
     Loaded="OnViewLoaded"
+    PreviewKeyDown="ModBrowserView_PreviewKeyDown"
     mc:Ignorable="d">
 
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVisibilityInverted" IsInverted="True" />
         <converters:InvertBooleanConverter x:Key="InvertBoolean" />
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
         <converters:SelectedToBorderBrushConverter x:Key="SelectedToBorder" />
@@ -969,6 +971,8 @@
             Grid.Row="0"
             Grid.RowSpan="2"
             Background="#B0000000"
+            Focusable="True"
+            IsVisibleChanged="ModDetailOverlay_IsVisibleChanged"
             MouseLeftButtonDown="ModDetailOverlay_Click"
             Visibility="{Binding IsModDetailsOpen, Converter={StaticResource BoolToVisibility}}">
             <Border
@@ -993,13 +997,16 @@
                     <!--  Screenshot gallery  -->
                     <Grid
                         Grid.Row="0"
-                        Height="300"
-                        Background="#33000000">
+                        Height="300">
+                        <!--  Opaque backing that respects the card's rounded top corners  -->
+                        <Border
+                            Background="{DynamicResource Brush.Panel.Secondary.Background.Solid}"
+                            CornerRadius="9,9,0,0" />
                         <!--  Current screenshot (contained within the dialog with a margin)  -->
                         <Image
+                            x:Name="CurrentScreenshotImage"
                             Margin="16"
                             RenderOptions.BitmapScalingMode="HighQuality"
-                            Source="{Binding CurrentScreenshotUrl, Converter={StaticResource StringToImageSource}, IsAsync=True}"
                             Stretch="Uniform"
                             StretchDirection="DownOnly"
                             Visibility="{Binding HasScreenshots, Converter={StaticResource BoolToVisibility}}" />
@@ -1012,7 +1019,7 @@
                             RenderOptions.BitmapScalingMode="HighQuality"
                             Source="/Resources/mod-default.png"
                             Stretch="Uniform"
-                            Visibility="{Binding HasScreenshots, ConverterParameter=invert, Converter={StaticResource BoolToVisibility}}" />
+                            Visibility="{Binding HasScreenshots, Converter={StaticResource BoolToVisibilityInverted}}" />
 
                         <!--  Previous image button  -->
                         <Button

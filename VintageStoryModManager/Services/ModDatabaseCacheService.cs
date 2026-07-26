@@ -661,20 +661,10 @@ internal sealed class ModDatabaseCacheService
                 || !Uri.TryCreate(release.DownloadUrl, UriKind.Absolute, out var downloadUri))
                 continue;
 
-            var isCompatible = false;
-            if (normalizedGameVersion is null)
-            {
-                isCompatible = true;
-            }
-            else if (release.GameVersionTags is { Length: > 0 })
-            {
-                foreach (var tag in release.GameVersionTags)
-                    if (VersionStringUtility.SupportsVersion(tag, normalizedGameVersion, requireExactVersionMatch))
-                    {
-                        isCompatible = true;
-                        break;
-                    }
-            }
+            var isCompatible = TargetGameVersionReleaseSelector.TagsSupportTarget(
+                release.GameVersionTags,
+                normalizedGameVersion,
+                requireExactVersionMatch);
 
             releases.Add(new ModReleaseInfo
             {

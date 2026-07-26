@@ -159,7 +159,7 @@
                             <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:HoverEffectHelper.DisableHoverEffects)}" Value="False" />
                             <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True" />
                         </MultiDataTrigger.Conditions>
-                        <!-- Hover effect would be applied here if needed at style level -->
+                        <!--  Hover effect would be applied here if needed at style level  -->
                     </MultiDataTrigger>
                 </Style.Triggers>
             </Style>
