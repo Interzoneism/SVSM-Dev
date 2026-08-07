@@ -17,7 +17,7 @@ public enum ModlistsTabSelection
 }
 
 /// <summary>
-///     Defines which side of the installed-mod list hosts the inline details pane.
+///     Defines where the installed-mod list hosts the inline details pane.
 /// </summary>
 public enum ModInfoPanePlacement
 {

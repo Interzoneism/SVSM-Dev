@@ -231,6 +231,8 @@ public sealed class UserConfigurationService
 
     public bool AutomaticDataBackupsWarningAcknowledged { get; private set; }
 
+    public bool CloseManagerAfterGameLaunch { get; private set; }
+
     public string? CustomDataBackupLocation { get; private set; }
 
     public int MaximumDataBackups { get; private set; }
@@ -1264,6 +1266,14 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetCloseManagerAfterGameLaunch(bool isEnabled)
+    {
+        if (CloseManagerAfterGameLaunch == isEnabled) return;
+
+        CloseManagerAfterGameLaunch = isEnabled;
+        Save();
+    }
+
     public void SetCustomDataBackupLocation(string? path)
     {
         var normalized = string.IsNullOrWhiteSpace(path) ? null : NormalizePath(path);
@@ -1840,6 +1850,7 @@ public sealed class UserConfigurationService
         _selectedPresetName = null;
         GameProfileCreationWarningAcknowledged = false;
         AutomaticDataBackupsWarningAcknowledged = false;
+        CloseManagerAfterGameLaunch = false;
 
         try
         {
@@ -1876,6 +1887,7 @@ public sealed class UserConfigurationService
             AutomaticDataBackupsEnabled = obj["automaticDataBackupsEnabled"]?.GetValue<bool?>() ?? false;
             AutomaticDataBackupsWarningAcknowledged =
                 obj["automaticDataBackupsWarningAcknowledged"]?.GetValue<bool?>() ?? false;
+            CloseManagerAfterGameLaunch = obj["closeManagerAfterGameLaunch"]?.GetValue<bool?>() ?? false;
             CustomDataBackupLocation = NormalizePath(GetOptionalString(obj["customDataBackupLocation"]));
             MaximumDataBackups = NormalizeMaximumDataBackups(obj["maximumDataBackups"]?.GetValue<int?>());
             SuppressModlistSavePrompt = obj["suppressModlistSavePrompt"]?.GetValue<bool?>() ?? false;
@@ -2062,6 +2074,7 @@ public sealed class UserConfigurationService
             LogModInstalls = false;
             LogModDeletions = false;
             AutomaticDataBackupsWarningAcknowledged = false;
+            CloseManagerAfterGameLaunch = false;
             CustomDataBackupLocation = null;
             MaximumDataBackups = 0;
             SuppressModlistSavePrompt = false;
@@ -2149,6 +2162,7 @@ public sealed class UserConfigurationService
                 ["logErrorsAndExceptions"] = LogErrorsAndExceptions,
                 ["automaticDataBackupsEnabled"] = AutomaticDataBackupsEnabled,
                 ["automaticDataBackupsWarningAcknowledged"] = AutomaticDataBackupsWarningAcknowledged,
+                ["closeManagerAfterGameLaunch"] = CloseManagerAfterGameLaunch,
                 ["customDataBackupLocation"] = CustomDataBackupLocation,
                 ["maximumDataBackups"] = MaximumDataBackups,
                 ["suppressModlistSavePrompt"] = SuppressModlistSavePrompt,

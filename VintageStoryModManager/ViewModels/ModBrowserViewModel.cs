@@ -31,6 +31,8 @@ public partial class ModBrowserViewModel : ObservableObject
     private bool _isInitializing;
     private bool _isTabVisible;
     private Func<DownloadableMod, Task>? _installModCallback;
+    private int _modDetailsLoadVersion;
+    private CancellationTokenSource? _modDetailsLoadCancellation;
     private readonly HashSet<int> _userReportsLoaded = new();
     private readonly HashSet<int> _modsWithLoadedLogos = new();
     private readonly HashSet<string> _normalizedInstalledModIds = new(StringComparer.OrdinalIgnoreCase);
@@ -317,6 +319,14 @@ public partial class ModBrowserViewModel : ObservableObject
             _searchCts?.Cancel();
             _pendingLoadMoreCts?.Cancel();
             _pendingLoadMoreCts = null;
+
+            // A detail overlay belongs to this tab and must not survive navigation.
+            // Closing it also invalidates any response that is still in flight.
+            if (IsModDetailsOpen || SelectedMod != null || ModDetails != null ||
+                _modDetailsLoadCancellation != null)
+            {
+                CloseModDetails();
+            }
         }
     }
 
@@ -896,6 +906,11 @@ public partial class ModBrowserViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenModDetailsAsync(DownloadableModOnList mod)
     {
+        CancelModDetailsLoad();
+        var loadVersion = _modDetailsLoadVersion;
+        var loadCancellation = new CancellationTokenSource();
+        _modDetailsLoadCancellation = loadCancellation;
+
         // Show the overlay immediately using the summary data already available,
         // then load the full mod details (including the complete description).
         SelectedMod = mod;
@@ -906,7 +921,20 @@ public partial class ModBrowserViewModel : ObservableObject
 
         try
         {
-            ModDetails = await _modApiService.GetModAsync(mod.ModId);
+            var details = await _modApiService.GetModAsync(mod.ModId, loadCancellation.Token);
+            if (loadVersion != _modDetailsLoadVersion ||
+                loadCancellation.IsCancellationRequested ||
+                !IsModDetailsOpen ||
+                SelectedMod?.ModId != mod.ModId)
+            {
+                return;
+            }
+
+            ModDetails = details;
+        }
+        catch (OperationCanceledException) when (loadCancellation.IsCancellationRequested)
+        {
+            // Closing the overlay, leaving the tab, or a newer selection superseded this load.
         }
         catch (Exception ex)
         {
@@ -914,19 +942,36 @@ public partial class ModBrowserViewModel : ObservableObject
         }
         finally
         {
-            IsModDetailsLoading = false;
+            if (loadVersion == _modDetailsLoadVersion)
+            {
+                IsModDetailsLoading = false;
+
+                if (ReferenceEquals(_modDetailsLoadCancellation, loadCancellation))
+                    _modDetailsLoadCancellation = null;
+
+                loadCancellation.Dispose();
+            }
         }
     }
 
     [RelayCommand]
     private void CloseModDetails()
     {
+        CancelModDetailsLoad();
         IsModDetailsOpen = false;
         IsModDetailsLoading = false;
         ModDetails = null;
         SelectedMod = null;
         CurrentScreenshotIndex = 0;
         ScreenshotUrls = Array.Empty<string>();
+    }
+
+    private void CancelModDetailsLoad()
+    {
+        _modDetailsLoadVersion++;
+        _modDetailsLoadCancellation?.Cancel();
+        _modDetailsLoadCancellation?.Dispose();
+        _modDetailsLoadCancellation = null;
     }
 
     [RelayCommand]

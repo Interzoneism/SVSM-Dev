@@ -411,6 +411,7 @@ public partial class MainWindow : Window
         DisableAutoRefreshMenuItem.IsChecked = _userConfiguration.DisableAutoRefresh;
         DisableInternetAccessMenuItem.IsChecked = _userConfiguration.DisableInternetAccess;
         AutomaticDataBackupsMenuItem.IsChecked = _userConfiguration.AutomaticDataBackupsEnabled;
+        CloseManagerAfterGameLaunchMenuItem.IsChecked = _userConfiguration.CloseManagerAfterGameLaunch;
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
         UseFasterThumbnailsMenuItem.IsChecked = _userConfiguration.UseFasterThumbnails;
@@ -578,24 +579,21 @@ public partial class MainWindow : Window
         ClearSelection(true);
     }
 
-    private void InstalledModsContextMenu_OnOpened(object sender, RoutedEventArgs e)
+    private void ModsDataGrid_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        if (sender is not ContextMenu menu) return;
+        var menu = InstalledModsContextMenu;
+        var contextColumn = _installedContextColumn;
+        _installedContextColumn = null;
 
         menu.Items.Clear();
 
-        if (_installedContextColumn is not null)
+        if (contextColumn is not null)
         {
-            PopulateInstalledColumnHeaderContextMenu(menu, _installedContextColumn);
+            PopulateInstalledColumnHeaderContextMenu(menu, contextColumn);
             return;
         }
 
         PopulateInstalledModsContextMenu(menu);
-    }
-
-    private void InstalledModsContextMenu_OnClosed(object sender, RoutedEventArgs e)
-    {
-        _installedContextColumn = null;
     }
 
     private void PopulateInstalledColumnHeaderContextMenu(ContextMenu menu, DataGridColumn column)
@@ -710,7 +708,6 @@ public partial class MainWindow : Window
             (_, _) => SelectAllModsInCurrentView(),
             GetModsInViewOrder().Count > 0,
             inputGestureText: "Ctrl+A"));
-        menu.Items.Add(CreateInstalledColumnsSubmenu());
     }
 
     private void LocalModlistsDataGrid_OnPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -737,9 +734,9 @@ public partial class MainWindow : Window
         dataGrid.UnselectAll();
     }
 
-    private void LocalModlistsContextMenu_OnOpened(object sender, RoutedEventArgs e)
+    private void LocalModlistsDataGrid_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        if (sender is not ContextMenu menu) return;
+        var menu = LocalModlistsContextMenu;
 
         menu.Items.Clear();
         var selectionCount = _selectedLocalModlists.Count;
@@ -785,9 +782,9 @@ public partial class MainWindow : Window
         dataGrid.UnselectAll();
     }
 
-    private void CloudModlistsContextMenu_OnOpened(object sender, RoutedEventArgs e)
+    private void CloudModlistsDataGrid_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        if (sender is not ContextMenu menu) return;
+        var menu = CloudModlistsContextMenu;
 
         menu.Items.Clear();
         var internetEnabled = !InternetAccessManager.IsInternetAccessDisabled;
@@ -1664,9 +1661,8 @@ public partial class MainWindow : Window
     private void ApplyModInfoPanePlacement(ModInfoPanePlacement placement)
     {
         var dockLeft = placement == ModInfoPanePlacement.Left;
-        InstalledModSplitView.PanePlacement = dockLeft
-            ? SplitViewPanePlacement.Left
-            : SplitViewPanePlacement.Right;
+        DockPanel.SetDock(ModInfoPaneRoot, dockLeft ? Dock.Left : Dock.Right);
+        ModInfoPanePlacementButton.Content = dockLeft ? "→" : "←";
         ModInfoPanePlacementButton.ToolTip = dockLeft
             ? "Move details pane to the right"
             : "Move details pane to the left";
@@ -1741,6 +1737,13 @@ public partial class MainWindow : Window
 
         _userConfiguration.SetAutomaticDataBackupsEnabled(menuItem.IsChecked);
         menuItem.IsChecked = _userConfiguration.AutomaticDataBackupsEnabled;
+    }
+
+    private void CloseManagerAfterGameLaunchMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menuItem) return;
+
+        _userConfiguration.SetCloseManagerAfterGameLaunch(menuItem.IsChecked);
     }
 
     private void DisableInternetAccessMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -5456,6 +5459,12 @@ public partial class MainWindow : Window
     {
         if (_isApplyingPreset) return true;
 
+        if (e.Key == Key.Escape && _selectedMods.Count > 0)
+        {
+            ClearSelection(resetAnchor: true);
+            return true;
+        }
+
         if (e.Key == Key.A && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
         {
             // Allow CTRL+A to select text when a TextBox has focus
@@ -8811,6 +8820,7 @@ public partial class MainWindow : Window
                     FileName = _customShortcutPath,
                     UseShellExecute = true
                 });
+                CloseManagerAfterGameLaunchIfEnabled();
             }
             catch (Exception ex)
             {
@@ -8856,6 +8866,7 @@ public partial class MainWindow : Window
             startInfo.ArgumentList.Add(_dataDirectory);
 
             Process.Start(startInfo);
+            CloseManagerAfterGameLaunchIfEnabled();
         }
         catch (Exception ex)
         {
@@ -8864,6 +8875,11 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    private void CloseManagerAfterGameLaunchIfEnabled()
+    {
+        if (_userConfiguration.CloseManagerAfterGameLaunch) Close();
     }
 
     private void SetCustomShortcutMenuItem_OnClick(object sender, RoutedEventArgs e)

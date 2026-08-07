@@ -23,6 +23,7 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
     private bool _isInitialized;
     private int _screenshotLoadVersion;
     private CancellationTokenSource? _screenshotLoadCancellation;
+    private ModBrowserViewModel? _subscribedViewModel;
 
     public bool IsModBrowserInitialized => _isInitialized;
 
@@ -37,6 +38,9 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
 
     private void OnViewLoaded(object sender, RoutedEventArgs e)
     {
+        SubscribeToViewModel(ViewModel);
+        _ = UpdateScreenshotImageAsync(clearExistingImage: true);
+
         // Don't initialize ViewModel here - defer until tab is selected
         // This prevents unnecessary network requests on application startup
     }
@@ -77,33 +81,39 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
     private void OnControlUnloaded(object sender, RoutedEventArgs e)
     {
         CancelScreenshotLoad();
-
-        // Clean up resources when the control is unloaded
-        if (DataContext is ModBrowserViewModel vm)
-        {
-            vm.PropertyChanged -= OnViewModelPropertyChanged;
-        }
+        CurrentScreenshotImage.Source = null;
+        SubscribeToViewModel(null);
     }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if (e.OldValue is ModBrowserViewModel oldVm)
+        if (IsLoaded)
         {
-            oldVm.PropertyChanged -= OnViewModelPropertyChanged;
-        }
-
-        if (e.NewValue is ModBrowserViewModel newVm)
-        {
-            newVm.PropertyChanged += OnViewModelPropertyChanged;
+            SubscribeToViewModel(e.NewValue as ModBrowserViewModel);
             _ = UpdateScreenshotImageAsync(clearExistingImage: true);
         }
+    }
+
+    private void SubscribeToViewModel(ModBrowserViewModel? viewModel)
+    {
+        if (ReferenceEquals(_subscribedViewModel, viewModel))
+            return;
+
+        if (_subscribedViewModel != null)
+            _subscribedViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+
+        _subscribedViewModel = viewModel;
+
+        if (_subscribedViewModel != null)
+            _subscribedViewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(ModBrowserViewModel.CurrentScreenshotUrl))
         {
-            _ = UpdateScreenshotImageAsync(clearExistingImage: false);
+            // Never leave the previous mod's screenshot visible while its replacement loads.
+            _ = UpdateScreenshotImageAsync(clearExistingImage: true);
         }
         else if (e.PropertyName == nameof(ModBrowserViewModel.IsModDetailsOpen) &&
                  ViewModel?.IsModDetailsOpen != true)
@@ -115,7 +125,9 @@ public partial class ModBrowserView : System.Windows.Controls.UserControl
 
     private async Task UpdateScreenshotImageAsync(bool clearExistingImage)
     {
-        var screenshotUrl = ViewModel?.CurrentScreenshotUrl;
+        var screenshotUrl = ViewModel?.IsModDetailsOpen == true
+            ? ViewModel.CurrentScreenshotUrl
+            : null;
         var loadVersion = ++_screenshotLoadVersion;
         _screenshotLoadCancellation?.Cancel();
         _screenshotLoadCancellation?.Dispose();

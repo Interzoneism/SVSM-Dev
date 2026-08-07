@@ -223,6 +223,10 @@ public class ModApiService : IModApiService
 
             return mod;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (JsonException ex)
         {
             System.Diagnostics.Debug.WriteLine($"[ModApiService] JSON deserialization error fetching mod {modIdStr}: {ex.Message}");

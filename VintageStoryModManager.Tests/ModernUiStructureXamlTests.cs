@@ -33,13 +33,13 @@ public sealed class ModernUiStructureXamlTests
     }
 
     [Fact]
-    public void InstalledModDetailsUsePurposeBuiltInlineMovablePane()
+    public void InstalledModDetailsUsePurposeBuiltTwoPositionDockedPane()
     {
         var document = LoadView("MainWindow.xaml");
 
-        var splitView = document.Descendants(ModernWpf + "SplitView").Single(element =>
-            string.Equals(element.Attribute(Xaml + "Name")?.Value, "InstalledModSplitView", StringComparison.Ordinal));
-        var paneRoot = splitView.Descendants(Presentation + "Border").Single(element =>
+        var detailsLayout = document.Descendants(Presentation + "DockPanel").Single(element =>
+            string.Equals(element.Attribute(Xaml + "Name")?.Value, "InstalledModDetailsLayout", StringComparison.Ordinal));
+        var paneRoot = detailsLayout.Descendants(Presentation + "Border").Single(element =>
             string.Equals(element.Attribute(Xaml + "Name")?.Value, "ModInfoPaneRoot", StringComparison.Ordinal));
         var placementButton = document.Descendants(Presentation + "Button").Single(element =>
             string.Equals(element.Attribute(Xaml + "Name")?.Value, "ModInfoPanePlacementButton", StringComparison.Ordinal));
@@ -48,10 +48,15 @@ public sealed class ModernUiStructureXamlTests
         var deleteButton = paneRoot.Descendants(Presentation + "Button").Single(element =>
             string.Equals(element.Attribute(Xaml + "Name")?.Value, "SelectedModDeleteButton", StringComparison.Ordinal));
 
-        Assert.Equal("Inline", splitView.Attribute("DisplayMode")?.Value);
-        Assert.Equal("372", splitView.Attribute("OpenPaneLength")?.Value);
+        var singleDetailsGrid = paneRoot.Descendants(Presentation + "Grid").Single(element =>
+            string.Equals(element.Attribute(Xaml + "Name")?.Value, "ModInfoSingleDetailsGrid", StringComparison.Ordinal));
+
+        Assert.Equal("True", detailsLayout.Attribute("LastChildFill")?.Value);
+        Assert.Equal("Right", paneRoot.Attribute("DockPanel.Dock")?.Value);
+        Assert.Equal("372", paneRoot.Attribute("Width")?.Value);
         Assert.NotNull(paneRoot);
         Assert.NotNull(versionSelector);
+        Assert.NotNull(singleDetailsGrid);
         Assert.Equal("DeleteModButton_OnClick", deleteButton.Attribute("Click")?.Value);
         Assert.Equal("ModInfoPanePlacementButton_OnClick", placementButton.Attribute("Click")?.Value);
         Assert.DoesNotContain(document.Descendants(Presentation + "Canvas"), element =>

@@ -63,6 +63,20 @@ public sealed class UserConfigurationServiceDependencyOverrideTests : IDisposabl
     }
 
     [Fact]
+    public void CloseManagerAfterGameLaunchDefaultsOffAndPersistsWhenEnabled()
+    {
+        var configuration = new UserConfigurationService();
+
+        Assert.False(configuration.CloseManagerAfterGameLaunch);
+
+        configuration.EnablePersistence();
+        configuration.SetCloseManagerAfterGameLaunch(true);
+
+        var reloaded = new UserConfigurationService();
+        Assert.True(reloaded.CloseManagerAfterGameLaunch);
+    }
+
+    [Fact]
     public void ModInfoPanePlacementDefaultsRightAndPersistsWhenMovedLeft()
     {
         var configuration = new UserConfigurationService();

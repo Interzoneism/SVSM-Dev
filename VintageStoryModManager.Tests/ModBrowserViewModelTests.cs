@@ -56,6 +56,55 @@ public sealed class ModBrowserViewModelTests
         Assert.Equal(2, modApiService.QueryModsCallCount);
     }
 
+    [Fact]
+    public async Task LeavingTabClosesDetailsAndIgnoresTheInFlightResponse()
+    {
+        var detailsCompletion = new TaskCompletionSource<DownloadableMod?>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var modApiService = new RecordingModApiService
+        {
+            GetModHandler = (_, _) => detailsCompletion.Task
+        };
+        var viewModel = new ModBrowserViewModel(modApiService);
+        viewModel.SetTabVisibility(true);
+        var selectedMod = new DownloadableModOnList
+        {
+            ModId = 10,
+            Name = "First mod",
+            Logo = "https://example.invalid/first-logo.png"
+        };
+
+        var openTask = viewModel.OpenModDetailsCommand.ExecuteAsync(selectedMod);
+        Assert.True(viewModel.IsModDetailsOpen);
+        Assert.Equal(selectedMod, viewModel.SelectedMod);
+
+        viewModel.SetTabVisibility(false);
+
+        Assert.False(viewModel.IsModDetailsOpen);
+        Assert.Null(viewModel.SelectedMod);
+        Assert.Null(viewModel.ModDetails);
+        Assert.Empty(viewModel.ScreenshotUrls);
+
+        detailsCompletion.SetResult(new DownloadableMod
+        {
+            ModId = selectedMod.ModId,
+            Screenshots =
+            [
+                new DownloadableModScreenshot
+                {
+                    FileId = 1,
+                    MainFile = "https://example.invalid/stale-screenshot.png"
+                }
+            ]
+        });
+        await openTask;
+
+        Assert.False(viewModel.IsModDetailsOpen);
+        Assert.Null(viewModel.SelectedMod);
+        Assert.Null(viewModel.ModDetails);
+        Assert.Empty(viewModel.ScreenshotUrls);
+    }
+
     private sealed class RecordingModApiService : IModApiService
     {
         public List<GameVersion> GameVersions { get; set; } = [];
@@ -63,6 +112,8 @@ public sealed class ModBrowserViewModelTests
         public int GetGameVersionsCallCount { get; private set; }
 
         public int QueryModsCallCount { get; private set; }
+
+        public Func<int, CancellationToken, Task<DownloadableMod?>>? GetModHandler { get; init; }
 
         public Task<List<DownloadableModOnList>> QueryModsAsync(
             string? textFilter = null,
@@ -79,7 +130,8 @@ public sealed class ModBrowserViewModelTests
 
         public Task<DownloadableMod?> GetModAsync(int modId, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<DownloadableMod?>(null);
+            return GetModHandler?.Invoke(modId, cancellationToken)
+                   ?? Task.FromResult<DownloadableMod?>(null);
         }
 
         public Task<DownloadableMod?> GetModAsync(string modIdStr, CancellationToken cancellationToken = default)

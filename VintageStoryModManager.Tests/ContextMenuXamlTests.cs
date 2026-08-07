@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace VintageStoryModManager.Tests;
@@ -13,22 +14,22 @@ public sealed class ContextMenuXamlTests
         "ModsDataGrid",
         "ModsDataGrid_OnPreviewMouseRightButtonDown",
         "InstalledModsContextMenu",
-        "InstalledModsContextMenu_OnOpened")]
+        "ModsDataGrid_OnContextMenuOpening")]
     [InlineData(
         "LocalModlistsDataGrid",
         "LocalModlistsDataGrid_OnPreviewMouseRightButtonDown",
         "LocalModlistsContextMenu",
-        "LocalModlistsContextMenu_OnOpened")]
+        "LocalModlistsDataGrid_OnContextMenuOpening")]
     [InlineData(
         "CloudModlistsDataGrid",
         "CloudModlistsDataGrid_OnPreviewMouseRightButtonDown",
         "CloudModlistsContextMenu",
-        "CloudModlistsContextMenu_OnOpened")]
+        "CloudModlistsDataGrid_OnContextMenuOpening")]
     public void DataGridsExposeDynamicAutoSizingContextMenus(
         string dataGridName,
         string previewHandler,
         string contextMenuName,
-        string openedHandler)
+        string openingHandler)
     {
         var document = LoadMainWindow();
         var dataGrid = document
@@ -41,11 +42,37 @@ public sealed class ContextMenuXamlTests
             .Elements(Presentation + "DataGrid.ContextMenu")
             .Elements(Presentation + "ContextMenu")
             .Single();
+        var uniformContextMenuStyle = document
+            .Descendants(Presentation + "Style")
+            .Single(element => string.Equals(
+                element.Attribute(Xaml + "Key")?.Value,
+                "IMM.UniformContextMenuStyle",
+                StringComparison.Ordinal));
+        var paddingSetter = uniformContextMenuStyle
+            .Elements(Presentation + "Setter")
+            .Single(element => string.Equals(
+                element.Attribute("Property")?.Value,
+                "Padding",
+                StringComparison.Ordinal));
+        var contextMenuTemplate = uniformContextMenuStyle
+            .Descendants(Presentation + "ControlTemplate")
+            .Single();
+        var itemsHost = contextMenuTemplate
+            .Descendants(Presentation + "StackPanel")
+            .Single();
 
         Assert.Equal(previewHandler, dataGrid.Attribute("PreviewMouseRightButtonDown")?.Value);
+        Assert.Equal(openingHandler, dataGrid.Attribute("ContextMenuOpening")?.Value);
         Assert.Equal(contextMenuName, contextMenu.Attribute(Xaml + "Name")?.Value);
-        Assert.Equal(openedHandler, contextMenu.Attribute("Opened")?.Value);
+        Assert.Null(contextMenu.Attribute("Opened"));
+        Assert.Null(contextMenu.Attribute("Closed"));
         Assert.Equal("240", contextMenu.Attribute("MinWidth")?.Value);
+        Assert.Equal(
+            "{StaticResource IMM.UniformContextMenuStyle}",
+            contextMenu.Attribute("Style")?.Value);
+        Assert.Equal("0", paddingSetter.Attribute("Value")?.Value);
+        Assert.Equal("True", itemsHost.Attribute("IsItemsHost")?.Value);
+        Assert.Empty(contextMenuTemplate.Descendants(Presentation + "ScrollViewer"));
         Assert.Null(contextMenu.Attribute("Width"));
         Assert.Null(contextMenu.Attribute("MaxWidth"));
     }
@@ -61,16 +88,19 @@ public sealed class ContextMenuXamlTests
         return XDocument.Load(Path.GetFullPath(xamlPath));
     }
 
-    private static string FindRepositoryRoot()
+    private static string FindRepositoryRoot([CallerFilePath] string sourceFilePath = "")
     {
         var candidates = new[]
         {
             AppContext.BaseDirectory,
-            Directory.GetCurrentDirectory()
+            Directory.GetCurrentDirectory(),
+            Path.GetDirectoryName(sourceFilePath)
         };
 
         foreach (var candidate in candidates)
         {
+            if (string.IsNullOrWhiteSpace(candidate)) continue;
+
             var directory = new DirectoryInfo(candidate);
             while (directory is not null)
             {
