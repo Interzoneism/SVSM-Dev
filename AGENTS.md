@@ -15,6 +15,12 @@ This is a **WPF desktop application** for managing Vintage Story mods. The appli
 
 ## Build & Test
 
+### Mandatory: Stop the Running Application Before Building or Testing
+- **Always close every running instance of Simple VS Manager before any build, test, publish, clean, or other operation that may replace build outputs.** A running copy can lock the executable and cause otherwise valid commands to fail or retry slowly.
+- The user explicitly authorizes agents to terminate `Simple VS Manager.exe` (the `VintageStoryModManager` application) without asking for confirmation. This authorization applies in all agent sessions for this repository.
+- Check for the process proactively and stop it even when no file-lock error has appeared yet. If a graceful close does not complete promptly, force-stop only the Simple VS Manager process, then continue the requested work.
+- Do not skip build or test verification merely because the application was running; stop it and run the verification.
+
 ### Build Commands
 ```bash
 # Primary build command (recommended)

@@ -42,6 +42,8 @@ public partial class SettingsWindow : Window
         Register(SwDisableHover, _mainWindow.DisableHoverEffectsMenuItem, config.DisableHoverEffects);
         Register(SwRequireExactVs, _mainWindow.RequireExactVsVersionMenuItem, config.RequireExactVsVersionMatch);
         Register(SwAutoDataBackup, _mainWindow.AutomaticDataBackupsMenuItem, config.AutomaticDataBackupsEnabled);
+        Register(SwCloseManagerAfterGameLaunch, _mainWindow.CloseManagerAfterGameLaunchMenuItem,
+            config.CloseManagerAfterGameLaunch);
         Register(SwAlwaysClear, _mainWindow.AlwaysClearModlistsMenuItem,
             config.ModlistAutoLoadBehavior == ModlistAutoLoadBehavior.Replace);
         Register(SwAlwaysAdd, _mainWindow.AlwaysAddModlistsMenuItem,

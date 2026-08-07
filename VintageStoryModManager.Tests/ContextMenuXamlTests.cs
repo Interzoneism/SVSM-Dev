@@ -77,6 +77,159 @@ public sealed class ContextMenuXamlTests
         Assert.Null(contextMenu.Attribute("MaxWidth"));
     }
 
+    [Fact]
+    public void ModlistGroupReferencesAreClickableAndExposeOnlyTheirTwoActions()
+    {
+        var document = LoadMainWindow();
+        var referenceList = document
+            .Descendants(Presentation + "ItemsControl")
+            .Single(element => string.Equals(
+                element.Attribute("ItemsSource")?.Value,
+                "{Binding GroupMembers}",
+                StringComparison.Ordinal));
+        var referenceButton = referenceList
+            .Descendants(Presentation + "Button")
+            .Single();
+        var contextMenu = referenceButton
+            .Elements(Presentation + "Button.ContextMenu")
+            .Elements(Presentation + "ContextMenu")
+            .Single();
+        var menuItems = contextMenu.Elements(Presentation + "MenuItem").ToList();
+        var localGrid = document
+            .Descendants(Presentation + "DataGrid")
+            .Single(element => string.Equals(
+                element.Attribute(Xaml + "Name")?.Value,
+                "LocalModlistsDataGrid",
+                StringComparison.Ordinal));
+        var expander = localGrid
+            .Descendants(Presentation + "ToggleButton")
+            .Single(element => string.Equals(
+                element.Attribute("Click")?.Value,
+                "ModlistGroupExpanderButton_OnClick",
+                StringComparison.Ordinal));
+        var rowDetailsBorder = localGrid
+            .Elements(Presentation + "DataGrid.RowDetailsTemplate")
+            .Elements(Presentation + "DataTemplate")
+            .Elements(Presentation + "Border")
+            .Single();
+        var expanderBorderThickness = expander
+            .Descendants(Presentation + "Setter")
+            .Single(setter => string.Equals(
+                setter.Attribute("Property")?.Value,
+                "BorderThickness",
+                StringComparison.Ordinal));
+        var duplicateModsButton = document
+            .Descendants(Presentation + "Button")
+            .Single(element => string.Equals(
+                element.Attribute(Xaml + "Name")?.Value,
+                "FixDuplicateModsButton",
+                StringComparison.Ordinal));
+
+        Assert.Equal("GroupReferenceItemButton_OnClick", referenceButton.Attribute("Click")?.Value);
+        Assert.Null(referenceButton.Attribute("PreviewMouseRightButtonDown"));
+        Assert.DoesNotContain(document.Descendants(Presentation + "ListBox"), element => string.Equals(
+                element.Attribute("ItemsSource")?.Value,
+                "{Binding GroupMembers}",
+                StringComparison.Ordinal));
+        Assert.Equal(2, menuItems.Count);
+        Assert.Equal("240", contextMenu.Attribute("MinWidth")?.Value);
+        Assert.Equal("Remove from group", menuItems[0].Attribute("Header")?.Value);
+        Assert.Equal("Select modlist", menuItems[1].Attribute("Header")?.Value);
+        Assert.All(menuItems, item => Assert.Equal("32", item.Attribute("MinHeight")?.Value));
+        Assert.All(menuItems, item => Assert.Equal(
+            "{StaticResource ToggleMenuItemStyle}",
+            item.Attribute("Style")?.Value));
+        Assert.Equal("Collapsed", localGrid.Attribute("RowDetailsVisibilityMode")?.Value);
+        Assert.Equal("LocalModlistsDataGrid_OnLoadingRow", localGrid.Attribute("LoadingRow")?.Value);
+        Assert.Equal("{Binding IsGroupExpanded, Mode=TwoWay}", expander.Attribute("IsChecked")?.Value);
+        Assert.Equal("Right", expander.Attribute("HorizontalAlignment")?.Value);
+        Assert.Equal("32", expander.Attribute("Width")?.Value);
+        Assert.Equal(2, expander.Descendants(Presentation + "Path").Count());
+        Assert.Empty(expander.Descendants(Presentation + "Border"));
+        Assert.Equal("0", expanderBorderThickness.Attribute("Value")?.Value);
+        Assert.Equal("22,4,22,4", rowDetailsBorder.Attribute("Margin")?.Value);
+        Assert.Equal("4,0", rowDetailsBorder.Attribute("Padding")?.Value);
+        Assert.Equal("Fix duplicate mods (0)", duplicateModsButton.Attribute("Content")?.Value);
+        Assert.Equal("FixDuplicateModsButton_OnClick", duplicateModsButton.Attribute("Click")?.Value);
+        Assert.DoesNotContain(document.Descendants(Presentation + "DataTrigger"), trigger => string.Equals(
+            trigger.Attribute("Binding")?.Value,
+            "{Binding HasUnresolvedConflicts}",
+            StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void LocalModlistContextMenuContainsOnlyActionsForItsSelection()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "VintageStoryModManager",
+            "Views",
+            "MainWindow.xaml.cs"));
+        var methodStart = source.IndexOf(
+            "private void LocalModlistsDataGrid_OnContextMenuOpening",
+            StringComparison.Ordinal);
+        var methodEnd = source.IndexOf(
+            "private void CloudModlistsDataGrid_OnPreviewMouseRightButtonDown",
+            methodStart,
+            StringComparison.Ordinal);
+        var method = source[methodStart..methodEnd];
+
+        Assert.Contains("if (selectionCount == 0)", method, StringComparison.Ordinal);
+        Assert.Contains("e.Handled = true", method, StringComparison.Ordinal);
+        Assert.DoesNotContain("Save current mods as local modlist", method, StringComparison.Ordinal);
+        Assert.DoesNotContain("Create modlist group", method, StringComparison.Ordinal);
+        Assert.DoesNotContain("Open modlists folder", method, StringComparison.Ordinal);
+        Assert.Contains("contextMenu.Placement = PlacementMode.MousePoint", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LocalModlistModsDropdownMatchesLaunchButtonWidth()
+    {
+        var document = LoadMainWindow();
+        var launchButton = document
+            .Descendants(Presentation + "Button")
+            .Single(element => string.Equals(
+                element.Attribute(Xaml + "Name")?.Value,
+                "LaunchGameButton",
+                StringComparison.Ordinal));
+        var localModsComboBox = document
+            .Descendants(Presentation + "ComboBox")
+            .Single(element => string.Equals(
+                element.Attribute(Xaml + "Name")?.Value,
+                "LocalModsComboBox",
+                StringComparison.Ordinal));
+        var dropdownContainer = Assert.IsType<XElement>(localModsComboBox.Parent);
+
+        Assert.Equal(launchButton.Attribute("MinWidth")?.Value, dropdownContainer.Attribute("Width")?.Value);
+        Assert.Equal("Left", dropdownContainer.Attribute("HorizontalAlignment")?.Value);
+    }
+
+    [Fact]
+    public void SelectingReferencedModlistPreservesHorizontalScrollPosition()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "VintageStoryModManager",
+            "Views",
+            "MainWindow.xaml.cs"));
+        var methodStart = source.IndexOf(
+            "private void SelectReferencedModlist",
+            StringComparison.Ordinal);
+        var methodEnd = source.IndexOf(
+            "private void LocalModlistsDataGrid_OnPreviewMouseLeftButtonDown",
+            methodStart,
+            StringComparison.Ordinal);
+        var method = source[methodStart..methodEnd];
+
+        Assert.Contains("previousHorizontalOffset", method, StringComparison.Ordinal);
+        Assert.Contains("ScrollIntoView(sourceEntry)", method, StringComparison.Ordinal);
+        Assert.Contains(
+            "ScrollToHorizontalOffset(previousHorizontalOffset)",
+            method,
+            StringComparison.Ordinal);
+        Assert.Contains("DispatcherPriority.Loaded", method, StringComparison.Ordinal);
+    }
+
     private static XDocument LoadMainWindow()
     {
         var xamlPath = Path.Combine(

@@ -286,6 +286,17 @@
                                 Style="{StaticResource SettingsToggleStyle}"
                                 Toggled="Toggle_OnToggled" />
                         </Grid>
+
+                        <Grid Style="{StaticResource SettingsRowStyle}">
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource SettingsRowTitleStyle}" Text="Close manager after launching Vintage Story" />
+                                <TextBlock Style="{StaticResource SettingsRowDescStyle}" Text="Closes Simple VS Manager after the game launches successfully." />
+                            </StackPanel>
+                            <ui:ToggleSwitch
+                                x:Name="SwCloseManagerAfterGameLaunch"
+                                Style="{StaticResource SettingsToggleStyle}"
+                                Toggled="Toggle_OnToggled" />
+                        </Grid>
                     </StackPanel>
                 </Border>
 

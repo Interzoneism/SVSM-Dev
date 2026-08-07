@@ -151,8 +151,12 @@ public sealed class UserConfigurationService
     private ModlistsTabSelection _preferredModlistsTab = ModlistsTabSelection.Local;
     private double? _modInfoPanelLeft;
     private double? _modInfoPanelTop;
+    private ListSortDirection _localModlistsSortDirection = ListSortDirection.Ascending;
+    private string? _localModlistsSortMemberPath;
     private ListSortDirection _modsSortDirection = ListSortDirection.Ascending;
     private string? _modsSortMemberPath;
+    private ListSortDirection _onlineModlistsSortDirection = ListSortDirection.Ascending;
+    private string? _onlineModlistsSortMemberPath;
     private string? _currentThemeName;
     private string? _selectedPresetName;
     private bool _suppressRefreshCachePrompt;
@@ -942,6 +946,16 @@ public sealed class UserConfigurationService
     public (string? SortMemberPath, ListSortDirection Direction) GetModListSortPreference()
     {
         return (_modsSortMemberPath, _modsSortDirection);
+    }
+
+    public (string? SortMemberPath, ListSortDirection Direction) GetLocalModlistsSortPreference()
+    {
+        return (_localModlistsSortMemberPath, _localModlistsSortDirection);
+    }
+
+    public (string? SortMemberPath, ListSortDirection Direction) GetOnlineModlistsSortPreference()
+    {
+        return (_onlineModlistsSortMemberPath, _onlineModlistsSortDirection);
     }
 
     public bool? GetInstalledColumnVisibility(string columnName)
@@ -1785,6 +1799,32 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public void SetLocalModlistsSortPreference(string? sortMemberPath, ListSortDirection direction)
+    {
+        var normalized = NormalizeOptionalSortMemberPath(sortMemberPath);
+
+        if (string.Equals(_localModlistsSortMemberPath, normalized, StringComparison.Ordinal)
+            && _localModlistsSortDirection == direction)
+            return;
+
+        _localModlistsSortMemberPath = normalized;
+        _localModlistsSortDirection = direction;
+        Save();
+    }
+
+    public void SetOnlineModlistsSortPreference(string? sortMemberPath, ListSortDirection direction)
+    {
+        var normalized = NormalizeOptionalSortMemberPath(sortMemberPath);
+
+        if (string.Equals(_onlineModlistsSortMemberPath, normalized, StringComparison.Ordinal)
+            && _onlineModlistsSortDirection == direction)
+            return;
+
+        _onlineModlistsSortMemberPath = normalized;
+        _onlineModlistsSortDirection = direction;
+        Save();
+    }
+
     public void SetModInfoPanePlacement(ModInfoPanePlacement placement)
     {
         if (ModInfoPanePlacement == placement) return;
@@ -1936,6 +1976,12 @@ public sealed class UserConfigurationService
             ModInfoPanePlacement = ParseModInfoPanePlacement(GetOptionalString(obj["modInfoPanePlacement"]));
             _modsSortMemberPath = NormalizeSortMemberPath(GetOptionalString(obj["modsSortMemberPath"]));
             _modsSortDirection = ParseSortDirection(GetOptionalString(obj["modsSortDirection"]));
+            _localModlistsSortMemberPath = NormalizeOptionalSortMemberPath(
+                GetOptionalString(obj["localModlistsSortMemberPath"]));
+            _localModlistsSortDirection = ParseSortDirection(GetOptionalString(obj["localModlistsSortDirection"]));
+            _onlineModlistsSortMemberPath = NormalizeOptionalSortMemberPath(
+                GetOptionalString(obj["onlineModlistsSortMemberPath"]));
+            _onlineModlistsSortDirection = ParseSortDirection(GetOptionalString(obj["onlineModlistsSortDirection"]));
             ModDatabaseSearchResultLimit =
                 NormalizeModDatabaseSearchResultLimit(obj["modDatabaseSearchResultLimit"]?.GetValue<int?>());
             ModDatabaseNewModsRecentMonths = NormalizeModDatabaseNewModsRecentMonths(
@@ -2085,6 +2131,10 @@ public sealed class UserConfigurationService
             ModInfoPanePlacement = ModInfoPanePlacement.Right;
             _modsSortMemberPath = null;
             _modsSortDirection = ListSortDirection.Ascending;
+            _localModlistsSortMemberPath = null;
+            _localModlistsSortDirection = ListSortDirection.Ascending;
+            _onlineModlistsSortMemberPath = null;
+            _onlineModlistsSortDirection = ListSortDirection.Ascending;
             _selectedPresetName = null;
             ModDatabaseSearchResultLimit = DefaultModDatabaseSearchResultLimit;
             ModDatabaseNewModsRecentMonths = DefaultModDatabaseNewModsRecentMonths;
@@ -2177,6 +2227,10 @@ public sealed class UserConfigurationService
                 ["modInfoPanePlacement"] = ModInfoPanePlacement.ToString(),
                 ["modsSortMemberPath"] = _modsSortMemberPath,
                 ["modsSortDirection"] = _modsSortDirection.ToString(),
+                ["localModlistsSortMemberPath"] = _localModlistsSortMemberPath,
+                ["localModlistsSortDirection"] = _localModlistsSortDirection.ToString(),
+                ["onlineModlistsSortMemberPath"] = _onlineModlistsSortMemberPath,
+                ["onlineModlistsSortDirection"] = _onlineModlistsSortDirection.ToString(),
                 ["modDatabaseSearchResultLimit"] = ModDatabaseSearchResultLimit,
                 ["modDatabaseNewModsRecentMonths"] = ModDatabaseNewModsRecentMonths,
                 ["modDatabaseAutoLoadMode"] = ModDatabaseAutoLoadMode.ToString(),
@@ -3778,6 +3832,11 @@ public sealed class UserConfigurationService
     private static string? NormalizeModId(string? modId)
     {
         return string.IsNullOrWhiteSpace(modId) ? null : modId.Trim();
+    }
+
+    private static string? NormalizeOptionalSortMemberPath(string? sortMemberPath)
+    {
+        return string.IsNullOrWhiteSpace(sortMemberPath) ? null : sortMemberPath.Trim();
     }
 
     private static ListSortDirection ParseSortDirection(string? value)

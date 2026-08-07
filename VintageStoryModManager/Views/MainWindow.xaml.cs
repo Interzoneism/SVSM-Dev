@@ -87,6 +87,7 @@ public partial class MainWindow : Window
     private const string TargetGameVersionMenuCustomTag = "__target_custom__";
     private const int MaxDataBackupsMenuItems = 15;
     private const int WindowPositionScreenMargin = 50;
+    private const string LocalModlistDragDataFormat = "SimpleVSManager.LocalModlist";
 
     #endregion
 
@@ -322,6 +323,9 @@ public partial class MainWindow : Window
     private readonly Dictionary<ModListItemViewModel, PropertyChangedEventHandler> _selectedModPropertyHandlers = new();
     private readonly List<ModListItemViewModel> _selectedMods = new();
     private readonly List<LocalModlistListEntry> _selectedLocalModlists = new();
+    private readonly HashSet<string> _collapsedModlistGroups = new(StringComparer.OrdinalIgnoreCase);
+    private Point _localModlistDragStart;
+    private LocalModlistListEntry? _localModlistDragSource;
     private CloudModlistListEntry? _selectedCloudModlist;
     private DataGridColumn? _installedContextColumn;
     private ModListItemViewModel? _selectionAnchor;
@@ -335,6 +339,8 @@ public partial class MainWindow : Window
     private ICollectionView? _currentModsView;
     private ScrollViewer? _modsScrollViewer;
     private DataGrid? _modsScrollViewerSource;
+    private ScrollViewer? _modsVerticalWheelRemainderSource;
+    private double _modsVerticalWheelRemainder;
     private INotifyCollectionChanged? _modsCollection;
 
     // Path configuration
@@ -715,6 +721,8 @@ public partial class MainWindow : Window
         if (sender is not DataGrid dataGrid) return;
 
         var source = e.OriginalSource as DependencyObject;
+        if (FindAncestor<WpfButton>(source) is { DataContext: ModlistGroupMemberListEntry }) return;
+
         if (FindAncestor<DataGridColumnHeader>(source) is not null
             || FindAncestor<ScrollBar>(source) is not null)
             return;
@@ -736,31 +744,44 @@ public partial class MainWindow : Window
 
     private void LocalModlistsDataGrid_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
+        if (FindAncestor<WpfButton>(e.OriginalSource as DependencyObject) is
+            { DataContext: ModlistGroupMemberListEntry })
+            return;
+
         var menu = LocalModlistsContextMenu;
 
         menu.Items.Clear();
         var selectionCount = _selectedLocalModlists.Count;
+        if (selectionCount == 0)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (selectionCount == 1)
+        {
+            var selectedEntry = _selectedLocalModlists[0];
+            menu.Items.Add(CreateContextMenuItem(
+                selectedEntry.IsGroup ? "Install modlist group" : "Install modlist",
+                InstallLocalModlistButton_OnClick));
+            menu.Items.Add(CreateContextMenuItem(
+                selectedEntry.IsGroup ? "Modify modlist group..." : "Modify modlist...",
+                ModifyLocalModlistButton_OnClick));
+
+            if (selectedEntry.IsGroup)
+                menu.Items.Add(CreateContextMenuItem(
+                    $"Fix duplicate mods ({selectedEntry.GroupConflicts.Count})",
+                    FixDuplicateModsButton_OnClick,
+                    selectedEntry.GroupConflicts.Count > 0));
+        }
 
         menu.Items.Add(CreateContextMenuItem(
-            "Save current mods as local modlist...",
-            SaveLocalModlistButton_OnClick));
-        menu.Items.Add(new Separator());
-        menu.Items.Add(CreateContextMenuItem(
-            "Install selected modlist",
-            InstallLocalModlistButton_OnClick,
-            selectionCount == 1));
-        menu.Items.Add(CreateContextMenuItem(
-            "Modify selected modlist...",
-            ModifyLocalModlistButton_OnClick,
-            selectionCount == 1));
-        menu.Items.Add(CreateContextMenuItem(
-            selectionCount > 1 ? $"Delete selected modlists ({selectionCount})" : "Delete selected modlist",
-            DeleteLocalModlistsButton_OnClick,
-            selectionCount > 0));
-        menu.Items.Add(new Separator());
-        menu.Items.Add(CreateContextMenuItem(
-            "Open modlists folder",
-            OpenModlistsFolderButton_OnClick));
+            selectionCount > 1
+                ? $"Delete selected modlists/groups ({selectionCount})"
+                : _selectedLocalModlists[0].IsGroup
+                    ? "Delete modlist group"
+                    : "Delete modlist",
+            DeleteLocalModlistsButton_OnClick));
     }
 
     private void CloudModlistsDataGrid_OnPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -799,13 +820,9 @@ public partial class MainWindow : Window
             InstallCloudModlistButton_OnClick,
             internetEnabled && _selectedCloudModlist is not null));
         menu.Items.Add(CreateContextMenuItem(
-            "Save current mods as online modlist...",
-            SaveCloudModlistButton_OnClick,
-            internetEnabled));
-        menu.Items.Add(CreateContextMenuItem(
-            "Modify online modlists...",
-            ModifyCloudModlistsButton_OnClick,
-            internetEnabled));
+            "Add to your local modlists",
+            AddCloudModlistToLocal_OnClick,
+            internetEnabled && _selectedCloudModlist is not null));
     }
 
     private MenuItem CreateInstalledColumnsSubmenu()
@@ -1768,6 +1785,7 @@ public partial class MainWindow : Window
             var selectedPalette = _userConfiguration.GetThemePaletteColors();
             UpdateThemeMenuSelection(_userConfiguration.ColorTheme, themeName);
             App.ApplyTheme(_userConfiguration.ColorTheme, selectedPalette.Count > 0 ? selectedPalette : null);
+            ClearScrollViewerCache();
             return;
         }
 
@@ -3207,6 +3225,7 @@ public partial class MainWindow : Window
         _selectedCloudModlist = null; ;
         AttachToModsView(_viewModel.CurrentModsView);
         RestoreSortPreference();
+        RestoreModlistsSortPreferences();
         UpdateGameVersionMenuItem(_viewModel.InstalledGameVersion);
         ApplyColumnVisibilityPreferencesToViewModel();
         SubscribeModBrowserToDirectoryWatcher();
@@ -3712,7 +3731,9 @@ public partial class MainWindow : Window
         if (isVisible)
         {
             ApplyPreferredModlistsTabSelection();
-            RefreshLocalModlists(false);
+            // Group contents are references, so re-read local files whenever the
+            // tab becomes visible to reflect edits made outside the manager too.
+            RefreshLocalModlists(true);
 
             // When opening modlists tab with Online sub-tab already selected, ensure cloud modlists load
             if (ModlistsTabControl is not null &&
@@ -5303,8 +5324,54 @@ public partial class MainWindow : Window
 
         var direction = GetNextColumnSortDirection(e.Column);
 
-        view.SortDescriptions.Clear();
-        view.SortDescriptions.Add(new SortDescription(sortMemberPath, direction));
+        ApplyModlistsSort(dataGrid, view, sortMemberPath, direction);
+
+        if (ReferenceEquals(dataGrid, LocalModlistsDataGrid))
+            _userConfiguration.SetLocalModlistsSortPreference(sortMemberPath, direction);
+        else if (ReferenceEquals(dataGrid, CloudModlistsDataGrid))
+            _userConfiguration.SetOnlineModlistsSortPreference(sortMemberPath, direction);
+    }
+
+    private void RestoreModlistsSortPreferences()
+    {
+        if (_viewModel is null) return;
+
+        RestoreModlistsSortPreference(
+            LocalModlistsDataGrid,
+            _viewModel.LocalModlistsView,
+            _userConfiguration.GetLocalModlistsSortPreference());
+        RestoreModlistsSortPreference(
+            CloudModlistsDataGrid,
+            _viewModel.CloudModlistsView,
+            _userConfiguration.GetOnlineModlistsSortPreference());
+    }
+
+    private static void RestoreModlistsSortPreference(
+        DataGrid dataGrid,
+        ICollectionView view,
+        (string? SortMemberPath, ListSortDirection Direction) preference)
+    {
+        if (string.IsNullOrWhiteSpace(preference.SortMemberPath)) return;
+
+        var sortMemberPath = preference.SortMemberPath;
+        if (!dataGrid.Columns.Any(column => string.Equals(
+                GetColumnSortMemberPath(column), sortMemberPath, StringComparison.Ordinal)))
+            return;
+
+        ApplyModlistsSort(dataGrid, view, sortMemberPath, preference.Direction);
+    }
+
+    private static void ApplyModlistsSort(
+        DataGrid dataGrid,
+        ICollectionView view,
+        string sortMemberPath,
+        ListSortDirection direction)
+    {
+        using (view.DeferRefresh())
+        {
+            view.SortDescriptions.Clear();
+            view.SortDescriptions.Add(new SortDescription(sortMemberPath, direction));
+        }
 
         foreach (var column in dataGrid.Columns)
             column.SortDirection = string.Equals(GetColumnSortMemberPath(column), sortMemberPath, StringComparison.Ordinal)
@@ -11247,6 +11314,322 @@ public partial class MainWindow : Window
         SetLocalModlistSelection(selectedEntries);
     }
 
+    private void GroupReferenceItemButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfButton { ContextMenu: { } contextMenu } button) return;
+
+        contextMenu.PlacementTarget = button;
+        contextMenu.Placement = PlacementMode.MousePoint;
+        contextMenu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    private void RemoveReferencedModlistMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: ModlistGroupMemberListEntry member }) RemoveGroupReference(member);
+    }
+
+    private void SelectReferencedModlistMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: ModlistGroupMemberListEntry member }) SelectReferencedModlist(member);
+    }
+
+    private void RemoveGroupReference(ModlistGroupMemberListEntry member)
+    {
+        var owner = LocalModlistsDataGrid.Items.OfType<LocalModlistListEntry>().FirstOrDefault(entry =>
+                entry.IsGroup
+                && string.Equals(entry.FilePath, member.GroupFilePath, StringComparison.OrdinalIgnoreCase));
+
+        if (owner?.GroupDefinition is not ModlistGroupDefinition definition) return;
+
+        var confirmation = WpfMessageBox.Show(
+            this,
+            $"Remove the reference to \"{member.DisplayName}\" from \"{owner.BaseDisplayName}\"? The original modlist will not be deleted.",
+            "Remove from Modlist Group",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (confirmation != MessageBoxResult.Yes) return;
+
+        var removedCount = definition.Members.RemoveAll(reference => string.Equals(
+            reference,
+            member.MemberReference,
+            StringComparison.OrdinalIgnoreCase));
+        if (removedCount == 0) return;
+
+        foreach (var modId in definition.ConflictResolutions
+                     .Where(resolution => string.Equals(
+                         resolution.Value,
+                         member.MemberReference,
+                         StringComparison.OrdinalIgnoreCase))
+                     .Select(resolution => resolution.Key)
+                     .ToList())
+            definition.ConflictResolutions.Remove(modId);
+
+        try
+        {
+            ModlistGroupService.Save(owner.FilePath, definition);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            WpfMessageBox.Show(
+                this,
+                $"Failed to remove the modlist reference:\n{ex.Message}",
+                "Remove from Modlist Group",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        _viewModel?.ReportStatus($"Removed \"{member.DisplayName}\" from \"{owner.BaseDisplayName}\".");
+        RefreshLocalModlists(true, new[] { owner.FilePath });
+    }
+
+    private void SelectReferencedModlist(ModlistGroupMemberListEntry member)
+    {
+        if (!member.IsAvailable)
+        {
+            WpfMessageBox.Show(
+                this,
+                "The referenced modlist file could not be found.",
+                "Select Referenced Modlist",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var sourceEntry = LocalModlistsDataGrid.Items
+            .OfType<LocalModlistListEntry>()
+            .FirstOrDefault(entry => !entry.IsGroup
+                                     && string.Equals(
+                                         entry.FilePath,
+                                         member.SourceFilePath,
+                                         StringComparison.OrdinalIgnoreCase));
+        if (sourceEntry is null)
+        {
+            WpfMessageBox.Show(
+                this,
+                "The referenced modlist is no longer available in the local list.",
+                "Select Referenced Modlist",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var scrollViewer = FindDescendantScrollViewer(LocalModlistsDataGrid);
+        var previousHorizontalOffset = scrollViewer?.HorizontalOffset ?? 0;
+
+        LocalModlistsDataGrid.UnselectAll();
+        LocalModlistsDataGrid.SelectedItem = sourceEntry;
+        LocalModlistsDataGrid.ScrollIntoView(sourceEntry);
+
+        if (scrollViewer is not null)
+            LocalModlistsDataGrid.Dispatcher.BeginInvoke(
+                () => scrollViewer.ScrollToHorizontalOffset(previousHorizontalOffset),
+                DispatcherPriority.Loaded);
+    }
+
+    private void LocalModlistsDataGrid_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (FindAncestor<WpfButton>(e.OriginalSource as DependencyObject) is
+            { DataContext: ModlistGroupMemberListEntry })
+        {
+            _localModlistDragSource = null;
+            return;
+        }
+
+        _localModlistDragStart = e.GetPosition(LocalModlistsDataGrid);
+        _localModlistDragSource = FindAncestor<DataGridRow>(e.OriginalSource as DependencyObject)?.Item
+            as LocalModlistListEntry;
+    }
+
+    private void LocalModlistsDataGrid_OnPreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed
+            || _localModlistDragSource is null
+            || _localModlistDragSource.IsGroup)
+            return;
+
+        var currentPosition = e.GetPosition(LocalModlistsDataGrid);
+        if (Math.Abs(currentPosition.X - _localModlistDragStart.X) < SystemParameters.MinimumHorizontalDragDistance
+            && Math.Abs(currentPosition.Y - _localModlistDragStart.Y) < SystemParameters.MinimumVerticalDragDistance)
+            return;
+
+        var source = _localModlistDragSource;
+        _localModlistDragSource = null;
+        var data = new System.Windows.DataObject(LocalModlistDragDataFormat, source);
+        DragDrop.DoDragDrop(LocalModlistsDataGrid, data, DragDropEffects.Link);
+    }
+
+    private void LocalModlistsDataGrid_OnDragOver(object sender, DragEventArgs e)
+    {
+        e.Handled = true;
+        e.Effects = CanDropLocalModlistReference(e, out _, out _)
+            ? DragDropEffects.Link
+            : DragDropEffects.None;
+    }
+
+    private void LocalModlistsDataGrid_OnDrop(object sender, DragEventArgs e)
+    {
+        e.Handled = true;
+        if (!CanDropLocalModlistReference(e, out var source, out var target))
+        {
+            e.Effects = DragDropEffects.None;
+            return;
+        }
+
+        e.Effects = DragDropEffects.Link;
+        if (target!.IsGroup)
+            AddModlistReferenceToGroup(target, source!);
+        else
+            CreateModlistGroup(new[] { target, source! });
+    }
+
+    private void LocalModlistsDataGrid_OnLoadingRow(object sender, DataGridRowEventArgs e)
+    {
+        e.Row.DetailsVisibility = e.Row.Item is LocalModlistListEntry
+        {
+            IsGroup: true,
+            IsGroupExpanded: true
+        }
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private void ModlistGroupExpanderButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleButton
+            {
+                DataContext: LocalModlistListEntry { IsGroup: true } group
+            } button
+            || FindAncestor<DataGridRow>(button) is not { } row)
+            return;
+
+        var isExpanded = button.IsChecked == true;
+        group.IsGroupExpanded = isExpanded;
+        row.DetailsVisibility = isExpanded ? Visibility.Visible : Visibility.Collapsed;
+
+        if (isExpanded)
+            _collapsedModlistGroups.Remove(group.FilePath);
+        else
+            _collapsedModlistGroups.Add(group.FilePath);
+
+    }
+
+    private static bool CanDropLocalModlistReference(
+        DragEventArgs e,
+        out LocalModlistListEntry? source,
+        out LocalModlistListEntry? target)
+    {
+        source = e.Data.GetData(LocalModlistDragDataFormat) as LocalModlistListEntry;
+        target = FindAncestor<DataGridRow>(e.OriginalSource as DependencyObject)?.Item as LocalModlistListEntry;
+
+        return source is { IsGroup: false }
+               && target is not null
+               && !ReferenceEquals(source, target)
+               && !string.Equals(source.FilePath, target.FilePath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void CreateModlistGroupButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        CreateModlistGroup(Array.Empty<LocalModlistListEntry>());
+    }
+
+    private void CreateModlistGroup(IReadOnlyCollection<LocalModlistListEntry> initialMembers)
+    {
+        var dialog = new LocalModlistEditDialog(
+            this,
+            null,
+            null,
+            null,
+            null,
+            "Create Modlist Group",
+            "Create group");
+        if (dialog.ShowDialog() != true) return;
+
+        string groupFilePath;
+        try
+        {
+            var directory = EnsureModListDirectory();
+            var fileName = BuildSuggestedFileName(dialog.ModlistName, "Modlist Group");
+            groupFilePath = GetUniqueFilePath(directory, fileName, ModlistGroupService.FileExtension);
+            var definition = new ModlistGroupDefinition
+            {
+                Name = dialog.ModlistName,
+                Description = dialog.ModlistDescription,
+                Version = dialog.ModlistVersion,
+                GameVersion = dialog.ModlistGameVersion
+            };
+
+            foreach (var member in initialMembers
+                         .Where(member => !member.IsGroup)
+                         .DistinctBy(member => member.FilePath, StringComparer.OrdinalIgnoreCase))
+                definition.Members.Add(ModlistGroupService.CreateReference(groupFilePath, member.FilePath));
+
+            ModlistGroupService.Save(groupFilePath, definition);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException
+                                      or NotSupportedException or PathTooLongException)
+        {
+            WpfMessageBox.Show(
+                this,
+                $"Failed to create the modlist group:\n{ex.Message}",
+                "Create Modlist Group",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        _viewModel?.ReportStatus($"Created modlist group \"{dialog.ModlistName}\".");
+        RefreshLocalModlists(true, new[] { groupFilePath });
+    }
+
+    private void AddModlistReferenceToGroup(LocalModlistListEntry group, LocalModlistListEntry member)
+    {
+        if (group.GroupDefinition is not ModlistGroupDefinition definition || member.IsGroup) return;
+
+        try
+        {
+            var memberReference = ModlistGroupService.CreateReference(group.FilePath, member.FilePath);
+            var alreadyIncluded = definition.Members.Any(existingReference =>
+            {
+                try
+                {
+                    return string.Equals(
+                        ModlistGroupService.ResolveReference(group.FilePath, existingReference),
+                        member.FilePath,
+                        StringComparison.OrdinalIgnoreCase);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            });
+
+            if (alreadyIncluded)
+            {
+                _viewModel?.ReportStatus($"\"{member.DisplayName}\" is already referenced by \"{group.BaseDisplayName}\".");
+                return;
+            }
+
+            definition.Members.Add(memberReference);
+            ModlistGroupService.Save(group.FilePath, definition);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException
+                                      or NotSupportedException or PathTooLongException)
+        {
+            WpfMessageBox.Show(
+                this,
+                $"Failed to add the modlist to the group:\n{ex.Message}",
+                "Modlist Group",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        _viewModel?.ReportStatus($"Added a reference to \"{member.DisplayName}\" in \"{group.BaseDisplayName}\".");
+        RefreshLocalModlists(true, new[] { group.FilePath });
+    }
+
     private void SaveLocalModlistButton_OnClick(object sender, RoutedEventArgs e)
     {
         var preservedSelection = _selectedLocalModlists
@@ -11267,6 +11650,12 @@ public partial class MainWindow : Window
 
         var entry = _selectedLocalModlists[0];
 
+        if (entry.IsGroup)
+        {
+            await LoadModlistGroupAsync(entry).ConfigureAwait(true);
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(entry.FilePath) || !File.Exists(entry.FilePath))
         {
             WpfMessageBox.Show(
@@ -11279,6 +11668,53 @@ public partial class MainWindow : Window
         }
 
         await LoadModlistFromFileAsync(entry.FilePath).ConfigureAwait(true);
+    }
+
+    private async Task LoadModlistGroupAsync(LocalModlistListEntry entry)
+    {
+        if (_viewModel is null || entry.SourcePreset is null) return;
+
+        if (entry.MissingGroupMembers.Count > 0)
+        {
+            WpfMessageBox.Show(
+                this,
+                "This modlist group references one or more files that are missing. Restore or re-add those modlists before installing the group.",
+                "Modlist Group",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var loadMode = PromptModlistLoadMode();
+        if (loadMode is not ModlistLoadMode mode) return;
+
+        if (mode == ModlistLoadMode.Replace && !EnsureModlistBackupBeforeLoad()) return;
+
+        PrepareForModlistLoad();
+        var loadOptions = GetModlistLoadOptions(mode);
+        if (!TryBuildPresetFromSerializable(
+                entry.SourcePreset,
+                "Modlist Group",
+                loadOptions,
+                out var preset,
+                out var errorMessage,
+                entry.BaseDisplayName))
+        {
+            WpfMessageBox.Show(
+                this,
+                string.IsNullOrWhiteSpace(errorMessage) ? "The modlist group could not be loaded." : errorMessage!,
+                "Modlist Group",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        var loadedGroup = preset!;
+        await CreateAutomaticBackupAsync("ModlistLoaded").ConfigureAwait(true);
+        await ApplyPresetAsync(loadedGroup).ConfigureAwait(true);
+        _viewModel.ReportStatus(mode == ModlistLoadMode.Replace
+            ? $"Installed modlist group \"{loadedGroup.Name}\"."
+            : $"Added mods from modlist group \"{loadedGroup.Name}\".");
     }
 
     private void OpenModlistsFolderButton_OnClick(object sender, RoutedEventArgs e)
@@ -11314,7 +11750,8 @@ public partial class MainWindow : Window
         if (entries.Count == 1)
         {
             var name = entries[0].DisplayName;
-            message = $"Are you sure you want to delete the modlist \"{name}\"? This cannot be undone.";
+            var itemType = entries[0].IsGroup ? "modlist group" : "modlist";
+            message = $"Are you sure you want to delete the {itemType} \"{name}\"? This cannot be undone.";
         }
         else
         {
@@ -11374,6 +11811,12 @@ public partial class MainWindow : Window
 
         var entry = _selectedLocalModlists[0];
         if (entry is null || string.IsNullOrWhiteSpace(entry.FilePath)) return;
+
+        if (entry.GroupDefinition is ModlistGroupDefinition groupDefinition)
+        {
+            ModifyModlistGroup(entry, groupDefinition);
+            return;
+        }
 
         var dialog = new LocalModlistEditDialog(this, entry.DisplayName, entry.Description, entry.Version,
             entry.GameVersion);
@@ -11451,6 +11894,83 @@ public partial class MainWindow : Window
 
         var statusName = string.IsNullOrWhiteSpace(updatedName) ? entry.DisplayName : updatedName!;
         _viewModel?.ReportStatus($"Updated modlist \"{statusName}\".");
+        RefreshLocalModlists(true, new[] { entry.FilePath });
+    }
+
+    private void ModifyModlistGroup(LocalModlistListEntry entry, ModlistGroupDefinition definition)
+    {
+        var dialog = new LocalModlistEditDialog(
+            this,
+            definition.Name,
+            definition.Description,
+            definition.Version,
+            definition.GameVersion,
+            "Modify Modlist Group");
+        if (dialog.ShowDialog() != true) return;
+
+        definition.Name = dialog.ModlistName;
+        definition.Description = dialog.ModlistDescription;
+        definition.Version = dialog.ModlistVersion;
+        definition.GameVersion = dialog.ModlistGameVersion;
+
+        try
+        {
+            ModlistGroupService.Save(entry.FilePath, definition);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            WpfMessageBox.Show(
+                this,
+                $"Failed to update the modlist group:\n{ex.Message}",
+                "Modify Modlist Group",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        _viewModel?.ReportStatus($"Updated modlist group \"{dialog.ModlistName}\".");
+        RefreshLocalModlists(true, new[] { entry.FilePath });
+    }
+
+    private void FixDuplicateModsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedLocalModlists.Count != 1
+            || _selectedLocalModlists[0] is not { GroupDefinition: ModlistGroupDefinition definition } entry)
+            return;
+
+        if (entry.GroupConflicts.Count == 0)
+        {
+            WpfMessageBox.Show(
+                this,
+                "This modlist group has no duplicate mods.",
+                "Modlist Group",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new ModlistGroupConflictDialog(this, entry.GroupConflicts);
+        if (dialog.ShowDialog() != true) return;
+
+        foreach (var resolution in dialog.Resolutions)
+            definition.ConflictResolutions[resolution.Key] = resolution.Value;
+
+        try
+        {
+            ModlistGroupService.Save(entry.FilePath, definition);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            WpfMessageBox.Show(
+                this,
+                $"Failed to save the duplicate-mod choices:\n{ex.Message}",
+                "Fix Duplicate Mods",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        _viewModel?.ReportStatus($"Resolved duplicate mods in \"{entry.BaseDisplayName}\".");
         RefreshLocalModlists(true, new[] { entry.FilePath });
     }
 
@@ -11539,6 +12059,37 @@ public partial class MainWindow : Window
             ? $"Installed cloud modlist \"{preset.Name}\"."
             : $"Added mods from cloud modlist \"{preset.Name}\".";
         _viewModel.ReportStatus(status);
+    }
+
+    private async void AddCloudModlistToLocal_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedCloudModlist is not CloudModlistListEntry entry) return;
+
+        var ensuredEntry = await EnsureCloudModlistContentAsync(entry);
+        if (ensuredEntry is null) return;
+
+        string filePath;
+        try
+        {
+            var modlistDirectory = EnsureModListDirectory();
+            var fileName = BuildSuggestedFileName(ensuredEntry.Name ?? ensuredEntry.DisplayName, "Modlist");
+            filePath = GetUniqueFilePath(modlistDirectory, fileName, ".json");
+            await File.WriteAllTextAsync(filePath, ensuredEntry.ContentJson);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException
+                                      or NotSupportedException or PathTooLongException)
+        {
+            WpfMessageBox.Show(
+                this,
+                $"Failed to add the modlist to your local modlists:\n{ex.Message}",
+                "Simple VS Manager",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        _viewModel?.ReportStatus($"Added modlist \"{ensuredEntry.DisplayName}\" to your local modlists.");
+        RefreshLocalModlists(true, new[] { filePath });
     }
 
     private async void LoadModlistFromCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -11865,16 +12416,20 @@ public partial class MainWindow : Window
 
     private void MainWindow_OnPreviewDragEnter(object sender, DragEventArgs e)
     {
+        if (e.Data.GetDataPresent(LocalModlistDragDataFormat)) return;
         HandleModlistDragEvent(e);
     }
 
     private void MainWindow_OnPreviewDragOver(object sender, DragEventArgs e)
     {
+        if (e.Data.GetDataPresent(LocalModlistDragDataFormat)) return;
         HandleModlistDragEvent(e);
     }
 
     private async void MainWindow_OnPreviewDrop(object sender, DragEventArgs e)
     {
+        if (e.Data.GetDataPresent(LocalModlistDragDataFormat)) return;
+
         if (!TryGetDroppedModlistFile(e, out var filePath))
         {
             e.Effects = DragDropEffects.None;
@@ -12677,6 +13232,9 @@ public partial class MainWindow : Window
             errors = new List<string>();
         }
 
+        foreach (var group in entries.Where(entry => entry.IsGroup))
+            group.IsGroupExpanded = !_collapsedModlistGroups.Contains(group.FilePath);
+
         _viewModel?.ReplaceLocalModlists(entries);
         _localModlistsLoaded = true;
 
@@ -12732,6 +13290,10 @@ public partial class MainWindow : Window
 
         foreach (var filePath in Directory.EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly))
         {
+            if (string.Equals(Path.GetExtension(filePath), ModlistGroupService.FileExtension,
+                    StringComparison.OrdinalIgnoreCase))
+                continue;
+
             if (!HasSupportedModlistExtension(filePath)) continue;
 
             if (TryCreateLocalModlistEntry(filePath, out var entry, out var error))
@@ -12744,6 +13306,25 @@ public partial class MainWindow : Window
             }
         }
 
+        var sourceEntriesByPath = list.ToDictionary(
+            entry => Path.GetFullPath(entry.FilePath),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var groupFilePath in Directory.EnumerateFiles(
+                     directory,
+                     $"*{ModlistGroupService.FileExtension}",
+                     SearchOption.TopDirectoryOnly))
+        {
+            if (TryCreateLocalModlistGroupEntry(groupFilePath, sourceEntriesByPath, out var groupEntry, out var error))
+            {
+                if (groupEntry is not null) list.Add(groupEntry);
+            }
+            else if (!string.IsNullOrWhiteSpace(error))
+            {
+                errors.Add($"{Path.GetFileName(groupFilePath)}: {error}");
+            }
+        }
+
         list.Sort((left, right) =>
         {
             var compare = string.Compare(left.DisplayName, right.DisplayName, StringComparison.OrdinalIgnoreCase);
@@ -12753,6 +13334,120 @@ public partial class MainWindow : Window
         });
 
         return list;
+    }
+
+    private static bool TryCreateLocalModlistGroupEntry(
+        string groupFilePath,
+        IReadOnlyDictionary<string, LocalModlistListEntry> sourceEntriesByPath,
+        out LocalModlistListEntry? entry,
+        out string? error)
+    {
+        entry = null;
+        error = null;
+
+        try
+        {
+            var definition = ModlistGroupService.Load(groupFilePath);
+            var sources = new List<ModlistGroupSource>();
+            var missingMembers = new List<string>();
+            var groupMembers = new List<ModlistGroupMemberListEntry>();
+            var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var groupName = string.IsNullOrWhiteSpace(definition.Name)
+                ? Path.GetFileNameWithoutExtension(groupFilePath)
+                : definition.Name.Trim();
+
+            foreach (var memberReference in definition.Members)
+            {
+                if (string.IsNullOrWhiteSpace(memberReference)) continue;
+
+                string memberPath;
+                try
+                {
+                    memberPath = ModlistGroupService.ResolveReference(groupFilePath, memberReference);
+                }
+                catch (Exception ex) when (ex is ArgumentException or InvalidOperationException
+                                              or NotSupportedException or PathTooLongException)
+                {
+                    missingMembers.Add(memberReference);
+                    groupMembers.Add(new ModlistGroupMemberListEntry(
+                        groupFilePath,
+                        groupName,
+                        memberReference,
+                        null,
+                        memberReference,
+                        true));
+                    continue;
+                }
+
+                if (!seenPaths.Add(memberPath)) continue;
+
+                if (!sourceEntriesByPath.TryGetValue(memberPath, out var sourceEntry)
+                    || sourceEntry.SourcePreset is null)
+                {
+                    missingMembers.Add(memberReference);
+                    groupMembers.Add(new ModlistGroupMemberListEntry(
+                        groupFilePath,
+                        groupName,
+                        memberReference,
+                        memberPath,
+                        Path.GetFileNameWithoutExtension(memberPath),
+                        true));
+                    continue;
+                }
+
+                sources.Add(new ModlistGroupSource(
+                    memberReference,
+                    sourceEntry.FilePath,
+                    sourceEntry.BaseDisplayName,
+                    sourceEntry.SourcePreset));
+                groupMembers.Add(new ModlistGroupMemberListEntry(
+                    groupFilePath,
+                    groupName,
+                    memberReference,
+                    sourceEntry.FilePath,
+                    sourceEntry.BaseDisplayName,
+                    false));
+            }
+
+            var buildResult = ModlistGroupService.BuildMergedPreset(definition, sources, missingMembers);
+            var mods = buildResult.MergedPreset.Mods?
+                           .Where(mod => mod is not null && !string.IsNullOrWhiteSpace(mod.ModId))
+                           .Select(mod => string.IsNullOrWhiteSpace(mod.Version)
+                               ? mod.ModId!.Trim()
+                               : $"{mod.ModId!.Trim()} ({mod.Version!.Trim()})")
+                           .ToList()
+                       ?? new List<string>();
+            var latestWriteUtc = new[] { groupFilePath }
+                .Concat(sources.Select(source => source.FilePath))
+                .Select(File.GetLastWriteTimeUtc)
+                .DefaultIfEmpty(DateTime.MinValue)
+                .Max();
+            DateTimeOffset? lastModified = latestWriteUtc == DateTime.MinValue
+                ? null
+                : new DateTimeOffset(latestWriteUtc, TimeSpan.Zero);
+
+            entry = new LocalModlistListEntry(
+                groupFilePath,
+                buildResult.MergedPreset.Name,
+                buildResult.MergedPreset.Description,
+                buildResult.MergedPreset.Version,
+                null,
+                mods,
+                lastModified,
+                buildResult.MergedPreset.GameVersion,
+                buildResult.MergedPreset,
+                definition,
+                buildResult.Conflicts,
+                buildResult.MissingMembers,
+                groupMembers);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException
+                                      or InvalidDataException or InvalidOperationException)
+        {
+            error = ex.Message;
+            return false;
+        }
     }
 
     private bool TryCreateLocalModlistEntry(string filePath, out LocalModlistListEntry? entry, out string? error)
@@ -12818,7 +13513,18 @@ public partial class MainWindow : Window
                     }
                 }
 
-                return TryCreateLocalModlistEntryFromJson(filePath, json!, out entry, out error);
+                string? configJson = null;
+                if (!PdfModlistSerializer.TryExtractConfigJsonFromMetadata(
+                        information?.Keywords,
+                        out configJson,
+                        out var configMetadataError)
+                    && configMetadataError is not null)
+                {
+                    error = configMetadataError;
+                    return false;
+                }
+
+                return TryCreateLocalModlistEntryFromJson(filePath, json!, out entry, out error, configJson);
             }
 
             var jsonText = File.ReadAllText(filePath);
@@ -12835,7 +13541,8 @@ public partial class MainWindow : Window
         string filePath,
         string json,
         out LocalModlistListEntry? entry,
-        out string? error)
+        out string? error,
+        string? configJson = null)
     {
         entry = null;
         error = null;
@@ -12846,6 +13553,22 @@ public partial class MainWindow : Window
                 ? "The file is not a valid SVSM modlist."
                 : errorMessage;
             return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(configJson))
+        {
+            if (!PdfModlistSerializer.TryDeserializeConfigListFromJson(
+                    configJson,
+                    out var configList,
+                    out var configError))
+            {
+                error = string.IsNullOrWhiteSpace(configError)
+                    ? "The PDF configuration data could not be read."
+                    : configError;
+                return false;
+            }
+
+            ApplyConfigListToPreset(preset!, configList);
         }
 
         var metadata = ExtractModlistMetadata(json);
@@ -12863,7 +13586,7 @@ public partial class MainWindow : Window
         var gameVersion = metadata.GameVersion ?? preset?.GameVersion;
 
         entry = new LocalModlistListEntry(filePath, name, description, version, uploader, mods, lastModified,
-            gameVersion);
+            gameVersion, preset);
         return true;
     }
 
@@ -13006,10 +13729,21 @@ public partial class MainWindow : Window
         if (InstallLocalModlistButton is not null)
         {
             if (_selectedLocalModlists.Count == 1 && primary is not null)
+            {
                 InstallLocalModlistButton.ToolTip = $"Install \"{primary.DisplayName}\"";
+                InstallLocalModlistButton.Content = primary.IsGroup
+                    ? "Install Selected Group"
+                    : "Install Selected Modlist";
+            }
             else
+            {
                 InstallLocalModlistButton.ToolTip = null;
+                InstallLocalModlistButton.Content = "Install Selected Modlist";
+            }
         }
+
+        if (ModifyLocalModlistButton is not null)
+            ModifyLocalModlistButton.Content = primary?.IsGroup == true ? "Modify Group" : "Modify";
 
         UpdateLocalModlistControlsEnabledState();
     }
@@ -13049,6 +13783,8 @@ public partial class MainWindow : Window
         var hasSelection = _selectedLocalModlists.Count > 0;
         var hasSingleSelection = _selectedLocalModlists.Count == 1;
 
+        UpdateLocalModlistControlVisibility();
+
         if (DeleteLocalModlistsButton is not null)
             DeleteLocalModlistsButton.IsEnabled = hasSelection;
 
@@ -13057,6 +13793,33 @@ public partial class MainWindow : Window
 
         if (InstallLocalModlistButton is not null)
             InstallLocalModlistButton.IsEnabled = hasSingleSelection;
+
+        if (FixDuplicateModsButton is not null)
+        {
+            var duplicateCount = hasSingleSelection && _selectedLocalModlists[0].IsGroup
+                ? _selectedLocalModlists[0].GroupConflicts.Count
+                : 0;
+            FixDuplicateModsButton.Content = $"Fix duplicate mods ({duplicateCount})";
+            FixDuplicateModsButton.IsEnabled = duplicateCount > 0;
+        }
+    }
+
+    private void UpdateLocalModlistControlVisibility()
+    {
+        if (SaveLocalModlistButton is not null) SaveLocalModlistButton.Visibility = Visibility.Visible;
+        if (InstallLocalModlistButton is not null) InstallLocalModlistButton.Visibility = Visibility.Visible;
+        if (DeleteLocalModlistsButton is not null) DeleteLocalModlistsButton.Visibility = Visibility.Visible;
+        if (ModifyLocalModlistButton is not null) ModifyLocalModlistButton.Visibility = Visibility.Visible;
+        if (CreateModlistGroupButton is not null) CreateModlistGroupButton.Visibility = Visibility.Visible;
+
+        if (FixDuplicateModsButton is not null)
+            FixDuplicateModsButton.Visibility = _selectedLocalModlists.Count == 1
+                                                && _selectedLocalModlists[0].IsGroup
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+        if (SelectedLocalModlistDetailsBorder is not null)
+            SelectedLocalModlistDetailsBorder.Margin = new Thickness(390, 10, 10, 0);
     }
 
     private async Task RefreshManagerUpdateLinkAsync()
@@ -14150,6 +14913,8 @@ public partial class MainWindow : Window
 
         if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
         {
+            ResetModsVerticalWheelAccumulator();
+
             const double horizontalDistancePerWheelStep = 48.0;
             var horizontalTargetOffset =
                 scrollViewer.HorizontalOffset - deltaMultiplier * horizontalDistancePerWheelStep;
@@ -14165,6 +14930,33 @@ public partial class MainWindow : Window
         double lines = Math.Max(1, SystemParameters.WheelScrollLines);
         var offsetChange = deltaMultiplier * lines * GetCurrentScrollMultiplier();
         if (Math.Abs(offsetChange) < double.Epsilon) return;
+
+        // Logical scrolling accepts item offsets, not pixels. WPF rounds fractional
+        // item offsets down, so precision wheels and a one-line Windows wheel setting
+        // can otherwise have every event swallowed without moving the grid.
+        if (scrollViewer.CanContentScroll && Math.Abs(offsetChange) < 1.0)
+        {
+            if (!ReferenceEquals(_modsVerticalWheelRemainderSource, scrollViewer)
+                || Math.Sign(_modsVerticalWheelRemainder) != Math.Sign(offsetChange))
+            {
+                _modsVerticalWheelRemainderSource = scrollViewer;
+                _modsVerticalWheelRemainder = 0;
+            }
+
+            _modsVerticalWheelRemainder += offsetChange;
+            if (Math.Abs(_modsVerticalWheelRemainder) < 1.0)
+            {
+                e.Handled = true;
+                return;
+            }
+
+            offsetChange = Math.Truncate(_modsVerticalWheelRemainder);
+            _modsVerticalWheelRemainder -= offsetChange;
+        }
+        else
+        {
+            ResetModsVerticalWheelAccumulator();
+        }
 
         var targetOffset = scrollViewer.VerticalOffset - offsetChange;
         var clampedOffset = Math.Max(0, Math.Min(targetOffset, scrollViewer.ScrollableHeight));
@@ -14707,8 +15499,14 @@ public partial class MainWindow : Window
 
         if (targetGrid == null) return null;
 
-        if (_modsScrollViewer != null && ReferenceEquals(_modsScrollViewerSource, targetGrid)) return _modsScrollViewer;
+        if (_modsScrollViewer != null
+            && ReferenceEquals(_modsScrollViewerSource, targetGrid)
+            && _modsScrollViewer.IsDescendantOf(targetGrid))
+        {
+            return _modsScrollViewer;
+        }
 
+        ResetModsVerticalWheelAccumulator();
         _modsScrollViewer = FindDescendantScrollViewer(targetGrid);
         _modsScrollViewerSource = targetGrid;
         return _modsScrollViewer;
@@ -14716,8 +15514,15 @@ public partial class MainWindow : Window
 
     private void ClearScrollViewerCache()
     {
+        ResetModsVerticalWheelAccumulator();
         _modsScrollViewer = null;
         _modsScrollViewerSource = null;
+    }
+
+    private void ResetModsVerticalWheelAccumulator()
+    {
+        _modsVerticalWheelRemainderSource = null;
+        _modsVerticalWheelRemainder = 0;
     }
 
     private static ScrollViewer? FindDescendantScrollViewer(DependencyObject? current)

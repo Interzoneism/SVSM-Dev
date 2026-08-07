@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using VintageStoryModManager.Services;
 using Xunit;
 
@@ -88,6 +89,26 @@ public sealed class UserConfigurationServiceDependencyOverrideTests : IDisposabl
 
         var reloaded = new UserConfigurationService();
         Assert.Equal(ModInfoPanePlacement.Left, reloaded.ModInfoPanePlacement);
+    }
+
+    [Fact]
+    public void LocalAndOnlineModlistSortPreferencesPersistIndependently()
+    {
+        var configuration = new UserConfigurationService();
+
+        Assert.Equal((null, ListSortDirection.Ascending), configuration.GetLocalModlistsSortPreference());
+        Assert.Equal((null, ListSortDirection.Ascending), configuration.GetOnlineModlistsSortPreference());
+
+        configuration.EnablePersistence();
+        configuration.SetLocalModlistsSortPreference("LastModified", ListSortDirection.Descending);
+        configuration.SetOnlineModlistsSortPreference("DisplayName", ListSortDirection.Ascending);
+
+        var reloaded = new UserConfigurationService();
+
+        Assert.Equal(("LastModified", ListSortDirection.Descending),
+            reloaded.GetLocalModlistsSortPreference());
+        Assert.Equal(("DisplayName", ListSortDirection.Ascending),
+            reloaded.GetOnlineModlistsSortPreference());
     }
 
     public void Dispose()

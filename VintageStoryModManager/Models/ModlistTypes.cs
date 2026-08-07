@@ -310,7 +310,12 @@ public sealed class LocalModlistListEntry
         string? uploader,
         IReadOnlyList<string> mods,
         DateTimeOffset? lastModified,
-        string? gameVersion)
+        string? gameVersion,
+        SerializablePreset? sourcePreset = null,
+        ModlistGroupDefinition? groupDefinition = null,
+        IReadOnlyList<ModlistGroupConflict>? groupConflicts = null,
+        IReadOnlyList<string>? missingGroupMembers = null,
+        IReadOnlyList<ModlistGroupMemberListEntry>? groupMembers = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
@@ -323,6 +328,11 @@ public sealed class LocalModlistListEntry
         Mods = mods?.ToList() ?? throw new ArgumentNullException(nameof(mods));
         LastModified = lastModified;
         GameVersion = string.IsNullOrWhiteSpace(gameVersion) ? null : gameVersion.Trim();
+        SourcePreset = sourcePreset;
+        GroupDefinition = groupDefinition;
+        GroupConflicts = groupConflicts is null ? Array.Empty<ModlistGroupConflict>() : groupConflicts.ToList();
+        MissingGroupMembers = missingGroupMembers is null ? Array.Empty<string>() : missingGroupMembers.ToList();
+        GroupMembers = groupMembers is null ? Array.Empty<ModlistGroupMemberListEntry>() : groupMembers.ToList();
     }
 
     public string FilePath { get; }
@@ -343,11 +353,29 @@ public sealed class LocalModlistListEntry
 
     public string? GameVersion { get; }
 
-    public string DisplayName => string.IsNullOrWhiteSpace(Name)
+    public SerializablePreset? SourcePreset { get; }
+
+    public ModlistGroupDefinition? GroupDefinition { get; }
+
+    public IReadOnlyList<ModlistGroupConflict> GroupConflicts { get; }
+
+    public IReadOnlyList<string> MissingGroupMembers { get; }
+
+    public IReadOnlyList<ModlistGroupMemberListEntry> GroupMembers { get; }
+
+    public bool IsGroup => GroupDefinition is not null;
+
+    public bool IsGroupExpanded { get; set; } = true;
+
+    public string BaseDisplayName => string.IsNullOrWhiteSpace(Name)
         ? Path.GetFileNameWithoutExtension(FileName)
         : Name!;
 
-    public string UploaderDisplay => string.IsNullOrWhiteSpace(Uploader) ? "—" : Uploader!;
+    public string DisplayName => BaseDisplayName;
+
+    public string UploaderDisplay => IsGroup
+        ? "Modlist Group"
+        : string.IsNullOrWhiteSpace(Uploader) ? "—" : Uploader!;
 
     public string ModsSummary => Mods.Count == 0
         ? "No mods"

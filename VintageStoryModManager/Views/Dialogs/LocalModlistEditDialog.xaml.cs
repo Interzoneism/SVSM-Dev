@@ -5,10 +5,12 @@ namespace VintageStoryModManager.Views.Dialogs;
 public partial class LocalModlistEditDialog : Window
 {
     public LocalModlistEditDialog(Window owner, string? name, string? description, string? version,
-        string? gameVersion)
+        string? gameVersion, string? dialogTitle = null, string? confirmButtonText = null)
     {
         InitializeComponent();
         Owner = owner;
+        if (!string.IsNullOrWhiteSpace(dialogTitle)) Title = dialogTitle;
+        if (!string.IsNullOrWhiteSpace(confirmButtonText)) ConfirmButton.Content = confirmButtonText;
 
         NameTextBox.Text = name ?? string.Empty;
         DescriptionTextBox.Text = description ?? string.Empty;
