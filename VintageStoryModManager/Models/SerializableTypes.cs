@@ -27,6 +27,27 @@ public sealed class SerializablePreset
     public bool? IncludeModVersions { get; set; }
 
     public bool? Exclusive { get; set; }
+
+    /// <summary>
+    ///     Identifies a local modlist as a synchronized copy of an online modlist.
+    ///     This metadata is never included in the public cloud payload.
+    /// </summary>
+    public OnlineSubscriptionInfo? OnlineSubscription { get; set; }
+}
+
+public sealed class OnlineSubscriptionInfo
+{
+    public string? RegistryId { get; set; }
+
+    public long SyncedRevision { get; set; } = 1;
+
+    public long LastKnownRemoteRevision { get; set; } = 1;
+
+    public DateTimeOffset? SubscribedAtUtc { get; set; }
+
+    public DateTimeOffset? LastSyncedAtUtc { get; set; }
+
+    public DateTimeOffset? LastCheckedAtUtc { get; set; }
 }
 
 /// <summary>

@@ -88,6 +88,7 @@ public partial class MainWindow : Window
     private const int MaxDataBackupsMenuItems = 15;
     private const int WindowPositionScreenMargin = 50;
     private const string LocalModlistDragDataFormat = "SimpleVSManager.LocalModlist";
+    private static readonly TimeSpan SubscriptionUpdateCheckCooldown = TimeSpan.FromMinutes(5);
 
     #endregion
 
@@ -304,6 +305,7 @@ public partial class MainWindow : Window
     // Synchronization primitives
     private readonly SemaphoreSlim _backupSemaphore = new(1, 1);
     private readonly SemaphoreSlim _cloudStoreLock = new(1, 1);
+    private readonly SemaphoreSlim _subscriptionUpdateCheckLock = new(1, 1);
 
     // Menu item collections
     private readonly List<MenuItem> _developerProfileMenuItems = new();
@@ -318,6 +320,7 @@ public partial class MainWindow : Window
     private readonly ModActivityLoggingService _modActivityLoggingService;
     private readonly UserConfigurationService _userConfiguration;
     private ModManagerTraceListener? _traceListener;
+    private IModApiService? _modApiService;
 
     // Selection tracking
     private readonly Dictionary<ModListItemViewModel, PropertyChangedEventHandler> _selectedModPropertyHandlers = new();
@@ -327,6 +330,14 @@ public partial class MainWindow : Window
     private Point _localModlistDragStart;
     private LocalModlistListEntry? _localModlistDragSource;
     private CloudModlistListEntry? _selectedCloudModlist;
+    private CloudModlistListEntry? _displayedCloudModlist;
+    private CancellationTokenSource? _modlistDetailsCancellation;
+    private readonly HashSet<string> _unavailableSubscribedRegistryIds = new(StringComparer.OrdinalIgnoreCase);
+    private CloudSubscriptionSnapshot? _cloudSubscriptionSnapshot;
+    private IReadOnlyDictionary<string, string> _ownedCloudRegistrySlots =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<CloudModlistRegistryEntry> _lastCloudRegistryEntries = [];
+    private DateTimeOffset _lastSubscriptionUpdateCheckUtc = DateTimeOffset.MinValue;
     private DataGridColumn? _installedContextColumn;
     private ModListItemViewModel? _selectionAnchor;
 
@@ -420,6 +431,7 @@ public partial class MainWindow : Window
         CloseManagerAfterGameLaunchMenuItem.IsChecked = _userConfiguration.CloseManagerAfterGameLaunch;
         InternetAccessManager.SetInternetAccessDisabled(_userConfiguration.DisableInternetAccess);
         UpdateServerOptionsState(_userConfiguration.EnableServerOptions);
+        UpdateHiddenOnlineModlistsMenuState();
         UseFasterThumbnailsMenuItem.IsChecked = _userConfiguration.UseFasterThumbnails;
         CacheModDatabaseResultsMenuItem.IsChecked = _userConfiguration.CacheModDatabaseResults;
         DisableHoverEffectsMenuItem.IsChecked = _userConfiguration.DisableHoverEffects;
@@ -764,6 +776,17 @@ public partial class MainWindow : Window
             menu.Items.Add(CreateContextMenuItem(
                 selectedEntry.IsGroup ? "Install modlist group" : "Install modlist",
                 InstallLocalModlistButton_OnClick));
+            if (selectedEntry.IsSubscribed)
+            {
+                menu.Items.Add(CreateContextMenuItem(
+                    "Sync subscribed modlist",
+                    SyncSubscribedModlistButton_OnClick,
+                    selectedEntry.HasUpdateAvailable));
+                menu.Items.Add(CreateContextMenuItem(
+                    "Unsubscribe and keep local copy",
+                    UnsubscribeLocalModlistButton_OnClick));
+                return;
+            }
             menu.Items.Add(CreateContextMenuItem(
                 selectedEntry.IsGroup ? "Modify modlist group..." : "Modify modlist...",
                 ModifyLocalModlistButton_OnClick));
@@ -823,6 +846,139 @@ public partial class MainWindow : Window
             "Add to your local modlists",
             AddCloudModlistToLocal_OnClick,
             internetEnabled && _selectedCloudModlist is not null));
+        if (_selectedCloudModlist is { IsOwnedByCurrentUser: true })
+            menu.Items.Add(CreateContextMenuItem(
+                "Update selected online modlist",
+                UpdateOwnedCloudModlistButton_OnClick,
+                internetEnabled));
+        else if (_selectedCloudModlist is not null)
+        {
+            var hasLocalCopy = _viewModel?.GetLocalModlistsSnapshot().Any(local =>
+                string.Equals(local.OnlineSubscription?.RegistryId, _selectedCloudModlist.RegistryId,
+                    StringComparison.OrdinalIgnoreCase)) == true;
+            menu.Items.Add(CreateContextMenuItem(
+                _selectedCloudModlist.IsSubscribed
+                    ? hasLocalCopy ? "Unsubscribe" : "Restore local copy"
+                    : "Subscribe",
+                SubscribeCloudModlistButton_OnClick,
+                internetEnabled));
+        }
+
+        if (_selectedCloudModlist is not null)
+        {
+            menu.Items.Add(new Separator());
+            menu.Items.Add(CreateContextMenuItem(
+                "Hide this modlist",
+                HideCloudModlistContextMenuItem_OnClick,
+                true,
+                _selectedCloudModlist));
+            menu.Items.Add(CreateContextMenuItem(
+                $"Hide all from {_selectedCloudModlist.Uploader}",
+                HideCloudModlistAuthorContextMenuItem_OnClick,
+                true,
+                _selectedCloudModlist));
+        }
+    }
+
+    private void HideCloudModlistContextMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: CloudModlistListEntry entry }) HideOnlineModlist(entry);
+    }
+
+    private void HideCloudModlistAuthorContextMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: CloudModlistListEntry entry }) HideOnlineModlistAuthor(entry);
+    }
+
+    private void HideOnlineModlist(CloudModlistListEntry entry)
+    {
+        if (!_userConfiguration.HideOnlineModlist(entry.OwnerId, entry.SlotKey)) return;
+
+        ModlistDetailsOverlay.Close();
+        ApplyCurrentOnlineModlistHideFilters();
+        UpdateHiddenOnlineModlistsMenuState();
+        _viewModel?.ReportStatus($"Hidden online modlist \"{entry.DisplayName}\".");
+    }
+
+    private void HideOnlineModlistAuthor(CloudModlistListEntry entry)
+    {
+        if (!_userConfiguration.HideOnlineModlistAuthor(entry.Uploader)) return;
+
+        ModlistDetailsOverlay.Close();
+        ApplyCurrentOnlineModlistHideFilters();
+        UpdateHiddenOnlineModlistsMenuState();
+        _viewModel?.ReportStatus($"Hidden all online modlists from {entry.Uploader}.");
+    }
+
+    private void ApplyCurrentOnlineModlistHideFilters()
+    {
+        if (_viewModel is null) return;
+
+        var visibleEntries = _viewModel.GetCloudModlistsSnapshot()
+            .Where(entry => !_userConfiguration.IsOnlineModlistHidden(entry.OwnerId, entry.SlotKey)
+                            && !_userConfiguration.IsOnlineModlistAuthorHidden(entry.Uploader)
+                            // Also honor rules written by the previous owner-ID implementation.
+                            && !_userConfiguration.IsOnlineModlistAuthorHidden(entry.OwnerId))
+            .ToList();
+        _viewModel.ReplaceCloudModlists(visibleEntries);
+        SetCloudModlistSelection(null);
+        if (CloudModlistsDataGrid is not null) CloudModlistsDataGrid.SelectedItem = null;
+    }
+
+    private void UpdateHiddenOnlineModlistsMenuState()
+    {
+        var modlistCount = _userConfiguration.HiddenOnlineModlistCount;
+        var authorCount = _userConfiguration.HiddenOnlineModlistAuthorCount;
+
+        if (ClearHiddenOnlineModlistsMenuItem is not null)
+        {
+            ClearHiddenOnlineModlistsMenuItem.Header = $"Clear hidden modlists ({modlistCount})";
+            ClearHiddenOnlineModlistsMenuItem.IsEnabled = modlistCount > 0;
+        }
+
+        if (ClearHiddenOnlineModlistAuthorsMenuItem is not null)
+        {
+            ClearHiddenOnlineModlistAuthorsMenuItem.Header = $"Clear hidden authors ({authorCount})";
+            ClearHiddenOnlineModlistAuthorsMenuItem.IsEnabled = authorCount > 0;
+        }
+
+        if (ClearAllHiddenOnlineModlistsMenuItem is not null)
+            ClearAllHiddenOnlineModlistsMenuItem.IsEnabled = modlistCount > 0 || authorCount > 0;
+    }
+
+    private async void ClearHiddenOnlineModlistsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_userConfiguration.ClearHiddenOnlineModlists())
+            await RestoreClearedOnlineModlistsAsync("Cleared hidden online modlists.").ConfigureAwait(true);
+    }
+
+    private async void ClearHiddenOnlineModlistAuthorsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_userConfiguration.ClearHiddenOnlineModlistAuthors())
+            await RestoreClearedOnlineModlistsAsync("Cleared hidden online modlist authors.").ConfigureAwait(true);
+    }
+
+    private async void ClearAllHiddenOnlineModlistsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_userConfiguration.ClearAllHiddenOnlineModlists())
+            await RestoreClearedOnlineModlistsAsync("Cleared all hidden online modlists and authors.")
+                .ConfigureAwait(true);
+    }
+
+    private async Task RestoreClearedOnlineModlistsAsync(string statusMessage)
+    {
+        UpdateHiddenOnlineModlistsMenuState();
+        if (_lastCloudRegistryEntries.Count > 0 && _viewModel is not null)
+        {
+            _viewModel.ReplaceCloudModlists(BuildCloudModlistEntries(_lastCloudRegistryEntries));
+            SetCloudModlistSelection(null);
+        }
+        else if (!InternetAccessManager.IsInternetAccessDisabled)
+        {
+            await RefreshCloudModlistsAsync(true).ConfigureAwait(true);
+        }
+
+        _viewModel?.ReportStatus(statusMessage);
     }
 
     private MenuItem CreateInstalledColumnsSubmenu()
@@ -1125,6 +1281,10 @@ public partial class MainWindow : Window
 
         await RefreshDeleteCachedModsMenuHeaderAsync();
         await RefreshManagerUpdateLinkAsync();
+
+        RefreshLocalModlists(true);
+        if (!InternetAccessManager.IsInternetAccessDisabled && FirebaseAnonymousAuthenticator.HasPersistedState())
+            await RefreshCloudModlistsAsync(false).ConfigureAwait(true);
     }
 
     private void MigrateLegacyRebuiltModlistsIfNeeded()
@@ -3243,8 +3403,8 @@ public partial class MainWindow : Window
                 Timeout = TimeSpan.FromSeconds(30)
             };
 
-            var modApiService = new ModApiService(httpClient);
-            _modBrowserViewModel = new ModBrowserViewModel(modApiService, _userConfiguration);
+            _modApiService = new ModApiService(httpClient);
+            _modBrowserViewModel = new ModBrowserViewModel(_modApiService, _userConfiguration);
 
             // Set up the installation callback
             _modBrowserViewModel.SetInstallModCallback(InstallModFromBrowserAsync);
@@ -3406,14 +3566,7 @@ public partial class MainWindow : Window
         }
 
         var release = SelectReleaseForInstall(modViewModel);
-        if (release is null)
-        {
-            WpfMessageBox.Show("No downloadable releases are available for this mod.",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-            return;
-        }
+        if (release is null) return;
 
         if (!TryGetInstallTargetPath(modViewModel, release, out var targetPath, out var errorMessage))
         {
@@ -5438,6 +5591,13 @@ public partial class MainWindow : Window
 
     private async void MainWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Escape && ModlistDetailsOverlay?.Visibility == Visibility.Visible)
+        {
+            ModlistDetailsOverlay.Close();
+            e.Handled = true;
+            return;
+        }
+
         if (await TryHandleModListKeyDownAsync(e)) e.Handled = true;
     }
 
@@ -6402,14 +6562,7 @@ public partial class MainWindow : Window
         }
 
         var release = SelectReleaseForInstall(mod);
-        if (release is null)
-        {
-            WpfMessageBox.Show("No downloadable releases are available for this mod.",
-                "Simple VS Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-            return;
-        }
+        if (release is null) return;
 
         if (!TryGetInstallTargetPath(mod, release, out var targetPath, out var errorMessage))
         {
@@ -6606,7 +6759,22 @@ public partial class MainWindow : Window
 
     private static ModReleaseInfo? SelectReleaseForInstall(ModListItemViewModel mod)
     {
-        return mod.LatestCompatibleRelease;
+        if (mod.LatestCompatibleRelease is not null) return mod.LatestCompatibleRelease;
+
+        var latestRelease = mod.LatestRelease;
+        if (latestRelease is null) return null;
+
+        var versionDescription = string.IsNullOrWhiteSpace(latestRelease.Version)
+            ? "The latest release"
+            : $"The latest release ({latestRelease.Version})";
+        var decision = WpfMessageBox.Show(
+            $"{versionDescription} is not marked as compatible with your target Vintage Story version.{Environment.NewLine}{Environment.NewLine}" +
+            "Do you want to download it anyway?",
+            "Compatibility warning",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        return decision == MessageBoxResult.Yes ? latestRelease : null;
     }
 
     private async void UpdateModButton_OnClick(object sender, RoutedEventArgs e)
@@ -7126,10 +7294,12 @@ public partial class MainWindow : Window
             ? GetUploaderNameForPdf()
             : uploaderName.Trim();
 
+        string? temporaryFilePath = null;
         try
         {
+            temporaryFilePath = filePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
             GenerateInstalledModsPdf(
-                filePath,
+                temporaryFilePath,
                 listName,
                 version,
                 description,
@@ -7138,6 +7308,12 @@ public partial class MainWindow : Window
                 mods,
                 serializable,
                 serializableConfigList);
+
+            // Generate into a temporary file and publish it only after QuestPDF
+            // completes. A failed render must not replace a valid PDF with an
+            // empty file created by the PDF library.
+            File.Move(temporaryFilePath, filePath, true);
+            temporaryFilePath = null;
 
             _viewModel.ReportStatus($"Saved installed mods PDF to \"{filePath}\".");
 
@@ -7165,6 +7341,22 @@ public partial class MainWindow : Window
                 "Simple VS Manager",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
+        }
+
+        if (temporaryFilePath is not null)
+        {
+            try
+            {
+                if (File.Exists(temporaryFilePath)) File.Delete(temporaryFilePath);
+            }
+            catch (IOException)
+            {
+                // Cleanup is best effort; the original destination remains intact.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Cleanup is best effort; the original destination remains intact.
+            }
         }
 
         return false;
@@ -10988,60 +11180,17 @@ public partial class MainWindow : Window
                     out var json)) return;
 
             var slots = await GetCloudModlistSlotsAsync(store, true, false);
-            var trimmedModlistName = modlistName.Trim();
-
-            CloudModlistSlot? replacementSlot = null;
-            string? slotKey = null;
-
-            var matchingSlot = slots.FirstOrDefault(slot =>
-                slot.IsOccupied
-                && string.Equals((slot.Name ?? string.Empty).Trim(), trimmedModlistName,
-                    StringComparison.OrdinalIgnoreCase));
-
-            if (matchingSlot is not null)
+            var freeSlot = slots.FirstOrDefault(slot => !slot.IsOccupied);
+            if (freeSlot is null)
             {
-                var slotLabel = FormatCloudSlotLabel(matchingSlot.SlotKey);
-                var replaceExisting = WpfMessageBox.Show(
-                    $"A cloud modlist named \"{trimmedModlistName}\" already exists in {slotLabel}. Do you want to replace it?",
-                    "Simple VS Manager",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (replaceExisting != MessageBoxResult.Yes) return;
-
-                replacementSlot = matchingSlot;
-                slotKey = matchingSlot.SlotKey;
+                WpfMessageBox.Show(this,
+                    "All five online modlist slots are in use. Select one of your online modlists to update it, or delete one from Modify Modlists.",
+                    "Online Modlists Full", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
             }
 
-            CloudModlistSlot? freeSlot = null;
-            if (slotKey is null)
-            {
-                freeSlot = slots.FirstOrDefault(slot => !slot.IsOccupied);
-                slotKey = freeSlot?.SlotKey;
-            }
-
-            if (slotKey is null)
-            {
-                replacementSlot = PromptForCloudSaveReplacement(slots);
-                if (replacementSlot is null) return;
-
-                slotKey = replacementSlot.SlotKey;
-            }
-
-            await store.SaveAsync(slotKey, json);
-
-            if (replacementSlot is not null)
-            {
-                var replacedName = replacementSlot.Name ?? "existing modlist";
-                var replacedVersion = replacementSlot.Version;
-                if (!string.IsNullOrWhiteSpace(replacedVersion)) replacedName = $"{replacedName} (v{replacedVersion})";
-
-                _viewModel?.ReportStatus($"Replaced cloud modlist \"{replacedName}\" with \"{modlistName}\".");
-            }
-            else
-            {
-                _viewModel?.ReportStatus($"Saved cloud modlist \"{modlistName}\" to the cloud.");
-            }
+            await store.CreateAsync(freeSlot.SlotKey, json);
+            _viewModel?.ReportStatus($"Saved cloud modlist \"{modlistName}\" to the cloud.");
         }, "save the modlist to the cloud");
     }
 
@@ -11276,6 +11425,57 @@ public partial class MainWindow : Window
             "manage your cloud modlists");
     }
 
+    private async void UpdateOwnedCloudModlistButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedCloudModlist is not { IsOwnedByCurrentUser: true, OwnerSlotKey: not null } entry) return;
+        var ensured = await EnsureCloudModlistContentAsync(entry).ConfigureAwait(true);
+        if (ensured is null) return;
+
+        var dialog = new CloudModlistDetailsDialog(
+            this,
+            ensured.DisplayName,
+            BuildModConfigOptions(selectByDefault: false),
+            ensured.GameVersion,
+            ensured.Description,
+            ensured.Version);
+        if (dialog.ShowDialog() != true) return;
+
+        var uploader = GetUploaderNameForPdf();
+        if (OnlineModlistContentValidator.TryFindBlockedWord(
+                new[] { dialog.ModlistName, dialog.ModlistDescription, uploader }, out var blockedWord))
+        {
+            WpfMessageBox.Show(this,
+                $"The online modlist cannot be updated because it contains the blocked word or phrase \"{blockedWord}\".",
+                "Blocked Word", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var versionUnchanged = string.Equals(NormalizeCloudVersion(dialog.ModlistVersion),
+            NormalizeCloudVersion(ensured.Version), StringComparison.OrdinalIgnoreCase);
+        var confirmationMessage =
+            $"Publish a new revision of \"{ensured.DisplayName}\"?\n\n" +
+            $"{ensured.SubscriberCount} subscriber{(ensured.SubscriberCount == 1 ? string.Empty : "s")} will see an update notification.";
+        if (versionUnchanged)
+            confirmationMessage += "\n\nThe display version has not changed. The internal revision will still advance.";
+
+        if (WpfMessageBox.Show(this, confirmationMessage, "Update Online Modlist", MessageBoxButton.YesNo,
+                versionUnchanged ? MessageBoxImage.Warning : MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        var includedConfigurations = TryReadModConfigurations(dialog.GetSelectedConfigOptions());
+        if (!TryBuildCurrentModlistJson(dialog.ModlistName, dialog.ModlistDescription, dialog.ModlistVersion,
+                uploader, includedConfigurations, ResolveGameVersion(dialog.ModlistGameVersion), out var json))
+            return;
+
+        await ExecuteCloudOperationAsync(async store =>
+        {
+            var result = await store.UpdateAsync(ensured.OwnerSlotKey!, ensured.RegistryId, json);
+            _viewModel?.ReportStatus(
+                $"Published revision {result.Revision} of \"{dialog.ModlistName}\" for {ensured.SubscriberCount} subscribers.");
+        }, "update the online modlist").ConfigureAwait(true);
+        await RefreshCloudModlistsAsync(true).ConfigureAwait(true);
+    }
+
     private async Task<bool> IsCloudUploaderNameAvailableAsync(FirebaseModlistStore store, string uploader)
     {
         if (string.IsNullOrWhiteSpace(uploader)) return true;
@@ -11312,6 +11512,182 @@ public partial class MainWindow : Window
             .ToList();
 
         SetLocalModlistSelection(selectedEntries);
+    }
+
+    private async void ModlistsDataGrid_OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) != ModifierKeys.None) return;
+
+        var source = e.OriginalSource as DependencyObject;
+        if (source is null
+            || FindAncestor<ButtonBase>(source) is not null
+            || FindAncestor<ComboBox>(source) is not null
+            || FindAncestor<ScrollBar>(source) is not null
+            || FindAncestor<DataGridColumnHeader>(source) is not null)
+            return;
+
+        if (FindAncestor<DataGridRow>(source) is not { Item: { } item }) return;
+
+        switch (item)
+        {
+            case LocalModlistListEntry localEntry:
+                ShowLocalModlistDetails(localEntry);
+                break;
+            case CloudModlistListEntry cloudEntry:
+                await ShowCloudModlistDetailsAsync(cloudEntry).ConfigureAwait(true);
+                break;
+        }
+
+        e.Handled = true;
+    }
+
+    private void ShowLocalModlistDetails(LocalModlistListEntry entry)
+    {
+        _displayedCloudModlist = null;
+        var mods = BuildModlistDetailsReferences(entry.SourcePreset, entry.Mods);
+        ShowModlistDetails(new ModlistDetailsPresentation(
+            entry.DisplayName,
+            entry.Description,
+            entry.UploaderDisplay,
+            entry.Version,
+            entry.GameVersion,
+            entry.LastModifiedDisplay,
+            0,
+            false,
+            entry.IsGroup,
+            mods));
+    }
+
+    private async Task ShowCloudModlistDetailsAsync(CloudModlistListEntry entry)
+    {
+        var ensuredEntry = await EnsureCloudModlistContentAsync(entry).ConfigureAwait(true);
+        if (ensuredEntry is null) return;
+
+        SerializablePreset? preset = null;
+        PdfModlistSerializer.TryDeserializeFromJson(ensuredEntry.ContentJson, out preset, out _);
+        _displayedCloudModlist = ensuredEntry;
+        var mods = BuildModlistDetailsReferences(preset, ensuredEntry.Mods);
+        ShowModlistDetails(new ModlistDetailsPresentation(
+            ensuredEntry.DisplayName,
+            ensuredEntry.Description,
+            ensuredEntry.Uploader,
+            ensuredEntry.Version,
+            ensuredEntry.GameVersion,
+            ensuredEntry.DateAddedDisplay,
+            ensuredEntry.SubscriberCount,
+            true,
+            false,
+            mods));
+    }
+
+    private void ShowModlistDetails(ModlistDetailsPresentation presentation)
+    {
+        _modlistDetailsCancellation?.Cancel();
+        _modlistDetailsCancellation?.Dispose();
+        _modlistDetailsCancellation = new CancellationTokenSource();
+
+        ModlistDetailsOverlay.ShowDetails(presentation);
+        _ = LoadModlistDetailsCardsAsync(_modlistDetailsCancellation.Token);
+    }
+
+    private async Task LoadModlistDetailsCardsAsync(CancellationToken cancellationToken)
+    {
+        var cards = ModlistDetailsOverlay.Mods.ToList();
+        if (cards.Count == 0)
+        {
+            ModlistDetailsOverlay.SetLoading(false, "This modlist has no mods.");
+            return;
+        }
+
+        if (_modApiService is null || InternetAccessManager.IsInternetAccessDisabled)
+        {
+            foreach (var card in cards) card.MarkUnavailable();
+            ModlistDetailsOverlay.SetLoading(false, "Online details are unavailable.");
+            return;
+        }
+
+        using var concurrency = new SemaphoreSlim(6, 6);
+        var loadedCount = 0;
+        var tasks = cards.Select(async card =>
+        {
+            await concurrency.WaitAsync(cancellationToken).ConfigureAwait(true);
+            try
+            {
+                var details = await _modApiService.GetModAsync(card.ModId, cancellationToken).ConfigureAwait(true);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (details is null)
+                    card.MarkUnavailable();
+                else
+                    card.ApplyDetails(details);
+
+                loadedCount++;
+                ModlistDetailsOverlay.SetLoading(true,
+                    $"Loaded {loadedCount.ToString(CultureInfo.CurrentCulture)} of {cards.Count.ToString(CultureInfo.CurrentCulture)}");
+            }
+            finally
+            {
+                concurrency.Release();
+            }
+        });
+
+        try
+        {
+            await Task.WhenAll(tasks).ConfigureAwait(true);
+            if (!cancellationToken.IsCancellationRequested)
+                ModlistDetailsOverlay.SetLoading(false, $"{cards.Count.ToString(CultureInfo.CurrentCulture)} mods");
+        }
+        catch (OperationCanceledException)
+        {
+            // Closing or switching the details overlay cancels outstanding lookups.
+        }
+    }
+
+    private static IReadOnlyList<ModlistDetailsModReference> BuildModlistDetailsReferences(
+        SerializablePreset? preset,
+        IReadOnlyList<string> fallbackMods)
+    {
+        var references = preset?.Mods?
+            .Where(mod => mod is not null && !string.IsNullOrWhiteSpace(mod.ModId))
+            .Select(mod => new ModlistDetailsModReference(mod.ModId!.Trim(), mod.Version))
+            .ToList();
+        if (references is { Count: > 0 }) return references;
+
+        return fallbackMods
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(ParseModlistDetailsReference)
+            .ToList();
+    }
+
+    private static ModlistDetailsModReference ParseModlistDetailsReference(string value)
+    {
+        var trimmed = value.Trim();
+        var versionStart = trimmed.LastIndexOf(" (", StringComparison.Ordinal);
+        if (versionStart <= 0 || !trimmed.EndsWith(')'))
+            return new ModlistDetailsModReference(trimmed, null);
+
+        return new ModlistDetailsModReference(
+            trimmed[..versionStart],
+            trimmed[(versionStart + 2)..^1]);
+    }
+
+    private void ModlistDetailsOverlay_OnCloseRequested(object? sender, EventArgs e)
+    {
+        _modlistDetailsCancellation?.Cancel();
+        _modlistDetailsCancellation?.Dispose();
+        _modlistDetailsCancellation = null;
+        _displayedCloudModlist = null;
+    }
+
+    private void ModlistDetailsOverlay_OnHideModlistRequested(object? sender, EventArgs e)
+    {
+        if (_displayedCloudModlist is null) return;
+        HideOnlineModlist(_displayedCloudModlist);
+    }
+
+    private void ModlistDetailsOverlay_OnHideAuthorRequested(object? sender, EventArgs e)
+    {
+        if (_displayedCloudModlist is null) return;
+        HideOnlineModlistAuthor(_displayedCloudModlist);
     }
 
     private void GroupReferenceItemButton_OnClick(object sender, RoutedEventArgs e)
@@ -11745,6 +12121,13 @@ public partial class MainWindow : Window
             .ToList();
 
         if (entries.Count == 0) return;
+        if (entries.Any(entry => entry.IsSubscribed))
+        {
+            WpfMessageBox.Show(this,
+                "Subscribed modlists must be unsubscribed before they can be deleted.",
+                "Delete Modlists", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
 
         string message;
         if (entries.Count == 1)
@@ -11811,6 +12194,13 @@ public partial class MainWindow : Window
 
         var entry = _selectedLocalModlists[0];
         if (entry is null || string.IsNullOrWhiteSpace(entry.FilePath)) return;
+        if (entry.IsSubscribed)
+        {
+            WpfMessageBox.Show(this,
+                "Subscribed modlists are synchronized copies. Unsubscribe before modifying this local file.",
+                "Modify Modlist", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
 
         if (entry.GroupDefinition is ModlistGroupDefinition groupDefinition)
         {
@@ -12090,6 +12480,206 @@ public partial class MainWindow : Window
 
         _viewModel?.ReportStatus($"Added modlist \"{ensuredEntry.DisplayName}\" to your local modlists.");
         RefreshLocalModlists(true, new[] { filePath });
+    }
+
+    private async void SubscribeCloudModlistButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedCloudModlist is not { IsOwnedByCurrentUser: false } entry) return;
+
+        var existingLocal = _viewModel?.GetLocalModlistsSnapshot().FirstOrDefault(local =>
+            string.Equals(local.OnlineSubscription?.RegistryId, entry.RegistryId,
+                StringComparison.OrdinalIgnoreCase));
+        if (existingLocal is not null)
+        {
+            if (entry.IsSubscribed)
+            {
+                await UnsubscribeLocalModlistAsync(existingLocal).ConfigureAwait(true);
+                return;
+            }
+
+            SelectLocalModlist(existingLocal);
+            return;
+        }
+
+        var ensuredEntry = await EnsureCloudModlistContentAsync(entry).ConfigureAwait(true);
+        if (ensuredEntry is null) return;
+        if (!PdfModlistSerializer.TryDeserializeFromJson(ensuredEntry.ContentJson, out var preset, out var error)
+            || preset is null)
+        {
+            WpfMessageBox.Show(this, error ?? "The online modlist could not be read.", "Subscribe to Modlist",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        preset.OnlineSubscription = new OnlineSubscriptionInfo
+        {
+            RegistryId = ensuredEntry.RegistryId,
+            SyncedRevision = ensuredEntry.Revision,
+            LastKnownRemoteRevision = ensuredEntry.Revision,
+            SubscribedAtUtc = now,
+            LastSyncedAtUtc = now,
+            LastCheckedAtUtc = now
+        };
+
+        var directory = EnsureModListDirectory();
+        var fileName = BuildSuggestedFileName(ensuredEntry.DisplayName, "Modlist");
+        var filePath = GetUniqueFilePath(directory, fileName, ".json");
+        try
+        {
+            await WriteSerializablePresetAtomicallyAsync(filePath, preset).ConfigureAwait(true);
+            var store = await EnsureCloudStoreInitializedAsync().ConfigureAwait(true);
+            await store.SubscribeAsync(ensuredEntry.RegistryId).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or HttpRequestException
+                                       or TaskCanceledException or InvalidOperationException)
+        {
+            try
+            {
+                if (File.Exists(filePath)) File.Delete(filePath);
+            }
+            catch (IOException)
+            {
+                // The error below remains the actionable failure.
+            }
+
+            WpfMessageBox.Show(this, $"Failed to subscribe to the modlist:\n{ex.Message}", "Subscribe to Modlist",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        _viewModel?.ReportStatus($"Subscribed to \"{ensuredEntry.DisplayName}\" and created a local copy.");
+        RefreshLocalModlists(true, new[] { filePath });
+        await RefreshCloudModlistsAsync(true).ConfigureAwait(true);
+    }
+
+    private async void SyncSubscribedModlistButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedLocalModlists.Count != 1 || !_selectedLocalModlists[0].IsSubscribed) return;
+        await SyncSubscribedModlistAsync(_selectedLocalModlists[0]).ConfigureAwait(true);
+    }
+
+    private async Task SyncSubscribedModlistAsync(LocalModlistListEntry entry)
+    {
+        var registryId = entry.OnlineSubscription?.RegistryId;
+        if (string.IsNullOrWhiteSpace(registryId)) return;
+        if (WpfMessageBox.Show(this,
+                $"Replace the local copy of \"{entry.DisplayName}\" with the latest online revision?",
+                "Sync Modlist Update", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        CloudModlistRegistryEntry? remote;
+        try
+        {
+            var store = await EnsureCloudStoreInitializedAsync().ConfigureAwait(true);
+            remote = await store.GetRegistryEntryAsync(registryId).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            WpfMessageBox.Show(this, $"Failed to download the subscribed modlist:\n{ex.Message}",
+                "Sync Modlist Update", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+        if (remote is null)
+        {
+            _unavailableSubscribedRegistryIds.Add(registryId);
+            RefreshLocalModlists(true, new[] { entry.FilePath });
+            WpfMessageBox.Show(this, "The online source is no longer available. You can unsubscribe to keep this as a normal local modlist.",
+                "Source Unavailable", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!PdfModlistSerializer.TryDeserializeFromJson(remote.ContentJson, out var preset, out var error)
+            || preset is null)
+        {
+            WpfMessageBox.Show(this, error ?? "The online modlist could not be read.", "Sync Modlist Update",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        preset.OnlineSubscription = new OnlineSubscriptionInfo
+        {
+            RegistryId = registryId,
+            SyncedRevision = remote.Revision,
+            LastKnownRemoteRevision = remote.Revision,
+            SubscribedAtUtc = entry.OnlineSubscription?.SubscribedAtUtc ?? now,
+            LastSyncedAtUtc = now,
+            LastCheckedAtUtc = now
+        };
+        try
+        {
+            await WriteSerializablePresetAtomicallyAsync(entry.FilePath, preset).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            WpfMessageBox.Show(this, $"Failed to update the local modlist:\n{ex.Message}", "Sync Modlist Update",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        _unavailableSubscribedRegistryIds.Remove(registryId);
+        _viewModel?.ReportStatus($"Synced \"{entry.DisplayName}\" to online revision {remote.Revision}.");
+        RefreshLocalModlists(true, new[] { entry.FilePath });
+        await RefreshCloudModlistsAsync(true).ConfigureAwait(true);
+    }
+
+    private async void UnsubscribeLocalModlistButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_selectedLocalModlists.Count != 1 || !_selectedLocalModlists[0].IsSubscribed) return;
+        await UnsubscribeLocalModlistAsync(_selectedLocalModlists[0]).ConfigureAwait(true);
+    }
+
+    private async Task UnsubscribeLocalModlistAsync(LocalModlistListEntry entry)
+    {
+        var registryId = entry.OnlineSubscription?.RegistryId;
+        if (string.IsNullOrWhiteSpace(registryId)) return;
+        if (WpfMessageBox.Show(this,
+                $"Unsubscribe from \"{entry.DisplayName}\"? The current local copy will be kept and become editable.",
+                "Unsubscribe from Modlist", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            if (entry.IsOnlineSourceAvailable)
+            {
+                var store = await EnsureCloudStoreInitializedAsync().ConfigureAwait(true);
+                await store.UnsubscribeAsync(registryId).ConfigureAwait(true);
+            }
+
+            var json = await File.ReadAllTextAsync(entry.FilePath).ConfigureAwait(true);
+            if (!PdfModlistSerializer.TryDeserializeFromJson(json, out var preset, out var error) || preset is null)
+                throw new InvalidDataException(error ?? "The local modlist could not be read.");
+            preset.OnlineSubscription = null;
+            await WriteSerializablePresetAtomicallyAsync(entry.FilePath, preset).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or HttpRequestException
+                                       or TaskCanceledException or InvalidOperationException or InvalidDataException)
+        {
+            WpfMessageBox.Show(this, $"Failed to unsubscribe from the modlist:\n{ex.Message}",
+                "Unsubscribe from Modlist", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        _unavailableSubscribedRegistryIds.Remove(registryId);
+        _viewModel?.ReportStatus($"Unsubscribed from \"{entry.DisplayName}\". The local copy was kept.");
+        RefreshLocalModlists(true, new[] { entry.FilePath });
+        if (!InternetAccessManager.IsInternetAccessDisabled)
+            await RefreshCloudModlistsAsync(true).ConfigureAwait(true);
+    }
+
+    private void SelectLocalModlist(LocalModlistListEntry entry)
+    {
+        _viewModel?.ShowModlistTabCommand.Execute(null);
+        if (ModlistsTabControl is not null && LocalModlistsTabItem is not null)
+            ModlistsTabControl.SelectedItem = LocalModlistsTabItem;
+        RefreshLocalModlists(true, new[] { entry.FilePath });
+    }
+
+    private void SubscribedModlistUpdatesLink_OnClick(object sender, RoutedEventArgs e)
+    {
+        var entry = _viewModel?.GetLocalModlistsSnapshot().FirstOrDefault(local => local.HasUpdateAvailable);
+        if (entry is not null) SelectLocalModlist(entry);
     }
 
     private async void LoadModlistFromCloudMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -12945,21 +13535,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private CloudModlistSlot? PromptForCloudSaveReplacement(IReadOnlyList<CloudModlistSlot> slots)
-    {
-        if (slots is null) return null;
-
-        var occupiedSlots = slots.Where(slot => slot.IsOccupied).ToList();
-        if (occupiedSlots.Count == 0) return null;
-
-        var dialog = new CloudSlotSelectionDialog(this,
-            occupiedSlots,
-            "Replace Cloud Modlist",
-            "Select a cloud modlist to replace.");
-        var dialogResult = dialog.ShowDialog();
-        return dialogResult == true ? dialog.SelectedSlot : null;
-    }
-
     private async Task ShowCloudModlistManagementDialogAsync(FirebaseModlistStore store)
     {
         var entries = await BuildCloudModlistManagementEntriesAsync(store);
@@ -12998,7 +13573,10 @@ public partial class MainWindow : Window
                 slot.Name,
                 slot.Version,
                 slot.DisplayName,
-                slot.CachedContent));
+                slot.CachedContent,
+                slot.RegistryId,
+                slot.Revision,
+                _cloudSubscriptionSnapshot?.SubscriberCounts.GetValueOrDefault(slot.RegistryId ?? string.Empty) ?? 0));
         }
 
         return list;
@@ -13010,6 +13588,13 @@ public partial class MainWindow : Window
         string newName)
     {
         if (string.IsNullOrWhiteSpace(newName)) return false;
+
+        if (entry.SubscriberCount > 0
+            && WpfMessageBox.Show(this,
+                $"Renaming this modlist will publish a new revision for {entry.SubscriberCount} subscriber{(entry.SubscriberCount == 1 ? string.Empty : "s")}. Continue?",
+                "Rename Subscribed Modlist", MessageBoxButton.YesNo, MessageBoxImage.Question)
+            != MessageBoxResult.Yes)
+            return false;
 
         var trimmedName = newName.Trim();
         var json = entry.CachedContent;
@@ -13056,7 +13641,10 @@ public partial class MainWindow : Window
 
         try
         {
-            await store.SaveAsync(entry.SlotKey, updatedJson);
+            if (!string.IsNullOrWhiteSpace(entry.RegistryId))
+                await store.UpdateAsync(entry.SlotKey, entry.RegistryId, updatedJson);
+            else
+                await store.SaveAsync(entry.SlotKey, updatedJson);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
@@ -13077,6 +13665,13 @@ public partial class MainWindow : Window
 
     private async Task<bool> DeleteCloudModlistAsync(FirebaseModlistStore store, CloudModlistManagementEntry entry)
     {
+        if (entry.SubscriberCount > 0
+            && WpfMessageBox.Show(this,
+                $"This modlist has {entry.SubscriberCount} subscriber{(entry.SubscriberCount == 1 ? string.Empty : "s")}. Deleting it removes the online source; subscribers will keep an unavailable local copy. Continue?",
+                "Delete Subscribed Modlist", MessageBoxButton.YesNo, MessageBoxImage.Warning)
+            != MessageBoxResult.Yes)
+            return false;
+
         try
         {
             await store.DeleteAsync(entry.SlotKey);
@@ -13181,6 +13776,13 @@ public partial class MainWindow : Window
         var existing = await store.ListSlotsAsync();
         var existingSet = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
         var result = new List<CloudModlistSlot>(FirebaseModlistStore.SlotKeys.Count);
+        _ownedCloudRegistrySlots = await store.GetOwnedRegistrySlotsAsync();
+        _cloudSubscriptionSnapshot = await store.GetSubscriptionSnapshotAsync();
+        var registryIdBySlot = _ownedCloudRegistrySlots.ToDictionary(pair => pair.Value, pair => pair.Key,
+            StringComparer.OrdinalIgnoreCase);
+        var registryEntries = await store.GetRegistryEntriesAsync();
+        var registryById = registryEntries.ToDictionary(entry => entry.RegistryId,
+            StringComparer.OrdinalIgnoreCase);
 
         foreach (var slotKey in FirebaseModlistStore.SlotKeys)
         {
@@ -13204,8 +13806,11 @@ public partial class MainWindow : Window
 
             var display = BuildCloudSlotDisplay(slotKey, metadata, isOccupied);
             var cachedContent = captureContent ? json : null;
+            registryIdBySlot.TryGetValue(slotKey, out var registryId);
+            registryById.TryGetValue(registryId ?? string.Empty, out var registryEntry);
             result.Add(new CloudModlistSlot(slotKey, isOccupied, display, metadata.Name, metadata.Version,
-                cachedContent));
+                cachedContent, registryId, registryEntry?.Revision ?? 1, registryEntry?.CreatedAt,
+                registryEntry?.UpdatedAt));
         }
 
         return result;
@@ -13266,6 +13871,8 @@ public partial class MainWindow : Window
         {
             SetLocalModlistSelection(Array.Empty<LocalModlistListEntry>());
         }
+
+        UpdateSubscribedModlistAlert();
 
         if (errors.Count > 0)
         {
@@ -13585,8 +14192,11 @@ public partial class MainWindow : Window
 
         var gameVersion = metadata.GameVersion ?? preset?.GameVersion;
 
+        var subscription = preset?.OnlineSubscription;
+        var sourceAvailable = string.IsNullOrWhiteSpace(subscription?.RegistryId)
+                              || !_unavailableSubscribedRegistryIds.Contains(subscription.RegistryId);
         entry = new LocalModlistListEntry(filePath, name, description, version, uploader, mods, lastModified,
-            gameVersion, preset);
+            gameVersion, preset, onlineSubscription: subscription, isOnlineSourceAvailable: sourceAvailable);
         return true;
     }
 
@@ -13603,7 +14213,15 @@ public partial class MainWindow : Window
         {
             await ExecuteCloudOperationAsync(async store =>
             {
-                var registryEntries = await store.GetRegistryEntriesAsync();
+                var registryTask = store.GetRegistryEntriesAsync();
+                var subscriptionTask = store.GetSubscriptionSnapshotAsync();
+                var ownedTask = store.GetOwnedRegistrySlotsAsync();
+                await Task.WhenAll(registryTask, subscriptionTask, ownedTask);
+
+                var registryEntries = await registryTask;
+                _lastCloudRegistryEntries = registryEntries.ToList();
+                _cloudSubscriptionSnapshot = await subscriptionTask;
+                _ownedCloudRegistrySlots = await ownedTask;
                 var listEntries = BuildCloudModlistEntries(registryEntries);
 
                 await Dispatcher.InvokeAsync(() =>
@@ -13613,7 +14231,11 @@ public partial class MainWindow : Window
                     SetCloudModlistSelection(null);
                     if (CloudModlistsDataGrid != null) CloudModlistsDataGrid.SelectedItem = null;
                 }, DispatcherPriority.Background);
+
+                await ShowPendingOwnerSubscriptionNoticesAsync(store, listEntries);
             }, "load cloud modlists");
+
+            await CheckSubscribedModlistUpdatesAsync(true).ConfigureAwait(true);
         }
         finally
         {
@@ -13628,15 +14250,33 @@ public partial class MainWindow : Window
         var list = new List<CloudModlistListEntry>();
         if (registryEntries is null) return list;
 
+        var localSubscriptions = (_viewModel?.GetLocalModlistsSnapshot() ?? Array.Empty<LocalModlistListEntry>())
+            .Where(entry => entry.IsSubscribed && !string.IsNullOrWhiteSpace(entry.OnlineSubscription?.RegistryId))
+            .GroupBy(entry => entry.OnlineSubscription!.RegistryId!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in registryEntries)
         {
             if (entry is null) continue;
 
+            var metadata = ExtractModlistMetadata(entry.ContentJson);
+
+            if (_userConfiguration.IsOnlineModlistHidden(entry.OwnerId, entry.SlotKey)
+                || _userConfiguration.IsOnlineModlistAuthorHidden(metadata.Uploader ?? entry.OwnerId)
+                // Also honor rules written by the previous owner-ID implementation.
+                || _userConfiguration.IsOnlineModlistAuthorHidden(entry.OwnerId))
+                continue;
+
             if (!seen.Add(entry.RegistryKey)) continue;
 
             var slotLabel = FormatCloudSlotLabel(entry.SlotKey);
-            var metadata = ExtractModlistMetadata(entry.ContentJson);
+            var registryId = entry.RegistryId;
+            var isOwned = _ownedCloudRegistrySlots.TryGetValue(registryId, out var ownerSlotKey);
+            var isSubscribed = _cloudSubscriptionSnapshot?.CurrentUserSubscriptions.Contains(registryId) == true;
+            var subscriberCount = _cloudSubscriptionSnapshot?.SubscriberCounts.GetValueOrDefault(registryId) ?? 0;
+            var hasUpdate = localSubscriptions.TryGetValue(registryId, out var localEntry)
+                            && localEntry.OnlineSubscription!.SyncedRevision < entry.Revision;
             list.Add(new CloudModlistListEntry(
                 entry.OwnerId,
                 entry.SlotKey,
@@ -13647,9 +14287,15 @@ public partial class MainWindow : Window
                 metadata.Uploader,
                 metadata.Mods,
                 entry.ContentJson,
-                entry.DateAdded,
+                entry.UpdatedAt ?? entry.DateAdded,
                 metadata.GameVersion,
-                entry.IsContentComplete));
+                entry.IsContentComplete,
+                entry.Revision,
+                subscriberCount,
+                isSubscribed,
+                isOwned,
+                hasUpdate,
+                ownerSlotKey));
         }
 
         list.Sort((left, right) =>
@@ -13699,7 +14345,13 @@ public partial class MainWindow : Window
             registryEntry.ContentJson,
             registryEntry.DateAdded,
             metadata.GameVersion,
-            true);
+            true,
+            registryEntry.Revision,
+            entry.SubscriberCount,
+            entry.IsSubscribed,
+            entry.IsOwnedByCurrentUser,
+            entry.HasUpdateAvailable,
+            entry.OwnerSlotKey);
 
         if (_viewModel?.TryReplaceCloudModlist(entry, refreshedEntry) == true)
             SetCloudModlistSelection(refreshedEntry);
@@ -13707,6 +14359,149 @@ public partial class MainWindow : Window
             SetCloudModlistSelection(refreshedEntry);
 
         return refreshedEntry;
+    }
+
+    private async Task CheckSubscribedModlistUpdatesAsync(bool force)
+    {
+        if (InternetAccessManager.IsInternetAccessDisabled || _viewModel is null) return;
+        if (!force && DateTimeOffset.UtcNow - _lastSubscriptionUpdateCheckUtc < SubscriptionUpdateCheckCooldown)
+            return;
+        if (!await _subscriptionUpdateCheckLock.WaitAsync(0).ConfigureAwait(true)) return;
+
+        try
+        {
+            var subscriptions = _viewModel.GetLocalModlistsSnapshot()
+                .Where(entry => entry.IsSubscribed && !string.IsNullOrWhiteSpace(entry.OnlineSubscription?.RegistryId))
+                .ToList();
+            if (subscriptions.Count == 0)
+            {
+                UpdateSubscribedModlistAlert();
+                _lastSubscriptionUpdateCheckUtc = DateTimeOffset.UtcNow;
+                return;
+            }
+
+            var store = await EnsureCloudStoreInitializedAsync().ConfigureAwait(true);
+            var registryEntries = await store.GetRegistryEntriesAsync().ConfigureAwait(true);
+            _lastCloudRegistryEntries = registryEntries.ToList();
+            var registryById = registryEntries.ToDictionary(entry => entry.RegistryId,
+                StringComparer.OrdinalIgnoreCase);
+            var changedFiles = new List<string>();
+            var availabilityChanged = false;
+            var checkedAt = DateTimeOffset.UtcNow;
+
+            foreach (var localEntry in subscriptions)
+            {
+                var registryId = localEntry.OnlineSubscription!.RegistryId!;
+                if (!registryById.TryGetValue(registryId, out var remoteEntry))
+                {
+                    availabilityChanged |= _unavailableSubscribedRegistryIds.Add(registryId);
+                    continue;
+                }
+
+                availabilityChanged |= _unavailableSubscribedRegistryIds.Remove(registryId);
+                if (localEntry.OnlineSubscription.LastKnownRemoteRevision == remoteEntry.Revision) continue;
+
+                if (await UpdateLocalSubscriptionMetadataAsync(localEntry.FilePath, subscription =>
+                    {
+                        subscription.LastKnownRemoteRevision = remoteEntry.Revision;
+                        subscription.LastCheckedAtUtc = checkedAt;
+                    }).ConfigureAwait(true))
+                    changedFiles.Add(localEntry.FilePath);
+            }
+
+            _lastSubscriptionUpdateCheckUtc = checkedAt;
+            if (changedFiles.Count > 0 || availabilityChanged)
+                RefreshLocalModlists(true, changedFiles.Count > 0 ? changedFiles : null);
+
+            var refreshedCloudEntries = BuildCloudModlistEntries(registryEntries);
+            _viewModel.ReplaceCloudModlists(refreshedCloudEntries);
+            UpdateSubscribedModlistAlert();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException
+                                       or IOException or UnauthorizedAccessException or JsonException)
+        {
+            StatusLogService.AppendStatus($"Failed to check subscribed modlists: {ex.Message}", true);
+        }
+        finally
+        {
+            _subscriptionUpdateCheckLock.Release();
+        }
+    }
+
+    private async Task<bool> UpdateLocalSubscriptionMetadataAsync(
+        string filePath,
+        Action<OnlineSubscriptionInfo> update)
+    {
+        if (!File.Exists(filePath)) return false;
+        var json = await File.ReadAllTextAsync(filePath).ConfigureAwait(true);
+        if (!PdfModlistSerializer.TryDeserializeFromJson(json, out var preset, out _) || preset is null
+            || preset.OnlineSubscription is null)
+            return false;
+
+        update(preset.OnlineSubscription);
+        await WriteSerializablePresetAtomicallyAsync(filePath, preset).ConfigureAwait(true);
+        return true;
+    }
+
+    private static async Task WriteSerializablePresetAtomicallyAsync(string filePath, SerializablePreset preset)
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+        var tempPath = filePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(preset, options)).ConfigureAwait(false);
+            File.Move(tempPath, filePath, true);
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(tempPath)) File.Delete(tempPath);
+            }
+            catch (IOException)
+            {
+                // Best-effort cleanup of a failed temporary write.
+            }
+        }
+    }
+
+    private void UpdateSubscribedModlistAlert()
+    {
+        if (SubscribedModlistUpdatesTextBlock is null || SubscribedModlistUpdatesRun is null) return;
+        var updateCount = _viewModel?.GetLocalModlistsSnapshot().Count(entry => entry.HasUpdateAvailable) ?? 0;
+        SubscribedModlistUpdatesRun.Text = updateCount == 1
+            ? "1 subscribed modlist update"
+            : $"{updateCount} subscribed modlist updates";
+        SubscribedModlistUpdatesTextBlock.Visibility = updateCount > 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private async Task ShowPendingOwnerSubscriptionNoticesAsync(
+        FirebaseModlistStore store,
+        IReadOnlyList<CloudModlistListEntry> cloudEntries)
+    {
+        if (_ownedCloudRegistrySlots.Count == 0) return;
+        var notices = await store.GetPendingOwnerSubscriptionNoticesAsync(_ownedCloudRegistrySlots.Keys)
+            .ConfigureAwait(true);
+        if (notices.Count == 0) return;
+
+        var names = cloudEntries.ToDictionary(entry => entry.RegistryId, entry => entry.DisplayName,
+            StringComparer.OrdinalIgnoreCase);
+        var summary = string.Join(Environment.NewLine, notices.Select(notice =>
+        {
+            var name = names.GetValueOrDefault(notice.RegistryId) ?? "an online modlist";
+            return $"• {notice.NewSubscriberCount} new subscriber{(notice.NewSubscriberCount == 1 ? string.Empty : "s")} to \"{name}\"";
+        }));
+        WpfMessageBox.Show(this, summary, "New Modlist Subscribers", MessageBoxButton.OK,
+            MessageBoxImage.Information);
+        await store.AcknowledgeOwnerSubscriptionNoticesAsync(notices.Select(notice => notice.RegistryId))
+            .ConfigureAwait(true);
     }
 
     private void SetLocalModlistSelection(IReadOnlyList<LocalModlistListEntry> selection)
@@ -13776,6 +14571,30 @@ public partial class MainWindow : Window
             var hasSelection = _selectedCloudModlist is not null;
             InstallCloudModlistButton.IsEnabled = internetEnabled && hasSelection;
         }
+
+        if (SubscribeCloudModlistButton is not null)
+        {
+            var entry = _selectedCloudModlist;
+            var localCopyExists = entry is not null && (_viewModel?.GetLocalModlistsSnapshot().Any(local =>
+                string.Equals(local.OnlineSubscription?.RegistryId, entry.RegistryId,
+                    StringComparison.OrdinalIgnoreCase)) ?? false);
+            SubscribeCloudModlistButton.Visibility = entry?.IsOwnedByCurrentUser == true
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+            SubscribeCloudModlistButton.IsEnabled = internetEnabled && entry is not null;
+            SubscribeCloudModlistButton.Content = entry?.IsSubscribed == true
+                ? localCopyExists ? "Unsubscribe" : "Restore Local Copy"
+                : "Subscribe";
+        }
+
+        if (UpdateOwnedCloudModlistButton is not null)
+        {
+            UpdateOwnedCloudModlistButton.Visibility = _selectedCloudModlist?.IsOwnedByCurrentUser == true
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            UpdateOwnedCloudModlistButton.IsEnabled = internetEnabled
+                                                       && _selectedCloudModlist?.IsOwnedByCurrentUser == true;
+        }
     }
 
     private void UpdateLocalModlistControlsEnabledState()
@@ -13786,10 +14605,29 @@ public partial class MainWindow : Window
         UpdateLocalModlistControlVisibility();
 
         if (DeleteLocalModlistsButton is not null)
-            DeleteLocalModlistsButton.IsEnabled = hasSelection;
+            DeleteLocalModlistsButton.IsEnabled = hasSelection && _selectedLocalModlists.All(entry => !entry.IsSubscribed);
 
         if (ModifyLocalModlistButton is not null)
-            ModifyLocalModlistButton.IsEnabled = _selectedLocalModlists.Count == 1;
+            ModifyLocalModlistButton.IsEnabled = _selectedLocalModlists.Count == 1
+                                                  && !_selectedLocalModlists[0].IsSubscribed;
+
+        if (SyncSubscribedModlistButton is not null)
+        {
+            SyncSubscribedModlistButton.Visibility = hasSingleSelection && _selectedLocalModlists[0].IsSubscribed
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            SyncSubscribedModlistButton.IsEnabled = hasSingleSelection
+                                                     && _selectedLocalModlists[0].HasUpdateAvailable;
+        }
+
+        if (UnsubscribeLocalModlistButton is not null)
+        {
+            UnsubscribeLocalModlistButton.Visibility = hasSingleSelection && _selectedLocalModlists[0].IsSubscribed
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            UnsubscribeLocalModlistButton.IsEnabled = hasSingleSelection
+                                                       && _selectedLocalModlists[0].IsSubscribed;
+        }
 
         if (InstallLocalModlistButton is not null)
             InstallLocalModlistButton.IsEnabled = hasSingleSelection;
@@ -15898,6 +16736,7 @@ public partial class MainWindow : Window
         if (_isWindowActive) return;
 
         _isWindowActive = true;
+        _ = CheckSubscribedModlistUpdatesAsync(false);
     }
 
     protected override void OnDeactivated(EventArgs e)
@@ -15911,8 +16750,11 @@ public partial class MainWindow : Window
         UnsubscribeModBrowserFromDirectoryWatcher();
         StopModsWatcher();
         _votesCacheWatcher?.Dispose();
+        _modlistDetailsCancellation?.Cancel();
+        _modlistDetailsCancellation?.Dispose();
         _backupSemaphore.Dispose();
         _cloudStoreLock.Dispose();
+        _subscriptionUpdateCheckLock.Dispose();
         _cloudModlistStore?.Dispose();
         base.OnClosed(e);
     }

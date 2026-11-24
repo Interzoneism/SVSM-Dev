@@ -4,13 +4,30 @@ using System.Text.Json;
 
 namespace VintageStoryModManager.Models;
 
+public sealed record CloudModlistWriteResult(
+    string RegistryId,
+    string SlotKey,
+    long Revision,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
+
+public sealed record CloudSubscriptionSnapshot(
+    IReadOnlyDictionary<string, int> SubscriberCounts,
+    IReadOnlySet<string> CurrentUserSubscriptions,
+    string CurrentFirebaseUserId);
+
+public sealed record CloudOwnerSubscriptionNotice(
+    string RegistryId,
+    int NewSubscriberCount);
+
 /// <summary>
 ///     Represents a cloud modlist slot entry exposed to the UI.
 /// </summary>
 public sealed class CloudModlistSlot
 {
     public CloudModlistSlot(string slotKey, bool isOccupied, string displayName, string? name, string? version,
-        string? cachedContent)
+        string? cachedContent, string? registryId = null, long revision = 1,
+        DateTimeOffset? createdAt = null, DateTimeOffset? updatedAt = null)
     {
         SlotKey = slotKey ?? throw new ArgumentNullException(nameof(slotKey));
         IsOccupied = isOccupied;
@@ -18,6 +35,10 @@ public sealed class CloudModlistSlot
         Name = name;
         Version = version;
         CachedContent = cachedContent;
+        RegistryId = registryId;
+        Revision = Math.Max(1, revision);
+        CreatedAt = createdAt;
+        UpdatedAt = updatedAt;
     }
 
     public string SlotKey { get; }
@@ -31,6 +52,14 @@ public sealed class CloudModlistSlot
     public string? Version { get; }
 
     public string? CachedContent { get; }
+
+    public string? RegistryId { get; }
+
+    public long Revision { get; }
+
+    public DateTimeOffset? CreatedAt { get; }
+
+    public DateTimeOffset? UpdatedAt { get; }
 
     public override string ToString()
     {
@@ -48,13 +77,19 @@ public sealed class CloudModlistRegistryEntry
         string slotKey,
         string contentJson,
         DateTimeOffset? dateAdded,
-        bool isContentComplete = true)
+        bool isContentComplete = true,
+        long revision = 1,
+        DateTimeOffset? createdAt = null,
+        DateTimeOffset? updatedAt = null)
     {
         OwnerId = ownerId ?? throw new ArgumentNullException(nameof(ownerId));
         SlotKey = slotKey ?? throw new ArgumentNullException(nameof(slotKey));
         ContentJson = contentJson ?? throw new ArgumentNullException(nameof(contentJson));
         DateAdded = dateAdded;
         IsContentComplete = isContentComplete;
+        Revision = Math.Max(1, revision);
+        CreatedAt = createdAt ?? dateAdded;
+        UpdatedAt = updatedAt ?? dateAdded;
     }
 
     public string OwnerId { get; }
@@ -66,6 +101,14 @@ public sealed class CloudModlistRegistryEntry
     public DateTimeOffset? DateAdded { get; }
 
     public string RegistryKey => $"{OwnerId}/{SlotKey}";
+
+    public string RegistryId => OwnerId;
+
+    public long Revision { get; }
+
+    public DateTimeOffset? CreatedAt { get; }
+
+    public DateTimeOffset? UpdatedAt { get; }
 
     /// <summary>
     ///     Indicates whether <see cref="ContentJson" /> contains the full modlist payload
@@ -85,7 +128,10 @@ public sealed class CloudModlistManagementEntry
         string? name,
         string? version,
         string displayName,
-        string? cachedContent)
+        string? cachedContent,
+        string? registryId = null,
+        long revision = 1,
+        int subscriberCount = 0)
     {
         SlotKey = slotKey ?? throw new ArgumentNullException(nameof(slotKey));
         SlotLabel = slotLabel ?? throw new ArgumentNullException(nameof(slotLabel));
@@ -93,6 +139,9 @@ public sealed class CloudModlistManagementEntry
         Version = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
         DisplayName = displayName ?? throw new ArgumentNullException(nameof(displayName));
         CachedContent = cachedContent;
+        RegistryId = registryId;
+        Revision = Math.Max(1, revision);
+        SubscriberCount = Math.Max(0, subscriberCount);
     }
 
     public string SlotKey { get; }
@@ -106,6 +155,12 @@ public sealed class CloudModlistManagementEntry
     public string DisplayName { get; }
 
     public string? CachedContent { get; }
+
+    public string? RegistryId { get; }
+
+    public long Revision { get; }
+
+    public int SubscriberCount { get; }
 
     public string EffectiveName => Name ?? "Unnamed Modlist";
 
@@ -136,7 +191,13 @@ public sealed class CloudModlistListEntry
         string contentJson,
         DateTimeOffset? dateAdded,
         string? gameVersion,
-        bool isContentComplete)
+        bool isContentComplete,
+        long revision = 1,
+        int subscriberCount = 0,
+        bool isSubscribed = false,
+        bool isOwnedByCurrentUser = false,
+        bool hasUpdateAvailable = false,
+        string? ownerSlotKey = null)
     {
         OwnerId = ownerId ?? throw new ArgumentNullException(nameof(ownerId));
         SlotKey = slotKey ?? throw new ArgumentNullException(nameof(slotKey));
@@ -150,6 +211,12 @@ public sealed class CloudModlistListEntry
         DateAdded = dateAdded;
         GameVersion = string.IsNullOrWhiteSpace(gameVersion) ? null : gameVersion.Trim();
         IsContentComplete = isContentComplete;
+        Revision = Math.Max(1, revision);
+        SubscriberCount = Math.Max(0, subscriberCount);
+        IsSubscribed = isSubscribed;
+        IsOwnedByCurrentUser = isOwnedByCurrentUser;
+        HasUpdateAvailable = hasUpdateAvailable;
+        OwnerSlotKey = ownerSlotKey;
     }
 
     public string OwnerId { get; }
@@ -175,6 +242,24 @@ public sealed class CloudModlistListEntry
     public string? GameVersion { get; }
 
     public bool IsContentComplete { get; }
+
+    public string RegistryId => OwnerId;
+
+    public long Revision { get; }
+
+    public int SubscriberCount { get; }
+
+    public bool IsSubscribed { get; }
+
+    public bool IsOwnedByCurrentUser { get; }
+
+    public bool HasUpdateAvailable { get; }
+
+    public string? OwnerSlotKey { get; }
+
+    public string UpdateBadgeToolTip => HasUpdateAvailable
+        ? $"Update available (online revision {Revision})"
+        : string.Empty;
 
     public string DisplayName => Name ?? "Unnamed Modlist";
 
@@ -315,7 +400,9 @@ public sealed class LocalModlistListEntry
         ModlistGroupDefinition? groupDefinition = null,
         IReadOnlyList<ModlistGroupConflict>? groupConflicts = null,
         IReadOnlyList<string>? missingGroupMembers = null,
-        IReadOnlyList<ModlistGroupMemberListEntry>? groupMembers = null)
+        IReadOnlyList<ModlistGroupMemberListEntry>? groupMembers = null,
+        OnlineSubscriptionInfo? onlineSubscription = null,
+        bool isOnlineSourceAvailable = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
@@ -333,6 +420,8 @@ public sealed class LocalModlistListEntry
         GroupConflicts = groupConflicts is null ? Array.Empty<ModlistGroupConflict>() : groupConflicts.ToList();
         MissingGroupMembers = missingGroupMembers is null ? Array.Empty<string>() : missingGroupMembers.ToList();
         GroupMembers = groupMembers is null ? Array.Empty<ModlistGroupMemberListEntry>() : groupMembers.ToList();
+        OnlineSubscription = onlineSubscription;
+        IsOnlineSourceAvailable = isOnlineSourceAvailable;
     }
 
     public string FilePath { get; }
@@ -362,6 +451,29 @@ public sealed class LocalModlistListEntry
     public IReadOnlyList<string> MissingGroupMembers { get; }
 
     public IReadOnlyList<ModlistGroupMemberListEntry> GroupMembers { get; }
+
+    public OnlineSubscriptionInfo? OnlineSubscription { get; }
+
+    public bool IsSubscribed => !string.IsNullOrWhiteSpace(OnlineSubscription?.RegistryId);
+
+    public bool IsOnlineSourceAvailable { get; }
+
+    public bool HasUpdateAvailable => IsSubscribed
+                                      && IsOnlineSourceAvailable
+                                      && OnlineSubscription!.LastKnownRemoteRevision
+                                      > OnlineSubscription.SyncedRevision;
+
+    public string SubscriptionStatusDisplay => !IsSubscribed
+        ? "—"
+        : !IsOnlineSourceAvailable
+            ? "Source unavailable"
+            : HasUpdateAvailable
+                ? "Update available"
+                : "Subscribed";
+
+    public string UpdateBadgeToolTip => HasUpdateAvailable
+        ? $"Update available (local revision {OnlineSubscription!.SyncedRevision}, online revision {OnlineSubscription.LastKnownRemoteRevision})"
+        : string.Empty;
 
     public bool IsGroup => GroupDefinition is not null;
 

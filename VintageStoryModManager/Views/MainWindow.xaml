@@ -5,6 +5,7 @@
     xmlns:converters="clr-namespace:VintageStoryModManager.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:design="clr-namespace:VintageStoryModManager.Design"
+    xmlns:dialogs="clr-namespace:VintageStoryModManager.Views.Dialogs"
     xmlns:helpers="clr-namespace:VintageStoryModManager.Helpers"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:services="clr-namespace:VintageStoryModManager.Services"
@@ -569,6 +570,27 @@
                             Header="Enable server options"
                             IsCheckable="True"
                             Style="{StaticResource ToggleMenuItemStyle}" />
+                        <MenuItem
+                            x:Name="HiddenOnlineModlistsMenuItem"
+                            Padding="12,6"
+                            Header="Hidden online modlists">
+                            <MenuItem
+                                x:Name="ClearHiddenOnlineModlistsMenuItem"
+                                Padding="12,6"
+                                Click="ClearHiddenOnlineModlistsMenuItem_OnClick"
+                                Header="Clear hidden modlists" />
+                            <MenuItem
+                                x:Name="ClearHiddenOnlineModlistAuthorsMenuItem"
+                                Padding="12,6"
+                                Click="ClearHiddenOnlineModlistAuthorsMenuItem_OnClick"
+                                Header="Clear hidden authors" />
+                            <Separator />
+                            <MenuItem
+                                x:Name="ClearAllHiddenOnlineModlistsMenuItem"
+                                Padding="12,6"
+                                Click="ClearAllHiddenOnlineModlistsMenuItem_OnClick"
+                                Header="Clear all hidden online modlists" />
+                        </MenuItem>
 
                         <MenuItem Padding="12,6" Header="Enable logging for...">
                             <MenuItem
@@ -664,9 +686,18 @@
 
                 <TextBlock
                     x:Name="ModUsagePromptTextBlock"
+                    Margin="0,0,12,0"
                     VerticalAlignment="Center"
                     Visibility="Collapsed"><Hyperlink Click="ModUsagePromptLink_OnClick" Foreground="{DynamicResource Brush.Text.Emphasis}">
                         <Run Text="Confirm working mods!" />
+                    </Hyperlink></TextBlock>
+
+                <TextBlock
+                    x:Name="SubscribedModlistUpdatesTextBlock"
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed"><Hyperlink Click="SubscribedModlistUpdatesLink_OnClick" Foreground="#FFFFB300">
+                        <Run Text="↻ " />
+                        <Run x:Name="SubscribedModlistUpdatesRun" Text="0 subscribed modlist updates" />
                     </Hyperlink></TextBlock>
             </StackPanel>
 
@@ -1997,6 +2028,7 @@
                                                 ItemsSource="{Binding LocalModlistsView}"
                                                 LoadingRow="LocalModlistsDataGrid_OnLoadingRow"
                                                 PreviewMouseLeftButtonDown="LocalModlistsDataGrid_OnPreviewMouseLeftButtonDown"
+                                                PreviewMouseLeftButtonUp="ModlistsDataGrid_OnPreviewMouseLeftButtonUp"
                                                 PreviewMouseMove="LocalModlistsDataGrid_OnPreviewMouseMove"
                                                 PreviewMouseRightButtonDown="LocalModlistsDataGrid_OnPreviewMouseRightButtonDown"
                                                 RowBackground="{DynamicResource Brush.Panel.Primary.Background.Solid}"
@@ -2123,27 +2155,49 @@
                                                     </DataTemplate>
                                                 </DataGrid.RowDetailsTemplate>
                                                 <DataGrid.Columns>
-                                                    <DataGridTextColumn
+                                                    <DataGridTemplateColumn
                                                         Width="260"
                                                         MinWidth="200"
-                                                        Binding="{Binding DisplayName}"
                                                         Header="Name"
-                                                        IsReadOnly="True">
-                                                        <DataGridTextColumn.ElementStyle>
-                                                            <Style TargetType="{x:Type TextBlock}">
-                                                                <Setter Property="VerticalAlignment" Value="Center" />
-                                                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                                                                <Setter Property="ToolTip" Value="{Binding DisplayName}" />
-                                                            </Style>
-                                                        </DataGridTextColumn.ElementStyle>
-                                                        <DataGridTextColumn.CellStyle>
+                                                        IsReadOnly="True"
+                                                        SortMemberPath="DisplayName">
+                                                        <DataGridTemplateColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                                                    <TextBlock
+                                                                        VerticalAlignment="Center"
+                                                                        FontWeight="Bold"
+                                                                        Text="{Binding DisplayName}"
+                                                                        ToolTip="{Binding DisplayName}" />
+                                                                    <TextBlock
+                                                                        Margin="8,0,0,0"
+                                                                        VerticalAlignment="Center"
+                                                                        FontSize="18"
+                                                                        FontWeight="Bold"
+                                                                        Foreground="#FFFFB300"
+                                                                        Text="↻"
+                                                                        ToolTip="{Binding UpdateBadgeToolTip}">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="{x:Type TextBlock}">
+                                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding HasUpdateAvailable}" Value="True">
+                                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
+                                                                </StackPanel>
+                                                            </DataTemplate>
+                                                        </DataGridTemplateColumn.CellTemplate>
+                                                        <DataGridTemplateColumn.CellStyle>
                                                             <Style BasedOn="{StaticResource IMM.DataGridCellBaseStyle}" TargetType="{x:Type DataGridCell}">
                                                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                                                                 <Setter Property="Margin" Value="10,0,0,0" />
-                                                                <Setter Property="FontWeight" Value="Bold" />
                                                             </Style>
-                                                        </DataGridTextColumn.CellStyle>
-                                                    </DataGridTextColumn>
+                                                        </DataGridTemplateColumn.CellStyle>
+                                                    </DataGridTemplateColumn>
                                                     <DataGridTextColumn
                                                         Width="220"
                                                         MinWidth="180"
@@ -2188,6 +2242,14 @@
                                                             </Style>
                                                         </DataGridTextColumn.CellStyle>
                                                     </DataGridTextColumn>
+                                                    <DataGridTextColumn
+                                                        Width="150"
+                                                        Binding="{Binding SubscriptionStatusDisplay}"
+                                                        CellStyle="{StaticResource IMM.DataGridCenteredCellStyle}"
+                                                        ElementStyle="{StaticResource IMM.DataGridCenteredTextStyle}"
+                                                        Header="Subscription"
+                                                        IsReadOnly="True"
+                                                        SortMemberPath="SubscriptionStatusDisplay" />
                                                     <DataGridTemplateColumn
                                                         Width="*"
                                                         MinWidth="180"
@@ -2399,6 +2461,28 @@
                                                         Content="Fix duplicate mods (0)"
                                                         IsEnabled="False"
                                                         Visibility="Collapsed" />
+                                                    <Button
+                                                        x:Name="SyncSubscribedModlistButton"
+                                                        Width="185"
+                                                        Height="32"
+                                                        Margin="200,47,0,0"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Top"
+                                                        Click="SyncSubscribedModlistButton_OnClick"
+                                                        Content="Sync Update"
+                                                        IsEnabled="False"
+                                                        Visibility="Collapsed" />
+                                                    <Button
+                                                        x:Name="UnsubscribeLocalModlistButton"
+                                                        Width="185"
+                                                        Height="32"
+                                                        Margin="200,84,0,0"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Top"
+                                                        Click="UnsubscribeLocalModlistButton_OnClick"
+                                                        Content="Unsubscribe"
+                                                        IsEnabled="False"
+                                                        Visibility="Collapsed" />
                                                     <Border
                                                         x:Name="SelectedLocalModlistDetailsBorder"
                                                         Height="142"
@@ -2478,6 +2562,7 @@
                                                 IsEnabled="{Binding CanAccessCloudModlists}"
                                                 IsReadOnly="True"
                                                 ItemsSource="{Binding CloudModlistsView}"
+                                                PreviewMouseLeftButtonUp="ModlistsDataGrid_OnPreviewMouseLeftButtonUp"
                                                 PreviewMouseRightButtonDown="CloudModlistsDataGrid_OnPreviewMouseRightButtonDown"
                                                 RowBackground="{DynamicResource Brush.Panel.Primary.Background.Solid}"
                                                 RowHeaderWidth="0"
@@ -2512,27 +2597,49 @@
                                                     <StaticResource ResourceKey="IMM.ModlistsDataGridRowStyle" />
                                                 </DataGrid.RowStyle>
                                                 <DataGrid.Columns>
-                                                    <DataGridTextColumn
+                                                    <DataGridTemplateColumn
                                                         Width="260"
                                                         MinWidth="200"
-                                                        Binding="{Binding DisplayName}"
                                                         Header="Name"
-                                                        IsReadOnly="True">
-                                                        <DataGridTextColumn.ElementStyle>
-                                                            <Style TargetType="{x:Type TextBlock}">
-                                                                <Setter Property="VerticalAlignment" Value="Center" />
-                                                                <Setter Property="ToolTipService.ShowDuration" Value="60000" />
-                                                                <Setter Property="ToolTip" Value="{Binding DisplayName}" />
-                                                            </Style>
-                                                        </DataGridTextColumn.ElementStyle>
-                                                        <DataGridTextColumn.CellStyle>
+                                                        IsReadOnly="True"
+                                                        SortMemberPath="DisplayName">
+                                                        <DataGridTemplateColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                                                    <TextBlock
+                                                                        VerticalAlignment="Center"
+                                                                        FontWeight="Bold"
+                                                                        Text="{Binding DisplayName}"
+                                                                        ToolTip="{Binding DisplayName}" />
+                                                                    <TextBlock
+                                                                        Margin="8,0,0,0"
+                                                                        VerticalAlignment="Center"
+                                                                        FontSize="18"
+                                                                        FontWeight="Bold"
+                                                                        Foreground="#FFFFB300"
+                                                                        Text="↻"
+                                                                        ToolTip="{Binding UpdateBadgeToolTip}">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="{x:Type TextBlock}">
+                                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding HasUpdateAvailable}" Value="True">
+                                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
+                                                                </StackPanel>
+                                                            </DataTemplate>
+                                                        </DataGridTemplateColumn.CellTemplate>
+                                                        <DataGridTemplateColumn.CellStyle>
                                                             <Style BasedOn="{StaticResource IMM.DataGridCellBaseStyle}" TargetType="{x:Type DataGridCell}">
                                                                 <Setter Property="VerticalContentAlignment" Value="Center" />
                                                                 <Setter Property="Margin" Value="10,0,0,0" />
-                                                                <Setter Property="FontWeight" Value="Bold" />
                                                             </Style>
-                                                        </DataGridTextColumn.CellStyle>
-                                                    </DataGridTextColumn>
+                                                        </DataGridTemplateColumn.CellStyle>
+                                                    </DataGridTemplateColumn>
                                                     <DataGridTextColumn
                                                         Width="220"
                                                         MinWidth="180"
@@ -2577,6 +2684,14 @@
                                                             </Style>
                                                         </DataGridTextColumn.CellStyle>
                                                     </DataGridTextColumn>
+                                                    <DataGridTextColumn
+                                                        Width="120"
+                                                        Binding="{Binding SubscriberCount}"
+                                                        CellStyle="{StaticResource IMM.DataGridCenteredCellStyle}"
+                                                        ElementStyle="{StaticResource IMM.DataGridCenteredTextStyle}"
+                                                        Header="Subscribers"
+                                                        IsReadOnly="True"
+                                                        SortMemberPath="SubscriberCount" />
                                                     <DataGridTemplateColumn
                                                         Width="200"
                                                         MinWidth="180"
@@ -2678,10 +2793,31 @@
                                                         VerticalAlignment="Top"
                                                         Click="RefreshCloudModlistsButton_OnClick"
                                                         Content="Refresh" />
+                                                    <Button
+                                                        x:Name="SubscribeCloudModlistButton"
+                                                        Width="185"
+                                                        Height="32"
+                                                        Margin="200,10,0,0"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Top"
+                                                        Click="SubscribeCloudModlistButton_OnClick"
+                                                        Content="Subscribe"
+                                                        IsEnabled="False" />
+                                                    <Button
+                                                        x:Name="UpdateOwnedCloudModlistButton"
+                                                        Width="185"
+                                                        Height="32"
+                                                        Margin="200,47,0,0"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Top"
+                                                        Click="UpdateOwnedCloudModlistButton_OnClick"
+                                                        Content="Update Selected Modlist"
+                                                        IsEnabled="False"
+                                                        Visibility="Collapsed" />
                                                     <Border
                                                         x:Name="OnlineModlistsDescriptions"
                                                         Height="142"
-                                                        Margin="200,10,10,0"
+                                                        Margin="390,10,10,0"
                                                         VerticalAlignment="Top"
                                                         Background="Transparent"
                                                         BorderBrush="{DynamicResource Brush.SunkenSurface.Bevel.Light}"
@@ -3080,6 +3216,13 @@
         <!--  FULL-WINDOW OVERLAYS: Modlist Install and Data Backup  -->
         <!--  ============================================================  -->
 
+        <dialogs:ModlistDetailsOverlay
+            x:Name="ModlistDetailsOverlay"
+            Grid.RowSpan="3"
+            Panel.ZIndex="4500"
+            CloseRequested="ModlistDetailsOverlay_OnCloseRequested"
+            HideAuthorRequested="ModlistDetailsOverlay_OnHideAuthorRequested"
+            HideModlistRequested="ModlistDetailsOverlay_OnHideModlistRequested" />
 
         <!--  Modlist Installation Progress Overlay  -->
         <Border

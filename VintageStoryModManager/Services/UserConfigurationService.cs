@@ -136,6 +136,8 @@ public sealed class UserConfigurationService
     private readonly Dictionary<string, string> _customThemePaletteColors = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, GameProfileState> _gameProfiles = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _installedColumnVisibility = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _hiddenOnlineModlistAuthorIds = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _hiddenOnlineModlistKeys = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _modConfigPathsPath;
     private readonly Dictionary<string, Dictionary<string, string>> _savedCustomThemes =
         new(StringComparer.OrdinalIgnoreCase);
@@ -294,6 +296,10 @@ public sealed class UserConfigurationService
     public List<string> ModBrowserSelectedVersionIds { get; private set; } = [];
 
     public List<int> ModBrowserSelectedTagIds { get; private set; } = [];
+
+    public int HiddenOnlineModlistCount => _hiddenOnlineModlistKeys.Count;
+
+    public int HiddenOnlineModlistAuthorCount => _hiddenOnlineModlistAuthorIds.Count;
 
     public double? WindowWidth => _windowWidth;
 
@@ -1280,6 +1286,65 @@ public sealed class UserConfigurationService
         Save();
     }
 
+    public bool IsOnlineModlistHidden(string? ownerId, string? slotKey)
+    {
+        var key = ComposeOnlineModlistKey(ownerId, slotKey);
+        return key is not null && _hiddenOnlineModlistKeys.Contains(key);
+    }
+
+    public bool IsOnlineModlistAuthorHidden(string? ownerId)
+    {
+        var normalized = NormalizeOnlineModlistIdentifier(ownerId);
+        return normalized is not null && _hiddenOnlineModlistAuthorIds.Contains(normalized);
+    }
+
+    public bool HideOnlineModlist(string? ownerId, string? slotKey)
+    {
+        var key = ComposeOnlineModlistKey(ownerId, slotKey);
+        if (key is null || !_hiddenOnlineModlistKeys.Add(key)) return false;
+
+        Save();
+        return true;
+    }
+
+    public bool HideOnlineModlistAuthor(string? ownerId)
+    {
+        var normalized = NormalizeOnlineModlistIdentifier(ownerId);
+        if (normalized is null || !_hiddenOnlineModlistAuthorIds.Add(normalized)) return false;
+
+        Save();
+        return true;
+    }
+
+    public bool ClearHiddenOnlineModlists()
+    {
+        if (_hiddenOnlineModlistKeys.Count == 0) return false;
+
+        _hiddenOnlineModlistKeys.Clear();
+        Save();
+        return true;
+    }
+
+    public bool ClearHiddenOnlineModlistAuthors()
+    {
+        if (_hiddenOnlineModlistAuthorIds.Count == 0) return false;
+
+        _hiddenOnlineModlistAuthorIds.Clear();
+        Save();
+        return true;
+    }
+
+    public bool ClearAllHiddenOnlineModlists()
+    {
+        var changed = _hiddenOnlineModlistKeys.Count > 0 || _hiddenOnlineModlistAuthorIds.Count > 0;
+        if (!changed) return false;
+
+        _hiddenOnlineModlistKeys.Clear();
+        _hiddenOnlineModlistAuthorIds.Clear();
+        Save();
+        return true;
+    }
+
     public void SetCloseManagerAfterGameLaunch(bool isEnabled)
     {
         if (CloseManagerAfterGameLaunch == isEnabled) return;
@@ -2000,6 +2065,9 @@ public sealed class UserConfigurationService
             ModBrowserFavoriteModIds = LoadIntList(obj["modBrowserFavoriteModIds"]);
             ModBrowserSelectedVersionIds = LoadStringList(obj["modBrowserSelectedVersionIds"]);
             ModBrowserSelectedTagIds = LoadIntList(obj["modBrowserSelectedTagIds"]);
+            ReplaceNormalizedStringSet(_hiddenOnlineModlistKeys, LoadStringList(obj["hiddenOnlineModlistKeys"]));
+            ReplaceNormalizedStringSet(_hiddenOnlineModlistAuthorIds,
+                LoadStringList(obj["hiddenOnlineModlistAuthorIds"]));
             _windowWidth = NormalizeWindowDimension(obj["windowWidth"]?.GetValue<double?>());
             _windowHeight = NormalizeWindowDimension(obj["windowHeight"]?.GetValue<double?>());
             _windowLeft = NormalizeWindowCoordinate(obj["windowLeft"]?.GetValue<double?>());
@@ -2246,6 +2314,8 @@ public sealed class UserConfigurationService
                 ["modBrowserFavoriteModIds"] = BuildIntListJson(ModBrowserFavoriteModIds),
                 ["modBrowserSelectedVersionIds"] = BuildStringListJson(ModBrowserSelectedVersionIds),
                 ["modBrowserSelectedTagIds"] = BuildIntListJson(ModBrowserSelectedTagIds),
+                ["hiddenOnlineModlistKeys"] = BuildStringListJson(_hiddenOnlineModlistKeys),
+                ["hiddenOnlineModlistAuthorIds"] = BuildStringListJson(_hiddenOnlineModlistAuthorIds),
                 ["windowWidth"] = _windowWidth,
                 ["windowHeight"] = _windowHeight,
                 ["windowLeft"] = _windowLeft,
@@ -2546,7 +2616,7 @@ public sealed class UserConfigurationService
         return result;
     }
 
-    private static JsonArray BuildStringListJson(List<string> strings)
+    private static JsonArray BuildStringListJson(IEnumerable<string> strings)
     {
         var result = new JsonArray();
         foreach (var str in strings)
@@ -3832,6 +3902,30 @@ public sealed class UserConfigurationService
     private static string? NormalizeModId(string? modId)
     {
         return string.IsNullOrWhiteSpace(modId) ? null : modId.Trim();
+    }
+
+    private static string? ComposeOnlineModlistKey(string? ownerId, string? slotKey)
+    {
+        var normalizedOwnerId = NormalizeOnlineModlistIdentifier(ownerId);
+        var normalizedSlotKey = NormalizeOnlineModlistIdentifier(slotKey);
+        return normalizedOwnerId is null || normalizedSlotKey is null
+            ? null
+            : $"{normalizedOwnerId}/{normalizedSlotKey}";
+    }
+
+    private static string? NormalizeOnlineModlistIdentifier(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static void ReplaceNormalizedStringSet(HashSet<string> target, IEnumerable<string> values)
+    {
+        target.Clear();
+        foreach (var value in values)
+        {
+            var normalized = NormalizeOnlineModlistIdentifier(value);
+            if (normalized is not null) target.Add(normalized);
+        }
     }
 
     private static string? NormalizeOptionalSortMemberPath(string? sortMemberPath)

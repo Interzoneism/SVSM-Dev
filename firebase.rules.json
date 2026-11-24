@@ -43,6 +43,26 @@
       }
     },
 
+    "modlistSubscriptions": {
+      ".read": true,
+      "$entryId": {
+        "$subscriberId": {
+          ".write": "auth != null && (($subscriberId == auth.uid && root.child('registry').child($entryId).exists() && root.child('registryOwners').child($entryId).val() != auth.uid) || (root.child('registryOwners').child($entryId).val() == auth.uid && !newData.exists()))",
+          ".validate": "!newData.exists() || (newData.isNumber() && newData.val() > 0 && newData.val() <= now)"
+        }
+      }
+    },
+
+    "modlistSubscriptionNotices": {
+      "$entryId": {
+        ".read": "auth != null && root.child('registryOwners').child($entryId).val() == auth.uid",
+        "$subscriberId": {
+          ".write": "auth != null && (($subscriberId == auth.uid && !data.exists() && newData.exists() && root.child('registry').child($entryId).exists() && root.child('registryOwners').child($entryId).val() != auth.uid) || (root.child('registryOwners').child($entryId).val() == auth.uid && !newData.exists()))",
+          ".validate": "!newData.exists() || (newData.isNumber() && newData.val() > 0 && newData.val() <= now)"
+        }
+      }
+    },
+
     "compatVotes": {
       ".read": true,
       "$modKey": {

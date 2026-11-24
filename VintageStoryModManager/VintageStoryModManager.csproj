@@ -13,7 +13,8 @@
 		<ApplicationIcon>SVSM.ico</ApplicationIcon>
 		
 		<!-- Optimize single-file publish size -->
-		<!-- IncludeAllContentForSelfExtract removed to reduce executable size by excluding unnecessary content -->
+		<!-- QuestPDF ships required font files as content; extract them beside the single-file app at runtime. -->
+		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 		<!-- What Windows/Task Manager shows -->
 		<FileDescription>Simple VS Manager</FileDescription>   <!-- Task Manager "Name" (File description) -->
@@ -45,16 +46,6 @@
 		<!-- Optional: avoid extra .pdb files -->
 		<DebugType>none</DebugType>
 	</PropertyGroup>
-
-	<!-- QuestPDF: official way to remove the default LatoFont folder from output -->
-	<Target Name="QuestPDF_DoNotIncludeLatoFont_AfterBuild" AfterTargets="Build">
-		<RemoveDir Directories="$(OutDir)/LatoFont" />
-	</Target>
-
-	<Target Name="QuestPDF_DoNotIncludeLatoFont_AfterPublish" AfterTargets="Publish">
-		<RemoveDir Directories="$(PublishDir)/LatoFont" />
-	</Target>
-
 
 	<ItemGroup>
                 <Resource Include="warning.png" />

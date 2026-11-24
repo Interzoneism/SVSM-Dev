@@ -402,7 +402,7 @@ public sealed class ModListItemViewModel : ObservableObject
 
     public bool HasVersionOptions => VersionOptions.Count > 0;
 
-    public bool HasDownloadableRelease => LatestCompatibleRelease != null;
+    public bool HasDownloadableRelease => LatestCompatibleRelease != null || LatestRelease != null;
 
     public IReadOnlyList<ReleaseChangelog> NewerReleaseChangelogs { get; private set; } =
         Array.Empty<ReleaseChangelog>();
@@ -480,7 +480,7 @@ public sealed class ModListItemViewModel : ObservableObject
             if (LatestCompatibleRelease != null)
                 return $"Install compatible version {LatestCompatibleRelease.Version}.";
 
-            return "No releases are marked compatible with the current target Vintage Story version.";
+            return $"Latest release {LatestRelease!.Version} is not marked as compatible. You can choose to install it anyway.";
         }
     }
 

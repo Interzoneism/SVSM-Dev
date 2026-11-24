@@ -14,7 +14,9 @@ public partial class CloudModlistDetailsDialog : Window
         Window owner,
         string? suggestedName,
         IEnumerable<ModConfigOption>? configOptions,
-        string? defaultGameVersion = null)
+        string? defaultGameVersion = null,
+        string? defaultDescription = null,
+        string? defaultVersion = null)
     {
         ConfigOptions = new ObservableCollection<ModConfigOption>(
             (configOptions ?? Enumerable.Empty<ModConfigOption>())
@@ -32,6 +34,8 @@ public partial class CloudModlistDetailsDialog : Window
             ? string.Empty
             : suggestedName;
         if (!string.IsNullOrWhiteSpace(defaultGameVersion)) GameVersionTextBox.Text = defaultGameVersion.Trim();
+        if (!string.IsNullOrWhiteSpace(defaultDescription)) DescriptionTextBox.Text = defaultDescription.Trim();
+        if (!string.IsNullOrWhiteSpace(defaultVersion)) VersionTextBox.Text = defaultVersion.Trim();
         NameTextBox.SelectAll();
         UpdateConfirmButtonState();
     }

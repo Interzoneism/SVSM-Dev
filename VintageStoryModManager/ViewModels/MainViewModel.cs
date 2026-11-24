@@ -1079,6 +1079,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HasLocalModlists));
     }
 
+    public IReadOnlyList<LocalModlistListEntry> GetLocalModlistsSnapshot()
+    {
+        return _localModlists.ToList();
+    }
+
+    public IReadOnlyList<CloudModlistListEntry> GetCloudModlistsSnapshot()
+    {
+        return _cloudModlists.ToList();
+    }
+
     public IReadOnlyList<string> GetCurrentDisabledEntries()
     {
         return _settingsStore.GetDisabledEntriesSnapshot();

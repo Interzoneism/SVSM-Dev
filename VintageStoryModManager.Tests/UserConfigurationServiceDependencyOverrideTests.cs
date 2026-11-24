@@ -111,6 +111,27 @@ public sealed class UserConfigurationServiceDependencyOverrideTests : IDisposabl
             reloaded.GetOnlineModlistsSortPreference());
     }
 
+    [Fact]
+    public void HiddenOnlineModlistsAndAuthorsPersistAndCanBeClearedIndependently()
+    {
+        var configuration = new UserConfigurationService();
+        configuration.EnablePersistence();
+
+        Assert.True(configuration.HideOnlineModlist("owner-one", "slot-a"));
+        Assert.True(configuration.HideOnlineModlistAuthor("Creator Name"));
+
+        var reloaded = new UserConfigurationService();
+        Assert.True(reloaded.IsOnlineModlistHidden("OWNER-ONE", "SLOT-A"));
+        Assert.True(reloaded.IsOnlineModlistAuthorHidden("creator name"));
+
+        Assert.True(reloaded.ClearHiddenOnlineModlists());
+        Assert.False(reloaded.IsOnlineModlistHidden("owner-one", "slot-a"));
+        Assert.True(reloaded.IsOnlineModlistAuthorHidden("creator name"));
+
+        Assert.True(reloaded.ClearHiddenOnlineModlistAuthors());
+        Assert.False(reloaded.IsOnlineModlistAuthorHidden("creator name"));
+    }
+
     public void Dispose()
     {
         CustomConfigFolderManager.ClearCustomConfigFolder();
